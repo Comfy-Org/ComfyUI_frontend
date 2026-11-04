@@ -8,11 +8,11 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-const mockApi = vi.hoisted(() => new EventTarget())
+import { api as mockApi } from '@/scripts/api'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: mockApi
-}))
+const apiEvents: EventTarget = mockApi
+
+vi.mock(import('@/scripts/api'))
 
 type MockTask = {
   displayStatus: 'Completed' | 'Failed' | 'Cancelled' | 'Running' | 'Pending'
@@ -105,7 +105,7 @@ describe(useQueueNotificationBanners, () => {
     const { unmount, composable } = mountComposable()
 
     try {
-      mockApi.dispatchEvent(
+      apiEvents.dispatchEvent(
         new CustomEvent('promptQueued', { detail: { batchCount: 4 } })
       )
       await nextTick()
@@ -127,11 +127,10 @@ describe(useQueueNotificationBanners, () => {
     const { unmount, composable } = mountComposable()
 
     try {
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueueing', {
-          detail: { requestId: 1, batchCount: 2 }
-        })
-      )
+      mockApi.dispatchCustomEvent('promptQueueing', {
+        requestId: 1,
+        batchCount: 2
+      })
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -140,7 +139,7 @@ describe(useQueueNotificationBanners, () => {
         requestId: 1
       })
 
-      mockApi.dispatchEvent(
+      apiEvents.dispatchEvent(
         new CustomEvent('promptQueued', {
           detail: { requestId: 1, batchCount: 2 }
         })
@@ -161,7 +160,7 @@ describe(useQueueNotificationBanners, () => {
     const { unmount, composable } = mountComposable()
 
     try {
-      mockApi.dispatchEvent(
+      apiEvents.dispatchEvent(
         new CustomEvent('promptQueued', { detail: { batchCount: 0 } })
       )
       await nextTick()
@@ -342,11 +341,10 @@ describe(useQueueNotificationBanners, () => {
         count: 1
       })
 
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueueing', {
-          detail: { requestId: 7, batchCount: 1 }
-        })
-      )
+      mockApi.dispatchCustomEvent('promptQueueing', {
+        requestId: 7,
+        batchCount: 1
+      })
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -378,11 +376,10 @@ describe(useQueueNotificationBanners, () => {
         thumbnailUrls: []
       })
 
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueueing', {
-          detail: { requestId: 8, batchCount: 1 }
-        })
-      )
+      mockApi.dispatchCustomEvent('promptQueueing', {
+        requestId: 8,
+        batchCount: 1
+      })
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -416,11 +413,10 @@ describe(useQueueNotificationBanners, () => {
         ]
       })
 
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueueing', {
-          detail: { requestId: 9, batchCount: 1 }
-        })
-      )
+      mockApi.dispatchCustomEvent('promptQueueing', {
+        requestId: 9,
+        batchCount: 1
+      })
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -429,11 +425,10 @@ describe(useQueueNotificationBanners, () => {
         requestId: 9
       })
 
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueueing', {
-          detail: { requestId: 10, batchCount: 1 }
-        })
-      )
+      mockApi.dispatchCustomEvent('promptQueueing', {
+        requestId: 10,
+        batchCount: 1
+      })
       await nextTick()
 
       await vi.advanceTimersByTimeAsync(4000)

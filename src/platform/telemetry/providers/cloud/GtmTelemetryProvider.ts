@@ -31,8 +31,8 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -160,7 +160,14 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   ): void {
     const ga4EventName =
       event === 'modal_opened' ? 'view_promotion' : 'select_promotion'
-    this.pushEvent(ga4EventName, metadata ? { ...metadata } : undefined)
+    this.pushEvent(
+      ga4EventName,
+      metadata && {
+        current_tier: metadata.current_tier,
+        reason: metadata.reason,
+        refusal_type: metadata.refusal_type
+      }
+    )
   }
 
   trackSignupOpened(): void {
@@ -192,7 +199,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       trigger_source: properties.trigger_source ?? 'unknown',
       view_mode: properties.view_mode,
       is_app_mode: properties.is_app_mode,
-      dock_state: properties.dock_state
+      dock_state: properties.dock_state,
+      agent_panel_open: properties.agent_panel_open
     })
   }
 

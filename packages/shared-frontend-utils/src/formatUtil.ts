@@ -63,46 +63,6 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
-interface HighlightQueryPart {
-  text: string
-  highlighted: boolean
-}
-
-export function highlightQuery(
-  text: string,
-  query: string
-): HighlightQueryPart[] {
-  if (!query) return [{ text, highlighted: false }]
-
-  // Escape special regex characters, then join with an optional single
-  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
-  // highlighted without spanning tabs, newlines, or multi-space gaps.
-  const pattern = Array.from(query)
-    .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('[ ]?')
-
-  const regex = new RegExp(pattern, 'gi')
-  const parts: HighlightQueryPart[] = []
-  let lastIndex = 0
-
-  for (const match of text.matchAll(regex)) {
-    if (match.index > lastIndex) {
-      parts.push({
-        text: text.slice(lastIndex, match.index),
-        highlighted: false
-      })
-    }
-    parts.push({ text: match[0], highlighted: true })
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < text.length || parts.length === 0) {
-    parts.push({ text: text.slice(lastIndex), highlighted: false })
-  }
-
-  return parts
-}
-
 export function formatNumberWithSuffix(
   num: number,
   {
@@ -538,7 +498,7 @@ export function usdToMicros(usd: number): number {
  * @param text - The string to convert
  * @returns The string with URLs converted to HTML links
  * @example
- * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">https://example.com</a> for more info'
  */
 export function linkifyHtml(text: string): string {
   if (!text) return ''
@@ -547,7 +507,7 @@ export function linkifyHtml(text: string): string {
   return text.replace(urlRegex, (_match, p1, _p2, p3) => {
     const url = p1 || p3
     const href = p3 ? `http://${url}` : url
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">${url}</a>`
   })
 }
 
@@ -672,7 +632,7 @@ export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
-type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
+export type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
 type TextExtension = (typeof TEXT_EXTENSIONS)[number]

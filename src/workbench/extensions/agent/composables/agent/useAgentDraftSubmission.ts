@@ -1,18 +1,23 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import type { AgentInputMethod } from '@/platform/telemetry/types'
+import type {
+  AgentComposerDropReason,
+  AgentInputMethod
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { WorkflowReference } from '../../types/workflowReference'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
   onSubmit: () => void
+  onRejected?: (reason: AgentComposerDropReason) => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -39,6 +44,12 @@ interface UseAgentDraftSubmissionOptions {
 export interface SubmissionMeta {
   clientMessageId: string
   inputMethod: AgentInputMethod
+  /**
+   * The starter prompt this draft came from, `null` when none did. Read here
+   * rather than at report time for the same reason `inputMethod` is:
+   * `startSubmission` clears it, and a failed send restores it for the retry.
+   */
+  starterPrompt: AgentStarterPromptSource | null
 }
 
 export function useAgentDraftSubmission(
@@ -51,23 +62,27 @@ export function useAgentDraftSubmission(
     const snapshot = composer.takeFailedSubmission()
     if (!snapshot || selection.staged.value.length > 0) return
 
-    composer.restorePrompt({
-      text: snapshot.prompt.text,
-      references: snapshot.prompt.references.filter((reference) => {
-        if (reference.kind === 'workflow')
-          return reference.id !== options.editableWorkflowId()
-        if (reference.kind === 'node')
-          return (
-            options.target() === snapshot.target &&
-            snapshot.nodes.some(
-              (node) =>
-                selectedNodeKey(node) === selectedNodeKey(reference.node)
+    composer.restorePrompt(
+      {
+        text: snapshot.prompt.text,
+        references: snapshot.prompt.references.filter((reference) => {
+          if (reference.kind === 'workflow')
+            return reference.id !== options.editableWorkflowId()
+          if (reference.kind === 'node')
+            return (
+              options.target() === snapshot.target &&
+              snapshot.nodes.some(
+                (node) =>
+                  selectedNodeKey(node) === selectedNodeKey(reference.node)
+              )
             )
-          )
-        return true
-      })
-    })
+          return true
+        })
+      },
+      snapshot.attachments
+    )
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
+    composer.markRejectedDraft()
   }
 
   watch(() => composer.submission, recoverFailedSubmission, {
@@ -81,18 +96,20 @@ export function useAgentDraftSubmission(
     references: WorkflowReference[] = []
   ): Promise<void> {
     const target = options.target()
-    if (
-      !options.canSubmit() ||
-      composer.submission?.phase === 'pending' ||
-      target === null ||
-      (!text.trim() && attachments.length === 0) ||
-      attachments.some((attachment) => attachment.uploading)
-    )
-      return
+    const reject = (reason: AgentComposerDropReason) =>
+      options.onRejected?.(reason)
+    if (!options.canSubmit()) return reject('cannot_submit')
+    if (composer.submission?.phase === 'pending')
+      return reject('submission_pending')
+    if (target === null) return reject('no_target')
+    if (!text.trim() && attachments.length === 0) return reject('empty')
+    if (attachments.some((attachment) => attachment.uploading))
+      return reject('attachment_uploading')
 
     options.onSubmit()
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
+    const starterPrompt = composer.starterPrompt
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -112,7 +129,7 @@ export function useAgentDraftSubmission(
       sentAttachments,
       nodes,
       sentReferences,
-      { clientMessageId: uuidv4(), inputMethod }
+      { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     composer.settleSubmission(submissionId, sent)
   }

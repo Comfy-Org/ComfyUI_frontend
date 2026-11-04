@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, readonly } from 'vue'
 
-import type { useTransformState as realUseTransformState } from '../useTransformState'
+import type { useTransformState as realUseTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 function reactiveDefaults() {
   return {

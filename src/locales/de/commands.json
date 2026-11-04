@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Ausgewählte Elemente löschen"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Ausgewählte Verbindungen löschen"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ansicht an ausgewählte Nodes anpassen"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Ausgewählte Verbindungen ausblenden"
   },
   "Comfy_Canvas_Lock": {
     "label": "Canvas sperren"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "Alle auswählen"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Ausgewählte Verbindungen anzeigen"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Verbindungssichtbarkeit im Canvas umschalten"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Ausgewählte Nodes einklappen/ausklappen"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Verbindungen bei ausgewählten Nodes ein-/ausblenden"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Ausgewählte Nodes stummschalten/Stummschaltung aufheben"
@@ -229,6 +241,9 @@
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Neuer leerer Workflow"
+  },
+  "Comfy_Onboarding_Replay": {
+    "label": "Onboarding wiederholen"
   },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"

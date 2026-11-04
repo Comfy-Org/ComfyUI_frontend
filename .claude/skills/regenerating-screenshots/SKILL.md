@@ -6,7 +6,7 @@ description: 'Creates a PR to regenerate Playwright screenshot expectations. Use
 # Regenerating Playwright Screenshot Expectations
 
 Automates the process of triggering the `PR: Update Playwright Expectations`
-GitHub Action by creating a labeled PR from `origin/main`.
+GitHub Action by creating a PR from `origin/main` and requesting a full rerun.
 
 ## Steps
 
@@ -40,7 +40,7 @@ GitHub Action by creating a labeled PR from `origin/main`.
    new, unique poem every time. Short (4–8 lines). Can be funny, wistful,
    epic, haiku-style, limerick, sonnet fragment — vary the form.
 
-6. **Create the PR** with the poem as the body (no label yet).
+6. **Create the PR** with the poem as the body.
 
    Write the poem to a temp file and use `--body-file`:
 
@@ -54,17 +54,12 @@ GitHub Action by creating a labeled PR from `origin/main`.
      --body-file <temp-file>
    ```
 
-7. **Add the label** as a separate step to trigger the GitHub Action.
-
-   The `labeled` event only fires when a label is added after PR
-   creation, not when applied during creation via `--label`.
-
-   Use the GitHub API directly (`gh pr edit --add-label` fails due to
-   deprecated Projects Classic GraphQL errors):
+7. **Request the full rerun** with a comment on the PR. The path filter
+   skips the Playwright jobs of an empty-commit PR, so there are no failed
+   screenshots to take from its E2E run.
 
    ```bash
-   gh api repos/{owner}/{repo}/issues/<pr-number>/labels \
-     -f "labels[]=New Browser Test Expectations" --method POST
+   gh pr comment <pr-number> --body '/update-playwright full'
    ```
 
 8. **Report the result** to the user:
@@ -75,9 +70,11 @@ GitHub Action by creating a labeled PR from `origin/main`.
 
 ## Notes
 
-- The `New Browser Test Expectations` label triggers the
-  `pr-update-playwright-expectations.yaml` workflow.
-- The workflow runs Playwright with `--update-snapshots`, commits results
-  back to the PR branch, then removes the label.
+- The `/update-playwright full` comment triggers the
+  `pr-update-playwright-expectations.yaml` workflow, which runs Playwright
+  with `--update-snapshots` and commits the results back to the PR branch.
+- On a PR whose E2E run has screenshot diffs, the
+  `New Browser Test Expectations` label or a plain `/update-playwright`
+  comment commits the images from that run instead of rerunning Playwright.
 - This is fire-and-forget — no need to wait for or monitor the Action.
 - Always return to the original branch/worktree state after pushing.

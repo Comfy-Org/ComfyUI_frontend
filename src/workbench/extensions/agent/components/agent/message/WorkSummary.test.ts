@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
@@ -139,6 +139,119 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Resize image node')).toBeInTheDocument()
     expect(screen.getByText('Opening a new tab')).toBeInTheDocument()
   })
+
+  it('distinguishes unknown, successful, and failed tool outcomes', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          tool('c1', 'remember', 'done', true),
+          tool('c2', 'remember', 'done'),
+          tool('c3', 'new_tab', 'done', true),
+          tool('c4', 'switch_tab', 'done', false),
+          tool('c5', 'run', 'done'),
+          tool('c6', 'list_slots', 'done', true),
+          tool('c7', 'set_widget', 'done', false)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Saving a preference — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.getByText('×2')).toBeInTheDocument()
+    expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
+    expect(screen.getByText('Switching tabs failed')).toBeInTheDocument()
+    expect(screen.getByText('Run')).toBeInTheDocument()
+    expect(screen.getByText('List slots')).toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
+  })
+
+  it('names the skill while it loads and after it finishes', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'streaming'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'done', true),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
+  })
+
+  it('names a skill load that finishes with an error', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done', false),
+            skill: 'broken-skill'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Failed to load broken-skill')).toBeInTheDocument()
+    expect(screen.queryByText('Loaded broken-skill')).not.toBeInTheDocument()
+  })
+
+  it('renders a missing skill outcome neutrally', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Loading comfy-director — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Loaded comfy-director')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Failed to load comfy-director')
+    ).not.toBeInTheDocument()
+  })
+
+  it('updates a generic loading label when the skill name arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [tool('c1', 'load_skill', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Load skill')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'streaming'),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+  })
 })
 
 describe('WorkSummary', () => {
@@ -215,6 +328,32 @@ describe('WorkSummary', () => {
 
     expect(
       screen.getByRole('button', { name: /^worked$/i })
+    ).toBeInTheDocument()
+  })
+
+  it('does not claim completed work while a successful canvas write awaits observation', () => {
+    render(WorkSummary, {
+      props: { parts: [tool('c1', 'add_node', 'streaming', true)] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
+    ).toBeInTheDocument()
+  })
+
+  it('warns when a successful canvas write settled without observation', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          { ...tool('c1', 'add_node', 'done', true), canvasConfirmed: false }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
     ).toBeInTheDocument()
   })
 })

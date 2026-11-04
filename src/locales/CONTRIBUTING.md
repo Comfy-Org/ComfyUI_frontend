@@ -132,6 +132,9 @@ check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
 sole writer of those bytes, which keeps the manifest's recorded blob hashes
 valid.
 
+Website translations are maintained in
+[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/README.md#generating-translations).
+
 ### Manual Translation Updates
 
 If urgent translation updates are needed outside of releases, maintainers can:

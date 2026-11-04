@@ -1,12 +1,15 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { RerouteChain } from '@/types/rerouteChain'
-import { toRerouteId } from '@/types/rerouteId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import { useLinkStore } from './linkStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from './rerouteStore'
@@ -48,7 +51,6 @@ function link(id: number, targetSlot: number, parentId?: number): LinkTopology {
 describe('useRerouteStore', () => {
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const owner = store.registerReroute(graphA, chain(1))
     assert(owner)
 
@@ -56,7 +58,7 @@ describe('useRerouteStore', () => {
 
     const usurper = chain(1, 7)
     expect(store.registerReroute(graphA, usurper)).toBeUndefined()
-    expect(error).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)
