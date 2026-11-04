@@ -3543,6 +3543,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'retarget' }),
+          context: expect.objectContaining({ reason: 'retarget' })
+        })
+      )
       unmount()
     })
 
@@ -3622,6 +3629,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'subscribe_refused' }),
+          context: expect.objectContaining({ reason: 'subscribe_refused' })
+        })
+      )
       unmount()
     })
   })
