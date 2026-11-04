@@ -171,12 +171,14 @@ function arrange(scenario: Scenario = {}) {
       resubscribe
     })
   )
-  const servedNoticePlan = () => ({
-    isTeamPlan: false,
-    ...(scenario.subscription === undefined
-      ? activeSubscription
-      : scenario.subscription)
-  })
+  function servedNoticePlan() {
+    return {
+      isTeamPlan: false,
+      ...(scenario.subscription === undefined
+        ? activeSubscription
+        : scenario.subscription)
+    }
+  }
   vi.mocked(useBillingCapabilities).mockReturnValue(
     fromPartial({
       canSubscribeSelfServe: computed(

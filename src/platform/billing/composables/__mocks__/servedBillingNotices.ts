@@ -19,7 +19,7 @@ export function servedEndingNoticeStartsAt(plan: ServedNoticePlan) {
   if (plan.tier !== 'ENTERPRISE' || !plan.isCancelled || !plan.endDate) {
     return null
   }
-  return new Date(
-    Date.parse(plan.endDate) - ENDING_NOTICE_LEAD_MS
-  ).toISOString()
+  const end = Date.parse(plan.endDate)
+  if (Number.isNaN(end) || end <= Date.now()) return null
+  return new Date(end - ENDING_NOTICE_LEAD_MS).toISOString()
 }
