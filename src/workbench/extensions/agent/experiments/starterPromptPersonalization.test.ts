@@ -119,6 +119,24 @@ describe('starter prompt personalization', () => {
     )
   })
 
+  it('normalizes empty profile objects to null', () => {
+    const selection = selectStarterPrompts({
+      strategy: 'profile',
+      profile: {},
+      canvasPresence: 'empty'
+    })
+
+    expect(selection.prompts).toEqual([
+      'Create a product image from a text prompt',
+      'Build an image-to-video workflow',
+      'Explain how a ComfyUI workflow works',
+      'Find the best workflow for a specific task',
+      'Diagnose and fix errors in a workflow'
+    ])
+    expect(selection.personalizationApplied).toBe(false)
+    expect(selection.profileSource).toBe('unavailable')
+  })
+
   it('falls back as one English catalog when the locale is unavailable', () => {
     const selection = selectStarterPrompts({
       strategy: 'static',

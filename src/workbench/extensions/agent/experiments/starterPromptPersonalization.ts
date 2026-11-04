@@ -172,7 +172,9 @@ export function selectStarterPrompts(input: {
 }): StarterPromptSelection {
   const usesProfile = ['profile', 'profile_canvas'].includes(input.strategy)
   const usesCanvas = ['canvas', 'profile_canvas'].includes(input.strategy)
-  const profile = usesProfile ? input.profile : null
+  const profile = usesProfile
+    ? normalizeStarterPromptProfile(input.profile)
+    : null
   const profilePrompts = promptsForProfile(profile)
   const canvasPresent = usesCanvas && input.canvasPresence === 'present'
 
