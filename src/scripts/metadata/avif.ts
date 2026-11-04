@@ -213,7 +213,7 @@ function findBox(
     if (offset + boxLength > end) break
     offset += boxLength
   }
-  return null
+  return undefined
 }
 
 function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {

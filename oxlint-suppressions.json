@@ -7146,21 +7146,6 @@
       "count": 3
     }
   },
-  "src/scripts/metadata/ebml.ts": {
-    "typescript/no-restricted-types": {
-      "count": 12
-    }
-  },
-  "src/scripts/metadata/gltf.ts": {
-    "typescript/no-restricted-types": {
-      "count": 5
-    }
-  },
-  "src/scripts/metadata/isobmff.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
   "src/scripts/pnginfo.ts": {
     "typescript/no-restricted-types": {
       "count": 5
@@ -7536,11 +7521,6 @@
   "src/types/index.ts": {
     "comfy/no-reexports": {
       "count": 35
-    }
-  },
-  "src/types/metadataTypes.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
     }
   },
   "src/types/slotId.test.ts": {
