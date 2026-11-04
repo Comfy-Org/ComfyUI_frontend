@@ -182,15 +182,6 @@ export function mapAllNodes<T>(
   return mapAllNodesWithVisited(graph, mapFn, new Set())
 }
 
-/**
- * Path-local cycle guard (add-on-descent, delete-on-return): seeded with
- * the current graph at function entry so a self-referential SubgraphNode
- * (`node.subgraph === graph`, directly or transitively) is short-circuited
- * instead of recursing forever. Deleting on return still lets two sibling
- * SubgraphNodes that reference the *same* Subgraph (e.g. a copy-pasted
- * subgraph node) each have their contents mapped — a set that were never
- * removed on return would under-count the second sibling's contents.
- */
 function mapAllNodesWithVisited<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined,
@@ -273,7 +264,6 @@ export function forEachNode(
   forEachNodeWithVisited(graph, fn, new Set())
 }
 
-/** See {@link mapAllNodesWithVisited} for the path-local cycle-guard rationale. */
 function forEachNodeWithVisited(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void,

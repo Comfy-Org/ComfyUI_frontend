@@ -77,13 +77,6 @@ function createNestedSubgraphRuntime() {
   }
 }
 
-/**
- * Builds a malformed graph where a Subgraph contains a SubgraphNode that
- * points back to that same Subgraph — a cycle that `loadGraphData`
- * validation and the editor's "Make Subgraph" command do not produce
- * through normal use, but which a hand-authored or externally-generated
- * workflow JSON can still carry into `graph.add` / `node:added`.
- */
 function createSelfReferencingSubgraphRuntime() {
   const rootGraph = new LGraph()
   const cyclicSubgraph: Subgraph = createTestSubgraph({ rootGraph })

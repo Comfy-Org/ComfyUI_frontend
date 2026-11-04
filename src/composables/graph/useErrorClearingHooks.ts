@@ -142,14 +142,6 @@ function restoreNodeHooks(node: LGraphNode): void {
   hookedNodes.delete(node)
 }
 
-/**
- * `visited` is path-local (add-on-descent, delete-on-return): it guards
- * against a subgraph that (directly or transitively) contains itself, while
- * still letting two sibling SubgraphNodes that reference the *same*
- * Subgraph (e.g. a copy-pasted subgraph node) each have their interior
- * visited. A global/memoized visited set would silently skip the second
- * sibling's interior instead.
- */
 function installNodeHooksRecursive(
   node: LGraphNode,
   visited: Set<Subgraph> = new Set()
