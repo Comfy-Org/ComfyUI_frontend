@@ -541,7 +541,7 @@ describe('workflowDraftStoreV2', () => {
       )
     })
 
-    it('evicts an unrelated draft and retries when moving a qualified collision survivor onto a freed plain hash key hits quota', () => {
+    it('moves a qualified collision survivor onto a freed plain hash key on a full device, evicting nothing', () => {
       const store = useWorkflowDraftStoreV2()
 
       store.saveDraft('workflows/oldest.json', '{"data":"evict-me"}', {
@@ -558,7 +558,9 @@ describe('workflowDraftStoreV2', () => {
       })
       store.removeDraft(COLLIDING_PATH_A)
 
-      failPayloadWrites(1)
+      // A move writes no payload at all, so a device with no room left for one
+      // cannot refuse it and nothing has to be evicted to make space.
+      failPayloadWrites()
       const moved = store.moveDraft(
         COLLIDING_PATH_B,
         COLLIDING_PATH_A,
@@ -572,40 +574,89 @@ describe('workflowDraftStoreV2', () => {
       expect(movedDraft).not.toBeNull()
       expect(movedDraft!.name).toBe('renamed')
       expect(movedDraft!.data).toBe('{"data":"b"}')
-      expect(store.getDraft('workflows/oldest.json')).toBeNull()
+      expect(store.getDraft('workflows/oldest.json')?.data).toBe(
+        '{"data":"evict-me"}'
+      )
     })
 
-    it('leaves the source draft recoverable at its original path when eviction cannot free enough quota', () => {
+    it('leaves the source draft recoverable at its original path when the moved index cannot be written', () => {
       const store = useWorkflowDraftStoreV2()
 
-      store.saveDraft(COLLIDING_PATH_A, '{"data":"a"}', {
+      store.saveDraft('workflows/old.json', '{"data":"a"}', {
         name: 'draft-a',
         isTemporary: true
       })
-      store.saveDraft(COLLIDING_PATH_B, '{"data":"b"}', {
-        name: 'draft-b',
-        isTemporary: true
-      })
-      store.removeDraft(COLLIDING_PATH_A)
 
-      failPayloadWrites()
+      withQuotaMock((key) => key === INDEX_KEY)
       const moved = store.moveDraft(
-        COLLIDING_PATH_B,
-        COLLIDING_PATH_A,
+        'workflows/old.json',
+        'workflows/new.json',
         'renamed'
       )
       store.reset()
 
       expect(moved).toBe(false)
-      const stillAtSource = store.getDraft(COLLIDING_PATH_B)
+      const stillAtSource = store.getDraft('workflows/old.json')
       expect(stillAtSource).not.toBeNull()
-      expect(stillAtSource!.name).toBe('draft-b')
-      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+      expect(stillAtSource!.name).toBe('draft-a')
+      expect(stillAtSource!.data).toBe('{"data":"a"}')
+      expect(store.getDraft('workflows/new.json')).toBeNull()
       expect(reportErrorMock).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          context: expect.objectContaining({ evictedDrafts: 0 })
+          errorType: 'rename_draft_relocation_commit_failed'
         })
+      )
+    })
+
+    it('does not alias a new draft onto a renamed one that still holds its storage slot', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/reused.json', '{"data":"first"}', {
+        name: 'first',
+        isTemporary: true
+      })
+      expect(
+        store.moveDraft('workflows/reused.json', 'workflows/one.json', 'one')
+      ).toBe(true)
+
+      // A new workflow takes the name the first one was renamed away from. The
+      // first draft still occupies that path's preferred key, so the second
+      // lands on the collision key — and renaming it away leaves *both*
+      // preferred keys occupied by drafts that no longer answer to the path.
+      store.saveDraft('workflows/reused.json', '{"data":"second"}', {
+        name: 'second',
+        isTemporary: true
+      })
+      expect(
+        store.moveDraft('workflows/reused.json', 'workflows/two.json', 'two')
+      ).toBe(true)
+      store.reset()
+
+      expect(store.getDraft('workflows/reused.json')).toBeNull()
+      expect(store.getDraft('workflows/one.json')?.data).toBe(
+        '{"data":"first"}'
+      )
+      expect(store.getDraft('workflows/two.json')?.data).toBe(
+        '{"data":"second"}'
+      )
+
+      // A third draft at the reused path must get a slot of its own rather
+      // than overwriting either renamed draft.
+      store.saveDraft('workflows/reused.json', '{"data":"third"}', {
+        name: 'third',
+        isTemporary: true
+      })
+      store.reset()
+
+      expect(store.getDraft('workflows/reused.json')?.data).toBe(
+        '{"data":"third"}'
+      )
+      expect(store.getDraft('workflows/one.json')?.data).toBe(
+        '{"data":"first"}'
+      )
+      expect(store.getDraft('workflows/two.json')?.data).toBe(
+        '{"data":"second"}'
       )
     })
 

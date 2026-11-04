@@ -4,9 +4,9 @@ import {
   createEmptyIndex,
   getEntryByPath,
   getMostRecentKey,
-  moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  retargetEntry,
   touchOrder,
   upsertEntry
 } from './draftCacheV2'
@@ -162,8 +162,8 @@ describe('draftCacheV2', () => {
     })
   })
 
-  describe('moveEntry', () => {
-    it('moves entry to new path with new name', () => {
+  describe('retargetEntry', () => {
+    it('re-points entry to new path with new name', () => {
       let index = createEmptyIndex()
       index = upsertEntry(index, 'workflows/ewip.json', {
         name: 'retained',
@@ -176,7 +176,7 @@ describe('draftCacheV2', () => {
         updatedAt: 1000
       }).index
 
-      const result = moveEntry(
+      const result = retargetEntry(
         index,
         'workflows/old.json',
         'workflows/4hbab.json',
@@ -184,18 +184,20 @@ describe('draftCacheV2', () => {
       )
 
       expect(result).not.toBeNull()
-      expect(
-        getEntryByPath(result!.index, 'workflows/ewip.json')
-      ).toMatchObject({ name: 'retained', path: 'workflows/ewip.json' })
-      expect(
-        getEntryByPath(result!.index, 'workflows/4hbab.json')
-      ).toMatchObject({ name: 'new', path: 'workflows/4hbab.json' })
-      expect(getEntryByPath(result!.index, 'workflows/old.json')).toBeNull()
+      expect(getEntryByPath(result!, 'workflows/ewip.json')).toMatchObject({
+        name: 'retained',
+        path: 'workflows/ewip.json'
+      })
+      expect(getEntryByPath(result!, 'workflows/4hbab.json')).toMatchObject({
+        name: 'new',
+        path: 'workflows/4hbab.json'
+      })
+      expect(getEntryByPath(result!, 'workflows/old.json')).toBeNull()
     })
 
     it('returns null for non-existent source', () => {
       const index = createEmptyIndex()
-      const result = moveEntry(
+      const result = retargetEntry(
         index,
         'workflows/missing.json',
         'workflows/new.json',
@@ -217,7 +219,7 @@ describe('draftCacheV2', () => {
         updatedAt: 2000
       }).index
 
-      const result = moveEntry(
+      const result = retargetEntry(
         index,
         'workflows/a.json',
         'workflows/b.json',
@@ -226,7 +228,7 @@ describe('draftCacheV2', () => {
       expect(result).toBeNull()
     })
 
-    it('moves entry to end of order', () => {
+    it('keeps the entry at its own key and moves it to the end of order', () => {
       let index = createEmptyIndex()
       index = upsertEntry(index, 'workflows/a.json', {
         name: 'a',
@@ -239,16 +241,22 @@ describe('draftCacheV2', () => {
         updatedAt: 2000
       }).index
 
-      const result = moveEntry(
+      const result = retargetEntry(
         index,
         'workflows/a.json',
         'workflows/c.json',
         'c'
       )
 
+      // The payload never moves, so the key stays the one `a` was stored
+      // under; `c` is identified by the entry's `path`, not by its key.
+      const keyA = hashPath('workflows/a.json')
       const keyB = hashPath('workflows/b.json')
-      const keyC = hashPath('workflows/c.json')
-      expect(result!.index.order).toEqual([keyB, keyC])
+      expect(result!.order).toEqual([keyB, keyA])
+      expect(getEntryByPath(result!, 'workflows/c.json')).toMatchObject({
+        name: 'c',
+        path: 'workflows/c.json'
+      })
     })
   })
 

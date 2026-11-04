@@ -3458,7 +3458,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
-          return true
+          return { renamed: true, draftRelocated: true }
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -3474,6 +3474,32 @@ describe('useWorkflowService', () => {
       executionErrorStore.setActiveGraph(graphId, oldPath)
       expect(executionErrorStore.lastPromptError).toBeNull()
     })
+
+    it('reports a rename whose draft could not follow it without reporting a failed rename', async () => {
+      const workflowStore = useWorkflowStore()
+      const service = useWorkflowService()
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/original.json'
+      })
+
+      vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
+        async (renamedWorkflow, path) => {
+          renamedWorkflow.updatePath(path)
+          return { renamed: true, draftRelocated: false }
+        }
+      )
+
+      await expect(
+        service.renameWorkflow(workflow, 'workflows/renamed.json')
+      ).resolves.toBe(true)
+
+      expect(useToast().error).toHaveBeenCalledWith(
+        t('g.error'),
+        expect.objectContaining({
+          description: t('toastMessages.draftNotRelocatedWithRename')
+        })
+      )
+    })
   })
 
   describe('saveWorkflowAs', () => {
@@ -3484,7 +3510,10 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue({
+        renamed: true,
+        draftRelocated: true
+      })
       app.rootGraph.extra = {}
     })
 
@@ -3522,7 +3551,10 @@ describe('useWorkflowService', () => {
     it('should report failure and not save when the temporary workflow rename is refused', async () => {
       const workflow = createTemporaryWorkflow()
       vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
-      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue({
+        renamed: false,
+        draftRelocated: false
+      })
 
       const result = await service.saveWorkflowAs(workflow, {
         filename: 'my-workflow'
@@ -3547,7 +3579,10 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue({
+        renamed: false,
+        draftRelocated: false
+      })
       const storeUserData = vi
         .spyOn(api, 'storeUserData')
         .mockResolvedValue(new Response(null, { status: 200 }))
@@ -3974,7 +4009,10 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue({
+        renamed: true,
+        draftRelocated: true
+      })
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
@@ -4086,7 +4124,10 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue({
+        renamed: false,
+        draftRelocated: false
+      })
       const storeUserData = vi
         .spyOn(api, 'storeUserData')
         .mockResolvedValue(new Response(null, { status: 200 }))

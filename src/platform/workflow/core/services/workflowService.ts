@@ -836,17 +836,34 @@ export const useWorkflowService = () => {
       return loaded
     }, workflow.path)
 
+  /**
+   * @returns `false` only when the rename did not happen, which is what the
+   * save flows above branch on. A rename that succeeded while its unsaved
+   * draft could not follow is reported to the user here and still returns
+   * `true`: the file moved, so reporting otherwise would arm an overwrite
+   * restore against a destination this rename has already written.
+   */
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
   ): Promise<boolean> => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    const renamed = await workflowStore.renameWorkflow(workflow, newPath)
-    if (renamed && graphId) {
+    const { renamed, draftRelocated } = await workflowStore.renameWorkflow(
+      workflow,
+      newPath
+    )
+    if (!renamed) return false
+
+    if (!draftRelocated) {
+      toast.error(t('g.error'), {
+        description: t('toastMessages.draftNotRelocatedWithRename')
+      })
+    }
+    if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
-    return renamed
+    return true
   }
 
   /**

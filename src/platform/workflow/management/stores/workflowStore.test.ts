@@ -803,7 +803,10 @@ describe('useWorkflowStore', () => {
       })
 
       completeRename()
-      await expect(renaming).resolves.toBe(true)
+      await expect(renaming).resolves.toEqual({
+        renamed: true,
+        draftRelocated: true
+      })
 
       draftStore.reset()
       expect(draftStore.getDraft(newPath)?.data).toBe('{"edits":"during"}')
@@ -811,13 +814,40 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(oldPath)).toBeNull()
     })
 
-    it('should abort the rename and keep the workflow and draft at the original path when the draft cannot be moved', async () => {
+    it('should carry an in-flight edit onto the new path when a successful rename lands on a device with no room left', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
       const newPath = 'workflows/renamed.json'
-      const draftStore = saveV2Draft(oldPath, { name: workflow.key })
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"before"}',
+        name: workflow.key,
+        isTemporary: true
+      })
 
-      const renameSpy = vi.spyOn(Object.getPrototypeOf(workflow), 'rename')
+      let completeRename = () => {}
+      const renameAccepted = new Promise<void>((resolve) => {
+        completeRename = resolve
+      })
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          await renameAccepted
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      const renaming = store.renameWorkflow(workflow, newPath)
+      await Promise.resolve()
+
+      // The edit lands while the request is in flight, so it is persisted
+      // against the still-old path...
+      draftStore.saveDraft(oldPath, '{"edits":"during"}', {
+        name: workflow.key,
+        isTemporary: true
+      })
+      // ...and only then does the device run out of room for a draft payload.
+      // Completing the rename must not need one: the newest bytes are already
+      // in the slot the draft's index entry names.
       const realSetItem = localStorage.setItem.bind(localStorage)
       const setItemSpy = vi
         .spyOn(localStorage, 'setItem')
@@ -828,17 +858,83 @@ describe('useWorkflowStore', () => {
           return realSetItem(key, value)
         })
 
-      await expect(store.renameWorkflow(workflow, newPath)).resolves.toBe(false)
+      completeRename()
+      const outcome = await renaming
+
+      setItemSpy.mockRestore()
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"edits":"during"}')
+      expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+      expect(outcome).toEqual({ renamed: true, draftRelocated: true })
+    })
+
+    it('should report a successful rename whose draft could not be relocated, without reporting a failed rename', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"unsaved"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key.startsWith('Comfy.Workflow.DraftIndex.v2:')) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return realSetItem(key, value)
+        })
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toEqual({
+        renamed: true,
+        draftRelocated: false
+      })
+
+      // The file moved, so the tab and the lookup follow it even though the
+      // draft did not.
+      expect(workflow.path).toBe(newPath)
+      expect(store.getWorkflowByPath(newPath)?.path).toBe(newPath)
+
+      setItemSpy.mockRestore()
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"edits":"unsaved"}')
+    })
+
+    it('should abort the rename and keep the workflow and draft at the original path when the destination already has its own draft', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, { name: workflow.key })
+      draftStore.saveDraft(newPath, '{"data":"destination"}', {
+        name: 'renamed.json',
+        isTemporary: true
+      })
+
+      const renameSpy = vi.spyOn(Object.getPrototypeOf(workflow), 'rename')
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toEqual({
+        renamed: false,
+        draftRelocated: false
+      })
 
       expect(renameSpy).not.toHaveBeenCalled()
       expect(workflow.path).toBe(oldPath)
       expect(store.getWorkflowByPath(oldPath)?.path).toBe(oldPath)
       expect(store.getWorkflowByPath(newPath)).toBeNull()
 
-      setItemSpy.mockRestore()
       draftStore.reset()
       expect(draftStore.getDraft(oldPath)?.name).toBe(workflow.key)
-      expect(draftStore.getDraft(newPath)).toBeNull()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"data":"destination"}')
     })
 
     it('should roll the draft back to the original path when the file rename rejects', async () => {
@@ -941,7 +1037,10 @@ describe('useWorkflowStore', () => {
       })
 
       completeRename()
-      await expect(renaming).resolves.toBe(true)
+      await expect(renaming).resolves.toEqual({
+        renamed: true,
+        draftRelocated: true
+      })
 
       // B's drafts and lineage are not a rename this account never made.
       draftStore.reset()

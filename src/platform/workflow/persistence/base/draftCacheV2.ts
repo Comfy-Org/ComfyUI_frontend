@@ -9,6 +9,18 @@ import type { DraftEntryMeta, DraftIndexV2 } from './draftTypes'
 import { MAX_DRAFTS } from './draftTypes'
 import { hashPath } from './hashUtil'
 
+/**
+ * Finds the key a path's draft is stored under, or allocates a free one.
+ *
+ * A key is a storage slot and not a derivation of the path occupying it: a
+ * renamed draft keeps the slot it was first written to (`retargetEntry`), so
+ * the slots a path prefers can be held by entries that no longer answer to it.
+ * The walk below is therefore an allocation and not a formula — returning an
+ * occupied slot would alias one path's draft onto another's.
+ *
+ * @returns the existing entry's key when `path` already has a draft, otherwise
+ * a key that is guaranteed absent from `index.entries`.
+ */
 export function resolveDraftKey(index: DraftIndexV2, path: string): string {
   const existing = Object.entries(
     index.entries as Record<string, unknown>
@@ -20,8 +32,14 @@ export function resolveDraftKey(index: DraftIndexV2, path: string): string {
       entry.path === path
   )?.[0]
   if (existing !== undefined) return existing
+
   const hash = hashPath(path)
-  return Object.hasOwn(index.entries, hash) ? `${hash}:${path}` : hash
+  const taken = (key: string) => Object.hasOwn(index.entries, key)
+  if (!taken(hash)) return hash
+  // Terminates: each iteration rules out one entry, and the index is bounded.
+  let key = `${hash}:${path}`
+  for (let suffix = 2; taken(key); suffix++) key = `${hash}:${path}:${suffix}`
+  return key
 }
 
 /**
@@ -117,49 +135,47 @@ export function removeEntry(
 }
 
 /**
- * Moves a draft from one path to another (rename operation).
+ * Re-points a draft from one path to another (rename operation), in place.
+ *
+ * The entry keeps the key it already has, so the payload it names is never
+ * copied, rewritten or removed: `resolveDraftKey` identifies an entry by its
+ * `path` field before it falls back to hashing, so a key is a storage slot and
+ * not a derivation of whichever path currently occupies it. Relocating a draft
+ * is therefore an index edit that allocates nothing — which is what makes it
+ * immune to a device that has run out of room.
+ *
  * Updates index recency only; callers keep the payload timestamp unchanged.
  *
- * @returns Object with updated index and keys involved
+ * @returns null when `oldPath` has no draft, or when `newPath` already has its
+ * own — neither of which this may overwrite.
  */
-export function moveEntry(
+export function retargetEntry(
   index: DraftIndexV2,
   oldPath: string,
   newPath: string,
   newName: string
-): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
-  const oldKey = resolveDraftKey(index, oldPath)
-  const indexWithoutSource = removeEntry(index, oldPath).index
-  const newKey = resolveDraftKey(indexWithoutSource, newPath)
-
+): DraftIndexV2 | null {
+  const draftKey = resolveDraftKey(index, oldPath)
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
-  const oldEntry = entriesByKey[oldKey]
-  if (!oldEntry) return null
-  if (oldKey !== newKey && entriesByKey[newKey]) return null
+  const entry = entriesByKey[draftKey]
+  if (!entry) return null
 
-  const entries = { ...index.entries }
-  delete entries[oldKey]
-
-  entries[newKey] = {
-    ...oldEntry,
-    path: newPath,
-    name: newName,
-    updatedAt: Date.now()
-  }
-
-  const order = index.order
-    .filter((key) => key !== oldKey && key !== newKey)
-    .concat(newKey)
+  const occupant = getEntryByPath(index, newPath)
+  if (occupant && occupant !== entry) return null
 
   return {
-    index: {
-      v: 2,
-      updatedAt: Date.now(),
-      order,
-      entries
-    },
-    oldKey,
-    newKey
+    v: 2,
+    updatedAt: Date.now(),
+    order: touchOrder(index.order, draftKey),
+    entries: {
+      ...index.entries,
+      [draftKey]: {
+        ...entry,
+        path: newPath,
+        name: newName,
+        updatedAt: Date.now()
+      }
+    }
   }
 }
 

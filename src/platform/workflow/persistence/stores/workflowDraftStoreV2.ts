@@ -21,10 +21,10 @@ import {
   createEmptyIndex,
   getEntryByPath,
   getMostRecentKey,
-  moveEntry,
   removeEntry,
   removeOrphanedEntries,
   resolveDraftKey,
+  retargetEntry,
   touchOrder,
   upsertEntry
 } from '@/platform/workflow/persistence/base/draftCacheV2'
@@ -48,9 +48,10 @@ interface DraftMeta {
 }
 
 /**
- * A draft relocation whose destination is reserved and whose source is still
- * intact. Pass to exactly one of `commitDraftRelocation` (the accompanying
- * operation committed) or `abortDraftRelocation` (it did not).
+ * A draft relocation that has been admitted but not performed. Pass to
+ * `commitDraftRelocation` once the operation it accompanies has committed; a
+ * handle that is never committed has nothing to clean up, because staging
+ * writes nothing.
  */
 export interface StagedDraftRelocation {
   /**
@@ -62,8 +63,6 @@ export interface StagedDraftRelocation {
   readonly oldPath: string
   readonly newPath: string
   readonly name: string
-  /** Destination key holding the reserved copy, when one was written. */
-  readonly prewrittenKey: string | null
 }
 
 type StageDraftRelocationResult =
@@ -334,60 +333,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Writes the relocated payload for a move, evicting unrelated drafts to
-   * free quota and retrying the move against the resulting index.
-   * Returns null if a retry finds the destination has since become
-   * occupied; otherwise the (possibly evicted) index, the latest move
-   * result, whether the write ultimately succeeded, and how many drafts
-   * were evicted along the way.
-   */
-  function writeRelocatedPayload(
-    workspaceId: string,
-    oldPath: string,
-    newPath: string,
-    name: string,
-    index: DraftIndexV2,
-    result: NonNullable<ReturnType<typeof moveEntry>>,
-    oldPayload: DraftPayloadV2
-  ): {
-    index: DraftIndexV2
-    result: NonNullable<ReturnType<typeof moveEntry>>
-    written: boolean
-    evictedCount: number
-  } | null {
-    let written = writePayload(workspaceId, result.newKey, oldPayload)
-    let evictedCount = 0
-
-    while (!written) {
-      const oldestKey = index.order.find(
-        (key) => key !== result.oldKey && key !== result.newKey
-      )
-      if (!oldestKey) break
-
-      const oldestEntry = getIndexEntry(index, oldestKey)
-      if (!oldestEntry) {
-        index = stripOrderKey(index, oldestKey)
-        continue
-      }
-
-      const evicted = removeEntry(index, oldestEntry.path)
-      index = evicted.index
-      if (evicted.removedKey) {
-        deletePayload(workspaceId, evicted.removedKey)
-        deleteLineages(workspaceId, [evicted.removedKey])
-        evictedCount++
-      }
-
-      const retried = moveEntry(index, oldPath, newPath, name)
-      if (!retried) return null
-      result = retried
-      written = writePayload(workspaceId, result.newKey, oldPayload)
-    }
-
-    return { index, result, written, evictedCount }
-  }
-
   function reportRelocationFailure(
     errorType: string,
     message: string,
@@ -404,24 +349,23 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
-   * Reserves a draft relocation's destination without destroying its source.
+   * Admits a draft relocation without performing it.
    *
-   * Phase one of the only ordering that needs no rollback. The fallible half of
-   * a relocation is allocating the destination payload, which quota can refuse;
-   * the destructive half is removing the source. Doing them in that order means
-   * a refusal is reported while the draft is still wholly intact at `oldPath`,
-   * so a caller that then abandons its rename has nothing to undo — and
-   * `abortDraftRelocation` therefore cannot fail in a way that loses data.
+   * Phase one of an ordering that needs no rollback, and it writes nothing at
+   * all. A relocation re-points one index entry and never copies a payload
+   * (`retargetEntry`), so there is no destination to reserve and no source to
+   * protect: a caller that stages and then abandons its rename leaves storage
+   * exactly as it found it. Staging exists only so a relocation that cannot be
+   * completed is refused *before* the remote step it accompanies happens,
+   * rather than after the file has already moved.
    *
-   * Between staging and committing, storage holds two copies of the draft and
-   * an index that still resolves `oldPath`. That is the correct view for a
-   * reload during a remote rename that has not resolved yet: the file has not
-   * moved either.
+   * The admission test is `retargetEntry` itself rather than a restatement of
+   * its preconditions, so staging and committing cannot disagree about what is
+   * relocatable.
    *
-   * @returns `refused` when the destination could not be reserved — nothing was
-   * destroyed and the caller must not proceed with the operation this
-   * accompanies. Otherwise a handle for exactly one of
-   * `commitDraftRelocation` or `abortDraftRelocation`.
+   * @returns `refused` when `newPath` already has its own draft — nothing was
+   * touched and the caller must not proceed with the operation this
+   * accompanies. Otherwise a handle for `commitDraftRelocation`.
    */
   function stageDraftRelocation(
     oldPath: string,
@@ -430,87 +374,52 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   ): StageDraftRelocationResult {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex(workspaceId)
-    const staged = (
-      prewrittenKey: string | null
-    ): StageDraftRelocationResult => ({
+    const staged: StageDraftRelocationResult = {
       kind: 'staged',
-      relocation: { workspaceId, oldPath, newPath, name, prewrittenKey }
-    })
+      relocation: { workspaceId, oldPath, newPath, name }
+    }
 
     // Nothing to relocate up front. The caller still commits, because a draft
     // can be written at `oldPath` while its rename is in flight.
-    if (!getEntryByPath(index, oldPath)) return staged(null)
+    if (!getEntryByPath(index, oldPath)) return staged
 
-    const result = moveEntry(index, oldPath, newPath, name)
-    if (!result) return { kind: 'refused' }
-    // A rename resolving onto its own draft key needs no second payload.
-    if (result.oldKey === result.newKey) return staged(null)
-
-    const oldPayload = readPayload(workspaceId, result.oldKey)
-    if (!oldPayload) return staged(null)
-
-    const relocated = writeRelocatedPayload(
-      workspaceId,
-      oldPath,
-      newPath,
-      name,
-      index,
-      result,
-      oldPayload
-    )
-    if (!relocated) return { kind: 'refused' }
-
-    // Evictions made to free room have already deleted their payloads, so the
-    // index must record them either way. The source entry is untouched by them.
-    if (relocated.evictedCount > 0) persistIndex(relocated.index, workspaceId)
-
-    if (!relocated.written) {
-      reportQuotaExhausted(
-        relocated.index,
-        relocated.evictedCount,
-        payloadByteSize(oldPayload.data)
-      )
+    if (!retargetEntry(index, oldPath, newPath, name))
       return { kind: 'refused' }
-    }
-    return staged(relocated.result.newKey)
+    return staged
   }
 
   /**
    * Completes a staged relocation, in the scope it was staged in.
    *
-   * Runs only once the step this relocation accompanies has committed, so the
-   * source removal below is the single destructive act in the whole operation
-   * and no outcome remains that could require undoing it.
-   *
-   * Two things are deliberately re-read from storage rather than carried on the
-   * handle. The index, because a draft persisted while a rename was in flight
-   * writes to `oldPath` — `workflow.path` is the old path until the request
-   * resolves — and that advances the index. The destination payload, because
-   * comparing against what is actually stored cannot disagree with reality,
-   * where a timestamp captured at stage time can.
+   * Runs only once the step this relocation accompanies has committed. The
+   * index is deliberately re-read rather than carried on the handle, because a
+   * draft persisted while a rename was in flight writes to `oldPath` —
+   * `workflow.path` is the old path until the request resolves — and that
+   * advances the index. Re-reading is also what carries that newer draft
+   * forward for free: the in-flight write landed on the very key this entry
+   * names, so re-pointing the entry associates `newPath` with the newest bytes
+   * by construction. There is no copy to refresh and so no refresh to refuse.
    *
    * Every read and write uses the handle's `workspaceId` rather than the
    * current one: an account transition during the await must not let account
    * A's relocation touch account B's drafts, and A's draft must still follow
    * A's file.
+   *
+   * @returns false when the draft was not relocated, which leaves it readable
+   * at `oldPath` — either because `newPath` acquired its own draft during the
+   * window, or because the index could not be written at all. Nothing is
+   * destroyed in either case.
    */
   function commitDraftRelocation(relocation: StagedDraftRelocation): boolean {
-    const { workspaceId, oldPath, newPath, name, prewrittenKey } = relocation
+    const { workspaceId, oldPath, newPath, name } = relocation
     const index = loadIndex(workspaceId)
-    const dropReservedCopy = () => {
-      if (prewrittenKey) deletePayload(workspaceId, prewrittenKey)
-    }
 
     // The source was discarded during the window (workflow closed or deleted).
-    // Drop the reserved copy rather than revive a draft the user let go.
-    if (!getEntryByPath(index, oldPath)) {
-      dropReservedCopy()
-      return true
-    }
+    // There is nothing to revive: the user let the draft go.
+    if (!getEntryByPath(index, oldPath)) return true
 
-    const moved = moveEntry(index, oldPath, newPath, name)
-    if (!moved) {
-      dropReservedCopy()
+    const retargeted = retargetEntry(index, oldPath, newPath, name)
+    if (!retargeted) {
       reportRelocationFailure(
         'rename_draft_relocation_commit_refused',
         'the draft destination was no longer available at commit',
@@ -520,92 +429,16 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       return false
     }
 
-    const sameKey = moved.oldKey === moved.newKey
-    if (!sameKey && !refreshRelocatedPayload(workspaceId, moved)) {
-      reportRelocationFailure(
-        'rename_draft_carry_forward_failed',
-        'could not carry a draft onto the relocated path',
-        oldPath,
-        newPath
-      )
-      return false
-    }
+    if (persistIndex(retargeted, workspaceId)) return true
 
-    if (!persistIndex(moved.index, workspaceId)) {
-      persistIndex(index, workspaceId)
-      reportRelocationFailure(
-        'rename_draft_relocation_commit_failed',
-        'could not persist a relocated draft index',
-        oldPath,
-        newPath
-      )
-      return false
-    }
-
-    if (!sameKey) reapRelocationSource(workspaceId, moved)
-    return true
-  }
-
-  /**
-   * Brings the destination copy up to date with the source before the source is
-   * removed.
-   *
-   * Staleness is decided on content rather than on `updatedAt`: the only writer
-   * to the source during a relocation's window is `persistActiveWorkflowDraft`,
-   * so any difference means the source is the newer draft — and a write landing
-   * in the same millisecond as the reserved copy is a real edit that a
-   * timestamp comparison would silently drop.
-   *
-   * @returns false when the destination is absent or stale and cannot be
-   * refreshed, which must leave the draft at its source rather than replace a
-   * newer draft with an older one or with nothing.
-   */
-  function refreshRelocatedPayload(
-    workspaceId: string,
-    moved: NonNullable<ReturnType<typeof moveEntry>>
-  ): boolean {
-    const source = readPayload(workspaceId, moved.oldKey)
-    if (!source) return true
-
-    const destination = readPayload(workspaceId, moved.newKey)
-    const isCurrent =
-      destination &&
-      destination.data === source.data &&
-      destination.updatedAt === source.updatedAt
-    if (isCurrent) return true
-
-    if (writePayload(workspaceId, moved.newKey, source)) return true
-    if (!destination) deletePayload(workspaceId, moved.newKey)
+    persistIndex(index, workspaceId)
+    reportRelocationFailure(
+      'rename_draft_relocation_commit_failed',
+      'could not persist a relocated draft index',
+      oldPath,
+      newPath
+    )
     return false
-  }
-
-  /**
-   * Removes a committed relocation's source payload and carries its lineage
-   * across. The single destructive step of a relocation, reached only once the
-   * operation it accompanies has committed and the destination is in place.
-   */
-  function reapRelocationSource(
-    workspaceId: string,
-    moved: NonNullable<ReturnType<typeof moveEntry>>
-  ): void {
-    deletePayload(workspaceId, moved.oldKey)
-    const lineage = lineageByDraft.get(lineageKey(workspaceId, moved.oldKey))
-    if (!lineage) return
-    lineageByDraft.set(lineageKey(workspaceId, moved.newKey), lineage)
-    lineageByDraft.delete(lineageKey(workspaceId, moved.oldKey))
-  }
-
-  /**
-   * Abandons a staged relocation, in the scope it was staged in.
-   *
-   * Removes only the copy the relocation itself reserved, so unlike a reverse
-   * move it allocates nothing and has no refusal to report — the draft and its
-   * index entry were never touched. A failed delete leaves an unreferenced
-   * payload, which `loadIndex` reaps as index/payload drift.
-   */
-  function abortDraftRelocation(relocation: StagedDraftRelocation): void {
-    if (relocation.prewrittenKey)
-      deletePayload(relocation.workspaceId, relocation.prewrittenKey)
   }
 
   /**
@@ -613,7 +446,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    *
    * Stages and immediately commits, which is only safe because nothing can
    * intervene between the two. Where a remote request sits between them, stage
-   * and commit explicitly so a rejection has nothing to roll back.
+   * and commit explicitly so the relocation is admitted before the request and
+   * completed after it.
    *
    * @returns false when the source draft could not be relocated (left
    * recoverable at `oldPath`); true otherwise, including when there was
@@ -772,7 +606,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     moveDraft,
     stageDraftRelocation,
     commitDraftRelocation,
-    abortDraftRelocation,
     markDraftUsed,
     getDraft,
     setLineage,
