@@ -991,18 +991,19 @@ describe('useWorkflowStore', () => {
     })
 
     it('should roll the draft back to the original path when the file rename rejects', async () => {
-      const workflow = store.createTemporary('test.json')
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath('workflows/test.json')
+      assert(workflow)
       const oldPath = workflow.path
       const newPath = 'workflows/renamed.json'
       const draftStore = saveV2Draft(oldPath, { name: workflow.key })
 
-      const renameError = new Error('server rejected the move')
-      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockRejectedValue(
-        renameError
+      vi.mocked(api.moveUserData).mockResolvedValue(
+        new Response(null, { status: 500 })
       )
 
-      await expect(store.renameWorkflow(workflow, newPath)).rejects.toBe(
-        renameError
+      await expect(store.renameWorkflow(workflow, newPath)).rejects.toThrow(
+        'Failed to rename file'
       )
 
       expect(workflow.path).toBe(oldPath)
