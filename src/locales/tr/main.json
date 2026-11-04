@@ -1219,6 +1219,10 @@
       "addMoreCredits": "Daha fazla kredi ekle",
       "addMoreCreditsToRun": "Çalıştırmak için daha fazla kredi ekle",
       "amountToPayLabel": "Ödenecek tutar (dolar)",
+      "autoTopUp": {
+        "prompt": "Krediniz mi azalıyor? Otomatik bakiye yüklemeyi açın.",
+        "setUp": "Ayarla"
+      },
       "awaitingBankApprovalBody": "Kredileriniz eklenmeden önce bankanızın bu ödemeyi onaylaması gerekiyor. İşlemi bankanızın uygulamasından veya bu satın alma için ödeme bağlantısından tamamlayabilirsiniz. Bu işlem tamamlanana ya da süresi dolana kadar yeni bir kredi yüklemesi başlatılamaz.",
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
@@ -3562,6 +3566,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

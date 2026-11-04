@@ -18736,7 +18736,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההנמקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-6 Sol/Luna ו-GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, סדרת o low-high; ל-GPT-4.1 אין הנמקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "הרמות הנתמכות משתנות בין מודלים. רמה שאינה נתמכת עוצרת את ההרצה ומציגה את הרמות התקפות. 'default' מאפשר למודל לבחור."
       },
       "truncation": {
         "name": "truncation",
@@ -18996,6 +18996,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "טקסט לתמונה, או עם תמונות — עריכה של image_1 כאשר האחרות משמשות כהפניות. הפרומפט מתייחס אליהן כאל <Picture 1>, <Picture 2>, ... המודל דורש את ModelSamplingMiniMaxH3 בערכים 1.0/1.0.",
+    "display_name": "התניית p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "0 משתמש בגובה של image_1 לאחר שינוי קנה המידה, או ב-2912 ללא תמונות."
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "עם תמונות, להנחיה קצרה מתווסף בתחילתה \"Edit <Picture 1>. \"; הנחיה המתחילה ב-\"Edit <Picture\" ותיאור עריכה ממגדיל הפרומפט משמשים כפי שהם."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ה-VAE של p-h3-image, הנדרש כאשר מחוברות תמונות."
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "0 משתמש ברוחב של image_1 לאחר שינוי קנה המידה, או ב-2912 ללא תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19647,6 +19684,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, MiniMax H3 של Pika שאומן לאחר האימון הראשוני. יצירה או עריכה של וידאו עם שמע מסונכרן, בהנחיית תמונות, סרטוני וידאו ושמע להפניה.",
+    "display_name": "Pika H3 Flex — מהפניה לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto עוקב אחר סרטון וידאו להפניה, ובכל מקרה אחר אחר הפרומפט. תמונות להפניה אינן משפיעות עליו."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט נקבע לפי רשת פריימים: 5 שניות מפיקות 124 פריימים, שהם כ-5.17 שניות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "יש להתייחס להפניות כ-@Image1, @Video1, @Audio1, או כ-<Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "עד 3 קטעים, שאליהם מתייחסים בפרומפט כ-@Audio1..@Audio3. 2–15 שניות לכל אחד, 15 שניות בסך הכול. כאשר הם מועתקים לפלט, הקטעים מתנגנים לפי סדר החיבור, לפני השמע של סרטוני הווידאו המחוברים, ללא קשר למספר שאליו מתייחס הפרומפט."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "עד 9 תמונות, שאליהן מתייחסים בפרומפט כ-@Image1..@Image9 לפי סדר החיבור. נדרשת לפחות תמונה אחת או סרטון וידאו אחד."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "השמע של סרטוני הווידאו המחוברים מועתק לפלט. יש לכבות אפשרות זו עבור אווירת רקע חדשה או העברת תנועה עם מוזיקה חדשה. ראש מדבר ללא דיאלוג בפרומפט יקבל אז דיבור מומצא."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "עד 3 סרטוני וידאו, שאליהם מתייחסים בפרומפט כ-@Video1..@Video3 לפי סדר החיבור. 2–15 שניות לכל אחד, 15 שניות בסך הכול. החיוב הוא לפי שנייה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p ומעלה מרונדרים ב-768p ומוגדלים פעם אחת. אותו seed ב-480p מפיק וידאו שונה."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "אפשרו ל-Pika להרחיב תחילה את הפרומפט. אותו seed יפיק אז וידאו שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הווידאו במדויק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, MiniMax H3 של Pika שאומן לאחר האימון הראשוני. יצירת וידאו עם שמע מסונכרן מטקסט ומפריימים ראשונים ואחרונים אופציונליים.",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_גובה-רוחב",
+        "tooltip": "auto עוקב אחר הפריים המחובר הראשון, או אחר הפרומפט אם אין כזה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט נקבע לפי רשת פריימים: 5 שניות נותנות 124 פריימים, שהם כ־5.17 שניות."
+      },
+      "first_frame": {
+        "name": "פריים_ראשון"
+      },
+      "last_frame": {
+        "name": "פריים_אחרון"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "ב־1080p ומעלה הרינדור מתבצע ב־768p ולאחר מכן מתבצעת הגדלה פעם אחת. אותו seed ב־480p מפיק וידאו שונה."
+      },
+      "rewrite_prompt": {
+        "name": "שכתוב_פרומפט",
+        "tooltip": "אפשרו ל־Pika להרחיב תחילה את הפרומפט. אותו seed יפיק לאחר מכן וידאו שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הווידאו בדיוק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "יצירת מוזיקה מתיאור טקסטואלי וממילות שיר אופציונליות, או יצירת קאבר לשיר, באמצעות Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב"
+      },
+      "mode_duration": {
+        "name": "משך"
+      },
+      "mode_lyrics": {
+        "name": "מילות שיר"
+      },
+      "mode_prompt": {
+        "name": "פרומפט"
+      },
+      "mode_rewrite_prompt": {
+        "name": "שכתוב_פרומפט"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "יצירת אפקט קול מתיאור טקסטואלי באמצעות Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "יצירת פסקול מסונכרן לסרטון באמצעות Pika. התמונה והאורך נשמרים; רק השמע מוחלף.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "instruction": {
+        "name": "הנחיה",
+        "tooltip": "מה צריך להיות בשמע: אפקטים קוליים, אווירה, מוזיקה או סגנון. השאירו ריק כדי להסיק זאת מהתמונה."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "עד 10 דקות."
       }
     },
     "outputs": {
@@ -24959,6 +25173,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "יצירת שיר עם שירה קולית מפרומפט טקסטואלי באמצעות Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "האפשרות 'auto' מתאימה את אורך השיר למילות השיר. אורך מותאם אישית חותך מילים שאינן מתאימות וחוזר על מילים קצרות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תארו את השיר: סוגה, אווירה, כלים ושירה. כדי להגדיר את המילים, הוסיפו בלוק 'Lyrics:' עם תגיות [Verse] / [Chorus]; בלעדיו, המודל כותב מילות שיר משלו. מקסימום: 2000 תווים."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת אמור לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "יצירת מוזיקה מתוך הנחיה טקסטואלית באמצעות מודל הבינה המלאכותית של Sonilo.",
     "display_name": "Sonilo טקסט למוזיקה",
@@ -26407,7 +26647,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "יצירת טקסט",
+    "display_name": "יצירת טקסט (מיושן)",
     "inputs": {
       "audio": {
         "name": "אודיו"
@@ -26550,6 +26790,79 @@
       },
       "1": {
         "name": "thinking",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "יצירת טקסט",
+    "inputs": {
+      "audios": {
+        "name": "שמע"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי רב-אסימוני של נקודת הביקורת. אין השפעה ללא משקלי MTP. האפשרות auto מתאימה את עומק ורוחב הטיוטה להתאמות האסימונים שנצפו ולעלות הביצוע; 2-5 מקבע ערך קבוע לעומק הטיוטה; מצבי עץ מקבעים הן את הרוחב והן את העומק. הפלט הנדגם נשאר בעל התפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו seed."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את פרומפט המערכת בתבנית הצ'אט של המודל. האפשרות מתעלמת מכך כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
+      "thinking": {
+        "name": "חשיבה",
+        "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "השתמש בפרומפט/בתבנית המערכת המובנים אם קיימים במודל."
+      },
+      "videos": {
+        "name": "סרטונים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }

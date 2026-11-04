@@ -1219,6 +1219,10 @@
       "addMoreCredits": "儲值點數",
       "addMoreCreditsToRun": "儲值點數以執行",
       "amountToPayLabel": "需支付的美元金額",
+      "autoTopUp": {
+        "prompt": "點數快用完了嗎？開啟自動儲值。",
+        "setUp": "設定"
+      },
       "awaitingBankApprovalBody": "您的銀行需要核准這筆付款，之後才會將點數加入您的帳戶。您可以透過銀行的應用程式或此次購買的付款連結完成核准。在此筆付款完成或到期前，無法開始新的儲值。",
       "buy": "購買",
       "buyCredits": "繼續付款",
@@ -3562,6 +3566,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

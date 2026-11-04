@@ -1219,6 +1219,10 @@
       "addMoreCredits": "Aggiungi altri crediti",
       "addMoreCreditsToRun": "Aggiungi altri crediti per eseguire",
       "amountToPayLabel": "Importo da pagare in dollari",
+      "autoTopUp": {
+        "prompt": "Hai pochi crediti? Attiva la ricarica automatica.",
+        "setUp": "Configura"
+      },
       "awaitingBankApprovalBody": "La tua banca deve approvare questo pagamento prima che i crediti vengano aggiunti. Puoi completarlo dall'app della tua banca o dal link di pagamento per questo acquisto. Non puoi avviare una nuova ricarica finché questa non viene completata o scade.",
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
@@ -3562,6 +3566,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

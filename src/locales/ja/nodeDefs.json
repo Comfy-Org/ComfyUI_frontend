@@ -18736,7 +18736,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "モデルが回答前にどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-6 Sol/Luna および GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high、GPT-4.1 には推論機能がありません。非対応のレベルはリクエスト送信前に拒否されます。"
+        "tooltip": "サポートされるレベルはモデルによって異なります。サポートされていないレベルでは実行が停止し、有効なレベルが一覧表示されます。'default'ではモデルが選択します。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -18996,6 +18996,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "テキストから画像を生成するか、画像を使用して image_1 を編集し、ほかの画像を参照として使用します。プロンプトではそれらを <Picture 1>、<Picture 2>、… として参照します。モデルには ModelSamplingMiniMaxH3 を 1.0/1.0 に設定する必要があります。",
+    "display_name": "p-h3-image コンディショニング",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "0 の場合、スケーリング後の image_1 の高さを使用します。画像がない場合は 2912 です。"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像がある場合、短い指示の先頭には \"Edit <Picture 1>. \" が追加されます。\"Edit <Picture\" で始まる指示と、プロンプトアップサンプラーによる編集指示はそのまま使用されます。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "画像が接続されている場合に必要な p-h3-image VAE。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "0 の場合、スケーリング後の image_1 の幅を使用します。画像がない場合は 2912 です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19647,6 +19684,183 @@
       },
       "positive": {
         "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika により追加学習された MiniMax H3、Pika H3 Flex。参照画像、動画、音声をガイドとして、同期した音声付きの動画を生成または編集します。",
+    "display_name": "Pika H3 Flex 参照から動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "auto は参照動画があればそれに従い、なければプロンプトに従います。参照画像は影響しません。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "出力の長さはフレームグリッドに従います。5 秒では 124 フレームとなり、約 5.17 秒です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "参照は @Image1、@Video1、@Audio1、または <Picture 1>、<Video 1>、<Audio 1> として指定します。"
+      },
+      "reference_audios": {
+        "name": "参照音声",
+        "tooltip": "最大 3 個のクリップ。プロンプト内で @Audio1..@Audio3 として参照します。各 2～15 秒、合計 15 秒までです。出力へコピーする場合、プロンプトで指定した番号にかかわらず、クリップは接続順に、接続された動画の音声より先に再生されます。"
+      },
+      "reference_images": {
+        "name": "参照画像",
+        "tooltip": "最大 9 枚の画像。接続順に、プロンプト内で @Image1..@Image9 として参照します。少なくとも 1 枚の画像または 1 本の動画が必要です。"
+      },
+      "reference_video_audio": {
+        "name": "参照動画の音声",
+        "tooltip": "接続された動画の音声が出力にコピーされます。新しい音楽による新しい環境音やモーション転写を行う場合は、これをオフにしてください。その場合、プロンプトにセリフのない話す人物が含まれていると、音声が生成されます。"
+      },
+      "reference_videos": {
+        "name": "参照動画",
+        "tooltip": "最大 3 本の動画。接続順に、プロンプト内で @Video1..@Video3 として参照します。各 2～15 秒、合計 15 秒までです。秒単位で課金されます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p 以上では 768p でレンダリングし、一度アップスケールします。480p では同じシードでも異なる動画になります。"
+      },
+      "rewrite_prompt": {
+        "name": "プロンプトを書き換える",
+        "tooltip": "最初に Pika にプロンプトを拡張させます。この場合、同じシードでも実行ごとに異なる動画になります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "rewrite_prompt がオフの場合、同じシードで動画が完全に再現されます。同じシードでのローカル実行では異なる結果になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika により追加学習された MiniMax H3、Pika H3 Flex。テキストと任意の開始・終了フレームから、同期した音声付きの動画を生成します。",
+    "display_name": "Pika H3 Flex 動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "autoは最初に接続されたフレームに従い、それ以外の場合はpromptに従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "出力の長さはフレームグリッドに従います。5秒では124フレームとなり、約5.17秒です。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p以上では768pでレンダリングしてから1回アップスケールします。480pで同じseedを使用すると、異なる動画になります。"
+      },
+      "rewrite_prompt": {
+        "name": "プロンプトを書き換える",
+        "tooltip": "まずPikaにプロンプトを展開させます。その後、同じseedでも実行ごとに異なる動画になります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "rewrite_promptをオフにすると、同じseedで動画が完全に再現されます。同じseedでローカル実行すると、異なる結果になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Pikaを使用して、テキストによる説明と任意の歌詞から音楽を生成するか、楽曲をカバーします。",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "mode_duration": {
+        "name": "長さ"
+      },
+      "mode_lyrics": {
+        "name": "歌詞"
+      },
+      "mode_prompt": {
+        "name": "プロンプト"
+      },
+      "mode_rewrite_prompt": {
+        "name": "プロンプトを書き換える"
+      },
+      "mode_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Pikaを使用して、テキストによる説明から効果音を生成します。",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Pikaを使用して、動画に同期したサウンドトラックを生成します。映像と長さは保持され、音声のみが置き換えられます。",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "音声の内容を指定します：効果音、環境音、音楽、またはスタイル。空欄の場合は、映像から生成します。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "最大10分。"
       }
     },
     "outputs": {
@@ -24959,6 +25173,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Sonilo Music 1.5を使用して、テキストプロンプトから歌唱ボーカル付きの楽曲を生成します。",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration": {
+        "name": "期間",
+        "tooltip": "「auto」は、曲の長さを歌詞に合わせます。カスタムの長さでは、収まりきらない歌詞は切り詰められ、短い歌詞は繰り返されます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "楽曲を説明します：ジャンル、雰囲気、楽器、ボーカル。歌詞を設定するには、[Verse] / [Chorus]タグを含む「Lyrics:」ブロックを追加してください。追加しない場合、モデルが独自の歌詞を書きます。最大：2000文字。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードにかかわらず非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
     "display_name": "Sonilo テキストから音楽生成",
@@ -26407,7 +26647,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "テキストを生成（非推奨）",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -26541,6 +26781,79 @@
       "video": {
         "name": "ビデオ",
         "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "テキストを生成",
+    "inputs": {
+      "audios": {
+        "name": "音声"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディングです。MTP重みがない場合は効果がありません。autoは、観測されたトークン一致と実行コストに応じてドラフトの深さと幅を適応させます。2-5は一定のドラフト深さに固定します。treeモードは幅と深さの両方を固定します。サンプリングされた出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "シード"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートを使用しない場合は無視されます。"
+      },
+      "thinking": {
+        "name": "思考",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込みのシステムプロンプト／テンプレートがある場合、それを使用します。"
+      },
+      "videos": {
+        "name": "動画"
       }
     },
     "outputs": {
