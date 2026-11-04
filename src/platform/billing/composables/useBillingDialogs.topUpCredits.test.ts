@@ -6,7 +6,7 @@ import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
@@ -251,7 +251,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.component).toBe(TopUpCreditsDialogContentWorkspace)
+    expect(args.component).toBe(AddCreditsDialogContent)
   })
 
   describe('add-credits entries reported to Datadog', () => {
