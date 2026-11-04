@@ -83,7 +83,6 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
-import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
@@ -700,6 +699,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
         has_funds: true,
         is_active: true,
         max_seats: 1,
+        next_charge: null,
         occupied_seats: 1,
         scheduled_change: null,
         team_credit_stop: null
@@ -920,7 +920,8 @@ describe('cloud API requests on the shared web session', () => {
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
       ],
-      can_create_workspace: true
+      can_create_workspace: true,
+      max_owned_workspaces: 10
     })
 
     await useTeamWorkspaceStore().initialize()
@@ -2554,28 +2555,10 @@ describe('billing on a tab that arrived by session', () => {
 
   it.for([
     {
-      name: 'balance',
+      name: 'customer provisioning',
       call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.fetchBalance(),
-      sent: [onSessionToken('GET', '/customers/balance')]
-    },
-    {
-      name: 'top-up',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        }),
-      sent: [
-        onSessionToken('POST', '/customers'),
-        onSessionToken('POST', '/customers/credit')
-      ]
-    },
-    {
-      name: 'billing portal',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.accessBillingPortal(),
-      sent: [onSessionToken('POST', '/customers/billing')]
+        authStore.createCustomer(),
+      sent: [onSessionToken('POST', '/customers')]
     }
   ])(
     'the $name call is sent with the session-minted token',
@@ -2595,14 +2578,14 @@ describe('billing on a tab that arrived by session', () => {
     { sso: true, reported: true, sendsCustomers: true },
     { sso: true, reported: false, sendsCustomers: false }
   ])(
-    'sso_enabled $sso with has_personal_workspace $reported: balance reaches /customers is $sendsCustomers',
+    'sso_enabled $sso with has_personal_workspace $reported: a customer setup reaches /customers is $sendsCustomers',
     async ({ sso, reported, sendsCustomers }) => {
       const { ingest, authStore } = await bootSessionOnly(
         { sso_enabled: sso },
         reported
       )
 
-      await authStore.fetchBalance()
+      await authStore.createCustomer().catch(() => undefined)
 
       expect(
         ingest.requests.some(({ path }) => path.startsWith('/customers'))
@@ -2610,70 +2593,18 @@ describe('billing on a tab that arrived by session', () => {
     }
   )
 
-  it.for([
-    {
-      name: 'top-up',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-    },
-    {
-      name: 'billing portal',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.accessBillingPortal()
-    },
-    {
-      name: 'subscription checkout',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        authStore.fetchWithCustomerRecovery(
-          '/customers/cloud-subscription-checkout',
-          { method: 'POST' }
-        )
-    }
-  ])(
-    'the $name call is refused before /customers without a personal workspace',
-    async ({ call }) => {
-      const { ingest, authStore } = await bootSessionOnly(
-        { sso_enabled: true },
-        false
-      )
-
-      await expect(call(authStore)).rejects.toMatchObject({
-        code: NO_PERSONAL_WORKSPACE
-      })
-      expect(
-        ingest.requests.filter(({ path }) => path.startsWith('/customers'))
-      ).toEqual([])
-    }
-  )
-
-  it('loads no customer events without a personal workspace', async () => {
-    const { ingest } = await bootSessionOnly({ sso_enabled: true }, false)
-    const events = useCustomerEventsService()
-
-    await expect(events.getMyEvents()).resolves.toBeNull()
-    expect(events.error.value).toBe(
-      'This account has no personal billing. Manage billing from your team workspace.'
+  it('refuses customer setup before /customers without a personal workspace', async () => {
+    const { ingest, authStore } = await bootSessionOnly(
+      { sso_enabled: true },
+      false
     )
+
+    await expect(authStore.createCustomer()).rejects.toMatchObject({
+      code: NO_PERSONAL_WORKSPACE
+    })
     expect(
       ingest.requests.filter(({ path }) => path.startsWith('/customers'))
     ).toEqual([])
-  })
-
-  it('provisions a missing customer on the session token and retries once', async () => {
-    const { ingest, authStore } = await bootSessionOnly()
-    ingest.customerMissing = true
-
-    await authStore.fetchBalance()
-
-    expect(authorizationsOf(ingest)).toEqual([
-      SESSION_MINT,
-      onSessionToken('GET', '/customers/balance'),
-      onSessionToken('POST', '/customers'),
-      onSessionToken('GET', '/customers/balance')
-    ])
   })
 
   it.for([
@@ -2790,51 +2721,6 @@ describe.for([{ unified: false }, { unified: true }])(
       expect(user.userDisplayName.value).toBeUndefined()
       expect(user.userPhotoUrl.value).toBeUndefined()
       expect(user.isEmailProvider.value).toBe(false)
-    })
-
-    it('discards a late balance response after the Firebase credential changes', async () => {
-      const { authStore } = await bootSessionOnly()
-      identity.signIn(USER_A)
-      const sessionFetch = vi.mocked(fetch).getMockImplementation()
-      assert.exists(sessionFetch)
-      let signalBalanceRequested: () => void = () => {}
-      const balanceRequested = new Promise<void>((resolve) => {
-        signalBalanceRequested = resolve
-      })
-      let resolveBalance: (value: unknown) => void = () => {}
-      const balance = new Promise((resolve) => {
-        resolveBalance = resolve
-      })
-      vi.mocked(fetch).mockImplementation(async (input, init) => {
-        const url = new URL(String(input), location.href)
-        if (url.pathname === '/api/auth/token') {
-          return jsonResponse({
-            token: 'session-jwt-1',
-            expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
-            user_id: 'uid-1',
-            workspace: {
-              id: 'ws-personal',
-              name: 'Personal',
-              type: 'personal'
-            },
-            role: 'owner',
-            permissions: []
-          })
-        }
-        if (url.pathname === '/customers/balance') {
-          signalBalanceRequested()
-          return fromPartial<Response>({ ok: true, json: () => balance })
-        }
-        return sessionFetch(input, init)
-      })
-
-      const pending = authStore.fetchBalance()
-      await balanceRequested
-      identity.signIn(USER_B)
-      resolveBalance({ balance: 4242 })
-
-      await expect(pending).resolves.toBeNull()
-      expect(authStore.balance).toBeNull()
     })
 
     it('signs out on the session alone', async () => {

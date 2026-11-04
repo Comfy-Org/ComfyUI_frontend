@@ -42,6 +42,40 @@ describe('projectBillingBalance', () => {
     }
   )
 
+  it.for([
+    {
+      case: 'served',
+      balance: { ...BALANCE, cloud_credit_display_balance_cents: 844.5 }
+    },
+    { case: 'omitted', balance: BALANCE }
+  ])('carries the display plan balance through when $case', ({ balance }) => {
+    expect(projectBillingBalance(balance)).toStrictEqual(balance)
+  })
+
+  it('reads the top-up minimum back as numbers', () => {
+    expect(
+      projectBillingBalance({
+        ...BALANCE,
+        min_topup_cents: 500n,
+        min_topup_credits: 1_055n
+      })
+    ).toStrictEqual({
+      ...BALANCE,
+      min_topup_cents: 500,
+      min_topup_credits: 1_055
+    })
+  })
+
+  it('drops only the top-up minimum when it is past what a number holds exactly', () => {
+    expect(
+      projectBillingBalance({
+        ...BALANCE,
+        max_topup_cents: 100_000n,
+        min_topup_cents: TOO_LARGE
+      })
+    ).toStrictEqual({ ...BALANCE, max_topup_cents: 100_000 })
+  })
+
   it('carries a balance with no top-up cap through untouched', () => {
     expect(projectBillingBalance(BALANCE)).toStrictEqual(BALANCE)
   })

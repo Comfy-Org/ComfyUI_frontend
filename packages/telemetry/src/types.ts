@@ -105,13 +105,22 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
@@ -160,6 +169,8 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
+  /** Wall-clock ms the tab was hidden during startup. */
+  hidden_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -762,6 +773,95 @@ export interface AgentConsentOfferExitedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
+export type AgentSendGate = 'composer' | 'consent' | 'coach'
+export type AgentComposerDropReason =
+  | 'cannot_submit'
+  | 'submission_pending'
+  | 'no_target'
+  | 'empty'
+  | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
+/** `not_completed`: the consent flow ended without accept, decline or dismiss. */
+export type AgentConsentDropReason =
+  | 'declined'
+  | 'dismissed'
+  | 'not_completed'
+  | 'panel_closed'
+export type AgentCoachReleaseReason =
+  | 'finished'
+  | 'skipped'
+  | 'elsewhere'
+  | 'stalled'
+  | 'deferred_app_mode'
+  | 'deferred_tour_active'
+  | 'deferred_dialog_open'
+export type AgentCoachDropReason =
+  | 'panel_closed'
+  | 'consent_cleared'
+  | 'identity_changed'
+type AgentSendGateOutcome =
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentComposerDropReason
+      client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
+      held_ms: null
+    }
+  | {
+      gate: 'consent' | 'coach'
+      outcome: 'held'
+      reason: null
+      client_message_id: string
+      held_ms: null
+    }
+  | {
+      gate: 'consent'
+      outcome: 'released'
+      reason: 'accepted'
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'consent'
+      outcome: 'dropped'
+      reason: AgentConsentDropReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'released'
+      reason: AgentCoachReleaseReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'dropped'
+      reason: AgentCoachDropReason
+      client_message_id: string
+      held_ms: number
+    }
+/**
+ * A first-send gate outcome, joinable to `app:agent_message_sent` by
+ * `client_message_id`.
+ */
+export type AgentSendGatedMetadata = AgentSendGateOutcome & {
+  thread_id: string | null
+  /** Page load id, also sent on the agent feedback form. */
+  client_session_id: string
+}
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -848,13 +948,17 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 /**
  * `step` is 1-based and matches the "Step N of M" indicator on the card.
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
- * onboarding time.
+ * onboarding time. `card` is the stable identity to funnel on, since `step`
+ * shifts when cards change. `total` is the tour length at the time of the event.
  */
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**
@@ -1284,6 +1388,8 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
+  /** Server `error.type` when a refused run opened the paywall. */
+  refusal_type?: string
 }
 
 export interface AddCreditsClickMetadata {
@@ -1609,6 +1715,7 @@ export interface TelemetryProvider {
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
+  trackAgentSendGated?(metadata: AgentSendGatedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1796,6 +1903,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+  AGENT_SEND_GATED: 'app:agent_send_gated',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',

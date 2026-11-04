@@ -4,13 +4,10 @@
   "description": "Compares the running frontend version with the backend-required frontend version from system stats and shows the dismissible mismatch warning toast.",
   "modules": [
     {
-      "path": "src/platform/updates/common/**",
-      "role": "application"
+      "path": "src/platform/updates/common/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Version mismatch between frontend and backend raises one dismissible warning",
