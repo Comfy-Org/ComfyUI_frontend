@@ -198,10 +198,16 @@ function useBillingCapabilitiesInternal() {
       capabilities.value?.can_manage_auto_top_up ?? false
     )
   )
-  const manageAutoTopUpDenial = computed(() =>
+  const canViewAutoTopUpCard = computed(() =>
     receiveServerFact(
-      'denied_reasons.can_manage_auto_top_up',
-      resolvedResponse.value?.denied_reasons?.can_manage_auto_top_up
+      'can_view_auto_top_up',
+      capabilities.value?.can_view_auto_top_up ?? false
+    )
+  )
+  const canViewAutoTopUpMemberNotice = computed(() =>
+    receiveServerFact(
+      'can_view_auto_top_up_member_notice',
+      capabilities.value?.can_view_auto_top_up_member_notice ?? false
     )
   )
   const autoTopUpEnabled = computed(() =>
@@ -583,7 +589,8 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
-    manageAutoTopUpDenial,
+    canViewAutoTopUpCard,
+    canViewAutoTopUpMemberNotice,
     autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
