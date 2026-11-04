@@ -13,7 +13,10 @@ const ENVELOPE_URL = 'https://example.invalid/api/1/envelope/*'
 export async function stubSentryDsnAndEnvelopes(page: Page): Promise<void> {
   await page.route('**/api/features', async (route) => {
     const response = await route.fetch()
-    const body = (await response.json()) as RemoteConfig
+    const body: unknown = await response.json()
+    if (body === null || typeof body !== 'object') {
+      throw new Error('The features response must be a non-null object')
+    }
     await route.fulfill({
       response,
       json: {
@@ -82,18 +85,14 @@ export function findErrorEvent(envelope: string): ErrorEvent {
 function isVueDirectiveRuntimeContext(
   context: unknown
 ): context is VueDirectiveRuntimeContext {
+  if (typeof context !== 'object' || context === null) return false
+  const candidate = context as Record<string, unknown>
   return (
-    typeof context === 'object' &&
-    context !== null &&
-    typeof (context as VueDirectiveRuntimeContext).frontend_version ===
-      'string' &&
-    typeof (context as VueDirectiveRuntimeContext).frontend_commit ===
-      'string' &&
-    typeof (context as VueDirectiveRuntimeContext).loaded_script_count ===
-      'number' &&
-    Array.isArray(
-      (context as VueDirectiveRuntimeContext).first_party_script_paths
-    )
+    typeof candidate.frontend_version === 'string' &&
+    typeof candidate.frontend_commit === 'string' &&
+    typeof candidate.loaded_script_count === 'number' &&
+    Array.isArray(candidate.first_party_script_paths) &&
+    candidate.first_party_script_paths.every((path) => typeof path === 'string')
   )
 }
 
