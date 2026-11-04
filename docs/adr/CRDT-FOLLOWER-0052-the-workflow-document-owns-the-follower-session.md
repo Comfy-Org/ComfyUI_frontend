@@ -128,15 +128,48 @@ its resume token with it and every recovery becomes a cold seed.
 1. **The workflow document owns the follower session, for as long as that
    document is open in this page session.** The owner is a registry keyed by
    workflow document id, not `AgentPanelRoot.vue`. A session is created when a
-   document binds to a doc host and disposed when that document closes. Panel
-   visibility, panel mount, thread switch and editor-tab activity change what
-   a session _does_; they never change whether it exists.
+   document binds to a doc host. Panel visibility, panel mount, thread switch
+   and editor-tab activity change what a session _does_; they never change
+   whether it exists.
+
+   **Disposal is by holder count, not by any single close.** Because Decision 3
+   lets two editor tabs resolve to one document id, "the document closed" is
+   not an event any one tab can report. The registry therefore hands out a
+   lease: a holder acquires a session for a document id, and the session is
+   disposed when the last lease is released — never when the first is. A panel
+   is not a holder, since by Decision 2 it only consumes. Holders are the open
+   editor tabs bound to that document id, so a session outlives any one tab and
+   dies with the last one.
+
+   This is the idiom the agent event source already uses rather than a new
+   mechanism: `agentEventSource.ts:167-174` keeps the socket alive while any
+   subscriber holds a listener and calls `disconnect()` only when
+   `listeners.size === 0`. A lease that is acquired twice and released once must
+   leave the session running, and a double release of one lease must not
+   decrement twice.
 
 2. **The Agent panel consumes a session; it does not construct one.**
    `useAgentCrdtFollower` resolves the session for the document the panel is
    bound to. Nothing under `src/workbench/extensions/agent/crdt/` reads panel
    state, tab bindings or the active tab: a session is given its document id,
    its graph accessor and its transport.
+
+   **So the transport cannot stay panel-owned either.** Today
+   `AgentPanelRoot.vue:263-269` constructs both the agent event source
+   (`events`) and the doc-frame transport over it (`docTransport`), and
+   destroys the transport in `onBeforeUnmount`. A registry that retained only
+   the replica and the sender would leave a session whose transport the panel
+   had just destroyed — unable to receive an update or to resubscribe, which is
+   worse than today's honest cold seed. Both are therefore **page-session
+   resources**, created and owned outside the panel for the lifetime of the
+   page, and the panel receives them exactly as it receives a session.
+
+   The event source needs no new lifetime machinery for this, only a surviving
+   subscriber: its socket is already reference-counted by listener count, so it
+   closes today because panel teardown drops the doc-frame tap
+   (`agentDocFrameTransport.ts:49-52`) and the session stream at the same time,
+   taking `listeners.size` to zero. A session that holds its own tap keeps the
+   socket open by that existing rule.
 
 3. **At most one replica per document id.** The registry returns the existing
    session for an id and never mints a second `FollowerDoc` for it. Two editor
@@ -146,6 +179,8 @@ its resume token with it and every recovery becomes a cold seed.
    — share one replica and one lineage. This is the KEEP-ALIVE rule that
    bootstrap forks from one seeded snapshot and never independently re-seeds
    the same base; a per-document refactor is exactly where it would break.
+   Sharing is what makes disposal a lease rather than a close, which is why
+   Decision 1 counts holders.
 
 4. **The minter and the sender share the session's lifetime.** Panel teardown
    no longer detaches `docOpMinter` or the op sender, which discharges
@@ -256,30 +291,57 @@ stale. Harness-first QA is mandatory here: unit coverage of the holders does
 not substitute, and FRONT-3582's own acceptance note says not to close this
 evidence on unit coverage alone. Guard: the specs themselves.
 
-**Stage 1 — move the owner, change no behaviour.** Add the document-keyed
-session registry; `AgentPanelRoot.vue` resolves instead of constructing; panel
-mount and unmount stop creating and destroying the seam. Keep today's
-semantics for everything else, including "my graph is readable only while my
-document's tab is active", which the shared root still requires.
+**Stage 1 — move the owner.** Two steps, in this order, because the second is
+useless without the first.
+
+_Stage 1a — the transport becomes page-session owned._ Move `events` and
+`docTransport` out of `AgentPanelRoot.vue`'s setup into a page-session owner,
+and remove the `onBeforeUnmount(() => docTransport.destroy())` that makes panel
+teardown drop the tap. The panel receives both instead of constructing them.
+Nothing else moves yet, so the follower seam still disposes with the panel and
+the user-visible behaviour is unchanged except that the agent socket is no
+longer closed by a panel close.
+
+_Stage 1b — the session registry._ Add the document-keyed registry with the
+lease semantics of Decision 1; `AgentPanelRoot.vue` resolves instead of
+constructing; panel mount and unmount stop creating and destroying the seam.
+
+**"Change no behaviour" means no change to how a frame is applied** — the
+applier, the projection and the recovery rules are untouched. It does not mean
+no observable change: the whole point of the stage is that a panel close stops
+destroying the replica and stops closing the socket, which is the Negative
+consequence recorded below about a subscription the user cannot see. Keep
+today's semantics for everything else, including "my graph is readable only
+while my document's tab is active", which the shared root still requires.
 _Invariants at risk:_ the replica is replaced only on a lineage break, and a
 reconnect recovers by state-vector delta rather than a wipe; one replica per
 document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
-document rule and linking this ADR; a new rule in
+document rule and linking this ADR; an `assert` that a lease release never
+takes a holder count below zero, so a double release cannot dispose a session
+another tab still holds; and a new rule in
 `scripts/check-follower-invariants.ts` (run by `pnpm follower-invariants:check`
 and by CI) restricting `new FollowerDoc(`, `new LayoutFollowerBridge(` and
 `useAgentCrdtFollower(` to the session-owner module, which makes FRONT-3582's
-first falsifiable check a CI check.
+first falsifiable check a CI check. That rule has to scan outside the existing
+`FOLLOWER_SCOPE_PATTERNS`, since the call site it must forbid is
+`AgentPanelRoot.vue`.
 
-**Stage 2 — the minter and the sender join the session.** Remove
-`detachDocOpMinter` and `sender.detach()` from component teardown; hold and
-replay instead.
+**Stage 2 — every operation producer joins the session.** Remove the op
+producers and the sender from component teardown; hold and replay instead.
+**Every** producer, not a subset: `AgentPanelRoot.vue:1737-1796` detaches
+`docOpMinter` _and_ `restoreOpMinter` (`:1769`, `:1772`), so moving only the
+first leaves a restore or undo edit made after a panel close unable to reach
+the session's replay path — the same defect in a narrower window. If a producer
+is deliberately left behind, the lifetime guarantee and the acceptance tests
+must be narrowed to say so explicitly rather than reading as covering all
+writes.
 _Invariants at risk:_ `op_id` is minted once and never regenerated; conflicts
 resolve on the stamp, not on client identity.
 _Guards:_ a unit pin that the `op_id`s observed before a panel unmount are the
 ones sent after remount; an `assert` that a replay carries an existing
-`op_id`; and a rule that `opSender.detach()` has no caller in a component
-teardown path. _Acceptance signal, not a test:_ the two `code=detached`
+`op_id`; and a rule that neither `opSender.detach()` nor any op-producer
+`detach()` has a caller in a component teardown path. _Acceptance signal, not a test:_ the two `code=detached`
 settlement signatures recorded on FRONT-3582 should stop appearing for
 panel-close episodes.
 
@@ -290,8 +352,14 @@ _Invariants at risk:_ bootstrap forks from one seeded snapshot; no
 intent is re-derived from end states — the divergence is _reported_, not
 _repaired_, so this must not become a diff-and-patch pass.
 _Guards:_ an `assert` that a whole-document frame is never applied in `merge`
-mode without the cold-seed declaration; a unit pin that an empty-state-vector
-catch-up whose node set differs from the live graph marks the target stale.
+mode without the cold-seed declaration; and unit pins that an empty-state-vector
+catch-up marks the target stale whenever the live graph diverges from the
+document. **The divergence test is over the whole semantic state, not the node
+set.** Cost A above is a deleted node, link _or_ widget, and `merge` cannot
+express a removal of any of the three, so a node-set comparison passes
+unchanged while a deleted link or a reverted widget value survives on the
+canvas — the guard would then certify exactly the case it exists to catch. Pin
+a link-only deletion and a widget-only divergence alongside the node case.
 
 **Stage 4 — collapse the identity holders. Gated on #21571.** One
 `workflowId`, one lineage, one graph reference and one commit fence, replacing
