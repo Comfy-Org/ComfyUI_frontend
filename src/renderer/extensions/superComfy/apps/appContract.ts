@@ -11,7 +11,7 @@ import {
   isStringInputSpec
 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { countBy, uniqBy } from 'es-toolkit'
+import { compact, countBy, uniqBy } from 'es-toolkit'
 
 import {
   isLoad3dNode,
@@ -279,10 +279,6 @@ function toOutputPort(
   }
 }
 
-function isPresent<T>(value: T | null): value is T {
-  return value !== null
-}
-
 export function deriveAppContract(
   linearData: LinearData,
   resolver: AppWidgetResolver,
@@ -294,12 +290,12 @@ export function deriveAppContract(
   })
   const resolved = inputs.map((input) => resolveEntry(input, resolver))
   const entries = disambiguateLabels(
-    resolved.filter(isPresent),
+    compact(resolved),
     (entry) => entry.target.nodeId
   )
   const outputIds = linearData.outputs.map(String)
   const outputs = disambiguateLabels(
-    outputIds.map((id) => toOutputPort(id, resolver)).filter(isPresent),
+    compact(outputIds.map((id) => toOutputPort(id, resolver))),
     (port) => port.outputNodeId
   )
   if (outputs.length === 0) return { ok: false, reason: 'noOutputs' }
@@ -307,9 +303,9 @@ export function deriveAppContract(
     ok: true,
     contract: {
       version,
-      inputs: entries.map(toInputPort).filter(isPresent),
+      inputs: compact(entries.map(toInputPort)),
       outputs,
-      settings: entries.map(toAppSetting).filter(isPresent),
+      settings: compact(entries.map(toAppSetting)),
       dropped:
         inputs.length - entries.length + outputIds.length - outputs.length
     }

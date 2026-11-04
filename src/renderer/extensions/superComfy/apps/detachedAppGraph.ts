@@ -8,6 +8,7 @@ import {
   LGraphEventMode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { isRecord } from '@/renderer/extensions/superComfy/router/routerJson'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { installGraphConfigureCallbacks } from '@/utils/graphConfigureCallbacks'
@@ -31,10 +32,6 @@ const INACTIVE_MODES: ReadonlySet<number> = new Set([
   LGraphEventMode.NEVER,
   LGraphEventMode.BYPASS
 ])
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 function recordsIn(value: unknown): JsonRecord[] {
   return Array.isArray(value) ? value.filter(isRecord) : []

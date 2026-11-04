@@ -1,5 +1,6 @@
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useEventListener, watchDebounced } from '@vueuse/core'
+import { omit } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
@@ -61,12 +62,6 @@ function executableFields() {
     runs: {},
     result: null
   }
-}
-
-function without<T>(record: Record<string, T>, key: string): Record<string, T> {
-  return Object.fromEntries(
-    Object.entries(record).filter(([entry]) => entry !== key)
-  )
 }
 
 function isStaleApp(
@@ -157,7 +152,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
   function setNodeError(nodeId: NodeId, message: string | null) {
     nodeErrors.value =
       message === null
-        ? without(nodeErrors.value, nodeId)
+        ? omit(nodeErrors.value, [nodeId])
         : { ...nodeErrors.value, [nodeId]: message }
   }
 
@@ -261,9 +256,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
 
   function removeNodes(ids: readonly NodeId[]) {
     dispatch({ type: 'nodesRemoved', nodeIds: [...ids] })
-    nodeErrors.value = Object.fromEntries(
-      Object.entries(nodeErrors.value).filter(([id]) => !ids.includes(id))
-    )
+    nodeErrors.value = omit(nodeErrors.value, ids)
   }
 
   function connect(from: PortRef, to: PortRef): ConnectOutcome {
@@ -300,7 +293,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
     uploads.value =
       count > 0
         ? { ...uploads.value, [nodeId]: count }
-        : without(uploads.value, nodeId)
+        : omit(uploads.value, [nodeId])
   }
 
   async function uploadFiles(
