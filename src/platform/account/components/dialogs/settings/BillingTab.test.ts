@@ -26,6 +26,7 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -211,6 +212,12 @@ function arrange(scenario: Scenario = {}) {
         receiveServerFact(
           'can_manage_auto_top_up',
           scenario.canManageAutoTopUp ?? true
+        )
+      ),
+      canViewAutoTopUpCard: computed(() =>
+        pendingServerFact(
+          'BE-25243',
+          (scenario.canManageAutoTopUp ?? true) && (scenario.canTopUp ?? true)
         )
       ),
       autoTopUpEnabled: computed(() =>

@@ -260,8 +260,7 @@ const { state: autoTopUp } = useBillingAutoTopUpCard()
 const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
     autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
-    canManageAutoTopUp: capabilities.canManageAutoTopUp.value,
-    canTopUp: capabilities.canTopUp.value,
+    canViewAutoTopUpCard: capabilities.canViewAutoTopUpCard.value,
     manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
   })
 )

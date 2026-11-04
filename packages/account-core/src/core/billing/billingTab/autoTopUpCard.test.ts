@@ -57,23 +57,26 @@ describe('deriveAutoTopUpCard', () => {
 describe('deriveAutoTopUpSection', () => {
   const owner: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: true,
-    canTopUp: true,
+    canViewAutoTopUpCard: true,
     manageAutoTopUpDenial: undefined
   }
   const member: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: false,
-    canTopUp: false,
+    canViewAutoTopUpCard: false,
     manageAutoTopUpDenial: 'not_workspace_owner'
   }
 
   it.for<{ case: string; facts: AutoTopUpSectionFacts; kind: string }>([
-    { case: 'an owner who can top up', facts: owner, kind: 'card' },
+    { case: 'a granted card', facts: owner, kind: 'card' },
     {
-      case: 'an owner who cannot top up',
-      facts: { ...owner, canTopUp: false },
+      case: 'a withheld card with no denial',
+      facts: { ...owner, canViewAutoTopUpCard: false },
       kind: 'hidden'
+    },
+    {
+      case: 'a granted card beside a stale denial',
+      facts: { ...owner, manageAutoTopUpDenial: 'not_workspace_owner' },
+      kind: 'card'
     },
     { case: 'a member', facts: member, kind: 'memberBlock' },
     {
