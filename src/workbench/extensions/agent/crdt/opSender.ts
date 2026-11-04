@@ -338,9 +338,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
+  function shouldPark(batch: InFlight): boolean {
+    return suspended && pendingAbortReason?.workflowId !== batch.workflowId
+  }
+
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
-    if (suspended && pendingAbortReason?.workflowId !== batch.workflowId) {
+    if (shouldPark(batch)) {
       batch.parked = true
       return
     }
