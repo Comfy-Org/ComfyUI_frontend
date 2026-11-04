@@ -813,9 +813,11 @@ export async function runRecord(
   blank()
   pass('Test saved', outputPath)
 
-  stepHeader(7, 7, 'Refactor (optional)')
-  await offerAgentRefactor(outputPath, projectRoot)
-  blank()
+  if (stdinOpen) {
+    stepHeader(7, 7, 'Refactor (optional)')
+    await offerAgentRefactor(outputPath, projectRoot)
+    blank()
+  }
 
   if (!stdinOpen) {
     // stdin is at EOF, so prompting here would hang.

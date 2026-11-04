@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { AgentCliAdapter } from '../checks/agentCli'
 import { resolveDistribution } from '../devserver/distributions'
 import type { EnvInfoResult } from '../devserver/envInfo'
 import { USE_CASES } from '../useCases'
@@ -28,7 +29,9 @@ const {
   fail,
   findProjectRoot,
   runRecording,
-  ensureDevServer
+  ensureDevServer,
+  detectAgentClis,
+  runAgentRefactor
 } = vi.hoisted(() => ({
   autocomplete: async <Value>({ options }: AutocompleteOptions<Value>) => {
     const addWorkflow = Array.isArray(options)
@@ -54,6 +57,8 @@ const {
   fail: vi.fn(),
   findProjectRoot: vi.fn(() => '/project'),
   runRecording: vi.fn(),
+  detectAgentClis: vi.fn((): AgentCliAdapter[] => []),
+  runAgentRefactor: vi.fn(),
   ensureDevServer: vi.fn(async () => ({
     url: 'http://localhost:5173',
     ownedByUs: true,
@@ -92,7 +97,8 @@ vi.mock(import('../recorder/runner'), () => ({
   runRecording
 }))
 vi.mock(import('../devserver/manager'), () => ({ ensureDevServer }))
-vi.mock(import('../checks/agentCli'), () => ({ detectAgentClis: () => [] }))
+vi.mock(import('../checks/agentCli'), () => ({ detectAgentClis }))
+vi.mock(import('../agent/refactor'), () => ({ runAgentRefactor }))
 vi.mock(import('../ui/logger'), () => ({
   alert: vi.fn(),
   blank: vi.fn(),
@@ -272,6 +278,51 @@ describe('runRecord overwrite guard', () => {
         'Refusing to overwrite existing test',
         expect.stringContaining('stdin is closed')
       )
+    } finally {
+      Object.defineProperty(process, 'stdin', {
+        configurable: true,
+        value: realStdin
+      })
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('replaces with --force after EOF without prompting for anything', async () => {
+    vi.clearAllMocks()
+    const { root, outputPath } = seedExistingSpec('eof-force')
+    const realStdin = process.stdin
+    try {
+      runRecording.mockResolvedValue({ success: true, recordedCode: '' })
+      detectAgentClis.mockReturnValueOnce([
+        { label: 'Claude Code', command: 'claude', buildArgs: () => [] }
+      ])
+      confirm.mockImplementation(async () => true)
+      const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`exit:${code}`)
+      })
+
+      const fakeStdin = Readable.from([RECORDED_CODE])
+      Object.defineProperty(fakeStdin, 'isTTY', {
+        configurable: true,
+        value: true
+      })
+      Object.defineProperty(process, 'stdin', {
+        configurable: true,
+        value: fakeStdin
+      })
+
+      await runRecord({ ...prefillFor('eof-force'), force: true })
+
+      expect(readFileSync(outputPath, 'utf-8')).toContain(
+        "comfyPage.page.getByText('Queue').click()"
+      )
+      expect(confirm).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('refactor')
+        })
+      )
+      expect(runAgentRefactor).not.toHaveBeenCalled()
+      expect(exit).not.toHaveBeenCalled()
     } finally {
       Object.defineProperty(process, 'stdin', {
         configurable: true,
