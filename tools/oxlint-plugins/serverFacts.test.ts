@@ -182,7 +182,32 @@ function deriveSection(facts: SectionFacts) {
 function deriveSection(facts: SectionFacts) {
   const a = facts.canTopUp && !facts.isLoading
   const b = facts.autoTopUpEnabled && facts.hasSeats
-  const c = facts.canTopUp && options.canTopUp
+}
+`
+    },
+    {
+      name: 'known scope limit: a fact capability gated by a capability-named member of an unnamed object',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return facts.canTopUp && options.canTopUp
+}
+`
+    },
+    {
+      name: 'a served refusal rendered next to its capability',
+      code: `
+function describe(facts: AddCreditsFacts) {
+  const a = !facts.canTopUp && facts.canTopUpRefusal
+  const b = facts.canTopUpRefusal ?? facts.canTopUpReason
+  const c = facts.canChangeSeats || facts.canChangeSeatsDenial
+}
+`
+    },
+    {
+      name: 'capability-named members of an object nested inside a facts object',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return facts.dialog.canClose && facts.dialog.canOpen
 }
 `
     },
@@ -208,6 +233,43 @@ function deriveSection(facts: SectionFacts) {
         { messageId: 'combined', data: { operator: '&&' } },
         { messageId: 'combined', data: { operator: '||' } }
       ]
+    },
+    {
+      name: 'two capability members of a facts object held under another object',
+      code: `
+function deriveSection(props: Props, section: Section) {
+  if (props.facts.canManageAutoTopUp && props.facts.canTopUp) return 'card'
+  if (section.billingFacts.canTopUp || section.billingFacts.canChangeSeats) return 'seats'
+  return this.facts.canTopUp && this.facts.canChangeSeats
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
+    {
+      name: 'capability members of two different fact objects combined',
+      code: `
+function deriveSection(billingFacts: BillingFacts, seatFacts: SeatFacts) {
+  if (billingFacts.canTopUp && seatFacts.canChangeSeats) return 'card'
+  return facts.canTopUp || capabilities.canManageBilling
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } }
+      ]
+    },
+    {
+      name: 'capability refs of an untracked capabilities object combined',
+      code: `
+function deriveSection(capabilities: BillingCapabilities) {
+  return capabilities.canTopUp.value && !capabilities.canManageAutoTopUp.value
+}
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
     },
     {
       name: '#15675 capability chosen by isCloud with a role fallback',

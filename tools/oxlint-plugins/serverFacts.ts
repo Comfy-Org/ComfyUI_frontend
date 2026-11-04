@@ -10,12 +10,14 @@ type VisitedNode<K extends keyof Visitor> = Parameters<
 type Expression = VisitedNode<'LogicalExpression'>['left']
 type AstNode = Expression['parent']
 type Ternary = VisitedNode<'ConditionalExpression'>
+type Member = Extract<AstNode, { type: 'MemberExpression' }>
 
 const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
   'useBillingCapabilities'
 ])
 const CAPABILITY_BINDING = /^can[A-Z]\w*$/
 const CAPABILITY_FIELD = /^can_[a-z_]+$/
+const CAPABILITY_DETAIL = /(?:Refusal|Denial|Reason)$/
 const SERVER_FACT_OWNER = /^(?:\w*Facts|facts|\w*Capabilities|capabilities)$/
 const PENDING_FACT_WRAPPER = 'pendingServerFact'
 const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
@@ -442,29 +444,26 @@ function memberPath(node: AstNode): string | undefined {
     : `${object}.${expression.property.name}`
 }
 
-function capabilityMemberOwner(node: AstNode): string | undefined {
-  const inner = negated(node)
-  if (inner) return capabilityMemberOwner(inner)
-  const expression = unwrap(node)
-  if (expression.type !== 'MemberExpression' || expression.computed) {
-    return undefined
-  }
-  if (expression.property.name === 'value') {
-    return capabilityMemberOwner(expression.object)
-  }
-  const owner = memberPath(expression.object)
-  return CAPABILITY_BINDING.test(expression.property.name) &&
-    owner !== undefined &&
-    SERVER_FACT_OWNER.test(owner.split('.')[0])
-    ? owner
-    : undefined
+function isFactObjectCapability(node: AstNode): boolean {
+  if (node.type !== 'MemberExpression' || node.computed) return false
+  const property = node.property.name
+  return (
+    CAPABILITY_BINDING.test(property) &&
+    !CAPABILITY_DETAIL.test(property) &&
+    SERVER_FACT_OWNER.test(factName(node.object) ?? '')
+  )
 }
 
-function combinesSiblingCapabilities(operands: AstNode[]): boolean {
-  const owners = operands.flatMap(
-    (operand) => capabilityMemberOwner(operand) ?? []
+function combinesFactObjectCapabilities(operands: AstNode[]): boolean {
+  return (
+    operands.filter(
+      (operand) =>
+        capabilityMember(
+          negated(operand) ?? operand,
+          isFactObjectCapability
+        ) !== undefined
+    ).length >= 2
   )
-  return new Set(owners).size < owners.length
 }
 
 interface LiteralDefault {
@@ -497,18 +496,26 @@ function isNarrowedTernary(node: Ternary, isCapability: IsCapability): boolean {
     : impliesCapability(fallback.other, isCapability)
 }
 
-function capabilityOwner(
+function capabilityMember(
   node: AstNode,
   isCapability: IsCapability
-): string | undefined {
+): Member | undefined {
   const expression = unwrap(node)
   if (expression.type !== 'MemberExpression' || expression.computed) {
     return undefined
   }
   if (expression.property.name === 'value') {
-    return capabilityOwner(expression.object, isCapability)
+    return capabilityMember(expression.object, isCapability)
   }
-  return isCapability(expression) ? memberPath(expression.object) : undefined
+  return isCapability(expression) ? expression : undefined
+}
+
+function capabilityOwner(
+  node: AstNode,
+  isCapability: IsCapability
+): string | undefined {
+  const member = capabilityMember(node, isCapability)
+  return member && memberPath(member.object)
 }
 
 // `caps ? caps.can_top_up : false` is `caps?.can_top_up ?? false`.
@@ -641,7 +648,7 @@ export const noCapabilityRecombination: Rule = {
           factOperands.length < 2 ||
           !(
             operands.some(containsCapability) ||
-            combinesSiblingCapabilities(operands)
+            combinesFactObjectCapabilities(operands)
           ) ||
           onlyNarrowedByLocalState(node) ||
           isInsidePendingFact(node)
