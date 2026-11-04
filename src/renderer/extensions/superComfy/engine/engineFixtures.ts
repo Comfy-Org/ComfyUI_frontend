@@ -129,20 +129,27 @@ export function appNode(id: NodeId, options: ExecutableOptions = {}): AppNode {
   }
 }
 
-export function withLastResult<T extends GenerateNode | AppNode>(
+export function withOutputs<T extends GenerateNode | AppNode>(
   node: T,
-  items: MediaItem[]
+  outputs: Record<string, MediaItem[]>
 ): T {
   return {
     ...node,
     result: {
       planKeys: [],
-      outputs: { out: items },
+      outputs,
       failures: [],
       status: 'complete',
       finishedAt: 0
     }
   }
+}
+
+export function withLastResult<T extends GenerateNode | AppNode>(
+  node: T,
+  items: MediaItem[]
+): T {
+  return withOutputs(node, { out: items })
 }
 
 export function edge(

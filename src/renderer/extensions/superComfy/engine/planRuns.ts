@@ -13,7 +13,13 @@ import { stableKey } from './stableKey'
 import type { Block, PlanOptions, PlannedRun, RunPlan } from './types'
 
 interface Contribution {
+  source: NodeId
   items: MediaItem[]
+}
+
+interface Dimension {
+  length: number
+  members: readonly Contribution[]
 }
 
 interface GatheredPort {
@@ -50,11 +56,16 @@ function contributionsFor(
   const edges = incomingEdges(doc, node.id, port.name)
   if (edges.length > 0) {
     return edges
-      .map((edge) => ({ items: sourceItems(doc, edge, exclude) }))
+      .map((edge) => ({
+        source: edge.from.node,
+        items: sourceItems(doc, edge, exclude)
+      }))
       .filter((contribution) => contribution.items.length > 0)
   }
   const text = inlineText(node, port)
-  return text.trim() === '' ? [] : [{ items: [textItem(text)] }]
+  return text.trim() === ''
+    ? []
+    : [{ source: node.id, items: [textItem(text)] }]
 }
 
 export function portHasContent(
@@ -137,20 +148,41 @@ function findBlock(
   return null
 }
 
-function productOf(dimensions: readonly Contribution[]): number {
-  return dimensions.reduce((product, { items }) => product * items.length, 1)
+function pairedOrSeparate(members: readonly Contribution[]): Dimension[] {
+  const { length } = members[0].items
+  return members.every(({ items }) => items.length === length)
+    ? [{ length, members }]
+    : members.map((member) => ({
+        length: member.items.length,
+        members: [member]
+      }))
+}
+
+function dimensionsOf(contributions: readonly Contribution[]): Dimension[] {
+  const bySource = contributions
+    .filter(({ items }) => items.length > 1)
+    .reduce((groups, contribution) => {
+      const members = groups.get(contribution.source) ?? []
+      return groups.set(contribution.source, [...members, contribution])
+    }, new Map<NodeId, Contribution[]>())
+  return [...bySource.values()].flatMap(pairedOrSeparate)
+}
+
+function productOf(dimensions: readonly Dimension[]): number {
+  return dimensions.reduce((product, { length }) => product * length, 1)
 }
 
 function choicesFor(
-  dimensions: readonly Contribution[],
+  dimensions: readonly Dimension[],
   combo: number
 ): Map<Contribution, number> {
   return new Map(
-    dimensions.map((dimension, position) => [
-      dimension,
-      Math.floor(combo / productOf(dimensions.slice(position + 1))) %
-        dimension.items.length
-    ])
+    dimensions.flatMap((dimension, position) => {
+      const choice =
+        Math.floor(combo / productOf(dimensions.slice(position + 1))) %
+        dimension.length
+      return dimension.members.map((member) => [member, choice] as const)
+    })
   )
 }
 
@@ -198,8 +230,8 @@ export function planRuns(
     port,
     contributions: contributionsFor(doc, node, port, opts.exclude)
   }))
-  const dimensions = gathered.flatMap(({ contributions }) =>
-    contributions.filter(({ items }) => items.length > 1)
+  const dimensions = dimensionsOf(
+    gathered.flatMap(({ contributions }) => contributions)
   )
   const combos = productOf(dimensions)
   const runCount = Math.max(1, Math.floor(node.runCount))

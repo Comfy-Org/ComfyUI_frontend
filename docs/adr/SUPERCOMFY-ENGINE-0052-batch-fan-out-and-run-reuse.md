@@ -27,9 +27,11 @@ when they come from a Router model schema or from an app's app mode selection.
 or litegraph, and receives the Router and Cloud executors by injection. One
 reducer applies both document edits and run events.
 
-**Fan-out is per edge.** Each incoming edge whose source holds more than one
-item is a dimension. A node plans the product of its dimensions times its run
-count, with the first dimension varying slowest and the repeat innermost, so
+**Fan-out is per source node.** Each upstream node whose batch holds more
+than one item is a dimension. When one node feeds several ports, its batches
+stay paired by position, so an App's image and mask from the same run arrive
+together; if their sizes differ, each edge is its own dimension. A node plans
+the product of its dimensions times its run count, with the first dimension varying slowest and the repeat innermost, so
 outputs stay grouped by input combination. A multi-item input takes one item
 from each of its edges per run: separate single-item nodes fill it together,
 and a batch from one node still fans out. I/O nodes downstream collect every
@@ -71,6 +73,9 @@ disposed after each node execution, and its registered types are removed.
 - **Zip batches instead of crossing them.** Simpler to explain for equal
   lengths, but undefined for unequal ones and contrary to the requirement that
   three images and two prompts make six runs.
+- **Make every edge its own dimension.** One rule for all edges, but one
+  node's batch wired into two ports would cross with itself and pair outputs
+  from different runs.
 - **Treat each edge into a multi-item input as its own run.** Breaks the
   reference-image case, where separate images must reach one run together.
 - **Re-run every node on every graph run.** Simplest, but it pays again for

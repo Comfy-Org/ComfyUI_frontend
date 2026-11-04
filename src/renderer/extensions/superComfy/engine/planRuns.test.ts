@@ -7,7 +7,8 @@ import {
   generateNode,
   ioNode,
   port,
-  withLastResult
+  withLastResult,
+  withOutputs
 } from './engineFixtures'
 import { textItem } from './items'
 import { planRuns } from './planRuns'
@@ -124,6 +125,80 @@ describe(planRuns, () => {
         { inputs: { refs: [fileItem('a2')] } },
         { inputs: { refs: [fileItem('a3')] } }
       ]
+    })
+  })
+
+  const pairedPorts = [
+    port('first', 'image', { required: true }),
+    port('second', 'image', { required: true })
+  ]
+
+  it.for([
+    {
+      name: 'one I/O batch wired into two ports',
+      source: ioNode('frames', 'image', [
+        fileItem('a1'),
+        fileItem('a2'),
+        fileItem('a3')
+      ]),
+      wires: [
+        edge('frames', 'out', 'gen', 'first'),
+        edge('frames', 'out', 'gen', 'second')
+      ],
+      expected: [
+        { first: [fileItem('a1')], second: [fileItem('a1')] },
+        { first: [fileItem('a2')], second: [fileItem('a2')] },
+        { first: [fileItem('a3')], second: [fileItem('a3')] }
+      ]
+    },
+    {
+      name: 'two outputs of one node',
+      source: withOutputs(generateNode('matte', 'image'), {
+        image: [fileItem('i0'), fileItem('i1'), fileItem('i2')],
+        mask: [fileItem('m0'), fileItem('m1'), fileItem('m2')]
+      }),
+      wires: [
+        edge('matte', 'image', 'gen', 'first'),
+        edge('matte', 'mask', 'gen', 'second')
+      ],
+      expected: [
+        { first: [fileItem('i0')], second: [fileItem('m0')] },
+        { first: [fileItem('i1')], second: [fileItem('m1')] },
+        { first: [fileItem('i2')], second: [fileItem('m2')] }
+      ]
+    }
+  ])(
+    "[R1g] keeps one node's batch paired across ports: $name",
+    ({ source, wires, expected }) => {
+      const doc = docWith(
+        [source, generateNode('gen', 'image', { inputs: pairedPorts })],
+        wires
+      )
+
+      const plan = planRuns(doc, 'gen', limits)
+
+      assert(plan.ok)
+      expect(plan.runs.map(({ inputs }) => inputs)).toEqual(expected)
+    }
+  )
+
+  it("[R1h] makes every combination of one node's outputs when their batch sizes differ", () => {
+    const doc = docWith(
+      [
+        withOutputs(generateNode('matte', 'image'), {
+          image: [fileItem('i0'), fileItem('i1')],
+          mask: [fileItem('m0'), fileItem('m1'), fileItem('m2')]
+        }),
+        generateNode('gen', 'image', { inputs: pairedPorts })
+      ],
+      [
+        edge('matte', 'image', 'gen', 'first'),
+        edge('matte', 'mask', 'gen', 'second')
+      ]
+    )
+
+    expect(planOutcome(planRuns(doc, 'gen', limits))).toEqual({
+      plannedRuns: 6
     })
   })
 
