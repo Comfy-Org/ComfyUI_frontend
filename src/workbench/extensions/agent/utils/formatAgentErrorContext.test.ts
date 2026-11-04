@@ -51,10 +51,16 @@ describe('formatAgentErrorContext', () => {
     expect(block.startsWith('fix using \n\n')).toBe(true)
   })
 
-  it('omits the user request when it is blank', () => {
-    const block = formatAgentErrorContext(context(), '   ')
+  it('omits the user request when it is empty', () => {
+    const block = formatAgentErrorContext(context(), '')
 
     expect(block.startsWith('I need help with')).toBe(true)
+  })
+
+  it('keeps whitespace-only user text verbatim so reference offsets still point into it', () => {
+    const block = formatAgentErrorContext(context(), '   ')
+
+    expect(block.startsWith('   \n\n')).toBe(true)
   })
 
   it('pluralizes the issue count', () => {

@@ -101,5 +101,5 @@ export function formatAgentErrorContext(
     GUIDANCE
   ].join('\n')
 
-  return userText.trim() ? `${userText}\n\n${block}` : block
+  return userText ? `${userText}\n\n${block}` : block
 }

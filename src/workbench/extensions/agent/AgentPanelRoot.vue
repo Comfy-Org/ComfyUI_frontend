@@ -205,6 +205,9 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToast()
 let errorAttachRun = 0
+onBeforeUnmount(() => {
+  errorAttachRun++
+})
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -1980,6 +1983,10 @@ async function attachErrorContext(context: AgentErrorContext): Promise<void> {
   if (workflow) {
     await followTab(workflow)
     if (run !== errorAttachRun) return
+    if (workflowStore.activeWorkflow?.path !== workflow.path) {
+      toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
+      return
+    }
     if (selectedTarget.value?.path !== workflow.path) {
       if (composerStore.hasDraft) {
         toast.warning(t('agent.errorContext.draftBlocked'), { duration: 5000 })
@@ -1988,6 +1995,7 @@ async function attachErrorContext(context: AgentErrorContext): Promise<void> {
       onNewChat()
     }
   }
+  agentPanelStore.retainWorkflowTarget()
   composerStore.setErrorContext(context)
 }
 
