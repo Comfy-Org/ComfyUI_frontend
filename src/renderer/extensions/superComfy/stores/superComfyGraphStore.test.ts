@@ -4,7 +4,11 @@ import { emptyDocument } from '@/renderer/extensions/superComfy/engine/documentS
 import { ioNode } from '@/renderer/extensions/superComfy/engine/engineFixtures'
 
 import { useSuperComfyGraphStore } from './superComfyGraphStore'
-import { createSuperGraphSaver, loadSuperGraph } from './superComfyPersistence'
+import {
+  createSuperGraphSaver,
+  loadSuperGraph,
+  saveDraftNow
+} from './superComfyPersistence'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('./superComfyPersistence'))
@@ -46,5 +50,28 @@ describe('useSuperComfyGraphStore autosave', () => {
     await moveEvery(store, 500, 12)
 
     expect(save).toHaveBeenCalled()
+  })
+
+  it('keeps a change in the browser when the page closes before the autosave', async () => {
+    vi.useFakeTimers()
+    await loadedStore()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(saveDraftNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodes: [expect.objectContaining({ id: 'busy' })]
+      })
+    )
+  })
+
+  it('leaves the browser copy alone when everything is saved', async () => {
+    vi.useFakeTimers()
+    await loadedStore()
+    await vi.advanceTimersByTimeAsync(2000)
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(saveDraftNow).not.toHaveBeenCalled()
   })
 })

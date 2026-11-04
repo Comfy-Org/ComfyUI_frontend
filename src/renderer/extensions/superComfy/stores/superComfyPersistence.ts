@@ -132,6 +132,11 @@ async function storeRemote(body: string): Promise<boolean> {
   }
 }
 
+/** Keeps the document in the browser right away, for a page that is closing. */
+export function saveDraftNow(doc: SuperGraphDocument): void {
+  writeDraft(JSON.stringify({ ...doc, savedAt: Date.now() }))
+}
+
 /** Returns a serialised saver that falls back to the browser for the session. */
 export function createSuperGraphSaver(
   initial: SaveLocation = 'userdata'

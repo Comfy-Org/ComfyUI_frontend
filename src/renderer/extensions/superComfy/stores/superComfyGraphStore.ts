@@ -1,7 +1,7 @@
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { watchDebounced } from '@vueuse/core'
+import { useEventListener, watchDebounced } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -44,7 +44,11 @@ import { uploadMediaFiles } from '@/renderer/extensions/superComfy/media/superMe
 import { resolveModelContract } from '@/renderer/extensions/superComfy/router/routerCatalog'
 import { createRouterExecutor } from '@/renderer/extensions/superComfy/router/routerExecutor'
 
-import { createSuperGraphSaver, loadSuperGraph } from './superComfyPersistence'
+import {
+  createSuperGraphSaver,
+  loadSuperGraph,
+  saveDraftNow
+} from './superComfyPersistence'
 import type { SaveLocation } from './superComfyPersistence'
 
 export const RUN_LIMIT = 50
@@ -130,13 +134,29 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
     limits: { runsPerNode: RUN_LIMIT, nodesInParallel: NODES_IN_PARALLEL }
   })
 
+  let unsaved: SuperGraphDocument | null = null
+
+  watch(
+    () => state.value.doc,
+    (doc) => {
+      unsaved = doc
+    },
+    { flush: 'sync' }
+  )
+
   watchDebounced(
     () => state.value.doc,
     async (doc) => {
-      if (save) saveLocation.value = await save(doc)
+      if (!save) return
+      saveLocation.value = await save(doc)
+      if (unsaved === doc) unsaved = null
     },
     { debounce: AUTOSAVE_DELAY_MS, maxWait: AUTOSAVE_MAX_WAIT_MS }
   )
+
+  useEventListener(window, 'pagehide', () => {
+    if (save && unsaved) saveDraftNow(unsaved)
+  })
 
   async function load() {
     loadStatus.value = 'loading'
