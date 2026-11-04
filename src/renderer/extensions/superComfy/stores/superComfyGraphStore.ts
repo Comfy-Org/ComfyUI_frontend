@@ -218,7 +218,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
     return addNode(node)
   }
 
-  async function refreshApp(nodeId: NodeId): Promise<void> {
+  async function resolveApp(nodeId: NodeId): Promise<void> {
     const node = findNode(state.value.doc, nodeId)
     if (node?.kind !== 'app') return
     const resolved = await resolveAppContract(node.workflowPath)
@@ -234,6 +234,11 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
       title: resolved.title,
       contract: resolved.contract
     })
+  }
+
+  async function refreshApp(nodeId: NodeId): Promise<void> {
+    await appCatalog.sync().catch(() => undefined)
+    await resolveApp(nodeId)
   }
 
   async function addAppNode(
@@ -253,7 +258,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
       width: NODE_WIDTH.app
     }
     addNode(node)
-    await refreshApp(node.id)
+    await resolveApp(node.id)
     return node.id
   }
 
@@ -268,7 +273,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
       (node): node is AppNode =>
         node.kind === 'app' && isStaleApp(node, entries)
     )
-    await Promise.all(stale.map(({ id }) => refreshApp(id)))
+    await Promise.all(stale.map(({ id }) => resolveApp(id)))
   }
 
   function removeNodes(ids: readonly NodeId[]) {

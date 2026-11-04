@@ -29,30 +29,36 @@ const useAppCatalogStore = defineStore('superComfyAppCatalog', () => {
       .sort((a, b) => a.title.localeCompare(b.title))
   )
 
+  async function sync() {
+    lastSyncedAt.value = Date.now()
+    await workflowStore.syncWorkflows()
+  }
+
   async function refresh() {
     loading.value = true
     try {
       await workflowStore.loadWorkflows()
       if (Date.now() - lastSyncedAt.value < SYNC_INTERVAL_MS) return
-      lastSyncedAt.value = Date.now()
-      await workflowStore.syncWorkflows()
+      await sync()
     } finally {
       loading.value = false
     }
   }
 
-  return { apps, loading: readonly(loading), refresh }
+  return { apps, loading: readonly(loading), refresh, sync }
 })
 
 export function useAppCatalog(): {
   apps: Readonly<Ref<AppCatalogEntry[]>>
   loading: Readonly<Ref<boolean>>
   refresh(): Promise<void>
+  sync(): Promise<void>
 } {
   const store = useAppCatalogStore()
   return {
     apps: computed(() => store.apps),
     loading: computed(() => store.loading),
-    refresh: () => store.refresh()
+    refresh: () => store.refresh(),
+    sync: () => store.sync()
   }
 }

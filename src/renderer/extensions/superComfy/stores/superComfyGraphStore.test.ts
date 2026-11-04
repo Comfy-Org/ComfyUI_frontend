@@ -3,8 +3,11 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { resolveAppContract } from '@/renderer/extensions/superComfy/apps/appContract'
 import type { SuperGraphDocument } from '@/renderer/extensions/superComfy/engine/documentSchema'
 import {
+  appNode,
   docWith,
   fileItem,
   ioNode
@@ -17,6 +20,7 @@ import { useSuperComfyGraphStore } from './superComfyGraphStore'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/renderer/extensions/superComfy/apps/appContract'))
 
 type GraphStore = ReturnType<typeof useSuperComfyGraphStore>
 
@@ -67,6 +71,20 @@ async function moveEvery(store: GraphStore, intervalMs: number, times: number) {
     })
     await vi.advanceTimersByTimeAsync(intervalMs)
   }
+}
+
+function serveAppSavedElsewhere(portrait: ReturnType<typeof appNode>) {
+  const contract = portrait.contract
+  assert(contract, 'fixture app has a contract')
+  const listed = { version: contract.version }
+  vi.mocked(useWorkflowStore().syncWorkflows).mockImplementation(async () => {
+    listed.version = contract.version + 1
+  })
+  vi.mocked(resolveAppContract).mockImplementation(async () => ({
+    ok: true,
+    title: portrait.title,
+    contract: { ...contract, version: listed.version }
+  }))
 }
 
 const addBusyNode: SuperComfyEvent = {
@@ -165,5 +183,20 @@ describe('useSuperComfyGraphStore persistence', () => {
         title: t('superComfy.loadUnavailable')
       })
     ])
+  })
+})
+
+describe('useSuperComfyGraphStore apps', () => {
+  it('Reload app picks up an app saved elsewhere since the last sync', async () => {
+    const portrait = appNode('portrait')
+    serveAppSavedElsewhere(portrait)
+    const store = await openStore()
+    store.dispatch({ type: 'nodeAdded', node: portrait })
+
+    await store.refreshApp('portrait')
+
+    expect(findNode(store.state.doc, 'portrait')).toMatchObject({
+      contract: { version: 2 }
+    })
   })
 })
