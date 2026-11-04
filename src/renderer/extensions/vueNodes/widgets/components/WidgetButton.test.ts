@@ -127,7 +127,7 @@ describe('WidgetButton Interactions', () => {
       ['secondary', 'hover:bg-secondary/80'],
       ['primary', 'hover:bg-primary/90'],
       ['inverted', 'hover:bg-foreground/80'],
-      ['textonly', 'hover:bg-accent/50']
+      ['textonly', 'hover:bg-accent/40']
     ] as const)('handles button variant: %s', ([variant, hoverClass]) => {
       const widget = createButtonWidget({ options: { variant } })
       mountComponent(widget)

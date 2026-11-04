@@ -88,7 +88,7 @@ describe('GizmoMenuGroup', () => {
 
     expect(
       screen.getByRole('button', { name: 'Translate', pressed: true })
-    ).toHaveClass('bg-muted')
+    ).toHaveClass('bg-accent/60')
 
     await user.click(
       screen.getByRole('button', { name: 'Rotate', pressed: false })

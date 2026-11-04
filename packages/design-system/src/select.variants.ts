@@ -20,13 +20,13 @@ export const selectTriggerVariants = cva({
 })
 
 export const selectItemVariants = cva({
-  base: 'flex cursor-pointer items-center px-2 outline-none hover:bg-accent/50',
+  base: 'flex cursor-pointer items-center px-2 outline-none hover:bg-accent/40',
   variants: {
     layout: {
       multi:
-        'h-10 shrink-0 gap-2 rounded-lg data-highlighted:bg-accent/50 data-highlighted:hover:bg-accent/50',
+        'h-10 shrink-0 gap-2 rounded-lg data-highlighted:bg-accent/40 data-highlighted:hover:bg-accent/40',
       single:
-        'relative w-full justify-between gap-3 rounded-sm py-3 text-sm select-none focus:bg-accent/50 data-[state=checked]:bg-accent data-[state=checked]:hover:bg-accent'
+        'relative w-full justify-between gap-3 rounded-sm py-3 text-sm select-none focus:bg-accent/40 data-[state=checked]:bg-accent/60 data-[state=checked]:hover:bg-accent/60'
     }
   },
   defaultVariants: {

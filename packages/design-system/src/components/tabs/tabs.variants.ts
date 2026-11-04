@@ -15,7 +15,7 @@ export const tabsListVariants = cva({
 })
 
 export const tabsTriggerVariants = cva({
-  base: 'inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border-none bg-transparent px-2.5 text-sm whitespace-nowrap text-muted-foreground transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=inactive]:hover:bg-secondary/50',
+  base: 'inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border-none bg-transparent px-2.5 text-sm whitespace-nowrap text-muted-foreground transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-accent/60 data-[state=active]:text-foreground data-[state=inactive]:hover:bg-accent/40',
   variants: {
     variant: {
       default: '',

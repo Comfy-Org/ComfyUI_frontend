@@ -91,12 +91,12 @@
   --secondary: var(--color-charcoal-800);
   --muted: var(--color-charcoal-700);
   --muted-foreground: var(--color-smoke-800);
-  --accent: var(--color-charcoal-800);
+  --accent: var(--color-charcoal-700);
   --destructive: var(--color-coral-700);
   --border: oklch(1 0 0 / 10%);
   --ring: var(--muted-foreground);
   --popover: var(--background);
-  --input: var(--accent);
+  --input: var(--color-charcoal-800);
   --node: var(--card);
 
   --default-transition-duration: 0.1s;

@@ -9,13 +9,13 @@ export const buttonVariants = cva({
       primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
       inverted: 'bg-foreground text-background hover:bg-foreground/80',
       destructive: 'bg-destructive text-foreground hover:bg-destructive/90',
-      textonly: 'bg-transparent text-foreground hover:bg-accent/50',
+      textonly: 'bg-transparent text-foreground hover:bg-accent/40',
       'muted-textonly':
-        'bg-transparent text-muted-foreground hover:bg-accent/50',
+        'bg-transparent text-muted-foreground hover:bg-accent/40',
       'destructive-textonly':
         'bg-transparent text-destructive hover:bg-destructive/10',
       outline:
-        'border border-solid bg-transparent text-foreground hover:bg-accent/50',
+        'border border-solid bg-transparent text-foreground hover:bg-accent/40',
       link: 'bg-transparent text-muted-foreground hover:text-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
       base: 'bg-background text-foreground hover:bg-background/80',
