@@ -138,7 +138,7 @@ function toggle() {
         <Textarea
           :model-value="node.inline[port.name] ?? ''"
           :aria-label="port.label"
-          class="min-h-14 px-2 py-1 text-xs"
+          class="min-h-14 bg-input px-2 py-1 text-xs"
           @update:model-value="setInline(port.name, $event)"
         />
       </label>
@@ -159,7 +159,7 @@ function toggle() {
           :max="RUN_LIMIT"
           :step="1"
           :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
-          class="h-7 rounded-md"
+          class="h-7 rounded-md bg-input"
           @update:model-value="setRunCount"
         >
           <NumberFieldInput

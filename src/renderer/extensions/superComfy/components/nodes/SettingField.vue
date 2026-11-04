@@ -70,6 +70,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-if="spec.control === 'select' && options.length <= SEARCHABLE_OVER"
       v-model="selectValue"
       size="md"
+      class="bg-input"
       :accessible-label="spec.label"
       :options
     />
@@ -77,6 +78,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-else-if="spec.control === 'select'"
       v-model="selectValue"
       size="md"
+      class="bg-input"
       :accessible-label="spec.label"
       :search-label="t('g.search')"
       :empty-text="t('g.noResults')"
@@ -92,7 +94,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
         useGrouping: false,
         maximumFractionDigits: spec.integer ? 0 : 4
       }"
-      class="h-7 rounded-md"
+      class="h-7 rounded-md bg-input"
     >
       <NumberFieldInput :aria-label="spec.label" class="text-xs" />
     </NumberField>
@@ -105,13 +107,13 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-else-if="spec.control === 'text' && spec.multiline"
       v-model="textValue"
       :aria-label="spec.label"
-      class="min-h-14 px-2 py-1 text-xs"
+      class="min-h-14 bg-input px-2 py-1 text-xs"
     />
     <Input
       v-else
       v-model="textValue"
       :aria-label="spec.label"
-      class="h-7 rounded-md px-2 text-xs"
+      class="h-7 rounded-md bg-input px-2 text-xs"
     />
   </label>
 </template>
