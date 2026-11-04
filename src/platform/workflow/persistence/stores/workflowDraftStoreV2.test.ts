@@ -222,6 +222,38 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
     })
 
+    it('applies a lineage set before the first save to that path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 3 })
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        lineage: { workflowId: 'wf-a', lineageSeq: 3 }
+      })
+    })
+
+    it('does not stamp an undrafted path lineage onto a colliding draft', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 3 })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)?.lineage).toBeUndefined()
+    })
+
     it('renames onto a free same-hash path without a second payload write', () => {
       const store = useWorkflowDraftStoreV2()
 

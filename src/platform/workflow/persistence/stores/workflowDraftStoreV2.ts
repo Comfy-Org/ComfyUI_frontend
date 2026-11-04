@@ -58,6 +58,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   // Key is workspaceId, value is the cached index
   const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
   const lineageByDraft = new Map<string, DraftLineage>()
+  const pendingLineageByPath = new Map<string, DraftLineage>()
   const authSubject = ref<string | null | undefined>(undefined)
 
   /**
@@ -87,11 +88,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function payloadFor(
     workspaceId: string,
     draftKey: string,
+    path: string,
     data: string,
     updatedAt: number
   ): DraftPayloadV2 {
     const lineage =
       lineageByDraft.get(lineageKey(workspaceId, draftKey)) ??
+      pendingLineageByPath.get(lineageKey(workspaceId, path)) ??
       readPayload(workspaceId, draftKey)?.lineage
     return { data, updatedAt, ...(lineage && { lineage }) }
   }
@@ -153,7 +156,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const payloadWritten = writePayload(
       workspaceId,
       draftKey,
-      payloadFor(workspaceId, draftKey, data, now)
+      payloadFor(workspaceId, draftKey, path, data, now)
     )
 
     if (!payloadWritten) {
@@ -173,6 +176,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       return false
     }
 
+    pendingLineageByPath.delete(lineageKey(workspaceId, path))
     deletePayloads(workspaceId, evicted)
     deleteLineages(workspaceId, evicted)
     return true
@@ -224,7 +228,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         writePayload(
           workspaceId,
           draftKey,
-          payloadFor(workspaceId, draftKey, data, now)
+          payloadFor(workspaceId, draftKey, path, data, now)
         )
       ) {
         const { index: finalIndex } = upsertEntry(
@@ -239,6 +243,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           persistIndex(currentIndex)
           return false
         }
+        pendingLineageByPath.delete(lineageKey(workspaceId, path))
         return true
       }
     }
@@ -354,7 +359,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function setLineage(path: string, lineage: DraftLineage): void {
     const workspaceId = currentWorkspaceId()
-    const draftKey = resolveDraftKey(loadIndex(), path)
+    const index = loadIndex()
+    if (!getEntryByPath(index, path)) {
+      pendingLineageByPath.set(lineageKey(workspaceId, path), lineage)
+      return
+    }
+
+    const draftKey = resolveDraftKey(index, path)
     lineageByDraft.set(lineageKey(workspaceId, draftKey), lineage)
     const payload = readPayload(workspaceId, draftKey)
     if (
@@ -455,6 +466,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     delete indexCacheByWorkspace.value[workspaceId]
     for (const key of lineageByDraft.keys()) {
       if (key.startsWith(`${workspaceId}:`)) lineageByDraft.delete(key)
+    }
+    for (const key of pendingLineageByPath.keys()) {
+      if (key.startsWith(`${workspaceId}:`)) pendingLineageByPath.delete(key)
     }
   }
 
