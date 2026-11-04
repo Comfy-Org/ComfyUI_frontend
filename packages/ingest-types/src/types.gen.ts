@@ -3103,9 +3103,9 @@ export type BillingStatusResponse = {
    */
   action_url?: string
   /**
-   * Durable workspace billing authority. Omitted by older servers and billing-disabled deployments.
+   * Durable workspace billing authority. Omitted by older servers, billing-disabled deployments and workspaces not on the stripe rail.
    */
-  billing_rail?: 'legacy_stripe' | 'metronome' | 'stripe'
+  billing_rail?: 'stripe'
   billing_status?: BillingStatus
   /**
    * When the subscription will become inactive (if canceled)
@@ -3140,7 +3140,7 @@ export type BillingStatusResponse = {
    */
   max_seats: number
   /**
-   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null on the legacy_stripe billing rail and for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
+   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
    */
   next_charge: NextCharge | null
   /**
@@ -6022,6 +6022,7 @@ export type OAuthConsentChallenge = {
    * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
    */
   scopes: Array<string>
+  verified_client?: OAuthConsentVerifiedClient
   /**
    * Workspaces the user can select from. Membership is re-checked on POST.
    */
@@ -6037,6 +6038,33 @@ export type OAuthConsentChallengeWorkspace = {
   name: string
   role: 'owner' | 'member'
   type: 'personal' | 'team'
+}
+
+/**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export type OAuthConsentVerifiedClient = {
+  /**
+   * Human-readable platform name from the server registry (e.g. "ChatGPT"), never from client_name.
+   */
+  display_name: string
+  /**
+   * Stable identifier of the verified platform.
+   */
+  platform: 'chatgpt' | 'claude'
 }
 
 /**
@@ -7046,7 +7074,7 @@ export type ReleaseUnsupportedPacks = {
 }
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export type RenewalInvoice = {
   /**
@@ -18528,18 +18556,18 @@ export type GetCccPublicMediaBytesData = {
 
 export type GetCccPublicMediaBytesErrors = {
   /**
-   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias
+   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias; no-store
    */
   404: unknown
   /**
-   * Requested range is outside the file
+   * Requested range is outside the file; no-store
    */
   416: unknown
 }
 
 export type GetCccPublicMediaBytesResponses = {
   /**
-   * Exact current LIVE bytes; authority checked before byte access; no-store
+   * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
    */
   200: Blob | File
   /**
@@ -18570,7 +18598,7 @@ export type HeadCccPublicMediaBytesErrors = {
 
 export type HeadCccPublicMediaBytesResponses = {
   /**
-   * Headers of the current LIVE bytes; no-store; no body
+   * Headers of the current LIVE bytes; public, max-age=120, must-revalidate; no body
    */
   200: unknown
 }

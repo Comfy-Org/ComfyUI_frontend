@@ -97,7 +97,7 @@ const i18n = createI18n({
       credits: {
         addCreditsRefusal: {
           topupPurchasesPaused:
-            "Buying credits isn't available right now. Try again later, or message support.",
+            "Buying credits isn't available right now. Try again later.",
           paymentPastDue: 'Update your payment method to add credits.',
           unavailable:
             "Adding credits isn't available for this workspace right now."
@@ -578,8 +578,7 @@ describe('CreditsTile', () => {
   it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
     {
       denial: 'topup_purchases_paused',
-      reason:
-        "Buying credits isn't available right now. Try again later, or message support."
+      reason: "Buying credits isn't available right now. Try again later."
     },
     {
       denial: 'payment_past_due',

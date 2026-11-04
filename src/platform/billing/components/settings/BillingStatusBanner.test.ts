@@ -144,7 +144,7 @@ const i18n = createI18n({
       credits: {
         addCreditsRefusal: {
           topupPurchasesPaused:
-            "Buying credits isn't available right now. Try again later, or message support.",
+            "Buying credits isn't available right now. Try again later.",
           paymentPastDue: 'Update your payment method to add credits.',
           unavailable:
             "Adding credits isn't available for this workspace right now."
@@ -181,11 +181,11 @@ const i18n = createI18n({
             pausedBody:
               "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
             pausedBodyNoDate:
-              "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+              "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
             pausedPersonalBody:
               "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
             pausedPersonalBodyNoDate:
-              "You've used all your credits. Buying credits isn't available right now. Try again later.",
+              "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -497,7 +497,7 @@ describe('BillingStatusBanner', () => {
     },
     {
       denial: 'topup_purchases_paused',
-      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later."
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     },
     {
       denial: 'creator_only_provisioning',
@@ -607,7 +607,7 @@ describe('BillingStatusBanner', () => {
       owner: true,
       personal: false,
       refill: null,
-      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {
@@ -623,7 +623,7 @@ describe('BillingStatusBanner', () => {
       owner: true,
       personal: true,
       refill: null,
-      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {
@@ -914,8 +914,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
-    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
-    // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
     useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true

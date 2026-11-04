@@ -2523,6 +2523,7 @@
     "angle": "Angle"
   },
   "boundingBoxes": {
+    "boxCount": "{current} of {max} box | {current} of {max} boxes",
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
     "typeObj": "obj",
@@ -2733,7 +2734,10 @@
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
-      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?",
+      "switchAccount": "Switch account"
     },
     "scopes": {
       "mcp:tools:read": {
@@ -2987,7 +2991,7 @@
   "credits": {
     "activity": "Activity",
     "addCreditsRefusal": {
-      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later, or message support.",
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later.",
       "paymentPastDue": "Update your payment method to add credits.",
       "unavailable": "Adding credits isn't available for this workspace right now."
     },
@@ -3790,9 +3794,9 @@
         "refusedBody": "Your team has used all its credits.",
         "refusedPersonalBody": "You've used all your credits.",
         "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
         "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },

@@ -51,6 +51,7 @@ export class AgentPanel {
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly referenceMenu: Locator
   public readonly replyAssetThumbnails: Locator
   public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
@@ -136,6 +137,7 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.referenceMenu = this.root.getByTestId('agent-reference-menu')
     this.replyAssetThumbnails = this.root.getByRole('img', {
       name: /^mesh-\d+/
     })

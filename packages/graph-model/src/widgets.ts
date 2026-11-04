@@ -400,9 +400,14 @@ export interface ICompositorWidget extends IBaseWidget<
   value: CompositorWidgetValue
 }
 
+export interface IWidgetBoundingBoxesOptions extends IWidgetOptions {
+  max_boxes?: number
+}
+
 export interface IBoundingBoxesWidget extends IBaseWidget<
   BoundingBox[],
-  'boundingboxes'
+  'boundingboxes',
+  IWidgetBoundingBoxesOptions
 > {
   type: 'boundingboxes'
   value: BoundingBox[]
