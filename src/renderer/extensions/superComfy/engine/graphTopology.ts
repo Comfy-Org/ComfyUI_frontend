@@ -9,7 +9,7 @@ import type {
 } from './documentSchema'
 import type { ConnectOutcome } from './types'
 
-function outPort(modality: Modality): PortSpec {
+export function outPort(modality: Modality): PortSpec {
   return { name: 'out', label: 'out', modality, required: false, multi: false }
 }
 

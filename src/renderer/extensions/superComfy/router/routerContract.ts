@@ -6,12 +6,12 @@ import type {
   Modality,
   PortSpec
 } from '@/renderer/extensions/superComfy/engine/documentSchema'
+import { outPort } from '@/renderer/extensions/superComfy/engine/graphTopology'
 import { stableKey } from '@/renderer/extensions/superComfy/engine/stableKey'
 import { findRouterFamily } from '@/renderer/extensions/superComfy/router/routerFamilies'
 import {
   humanizeKey,
   mediaPort,
-  outputPort,
   textPort
 } from '@/renderer/extensions/superComfy/router/routerPorts'
 import {
@@ -494,7 +494,7 @@ export function deriveRouterContract(
       modelId,
       version: stableKey([CONTRACT_REVISION, raw, reachableSchemas(doc, raw)]),
       modality,
-      output: outputPort(modality),
+      output: outPort(modality),
       ...parts
     }
   }

@@ -1,10 +1,6 @@
 import { capitalize, lowerCase } from 'es-toolkit'
 
-import type {
-  FileModality,
-  Modality,
-  PortSpec
-} from '@/renderer/extensions/superComfy/engine/documentSchema'
+import type { FileModality } from '@/renderer/extensions/superComfy/engine/documentSchema'
 import type {
   RouterEncoding,
   RouterPortSpec
@@ -59,8 +55,4 @@ export function singleMediaPort(
   options: Omit<MediaPortOptions, 'max'>
 ): RouterPortSpec {
   return mediaPort({ ...options, max: 1 })
-}
-
-export function outputPort(modality: Modality): PortSpec {
-  return { name: 'out', label: 'out', modality, required: false, multi: false }
 }
