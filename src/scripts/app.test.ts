@@ -664,20 +664,13 @@ describe('ComfyApp', () => {
       onTestFinished(() => {
         graphsAwaitingNodeTypes.delete(graph)
       })
-      const createRootGraph = app.createRootGraph.bind(app)
-      vi.spyOn(app, 'createRootGraph').mockImplementation(() => {
-        const fresh = createRootGraph()
-        const { onConfigure } = fresh
-        fresh.onConfigure = function (...args) {
-          onConfigure?.apply(this, args)
-          const [node] = this.nodes
-          assert(node)
-          node.onResize = () => {
-            throw new Error('node resize failed')
-          }
+      graph.onConfigure = () => {
+        const [node] = graph.nodes
+        assert(node)
+        node.onResize = () => {
+          throw new Error('node resize failed')
         }
-        return fresh
-      })
+      }
       const data = zComfyWorkflow.parse({
         ...createWorkflowGraphData(),
         nodes: [
@@ -727,7 +720,7 @@ describe('ComfyApp', () => {
         }
       }
     ])(
-      'keeps the owned graph of an $workflowState workflow intact when a forced reload fails in $failingStep',
+      'keeps the canvas on the owned graph of an $workflowState workflow when a forced reload fails in $failingStep',
       async ({ isActive, failWith }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const workflow = markLoaded(
@@ -738,8 +731,6 @@ describe('ComfyApp', () => {
           })
         )
         const graph = new LGraph()
-        const keptNode = new LGraphNode('kept')
-        graph.add(keptNode)
         workflow.adoptGraph(graph)
         useWorkflowStore().attachWorkflow(workflow)
         Reflect.set(app, 'rootGraphInternal', graph)
@@ -752,14 +743,37 @@ describe('ComfyApp', () => {
         ).resolves.toBe(false)
 
         expect(workflow.graph).toBe(graph)
-        expect(graph.nodes).toEqual([keptNode])
-        expect(app.rootGraph).not.toBe(graph)
+        expect(app.rootGraph).toBe(graph)
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'onGraphLoadError',
           error
         )
       }
     )
+
+    it('keeps the root graph id across a forced reload of an owned workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/owned.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const id = crypto.randomUUID()
+      const data = zComfyWorkflow.parse({ ...createWorkflowGraphData(), id })
+      const graph = createTestRootGraph(id)
+      graph.add(new LGraphNode('existing'))
+      workflow.adoptGraph(graph)
+      useWorkflowStore().attachWorkflow(workflow)
+      Reflect.set(app, 'rootGraphInternal', graph)
+
+      await expect(
+        app.loadGraphData(data, true, true, workflow)
+      ).resolves.toBeTruthy()
+
+      expect(app.rootGraph.id).toBe(id)
+    })
 
     it('loads subgraph definitions into the inactive workflow on a non-clean load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
@@ -5277,42 +5291,42 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('marks the graphs of background workflows, not the active one, as awaiting the refreshed types', async () => {
+    it('marks every open graph off the canvas, including the active workflow mid-switch, as awaiting the refreshed types', async () => {
       const workflowStore = useWorkflowStore()
-      const active = markLoaded(
+      const onCanvas = markLoaded(
         new ComfyWorkflow({
-          path: 'workflows/active.json',
+          path: 'workflows/on-canvas.json',
           modified: 0,
           size: 0
         })
       )
-      const background = markLoaded(
+      const switching = markLoaded(
         new ComfyWorkflow({
-          path: 'workflows/background.json',
+          path: 'workflows/switching.json',
           modified: 0,
           size: 0
         })
       )
-      const activeGraph = createTestRootGraph()
-      const backgroundGraph = new LGraph()
-      active.adoptGraph(activeGraph)
-      background.adoptGraph(backgroundGraph)
-      workflowStore.attachWorkflow(active, 0)
-      workflowStore.attachWorkflow(background, 1)
-      workflowStore.activeWorkflow = active
-      Reflect.set(app, 'rootGraphInternal', activeGraph)
+      const onCanvasGraph = createTestRootGraph()
+      const switchingGraph = new LGraph()
+      onCanvas.adoptGraph(onCanvasGraph)
+      switching.adoptGraph(switchingGraph)
+      workflowStore.attachWorkflow(onCanvas, 0)
+      workflowStore.attachWorkflow(switching, 1)
+      workflowStore.activeWorkflow = switching
+      Reflect.set(app, 'rootGraphInternal', onCanvasGraph)
       onTestFinished(() => {
-        graphsAwaitingNodeTypes.delete(backgroundGraph)
-        graphsAwaitingNodeTypes.delete(activeGraph)
+        graphsAwaitingNodeTypes.delete(switchingGraph)
+        graphsAwaitingNodeTypes.delete(onCanvasGraph)
       })
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
 
       await expect(app.reloadNodeDefs()).resolves.toBe(true)
 
       expect({
-        background: graphsAwaitingNodeTypes.has(backgroundGraph),
-        active: graphsAwaitingNodeTypes.has(activeGraph)
-      }).toEqual({ background: true, active: false })
+        switching: graphsAwaitingNodeTypes.has(switchingGraph),
+        onCanvas: graphsAwaitingNodeTypes.has(onCanvasGraph)
+      }).toEqual({ switching: true, onCanvas: false })
     })
 
     it('fetches the definitions, or the status of an HTTP error answer that getNodeDefs reads as none', async () => {

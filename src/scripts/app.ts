@@ -940,8 +940,9 @@ export class ComfyApp implements IComfyApp {
     workflow: ComfyWorkflow | null,
     clean: boolean
   ): LGraph {
+    if (workflow?.graph) return workflow.graph
     const current = this.rootGraph
-    if (!clean) return workflow?.graph ?? current
+    if (!clean) return current
     return isOwnedByWorkflow(current) ? this.createRootGraph() : current
   }
 
@@ -1444,7 +1445,9 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         try {
-          await this.reportGraphLoadFailure(error)
+          await this.reportGraphLoadFailure(error, {
+            notifyExtensions: !backgroundRestore
+          })
         } finally {
           ChangeTracker.isLoadingGraph = false
         }
@@ -1549,7 +1552,9 @@ export class ComfyApp implements IComfyApp {
             }
           }
         } catch (error) {
-          await this.reportGraphLoadFailure(error)
+          await this.reportGraphLoadFailure(error, {
+            notifyExtensions: !backgroundRestore
+          })
           return false
         }
         const snapTo = LiteGraph.alwaysSnapToGrid
@@ -2794,9 +2799,7 @@ export class ComfyApp implements IComfyApp {
     for (const nodeId in defs) {
       await this.registerNodeDef(nodeId, defs[nodeId])
     }
-    markOpenGraphsAwaitingNodeTypes({
-      except: useWorkflowStore().activeWorkflow
-    })
+    markOpenGraphsAwaitingNodeTypes({ except: this.rootGraphOrUndefined })
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type] as ComfyNodeDefV1 | undefined

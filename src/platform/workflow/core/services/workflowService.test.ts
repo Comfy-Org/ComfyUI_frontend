@@ -4,7 +4,16 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-di
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
@@ -745,6 +754,31 @@ describe('useWorkflowService', () => {
       graphsAwaitingNodeTypes.add(graph)
       finishQueue()
       await opening
+
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        next,
+        expect.anything()
+      )
+    })
+
+    it('reconfigures when late types invalidate a live switch during beforeLoadGraph', async () => {
+      const graph = next.graph
+      assert(graph)
+      onTestFinished(() => {
+        graphsAwaitingNodeTypes.delete(graph)
+      })
+      useExtensionStore().registerExtension({
+        name: 'Test.LateTypesDuringSwitch',
+        beforeLoadGraph: () => {
+          graphsAwaitingNodeTypes.add(graph)
+        }
+      })
+
+      await useWorkflowService().openWorkflow(next)
 
       expect(app.activateRootGraph).not.toHaveBeenCalled()
       expect(app.loadGraphData).toHaveBeenCalledWith(

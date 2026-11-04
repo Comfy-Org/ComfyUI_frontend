@@ -484,7 +484,8 @@ export const useWorkflowService = () => {
       if (workflow.graph !== graph || graphsAwaitingNodeTypes.has(graph))
         return false
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-      if (workflow.graph !== graph) return false
+      if (workflow.graph !== graph || graphsAwaitingNodeTypes.has(graph))
+        return false
       try {
         beforeLoadNewGraph(true)()
         const app = useApp()
