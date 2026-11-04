@@ -49,3 +49,8 @@ export function parseTags(value: string | undefined): string[] | undefined {
     .filter(Boolean)
   return tags && tags.length > 0 ? tags : undefined
 }
+
+/** A bare `--flag` or `--flag=true` is on; anything else, or absent, is off. */
+export function isFlagOn(value: string | undefined): boolean {
+  return value === '' || value === 'true'
+}

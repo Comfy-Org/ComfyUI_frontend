@@ -44,7 +44,7 @@ try {
       break
     }
     case 'transform': {
-      const { parseFlags, parseTags } = await import('./cli/flags')
+      const { isFlagOn, parseFlags, parseTags } = await import('./cli/flags')
       const { positional, flags } = parseFlags(args.slice(1), [
         'name',
         'tags',
@@ -68,7 +68,7 @@ try {
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
         output: flags.output,
-        force: flags.force === '' || flags.force === 'true',
+        force: isFlagOn(flags.force),
         featureFlags: flags['feature-flags']
           ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
           : undefined
