@@ -26,7 +26,7 @@ test.describe('Vue node title rename', { tag: ['@vue-nodes', '@node'] }, () => {
     await comfyPage.page.mouse.move(start.x, start.y)
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.up()
-    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.down({ clickCount: 2 })
     await comfyPage.page.mouse.move(start.x + pastClickDrift, start.y, {
       steps: 10
     })
