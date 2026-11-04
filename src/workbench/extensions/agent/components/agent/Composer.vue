@@ -328,6 +328,7 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Enter') event.stopPropagation()
   if (openingChat) {
     event.preventDefault()
     return
