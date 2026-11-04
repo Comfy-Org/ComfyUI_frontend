@@ -2815,35 +2815,82 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('defers rejected-op reverts until the bound workflow is active again', async () => {
+  it.for([
+    {
+      name: 'rejected',
+      result: (opId: string) => ({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: { index: 0, op_id: opId, code: 'unknown_node' }
+      })
+    },
+    {
+      name: 'overwritten',
+      result: (opId: string) => ({
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        lwwDropped: [opId]
+      })
+    }
+  ])(
+    'defers $name-op reverts until the bound workflow is active again',
+    async ({ result }) => {
+      const readyGraph = fromPartial<LGraph>({})
+      const { unmount, enqueue, isTargetActive } = mountFollower(
+        'wf-1',
+        true,
+        () => readyGraph
+      )
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+
+      isTargetActive.value = false
+      await nextTick()
+      bridge().resubscribe.mockClear()
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ...result(ops[0].op_id)
+      })
+
+      expect(projectionState.revertRejected).not.toHaveBeenCalled()
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+        'wf-1',
+        [ops[0]]
+      )
+      unmount()
+    }
+  )
+
+  it('reverts a batch that was both overwritten and rejected once', async () => {
     const readyGraph = fromPartial<LGraph>({})
-    const { unmount, enqueue, isTargetActive } = mountFollower(
-      'wf-1',
-      true,
-      () => readyGraph
-    )
-    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
+    enqueue([
+      { op: 'delete_node', node_id: '1', removed_links: [] },
+      { op: 'delete_node', node_id: '2', removed_links: [] }
+    ])
     await Promise.resolve()
     const [, , ops] = clientState.sendOps.mock.calls[0]
 
-    isTargetActive.value = false
-    await nextTick()
     dispatchFrame('doc_ops_result', {
       workflowId: 'wf-1',
       ok: false,
       applied: [],
-      skipped: [],
-      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+      skipped: [ops[0].op_id],
+      lwwDropped: [ops[0].op_id],
+      failed: { index: 1, op_id: ops[1].op_id, code: 'unknown_node' }
     })
-
-    expect(projectionState.revertRejected).not.toHaveBeenCalled()
-
-    isTargetActive.value = true
-    await nextTick()
 
     expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
       'wf-1',
-      [ops[0]]
+      [ops[0], ops[1]]
     )
     unmount()
   })
@@ -3552,6 +3599,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'retarget' }),
+          context: expect.objectContaining({ reason: 'retarget' })
+        })
+      )
       unmount()
     })
 
@@ -3631,6 +3685,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'subscribe_refused' }),
+          context: expect.objectContaining({ reason: 'subscribe_refused' })
+        })
+      )
       unmount()
     })
   })

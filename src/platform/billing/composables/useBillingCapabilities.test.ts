@@ -1608,6 +1608,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
       expect(billingCapabilities.runWorkflowsDenial.value).toBe(denial)
     }
   )
+
+  it.for([
+    { denial: 'not_workspace_owner' },
+    { denial: 'not_a_member' },
+    { denial: undefined }
+  ])(
+    'exposes a can_manage_auto_top_up denial of $denial as the server sent it',
+    async ({ denial }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_manage_auto_top_up: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.manageAutoTopUpDenial.value).toBe(denial)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {
@@ -1652,6 +1673,35 @@ describe('useBillingCapabilities capability gates', () => {
         }
       }))
   }
+
+  it.for([
+    { manage: true, topUp: true, shown: true },
+    { manage: true, topUp: false, shown: false },
+    { manage: false, topUp: true, shown: false },
+    { manage: false, topUp: false, shown: false }
+  ])(
+    'grants the auto top-up card only for can_manage_auto_top_up $manage with can_top_up $topUp',
+    async ({ manage, topUp, shown }) => {
+      response.capabilities.can_manage_auto_top_up = manage
+      response.capabilities.can_top_up = topUp
+
+      const billingCapabilities = await mount()
+
+      expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(shown)
+    }
+  )
+
+  it('keeps the auto top-up card independent of the local member role', async () => {
+    response.capabilities.can_manage_auto_top_up = true
+    response.capabilities.can_top_up = true
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    })
+
+    const billingCapabilities = await mount()
+
+    expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(true)
+  })
 
   describe.for([
     ['can_top_up', 'canTopUp'],

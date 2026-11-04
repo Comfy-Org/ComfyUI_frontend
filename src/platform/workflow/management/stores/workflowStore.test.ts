@@ -1720,6 +1720,32 @@ describe('useWorkflowStore', () => {
 
         expect(failedAssertions()).toHaveLength(0)
       })
+
+      it('reports a never-loaded temporary workflow that aliases the active path', async () => {
+        const activeByPath = await store.createTemporary('aliased.json').load()
+        const neverLoaded = store.createTemporary('aliased.json')
+        neverLoaded.updatePath(activeByPath.path)
+        store.activeWorkflow = activeByPath
+
+        const opened = await store.openWorkflow(neverLoaded)
+
+        expectReported(
+          'openWorkflow called on an active workflow that is not loaded',
+          {
+            method: 'workflowStore.openWorkflow',
+            isActive: true,
+            isLoaded: false,
+            hasChangeTracker: false,
+            hasInitialState: false,
+            hasActiveState: false,
+            isPersisted: false,
+            isTemporary: true,
+            originalContentKind: 'object'
+          }
+        )
+        expect(opened).toBe(neverLoaded)
+        expect(opened.isLoaded).toBe(true)
+      })
     })
   })
 })
