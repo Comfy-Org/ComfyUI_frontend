@@ -786,7 +786,7 @@ export async function runRecord(
       allowOverwrite ? undefined : { flag: 'wx' }
     )
   } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
       fail(
         'Refusing to overwrite existing test',
         `Choose a different name, or delete ${outputPath} first.`
