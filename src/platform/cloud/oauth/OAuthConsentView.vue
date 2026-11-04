@@ -7,7 +7,14 @@
             class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              class="icon-[lucide--app-window] size-8 text-black"
+              :class="
+                cn(
+                  verified
+                    ? verifiedClientIcons[verified.platform]
+                    : 'icon-[lucide--app-window]',
+                  'size-8 text-black'
+                )
+              "
               aria-hidden="true"
               data-testid="client-icon"
             />
@@ -29,11 +36,24 @@
           <h1 class="m-0 text-2xl/tight font-semibold text-foreground">
             {{
               t('oauth.consent.title', {
-                client: challenge.client_display_name
+                client: verified?.display_name ?? challenge.client_display_name
               })
             }}
           </h1>
-          <template v-if="!isFirstPartyClient(challenge)">
+          <p
+            v-if="verified"
+            class="m-0 text-xs wrap-anywhere text-muted-foreground"
+            data-testid="client-verified"
+          >
+            {{
+              destinationHost
+                ? t('oauth.consent.verifiedNotice', { host: destinationHost })
+                : t('oauth.consent.verifiedNoticeNoHost', {
+                    client: verified.display_name
+                  })
+            }}
+          </p>
+          <template v-else-if="!isFirstPartyClient(challenge)">
             <Badge
               variant="compact"
               severity="warning"
@@ -211,7 +231,9 @@ import {
   fetchOAuthConsentChallenge,
   isFirstPartyClient,
   redirectHost,
-  submitOAuthConsentDecision
+  submitOAuthConsentDecision,
+  verifiedClient,
+  verifiedClientIcons
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
@@ -248,6 +270,10 @@ const resourceName = computed(
   () =>
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
+)
+
+const verified = computed(() =>
+  challenge.value ? verifiedClient(challenge.value) : undefined
 )
 
 const destinationHost = computed(() =>

@@ -128,3 +128,29 @@ export const DynamicUnverified: Story = {
     }
   }
 }
+
+export const VerifiedChatGpt: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123',
+      verified_client: { platform: 'chatgpt', display_name: 'ChatGPT' }
+    }
+  }
+}
+
+export const VerifiedClaude: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      verified_client: { platform: 'claude', display_name: 'Claude' }
+    }
+  }
+}

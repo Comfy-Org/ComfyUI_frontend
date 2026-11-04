@@ -3239,6 +3239,27 @@ export const zOAuthConsentChallengeWorkspace = z.object({
 })
 
 /**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export const zOAuthConsentVerifiedClient = z.object({
+  platform: z.enum(['chatgpt', 'claude']),
+  display_name: z.string()
+})
+
+/**
  * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
  *
  */
@@ -3250,6 +3271,7 @@ export const zOAuthConsentChallenge = z.object({
   redirect_uri: z.url(),
   resource_display_name: z.string(),
   scopes: z.array(z.string()),
+  verified_client: zOAuthConsentVerifiedClient.optional(),
   workspaces: z.array(zOAuthConsentChallengeWorkspace)
 })
 

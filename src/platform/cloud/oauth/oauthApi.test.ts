@@ -4,7 +4,8 @@ import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
   redirectHost,
-  submitOAuthConsentDecision
+  submitOAuthConsentDecision,
+  verifiedClient
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
@@ -391,5 +392,29 @@ describe('redirectHost', () => {
     [undefined, undefined]
   ] as const)('maps %s to %s', ([uri, host]) => {
     expect(redirectHost(uri)).toBe(host)
+  })
+})
+
+describe('verifiedClient', () => {
+  const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' } as const
+
+  it.for([
+    ['a dynamic client with a known platform', 'dynamic', chatgpt, chatgpt],
+    ['a first-party client', 'first_party', chatgpt, undefined],
+    ['a client without provenance', undefined, chatgpt, undefined],
+    ['a dynamic client without one', 'dynamic', undefined, undefined],
+    [
+      'a dynamic client with an empty display name',
+      'dynamic',
+      { platform: 'chatgpt', display_name: '' },
+      undefined
+    ]
+  ] as const)('for %s', ([, provenance, verified, expected]) => {
+    expect(
+      verifiedClient({
+        client_provenance: provenance,
+        verified_client: verified
+      })
+    ).toEqual(expected)
   })
 })

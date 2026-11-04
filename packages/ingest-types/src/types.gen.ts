@@ -6022,6 +6022,7 @@ export type OAuthConsentChallenge = {
    * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
    */
   scopes: Array<string>
+  verified_client?: OAuthConsentVerifiedClient
   /**
    * Workspaces the user can select from. Membership is re-checked on POST.
    */
@@ -6037,6 +6038,33 @@ export type OAuthConsentChallengeWorkspace = {
   name: string
   role: 'owner' | 'member'
   type: 'personal' | 'team'
+}
+
+/**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export type OAuthConsentVerifiedClient = {
+  /**
+   * Stable identifier of the verified platform.
+   */
+  platform: 'chatgpt' | 'claude'
+  /**
+   * Human-readable platform name from the server registry (e.g. "ChatGPT"), never from client_name.
+   */
+  display_name: string
 }
 
 /**
