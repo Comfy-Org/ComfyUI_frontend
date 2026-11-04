@@ -10,13 +10,16 @@ const markerType = 'TestRetainedSubValueDeliveryMarker'
 export const retainedMarkerId = 822
 export const overflowMarkerId = 823
 export const driftMarkerId = 824
+export const unreachableOverflowMarkerId = 825
 
 export const promptWidget = 'prompt'
 export const selectorWidget = 'model'
 export const selectedOptionSubWidget = 'size_preset'
 export const unselectedOptionSubWidget = 'task_type'
+const unselectedOptionWideningSubWidget = 'strength'
 export const unownedSubWidget = 'retired_field'
-export const overflowAliasPastSelection = '_extra_5'
+export const overflowAliasPastSelection = '_extra_3'
+export const overflowAliasBeyondEverySelection = '_extra_5'
 
 export const promptValue = 'kept by the canvas'
 export const selectedSubValue = 'a4'
@@ -56,7 +59,11 @@ const nodeDef: ComfyNodeDef = {
               key: 'reference',
               inputs: {
                 required: {
-                  [unselectedOptionSubWidget]: ['STRING', { default: 'edit' }]
+                  [unselectedOptionSubWidget]: ['STRING', { default: 'edit' }],
+                  [unselectedOptionWideningSubWidget]: [
+                    'STRING',
+                    { default: 'half' }
+                  ]
                 }
               }
             }
@@ -106,9 +113,14 @@ export const comboAddressCatalog: WidgetCatalog = {
               }
             },
             reference: {
-              widgets: [`${selectorWidget}.${unselectedOptionSubWidget}`],
+              widgets: [
+                `${selectorWidget}.${unselectedOptionSubWidget}`,
+                `${selectorWidget}.${unselectedOptionWideningSubWidget}`
+              ],
               defaults: {
-                [`${selectorWidget}.${unselectedOptionSubWidget}`]: 'edit'
+                [`${selectorWidget}.${unselectedOptionSubWidget}`]: 'edit',
+                [`${selectorWidget}.${unselectedOptionWideningSubWidget}`]:
+                  'half'
               }
             }
           }

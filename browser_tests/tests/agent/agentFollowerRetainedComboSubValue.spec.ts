@@ -30,7 +30,9 @@ import {
   selectedSubValue,
   selectedOptionSubWidget,
   selectorWidget,
-  overflowAliasPastSelection
+  overflowAliasPastSelection,
+  overflowAliasBeyondEverySelection,
+  unreachableOverflowMarkerId
 } from '@e2e/fixtures/data/agent/agentFollowerRetainedComboSubValue'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
@@ -194,7 +196,37 @@ test.describe(
           vueNodes.getNodeLocator(String(driftMarkerId))
         ).toBeVisible()
         await expect(prompt).toHaveValue(laterPromptValue)
-        await expect.poll(() => missingWidgetReports).not.toHaveLength(0)
+        await expect
+          .poll(() =>
+            missingWidgetReports.filter((report) =>
+              report.includes(unownedSubWidget)
+            )
+          )
+          .not.toHaveLength(0)
+      })
+
+      await test.step('a positional alias beyond every selection of this node is still reported', async () => {
+        hostSocket.send(
+          host.setDocumentWidget(
+            comboAddressNodeId,
+            overflowAliasBeyondEverySelection,
+            retainedSubValue
+          )
+        )
+        hostSocket.send(
+          host.apply([createDeliveryBarrierAdd(unreachableOverflowMarkerId)])
+        )
+
+        await expect(
+          vueNodes.getNodeLocator(String(unreachableOverflowMarkerId))
+        ).toBeVisible()
+        await expect
+          .poll(() =>
+            missingWidgetReports.filter((report) =>
+              report.includes(overflowAliasBeyondEverySelection)
+            )
+          )
+          .not.toHaveLength(0)
       })
     })
   }
