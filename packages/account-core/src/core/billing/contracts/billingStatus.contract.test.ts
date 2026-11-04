@@ -19,7 +19,7 @@ function statusBody(overrides: Partial<StatusBody> = {}): StatusBody {
   }
 }
 
-/** Every rail presentation routing distinguishes; only 'stripe' reaches the embedded challenge. */
+/** Every rail the status contract allows; 'stripe' reaches the embedded challenge. */
 const BILLING_RAILS = ['stripe'] as const satisfies readonly NonNullable<
   Status['billing_rail']
 >[]

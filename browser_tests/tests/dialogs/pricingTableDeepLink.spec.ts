@@ -122,10 +122,6 @@ const ACTIVE_CREATOR_STATUS = {
   plan_slug: 'creator-annual'
 } satisfies BillingStatusResponse
 
-const LEGACY_ACTIVE_STANDARD_STATUS = {
-  ...ACTIVE_STANDARD_STATUS
-} satisfies BillingStatusResponse
-
 const BILLING_BALANCE = {
   amount_micros: 0,
   currency: 'USD'
@@ -723,7 +719,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     const subscribeRequests: Request[] = []
     await setupCloudApp(page, workspace('personal', 'owner'), [])
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(
@@ -760,7 +756,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     })
     await setupCloudApp(page, workspace('personal', 'owner'), [])
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(
