@@ -124,14 +124,6 @@ async function loadGuardedCoreExtension<
   return extension as Extension
 }
 
-/**
- * `cloudSessionCookieExtension`'s `onAuthUserLogout` hook is the only
- * production caller of `deleteSession()`, so a failed load of that module
- * would otherwise leave the server-side session cookie alive past sign-out.
- * Wired directly rather than through an extension object, since
- * `clearOAuthRequestId` and `useSessionCookie` live outside the chunk that
- * failed to load.
- */
 function wireSessionCookieLogoutFallback(): () => void {
   const { onUserLogout } = useCurrentUser()
   return onUserLogout(() => {
