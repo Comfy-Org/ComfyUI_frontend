@@ -78,6 +78,16 @@ interface StatusCase {
 }
 
 describe('nodeStatus', () => {
+  it('leaves a Generate node without a model to its model picker', () => {
+    const unpicked = promptNode({
+      modelId: null,
+      modelLabel: null,
+      contract: null
+    })
+
+    expect(statusOf(unpicked, idle)).toBeNull()
+  })
+
   it.for<StatusCase>([
     {
       name: 'names an empty required input before any run, quietly',

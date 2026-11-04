@@ -97,12 +97,6 @@ function runningStatus(
   }
 }
 
-function noContractStatus(node: ExecutableNode): StatusLine | null {
-  return node.kind === 'generate'
-    ? { tone: 'muted', key: 'superComfy.model.pick' }
-    : null
-}
-
 function blockStatus(
   node: ExecutableNode,
   block: Block,
@@ -130,7 +124,7 @@ function blockStatus(
         params: { port: portLabels(node, [block.port]), max: block.max }
       }
     case 'noContract':
-      return noContractStatus(node)
+      return null
     case 'upstreamFailed':
       return { tone: 'destructive', key: 'superComfy.node.upstreamFailed' }
   }
@@ -166,7 +160,6 @@ function resultStatus(node: ExecutableNode, plan: RunPlan): StatusLine | null {
 
 function planStatus(node: ExecutableNode, plan: RunPlan): StatusLine | null {
   if (plan.ok) return null
-  if (plan.block.reason === 'noContract') return noContractStatus(node)
   if (plan.block.reason !== 'missingInputs') return null
   return {
     tone: 'muted',
