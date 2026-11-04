@@ -6,9 +6,9 @@
     aria-atomic="true"
     :class="
       cn(
-        'w-100 max-w-full rounded-md border backdrop-blur-[10px]',
+        'w-100 max-w-full rounded-md border border-current/36 bg-current/16 [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,currentColor,transparent_96%)] backdrop-blur-[10px]',
         SEVERITY[severity].shell,
-        variant === 'message' && 'min-h-[73px]'
+        variant === 'message' && 'min-h-18.25'
       )
     "
   >
@@ -60,35 +60,17 @@
 
 <script setup lang="ts">
 /**
- * The cloud app's toast, as billing-web renders it: PrimeVue's dark Aura
- * toast (severity tint, border, blur, 28px close button) sized as the app
- * sizes its two toast hosts. `operation` is the app's payment-progress
- * toast (spinner or prompt beside one line); `message` its error and
- * success toast (severity icon, summary, detail).
+ * A severity-tinted checkout toast. `operation` is the payment-progress toast
+ * (spinner or prompt beside one line); `message` the error and success toast
+ * (severity icon, summary, detail).
  */
 import { cn } from '@comfyorg/tailwind-utils'
 
 const SEVERITY = {
-  info: {
-    shell:
-      'border-[color-mix(in_srgb,#1d4ed8,transparent_64%)] bg-[color-mix(in_srgb,#3b82f6,transparent_84%)] text-[#3b82f6] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#3b82f6,transparent_96%)]',
-    icon: 'icon-[lucide--info]'
-  },
-  success: {
-    shell:
-      'border-[color-mix(in_srgb,#15803d,transparent_64%)] bg-[color-mix(in_srgb,#22c55e,transparent_84%)] text-[#22c55e] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#22c55e,transparent_96%)]',
-    icon: 'icon-[lucide--check]'
-  },
-  warn: {
-    shell:
-      'border-[color-mix(in_srgb,#a16207,transparent_64%)] bg-[color-mix(in_srgb,#eab308,transparent_84%)] text-[#eab308] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#eab308,transparent_96%)]',
-    icon: 'icon-[lucide--triangle-alert]'
-  },
-  error: {
-    shell:
-      'border-[color-mix(in_srgb,#b91c1c,transparent_64%)] bg-[color-mix(in_srgb,#ef4444,transparent_84%)] text-[#ef4444] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#ef4444,transparent_96%)]',
-    icon: 'icon-[lucide--circle-x]'
-  }
+  info: { shell: 'text-primary', icon: 'icon-[lucide--info]' },
+  success: { shell: 'text-success', icon: 'icon-[lucide--check]' },
+  warn: { shell: 'text-warning', icon: 'icon-[lucide--triangle-alert]' },
+  error: { shell: 'text-[#ef4444]', icon: 'icon-[lucide--circle-x]' }
 } as const
 
 const {
