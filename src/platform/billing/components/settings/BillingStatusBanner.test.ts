@@ -914,8 +914,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
-    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
-    // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
     useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
