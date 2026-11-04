@@ -466,7 +466,7 @@ const SUBGRAPH_SCENARIOS: {
         options: {},
         y: 0,
         computeSize: () => [100, 20]
-      } as unknown as IBaseWidget)
+      })
     }
   }
 ]
