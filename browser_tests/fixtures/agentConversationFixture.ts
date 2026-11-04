@@ -409,6 +409,10 @@ export class AgentConversationHarness {
     this.hostSocket.refuseSubscribes(reason)
   }
 
+  refusedSubscribeCount(): number {
+    return this.hostSocket.refusedSubscribeCount()
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)

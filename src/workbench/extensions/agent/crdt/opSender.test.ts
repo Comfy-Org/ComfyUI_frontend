@@ -653,6 +653,32 @@ describe('createOpSender', () => {
     expect(sent[1].workflowId).toBe('wf-2')
   })
 
+  it('abortIfUnbound attributes its reason to every dead-workflow batch while delivery is suspended', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+    sender.suspend()
+
+    sender.abortIfUnbound('subscribe_refused')
+
+    const unboundReports = vi
+      .mocked(reportError)
+      .mock.calls.filter(([, options]) => options.tags?.code === 'unbound')
+    expect(unboundReports).toHaveLength(3)
+    expect(
+      unboundReports.every(
+        ([, options]) => options.tags?.reason === 'subscribe_refused'
+      )
+    ).toBe(true)
+    expect(sender.pending()).toBe(1)
+    expect(sent).toHaveLength(1)
+
+    sender.resume()
+    expect(sent[1].workflowId).toBe('wf-2')
+  })
+
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
     transportUp = false
     sender.enqueue([addNode(1)])

@@ -180,6 +180,9 @@ test.describe(
             .getTab(0)
             .and(agentConversation.topbar.getActiveTab())
         ).toBeVisible()
+        await expect
+          .poll(() => agentConversation.refusedSubscribeCount())
+          .toBeGreaterThan(0)
         await expect(node).toBeVisible()
       })
     })

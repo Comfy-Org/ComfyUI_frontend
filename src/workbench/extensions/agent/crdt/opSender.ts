@@ -340,7 +340,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
-    if (suspended) {
+    if (suspended && pendingAbortReason?.workflowId !== batch.workflowId) {
       batch.parked = true
       return
     }
@@ -786,11 +786,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortIfUnbound(reason) {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
+        const previousAbortReason = pendingAbortReason
         pendingAbortReason = { workflowId: inFlight.workflowId, reason }
         try {
           settleUnbound(inFlight, 'unbound', reason)
         } finally {
-          pendingAbortReason = null
+          pendingAbortReason = previousAbortReason
         }
       }
     },
