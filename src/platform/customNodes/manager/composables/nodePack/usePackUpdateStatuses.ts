@@ -10,8 +10,10 @@ type NodePack = components['schemas']['Node']
 type NodeVersion = components['schemas']['NodeVersion']
 type LookupState =
   | { status: 'loading' }
-  | { status: 'ready'; versions: Map<string, NodeVersion | undefined> }
-  | { status: 'error' }
+  | {
+      status: 'ready' | 'error'
+      versions: Map<string, NodeVersion | undefined>
+    }
 
 export function usePackUpdateStatuses(packs: MaybeRefOrGetter<NodePack[]>) {
   const manager = useComfyManagerStore()
@@ -62,9 +64,10 @@ export function usePackUpdateStatuses(packs: MaybeRefOrGetter<NodePack[]>) {
         })
       )
       if (!controller.signal.aborted) {
-        state.value = results.every(Boolean)
-          ? { status: 'ready', versions }
-          : { status: 'error' }
+        state.value = {
+          status: results.every(Boolean) ? 'ready' : 'error',
+          versions
+        }
       }
     },
     { immediate: true }
@@ -77,9 +80,9 @@ export function usePackUpdateStatuses(packs: MaybeRefOrGetter<NodePack[]>) {
         manager,
         pack.latest_version?.status === 'NodeVersionStatusActive'
           ? pack.latest_version
-          : state.value.status === 'ready'
-            ? state.value.versions.get(pack.id ?? '')
-            : undefined
+          : state.value.status === 'loading'
+            ? undefined
+            : state.value.versions.get(pack.id ?? '')
       ),
     isLoading: computed(() => state.value.status === 'loading'),
     hasError: computed(() => state.value.status === 'error')

@@ -119,6 +119,26 @@ it('reports lookup failures and retries when the view is reopened', async () => 
   expect(getVersions).toHaveBeenCalledTimes(2)
 })
 
+it('preserves successful update lookups when another pack fails', async () => {
+  const failedPack = { ...flaggedPack, id: 'unavailable-pack' }
+  const responses = new Map<string, NodeVersion[] | null>([
+    ['sample-pack', [{ version: '2.0.0', status: 'NodeVersionStatusActive' }]],
+    ['unavailable-pack', null]
+  ])
+  setupVersions().mockImplementation(
+    async (id) => responses.get(id ?? '') ?? null
+  )
+  const { result } = scoped(() =>
+    usePackUpdateStatuses([flaggedPack, failedPack])
+  )
+
+  await vi.waitFor(() => expect(result.isLoading.value).toBe(false))
+
+  expect(result.hasError.value).toBe(true)
+  expect(result.getStatus(flaggedPack).isUpdateAvailable).toBe(true)
+  expect(result.getStatus(failedPack).isUpdateAvailable).toBe(false)
+})
+
 it('does not let a closed view cancel a shared version request', async () => {
   const pending = deferred<NodeVersion[]>()
   const getVersions = setupVersions().mockReturnValue(pending.promise)
@@ -132,6 +152,7 @@ it('does not let a closed view cancel a shared version request', async () => {
 })
 
 it('ignores an old lookup after the source pack changes', async () => {
+  vi.useFakeTimers()
   const pending = deferred<NodeVersion[]>()
   setupVersions()
     .mockReturnValueOnce(pending.promise)
@@ -146,7 +167,8 @@ it('ignores an old lookup after the source pack changes', async () => {
   pending.resolve([{ version: '2.0.0', status: 'NodeVersionStatusActive' }])
   await pending.promise
   await nextTick()
-  expect(result.getStatus(packs.value[0]).isUpdateAvailable).toBe(false)
+  await vi.advanceTimersByTimeAsync(0)
+  expect(result.getStatus(flaggedPack).isUpdateAvailable).toBe(false)
 })
 
 it('refreshes the target when advertised metadata changes or caches are cleared', async () => {
