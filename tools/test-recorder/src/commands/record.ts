@@ -23,6 +23,7 @@ import {
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { openPr } from '../pr/openPr'
+import { isAlreadyExistsError } from '../cli/fsErrors'
 import { runCommand } from '../cli/run'
 import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
@@ -762,6 +763,17 @@ export async function runRecord(
   const outputPath = join(testsDir, `${slug}.spec.ts`)
   let allowOverwrite = false
   if (existsSync(outputPath)) {
+    if (!stdinOpen) {
+      // stdin is at EOF, so asking for consent here would hang. Keeping the
+      // existing spec is the safe answer the prompt defaults to anyway.
+      fail(
+        'Refusing to overwrite existing test',
+        `${outputPath} already exists, and stdin is closed so the overwrite ` +
+          'prompt cannot be answered. Delete that file, or re-record and end ' +
+          'the paste with a single "." line to stay interactive.'
+      )
+      process.exit(1)
+    }
     const overwrite = await confirm({
       message: `${slug}.spec.ts already exists. Overwrite it?`,
       initialValue: false
@@ -786,7 +798,7 @@ export async function runRecord(
       allowOverwrite ? undefined : { flag: 'wx' }
     )
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+    if (isAlreadyExistsError(error)) {
       fail(
         'Refusing to overwrite existing test',
         `Choose a different name, or delete ${outputPath} first.`

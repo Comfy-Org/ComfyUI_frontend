@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
+import { isAlreadyExistsError } from '../cli/fsErrors'
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { header } from '../ui/logger'
@@ -62,7 +63,7 @@ export async function runTransform(
       options.force ? undefined : { flag: 'wx' }
     )
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+    if (isAlreadyExistsError(error)) {
       console.log(
         pc.red(`  Refusing to overwrite existing file: ${outputPath}`)
       )
