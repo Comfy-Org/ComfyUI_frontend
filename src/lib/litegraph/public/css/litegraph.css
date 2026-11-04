@@ -128,7 +128,8 @@
   min-height: 1.2em;
 }
 
-.litegraph .litemenu-entry .property_value {
+.litegraph .litemenu-entry .property_value,
+.litemenu-entry .property_value {
   display: inline-block;
   background-color: rgba(0, 0, 0, 0.5);
   text-align: right;
@@ -157,7 +158,8 @@
   max-width: 300px;
 }
 
-.litegraph.litesearchbox .name {
+.litegraph.litesearchbox .name,
+.graphdialog .name {
   display: inline-block;
   min-width: 60px;
   min-height: 1.5em;
@@ -406,16 +408,6 @@
   opacity: 0.8;
 }
 
-.litemenu-entry .property_value {
-  display: inline-block;
-  background-color: rgba(0, 0, 0, 0.5);
-  text-align: right;
-  min-width: 80px;
-  min-height: 1.2em;
-  vertical-align: middle;
-  padding-right: 10px;
-}
-
 .graphdialog {
   position: absolute;
   top: 10px;
@@ -430,13 +422,6 @@
 .graphdialog.rounded {
   border-radius: 12px;
   padding-right: 2px;
-}
-
-.graphdialog .name {
-  display: inline-block;
-  min-width: 60px;
-  min-height: 1.5em;
-  padding-left: 10px;
 }
 
 .graphdialog input,
