@@ -12,6 +12,7 @@ import {
   fitView,
   hitPort,
   linkPath,
+  placeNode,
   portAnchor,
   screenToWorld
 } from './canvasGeometry'
@@ -155,5 +156,32 @@ describe('cardMinHeight', () => {
     { rows: 3, expected: 104 }
   ])('fits $rows port rows in $expected px', ({ rows, expected }) => {
     expect(cardMinHeight(rows)).toBe(expected)
+  })
+})
+
+describe('placeNode', () => {
+  const doc = docWith([
+    placed(ioNode('a', 'image'), 0, 0),
+    placed(ioNode('b', 'image'), 320, 0)
+  ])
+
+  it.for([
+    {
+      name: 'keeps a free spot',
+      at: { x: 0, y: 400 },
+      expected: { x: 0, y: 400 }
+    },
+    {
+      name: 'moves past a node it would cover',
+      at: { x: 400, y: 100 },
+      expected: { x: 640, y: 100 }
+    },
+    {
+      name: 'moves past every node in a row',
+      at: { x: 0, y: 0 },
+      expected: { x: 640, y: 0 }
+    }
+  ])('$name', ({ at, expected }) => {
+    expect(placeNode(doc, at, 240)).toEqual(expected)
   })
 })

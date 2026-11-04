@@ -9,7 +9,10 @@ import { useAppCatalog } from '@/renderer/extensions/superComfy/apps/appCatalog'
 import type { AppCatalogEntry } from '@/renderer/extensions/superComfy/apps/appCatalog'
 import { resolveAppContract } from '@/renderer/extensions/superComfy/apps/appContract'
 import { createAppExecutor } from '@/renderer/extensions/superComfy/apps/appExecutor'
-import { NODE_WIDTH } from '@/renderer/extensions/superComfy/canvas/canvasGeometry'
+import {
+  NODE_WIDTH,
+  placeNode
+} from '@/renderer/extensions/superComfy/canvas/canvasGeometry'
 import { createEngine } from '@/renderer/extensions/superComfy/engine/createEngine'
 import { emptyDocument } from '@/renderer/extensions/superComfy/engine/documentSchema'
 import type {
@@ -157,7 +160,12 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
   }
 
   function addNode(node: SuperNode): NodeId {
-    dispatch({ type: 'nodeAdded', node })
+    const spot = placeNode(
+      state.value.doc,
+      { x: node.x, y: node.y },
+      node.width
+    )
+    dispatch({ type: 'nodeAdded', node: { ...node, ...spot } })
     return node.id
   }
 

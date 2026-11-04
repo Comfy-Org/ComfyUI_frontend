@@ -34,6 +34,7 @@ const NODE_EST_HEIGHT = 260
 
 const FIT_PADDING = 64
 const MIN_LINK_BEND = 48
+const PLACEMENT_GAP = 80
 
 export function portAnchor(
   node: SuperNode,
@@ -110,6 +111,28 @@ export function fitView(doc: SuperGraphDocument, viewport: Size): Camera {
     y: viewport.height / 2 - ((minY + maxY) / 2) * zoom,
     zoom
   }
+}
+
+/** Moves a new node of `width` right of any node it would land on. */
+export function placeNode(
+  doc: SuperGraphDocument,
+  at: Point,
+  width: number
+): Point {
+  const blocker = doc.nodes.find(
+    (node) =>
+      node.x < at.x + width &&
+      at.x < node.x + node.width &&
+      node.y < at.y + NODE_EST_HEIGHT &&
+      at.y < node.y + NODE_EST_HEIGHT
+  )
+  return blocker
+    ? placeNode(
+        doc,
+        { x: blocker.x + blocker.width + PLACEMENT_GAP, y: at.y },
+        width
+      )
+    : at
 }
 
 export function cardMinHeight(rows: number): number {
