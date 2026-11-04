@@ -184,6 +184,31 @@ describe('nodeStatus', () => {
     expect(statusOf(node, activity, missing)).toEqual(expected)
   })
 
+  it.for<{ name: string; node: GenerateNode; expected: StatusLine | null }>([
+    {
+      name: 'shows the current run count while the plan is still over the limit',
+      node: promptNode({ inline: { prompt: 'a lighthouse' }, runCount: 60 }),
+      expected: {
+        tone: 'destructive',
+        key: 'superComfy.node.tooManyRuns',
+        params: { runs: 60, limit: 50 }
+      }
+    },
+    {
+      name: 'drops the refusal once the plan fits the limit again',
+      node: promptNode({ inline: { prompt: 'a lighthouse' }, runCount: 2 }),
+      expected: null
+    }
+  ])('after a run refused over the run limit, $name', ({ node, expected }) => {
+    const refused: NodeActivity = {
+      phase: 'blocked',
+      sessionId: null,
+      block: { reason: 'tooManyRuns', runs: 70, limit: 50 }
+    }
+
+    expect(statusOf(node, refused)).toEqual(expected)
+  })
+
   it('shows a node error exactly as received', () => {
     expect(
       statusOf(promptNode(), idle, [], 'App not found: portrait.app.json')

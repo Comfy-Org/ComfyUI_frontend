@@ -97,9 +97,28 @@ function runningStatus(
   }
 }
 
+function limitStatus(node: ExecutableNode, block: Block): StatusLine | null {
+  if (block.reason === 'tooManyRuns') {
+    return {
+      tone: 'destructive',
+      key: 'superComfy.node.tooManyRuns',
+      params: { runs: block.runs, limit: block.limit }
+    }
+  }
+  if (block.reason === 'tooManyItems') {
+    return {
+      tone: 'destructive',
+      key: 'superComfy.node.tooManyItems',
+      params: { port: portLabels(node, [block.port]), max: block.max }
+    }
+  }
+  return null
+}
+
 function blockStatus(
   node: ExecutableNode,
   block: Block,
+  plan: RunPlan,
   missing: readonly string[]
 ): StatusLine | null {
   switch (block.reason) {
@@ -112,17 +131,10 @@ function blockStatus(
           }
         : null
     case 'tooManyRuns':
-      return {
-        tone: 'destructive',
-        key: 'superComfy.node.tooManyRuns',
-        params: { runs: block.runs, limit: block.limit }
-      }
     case 'tooManyItems':
-      return {
-        tone: 'destructive',
-        key: 'superComfy.node.tooManyItems',
-        params: { port: portLabels(node, [block.port]), max: block.max }
-      }
+      return !plan.ok && plan.block.reason === block.reason
+        ? limitStatus(node, plan.block)
+        : null
     case 'noContract':
       return null
     case 'upstreamFailed':
@@ -184,7 +196,7 @@ export function nodeStatus({
   }
   const blocked =
     activity.phase === 'blocked'
-      ? blockStatus(node, activity.block, missing)
+      ? blockStatus(node, activity.block, plan, missing)
       : null
   return blocked ?? resultStatus(node, plan) ?? planStatus(node, plan)
 }

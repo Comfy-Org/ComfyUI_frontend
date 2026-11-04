@@ -591,6 +591,38 @@ function materializeResult(
   }
 }
 
+function withoutFailedUpstream(
+  activity: NodeActivity,
+  nodeId: NodeId
+): NodeActivity {
+  if (activity.phase !== 'blocked') return activity
+  if (activity.block.reason !== 'upstreamFailed') return activity
+  const nodeIds = activity.block.nodeIds.filter((id) => id !== nodeId)
+  if (nodeIds.length === 0) return { phase: 'idle' }
+  return { ...activity, block: { ...activity.block, nodeIds } }
+}
+
+function releaseDownstreamBlocks(
+  state: SuperComfyState,
+  nodeId: NodeId
+): SuperComfyState {
+  const activity = Object.fromEntries(
+    Object.entries(state.runtime.activity).map(
+      ([id, current]): [NodeId, NodeActivity] => [
+        id,
+        withoutFailedUpstream(current, nodeId)
+      ]
+    )
+  )
+  return { ...state, runtime: { ...state.runtime, activity } }
+}
+
+function hasOutputs(doc: SuperGraphDocument, nodeId: NodeId): boolean {
+  const node = findNode(doc, nodeId)
+  if (!node || node.kind === 'io') return false
+  return node.result !== null && node.result.status !== 'failed'
+}
+
 function commitNode(
   state: SuperComfyState,
   nodeId: NodeId,
@@ -612,7 +644,10 @@ function commitNode(
       }
     })
   )
-  return setActivity(withDoc(state, doc), nodeId, { phase: 'idle' })
+  const committed = setActivity(withDoc(state, doc), nodeId, { phase: 'idle' })
+  return hasOutputs(doc, nodeId)
+    ? releaseDownstreamBlocks(committed, nodeId)
+    : committed
 }
 
 function collectIoItems(doc: SuperGraphDocument, ioId: NodeId): MediaItem[] {
@@ -627,13 +662,16 @@ function collectIo(
   sessionId: SessionId
 ): SuperComfyState {
   const items = collectIoItems(state.doc, nodeId)
-  const collected = withDoc(
-    state,
-    mapNode(
-      state.doc,
-      nodeId,
-      onIo((node) => ({ ...node, items }))
-    )
+  const collected = releaseDownstreamBlocks(
+    withDoc(
+      state,
+      mapNode(
+        state.doc,
+        nodeId,
+        onIo((node) => ({ ...node, items }))
+      )
+    ),
+    nodeId
   )
   return owns(state, nodeId, sessionId)
     ? setActivity(collected, nodeId, { phase: 'idle' })

@@ -503,6 +503,48 @@ describe(createEngine, () => {
       })
     })
 
+    it.for([
+      {
+        name: 'wired straight to it',
+        nodes: [],
+        edges: [edge('failing', 'out', 'after', 'image')]
+      },
+      {
+        name: 'wired through an I/O node',
+        nodes: [ioNode('results', 'image')],
+        edges: [
+          edge('failing', 'out', 'results', 'in'),
+          edge('results', 'out', 'after', 'image')
+        ]
+      }
+    ])(
+      '[R7d] clears the failed-input mark once that input runs on its own and succeeds, $name',
+      async ({ nodes, edges }) => {
+        const app = deferredExecutor({
+          answer: () => ({ ok: false, message: 'Insufficient credits' })
+        })
+        const harness = testHost(
+          docWith(
+            [
+              ioNode('source', 'image', [fileItem('a')]),
+              appNode('failing', { inputs: [imageIn] }),
+              generateNode('after', 'image', { inputs: [imageIn] }),
+              ...nodes
+            ],
+            [edge('source', 'out', 'failing', 'image'), ...edges]
+          ),
+          { app, generate: deferredExecutor({ answer: freshOutputs() }) }
+        )
+        const engine = createEngine(harness.host)
+        await engine.runGraph()
+        app.answerAll(freshOutputs())
+
+        await engine.runNode('failing')
+
+        expect(activityOf(harness.state(), 'after')).toEqual({ phase: 'idle' })
+      }
+    )
+
     it('[R7e] a run that returns no output counts as failed', async () => {
       const generate = deferredExecutor({
         answer: () => ({ ok: true, outputs: { out: [] } })
