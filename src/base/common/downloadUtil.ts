@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { isCloud } from '@/platform/distribution/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'

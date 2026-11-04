@@ -62,19 +62,18 @@ import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import Field from '@/components/ui/field/Field.vue'
-import FieldDescription from '@/components/ui/field/FieldDescription.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldGroup from '@/components/ui/field/FieldGroup.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
 import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 import PasswordFields from './PasswordFields.vue'
 import TurnstileWidget from './TurnstileWidget.vue'
@@ -109,7 +108,7 @@ const emit = defineEmits<{
 }>()
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signUpSchema),
+  validationSchema: signUpSchema,
   initialValues: { email: '', password: '', confirmPassword: '' }
 })
 

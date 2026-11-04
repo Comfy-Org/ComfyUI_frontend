@@ -22,13 +22,13 @@ import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useAuthStore } from '@/stores/authStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const redirectAfterAuth = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock(
@@ -519,6 +519,31 @@ describe('CloudLoginView SSO', () => {
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).email).toBe('ada@acme.com')
       expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+    })
+
+    it('lets an email of an organization in optional mode sign in with its password', async () => {
+      discoverReplies({ sso: true, required: false })
+      await renderLoginView()
+
+      await signInWithPassword('ada@acme.com')
+
+      await waitFor(() =>
+        expect(useAuthActions().signInWithEmail).toHaveBeenCalledWith(
+          'ada@acme.com',
+          'hunter22'
+        )
+      )
+      expect(assign).not.toHaveBeenCalled()
+    })
+
+    it('still sends an optional-mode email chosen for SSO to SSO', async () => {
+      discoverReplies({ sso: true, required: false })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).email).toBe('ada@acme.com')
     })
 
     it.for<{ name: string; status: number; body: unknown }>([

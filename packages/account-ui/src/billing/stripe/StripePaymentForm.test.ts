@@ -84,6 +84,7 @@ function renderForm(
     publishableKey?: string
     themeKey?: string
     pageLayout?: boolean
+    payOnce?: boolean
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -173,12 +174,12 @@ describe('StripePaymentForm', () => {
   })
 
   it('themes Stripe from the theme scope the form renders in, not the page body', async () => {
-    document.body.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
-    document.body.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.style.setProperty('--foreground', 'rgb(20, 20, 20)')
+    document.body.style.setProperty('--background', 'rgb(255, 255, 255)')
     document.body.style.fontFamily = 'serif'
     const darkScope = document.createElement('div')
-    darkScope.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
-    darkScope.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    darkScope.style.setProperty('--foreground', 'rgb(250, 250, 250)')
+    darkScope.style.setProperty('--background', 'rgb(30, 30, 30)')
     darkScope.style.fontFamily = 'Inter'
     document.body.append(darkScope)
     onTestFinished(() => {
@@ -204,8 +205,8 @@ describe('StripePaymentForm', () => {
 
   it('re-themes the mounted Elements in place when the host theme changes', async () => {
     const themeRoot = document.createElement('div')
-    themeRoot.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
-    themeRoot.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    themeRoot.style.setProperty('--foreground', 'rgb(20, 20, 20)')
+    themeRoot.style.setProperty('--background', 'rgb(255, 255, 255)')
     document.body.append(themeRoot)
     onTestFinished(() => themeRoot.remove())
 
@@ -217,8 +218,8 @@ describe('StripePaymentForm', () => {
       expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
     )
 
-    themeRoot.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
-    themeRoot.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    themeRoot.style.setProperty('--foreground', 'rgb(250, 250, 250)')
+    themeRoot.style.setProperty('--background', 'rgb(30, 30, 30)')
     await rerender({ themeKey: 'dark' })
 
     await waitFor(() =>
@@ -420,6 +421,64 @@ describe('StripePaymentForm', () => {
     })
   })
 
+  it('collects a one-time card payment the card is never saved for when paying once', async () => {
+    renderForm(2500, 'pmc_topup', { payOnce: true })
+
+    await waitFor(() =>
+      expect(stripeMocks.stripe.elements).toHaveBeenCalledOnce()
+    )
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'payment',
+        amount: 2500,
+        currency: 'usd',
+        paymentMethodTypes: ['card']
+      })
+    )
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({ setupFutureUsage: expect.anything() })
+    )
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMethodConfiguration: expect.anything()
+      })
+    )
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({ wallets: { link: 'never' } })
+    )
+  })
+
+  it('collects a renewal method when the balance covers the whole first charge', async () => {
+    renderForm(0)
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'subscription',
+        amount: 0,
+        setupFutureUsage: 'off_session'
+      })
+    )
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Pay and subscribe'
+      }).disabled
+    ).toBe(false)
+  })
+
+  it('shows unavailable state when Stripe refuses the quoted amount', async () => {
+    stripeMocks.stripe.elements.mockImplementationOnce(() => {
+      throw new Error('IntegrationError: invalid amount')
+    })
+
+    renderForm(0, 'pmc_topup', { payOnce: true })
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(stripeMocks.mount).not.toHaveBeenCalled()
+  })
+
   it('collects deferred subscription details and emits a confirmation token', async () => {
     const user = userEvent.setup()
     const { emitted } = renderForm()
@@ -611,17 +670,23 @@ describe('StripePaymentForm', () => {
     ).toBe(true)
   })
 
-  it('updates Stripe Elements when the quote changes', async () => {
-    const { rerender } = renderForm()
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+  it.for([
+    { amountCents: 72000, currency: 'EUR' },
+    { amountCents: 0, currency: 'USD' }
+  ])(
+    'updates Stripe Elements when the quote changes to $amountCents $currency',
+    async ({ amountCents, currency }) => {
+      const { rerender } = renderForm()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
 
-    await rerender({ amountCents: 72000, currency: 'EUR' })
+      await rerender({ amountCents, currency })
 
-    expect(stripeMocks.update).toHaveBeenCalledWith({
-      amount: 72000,
-      currency: 'eur'
-    })
-  })
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        amount: amountCents,
+        currency: currency.toLowerCase()
+      })
+    }
+  )
 
   it('destroys the Stripe elements when the preview unmounts', async () => {
     const { unmount } = renderForm()

@@ -14,8 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const renderMenu = () =>
   render(JobHistoryActionsMenu, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
@@ -78,8 +77,7 @@ describe('JobHistoryActionsMenu', () => {
     render(JobHistoryActionsMenu, {
       props: { onClearHistory: clearHistorySpy },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 

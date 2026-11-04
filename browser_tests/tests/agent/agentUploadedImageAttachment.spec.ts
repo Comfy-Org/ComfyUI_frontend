@@ -7,6 +7,7 @@ import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixtu
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -54,7 +55,7 @@ test(
     ).toBeVisible()
     await expect(panel.getByTestId('asset-reference-chip')).toHaveCount(0)
     await panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
+      .getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
       .pressSequentially('use this upload')
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })

@@ -1,4 +1,5 @@
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 type Enclosure = {
   start: number
@@ -58,7 +59,7 @@ export function addWeightToParentheses(text: string): string {
   return hasTrailingWeight ? text : `(${innerText}:1.0)`
 }
 
-app.registerExtension({
+export const editAttentionExtension: ComfyExtension = {
   name: 'Comfy.EditAttention',
   init() {
     const editAttentionDelta = app.ui.settings.addSetting({
@@ -157,4 +158,4 @@ app.registerExtension({
     }
     window.addEventListener('keydown', editAttention)
   }
-})
+}

@@ -6,12 +6,10 @@ import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,
@@ -153,4 +151,55 @@ describe('ModelImportProgressDialog announcements', () => {
       ).toBeInTheDocument()
     }
   )
+})
+
+describe('ModelImportProgressDialog after a file upload', () => {
+  function renderWith(
+    downloads: Array<{ taskId: string; name: string; upload: boolean }>
+  ) {
+    const store = useAssetDownloadStore()
+    for (const { taskId, name, upload } of downloads) {
+      store.trackDownload(
+        taskId,
+        'loras',
+        name,
+        upload ? { source: 'upload' } : undefined
+      )
+    }
+    render(ModelImportProgressDialog, { global: { plugins: [i18n] } })
+    for (const download of store.downloadList) download.status = 'completed'
+    return nextTick()
+  }
+
+  function announced(text: string) {
+    return screen.getByText(text, { selector: '[role="status"]' })
+  }
+
+  it('names the uploaded file and says it is in the library', async () => {
+    await renderWith([
+      { taskId: 'task-1', name: 'my_style_v2.safetensors', upload: true }
+    ])
+
+    expect(
+      announced('my_style_v2.safetensors is in your library')
+    ).toBeInTheDocument()
+  })
+
+  it('counts several uploaded files', async () => {
+    await renderWith([
+      { taskId: 'task-1', name: 'my_style_v2.safetensors', upload: true },
+      { taskId: 'task-2', name: 'portrait.safetensors', upload: true }
+    ])
+
+    expect(announced('2 models are in your library')).toBeInTheDocument()
+  })
+
+  it('keeps the link import wording when a link import is in the list', async () => {
+    await renderWith([
+      { taskId: 'task-1', name: 'my_style_v2.safetensors', upload: true },
+      { taskId: 'task-2', name: 'model.safetensors', upload: false }
+    ])
+
+    expect(announced('All downloads completed')).toBeInTheDocument()
+  })
 })

@@ -22,14 +22,17 @@ describe('useColorsWidget', () => {
       'colors',
       'palette',
       ['#fff'],
-      null
+      null,
+      { hideInPanel: true }
     )
   })
 
   it('defaults to an empty palette', () => {
     const node = mockNode()
     useColorsWidget()(node, { type: 'COLORS', name: 'palette' })
-    expect(node.addWidget).toHaveBeenCalledWith('colors', 'palette', [], null)
+    expect(node.addWidget).toHaveBeenCalledWith('colors', 'palette', [], null, {
+      hideInPanel: true
+    })
   })
 
   it('copies the spec default so widgets never share its reference', () => {

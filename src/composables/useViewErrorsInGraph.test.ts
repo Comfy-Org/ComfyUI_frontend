@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -10,15 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
 
-const apiMock = vi.hoisted(() => ({
-  getSettings: vi.fn(),
-  storeSetting: vi.fn(),
-  storeSettings: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: apiMock
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -43,12 +35,6 @@ function createSelectedCanvas() {
 }
 
 describe('useViewErrorsInGraph', () => {
-  beforeEach(() => {
-    apiMock.getSettings.mockResolvedValue({})
-    apiMock.storeSetting.mockResolvedValue(undefined)
-    apiMock.storeSettings.mockResolvedValue(undefined)
-  })
-
   it('opens graph errors and clears app-mode error UI state', async () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()
@@ -63,13 +49,16 @@ describe('useViewErrorsInGraph', () => {
     expect(canvasStore.selectedItems).toEqual([node])
     executionErrorStore.showErrorOverlay()
 
-    useViewErrorsInGraph().viewErrorsInGraph()
+    useViewErrorsInGraph().viewErrorsInGraph(['execution:out_of_memory'])
 
     expect(node.selected).toBe(false)
     expect(canvasStore.linearMode).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(rightSidePanelStore.errorDetailsRequest).toEqual([
+      'execution:out_of_memory'
+    ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 
@@ -80,10 +69,21 @@ describe('useViewErrorsInGraph', () => {
     canvasStore.canvas = null
     executionErrorStore.showErrorOverlay()
 
-    expect(() => useViewErrorsInGraph().viewErrorsInGraph()).not.toThrow()
+    expect(() => useViewErrorsInGraph().viewErrorsInGraph([])).not.toThrow()
 
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(rightSidePanelStore.errorDetailsRequest).toEqual([])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('drops a details request when the user leaves the errors tab before it opens', async () => {
+    const rightSidePanelStore = useRightSidePanelStore()
+
+    useViewErrorsInGraph().viewErrorsInGraph(['missing_node'])
+    rightSidePanelStore.activeTab = 'parameters'
+    await nextTick()
+
+    expect(rightSidePanelStore.errorDetailsRequest).toBeNull()
   })
 })

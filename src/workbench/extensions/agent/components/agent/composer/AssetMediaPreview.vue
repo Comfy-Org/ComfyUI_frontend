@@ -13,9 +13,7 @@ const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
 const player = useTemplateRef<HTMLMediaElement>('player')
 const failed = ref(false)
 const colorPaletteStore = useColorPaletteStore()
-const colorScheme = computed(() =>
-  colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
-)
+const colorScheme = computed(() => colorPaletteStore.colorScheme)
 onBeforeUnmount(() => player.value?.pause())
 watch(
   () => active,

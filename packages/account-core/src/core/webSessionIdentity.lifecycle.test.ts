@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionEndpoint, FakeWebSessionState } from '../testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
-import { deferred } from './__fixtures__/sessionFakes.js'
+import type { FakeWebSessionEndpoint, FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { deferred } from './__fixtures__/sessionFakes'
 import type {
   CrossTabRefreshPort,
   WebSession,
   WebSessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 import type {
   RememberedLogin,
   ScheduleRetry,
@@ -17,11 +17,11 @@ import type {
   WebSessionIdentityState,
   WebSessionIdentityTransition,
   WebSessionSharedMessage
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 import {
   createWebSessionIdentity,
   transitionWebSessionIdentity
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 
 const API = 'https://cloud.example/api'
 const ORIGIN = 'https://www.comfy.example'

@@ -1,4 +1,4 @@
-Use the Vue 3 Composition API instead of the Options API when writing Vue components. An exception is when overriding or extending a PrimeVue component for compatibility, you may use the Options API.
+Use the Vue 3 Composition API instead of the Options API when writing Vue components.
 
 Use setup() function for component logic
 

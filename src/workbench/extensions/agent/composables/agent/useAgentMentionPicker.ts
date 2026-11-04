@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { PromptEditor } from '../../types/promptEditor'
-import type { WorkflowReferenceOption } from '../../types/workflowReference'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
+import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 import type {
   MentionPickerEvent,
   MentionPickerState,
@@ -11,8 +11,8 @@ import type {
 import { transitionMentionPicker } from './mentionPickerState'
 import type { SelectedNode } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { SkillReferenceMetadata } from '../../types/skillReference'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 const SKILL_QUERY = /^[A-Za-z0-9._-]*$/
 
@@ -119,14 +119,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
         ...options
           .assets()
           .filter((asset) => asset.name.toLowerCase().includes(search))
-          .map(
-            (asset): MentionMatch => ({
-              kind: 'asset',
-              id: asset.id,
-              label: asset.name,
-              asset
-            })
-          ),
+          .map((asset): MentionMatch => ({
+            kind: 'asset',
+            id: asset.id,
+            label: asset.name,
+            asset
+          })),
         ...sections.filter(({ label }) => label.toLowerCase().includes(search))
       ]
     }
@@ -142,14 +140,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
               (node.title.toLowerCase().includes(search) ||
                 node.id.includes(search))
           )
-          .map(
-            (node): MentionMatch => ({
-              kind: 'node',
-              id: selectedNodeKey(node),
-              label: node.title,
-              node
-            })
-          )
+          .map((node): MentionMatch => ({
+            kind: 'node',
+            id: selectedNodeKey(node),
+            label: node.title,
+            node
+          }))
       ]
     }
 
@@ -158,14 +154,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       ...options
         .workflows()
         .filter(({ name }) => name.toLowerCase().includes(search))
-        .map(
-          (workflow): MentionMatch => ({
-            kind: 'workflow',
-            id: workflow.id ?? workflow.tabPath,
-            label: workflow.name,
-            workflow
-          })
-        )
+        .map((workflow): MentionMatch => ({
+          kind: 'workflow',
+          id: workflow.id ?? workflow.tabPath,
+          label: workflow.name,
+          workflow
+        }))
     ]
   }
 
@@ -183,6 +177,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
           (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
         ))
   )
+  const mentionActiveNode = computed(() => {
+    if (!mentionVisible.value) return undefined
+    const match = mentionMatches.value.at(mentionActive.value)
+    return match?.kind === 'node' ? match.node : undefined
+  })
   const skillQueryEmpty = computed(
     () => mentionSection.value === 'skills' && mentionQuery.value === ''
   )
@@ -438,6 +437,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mentionActive,
     mentionMatches,
     mentionVisible,
+    mentionActiveNode,
     mentionHasResults,
     skillQueryEmpty,
     graphDupes,

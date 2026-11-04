@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/scripts/api'))
 
 import { zSeedFixture } from '@e2e/../scripts/agentConversationAssemble'
 import type { AgentConversation } from '@e2e/fixtures/data/agent/agentConversation'

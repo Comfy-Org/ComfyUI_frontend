@@ -1,0 +1,177 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import LightControls from '@/extensions/core/load3d/components/controls/LightControls.vue'
+import type {
+  HDRIConfig,
+  MaterialMode
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import { useSettingStore } from '@/platform/settings/settingStore'
+
+const settingValues: Record<string, unknown> = {
+  'Comfy.Load3D.LightIntensityMaximum': 10,
+  'Comfy.Load3D.LightIntensityMinimum': 1,
+  'Comfy.Load3D.LightAdjustmentIncrement': 0.5
+}
+
+beforeEach(() => {
+  useSettingStore().$patch({ settingValues })
+})
+
+vi.mock(import('@/composables/useDismissableOverlay'), () => ({
+  useDismissableOverlay: vi.fn()
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { load3d: { lightIntensity: 'Light intensity' } } }
+})
+
+type RenderOpts = {
+  lightIntensity?: number
+  materialMode?: MaterialMode
+  hdriConfig?: HDRIConfig
+  embedded?: boolean
+}
+
+function renderComponent(opts: RenderOpts = {}) {
+  const lightIntensity = ref<number>(opts.lightIntensity ?? 5)
+  const materialMode = ref<MaterialMode>(opts.materialMode ?? 'original')
+  const hdriConfig = ref<HDRIConfig | undefined>(opts.hdriConfig)
+
+  const utils = render(
+    defineComponent({
+      setup: () => () =>
+        h(LightControls, {
+          lightIntensity: lightIntensity.value,
+          'onUpdate:lightIntensity': (v: number | undefined) => {
+            if (v !== undefined) lightIntensity.value = v
+          },
+          materialMode: materialMode.value,
+          'onUpdate:materialMode': (v: MaterialMode | undefined) => {
+            if (v) materialMode.value = v
+          },
+          hdriConfig: hdriConfig.value,
+          'onUpdate:hdriConfig': (v: HDRIConfig | undefined) => {
+            hdriConfig.value = v
+          },
+          embedded: opts.embedded ?? false
+        })
+    }),
+    {
+      global: {
+        plugins: [i18n]
+      }
+    }
+  )
+
+  return {
+    ...utils,
+    lightIntensity,
+    hdriConfig,
+    user: userEvent.setup()
+  }
+}
+
+describe('LightControls', () => {
+  describe('material mode gating', () => {
+    it('renders the intensity control when materialMode is original', () => {
+      renderComponent({ materialMode: 'original' })
+
+      expect(
+        screen.getByRole('button', { name: 'Light intensity' })
+      ).toBeInTheDocument()
+    })
+
+    it.for(['normal', 'wireframe'] as const)(
+      'hides the intensity control when materialMode is %s',
+      (mode) => {
+        renderComponent({ materialMode: mode })
+
+        expect(
+          screen.queryByRole('button', { name: 'Light intensity' })
+        ).not.toBeInTheDocument()
+      }
+    )
+  })
+
+  describe('default (non-HDRI) mode', () => {
+    it('feeds the slider with the setting-store min / max / step', async () => {
+      const { user } = renderComponent({ lightIntensity: 5 })
+      await user.click(screen.getByRole('button', { name: 'Light intensity' }))
+
+      const slider = await screen.findByRole('slider')
+      expect(slider).toHaveAttribute('aria-valuemin', '1')
+      expect(slider).toHaveAttribute('aria-valuemax', '10')
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+      expect(slider).toHaveAttribute('aria-valuenow', '5.5')
+    })
+
+    it('updates lightIntensity v-model when the slider changes', async () => {
+      const { user, lightIntensity } = renderComponent({ lightIntensity: 5 })
+      await user.click(screen.getByRole('button', { name: 'Light intensity' }))
+
+      const slider = await screen.findByRole('slider')
+      slider.focus()
+      await user.keyboard('{ArrowRight>5}')
+
+      expect(lightIntensity.value).toBe(7.5)
+    })
+  })
+
+  describe('HDRI active mode', () => {
+    const hdriConfig: HDRIConfig = {
+      enabled: true,
+      hdriPath: '/api/hdri/test.hdr',
+      showAsBackground: false,
+      intensity: 2
+    }
+
+    it('reads the slider min / max / step from the HDRI range (0..5 step 0.1)', async () => {
+      const { user } = renderComponent({ hdriConfig })
+      await user.click(screen.getByRole('button', { name: 'Light intensity' }))
+
+      const slider = await screen.findByRole('slider')
+      expect(slider).toHaveAttribute('aria-valuemin', '0')
+      expect(slider).toHaveAttribute('aria-valuemax', '5')
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+      expect(slider).toHaveAttribute('aria-valuenow', '2.1')
+    })
+
+    it('writes back to hdriConfig.intensity instead of lightIntensity when the slider changes', async () => {
+      const {
+        user,
+        lightIntensity,
+        hdriConfig: cfg
+      } = renderComponent({
+        lightIntensity: 5,
+        hdriConfig
+      })
+      await user.click(screen.getByRole('button', { name: 'Light intensity' }))
+
+      const slider = await screen.findByRole('slider')
+      slider.focus()
+      await user.keyboard('{ArrowRight>15}')
+
+      expect(cfg.value?.intensity).toBe(3.5)
+      expect(lightIntensity.value).toBe(5) // unchanged
+    })
+  })
+
+  describe('embedded mode', () => {
+    it('renders the slider inline without the trigger button when embedded is true', async () => {
+      renderComponent({ embedded: true })
+
+      expect(
+        screen.queryByRole('button', { name: 'Light intensity' })
+      ).not.toBeInTheDocument()
+      expect(await screen.findByRole('slider')).toBeInTheDocument()
+    })
+  })
+})

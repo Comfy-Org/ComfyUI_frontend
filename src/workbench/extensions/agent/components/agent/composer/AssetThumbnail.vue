@@ -22,6 +22,9 @@ function onImageError(event: Event): void {
   )
     failedUrl.value = event.target.getAttribute('src') ?? undefined
 }
+const showNameTile = computed(
+  () => variant === 'tray' && kind.value === 'image'
+)
 const isMediaIcon = computed(
   () => kind.value === 'audio' || kind.value === 'video'
 )
@@ -63,11 +66,18 @@ const icon = computed(() => {
       @error="onImageError"
     />
     <span
+      v-else-if="showNameTile"
+      aria-hidden="true"
+      class="flex size-full items-center justify-center overflow-hidden p-1 text-center text-[10px] leading-tight break-all text-foreground"
+    >
+      <span class="line-clamp-3">{{ name }}</span>
+    </span>
+    <i
       v-else
       :role="isMediaIcon ? 'img' : undefined"
       :aria-label="isMediaIcon ? $t(mediaLabel) : undefined"
       :aria-hidden="!isMediaIcon || undefined"
-      :class="cn(icon, 'shrink-0', iconSize)"
+      :class="cn(icon, iconSize)"
     />
   </span>
 </template>

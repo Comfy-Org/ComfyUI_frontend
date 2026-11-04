@@ -259,8 +259,18 @@ describe('CheckoutView', () => {
               {
                 id: 'stop_700',
                 credits: 147_700n,
-                monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
-                yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+                monthly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 66_500n,
+                  period_charge_cents: 66_500n
+                },
+                yearly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 63_000n,
+                  period_charge_cents: 756_000n
+                }
               }
             ]
           }
@@ -690,6 +700,7 @@ describe('CheckoutView', () => {
         max_seats: 20,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null
       }
     })
@@ -1040,6 +1051,7 @@ describe('CheckoutView', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         cancel_at: '2026-10-25T00:00:00.000Z'
       }

@@ -9,10 +9,6 @@ const ADD_POSITION = { x: 200, y: 200 }
 // The Agent is not involved here: the local build has no follower, so this
 // is the baseline the Agent-bound spec in tests/agent is measured against.
 test.describe('Workflow tab switch keeps nodes added on the canvas', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   for (const { name, query } of [
     { name: 'a node added the ordinary way', query: 'KSampler' },
     { name: 'a frontend-only node', query: 'Note' },

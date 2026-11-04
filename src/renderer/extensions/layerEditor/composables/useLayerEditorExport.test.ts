@@ -6,14 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import type { Psd } from 'ag-psd'
 
-import type { Document } from '@/renderer/extensions/layerEditor/engine/document'
-import { registerBuiltinKinds } from '@/renderer/extensions/layerEditor/engine/kinds'
-import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import type {
-  GroupData,
-  RasterData
-} from '@/renderer/extensions/layerEditor/engine/node'
+import type { Document } from '@comfyorg/layer-editor/document'
+import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import type { GroupData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'

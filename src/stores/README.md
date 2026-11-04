@@ -129,7 +129,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | modelToNodeStore.ts          | useModelToNodeStore           | Maps models to compatible nodes                         | Models     |
 | nodeBookmarkStore.ts         | useNodeBookmarkStore          | Manages node bookmarks and favorites                    | Nodes      |
 | nodeDefStore.ts              | useNodeDefStore               | Manages node definitions and schemas                    | Nodes      |
-| nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
+| nodeFrequencyStore.ts        | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
 | queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
 | queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
 | queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |

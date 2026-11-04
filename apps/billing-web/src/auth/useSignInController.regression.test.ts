@@ -64,16 +64,15 @@ describe('useSignInController identity availability, real account-core resolutio
     respondToFetch(FEATURES_URL, () => new Response('not json'), { times: 1 })
 
     const controller = useSignInController(() => undefined)
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
-    // The startup fetch settling doesn't itself resolve `identity.value`:
-    // let the rest of its promise chain (parsing, cache write) drain too.
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(controller.available.value).toBe(false)
+    await vi.waitFor(() =>
+      expect(controller.identityStatus.value).toBe('unavailable')
+    )
+    expect(fetch).toHaveBeenCalledOnce()
 
     await controller.retryAvailability()
 
     expect(fetch).toHaveBeenCalledTimes(2)
-    expect(controller.available.value).toBe(true)
+    expect(controller.identityStatus.value).toBe('ready')
     await controller.signInWith('google')
     expect(controller.errorMessage.value).toBe('')
   })

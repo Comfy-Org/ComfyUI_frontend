@@ -66,6 +66,22 @@ describe('installPreservedQueryTracker', () => {
     )
   })
 
+  it('completes navigation and keeps the stash in memory when sessionStorage is blocked', async () => {
+    vi.spyOn(globalThis, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [strippedDefinition, plainDefinition])
+
+    await router.push('/?one_time_code=otc_abc123&plain_code=alpha')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?plain_code=alpha')
+    expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
+      'otc_abc123'
+    )
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('alpha')
+  })
+
   it('keeps params of non-strip namespaces in the URL and still captures them', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [plainDefinition])
@@ -176,9 +192,8 @@ describe('installPreservedQueryTracker', () => {
   it('strips keys of multiple marked namespaces in a single redirect', async () => {
     const router = createTestRouter()
     let navigationAttempts = 0
-    router.beforeEach((_to, _from, next) => {
+    router.beforeEach(() => {
       navigationAttempts++
-      next()
     })
     installPreservedQueryTracker(router, [
       strippedDefinition,

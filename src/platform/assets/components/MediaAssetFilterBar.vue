@@ -3,6 +3,12 @@
     <SidebarTopArea>
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="
+          $t('g.searchPlaceholder', {
+            subject: $t('sideToolbar.labels.assets')
+          })
+        "
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -46,7 +52,7 @@
       <span
         v-for="chip in filterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-md bg-secondary py-1 pr-1 pl-2 text-xs whitespace-nowrap"
       >
         <span>{{ chip.label }}</span>
         <Button
@@ -63,11 +69,7 @@
           <i class="icon-[lucide--x] size-3" />
         </Button>
       </span>
-      <Button
-        variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
-        @click="clearFilters"
-      >
+      <Button variant="muted-textonly" class="h-6 px-1.5" @click="clearFilters">
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}
       </Button>
     </div>
@@ -78,10 +80,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,

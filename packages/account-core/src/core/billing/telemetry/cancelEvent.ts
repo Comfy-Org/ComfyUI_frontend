@@ -1,5 +1,5 @@
-import type { BillingFailed, BillingIntent } from './stages.js'
-import type { BillingCycle, SubscriptionCheckoutTier } from './vocabulary.js'
+import type { BillingFailed, BillingIntent } from './stages'
+import type { BillingCycle, SubscriptionCheckoutTier } from './vocabulary'
 
 type CancelAbandoned = {
   stage: 'abandoned'

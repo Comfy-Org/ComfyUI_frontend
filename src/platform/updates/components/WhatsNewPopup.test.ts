@@ -1,4 +1,4 @@
-import { useReleaseStore } from '../common/releaseStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
     recentRelease: null as ReleaseNote | null
@@ -10,13 +10,12 @@ beforeEach(() => {
 })
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
+import Button from '@comfyorg/design-system/button/Button'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ReleaseNote } from '../common/releaseService'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
 vi.hoisted(() => {
@@ -72,7 +71,7 @@ describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
     return render(WhatsNewPopup, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         components: { Button },
         stubs: {
           'i-lucide-x': true,

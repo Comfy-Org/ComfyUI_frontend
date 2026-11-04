@@ -33,6 +33,7 @@ true.
 | ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Target distribution    | Distribution selector with live versions                                            | `record --distribution <id>`; `check --distribution <id>` or `COMFY_TEST_DISTRIBUTION`                        |
 | Custom backend         | “Custom backend…” selection and URL prompt                                          | `record --backend <url>`; `check --backend <url>` or `COMFY_TEST_BACKEND`                                     |
+| Access-gated backend   | Environment check reminds about a missing service token                             | `DEV_SERVER_CF_ACCESS_CLIENT_ID` and `DEV_SERVER_CF_ACCESS_CLIENT_SECRET` in the environment                  |
 | Workflow search        | Searchable workflow autocomplete                                                    | `list --filter <keyword>`                                                                                     |
 | Add workflow from file | “(add from file…)” workflow option                                                  | `add-workflow <file> [--name <n>]`                                                                            |
 | Test tags              | Tag multiselect with hints                                                          | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags                  |
@@ -51,7 +52,7 @@ recording template branches on the selected distribution
 (`recordingTarget` in `src/recorder/template.ts`):
 
 - **local** — full `comfyPage` template: workflow pre-load, `test.use({
-initialFeatureFlags })`.
+  initialFeatureFlags })`.
 - **cloud / cloud-staging / cloud-prod / custom** — bare-page template:
   `page.goto(PLAYWRIGHT_TEST_URL)` and the recorder enabled immediately —
   no boot gate, so a sign-in screen can't stall the recorder (sign in
