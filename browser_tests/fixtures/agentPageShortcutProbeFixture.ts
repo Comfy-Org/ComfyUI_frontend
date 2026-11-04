@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture as base } from '@e2e/fixtures/ComfyPage'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 interface ProbeState {
   entersAtPage: string[]
@@ -15,6 +15,7 @@ interface ProbeWindow {
 export class PageShortcutProbe {
   constructor(private readonly page: Page) {}
 
+  /** Call once the app has loaded: the run-request count reads `window.app`. */
   async install(): Promise<void> {
     await this.page.evaluate(() => {
       const state: ProbeState = { entersAtPage: [], runRequests: 0 }
@@ -63,9 +64,7 @@ export class PageShortcutProbe {
 export const agentPageShortcutProbeFixture = base.extend<{
   pageShortcuts: PageShortcutProbe
 }>({
-  pageShortcuts: async ({ comfyPage }, use) => {
-    const probe = new PageShortcutProbe(comfyPage.page)
-    await probe.install()
-    await use(probe)
+  pageShortcuts: async ({ page }, use) => {
+    await use(new PageShortcutProbe(page))
   }
 })

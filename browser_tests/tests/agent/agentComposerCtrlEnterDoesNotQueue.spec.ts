@@ -17,14 +17,15 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test.beforeEach(async ({ page }) => {
-      await page.route('**/api/prompt', (route) =>
+    test.beforeEach(async ({ comfyPage, pageShortcuts }) => {
+      await comfyPage.page.route('**/api/prompt', (route) =>
         route.request().method() === 'POST'
           ? route.fulfill(
               jsonRoute({ prompt_id: 'run', number: 1, node_errors: {} })
             )
           : route.fallback()
       )
+      await pageShortcuts.install()
     })
 
     test('keeps composer Enter chords away from page shortcuts, while canvas Ctrl+Enter still queues', async ({
