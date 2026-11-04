@@ -31,16 +31,23 @@ Turn raw Playwright codegen output (from `pnpm comfy-test record` or
 Codegen records pixel positions. Replace each click on a node with a node
 reference:
 
-```typescript
-// Raw codegen
-await page.locator('canvas').click({ position: { x: 423, y: 267 } })
+Raw codegen:
 
-// Clicking a specific node
+```typescript
+await page.locator('canvas').click({ position: { x: 423, y: 267 } })
+```
+
+Clicking a specific node:
+
+```typescript
 const node = await comfyPage.nodeOps.getNodeRefById(3)
 await node.click('title')
+```
 
-// Double-clicking empty canvas to open search
-await comfyPage.canvas.dblclick({ position: { x: 500, y: 400 } })
+Double-clicking empty canvas to open search:
+
+```typescript
+await comfyPage.canvas.dblclick({ position: { x: 500, y: 400 }, delay: 5 })
 await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 ```
 

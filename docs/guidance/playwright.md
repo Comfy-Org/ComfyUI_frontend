@@ -2,6 +2,7 @@
 globs:
   - '**/*.spec.ts'
   - 'browser_tests/**/*.ts'
+  - 'browser_tests/assets/**/*.json'
 ---
 
 # Playwright E2E Conventions
@@ -45,8 +46,9 @@ equivalent.
 
 ## Test structure
 
-- Mock setup, state, and fixture arrangement go in `test.beforeEach()` or a
-  Playwright fixture. Inside `test()`, only act and assert.
+- Put setup every test in the scope needs (boot, shared mocks) in
+  `test.beforeEach()` or a fixture. Keep arrangement that explains one
+  scenario inside that test.
 - Never call `clearAllMocks` or reset mock state mid-test.
 - A spec contains imports, `test.describe`/`test` blocks, and Playwright hooks
   and configuration (`test.use()`, `test.describe.configure()`, file-level
@@ -63,7 +65,7 @@ import {
 
 test.describe('Node pinning', { tag: ['@canvas', '@node'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
   })
 
   test('pins the selected node with the P key', async ({ comfyPage }) => {
@@ -81,10 +83,13 @@ test.describe('Node pinning', { tag: ['@canvas', '@node'] }, () => {
   `comfyPage.settings`, `comfyPage.command`, and `comfyPage.nodeOps`. Check
   `fixtures/` for an existing helper before writing one.
 - Register a new domain helper as a Playwright fixture with `base.extend()` on
-  `@playwright/test`, not as a new `ComfyPage` property. Fixtures get setup
-  and teardown and compose with `mergeTests`.
+  `networkIsolationFixture` from `@e2e/fixtures/networkIsolationFixture`, not
+  as a new `ComfyPage` property. Fixtures get setup and teardown and compose
+  with `mergeTests`.
 
 ```typescript
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+
 export const test = base.extend<{ assetHelper: AssetHelper }>({
   assetHelper: async ({ page }, use) => {
     const helper = new AssetHelper(page)
@@ -222,12 +227,14 @@ file or describe scope, not `setSetting` in `beforeEach`.
 - Nested `test.use` replaces the parent's `initialSettings` object; repeat
   every override the nested scope needs.
 - Keep runtime `setSetting` calls only when a live change or persistence is the
-  behavior under test.
+  behavior under test. A same-test reload retains those changes.
 - `test.use({ initialUrl: '/?template=template_id' })` sets the first app URL;
   `initialLocalStorage` seeds storage before it.
 - Install mocks that startup settings depend on before `comfyPage` boots.
 - Manual backend boots call `comfyPage.setupSettings({ userId, settings })`
-  before navigation; `ComfyPage.setup()` alone does not reset settings.
+  before navigation; `ComfyPage.setup()` alone does not reset settings. Use a
+  multi-user backend; separate test runs must not share worker users on the
+  same backend.
 - Mock-only cloud tests get a fresh settings response per test from their boot
   helper; use a stateful mock to test persistence across reloads.
 - Uploaded files and saved workflows are not covered by the baseline. Clean
@@ -241,7 +248,9 @@ request fails its test. Use `route.fallback()` for unmatched requests, never
 `route.continue()`. Mock popups on `context`, not `page`. Use
 `test.use({ userAgent })` instead of `browser.newContext()`. Build custom test
 roots on `fixtures/networkIsolationFixture.ts`; oxlint bans raw Playwright
-`test` imports and `route.continue()` everywhere else.
+`test` imports and `route.continue()` everywhere else. Service workers are
+blocked. Keep auth mocks in the existing auth helpers; shared mocks only replace
+third-party scripts, model metadata lookups, and carousel media.
 
 ## Typed API mocks
 
@@ -322,8 +331,9 @@ baseline workflow.
 
 Visible is not always ready. Wait on the state the behavior depends on:
 `node.imgs` before an image context menu, settings cleanup before asserting
-persisted state, a locale reload before selecting nodes, the real builder UI
-rather than transient helper metadata. Shared helpers drive setup to a stable
+persisted state, a locale reload before selecting nodes, a workflow reload or
+node-def refresh before acting on the new nodes, the real builder UI rather
+than transient helper metadata. Shared helpers drive setup to a stable
 boundary; a timing assumption that only one spec needs stays in that spec.
 
 ### Common flake patterns

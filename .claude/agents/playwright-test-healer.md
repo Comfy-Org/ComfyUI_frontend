@@ -59,6 +59,7 @@ Key principles:
   workflow assets are in `browser_tests/assets/`.
 - `pnpm comfy-test tags` lists the area tags; `docs/guidance/playwright.md` lists
   the project-routing tags.
+- For raw codegen output, apply `.claude/skills/codegen-transform/SKILL.md`.
 - Backend and dev server setup is in `browser_tests/README.md`.
 - Match the failure against the common flake patterns and gotchas in
   `docs/guidance/playwright.md` before changing a wait or an assertion.

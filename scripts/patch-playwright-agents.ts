@@ -25,6 +25,7 @@ const sharedContext = `
   workflow assets are in \`browser_tests/assets/\`.
 - \`pnpm comfy-test tags\` lists the area tags; \`docs/guidance/playwright.md\` lists
   the project-routing tags.
+- For raw codegen output, apply \`.claude/skills/codegen-transform/SKILL.md\`.
 - Backend and dev server setup is in \`browser_tests/README.md\`.`
 
 const patches: Record<string, AgentPatch> = {
@@ -113,7 +114,7 @@ ${sharedContext}
     context: `${sharedContext}
 - Wrap every test in \`test.describe('Name', { tag: [...] }, () => { ... })\`
   with the tags the plan selected, and give it a descriptive title.
-- Never use \`page.goto()\`, \`waitForTimeout()\`, or imports from
+- Never use \`page.goto()\`, \`waitForTimeout()\`, or the \`test\` export of
   \`@playwright/test\`.`
   },
 
@@ -144,12 +145,17 @@ ${sharedContext}
   }
 }
 
+function withoutIndentation(text: string): string {
+  return text.replace(/^[ \t]+/gm, '')
+}
+
 function applyReplacement(
   content: string,
   [from, to]: Replacement,
   filename: string
 ): string {
-  if (content.includes(to)) return content
+  if (withoutIndentation(content).includes(withoutIndentation(to)))
+    return content
   if (!content.includes(from)) {
     throw new Error(
       `${filename}: text not found. Run scripts/update-playwright-agents.sh to regenerate the file, or update the replacement starting "${from.slice(0, 60)}"`
@@ -168,6 +174,7 @@ function removeClaudeTools(content: string): string {
 }
 
 const missingFiles: string[] = []
+const patchedFiles: [path: string, content: string][] = []
 
 for (const [filename, patch] of Object.entries(patches)) {
   const filePath = join(agentsDir, filename)
@@ -191,12 +198,16 @@ for (const [filename, patch] of Object.entries(patches)) {
   )
 
   content += `\n\n${CONTEXT_HEADING}\n${patch.context}\n`
-  writeFileSync(filePath, content, 'utf-8')
-  console.log(`  ✅ ${filename}: patched`)
+  patchedFiles.push([filePath, content])
 }
 
 if (missingFiles.length > 0) {
   throw new Error(
     `Missing expected Playwright agent files: ${missingFiles.join(', ')}`
   )
+}
+
+for (const [filePath, content] of patchedFiles) {
+  writeFileSync(filePath, content, 'utf-8')
+  console.log(`  ✅ ${filePath}: patched`)
 }

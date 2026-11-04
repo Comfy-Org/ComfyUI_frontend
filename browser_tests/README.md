@@ -337,7 +337,8 @@ pnpm test:browser:local --update-snapshots
 
 ### Creating new baselines in CI
 
-1. Write the test with one of the screenshot assertions above.
+1. Write the test with one of the screenshot helpers in
+   [Screenshots](../docs/guidance/playwright.md#screenshots).
 2. Add the **`New Browser Test Expectations`** label, comment
    `/update-playwright`, or tick the "Update Playwright expectations"
    checkbox in the Playwright section of the PR report comment.

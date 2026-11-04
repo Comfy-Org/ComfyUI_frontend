@@ -76,8 +76,9 @@ application behavior.
   workflow assets are in `browser_tests/assets/`.
 - `pnpm comfy-test tags` lists the area tags; `docs/guidance/playwright.md` lists
   the project-routing tags.
+- For raw codegen output, apply `.claude/skills/codegen-transform/SKILL.md`.
 - Backend and dev server setup is in `browser_tests/README.md`.
 - Wrap every test in `test.describe('Name', { tag: [...] }, () => { ... })`
   with the tags the plan selected, and give it a descriptive title.
-- Never use `page.goto()`, `waitForTimeout()`, or imports from
+- Never use `page.goto()`, `waitForTimeout()`, or the `test` export of
   `@playwright/test`.

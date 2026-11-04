@@ -72,5 +72,6 @@ Load a workflow before exploring; the app does little on an empty canvas.
   workflow assets are in `browser_tests/assets/`.
 - `pnpm comfy-test tags` lists the area tags; `docs/guidance/playwright.md` lists
   the project-routing tags.
+- For raw codegen output, apply `.claude/skills/codegen-transform/SKILL.md`.
 - Backend and dev server setup is in `browser_tests/README.md`.
 - Name the workflow asset each scenario starts from, and the tags it needs.
