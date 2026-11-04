@@ -517,6 +517,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
+  async function moveBookmark(oldPath: string, newPath: string) {
+    try {
+      await bookmarkStore.setBookmarked(oldPath, false)
+      await bookmarkStore.setBookmarked(newPath, true)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'error_saving_renamed_workflow_bookmark',
+        level: 'warning',
+        context: { oldPath, newPath }
+      })
+    }
+  }
+
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
@@ -552,10 +566,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
 
       moveWorkflowThumbnail(oldKey, newKey)
-      if (wasBookmarked) {
-        await bookmarkStore.setBookmarked(oldPath, false)
-        await bookmarkStore.setBookmarked(newPath, true)
-      }
+      if (wasBookmarked) await moveBookmark(oldPath, newPath)
       return { renamed: true, draftRelocated }
     } finally {
       isBusy.value = false
