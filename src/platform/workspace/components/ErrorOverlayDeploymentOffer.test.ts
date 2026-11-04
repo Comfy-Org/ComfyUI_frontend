@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { defineComponent, effectScope, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
@@ -24,7 +24,13 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
+import {
+  isWorkflowNeedsDeploymentDialogOpen,
+  openWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
+import type { MarkFor } from '@/platform/workspace/workflowDeploymentOffer'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -67,7 +73,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     get isGraphReady() {
       return hoisted.rootGraph !== undefined
     }
-  }
+  },
+  sanitizeNodeName: (name: string) => name
 }))
 
 const i18n = createI18n({
@@ -185,6 +192,12 @@ function expectNoticeAsToday() {
       .getAllByRole('button')
       .map((button) => button.textContent.trim())
   ).toEqual(['View details', ''])
+}
+
+function editorCompatibilityMarks(): MarkFor {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(() => useDeploymentCompatibility())!.markFor
 }
 
 function customDeploymentOffer() {
@@ -523,6 +536,28 @@ describe('ErrorOverlay deployment offer', () => {
       expectNoticeAsToday()
     }
   )
+
+  it('hides the Switch row on Comfy Cloud once the dialog opens on its own for a ready deployment that runs the workflow, even after it closes', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA], [plain])
+    )
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockResolvedValue()
+    renderNotice()
+
+    await noticeMissingNodes(NO_REPLACEMENT, editorCompatibilityMarks())
+    await nextTick()
+
+    expect(isWorkflowNeedsDeploymentDialogOpen()).toBe(true)
+    expect(screen.queryByTestId('error-overlay-deployment-offer')).toBeNull()
+
+    useDialogStore().closeDialog({ key: 'global-workflow-needs-deployment' })
+    await nextTick()
+
+    expect(screen.queryByTestId('error-overlay-deployment-offer')).toBeNull()
+    expectNoticeAsToday()
+  })
 
   it.for(offerRows)(
     'shows the $row row in a later notice after the deployment dialog closes',
