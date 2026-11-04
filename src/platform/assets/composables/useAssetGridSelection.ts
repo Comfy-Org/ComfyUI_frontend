@@ -50,7 +50,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     isEnabled = () => true
   } = options
 
-  const marqueeRect = ref<RectEdges | null>(null)
+  const marquee = ref<{ rect: RectEdges; visible: RectEdges } | null>(null)
   const isHoveringPanel = useElementHover(hoverTargetRef)
 
   let startX = 0
@@ -82,7 +82,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     if (!container) return
     dragScroller = container.querySelector<HTMLElement>(SCROLLER_SELECTOR)
     startScrollTop = dragScroller?.scrollTop ?? 0
-    dragBounds = container.getBoundingClientRect()
+    dragBounds = (dragScroller ?? container).getBoundingClientRect()
   }
 
   function applyMarquee(clientX: number, clientY: number) {
@@ -91,14 +91,12 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     const dy = (dragScroller?.scrollTop ?? 0) - startScrollTop
     recordRenderedCards(container, dy)
     const pointer = {
-      x: clientX,
+      x: clamp(clientX, dragBounds.left, dragBounds.right),
       y: clamp(clientY, dragBounds.top, dragBounds.bottom) + dy
     }
     const contentRect = normalizeMarqueeRect({ x: startX, y: startY }, pointer)
-    marqueeRect.value = clipRectToBounds(
-      shiftRectY(contentRect, -dy),
-      dragBounds
-    )
+    const rect = shiftRectY(contentRect, -dy)
+    marquee.value = { rect, visible: clipRectToBounds(rect, dragBounds) }
     const cards = [...dragCards].map(([id, rect]) => ({ id, rect }))
     setSelectedIds(
       [...selectMarqueeIds(cards, contentRect, baseIds, isSubtractive)],
@@ -143,7 +141,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   function endDrag() {
     if (!isTracking) return
     isTracking = false
-    marqueeRect.value = null
+    marquee.value = null
     dragCards.clear()
     dragBounds = null
     if (isDragging) scheduleSuppressNextClick()
@@ -256,13 +254,14 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   onScopeDispose(clearSuppressTimer)
 
   const marqueeStyle = computed(() => {
-    const rect = marqueeRect.value
-    if (!rect) return null
+    if (!marquee.value) return null
+    const { rect, visible } = marquee.value
     return {
       left: `${rect.left}px`,
       top: `${rect.top}px`,
       width: `${rect.right - rect.left}px`,
-      height: `${rect.bottom - rect.top}px`
+      height: `${rect.bottom - rect.top}px`,
+      clipPath: `inset(${visible.top - rect.top}px ${rect.right - visible.right}px ${rect.bottom - visible.bottom}px ${visible.left - rect.left}px)`
     }
   })
 
