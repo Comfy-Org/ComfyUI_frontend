@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { createEngine } from './createEngine'
+import type {
+  AppContract,
+  ExecutableNode,
+  GenerateContract,
+  SuperNode
+} from './documentSchema'
 import {
   appNode,
   deferredExecutor,
@@ -15,9 +21,10 @@ import {
   testHost,
   withLastResult
 } from './engineFixtures'
+import type { FakeExecutor, TestHost } from './engineFixtures'
 import { findNode } from './graphTopology'
 import { activityOf, nodeProgress, visibleMissingPorts } from './selectors'
-import type { RunEvent } from './types'
+import type { RunEvent, RunOutcome, RunRequest, SuperComfyEvent } from './types'
 
 const imageIn = port('image', 'image', { required: true })
 
@@ -38,6 +45,37 @@ function settledRuns(events: RunEvent[]): number {
     ({ type }) => type === 'runSucceeded' || type === 'runFailed'
   ).length
 }
+
+function contractOf<T extends GenerateContract | AppContract>(
+  node: ExecutableNode & { contract: T | null }
+): T {
+  assert(node.contract, 'fixture node has a contract')
+  return node.contract
+}
+
+function applyEdits(harness: TestHost, edits: readonly SuperComfyEvent[]) {
+  edits.forEach((event) => harness.edit(event))
+}
+
+async function nodesRunBy(
+  run: () => Promise<unknown>,
+  executors: readonly FakeExecutor[]
+): Promise<string[]> {
+  const before = executors.map(({ calls }) => calls.length)
+  await run()
+  return executors.flatMap(({ calls }, position) =>
+    calls.slice(before[position]).map(({ request }) => request.node.id)
+  )
+}
+
+function failFirstRun({ run }: RunRequest): RunOutcome {
+  return run.index === 0
+    ? { ok: false, message: 'Payment required' }
+    : succeeded(fileItem(`r${run.index}`))
+}
+
+const generatedFirst = generateNode('first', 'image', { inputs: [imageIn] })
+const appFirst = appNode('first', { inputs: [imageIn] })
 
 describe(createEngine, () => {
   describe('graph runs', () => {
@@ -210,40 +248,89 @@ describe(createEngine, () => {
       expect(second).toMatchObject({ ok: true, outcomes: { gen: 'upToDate' } })
     })
 
-    it('[R6c] changing a setting re-runs that node and its dependents only', async () => {
-      const generate = deferredExecutor({ answer: freshOutputs() })
-      const harness = testHost(
-        docWith(
-          [
-            ioNode('source', 'image', [fileItem('a')]),
-            generateNode('first', 'image', { inputs: [imageIn] }),
-            generateNode('second', 'image', { inputs: [imageIn] }),
-            generateNode('unrelated', 'image', { inputs: [imageIn] })
-          ],
-          [
-            edge('source', 'out', 'first', 'image'),
-            edge('first', 'out', 'second', 'image'),
-            edge('source', 'out', 'unrelated', 'image')
-          ]
-        ),
-        { app: deferredExecutor(), generate }
-      )
-      const engine = createEngine(harness.host)
-      await engine.runGraph()
-      const callsBefore = generate.calls.length
+    it.for<{ name: string; first: SuperNode; edits: SuperComfyEvent[] }>([
+      {
+        name: 'a setting changed',
+        first: generatedFirst,
+        edits: [
+          {
+            type: 'valueChanged',
+            nodeId: 'first',
+            name: 'quality',
+            value: 'high'
+          }
+        ]
+      },
+      {
+        name: 'another model with the same ports was picked',
+        first: generatedFirst,
+        edits: [
+          { type: 'modelPicked', nodeId: 'first', modelId: 'other/model' },
+          {
+            type: 'modelContractResolved',
+            nodeId: 'first',
+            modelId: 'other/model',
+            modelLabel: 'other',
+            contract: contractOf(generatedFirst)
+          }
+        ]
+      },
+      {
+        name: "the model's schema changed",
+        first: generatedFirst,
+        edits: [
+          {
+            type: 'modelContractResolved',
+            nodeId: 'first',
+            modelId: 'fake/model',
+            modelLabel: 'model',
+            contract: { ...contractOf(generatedFirst), version: 'v2' }
+          }
+        ]
+      },
+      {
+        name: 'the saved app changed',
+        first: appFirst,
+        edits: [
+          {
+            type: 'appContractResolved',
+            nodeId: 'first',
+            workflowPath: 'first.app.json',
+            title: 'first',
+            contract: { ...contractOf(appFirst), version: 2 }
+          }
+        ]
+      }
+    ])(
+      '[R6c] re-runs a node and its dependents only when $name',
+      async ({ first, edits }) => {
+        const app = deferredExecutor({ answer: freshOutputs() })
+        const generate = deferredExecutor({ answer: freshOutputs() })
+        const harness = testHost(
+          docWith(
+            [
+              ioNode('source', 'image', [fileItem('a')]),
+              first,
+              generateNode('second', 'image', { inputs: [imageIn] }),
+              generateNode('unrelated', 'image', { inputs: [imageIn] })
+            ],
+            [
+              edge('source', 'out', 'first', 'image'),
+              edge('first', 'out', 'second', 'image'),
+              edge('source', 'out', 'unrelated', 'image')
+            ]
+          ),
+          { app, generate }
+        )
+        const engine = createEngine(harness.host)
+        await engine.runGraph()
+        applyEdits(harness, edits)
 
-      harness.edit({
-        type: 'valueChanged',
-        nodeId: 'first',
-        name: 'quality',
-        value: 'high'
-      })
-      await engine.runGraph()
+        const rerun = await nodesRunBy(() => engine.runGraph(), [app, generate])
 
-      expect(
-        generate.calls.slice(callsBefore).map(({ request }) => request.node.id)
-      ).toEqual(['first', 'second'])
-    })
+        expect(rerun).toEqual(['first', 'second'])
+      }
+    )
 
     it('[R6d] a graph run retries only the failed runs of a partially failed node', async () => {
       const generate = deferredExecutor()
@@ -329,6 +416,57 @@ describe(createEngine, () => {
           failures: [{ index: 1, code: 'threw', message: 'socket closed' }]
         }
       })
+    })
+
+    it('[R7b] a failed run does not stop the runs that had not started yet', async () => {
+      const generate = deferredExecutor({
+        concurrency: 1,
+        answer: failFirstRun
+      })
+      const harness = testHost(
+        docWith(
+          [threeImages(), generateNode('gen', 'image', { inputs: [imageIn] })],
+          [edge('images', 'out', 'gen', 'image')]
+        ),
+        { app: deferredExecutor(), generate }
+      )
+
+      await createEngine(harness.host).runGraph()
+
+      expect(generate.calls.map(({ request }) => request.run.index)).toEqual([
+        0, 1, 2
+      ])
+      expect(findNode(harness.state().doc, 'gen')).toMatchObject({
+        result: {
+          status: 'partial',
+          outputs: { out: [fileItem('r1'), fileItem('r2')] }
+        }
+      })
+    })
+
+    it('[R7c] shows the queue position an executor reports for a run', async () => {
+      const generate = deferredExecutor()
+      const harness = testHost(
+        docWith(
+          [
+            ioNode('source', 'image', [fileItem('a')]),
+            generateNode('gen', 'image', { inputs: [imageIn] })
+          ],
+          [edge('source', 'out', 'gen', 'image')]
+        ),
+        { app: deferredExecutor(), generate }
+      )
+      const finished = createEngine(harness.host).runGraph()
+      await generate.untilCalls(1)
+
+      generate.calls[0].request.onProgress({ queuePosition: 3 })
+
+      expect(activityOf(harness.state(), 'gen')).toMatchObject({
+        phase: 'running',
+        slots: [{ state: 'running', queuePosition: 3 }]
+      })
+      generate.answerAll(() => succeeded(fileItem('done')))
+      await finished
     })
 
     it('[R7d] when every run fails, downstream in that graph run is blocked and an unrelated branch still finishes', async () => {
