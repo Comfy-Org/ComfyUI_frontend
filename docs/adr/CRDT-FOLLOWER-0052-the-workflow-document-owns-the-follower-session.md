@@ -294,13 +294,23 @@ evidence on unit coverage alone. Guard: the specs themselves.
 **Stage 1 — move the owner.** Two steps, in this order, because the second is
 useless without the first.
 
-_Stage 1a — the transport becomes page-session owned._ Move `events` and
-`docTransport` out of `AgentPanelRoot.vue`'s setup into a page-session owner,
-and remove the `onBeforeUnmount(() => docTransport.destroy())` that makes panel
-teardown drop the tap. The panel receives both instead of constructing them.
+_Stage 1a — the transport becomes page-session owned._ Move `events`,
+`docTransport` **and the identity resolver that feeds the follower's user id**
+out of `AgentPanelRoot.vue`'s setup into a page-session owner, and remove the
+`onBeforeUnmount(() => docTransport.destroy())` and
+`onBeforeUnmount(() => agentIdentity.stop())` calls that make panel teardown
+drop the tap and the identity. That resolver (`resolveAgentIdentity`,
+`AgentPanelRoot.vue:271-282`) and the `agentSocketIdentity` watcher that calls
+`events.reconnect()` / `agentIdentity.reset()` on an account or workspace
+change (`:284-314`) must move together: `agentUserId`
+(`AgentPanelRoot.vue:1188-1190`), the value `useAgentCrdtFollower` is given as
+`userId`, reads `agentIdentity.state.value` directly, so moving only the
+transport would leave the follower's identity input, and its reconnect-on-
+account-change behaviour, torn down by the same panel close Stage 1a exists to
+stop affecting. The panel receives all three instead of constructing them.
 Nothing else moves yet, so the follower seam still disposes with the panel and
-the user-visible behaviour is unchanged except that the agent socket is no
-longer closed by a panel close.
+the user-visible behaviour is unchanged except that the agent socket and
+identity are no longer closed by a panel close.
 
 _Stage 1b — the session registry._ Add the document-keyed registry with the
 lease semantics of Decision 1; `AgentPanelRoot.vue` resolves instead of
@@ -312,14 +322,22 @@ no observable change: the whole point of the stage is that a panel close stops
 destroying the replica and stops closing the socket, which is the Negative
 consequence recorded below about a subscription the user cannot see. Keep
 today's semantics for everything else, including "my graph is readable only
-while my document's tab is active", which the shared root still requires.
+while my document's tab is active", which the shared root still requires. An
+account or workspace change while the panel is closed must still reconnect
+the socket and reset identity exactly as it does today while the panel is
+open — Stage 1 acceptance covers that transition explicitly, not only the
+panel-open case.
 _Invariants at risk:_ the replica is replaced only on a lineage break, and a
 reconnect recovers by state-vector delta rather than a wipe; one replica per
 document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
-document rule and linking this ADR; an `assert` that a lease release never
-takes a holder count below zero, so a double release cannot dispose a session
-another tab still holds; and a new rule in
+document rule and linking this ADR; a release-idempotency guard — each lease
+handle tracks whether it has already released, and a second release of the
+*same* handle is a no-op that asserts loudly, since a holder-count floor of
+zero cannot catch it: two distinct holders releasing the same handle twice
+reads 2 → 1 → 0 and never goes negative, so a below-zero assert alone would
+silently let a leased session dispose while another tab still holds it; and a
+new rule in
 `scripts/check-follower-invariants.ts` (run by `pnpm follower-invariants:check`
 and by CI) restricting `new FollowerDoc(`, `new LayoutFollowerBridge(` and
 `useAgentCrdtFollower(` to the session-owner module, which makes FRONT-3582's
