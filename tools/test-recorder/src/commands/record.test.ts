@@ -92,6 +92,8 @@ vi.mock(import('../recorder/runner'), () => ({
   runRecording
 }))
 vi.mock(import('../devserver/manager'), () => ({ ensureDevServer }))
+// Keeps step 7 from finding and launching a real coding-agent CLI on this host.
+vi.mock(import('../checks/agentCli'), () => ({ detectAgentClis: () => [] }))
 vi.mock(import('../ui/logger'), () => ({
   alert: vi.fn(),
   blank: vi.fn(),
@@ -180,40 +182,63 @@ const overwritePrompt = expect.objectContaining({
 })
 
 describe('runRecord overwrite guard', () => {
-  it('leaves the existing spec alone when the overwrite prompt is declined', async () => {
-    vi.clearAllMocks()
-    Object.defineProperty(process.stdin, 'isTTY', {
-      configurable: true,
-      value: true
-    })
-    const { root, outputPath } = seedExistingSpec('decline-overwrite')
-    try {
-      runRecording.mockResolvedValue({
-        success: true,
-        recordedCode: RECORDED_CODE
+  // The no and cancel rows keep the committed bytes; only an explicit yes may
+  // replace them, and it must write the transformed recording.
+  it.for([
+    {
+      outcome: 'declined',
+      answer: false,
+      exitCode: 1,
+      kept: true
+    },
+    {
+      outcome: 'cancelled',
+      answer: Symbol('clack:cancel'),
+      exitCode: 0,
+      kept: true
+    },
+    { outcome: 'accepted', answer: true, exitCode: undefined, kept: false }
+  ])(
+    'honours an overwrite prompt that is $outcome',
+    async ({ outcome, answer, exitCode, kept }) => {
+      vi.clearAllMocks()
+      Object.defineProperty(process.stdin, 'isTTY', {
+        configurable: true,
+        value: true
       })
-      confirm.mockImplementation(async ({ message }: { message: string }) =>
-        message.includes('Overwrite it?') ? false : true
-      )
-      const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
-        throw new Error(`exit:${code}`)
-      })
+      const slug = `${outcome}-overwrite`
+      const { root, outputPath } = seedExistingSpec(slug)
+      try {
+        runRecording.mockResolvedValue({
+          success: true,
+          recordedCode: RECORDED_CODE
+        })
+        confirm.mockImplementation(async ({ message }: { message: string }) =>
+          message.includes('Overwrite it?')
+            ? answer
+            : !/refactor|Pull Request/.test(message)
+        )
+        const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+          throw new Error(`exit:${code}`)
+        })
 
-      await expect(runRecord(prefillFor('decline-overwrite'))).rejects.toThrow(
-        'exit:1'
-      )
+        const run = runRecord(prefillFor(slug))
+        if (exitCode === undefined) await run
+        else await expect(run).rejects.toThrow(`exit:${exitCode}`)
 
-      expect(confirm).toHaveBeenCalledWith(overwritePrompt)
-      expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
-      expect(exit).toHaveBeenCalledWith(1)
-      expect(fail).toHaveBeenCalledWith(
-        'Refusing to overwrite existing test',
-        expect.any(String)
-      )
-    } finally {
-      rmSync(root, { recursive: true, force: true })
+        expect(confirm).toHaveBeenCalledWith(overwritePrompt)
+        const saved = readFileSync(outputPath, 'utf-8')
+        if (kept) {
+          expect(saved).toBe(EXISTING_SPEC)
+        } else {
+          expect(saved).toContain("comfyPage.page.getByText('Queue').click()")
+          expect(exit).not.toHaveBeenCalled()
+        }
+      } finally {
+        rmSync(root, { recursive: true, force: true })
+      }
     }
-  })
+  )
 
   it('refuses without prompting when stdin closed at EOF during the paste', async () => {
     vi.clearAllMocks()

@@ -774,14 +774,12 @@ export async function runRecord(
       )
       process.exit(1)
     }
-    const overwrite = await confirm({
-      message: `${slug}.spec.ts already exists. Overwrite it?`,
-      initialValue: false
-    })
-    if (isCancel(overwrite)) {
-      cancel('Operation cancelled')
-      process.exit(0)
-    }
+    const overwrite = answered(
+      await confirm({
+        message: `${slug}.spec.ts already exists. Overwrite it?`,
+        initialValue: false
+      })
+    )
     if (!overwrite) {
       fail(
         'Refusing to overwrite existing test',
