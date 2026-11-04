@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type {
   WebSessionRequests,
   WebSessionRequestScope
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
@@ -690,7 +690,7 @@ describe('installDesktopLoginRedemption', () => {
       const { trigger, seedStash, stashedCode } = await setup()
       mockAuthStore.currentUser = firebase ? mockAuthStore.currentUser : null
       const { provideWebSessionRequests } =
-        await import('@/platform/auth/session/webSessionFetch')
+        await import('@comfyorg/api-client/webSessionFetch')
       const scope = fromPartial<WebSessionRequestScope>({
         epoch: 1,
         workspaceId: 'stale-workspace',
@@ -721,7 +721,7 @@ describe('installDesktopLoginRedemption', () => {
   it('does not redeem an account code after the session changes during approval', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = fromPartial<WebSessionRequestScope>({
       epoch: 1,
       session: { user: { id: 'first-user' } }
@@ -749,7 +749,7 @@ describe('installDesktopLoginRedemption', () => {
     async (refusal) => {
       const { trigger, seedStash, stashedCode } = await setup()
       const { provideWebSessionRequests } =
-        await import('@/platform/auth/session/webSessionFetch')
+        await import('@comfyorg/api-client/webSessionFetch')
       const scope = fromPartial<WebSessionRequestScope>({
         epoch: 1,
         session: { user: { id: 'comfy-user' } }
@@ -779,7 +779,7 @@ describe('installDesktopLoginRedemption', () => {
   it('keeps the retry delay when auth objects refresh with the same identity', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = fromPartial<WebSessionRequestScope>({
       epoch: 1,
       session: { user: { id: 'comfy-user' } }
@@ -809,7 +809,7 @@ describe('installDesktopLoginRedemption', () => {
   it('keeps the code while interactive SSO is pending and retries after navigation', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = fromPartial<WebSessionRequestScope>({
       epoch: 1,
       session: { user: { id: 'comfy-user' } }
@@ -845,7 +845,7 @@ describe('installDesktopLoginRedemption', () => {
   ])('ignores a stale retry while $name waits for SSO', async ({ code }) => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = fromPartial<WebSessionRequestScope>({
       epoch: 1,
       session: { user: { id: 'comfy-user' } }
@@ -884,7 +884,7 @@ describe('installDesktopLoginRedemption', () => {
   it('waits for the browser session after Firebase sign-in', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = vi
       .fn<WebSessionRequests['scope']>()
       .mockResolvedValue(undefined)
@@ -928,7 +928,7 @@ describe('installDesktopLoginRedemption', () => {
     const { trigger, seedStash, stashedCode } = await setup()
     mockAuthStore.currentUser = null
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     provideWebSessionRequests(
       fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
     )
@@ -943,7 +943,7 @@ describe('installDesktopLoginRedemption', () => {
   it('keeps the redemption budget after repeated session initialization stalls', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     const scope = vi
       .fn<WebSessionRequests['scope']>()
       .mockImplementation(() => new Promise(() => {}))
@@ -975,7 +975,7 @@ describe('installDesktopLoginRedemption', () => {
   it('releases the drain when session initialization stalls', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
-      await import('@/platform/auth/session/webSessionFetch')
+      await import('@comfyorg/api-client/webSessionFetch')
     provideWebSessionRequests(
       fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
     )

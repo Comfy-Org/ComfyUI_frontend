@@ -1,4 +1,4 @@
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canDesktopHostMintPartnerNodeToken,

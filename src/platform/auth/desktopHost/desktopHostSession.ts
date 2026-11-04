@@ -181,15 +181,16 @@ export async function desktopHostPartnerNodeToken(
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     const result = await Promise.race([
-      current.getPartnerNodeToken(workspaceId).then(
-        (token): PartnerNodeTokenOutcome =>
+      current
+        .getPartnerNodeToken(workspaceId)
+        .then((token): PartnerNodeTokenOutcome =>
           token
             ? { status: 'ready', token }
             : {
                 status: 'failed',
                 error: new Error('Desktop partner credential unavailable')
               }
-      ),
+        ),
       new Promise<PartnerNodeTokenOutcome>((resolve) => {
         timer = setTimeout(
           () =>

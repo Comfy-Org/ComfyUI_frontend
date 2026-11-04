@@ -1,8 +1,8 @@
 import { watch } from 'vue'
 import { classifyWebSessionFailure } from '@comfyorg/account-core/webSession'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
