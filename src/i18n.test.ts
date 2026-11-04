@@ -575,6 +575,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
       expect(resolveSupportedLocale('it')).toBe('it')
+      expect(resolveSupportedLocale('sv')).toBe('sv')
     })
 
     it('matches case-insensitively per BCP-47 and returns canonical casing', () => {
@@ -593,6 +594,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('fr-CA')).toBe('fr')
       // ko-KR → ko (shipped) → ko
       expect(resolveSupportedLocale('ko-KR')).toBe('ko')
+      expect(resolveSupportedLocale('sv-SE')).toBe('sv')
       // zh-CN → zh (shipped) → zh (Simplified is the base)
       expect(resolveSupportedLocale('zh-CN')).toBe('zh')
     })
