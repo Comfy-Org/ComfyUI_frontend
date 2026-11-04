@@ -1534,8 +1534,9 @@ export type AutoReloadSettingsRequest = {
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
  * These states do not determine surface visibility. Unified billing settings
- * hide the auto top-up card when can_top_up is false, including paused or
- * payment-failed billing.
+ * show the auto top-up card only when capabilities.can_view_auto_top_up is
+ * true; it is false when can_top_up is, including paused or payment-failed
+ * billing.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -1705,8 +1706,9 @@ export type BillingBalanceResponse = {
  *
  * When the deployment has billing disabled, this endpoint answers without
  * consulting billing-api: can_top_up is true; can_manage_members,
- * can_invite_members, can_manage_subscription and can_manage_auto_top_up
- * follow the owner role. Other billing-action fields are false. These role
+ * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
+ * can_view_auto_top_up follow the owner role, and
+ * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
  * facts do not promise that billing endpoints are available.
  *
  */
@@ -2006,6 +2008,38 @@ export type BillingCapabilities = {
    */
   can_upgrade: boolean
   /**
+   * - Answers: should the client show the owner auto top-up card?
+   * - True: can_manage_auto_top_up and can_top_up are both true in this
+   * response. Render it as received; never recombine those two fields.
+   * - False: denied_reasons.can_view_auto_top_up names the first refusal,
+   * the can_manage_auto_top_up reason before the can_top_up reason.
+   * - When billing-api omits this field, ingest serves
+   * can_manage_auto_top_up and can_top_up as served here, and takes the
+   * reason from their denied_reasons in the same order.
+   * - Not: authorization to enable, edit or charge auto top-up, and not
+   * setup readiness, which auto_top_up_setup reports. auto_top_up_enabled
+   * still gates the rollout.
+   *
+   */
+  can_view_auto_top_up: boolean
+  /**
+   * - Answers: should the client show the member auto top-up notice that
+   * sends a non-owner to a workspace owner?
+   * - True: the actor is a member but not an owner, and the workspace
+   * passes every can_top_up condition that does not depend on the
+   * actor: not past due or paused, a recognized tier and status, and
+   * purchases not paused by staff. Render it as received; never derive
+   * it from can_top_up, can_manage_auto_top_up or their reasons.
+   * - False: denied_reasons.can_view_auto_top_up_member_notice names the
+   * first refusal.
+   * - When billing-api omits this field, ingest serves true for a member
+   * who is not an owner, with no reason.
+   * - Not: authorization to buy credits or change auto top-up.
+   * auto_top_up_enabled still gates the rollout.
+   *
+   */
+  can_view_auto_top_up_member_notice: boolean
+  /**
    * Whether to offer the actor's own usage attribution view. Optional for rolling deployments; absent means unknown. True for a current workspace member with usage attribution enabled. Clients must use person/source ledger groupings or person/source filters, which the existing route scopes to the actor for members. This is not permission for the default model grouping, whole-workspace analytics, or other unscoped queries. Query authorization and filters are unchanged. Attribution disabled emits usage_attribution_unavailable; missing denial means unknown.
    */
   can_view_own_usage?: boolean
@@ -2033,9 +2067,38 @@ export type BillingCapabilitiesResponse = {
    */
   auto_top_up_enabled: boolean
   auto_top_up_setup?: AutoTopUpSetup
+  /**
+   * Which set of billing notices speaks to the plan. Rendered as received;
+   * never derive it from tier names, slugs or the workspace type.
+   * - none: no subscription, a reserved (scheduled) row, an ENTERPRISE plan,
+   * or a plan that is neither a Team plan nor a personal paid tier (FREE or
+   * unrecognised). ENTERPRISE wins over every other rule.
+   * - team: a Team plan, meaning the subscription has a team credit stop or a
+   * per-credit or retired seat-based Team plan slug.
+   * - personal: a STANDARD, CREATOR, PRO or FOUNDERS_EDITION plan that is not
+   * a Team plan.
+   * It ignores the plan's status (an ended plan keeps its audience) and the
+   * user's role. It is not a capability and not authorization. Absent in the
+   * same cases as recovery_route.
+   *
+   */
+  billing_notice_audience?: 'none' | 'team' | 'personal'
   capabilities: BillingCapabilities
   denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
+  /**
+   * When the ending notice of a canceled sales-managed plan starts: its
+   * cancel_at minus 14 days. The notice applies once the current time is
+   * at or after this instant; compare it on the client clock rather than
+   * caching a yes/no answer. Present only while plan_kind is sales_managed,
+   * the subscription is canceled and its cancel_at is still in the future.
+   * Absent otherwise (including for self-serve plans, whose ending notice
+   * shows as soon as they are canceled), when billing is disabled, when
+   * talking to a billing-api version that predates it, and when the
+   * upstream value is not a valid timestamp.
+   *
+   */
+  ending_notice_starts_at?: string
   /**
    * Time after which the client must refetch this snapshot.
    */
@@ -2639,6 +2702,42 @@ export type BillingCapabilityDenials = {
     | 'billing_operation_in_progress'
     | 'sales_managed'
     | 'no_upgrade_available'
+  /**
+   * Why can_view_auto_top_up is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the can_manage_auto_top_up refusal, then the can_top_up refusal.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - creator_only_provisioning: Only the creator can provision this workspace billing identity.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Staff paused customer credit purchases; this lifts without customer action.
+   *
+   */
+  can_view_auto_top_up?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+  /**
+   * Why can_view_auto_top_up_member_notice is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the role refusal, then the workspace refusals in the order can_top_up reaches them.
+   * - not_a_member: The actor is not a workspace member.
+   * - workspace_owner: The actor is a workspace owner, who sees the owner auto top-up card (can_view_auto_top_up) instead.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought, including a paused workspace.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Staff paused customer credit purchases; this lifts without customer action.
+   *
+   */
+  can_view_auto_top_up_member_notice?:
+    | 'not_a_member'
+    | 'workspace_owner'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
   /**
    * Why can_view_own_usage is false, in enum order. Attribution disabled emits usage_attribution_unavailable. Missing means no recognized explanation, including disabled team-workspaces or unreadable membership, never permission. This does not explain can_view_team_usage.
    */
@@ -13197,7 +13296,7 @@ export type CreateTopupQuoteData = {
 export type CreateTopupQuoteErrors = {
   /**
    * Refused: `INVALID_REQUEST`, `INVALID_AMOUNT`,
-   * `LEGACY_STRIPE_CHECKOUT_REQUIRED` (use Stripe Checkout),
+   * `TRANSITION_NOT_ALLOWED` (workspace not on the `stripe` billing rail),
    * `BILLING_PLAN_ENDED` (retained code for unresolved existing plan/tier/status), or
    * `BILLING_DISABLED`.
    *
