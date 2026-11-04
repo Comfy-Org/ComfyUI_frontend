@@ -711,7 +711,6 @@ type AgentFixtures = {
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
   agentRetryAfter: string | undefined
-  /** Extra `/api/features` values that are not seeded as local overrides. */
   agentRemoteConfig: Partial<RemoteConfig>
   crdtDebugEnabled: boolean
   /** `'server'` loads real node definitions instead of the empty catalog. */
