@@ -106,8 +106,16 @@ function createTestI18n() {
     locale: 'en',
     messages: {
       en: {
+        shareWorkflow: {
+          workflowNameLabel: 'Workflow name',
+          saveButton: 'Save workflow',
+          saving: 'Saving...',
+          saveFailedTitle: 'Failed to save workflow',
+          saveFailedDescription: 'Your workflow was not saved.'
+        },
         comfyHubPublish: {
           title: 'Publish to Comfy Workflows',
+          unsavedDescription: 'You must save your workflow before publishing.',
           publishFailedTitle: 'Publish failed',
           publishFailedDescription:
             'Something went wrong while publishing your workflow. Please try again.',
@@ -396,6 +404,32 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockApplyPrefill).toHaveBeenCalledWith(cached)
+  })
+
+  it('does not save or leave the save prompt when the named save is refused', async () => {
+    setActiveWorkflow({
+      path: 'workflows/Unsaved Workflow.json',
+      filename: 'Unsaved Workflow.json',
+      directory: 'workflows',
+      isTemporary: true,
+      isModified: false
+    })
+    vi.mocked(useWorkflowService().renameWorkflow).mockResolvedValue(false)
+
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.type(screen.getByLabelText('Workflow name'), 'named')
+    await userEvent.click(
+      screen.getByRole('button', { name: /Save workflow/i })
+    )
+    await flushPromises()
+
+    expect(useWorkflowStore().saveWorkflow).not.toHaveBeenCalled()
+    expect(useToast().error).toHaveBeenCalledWith('Failed to save workflow', {
+      description: 'Your workflow was not saved.'
+    })
+    expect(screen.getByTestId('publish-save-prompt')).toBeTruthy()
   })
 
   it('refetches prefill when the active workflow path changes (e.g. rename)', async () => {

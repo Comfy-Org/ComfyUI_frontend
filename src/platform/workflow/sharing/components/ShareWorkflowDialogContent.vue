@@ -382,6 +382,12 @@ onMounted(() => {
   void refreshDialogState()
 })
 
+const showSaveFailed = () => {
+  toast.error(t('shareWorkflow.saveFailedTitle'), {
+    description: t('shareWorkflow.saveFailedDescription')
+  })
+}
+
 const { isLoading: isSaving, execute: handleSave } = useAsyncState(
   async () => {
     const workflow = workflowStore.activeWorkflow
@@ -391,10 +397,17 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       const name = workflowName.value.trim()
       if (!name) return
       const newPath = buildWorkflowPath(workflow.directory, name)
-      await workflowService.renameWorkflow(workflow, newPath)
+      // A refused draft relocation leaves the workflow at its temporary path,
+      // so saving here would persist it under that path and this dialog would
+      // advance as though the named save succeeded.
+      if (!(await workflowService.renameWorkflow(workflow, newPath))) {
+        showSaveFailed()
+        return
+      }
       await workflowStore.saveWorkflow(workflow)
-    } else {
-      await workflowService.saveWorkflow(workflow)
+    } else if (!(await workflowService.saveWorkflow(workflow))) {
+      showSaveFailed()
+      return
     }
 
     acknowledged.value = false
@@ -407,9 +420,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.error(t('shareWorkflow.saveFailedTitle'), {
-        description: t('shareWorkflow.saveFailedDescription')
-      })
+      showSaveFailed()
     }
   }
 )

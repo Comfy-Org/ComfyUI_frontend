@@ -35,6 +35,7 @@ import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/late
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
@@ -3532,6 +3533,41 @@ describe('useWorkflowService', () => {
       expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
     })
 
+    it('should restore the confirmed overwrite destination when the rename is refused', async () => {
+      const workflow = createTemporaryWorkflow()
+      const destination = new ComfyWorkflowClass({
+        path: 'workflows/my-workflow.json',
+        modified: Date.now(),
+        size: 100
+      })
+      destination.content = '{"destination":true}'
+      destination.originalContent = '{"destination":true}'
+
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).toHaveBeenCalledWith(destination)
+      expect(storeUserData).toHaveBeenCalledWith(
+        'workflows/my-workflow.json',
+        '{"destination":true}',
+        expect.objectContaining({ overwrite: true })
+      )
+      expect(workflowStore.syncWorkflows).toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
     it('should return false when no filename is provided', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -3969,6 +4005,35 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('restores the confirmed overwrite destination when the suffix rename is refused', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const destination = createSaveableWorkflow('workflows/test.app.json')
+      destination.originalContent = '{"destination":true}'
+
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+
+      const result = await service.saveWorkflow(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).toHaveBeenCalledWith(destination)
+      expect(storeUserData).toHaveBeenCalledWith(
+        'workflows/test.app.json',
+        '{"destination":true}',
+        expect.objectContaining({ overwrite: true })
+      )
+      expect(workflowStore.syncWorkflows).toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('saves without renaming when user declines overwrite', async () => {

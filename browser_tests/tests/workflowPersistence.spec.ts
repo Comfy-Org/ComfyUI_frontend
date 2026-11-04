@@ -7,6 +7,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { generateSameHashWorkflowNames } from '@e2e/fixtures/utils/sameHashWorkflowNames'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -1046,6 +1047,107 @@ test.describe('Workflow Persistence', () => {
       expect(await restoredNode.isCollapsed()).toBe(true)
       await expect(comfyPage.toast.toastErrors).toHaveCount(0)
     })
+  })
+
+  test('Keeps edits made while a rename is still in flight on the renamed workflow', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/22857#discussion_r4467160842 — the draft now moves before the rename request resolves, so an edit plus a tab switch during that window was stranded under the pre-rename path'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Sidebar'
+    )
+
+    const originalName = generateUniqueFilename()
+    const renamedName = generateUniqueFilename()
+    const otherName = generateUniqueFilename()
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
+    await comfyPage.menu.topbar.saveWorkflow(originalName)
+
+    // A second open workflow to switch to, which is what triggers the draft
+    // write.
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(otherName)
+    await waitForWorkflowTabState(comfyPage)
+
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual(expect.arrayContaining([originalName, otherName]))
+    await workflowsTab.switchToWorkflow(originalName)
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // Hold the rename response open so the edit below lands while
+    // `workflow.path` is still the pre-rename path.
+    let releaseRename = () => {}
+    const renameHeld = new Promise<void>((resolve) => {
+      releaseRename = resolve
+    })
+    await comfyPage.page.route('**/userdata/**/move/**', async (route) => {
+      await renameHeld
+      await route.fallback()
+    })
+
+    const openedItem = workflowsTab.getOpenedItem(originalName)
+    await openedItem.click({ button: 'right' })
+    await comfyPage.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
+    await comfyPage.page.keyboard.type(renamedName)
+    await comfyPage.page.keyboard.press('Enter')
+    await comfyPage.page.waitForFunction(
+      () =>
+        !!(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          .isBusy
+    )
+
+    // Edit, then switch workflows: `beforeLoadNewGraph()` persists the draft
+    // using the still-old path.
+    await workflowsTab.close()
+    const editedNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available while the rename is pending'
+    )
+    await editedNode.centerOnNode()
+    const draftSaveStartedAt = Date.now()
+    await editedNode.toggleCollapse()
+    await expect.poll(() => editedNode.isCollapsed()).toBe(true)
+    await workflowsTab.open()
+    await workflowsTab.switchToWorkflow(otherName)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+
+    releaseRename()
+    await comfyPage.page.waitForFunction(
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          .isBusy
+    )
+    await comfyPage.page.unroute('**/userdata/**/move/**')
+
+    // Read back at the final path: the collapse made during the window must
+    // have followed the workflow to its new name.
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await workflowsTab.open()
+    await workflowsTab.switchToWorkflow(renamedName)
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await comfyPage.expectNodeCount(1)
+
+    const restoredNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'Renamed workflow should restore its node after the reload'
+    )
+    await expect.poll(() => restoredNode.isCollapsed()).toBe(true)
   })
 
   test('Unedited saved workflows reopen as saved after a reload', async ({

@@ -1,3 +1,4 @@
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { render, screen } from '@testing-library/vue'
@@ -96,7 +97,9 @@ const i18n = createI18n({
         mediaLabel: '{count} Media File | {count} Media Files',
         modelsLabel: '{count} Model | {count} Models',
         acknowledgeCheckbox: 'I understand these assets...',
-        loadFailed: 'Failed to load publish status'
+        loadFailed: 'Failed to load publish status',
+        saveFailedTitle: 'Failed to save workflow',
+        saveFailedDescription: 'Your workflow was not saved.'
       },
       comfyHubProfile: {
         introTitle: 'Introducing ComfyHub',
@@ -451,6 +454,41 @@ describe('ShareWorkflowDialogContent', () => {
         'You must save your workflow before sharing.'
       )
       expect(container.textContent).toContain('Workflow name')
+    })
+
+    it('does not save or leave the unsaved state when the named save is refused', async () => {
+      Object.assign(useWorkflowStore(), {
+        activeWorkflow: {
+          path: 'workflows/Unsaved Workflow.json',
+          directory: 'workflows',
+          filename: 'Unsaved Workflow.json',
+          isTemporary: true,
+          isModified: false,
+          lastModified: 1000
+        }
+      })
+      const saveWorkflow = vi
+        .spyOn(useWorkflowStore(), 'saveWorkflow')
+        .mockResolvedValue()
+      vi.mocked(useWorkflowService().renameWorkflow).mockResolvedValue(false)
+
+      const { container } = renderComponent()
+      await flushPromises()
+
+      const nameInput = screen.getByLabelText('Workflow name')
+      await userEvent.type(nameInput, 'named')
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/i })
+      )
+      await flushPromises()
+
+      expect(saveWorkflow).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalledWith('Failed to save workflow', {
+        description: 'Your workflow was not saved.'
+      })
+      expect(container.textContent).toContain(
+        'You must save your workflow before sharing.'
+      )
     })
 
     it('shows error toast when getPublishStatus rejects', async () => {

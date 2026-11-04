@@ -516,6 +516,54 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
+  /**
+   * Carries a draft written while a rename was still in flight onto the new
+   * path.
+   *
+   * `renameWorkflow` relocates the draft before awaiting the remote rename so
+   * that a refused relocation can abort the rename instead of leaving the
+   * visible path pointing at a draft that never moved. That ordering leaves a
+   * window: `workflow.path` is still the old path until the request resolves,
+   * so an edit plus a tab switch during the await runs
+   * `persistActiveWorkflowDraft()` against the old path. Anything found there
+   * once the rename has succeeded was therefore written during the window and
+   * is newer than the copy relocated up front.
+   *
+   * The newer draft is written over the relocated copy in place rather than
+   * moved onto it: a move needs a second payload allocation and can refuse
+   * under quota, which would leave the renamed path with no draft at all.
+   */
+  function carryInFlightDraftForward(
+    draftStore: ReturnType<typeof useWorkflowDraftStoreV2>,
+    oldPath: string,
+    newPath: string,
+    newKey: string
+  ): void {
+    const inFlight = draftStore.getDraft(oldPath)
+    if (!inFlight) return
+
+    if (
+      !draftStore.saveDraft(newPath, inFlight.data, {
+        name: newKey,
+        isTemporary: inFlight.isTemporary
+      })
+    ) {
+      reportError(
+        new Error('could not carry an in-flight draft onto the renamed path'),
+        {
+          surface: 'graph',
+          errorType: 'rename_draft_carry_forward_failed',
+          level: 'warning',
+          context: { oldPath, newPath }
+        }
+      )
+      return
+    }
+
+    if (inFlight.lineage) draftStore.setLineage(newPath, inFlight.lineage)
+    draftStore.removeDraft(oldPath)
+  }
+
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
@@ -546,6 +594,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         }
         throw error
       }
+      carryInFlightDraftForward(draftStore, oldPath, newPath, newKey)
       void workflowRenamed.trigger(workflow)
 
       delete workflowLookup.value[oldPath]

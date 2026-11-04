@@ -26,6 +26,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import {
   bindCanvasTracker,
@@ -270,6 +271,72 @@ export const useWorkflowService = () => {
     }
   }
 
+  const readStoredWorkflow = async (path: string): Promise<string | null> => {
+    try {
+      const resp = await api.getUserData(path)
+      return resp.status === 200 ? await resp.text() : null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Deletes a confirmed overwrite destination and hands back a restore
+   * function.
+   *
+   * The save flows below can still refuse after this point — a rejected draft
+   * relocation makes `renameWorkflow` return false — and a refusal must not
+   * leave the user with neither the destination they confirmed overwriting nor
+   * a replacement. The destination's content is read into memory before the
+   * delete so the restore does not depend on anything the delete removed.
+   *
+   * @returns the restore function, or null when the destination was not
+   * deleted (nothing to restore, and the caller must not continue).
+   */
+  const deleteOverwriteDestination = async (
+    existing: ComfyWorkflow
+  ): Promise<(() => Promise<void>) | null> => {
+    const path = existing.path
+    // Snapshot the stored bytes directly rather than going through
+    // `existing.load()`/`existing.save()`: `ComfyWorkflow.load()` attaches a
+    // change tracker and touches the destination's own draft, and
+    // `ComfyWorkflow.save()` re-serializes from the live graph, which this
+    // inactive workflow does not have. `originalContent` is the last-saved
+    // content, so an already-loaded destination costs no extra request.
+    const content = existing.originalContent ?? (await readStoredWorkflow(path))
+
+    if (!(await deleteWorkflow(existing, true))) return null
+
+    return async () => {
+      if (content === null) {
+        reportError(
+          new Error('no snapshot to restore a deleted overwrite destination'),
+          {
+            surface: 'graph',
+            errorType: 'overwrite_destination_restore_failed',
+            level: 'error',
+            context: { path }
+          }
+        )
+        return
+      }
+      try {
+        await api.storeUserData(path, content, {
+          overwrite: true,
+          throwOnError: true
+        })
+        await workflowStore.syncWorkflows()
+      } catch (error) {
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'overwrite_destination_restore_failed',
+          level: 'error',
+          context: { path }
+        })
+      }
+    }
+  }
+
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
       title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
@@ -351,12 +418,13 @@ export const useWorkflowService = () => {
     const isSelfOverwrite =
       existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
+    let restoreDestination: (() => Promise<void>) | null = null
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
       if (!isSelfOverwrite) {
-        const deleted = await deleteWorkflow(existingWorkflow, true)
-        if (!deleted) return false
+        restoreDestination = await deleteOverwriteDestination(existingWorkflow)
+        if (!restoreDestination) return false
       }
     }
 
@@ -367,7 +435,10 @@ export const useWorkflowService = () => {
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
-        if (!(await renameWorkflow(workflow, newPath))) return false
+        if (!(await renameWorkflow(workflow, newPath))) {
+          await restoreDestination?.()
+          return false
+        }
         target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
@@ -401,14 +472,19 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
+      let restoreDestination: (() => Promise<void>) | null = null
       if (existing && !existing.isTemporary) {
         if ((await confirmOverwrite(expectedPath)) !== true) {
           await workflowStore.saveWorkflow(workflow)
           return true
         }
-        await deleteWorkflow(existing, true)
+        restoreDestination = await deleteOverwriteDestination(existing)
+        if (!restoreDestination) return false
       }
-      if (!(await renameWorkflow(workflow, expectedPath))) return false
+      if (!(await renameWorkflow(workflow, expectedPath))) {
+        await restoreDestination?.()
+        return false
+      }
       toast.info(
         t(
           isApp

@@ -768,6 +768,49 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
     })
 
+    it('should carry a draft persisted while the rename was still in flight onto the new path', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"before"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      let completeRename = () => {}
+      const renameAccepted = new Promise<void>((resolve) => {
+        completeRename = resolve
+      })
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          await renameAccepted
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      const renaming = store.renameWorkflow(workflow, newPath)
+      await Promise.resolve()
+
+      // The remote rename has not resolved, so `workflow.path` is still the
+      // old path and `persistActiveWorkflowDraft()` targets it: this is an
+      // edit followed by a tab switch while the request is in flight.
+      expect(workflow.path).toBe(oldPath)
+      draftStore.saveDraft(oldPath, '{"edits":"during"}', {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      completeRename()
+      await expect(renaming).resolves.toBe(true)
+
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"edits":"during"}')
+      expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+    })
+
     it('should abort the rename and keep the workflow and draft at the original path when the draft cannot be moved', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
