@@ -16,6 +16,7 @@ const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
 ])
 const CAPABILITY_BINDING = /^can[A-Z]\w*$/
 const CAPABILITY_FIELD = /^can_[a-z_]+$/
+const SERVER_FACT_OWNER = /^(?:\w*Facts|facts|\w*Capabilities|capabilities)$/
 const PENDING_FACT_WRAPPER = 'pendingServerFact'
 const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
   'isLoading',
@@ -451,8 +452,11 @@ function capabilityMemberOwner(node: AstNode): string | undefined {
   if (expression.property.name === 'value') {
     return capabilityMemberOwner(expression.object)
   }
-  return CAPABILITY_BINDING.test(expression.property.name)
-    ? memberPath(expression.object)
+  const owner = memberPath(expression.object)
+  return CAPABILITY_BINDING.test(expression.property.name) &&
+    owner !== undefined &&
+    SERVER_FACT_OWNER.test(owner.split('.')[0])
+    ? owner
     : undefined
 }
 

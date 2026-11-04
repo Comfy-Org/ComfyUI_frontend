@@ -185,6 +185,14 @@ function deriveSection(facts: SectionFacts) {
   const c = facts.canTopUp && options.canTopUp
 }
 `
+    },
+    {
+      name: 'capability-named members of a local options object combined',
+      code: `
+function close(options: DialogOptions) {
+  return options.canTopUp && options.canClose
+}
+`
     }
   ],
   invalid: [
