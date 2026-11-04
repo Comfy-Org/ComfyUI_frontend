@@ -111,6 +111,17 @@
         "patterns": ["src/extensions/core/webcamCapture.ts"]
       },
       {
+        "name": "workflow-file-identity/public",
+        "patterns": [
+          "src/platform/workflow/core/utils/userFileIdentity.ts",
+          "src/platform/workflow/core/services/userFileContext.ts"
+        ]
+      },
+      {
+        "name": "workspace-link/public",
+        "patterns": ["packages/account-core/src/workspaceLink.ts"]
+      },
+      {
         "name": "account",
         "patterns": [
           "src/platform/account/auth/WorkspaceAuthGate.vue",
@@ -1826,7 +1837,6 @@
           "src/composables/useWorkflowActionsMenu.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/platform/workflow/core/canvasTrackerOwnership.ts",
-          "src/platform/workflow/core/services/**",
           "src/platform/workflow/core/utils/pendingWarnings.ts",
           "src/platform/workflow/core/utils/pendingWarnings.test.ts",
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
@@ -1890,9 +1900,7 @@
           "src/platform/workspace/workspaceConstants.ts",
           "src/platform/workspace/workspaceTypes.ts",
           "src/storybook/mocks/teamWorkspaceStore.ts",
-          "src/storybook/mocks/useWorkspaceUI.ts",
-          "packages/account-core/src/workspaceLink.ts",
-          "packages/account-core/src/workspaceLink.test.ts"
+          "src/storybook/mocks/useWorkspaceUI.ts"
         ]
       },
       {
@@ -1977,6 +1985,22 @@
         "patterns": ["src/extensions/core/webcamCapture.ts"]
       },
       {
+        "name": "workflow-file-identity",
+        "patterns": [
+          "src/platform/workflow/core/utils/userFileIdentity.ts",
+          "src/platform/workflow/core/utils/userFileIdentity.test.ts",
+          "src/platform/workflow/core/services/userFileContext.ts",
+          "src/platform/workflow/core/services/userFileContext.test.ts"
+        ]
+      },
+      {
+        "name": "workspace-link",
+        "patterns": [
+          "packages/account-core/src/workspaceLink.ts",
+          "packages/account-core/src/workspaceLink.test.ts"
+        ]
+      },
+      {
         "name": "_inventory/outer-1",
         "patterns": [
           "src/constants/**",
@@ -2020,8 +2044,8 @@
           "src/composables/node/**",
           "src/renderer/extensions/vueNodes/widgets/components/**",
           "src/renderer/extensions/vueNodes/widgets/utils/**",
-          "src/platform/workflow/**",
-          "src/components/topbar/**"
+          "src/components/topbar/**",
+          "src/platform/workflow/core/services/**"
         ]
       },
       {
@@ -2030,7 +2054,8 @@
           "src/base/**",
           "src/platform/updates/**",
           "packages/viewport3d/src/**",
-          "src/components/sidebar/**"
+          "src/components/sidebar/**",
+          "src/platform/workflow/**"
         ]
       },
       {
@@ -2054,6 +2079,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "account",
           "_inventory",
           "_inventory/outer-1",
@@ -2076,6 +2103,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2097,6 +2126,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-compare",
           "_inventory/outer-1",
@@ -2119,6 +2150,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-compositor",
           "_inventory/outer-1",
@@ -2141,6 +2174,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-crop",
           "_inventory/outer-1",
@@ -2163,6 +2198,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "ingest-api",
           "_inventory/outer-1",
@@ -2185,6 +2222,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2206,6 +2245,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "mask-editor",
           "_inventory/outer-1",
@@ -2228,6 +2269,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "painter",
           "_inventory/outer-1",
@@ -2250,6 +2293,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2271,6 +2316,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "server-facts",
           "_inventory/outer-1",
@@ -2293,8 +2340,58 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "webcam-capture",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-file-identity/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
+          "_inventory",
+          "workflow-file-identity",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workspace-link/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
+          "_inventory",
+          "workspace-link",
           "_inventory/outer-1",
           "_inventory/outer-2",
           "unclassified"
@@ -2315,6 +2412,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "account",
           "_inventory",
           "_inventory/outer-1",
@@ -2337,6 +2436,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2358,6 +2459,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-compare",
           "_inventory/outer-1",
@@ -2380,6 +2483,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-compositor",
           "_inventory/outer-1",
@@ -2402,6 +2507,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "image-crop",
           "_inventory/outer-1",
@@ -2424,6 +2531,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "ingest-api",
           "_inventory/outer-1",
@@ -2446,6 +2555,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "mask-editor",
           "_inventory/outer-1",
@@ -2468,6 +2579,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "painter",
           "_inventory/outer-1",
@@ -2490,6 +2603,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "server-facts",
           "_inventory/outer-1",
@@ -2512,8 +2627,58 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "webcam-capture",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-file-identity",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
+          "_inventory",
+          "workflow-file-identity",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workspace-link",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
+          "_inventory",
+          "workspace-link",
           "_inventory/outer-1",
           "_inventory/outer-2",
           "unclassified"
@@ -2534,6 +2699,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2555,6 +2722,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",
@@ -2576,6 +2745,8 @@
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
+          "workflow-file-identity/public",
+          "workspace-link/public",
           "_inventory",
           "_inventory/outer-1",
           "_inventory/outer-2",

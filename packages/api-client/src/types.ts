@@ -58,7 +58,7 @@ export type UserConfigResponse = {
 }
 
 export type UserData = string[][]
-export type UserDataFullInfo = Required<UserDataResponseFull>
+export type UserDataFullInfo = Required<UserDataResponseFull> & { id?: string }
 
 export type ModelFolderInfo = ModelFolder & {
   /** Raw extension allowlist; empty matches all, absent on older backends. */

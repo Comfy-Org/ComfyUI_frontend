@@ -13,6 +13,7 @@ import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useSavedWorkflowUrlLoader } from '@/composables/useSavedWorkflowUrlLoader'
 import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
 import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
@@ -30,6 +31,7 @@ interface UrlActionStep {
 type UrlActionLoaders = {
   deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
   workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
+  savedWorkflowUrlLoader: ReturnType<typeof useSavedWorkflowUrlLoader> | null
   inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
   createWorkspaceUrlLoader: ReturnType<
     typeof useCreateWorkspaceUrlLoader
@@ -61,6 +63,7 @@ type UrlActionLoaders = {
 const HANDLED_PARAMS = [
   'workspace',
   'deployment',
+  'environment',
   'workflows',
   'invite',
   'create_workspace',
@@ -107,6 +110,15 @@ function buildUrlActionSteps(
       run: () => loader.loadWorkspaceFromUrl()
     })
   }
+  if (loaders.savedWorkflowUrlLoader) {
+    const loader = loaders.savedWorkflowUrlLoader
+    steps.push({
+      failureMessage: 'Failed to open saved workflow from URL:',
+      run: async () => {
+        await loader.openSavedWorkflowFromUrl()
+      }
+    })
+  }
   if (loaders.inviteUrlLoader) {
     const loader = loaders.inviteUrlLoader
     steps.push({
@@ -128,7 +140,6 @@ function buildUrlActionSteps(
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     steps.push({
@@ -224,6 +235,7 @@ export function useUrlActionLoaders() {
 
   const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
+  const savedWorkflowUrlLoader = useIfCloud(useSavedWorkflowUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
   const createWorkspaceUrlLoader = useIfCloud(useCreateWorkspaceUrlLoader)
   const pricingTableUrlLoader = useIfCloud(usePricingTableUrlLoader)
@@ -237,6 +249,7 @@ export function useUrlActionLoaders() {
         {
           deploymentUrlLoader,
           workspaceUrlLoader,
+          savedWorkflowUrlLoader,
           inviteUrlLoader,
           createWorkspaceUrlLoader,
           pricingTableUrlLoader,

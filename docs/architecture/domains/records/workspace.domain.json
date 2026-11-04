@@ -65,9 +65,6 @@
     },
     {
       "path": "src/storybook/mocks/useWorkspaceUI.ts"
-    },
-    {
-      "path": "packages/account-core/src/workspaceLink.ts"
     }
   ],
   "publicEntryPoints": [],

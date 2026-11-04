@@ -783,6 +783,93 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('does not repaint a retained workflow after a cancelled graph load reports failure', async () => {
+      const workflows = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      const saved = createModeTestWorkflow({
+        path: 'workflows/saved.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = retained
+      const retainedDocument = workflows.activeWorkflow
+      vi.spyOn(saved, 'load').mockImplementation(async () => {
+        saved.originalContent = '{}'
+        saved.content = '{"draft":true}'
+        saved.changeTracker = createMockChangeTracker()
+        saved.isModified = true
+        return saved
+      })
+      let finishGraphLoad = () => {}
+      const graphLoad = new Promise<false>((resolve) => {
+        finishGraphLoad = () => resolve(false)
+      })
+      vi.mocked(app.loadGraphData).mockReturnValueOnce(graphLoad)
+      let current = true
+      const opening = useWorkflowService().openWorkflow(saved, {
+        isCurrent: () => current
+      })
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+
+      current = false
+      finishGraphLoad()
+
+      expect(await opening).toBe(false)
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflows.activeWorkflow).toBe(retainedDocument)
+      expect(saved.isLoaded).toBe(false)
+      expect(saved.isModified).toBe(false)
+    })
+
+    it('keeps failure recovery cancellable while retained graph preparation is pending', async () => {
+      const workflows = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      const failing = createModeTestWorkflow({
+        path: 'workflows/failing.json',
+        loaded: false
+      })
+      vi.spyOn(failing, 'load').mockImplementation(async () => {
+        failing.originalContent = '{}'
+        failing.content = '{"draft":true}'
+        failing.changeTracker = createMockChangeTracker()
+        failing.isModified = true
+        return failing
+      })
+      workflows.activeWorkflow = retained
+      const retainedDocument = workflows.activeWorkflow
+      let finishRecovery = () => {}
+      const recovery = new Promise<void>((resolve) => {
+        finishRecovery = resolve
+      })
+      let recoveryIsCurrent: (() => boolean) | undefined
+      vi.mocked(app.loadGraphData)
+        .mockResolvedValueOnce(false)
+        .mockImplementationOnce(
+          async (_data, _clean, _view, _workflow, options) => {
+            recoveryIsCurrent = options?.isCurrent
+            await recovery
+            return false
+          }
+        )
+      let current = true
+      const opening = useWorkflowService().openWorkflow(failing, {
+        isCurrent: () => current
+      })
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
+
+      current = false
+      finishRecovery()
+
+      expect(await opening).toBe(false)
+      expect(recoveryIsCurrent?.()).toBe(false)
+      expect(failing.isLoaded).toBe(false)
+      expect(failing.isModified).toBe(false)
+      expect(workflows.activeWorkflow).toBe(retainedDocument)
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
@@ -937,13 +1024,12 @@ describe('useWorkflowService', () => {
 
     it('loads an active workflow that does not own the canvas', async () => {
       const workflowStore = useWorkflowStore()
-      const active = createWorkflow(null, {
-        loadable: true,
+      const active = createModeTestWorkflow({
         path: 'workflows/store-selected.json'
       })
       const activeTracker = active.changeTracker
-      if (!activeTracker) throw new Error('Expected loaded workflow')
-      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      assert(activeTracker)
+      workflowStore.activeWorkflow = active
       const service = useWorkflowService()
       vi.mocked(app.loadGraphData).mockImplementationOnce(
         async (_workflowData, _clean, _restoreView, workflow) => {
@@ -2943,7 +3029,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'shared',
         makeWorkflowData(),
-        'share-1'
+        { shareId: 'share-1' }
       )
 
       expect(tempWorkflow.shareId).toBe('share-1')
@@ -3043,7 +3129,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
         makeWorkflowData(),
-        'share-2'
+        { shareId: 'share-2' }
       )
 
       expect(existingWorkflow.shareId).toBe('share-2')
@@ -3055,7 +3141,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
         makeWorkflowData(),
-        'share-2'
+        { shareId: 'share-2' }
       )
 
       expect(existingWorkflow.shareId).toBe('share-2')
@@ -3514,7 +3600,9 @@ describe('useWorkflowService', () => {
         workflow,
         'workflows/my-workflow.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('should return false when no filename is provided', async () => {
@@ -3654,7 +3742,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/test.app.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
       expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
       expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
@@ -3677,7 +3767,9 @@ describe('useWorkflowService', () => {
 
       // Same path → self-overwrite: saves in place via saveWorkflow, no copy
       expect(workflowStore.saveAs).not.toHaveBeenCalled()
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('emits a single is_new:true telemetry event on self-overwrite', async () => {
@@ -3739,7 +3831,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/copy.app.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('does not modify source workflow mode when saving app as graph', async () => {
@@ -3765,7 +3859,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/copy.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     function captureLinearModeAtSaveTime() {

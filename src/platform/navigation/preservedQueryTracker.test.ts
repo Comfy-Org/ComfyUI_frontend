@@ -4,8 +4,12 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
   clearPreservedQuery,
-  getPreservedQueryParam
+  getPreservedQueryParam,
+  mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_DEFINITIONS } from './preservedQueryDefinitions'
+import { PRESERVED_QUERY_NAMESPACES } from './preservedQueryNamespaces'
+import { readSavedWorkflowLink } from './savedWorkflowLink'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 
 const STRIPPED_NAMESPACE = 'test_strip'
@@ -310,5 +314,325 @@ describe('installPreservedQueryTracker', () => {
     expect(
       getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')
     ).toBeUndefined()
+  })
+})
+
+describe('private workflow redirect intent', () => {
+  beforeEach(() => {
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE)
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT)
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.ENVIRONMENT)
+  })
+
+  it('preserves the exact private workflow and environment through sign-in and workspace reloads', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push(
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&deployment=dep-1&keep=original#canvas'
+    )
+    await router.push('/login')
+    await router.push('/')
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
+    ).toBe('c327cae8-2acf-4bfa-bb88-97948a3c008b')
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
+    ).toBe('ws-1')
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'deployment')
+    ).toBe('dep-1')
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace')
+    ).toBe('ws-1')
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
+        'deployment'
+      )
+    ).toBe('dep-1')
+  })
+
+  it.for([
+    {
+      name: 'omits a previous custom target',
+      previousTarget: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '',
+      expectedTarget: {}
+    },
+    {
+      name: 'omits a previous standard target',
+      previousTarget: '&workspace=ws-old&environment=standard',
+      nextTarget: '',
+      expectedTarget: {}
+    },
+    {
+      name: 'replaces custom with standard',
+      previousTarget: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '&workspace=ws-new&environment=standard',
+      expectedTarget: { workspace: 'ws-new', environment: 'standard' }
+    },
+    {
+      name: 'replaces standard with custom',
+      previousTarget: '&workspace=ws-old&environment=standard',
+      nextTarget: '&workspace=ws-new&deployment=dep-new',
+      expectedTarget: { workspace: 'ws-new', deployment: 'dep-new' }
+    },
+    {
+      name: 'retains only the new workspace',
+      previousTarget: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '&workspace=ws-new',
+      expectedTarget: { workspace: 'ws-new' }
+    }
+  ])(
+    '$name when a different workflow arrives',
+    async ({ previousTarget, nextTarget, expectedTarget }) => {
+      const router = createTestRouter()
+      installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+      await router.push(
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
+      )
+      await router.push('/login')
+
+      await router.push(
+        `/?savedFile=5fa31309-9bc6-41a0-9f9e-e51ec9800619${nextTarget}`
+      )
+      await router.push('/login')
+
+      expect(
+        mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
+      ).toEqual({
+        savedFile: '5fa31309-9bc6-41a0-9f9e-e51ec9800619',
+        ...expectedTarget
+      })
+      expect({
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.ENVIRONMENT)
+      }).toEqual(expectedTarget)
+    }
+  )
+
+  it.for([
+    {
+      name: 'custom to standard',
+      previousTarget: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '&workspace=ws-old&environment=standard',
+      expectedTarget: { workspace: 'ws-old', environment: 'standard' },
+      workspaceId: 'ws-old',
+      deploymentId: null,
+      environment: 'standard'
+    },
+    {
+      name: 'standard to custom',
+      previousTarget: '&workspace=ws-old&environment=standard',
+      nextTarget: '&workspace=ws-old&deployment=dep-new',
+      expectedTarget: { workspace: 'ws-old', deployment: 'dep-new' },
+      workspaceId: 'ws-old',
+      deploymentId: 'dep-new',
+      environment: null
+    },
+    {
+      name: 'another workspace',
+      previousTarget: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '&workspace=ws-new',
+      expectedTarget: { workspace: 'ws-new' },
+      workspaceId: 'ws-new',
+      deploymentId: null,
+      environment: null
+    }
+  ])(
+    'replaces a same-workflow target with $name',
+    async ({
+      previousTarget,
+      nextTarget,
+      expectedTarget,
+      workspaceId,
+      deploymentId,
+      environment
+    }) => {
+      const router = createTestRouter()
+      installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+      await router.push(
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
+      )
+      await router.push('/login')
+
+      await router.push(
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
+      )
+
+      const query =
+        mergePreservedQueryIntoQuery(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW,
+          router.currentRoute.value.query
+        ) ?? router.currentRoute.value.query
+      expect(readSavedWorkflowLink(query)).toEqual({
+        status: 'valid',
+        savedFileId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        workspaceId,
+        deploymentId,
+        environment
+      })
+      expect({
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.ENVIRONMENT)
+      }).toEqual(expectedTarget)
+    }
+  )
+
+  it('replaces target stashes restored from an earlier page load', async () => {
+    sessionStorage.setItem(
+      'Comfy.PreservedQuery.workspace',
+      JSON.stringify({ workspace: 'ws-old' })
+    )
+    sessionStorage.setItem(
+      'Comfy.PreservedQuery.deployment',
+      JSON.stringify({ deployment: 'dep-old' })
+    )
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push('/?savedFile=5fa31309-9bc6-41a0-9f9e-e51ec9800619')
+
+    expect(
+      mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
+    ).toEqual({ savedFile: '5fa31309-9bc6-41a0-9f9e-e51ec9800619' })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace')
+    ).toBeUndefined()
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
+        'deployment'
+      )
+    ).toBeUndefined()
+  })
+
+  it.for([
+    { query: 'savedFile=invalid', savedFile: 'invalid' },
+    { query: 'savedFile=first&savedFile=second', savedFile: 'first,second' },
+    { query: 'savedFile', savedFile: ',' },
+    { query: 'savedFile=', savedFile: undefined }
+  ])('replaces stale targets for $query', async ({ query, savedFile }) => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+    await router.push(
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-old&deployment=dep-old'
+    )
+
+    await router.push(`/?${query}`)
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
+    ).toBe(savedFile)
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
+    ).toBeUndefined()
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'deployment')
+    ).toBeUndefined()
+    expect({
+      ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE),
+      ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT),
+      ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.ENVIRONMENT)
+    }).toEqual({})
+  })
+
+  it.for([
+    {
+      target: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '',
+      expectedTarget: { workspace: 'ws-old', deployment: 'dep-old' }
+    },
+    {
+      target: '&workspace=ws-old&environment=standard',
+      nextTarget: '',
+      expectedTarget: { workspace: 'ws-old', environment: 'standard' }
+    },
+    {
+      target: '&workspace=ws-old&deployment=dep-old',
+      nextTarget: '&workspace=ws-old',
+      expectedTarget: { workspace: 'ws-old', deployment: 'dep-old' }
+    },
+    {
+      target: '&workspace=ws-old&environment=standard',
+      nextTarget: '&workspace=ws-old&environment=standard',
+      expectedTarget: { workspace: 'ws-old', environment: 'standard' }
+    }
+  ])(
+    'retains $target when the same workflow continues through redirects',
+    async ({ target, nextTarget, expectedTarget }) => {
+      const router = createTestRouter()
+      installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+      await router.push(
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${target}`
+      )
+      await router.push('/login')
+
+      await router.push(
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
+      )
+
+      expect(
+        mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
+      ).toEqual({
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        ...expectedTarget
+      })
+      expect({
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT),
+        ...mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.ENVIRONMENT)
+      }).toEqual(expectedTarget)
+    }
+  )
+
+  it('keeps repeated workflow values invalid through redirect preservation', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push('/?savedFile=first&savedFile=second')
+    await router.push('/login')
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
+    ).toBe('first,second')
+  })
+
+  it('keeps a standard environment target alongside the private workflow across reloads', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push(
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&environment=standard'
+    )
+    await router.push('/login')
+    await router.push('/')
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'environment')
+    ).toBe('standard')
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.ENVIRONMENT,
+        'environment'
+      )
+    ).toBe('standard')
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
+    ).toBe('ws-1')
   })
 })

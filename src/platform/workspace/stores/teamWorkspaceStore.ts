@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
+import { sleep } from '@comfyorg/api-client/retryPolicy'
 
 import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -257,9 +258,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   let initializationPromise: Promise<void> | null = null
   let hostChangedWhileLoading = false
   let pendingWorkspaceSwitch: Promise<void> | null = null
+  const scopeController = new AbortController()
+  onScopeDispose(() => scopeController.abort())
 
   function isStaleIdentity(generation: number): boolean {
-    return generation !== identityGeneration.value
+    return (
+      scopeController.signal.aborted || generation !== identityGeneration.value
+    )
   }
 
   function isStaleWorkspace(generation: number, workspaceId: string): boolean {
@@ -363,13 +368,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     updateWorkspace(activeWorkspaceId.value, updates)
   }
 
-  /**
-   * Initialize the workspace store.
-   * Fetches workspaces and resolves the active workspace from session/localStorage.
-   * Delegates token management to workspaceAuthStore.
-   * Retries on transient failures with exponential backoff.
-   * Call once on app boot.
-   */
   async function performInitialization(): Promise<void> {
     const generation = identityGeneration.value
     initState.value = 'loading'
@@ -526,7 +524,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         console.warn(
           `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
         )
-        await new Promise((resolve) => setTimeout(resolve, delay))
+        try {
+          await sleep(delay, scopeController.signal)
+        } catch (error) {
+          if (
+            scopeController.signal.aborted &&
+            error === scopeController.signal.reason
+          )
+            return
+          throw error
+        }
         if (isStaleIdentity(generation)) return
       }
     }
@@ -536,6 +543,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   function initialize(): Promise<void> {
+    if (scopeController.signal.aborted) return Promise.resolve()
     if (initializationPromise) return initializationPromise
     if (initState.value !== 'uninitialized' && initState.value !== 'error') {
       return Promise.resolve()

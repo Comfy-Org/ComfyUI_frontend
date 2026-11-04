@@ -3,13 +3,14 @@ import type { LocationQuery, Router } from 'vue-router'
 import {
   capturePreservedQuery,
   clearPreservedQuery,
+  getPreservedQueryParam,
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
 export interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
-  requiredKey?: string
+  requiredKey?: string | string[]
   /**
    * When set, keys present in the query are removed from the client-side URL
    * before navigation completes. Later guards, afterEach hooks, and views must
@@ -20,6 +21,11 @@ export interface PreservedQueryDefinition {
    * replace-on-capture semantics.
    */
   stripAfterCapture?: boolean
+  replaceOnChange?: {
+    key: string | string[]
+    targetKeys: string[]
+    namespaces: string[]
+  }
   /**
    * When set, a key present as a repeated (array) value, or present with no
    * value at all (`?key`, which the router reads as `null`, in a single
@@ -53,6 +59,38 @@ function withAmbiguityMarked(
   return result
 }
 
+function hasChangedQueryValue(
+  namespace: string,
+  key: string,
+  query: LocationQuery
+) {
+  if (!Object.hasOwn(query, key)) return false
+  const incoming = query[key]
+  const value = Array.isArray(incoming) ? incoming[0] : incoming
+  return value !== getPreservedQueryParam(namespace, key)
+}
+
+function clearReplacedIntent(
+  query: LocationQuery,
+  { namespace, rejectRepeated, replaceOnChange }: PreservedQueryDefinition
+) {
+  if (!replaceOnChange) return
+  const { key, targetKeys, namespaces } = replaceOnChange
+  const identityKeys = Array.isArray(key) ? key : [key]
+  if (!identityKeys.some((key) => Object.hasOwn(query, key))) return
+  const intentKeys = [...identityKeys, ...targetKeys]
+  const incoming = rejectRepeated
+    ? withAmbiguityMarked(query, intentKeys)
+    : query
+  if (!intentKeys.some((key) => hasChangedQueryValue(namespace, key, incoming)))
+    return
+
+  for (const targetNamespace of [namespace, ...namespaces]) {
+    hydratePreservedQuery(targetNamespace)
+    clearPreservedQuery(targetNamespace)
+  }
+}
+
 export const installPreservedQueryTracker = (
   router: Router,
   definitions: PreservedQueryDefinition[]
@@ -60,13 +98,24 @@ export const installPreservedQueryTracker = (
   router.beforeEach((to) => {
     const queryKeys = new Set(Object.keys(to.query))
     const keysToStrip = new Set<string>()
+    definitions.forEach((definition) =>
+      clearReplacedIntent(to.query, definition)
+    )
 
     definitions.forEach(
       ({ namespace, keys, requiredKey, stripAfterCapture, rejectRepeated }) => {
         hydratePreservedQuery(namespace)
         const presentKeys = keys.filter((key) => queryKeys.has(key))
         if (presentKeys.length === 0) return
-        if (requiredKey && !queryKeys.has(requiredKey)) {
+        const requiredKeys = Array.isArray(requiredKey)
+          ? requiredKey
+          : requiredKey
+            ? [requiredKey]
+            : []
+        if (
+          requiredKeys.length &&
+          !requiredKeys.some((key) => queryKeys.has(key))
+        ) {
           clearPreservedQuery(namespace)
           return
         }

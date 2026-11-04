@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
+import { registerUserFileScopeProvider } from '@/platform/workflow/core/services/userFileContext'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 vi.mock(import('@/scripts/api'))
@@ -19,6 +20,17 @@ describe('useUserFileStore', () => {
   })
 
   describe('syncFiles', () => {
+    it('carries received IDs and authenticated scope through ordinary file synchronization', async () => {
+      const scope = { ownerId: 'user-1', workspaceId: 'workspace-1' }
+      registerUserFileScopeProvider(() => scope)
+      const id = 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { id, path: 'saved.json', modified: 1, size: 10 }
+      ])
+      await store.syncFiles('workflows')
+      expect(store.userFiles[0].savedFileIdentity).toEqual({ ...scope, id })
+    })
+
     it('should add new files', async () => {
       const mockFiles = [
         { path: 'file1.txt', modified: 123, size: 100 },
