@@ -21,7 +21,7 @@ describe('runTransform overwrite guard', () => {
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const logSpy = vi.mocked(console.log).mockImplementation(() => {})
 
       const { runTransform } = await import('./transform')
       await expect(runTransform(input, { output })).rejects.toThrow('exit:1')
@@ -43,8 +43,7 @@ describe('runTransform overwrite guard', () => {
       writeFileSync(input, "await page.getByText('Queue').click();\n")
       writeFileSync(output, '// existing committed spec\n')
 
-      vi.spyOn(console, 'log').mockImplementation(() => {})
-      // formatFile may fail outside the monorepo; that is fine for this guard test
+      vi.mocked(console.log).mockImplementation(() => {})
       const { runTransform } = await import('./transform')
       await runTransform(input, { output, force: true, testName: 'demo' })
       expect(existsSync(output)).toBe(true)
