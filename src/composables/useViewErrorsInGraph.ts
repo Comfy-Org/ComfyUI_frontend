@@ -7,7 +7,7 @@ export function useViewErrorsInGraph() {
   const executionErrorStore = useExecutionErrorStore()
   const rightSidePanelStore = useRightSidePanelStore()
 
-  function viewErrorsInGraph(groupKeys: readonly string[] = []) {
+  function viewErrorsInGraph(groupKeys: readonly string[]) {
     canvasStore.linearMode = false
     if (canvasStore.canvas) {
       canvasStore.canvas.deselectAll()

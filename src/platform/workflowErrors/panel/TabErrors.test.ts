@@ -204,8 +204,9 @@ describe('TabErrors.vue', () => {
         },
         stubs: {
           AsyncSearchInput: {
+            props: ['modelValue'],
             template:
-              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+              '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
           }
         }
       }
@@ -1728,6 +1729,7 @@ describe('TabErrors.vue', () => {
     useRightSidePanelStore().requestErrorDetails([groupKey])
 
     expect(await screen.findByTestId('error-group-execution')).toBeVisible()
+    expect(screen.getByRole('textbox')).toHaveValue('')
   })
 
   it('uses error severity for a runtime error with an unnormalisable node id', () => {

@@ -1,4 +1,3 @@
-import { extractWidgetStringValue } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -7,7 +6,10 @@ import { app } from '@/scripts/app'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import {
+  extractWidgetStringValue,
+  parseImageWidgetValue
+} from '@/utils/imageUtil'
 
 type LoaderMediaType = 'image' | 'video' | 'audio'
 

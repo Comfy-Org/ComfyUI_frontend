@@ -14,7 +14,15 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -709,6 +717,52 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  function dispatchComposerEnter(init: KeyboardEventInit) {
+    const pageKeydown = vi.fn()
+    window.addEventListener('keydown', pageKeydown)
+    onTestFinished(() => window.removeEventListener('keydown', pageKeydown))
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        ...init
+      })
+    )
+    return { pageKeydown, notCanceled }
+  }
+
+  it.for([
+    { chord: 'Ctrl+Enter', init: { ctrlKey: true }, props: {} },
+    { chord: 'Meta+Enter', init: { metaKey: true }, props: {} },
+    {
+      chord: 'Ctrl+Shift+Enter',
+      init: { ctrlKey: true, shiftKey: true },
+      props: {}
+    },
+    {
+      chord: 'Ctrl+Enter while a chat is opening',
+      init: { ctrlKey: true },
+      props: { openingChat: true }
+    }
+  ])('keeps $chord away from page keybindings', ({ init, props }) => {
+    mount(props)
+    const { pageKeydown } = dispatchComposerEnter(init)
+    expect(pageKeydown).not.toHaveBeenCalled()
+  })
+
+  it('keeps Ctrl+Enter during IME composition away from page keybindings without canceling it', () => {
+    mount()
+    const { pageKeydown, notCanceled } = dispatchComposerEnter({
+      ctrlKey: true,
+      isComposing: true
+    })
+    expect(pageKeydown).not.toHaveBeenCalled()
+    expect(notCanceled).toBe(true)
+  })
+
   it('lets Escape close the mention list before it stops a run', async () => {
     const { emitted } = mount({
       streaming: true,
@@ -722,6 +776,88 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     await userEvent.keyboard('{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  async function mountRunningWithAttachment(onStop: () => void) {
+    vi.useFakeTimers()
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, {
+          ref: composer,
+          hasWorkflowTarget: true,
+          streaming: true,
+          onStop
+        })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+    return {
+      user: userEvent.setup({ advanceTimers: vi.advanceTimersByTimeAsync }),
+      trigger: screen.getByRole('button', { name: 'Preview cat.png' }),
+      previewed: () => screen.queryByRole('dialog', { name: 'cat.png' })
+    }
+  }
+
+  it('lets Escape close an attachment preview before it stops a run', async () => {
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.click(screen.getByRole('textbox'))
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.click(screen.getByRole('textbox'))
+    await user.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps an Escape that closed an attachment preview away from the page', async () => {
+    const pageEscape = vi.fn()
+    window.addEventListener('keydown', pageEscape)
+    onTestFinished(() => window.removeEventListener('keydown', pageEscape))
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    expect(trigger).not.toHaveFocus()
+    expect(previewed()).not.toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(pageEscape).not.toHaveBeenCalled()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.keyboard('{Escape}')
+    expect(pageEscape).toHaveBeenCalledTimes(1)
   })
 
   it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
@@ -1406,12 +1542,10 @@ describe('Composer', () => {
 
     it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
       const selectWorkflowReference = vi
-        .fn(
-          async (): Promise<WorkflowReferenceMetadata | undefined> => ({
-            id: 'saved-scratch',
-            name: 'Scratch'
-          })
-        )
+        .fn(async (): Promise<WorkflowReferenceMetadata | undefined> => ({
+          id: 'saved-scratch',
+          name: 'Scratch'
+        }))
         .mockResolvedValueOnce(undefined)
       mount({
         availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],

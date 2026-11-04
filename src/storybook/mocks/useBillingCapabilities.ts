@@ -12,6 +12,7 @@ interface BillingCapabilitiesMockState {
   canLeaveWorkspace: boolean
   canManageSubscription: boolean
   canDowngradeToPersonal: boolean
+  canOpenPlans: boolean
 }
 
 const canTopUpState = ref(true)
@@ -24,7 +25,8 @@ const defaultCapabilityState: BillingCapabilitiesMockState = {
   canInviteMembers: true,
   canLeaveWorkspace: true,
   canManageSubscription: true,
-  canDowngradeToPersonal: true
+  canDowngradeToPersonal: true,
+  canOpenPlans: true
 }
 const capabilityState = reactive<BillingCapabilitiesMockState>({
   ...defaultCapabilityState
@@ -74,6 +76,12 @@ export function useBillingCapabilities() {
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
     ),
+    topUpDenial: computed<string | undefined>(() => undefined),
+    canManageBilling: computed(() => capabilityState.canManageSubscription),
+    canOpenPlans: computed(() =>
+      receiveServerFact('can_open_plans', capabilityState.canOpenPlans)
+    ),
+    runDeniedPaymentPastDue: computed(() => false),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),
     initialize: () => undefined,
