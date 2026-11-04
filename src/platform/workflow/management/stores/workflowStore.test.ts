@@ -1721,29 +1721,13 @@ describe('useWorkflowStore', () => {
         expect(failedAssertions()).toHaveLength(0)
       })
 
-      // The production occurrence (CLOUD-FRONTEND-PROD-3C3, release 1.59.5)
-      // was not the remote-synced workflow the tests above cover: its report
-      // carried `isTemporary` with `originalContentKind: 'object'`, which is
-      // the state `createNewWorkflow` leaves and which `unload()` cannot
-      // produce because it nulls `originalContent` to `'unavailable'`. So the
-      // instance was freshly minted and never loaded, aliasing the active
-      // path rather than having lost a tracker it once had.
-      //
-      // The alias is constructed here rather than reproduced: what gets two
-      // instances onto one path in production is still unknown, and this does
-      // not claim to be that trigger. What it pins is the telemetry contract —
-      // this state reports these fields — so the next occurrence stays
-      // decidable against the unloaded and literal-null-content cases instead
-      // of collapsing back into one undifferentiated hypothesis.
       it('reports a never-loaded temporary workflow that aliases the active path', async () => {
-        const stale = store.createTemporary('aliased.json')
-        const fresh = store.createTemporary('aliased.json')
-        // `isActive` matches by path, so a stale active reference makes the
-        // freshly minted instance read as active without ever being loaded.
-        fresh.updatePath(stale.path)
-        store.activeWorkflow = stale as LoadedComfyWorkflow
+        const activeByPath = await store.createTemporary('aliased.json').load()
+        const neverLoaded = store.createTemporary('aliased.json')
+        neverLoaded.updatePath(activeByPath.path)
+        store.activeWorkflow = activeByPath
 
-        const opened = await store.openWorkflow(fresh)
+        const opened = await store.openWorkflow(neverLoaded)
 
         expectReported(
           'openWorkflow called on an active workflow that is not loaded',
@@ -1759,7 +1743,7 @@ describe('useWorkflowStore', () => {
             originalContentKind: 'object'
           }
         )
-        // #21326's recovery: the unloaded instance is loaded, not handed back.
+        expect(opened).toBe(neverLoaded)
         expect(opened.isLoaded).toBe(true)
       })
     })
