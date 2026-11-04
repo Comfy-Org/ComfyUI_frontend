@@ -14,7 +14,7 @@
       source="breadcrumb_subgraph_menu_selected"
     />
     <Button
-      v-if="isInSubgraph"
+      v-if="showsTrail"
       class="pointer-events-auto ml-1.5 shrink-0 border border-transparent p-0 transition-all hover:rounded-lg hover:border-border hover:bg-background"
       data-testid="subgraph-breadcrumb-back"
       variant="muted-textonly"
@@ -27,7 +27,7 @@
       :class="
         cn(
           'w-full overflow-hidden rounded-lg bg-transparent p-0',
-          !isInSubgraph && 'hidden'
+          !showsTrail && 'hidden'
         )
       "
       :aria-label="$t('g.graphNavigation')"
@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
@@ -75,6 +76,7 @@ import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown
 import Button from '@comfyorg/design-system/button/Button'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useSuperComfyNavigationStore } from '@/platform/superComfy/stores/superComfyNavigationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -87,8 +89,10 @@ const ITEM_GAP = 8
 const ITEM_PADDING = 8
 const ICON_WIDTH = 20
 
+const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
+const superComfyNavigation = useSuperComfyNavigationStore()
 const canvasStore = useCanvasStore()
 const breadcrumbListRef = ref<HTMLElement | null>(null)
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
@@ -98,6 +102,21 @@ const isBlueprint = computed(() =>
 const collapseTabs = ref(false)
 
 const isInSubgraph = computed(() => navigationStore.navigationStack.length > 0)
+const showsTrail = computed(
+  () => isInSubgraph.value || superComfyNavigation.parentCrumbVisible
+)
+
+const superComfyCrumbs = computed<BreadcrumbItem[]>(() =>
+  superComfyNavigation.parentCrumbVisible
+    ? [
+        {
+          label: t('superComfy.title'),
+          key: 'supercomfy',
+          command: () => superComfyNavigation.returnToSuperComfy()
+        }
+      ]
+    : []
+)
 
 const home = computed(() => ({
   label: workflowName.value,
@@ -142,13 +161,17 @@ const items = computed(() => {
     })
   )
 
-  return [home.value, ...items]
+  return [...superComfyCrumbs.value, home.value, ...items]
 })
 
 const activeItemKey = computed(() => items.value.at(-1)?.key)
 
 const handleBackClick = () => {
-  void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
+  if (isInSubgraph.value) {
+    void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
+    return
+  }
+  superComfyNavigation.returnToSuperComfy()
 }
 
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
