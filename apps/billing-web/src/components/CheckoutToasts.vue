@@ -11,7 +11,9 @@
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
-      @update:open="emit('close', toast.key)"
+      :data-toast-key="toast.key"
+      @escape-key-down="ignoreEscapeOutside($event, toast.key)"
+      @update:open="closeUnlessIgnored(toast.key)"
     >
       <i
         :class="
@@ -75,4 +77,22 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+let escapeIgnoredFor: string | undefined
+
+function ignoreEscapeOutside(event: KeyboardEvent, key: string) {
+  const focusedToast =
+    event.target instanceof Element
+      ? event.target.closest('[data-toast-key]')?.getAttribute('data-toast-key')
+      : undefined
+  escapeIgnoredFor = focusedToast === key ? undefined : key
+}
+
+function closeUnlessIgnored(key: string) {
+  if (escapeIgnoredFor === key) {
+    escapeIgnoredFor = undefined
+    return
+  }
+  emit('close', key)
+}
 </script>
