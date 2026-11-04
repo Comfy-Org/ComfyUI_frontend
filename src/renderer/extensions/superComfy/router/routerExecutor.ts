@@ -1,3 +1,4 @@
+import { delay } from 'es-toolkit'
 import { z } from 'zod'
 
 import { t } from '@/i18n'
@@ -107,21 +108,10 @@ const zStatus = z.looseObject({
 })
 
 function waitFor(ms: number, signal: AbortSignal): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (signal.aborted) {
-      resolve(false)
-      return
-    }
-    const onAbort = () => {
-      clearTimeout(timer)
-      resolve(false)
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve(true)
-    }, ms)
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
+  return delay(ms, { signal }).then(
+    () => true,
+    () => false
+  )
 }
 
 function stopped(): Completed {
