@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { IoNode } from '@/renderer/extensions/superComfy/engine/documentSchema'
@@ -12,6 +12,7 @@ const { node } = defineProps<{ node: IoNode }>()
 
 const { t } = useI18n()
 const store = useSuperComfyGraphStore()
+const fields = useTemplateRef<InstanceType<typeof Textarea>[]>('fields')
 
 const texts = computed(() =>
   node.items.flatMap((item, index) =>
@@ -32,13 +33,15 @@ function remove(index: number) {
   store.dispatch({ type: 'itemRemoved', nodeId: node.id, index })
 }
 
-function add() {
+async function add() {
   store.dispatch({
     type: 'itemsAdded',
     nodeId: node.id,
     items: [textItem('')],
     mode: 'append'
   })
+  await nextTick()
+  fields.value?.at(-1)?.focus()
 }
 </script>
 
@@ -46,9 +49,10 @@ function add() {
   <div class="flex flex-col gap-2 p-3" data-no-drag>
     <div v-for="entry in texts" :key="entry.index" class="group/item relative">
       <Textarea
+        ref="fields"
         :model-value="entry.text"
         :aria-label="t('superComfy.modality.text')"
-        class="max-h-48 min-h-14 px-2 py-1 pr-7 text-xs"
+        class="max-h-48 min-h-14 bg-input px-2 py-1 pr-7 text-xs"
         @update:model-value="change(entry.index, $event)"
       />
       <Button
