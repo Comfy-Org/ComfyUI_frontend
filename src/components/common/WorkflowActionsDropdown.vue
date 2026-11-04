@@ -199,8 +199,8 @@ onMounted(async () => {
                 cn(
                   'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                   seg.displayActive
-                    ? 'bg-secondary pr-2 pl-2.5 text-foreground group-data-[state=open]:bg-secondary/80 group-data-[state=open]:shadow-md hover:bg-secondary'
-                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    ? 'bg-accent/60 pr-2 pl-2.5 text-foreground group-data-[state=open]:bg-accent/60 group-data-[state=open]:shadow-md hover:bg-accent/60'
+                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground'
                 )
               "
               @click="onSegmentClick(seg, $event)"

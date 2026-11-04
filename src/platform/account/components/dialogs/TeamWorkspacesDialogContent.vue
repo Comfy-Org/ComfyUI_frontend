@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="flex items-start gap-3 p-5 pb-0">
       <div
-        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white"
+        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"
         aria-hidden="true"
       >
         <i class="icon-[lucide--users] text-lg" />

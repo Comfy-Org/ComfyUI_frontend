@@ -87,15 +87,16 @@
   --node-header: var(--color-charcoal-950);
   --node-border: var(--color-charcoal-700);
   --primary: var(--color-azure-600);
+  --primary-foreground: var(--color-white);
   --secondary: var(--color-charcoal-800);
   --muted: var(--color-charcoal-700);
   --muted-foreground: var(--color-smoke-800);
-  --accent: var(--color-charcoal-800);
+  --accent: var(--color-charcoal-700);
   --destructive: var(--color-coral-700);
-  --border: var(--color-charcoal-700);
+  --border: oklch(1 0 0 / 10%);
   --ring: var(--muted-foreground);
   --popover: var(--background);
-  --input: var(--accent);
+  --input: var(--color-charcoal-800);
   --node: var(--card);
 
   --default-transition-duration: 0.1s;
@@ -117,6 +118,7 @@
   --color-node-border: var(--node-border);
   --color-popover: var(--popover);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);

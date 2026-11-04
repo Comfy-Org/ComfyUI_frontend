@@ -239,7 +239,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       )
       await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
         'border-color',
-        'rgb(63, 63, 68)'
+        'oklch(1 0 0 / 0.1)'
       )
       await expect(
         page.getByRole('heading', { name: enMessages.agent.consent.title })

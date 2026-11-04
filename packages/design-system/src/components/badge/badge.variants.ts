@@ -17,7 +17,7 @@ export const badgeVariants = cva({
       dot: 'size-2 rounded-full p-0'
     },
     severity: {
-      default: 'bg-primary text-foreground',
+      default: 'bg-primary text-primary-foreground',
       contrast: 'bg-foreground text-background',
       primary: 'bg-primary/10 text-foreground',
       secondary: 'bg-secondary text-foreground',
