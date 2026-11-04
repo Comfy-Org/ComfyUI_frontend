@@ -1,11 +1,15 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { pageShortcutProbeFixture } from '@e2e/fixtures/pageShortcutProbeFixture'
+import { agentPageShortcutProbeFixture } from '@e2e/fixtures/agentPageShortcutProbeFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest, sentTurn } from '@e2e/tests/agent/agentPanelMocks'
 
-const test = mergeTests(agentTest, webSocketFixture, pageShortcutProbeFixture)
+const test = mergeTests(
+  agentTest,
+  webSocketFixture,
+  agentPageShortcutProbeFixture
+)
 
 test.describe(
   'Ctrl+Enter in the Agent composer',

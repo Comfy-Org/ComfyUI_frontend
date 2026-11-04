@@ -60,7 +60,7 @@ export class PageShortcutProbe {
   }
 }
 
-export const pageShortcutProbeFixture = base.extend<{
+export const agentPageShortcutProbeFixture = base.extend<{
   pageShortcuts: PageShortcutProbe
 }>({
   pageShortcuts: async ({ comfyPage }, use) => {
