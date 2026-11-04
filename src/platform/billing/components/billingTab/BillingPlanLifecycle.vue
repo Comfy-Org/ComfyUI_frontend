@@ -80,18 +80,18 @@ import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import {
+  formatPlanDate,
   PLAN_CONFIRM_CLOSED,
   reducePlanConfirm,
   resumeIntent,
   stayIntent
-} from '@/platform/billing/components/billingTab/planLifecycle'
+} from '@comfyorg/account-core/billing'
 import type {
   PlanConfirmEvent,
   PlanConfirmState,
-  PlanLifecycleIntent
-} from '@/platform/billing/components/billingTab/planLifecycle'
-import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+  PlanLifecycleIntent,
+  PlanRowState
+} from '@comfyorg/account-core/billing'
 import { usePlanLifecycleCommands } from '@/platform/billing/components/billingTab/usePlanLifecycleCommands'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 

@@ -57,6 +57,7 @@ const mockBillingStatus: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -105,14 +106,6 @@ const test = comfyPageFixture.extend({
 
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({ status: 204 })
-    )
-
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
     )
 
     // The popover sources its data from the workspace billing endpoints.

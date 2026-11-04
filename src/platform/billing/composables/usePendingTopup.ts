@@ -43,7 +43,8 @@ export function usePendingTopup() {
 
     const completedTopup = events.find(
       (e) =>
-        e.event_type === 'credit_added' &&
+        (e.event_type === 'credit_added' ||
+          e.event_type === 'topup_completed') &&
         e.createdAt &&
         new Date(e.createdAt).getTime() > timestamp
     )

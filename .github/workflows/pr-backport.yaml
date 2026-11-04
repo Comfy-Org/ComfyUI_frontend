@@ -289,6 +289,7 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
+          ALREADY_APPLIED=""
 
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -361,12 +362,22 @@ jobs:
               # Return to main (keep the branch, we need it for PR)
               git checkout main || git checkout -f main
             else
-              # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ',')
+              CHANGES_ALREADY_ON_TARGET=false
+              if [ -z "${CONFLICTS}" ] &&
+                git rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null &&
+                git diff --cached --quiet HEAD; then
+                CHANGES_ALREADY_ON_TARGET=true
+              fi
               git cherry-pick --abort || true
 
-              echo "::error::Cherry-pick failed due to conflicts"
-              FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              if [ "$CHANGES_ALREADY_ON_TARGET" = true ]; then
+                echo "::notice::${TARGET_BRANCH} already has the changes from ${MERGE_COMMIT}, skipping backport"
+                ALREADY_APPLIED="${ALREADY_APPLIED}${TARGET_BRANCH} "
+              else
+                echo "::error::Cherry-pick failed due to conflicts"
+                FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              fi
 
               # Clean up the failed branch
               git checkout main || git checkout -f main
@@ -378,6 +389,7 @@ jobs:
 
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "already-applied=${ALREADY_APPLIED}" >> $GITHUB_OUTPUT
 
           # Do not exit non-zero when only some targets failed: the clean
           # backports must still get their PRs (next step) and the conflicts
@@ -457,8 +469,11 @@ jobs:
         if: >-
           !cancelled() &&
           steps.filter-targets.outputs.skip != 'true' &&
-          steps.backport.outputs.failed != ''
+          (steps.backport.outputs.failed != '' ||
+           steps.backport.outputs.already-applied != '')
         env:
+          FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
+          ALREADY_APPLIED_TARGETS: ${{ steps.backport.outputs.already-applied }}
           FORCE_RERUN: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
@@ -529,11 +544,11 @@ jobs:
           notify() {
             local body="$1"
             local context="$2"
+            local title="${3:-Backport of #${PR_NUMBER} to ${target} failed}"
             if gh pr comment "${PR_NUMBER}" --body "${body}"; then
               return
             fi
             echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
-            local title="Backport of #${PR_NUMBER} to ${target} failed"
             gh issue create --title "${title}" --body "${body}" --label backport \
               || gh issue create --title "${title}" --body "${body}" \
               || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
@@ -562,7 +577,11 @@ jobs:
               )' <<<"${comments}${issues}" >/dev/null
           }
 
-          for failure in ${{ steps.backport.outputs.failed }}; do
+          for target in ${ALREADY_APPLIED_TARGETS}; do
+            notify "@${PR_AUTHOR} \`${target}\` already has the changes from \`${MERGE_COMMIT}\`, so no backport PR was opened." "changes already on ${target}" "Backport of #${PR_NUMBER} to ${target} not needed"
+          done
+
+          for failure in ${FAILED_TARGETS}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
             SAFE_TARGET=$(echo "$target" | tr '/' '-')

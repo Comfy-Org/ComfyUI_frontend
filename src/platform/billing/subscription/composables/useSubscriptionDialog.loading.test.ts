@@ -13,7 +13,7 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(
-  import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue'),
+  import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'),
   () => {
     throw new Error('pricing chunk unavailable')
   }

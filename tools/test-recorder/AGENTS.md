@@ -52,7 +52,7 @@ recording template branches on the selected distribution
 (`recordingTarget` in `src/recorder/template.ts`):
 
 - **local** — full `comfyPage` template: workflow pre-load, `test.use({
-initialFeatureFlags })`.
+  initialFeatureFlags })`.
 - **cloud / cloud-staging / cloud-prod / custom** — bare-page template:
   `page.goto(PLAYWRIGHT_TEST_URL)` and the recorder enabled immediately —
   no boot gate, so a sign-in screen can't stall the recorder (sign in

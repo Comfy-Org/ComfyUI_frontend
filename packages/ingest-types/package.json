@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@comfyorg/published-package-build": "workspace:*",
-    "@hey-api/openapi-ts": "0.97.3",
+    "@hey-api/openapi-ts": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"

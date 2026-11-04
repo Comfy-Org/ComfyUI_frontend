@@ -411,6 +411,30 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
+  it.for(['unspecified', 'billing_operation_in_progress'])(
+    'drops the off-contract top-up denial %s',
+    async (reason) => {
+      const response = capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_top_up: false
+        }
+      )
+      response.denied_reasons = { can_top_up: reason as never }
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    }
+  )
+
   it.for([
     { served: true, expected: true },
     { served: false, expected: false },
@@ -1582,6 +1606,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
       await billingCapabilities.initialize()
 
       expect(billingCapabilities.runWorkflowsDenial.value).toBe(denial)
+    }
+  )
+
+  it.for([
+    { denial: 'not_workspace_owner' },
+    { denial: 'not_a_member' },
+    { denial: undefined }
+  ])(
+    'exposes a can_manage_auto_top_up denial of $denial as the server sent it',
+    async ({ denial }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_manage_auto_top_up: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.manageAutoTopUpDenial.value).toBe(denial)
     }
   )
 })

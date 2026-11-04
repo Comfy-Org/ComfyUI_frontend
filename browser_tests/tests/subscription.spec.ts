@@ -116,13 +116,14 @@ unsubscribedTest.describe(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible()
 
-        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
-        await subscriptionHelper.triggerSubscriptionRefetch()
+        await comfyPage.page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'))
+        })
 
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
@@ -167,13 +168,14 @@ unsubscribedTest.describe(
         await dialog.getByRole('button', { name: /close/i }).first().click()
         await expect(dialog).toBeHidden()
 
-        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
-        await subscriptionHelper.triggerSubscriptionRefetch()
+        await comfyPage.page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'))
+        })
 
         await expect(dialog).toBeHidden()
         await expect(

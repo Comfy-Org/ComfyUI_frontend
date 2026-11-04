@@ -4,65 +4,28 @@
   "description": "App-mode workflow execution: state, the LinearView host, input and output presentation, run controls, history, and previews. Builder authoring belongs to app-builder.",
   "modules": [
     {
-      "path": "src/components/appMode/**",
-      "role": "presentation"
+      "path": "src/components/appMode/**"
     },
     {
-      "path": "src/composables/__mocks__/useAppMode.ts",
-      "role": "application"
+      "path": "src/composables/__mocks__/useAppMode.ts"
     },
     {
-      "path": "src/composables/useAppMode.ts",
-      "role": "application"
+      "path": "src/composables/useAppMode.ts"
     },
     {
-      "path": "src/renderer/extensions/linearMode/**",
-      "role": "presentation"
+      "path": "src/renderer/extensions/linearMode/**"
     },
     {
-      "path": "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
-      "role": "domain"
+      "path": "src/stores/appModeStore.ts"
     },
     {
-      "path": "src/renderer/extensions/linearMode/getExecutionStatusMessage.ts",
-      "role": "application"
+      "path": "src/utils/appMode.ts"
     },
     {
-      "path": "src/renderer/extensions/linearMode/linearModeTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/linearOutputStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/useExecutionStatus.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/useOutputHistory.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/appModeStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/appMode.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/views/LinearView.vue",
-      "role": "presentation"
+      "path": "src/views/LinearView.vue"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Run controls, progress, and run errors preserve app-mode execution",

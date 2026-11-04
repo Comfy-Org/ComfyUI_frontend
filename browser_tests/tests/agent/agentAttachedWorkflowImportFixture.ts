@@ -10,7 +10,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'

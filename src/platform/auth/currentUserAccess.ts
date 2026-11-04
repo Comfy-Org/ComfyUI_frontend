@@ -5,6 +5,7 @@ import { assert } from '@/base/assert'
 interface CurrentUserAccess {
   readonly userEmail: ComputedRef<string | null | undefined>
   readonly isApiKeyLogin: ComputedRef<boolean>
+  readonly isLoggedIn: ComputedRef<boolean>
 }
 
 let providedUseCurrentUser: (() => CurrentUserAccess) | undefined

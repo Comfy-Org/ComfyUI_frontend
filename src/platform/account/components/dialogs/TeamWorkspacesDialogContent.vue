@@ -39,8 +39,10 @@
         class="m-0 flex max-h-52 list-none flex-col gap-2 overflow-y-auto p-0"
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
-          <button
-            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-transparent px-4 py-3 transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+          <Button
+            variant="outline"
+            size="unset"
+            class="w-full gap-3 rounded-lg px-4 py-3"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
@@ -67,7 +69,7 @@
               {{ $t('teamWorkspacesDialog.switch') }}
               <i class="icon-[lucide--arrow-right] size-3" aria-hidden="true" />
             </span>
-          </button>
+          </Button>
         </li>
       </ul>
     </section>

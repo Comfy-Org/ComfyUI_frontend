@@ -219,7 +219,7 @@ function useFirstRunTourControllerInternal() {
       if (!(event.target instanceof Element)) return
       if (!event.target.closest(RUN_BUTTON_SELECTOR)) return
 
-      if (!billing.canRunWorkflows.value) {
+      if (billing.type.value !== 'unknown' && !billing.canRunWorkflows.value) {
         engine.postpone()
         return
       }

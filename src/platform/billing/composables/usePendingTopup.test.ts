@@ -76,6 +76,21 @@ describe('usePendingTopup', () => {
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
+    it('treats a topup_completed event like credit_added', () => {
+      const startedAtMs = Date.now() - 30_000
+      localStorage.setItem(STORAGE_KEY, String(startedAtMs))
+      const { consumeCompletedTopup } = usePendingTopup()
+      expect(
+        consumeCompletedTopup([
+          {
+            event_type: 'topup_completed',
+            createdAt: new Date(Date.now() + 1000).toISOString()
+          }
+        ])
+      ).toEqual({ startedAtMs })
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+
     it('ignores credit events that predate tracking', () => {
       const { startPendingTopup, consumeCompletedTopup } = usePendingTopup()
       startPendingTopup()

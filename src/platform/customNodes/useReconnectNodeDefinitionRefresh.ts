@@ -11,7 +11,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useUserBusy } from './useUserBusy'
 
@@ -35,12 +35,13 @@ function isRegistered(type: string): boolean {
 }
 
 function canvasHasRebuildablePlaceholder(): boolean {
-  let found = false
-  forEachNode(app.rootGraph, (node) => {
-    if (found || node.last_serialization === undefined) return
-    if (isRegistered(node.type)) found = true
-  })
-  return found
+  return reduceAllNodes(
+    app.rootGraph,
+    (found, node) =>
+      found ||
+      (node.last_serialization !== undefined && isRegistered(node.type)),
+    false
+  )
 }
 
 async function rebuildWhenIdle(

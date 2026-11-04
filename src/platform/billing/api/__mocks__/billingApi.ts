@@ -137,6 +137,11 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
     }),
+    quoteTopup: async (amount_cents) => ({
+      amount_cents,
+      credits: Math.round(amount_cents * 2.11),
+      expires_at: '2027-11-02T00:00:00Z'
+    }),
     listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
     getTopupCheckout: async (sessionId) => ({
       session_id: sessionId,

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   agentTest as test,

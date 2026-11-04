@@ -297,3 +297,37 @@ ruleTester.run(
     ]
   }
 )
+
+ruleTester.run(
+  'prefer-design-system-button',
+  templateClasses.rules['prefer-design-system-button'],
+  {
+    valid: [
+      vue('<button class="flex cursor-pointer bg-transparent p-0" />'),
+      vue("<button :class=\"cn('size-full', active && 'bg-none')\" />"),
+      vue('<button class="flex"><span class="bg-secondary" /></button>'),
+      vue('<div class="bg-secondary hover:bg-secondary/80" />'),
+      vue('<Button class="bg-secondary" />', buttonImport),
+      vue('<button :title="\'bg-secondary\'" />'),
+      vue('<button class="bg-transparent! p-0" />'),
+      vue("<button :class=\"`bg-${quiet ? 'transparent' : 'none'}`\" />")
+    ],
+    invalid: [
+      [
+        '<button class="flex hover:bg-secondary/80" />',
+        'hover:bg-secondary/80'
+      ],
+      ['<button class="rounded-md bg-secondary" />', 'bg-secondary'],
+      ['<button class="hover:!bg-secondary" />', 'hover:!bg-secondary'],
+      [
+        "<button :class=\"cn('flex', primary ? 'bg-foreground' : 'bg-transparent')\" />",
+        'bg-foreground'
+      ],
+      ['<button :class="{ \'bg-muted\': selected }" />', 'bg-muted'],
+      ['<button v-bind:class="`px-2 ${size} bg-base`" />', 'bg-base']
+    ].map(([template, token]) => ({
+      ...vue(template),
+      errors: [{ messageId: 'styled', data: { token } }]
+    }))
+  }
+)

@@ -802,12 +802,10 @@ export function useFullPageCheckout() {
   }
 
   const askOnce = (operationId: string) =>
-    commands.cancelOperation(operationId).catch(
-      (): CancelOperationResult => ({
-        status: 'error',
-        code: 'REQUEST_FAILED'
-      })
-    )
+    commands.cancelOperation(operationId).catch((): CancelOperationResult => ({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    }))
 
   /** Asks again while the server is still settling the cancel and `waiting` holds. */
   async function askUntilSettled(operationId: string, waiting: () => boolean) {

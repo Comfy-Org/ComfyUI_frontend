@@ -22,7 +22,8 @@ vi.mock(import('./agentAuth'))
 import {
   AgentApiError,
   AgentResponseUnreadableError,
-  createAgentRestClient
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
 } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
@@ -1438,6 +1439,70 @@ describe('error mapping', () => {
       'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
     )
     expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
+  })
+
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it('does not report it as an auth rejection', async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+      expect(error).toBeInstanceOf(AgentApiError)
+    })
+
+    it("carries the host's own sentence to the caller for display", async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .listThreads()
+        .then((listing) => (listing.status === 'failed' ? listing.cause : null))
+
+      expect(error).toMatchObject({ status: 403, message: refusal.error })
+      expect(isLoopbackOnlyRefusal(error)).toBe(true)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal],
+      [
+        'the code with no message',
+        403,
+        { error: '', code: 'agent_loopback_only' }
+      ]
+    ] as const)(
+      'still reports %s as an auth rejection',
+      async ([, status, body]) => {
+        respondWithAuthScheme(jsonResponse(status, body), 'web-session')
+
+        const error = await makeClient()
+          .getRunMode()
+          .catch((e: unknown) => e)
+
+        expect(reportedTags()).toMatchObject({
+          operation: 'get_run_mode',
+          status
+        })
+        expect(isLoopbackOnlyRefusal(error)).toBe(false)
+      }
+    )
+
+    it.for([undefined, null, 'agent_loopback_only', 42, {}] as const)(
+      'is false for %s rather than throwing',
+      (value) => {
+        expect(isLoopbackOnlyRefusal(value)).toBe(false)
+      }
+    )
   })
 
   it('does not report auth telemetry for a non-auth error status', async () => {

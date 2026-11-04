@@ -43,7 +43,8 @@ import {
   zAgentThreads,
   zAgentTurnAccepted,
   zAttachmentRejection,
-  zCloudWorkflowIndex
+  zCloudWorkflowIndex,
+  zLoopbackOnlyRefusal
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
@@ -185,6 +186,14 @@ export class AgentApiError extends Error {
     this.retryAfterSeconds = retryAfterSeconds
     this.operation = operation
   }
+}
+
+export function isLoopbackOnlyRefusal(error: unknown): error is AgentApiError {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 403 &&
+    zLoopbackOnlyRefusal.safeParse(error.body).success
+  )
 }
 
 export class AgentResponseUnreadableError extends Error {
@@ -603,6 +612,7 @@ export function createAgentRestClient() {
       route
     )
     if (
+      !isLoopbackOnlyRefusal(apiError) &&
       isAuthRejectionStatus(response.status) &&
       reportAuthRejection({
         status: response.status,

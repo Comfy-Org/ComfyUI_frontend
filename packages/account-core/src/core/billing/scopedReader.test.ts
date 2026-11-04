@@ -14,6 +14,7 @@ import type {
 } from './billingContracts'
 import type { BillingScopeSource } from './billingScope'
 import { sessionBillingScopeSource } from './billingScope'
+import { createAutoTopUpReader } from './autoTopUp'
 import { createCapabilitiesReader } from './capabilities'
 import { createCreditsReader } from './credits'
 import { createBillingEventsReader } from './events'
@@ -109,6 +110,31 @@ const PLAN = {
   },
   slug: 'creator_monthly',
   tier: 'CREATOR'
+}
+
+const AUTO_TOP_UP_OFF = {
+  card_expiry: null,
+  configured: false,
+  cycle_resets_at: null,
+  declined_payment_method: null,
+  disabled_reason: null,
+  enabled: false,
+  last_failure_at: null,
+  last_failure_reason: null,
+  max_monthly_budget_cents: 100_000,
+  max_reload_credits: null,
+  min_reload_credits: 500,
+  monthly_budget_cents: null,
+  monthly_budget_is_default: true,
+  paused_by_budget: false,
+  paused_by_budget_remainder: false,
+  paused_by_decline: false,
+  reload_amount_cents: null,
+  reload_credits: null,
+  spent_this_cycle_cents: 0,
+  status: 'off',
+  target_credits: null,
+  threshold_credits: null
 }
 
 const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
@@ -244,6 +270,13 @@ const CASES: readonly ReaderCase[] = [
     malformedBody: { ...EVENTS_PAGE, total: 'a few' },
     paced: false,
     create: (options) => alwaysRequests(createBillingEventsReader(options))
+  },
+  {
+    name: 'auto top-up',
+    body: AUTO_TOP_UP_OFF,
+    malformedBody: { ...AUTO_TOP_UP_OFF, status: 'paused' },
+    paced: false,
+    create: (options) => alwaysRequests(createAutoTopUpReader(options))
   },
   {
     name: 'capabilities',

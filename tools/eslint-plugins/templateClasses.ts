@@ -29,6 +29,7 @@ interface TemplateParserServices {
     VLiteral?: (node: AST.VLiteral) => void
     Literal?: (node: AST.ESLintLiteral) => void
     TemplateElement?: (node: AST.ESLintTemplateElement) => void
+    [selector: string]: ((node: never) => void) | undefined
   }): Rule.RuleListener
 }
 
@@ -755,9 +756,56 @@ const iconElement: Rule.RuleModule = {
   }
 }
 
+const BUTTON_FILL = /(^|:)!?bg-(?!((transparent|none|inherit)!?)?$)/
+
+const preferDesignSystemButton: Rule.RuleModule = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description:
+        'Disallow native <button> elements that paint their own background instead of using the design-system Button'
+    },
+    messages: {
+      styled:
+        '<button> sets `{{token}}`; use the design-system Button with a variant instead.'
+    },
+    schema: []
+  },
+  create(context) {
+    const services = context.sourceCode.parserServices as
+      | Partial<TemplateParserServices>
+      | undefined
+    function check(node: AST.Node, text: string) {
+      const token = text.split(/\s+/).find((part) => BUTTON_FILL.test(part))
+      if (token)
+        context.report({
+          loc: node.loc,
+          messageId: 'styled',
+          data: { token }
+        })
+    }
+    const buttonAttribute =
+      "VElement[rawName='button'] > VStartTag > VAttribute"
+    const boundClass = `${buttonAttribute}[directive=true][key.argument.name='class']`
+    return (
+      services?.defineTemplateBodyVisitor?.({
+        [`${buttonAttribute}[directive=false][key.name='class'] > VLiteral`]: (
+          node: AST.VLiteral
+        ) => check(node, node.value),
+        [`${boundClass} Literal`]: (node: AST.ESLintLiteral) => {
+          if (typeof node.value === 'string') check(node, node.value)
+        },
+        [`${boundClass} TemplateElement`]: (node: AST.ESLintTemplateElement) =>
+          check(node, node.value.raw)
+      }) ?? {}
+    )
+  }
+}
+
 export default {
   meta: { name: 'template-classes' },
   rules: {
+    'prefer-design-system-button': preferDesignSystemButton,
     'no-default-utilities': noDefaultUtilities,
     'no-redundant-component-classes': noRedundantComponentClasses,
     'no-inherited-utilities': noInheritedUtilities,

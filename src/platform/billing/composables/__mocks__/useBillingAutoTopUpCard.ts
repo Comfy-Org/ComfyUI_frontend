@@ -43,6 +43,7 @@ export const autoTopUpCardState = shallowRef<AutoTopUpCardState>({
 })
 
 const card: AutoTopUpCard = {
+  scope: computed(() => 'workspace-test'),
   state: computed(() => autoTopUpCardState.value),
   isReady: computed(() => autoTopUpCardState.value.kind !== 'loading'),
   ensureRead: vi.fn(),

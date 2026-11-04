@@ -67,4 +67,15 @@ describe('unsyncedHumanOps', () => {
     expect(page.hasUnsyncedHumanOps('wf-a')).toBe(false)
     expect((await loadPage()).hasUnsyncedHumanOps('wf-a')).toBe(false)
   })
+
+  it("hands a disposed recorder's workflows to its successor", async () => {
+    const page = await loadPage()
+    page.recordUnsyncedHumanOps('tab-1', ['wf-a'])
+    page.releaseUnsyncedHumanOpsRecorder('tab-1')
+    page.recordUnsyncedHumanOps('tab-1', [])
+
+    expect(page.hasUnsyncedHumanOps('wf-a')).toBe(true)
+    page.forgetUnsyncedAtLoad('wf-a')
+    expect(page.hasUnsyncedHumanOps('wf-a')).toBe(false)
+  })
 })

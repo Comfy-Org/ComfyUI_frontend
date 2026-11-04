@@ -37,7 +37,7 @@ import type {
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'

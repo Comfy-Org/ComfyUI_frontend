@@ -29,8 +29,6 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
-const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
@@ -73,16 +71,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@comfyorg/telemetry'))
-
-vi.mock<unknown>(
-  import('@/platform/billing/composables/usePendingTopup'),
-  () => ({
-    usePendingTopup: () => ({
-      startPendingTopup: mockStartPendingTopup,
-      clearPendingTopup: mockClearPendingTopup
-    })
-  })
-)
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
@@ -127,9 +115,6 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
   mockWorkflowStore = useWorkflowStore()
-  vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValue({
-    checkout_url: 'https://checkout.stripe.test'
-  })
   vi.mocked(mockAuthStore.logout).mockResolvedValue(undefined)
   vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValue(undefined)
   const credential = fromPartial<UserCredential>({ user: { uid: 'test-user' } })
@@ -138,81 +123,6 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
   mockDistributionState.isDesktop = false
-})
-
-describe('useAuthActions.accessBillingPortalDirect', () => {
-  it('rejects without opening a tab when no billing portal URL is returned', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
-    vi.mocked(mockAuthStore.accessBillingPortal).mockResolvedValueOnce(
-      fromPartial({})
-    )
-    const { accessBillingPortalDirect } = useAuthActions()
-
-    await expect(accessBillingPortalDirect()).rejects.toThrow(
-      'toastMessages.failedToAccessBillingPortal:No billing portal URL returned'
-    )
-
-    expect(open).not.toHaveBeenCalled()
-  })
-})
-
-describe('useAuthActions.purchaseCreditsDirect', () => {
-  it('starts top-up tracking before opening Stripe checkout', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await purchaseCreditsDirect(25)
-
-    expect(mockStartPendingTopup).toHaveBeenCalledOnce()
-    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockStartPendingTopup.mock.invocationCallOrder[0]).toBeLessThan(
-      open.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('does not start tracking or open checkout when no checkout URL is returned', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValueOnce({})
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
-
-    expect(mockStartPendingTopup).not.toHaveBeenCalled()
-    expect(open).not.toHaveBeenCalled()
-  })
-
-  it('does not start tracking or open checkout when the purchase request rejects', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(mockAuthStore.initiateCreditPurchase).mockRejectedValueOnce(
-      new Error('network down')
-    )
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
-
-    expect(mockStartPendingTopup).not.toHaveBeenCalled()
-    expect(open).not.toHaveBeenCalled()
-  })
-
-  it('reports a blocked checkout popup on the web', async () => {
-    vi.spyOn(window, 'open').mockImplementation(() => null)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
-
-    expect(mockClearPendingTopup).toHaveBeenCalledOnce()
-  })
-
-  it('keeps tracking the top-up when Desktop hands checkout to the system browser', async () => {
-    mockDistributionState.isDesktop = true
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await purchaseCreditsDirect(25)
-
-    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockClearPendingTopup).not.toHaveBeenCalled()
-  })
 })
 
 describe('useAuthActions.logout', () => {

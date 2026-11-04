@@ -30,7 +30,7 @@ import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'

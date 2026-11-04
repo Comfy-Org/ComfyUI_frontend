@@ -1,4 +1,4 @@
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 export const DYNAMIC_COMBO_CLASS = 'DynamicModePicker'
 

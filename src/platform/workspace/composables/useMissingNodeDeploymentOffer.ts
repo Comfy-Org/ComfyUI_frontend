@@ -44,10 +44,12 @@ export function useMissingNodeDeploymentOffer() {
     }
     const choices = [
       { deploymentId: null, label: t('deploymentSwitcher.comfyCloud') },
-      ...deployments.value.map((deployment) => ({
-        deploymentId: deployment.deployment_id,
-        label: deploymentFullLabel(deployment)
-      }))
+      ...deployments.value
+        .filter((deployment) => deployment.status === 'ready')
+        .map((deployment) => ({
+          deploymentId: deployment.deployment_id,
+          label: deploymentFullLabel(deployment)
+        }))
     ].filter(
       (choice) =>
         runIt.includes(choice.deploymentId) &&

@@ -51,7 +51,7 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
  */
 export function useBillingContext(): BillingContext {
   return {
-    type: computed(() => 'legacy' as const),
+    type: computed(() => 'workspace' as const),
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
     balance: computed(() => null),
@@ -80,6 +80,7 @@ export function useBillingContext(): BillingContext {
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
     periodCreditGrant: computed(() => null),
+    nextCreditRefillAt: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
@@ -88,7 +89,7 @@ export function useBillingContext(): BillingContext {
     subscribe: async () => {},
     previewSubscribe: async () => null,
     manageSubscription: async () => ({ ok: true }),
-    cancelSubscription: async () => 'legacy' as const,
+    cancelSubscription: async () => undefined,
     resubscribe: async () => {},
     topup: async () => {},
     fetchPlans: async () => {},

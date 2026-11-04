@@ -48,11 +48,10 @@ describe('resolveTemplateModelMetadata', () => {
   it('fetches each URL once while preserving input order and repeated identity', async () => {
     const shared = model('shared.safetensors')
     const unique = model('unique.safetensors')
-    mocks.fetchModelMetadataWithStatus.mockImplementation(
-      async (url: string) =>
-        url === shared.url
-          ? metadataOutcome(1024)
-          : metadataOutcome(null, 'https://huggingface.co/org/gated-model')
+    mocks.fetchModelMetadataWithStatus.mockImplementation(async (url: string) =>
+      url === shared.url
+        ? metadataOutcome(1024)
+        : metadataOutcome(null, 'https://huggingface.co/org/gated-model')
     )
 
     const result = await resolveTemplateModelMetadata([shared, unique, shared])

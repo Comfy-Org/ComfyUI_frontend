@@ -89,6 +89,16 @@ describe('foldActivity', () => {
     expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
   })
 
+  it('clears a prior outcome when the latest settled retry is unresolved', () => {
+    const rows = foldActivity([
+      tool('remember', true, 100),
+      tool('remember', undefined, 101)
+    ])
+
+    expect(rows[0]).toMatchObject({ count: 2, state: 'done' })
+    expect(rows[0]).toHaveProperty('ok', undefined)
+  })
+
   it('shows a successful retry as successful', () => {
     const rows = foldActivity([
       { ...tool('load_skill', false), skill: 'comfy-director' },

@@ -55,6 +55,7 @@ const ACTIVE_STATUS = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 } satisfies BillingStatusResponse
@@ -90,9 +91,6 @@ const PENDING_TOPUP = {
   status: 'pending',
   started_at: '2026-09-20T00:00:00Z'
 } satisfies BillingOpStatusResponse
-
-/** The legacy personal balance read, which a rail-on load must not issue. */
-const LEGACY_BALANCE_ROUTE = '/customers/balance'
 
 interface BillingServer {
   status: BillingStatusResponse
@@ -145,7 +143,6 @@ async function bootWithRailsOn(
     return route.fulfill(jsonRoute(server.balance))
   }
   await page.route('**/api/billing/balance', answerBalance)
-  await page.route(`**${LEGACY_BALANCE_ROUTE}`, answerBalance)
   await page.route(
     `**/api/billing/ops/${PENDING_OPERATION_ID}`,
     async (route) => {
@@ -330,7 +327,6 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
       ])
     ).toEqual(['fetch', 'fetch'])
     expect(transports(wire.reads)).not.toContain('xhr')
-    expect(readsOf(wire.reads, LEGACY_BALANCE_ROUTE)).toEqual([])
   })
 
   test('never shows the balance as 0 or blank across five reloads', async ({

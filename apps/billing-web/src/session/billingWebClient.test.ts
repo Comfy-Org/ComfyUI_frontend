@@ -141,6 +141,7 @@ const STATUS_BODY = {
   max_seats: 1,
   occupied_seats: 1,
   scheduled_change: null,
+  next_charge: null,
   team_credit_stop: null
 } satisfies BillingStatusResponse
 

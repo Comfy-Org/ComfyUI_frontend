@@ -26,6 +26,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   navigation: 'required',
   operation_type: 'required',
   origin: 'required',
+  phase: 'required',
   product: 'required',
   reason: 'required',
   result: 'required',

@@ -11,7 +11,7 @@ import {
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'

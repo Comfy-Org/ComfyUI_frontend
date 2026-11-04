@@ -7,7 +7,7 @@ import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import {
   DEFAULT_TEAM_MEMBERS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -46,10 +46,11 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
     page
   }) => {
     const helper = new CloudWorkspaceMockHelper(page)
-    await helper.setup(DEFAULT_TEAM_MEMBERS, workspace('personal', 'owner'), {
-      ...LEGACY_PERSONAL_BILLING_STATUS,
-      billing_rail: 'stripe'
-    })
+    await helper.setup(
+      DEFAULT_TEAM_MEMBERS,
+      workspace('personal', 'owner'),
+      PERSONAL_BILLING_STATUS
+    )
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(jsonRoute(CREATOR_MONTHLY_PLANS))
     )

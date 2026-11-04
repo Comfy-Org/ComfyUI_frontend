@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'

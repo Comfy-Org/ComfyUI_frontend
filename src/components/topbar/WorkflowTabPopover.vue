@@ -38,7 +38,7 @@ import { useTimeoutFn } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { ref, toRefs, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 
@@ -53,7 +53,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { thumbnailUrl, isActiveTab } = toRefs(props)
 const open = defineModel<boolean>('open', { default: false })
 const clicked = defineModel<boolean>('clicked', { default: false })
 const outside = ref(false)

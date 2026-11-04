@@ -1,6 +1,6 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 
 import overflowPlainWorkflow from '@e2e/assets/agent/overflow-widget-plain-node.json' with { type: 'json' }
 

@@ -480,6 +480,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'repro/pm-2147-extension-change-card': [
+    {
+      text: "I turned off comfy-cushions. Restart ComfyUI when you're ready and your nodes go back to their usual look.",
+      groups: [
+        [
+          {
+            label: 'Switched a node pack',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
   'repro/pm-1135-asset-grid-fragmentation': [
     {
       text: 'Version A: Version B:',

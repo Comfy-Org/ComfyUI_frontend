@@ -2,7 +2,7 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'

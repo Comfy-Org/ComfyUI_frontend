@@ -73,8 +73,8 @@ const emit = defineEmits<{
 const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
-const widgets = shallowRef(widgetsProp)
-watchEffect(() => (widgets.value = widgetsProp))
+const localWidgets = shallowRef(widgetsProp)
+watchEffect(() => (localWidgets.value = widgetsProp))
 
 const draggableList = ref<DraggableList | undefined>()
 
@@ -106,7 +106,7 @@ function setDraggableState() {
 }
 
 watchDebounced(
-  [widgets, () => isDraggable, collapse],
+  [localWidgets, () => isDraggable, collapse],
   () => setDraggableState(),
   { debounce: 100 }
 )
@@ -124,7 +124,7 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-const isEmpty = computed(() => widgets.value.length === 0)
+const isEmpty = computed(() => localWidgets.value.length === 0)
 
 const displayLabel = computed(
   () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
@@ -134,10 +134,12 @@ const targetNode = computed<LGraphNode | null>(() => {
   if (node) return node
   if (isEmpty.value) return null
 
-  const firstNodeId = widgets.value[0].node.id
-  const allSameNode = widgets.value.every(({ node }) => node.id === firstNodeId)
+  const firstNodeId = localWidgets.value[0].node.id
+  const allSameNode = localWidgets.value.every(
+    ({ node }) => node.id === firstNodeId
+  )
 
-  return allSameNode ? widgets.value[0].node : null
+  return allSameNode ? localWidgets.value[0].node : null
 })
 
 const hasDirectError = computed(() => {
@@ -355,7 +357,7 @@ defineExpose({
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
         <WidgetItem
-          v-for="{ widget, node } in widgets"
+          v-for="{ widget, node } in localWidgets"
           :key="getStableWidgetRenderKey(widget)"
           :widget
           :node

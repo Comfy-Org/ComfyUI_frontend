@@ -58,6 +58,7 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   workspace_creator: 'unknown',
   only_owner: 'unknown',
   billing_state_unknown: 'unknown',
+  topup_purchases_paused: 'unknown',
   free_tier_exhausted: 'unknown',
   invite_capacity_reached: 'unknown',
   manual_block: 'unknown',

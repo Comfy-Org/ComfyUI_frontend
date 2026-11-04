@@ -21,13 +21,33 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
 
+  let registeringExtensionName: string | undefined
+
+  /**
+   * Attributes tabs registered synchronously inside `run` to `extensionName`,
+   * whichever `app` reference the extension registers them through.
+   */
+  const attributeRegistrationsTo = <T>(
+    extensionName: string,
+    run: () => T
+  ): T => {
+    const previous = registeringExtensionName
+    registeringExtensionName = extensionName
+    try {
+      return run()
+    } finally {
+      registeringExtensionName = previous
+    }
+  }
+
   const registerSidebarTab = (
     tab: SidebarTabExtension,
     options?: { prepend?: boolean },
     sourceExtensionName?: string
   ) => {
-    if (sourceExtensionName) {
-      sourceExtensionNames.value[tab.id] = sourceExtensionName
+    const source = sourceExtensionName ?? registeringExtensionName
+    if (source) {
+      sourceExtensionNames.value[tab.id] = source
     }
     sidebarTabs.value = options?.prepend
       ? [tab, ...sidebarTabs.value]
@@ -102,6 +122,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
+    attributeRegistrationsTo,
     getSourceExtensionName,
     registerSidebarTab,
     unregisterSidebarTab

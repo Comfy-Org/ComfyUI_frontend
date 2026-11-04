@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -103,9 +103,7 @@ import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { toFiniteNumber } from '@/services/customerEventParams'
@@ -124,6 +122,7 @@ const error = ref<string | null>(null)
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const routingPending = computed(() => !shouldUseWorkspaceBilling.value)
 
 const pagination = ref({
   page: 1,
@@ -139,15 +138,16 @@ function eventAmount(event: AuditLog) {
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
-const readWorkspaceEvents = (params: { page: number; limit: number }) => {
-  const rail = useBillingReadRail()
-  return rail === null
-    ? billingApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
-}
-
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
+  if (routingPending.value) {
+    dropRenderedEvents()
+    error.value = workspaceInitSettled.value
+      ? t('credits.loadEventsError')
+      : null
+    loading.value = !workspaceInitSettled.value
+    return
+  }
   loading.value = true
   error.value = null
 
@@ -156,13 +156,10 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = shouldUseWorkspaceBilling.value
-      ? await readWorkspaceEvents(params)
-      : await customerEventService.getMyEvents(params)
+    const response = await readWorkspaceBillingEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since legacy and workspace backends emit different
-    // top-up events and the winning fetch may not carry the completion yet.
+    // supersedes this load.
     const completedTopup = usePendingTopup().consumeCompletedTopup(
       response?.events
     )
@@ -206,10 +203,7 @@ const loadEvents = async () => {
         pagination.value.total = response.total
       }
     } else {
-      const legacyError = shouldUseWorkspaceBilling.value
-        ? null
-        : customerEventService.error.value
-      error.value = legacyError || t('credits.loadEventsError')
+      error.value = t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
@@ -243,12 +237,17 @@ const refresh = async () => {
 }
 
 const workspaceStore = useWorkspaceIdentity()
+const workspaceInitSettled = computed(() => workspaceStore.initSettled)
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this
 // nothing reloads it at all when no read happens to be in flight.
 watch(
-  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  [
+    shouldUseWorkspaceBilling,
+    () => workspaceStore.activeWorkspaceId,
+    workspaceInitSettled
+  ],
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()

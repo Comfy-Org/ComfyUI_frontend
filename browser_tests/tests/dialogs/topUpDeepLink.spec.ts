@@ -14,7 +14,7 @@ import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * `page` so the cloud app boots against fully mocked endpoints, like the
  * pricing-table deep-link spec.
  */
-const topUpDialog = (page: Page) => page.getByTestId('top-up-pay-amount')
+const topUpDialog = (page: Page) => page.getByTestId('add-credits-dialog')
 
 test.describe('Top-up deep link', { tag: '@cloud' }, () => {
   test('opens the top-up dialog for a non-Enterprise owner', async ({

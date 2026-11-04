@@ -48,6 +48,15 @@ export function recordUnsyncedHumanOps(
   writeStored([...unsyncedNow()])
 }
 
+/** Preserves a disposed recorder's warnings for its successor. */
+export function releaseUnsyncedHumanOpsRecorder(recorder: string): void {
+  const recorded = unsyncedByRecorder.get(recorder)
+  if (recorded === undefined) return
+  for (const workflowId of recorded) loadOnce().add(workflowId)
+  unsyncedByRecorder.delete(recorder)
+  writeStored([...unsyncedNow()])
+}
+
 /** Whether `workflowId`'s canvas holds edits the shared document may lack. */
 export function hasUnsyncedHumanOps(workflowId: string): boolean {
   return unsyncedNow().has(workflowId)

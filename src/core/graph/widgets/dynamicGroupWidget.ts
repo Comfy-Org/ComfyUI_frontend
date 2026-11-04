@@ -14,9 +14,9 @@ import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec } from '@comfyorg/object-info-parser'
+import { zDynamicGroupInputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'

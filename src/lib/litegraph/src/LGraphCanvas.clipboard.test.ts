@@ -43,6 +43,8 @@ import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/services/litegraphService'))
+const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => telemetryMocks)
 
 function createSerialisedNode(
   id: number,
@@ -824,6 +826,46 @@ describe('copyToClipboard', () => {
     expect(localStorage.getItem('litegrapheditor_clipboard_id')).not.toBe(
       firstId
     )
+  })
+
+  it('does not report quota exhaustion from best-effort clipboard storage', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+    const storageError = new DOMException(
+      'The quota has been exceeded.',
+      'QuotaExceededError'
+    )
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw storageError
+      })
+    const copied = canvas.copyToClipboard([node])
+    setItem.mockRestore()
+
+    expect(copied).toContain('"nodes"')
+    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports unexpected failures from clipboard storage', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+    const storageError = new Error('Storage failed')
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw storageError
+      })
+    canvas.copyToClipboard([node])
+    expect(setItem).toHaveBeenCalled()
+    setItem.mockRestore()
+    expect(storageError).not.toBeInstanceOf(DOMException)
+    expect(telemetryMocks.reportError).toHaveBeenCalledWith(storageError, {
+      errorType: 'error_writing_clipboard_storage',
+      surface: 'graph'
+    })
   })
 })
 

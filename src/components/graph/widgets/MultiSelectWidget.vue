@@ -30,7 +30,7 @@ import { computed } from 'vue'
 
 import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/types/domWidget'
 
 const selectedItems = defineModel<string[]>({ required: true })

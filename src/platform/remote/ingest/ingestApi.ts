@@ -52,6 +52,12 @@ export async function requestAuth() {
   return { headers: await requireIngestApiAuth().getWorkspaceAuthHeader() }
 }
 
+function retryAfterSeconds(header: unknown): number | undefined {
+  return typeof header === 'string' && /^\d+$/.test(header.trim())
+    ? Number(header)
+    : undefined
+}
+
 export function handleAxiosError(err: unknown, operation: string): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
@@ -68,7 +74,8 @@ export function handleAxiosError(err: unknown, operation: string): never {
       status,
       code === UNKNOWN_ERROR_CODE ? undefined : code,
       undefined,
-      operation
+      operation,
+      retryAfterSeconds(err.response?.headers['retry-after'])
     )
   }
   throw err

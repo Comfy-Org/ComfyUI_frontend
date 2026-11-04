@@ -2,7 +2,7 @@
   <div v-if="banner" class="@container">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
       data-testid="billing-topup-checkout-banner"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -38,7 +38,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
-import type { TopupCheckoutBanner } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
+import type { TopupCheckoutBanner } from '@comfyorg/account-core/billing'
 
 const { banner, canTopUp, addCreditsVariant } = defineProps<{
   banner: TopupCheckoutBanner | null

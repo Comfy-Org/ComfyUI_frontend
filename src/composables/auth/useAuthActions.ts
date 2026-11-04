@@ -11,8 +11,6 @@ import type {
   AuthErrorCopy
 } from '@comfyorg/account-core/firebaseAuthError'
 
-import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -20,7 +18,6 @@ import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AuthFlowAction } from '@comfyorg/telemetry/types'
-import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   clearAllWorkspaceStorage,
@@ -28,15 +25,9 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
-import type {
-  BillingPortalTargetTier,
-  SocialSignInOptions
-} from '@/stores/authStore'
-import { usdToMicros } from '@/utils/formatUtil'
-import { openBillingUrl } from '@/platform/billing/billingTab'
+import type { SocialSignInOptions } from '@/stores/authStore'
 
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.
@@ -197,71 +188,6 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
-  /**
-   * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
-   * so callers that need to observe a rejection directly (e.g. to fire failure
-   * telemetry) aren't routed through `wrapWithErrorHandlingAsync`, which
-   * resolves instead of re-throwing on failure.
-   */
-  const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const response = await authStore.initiateCreditPurchase({
-      amount_micros: usdToMicros(amount),
-      currency: 'usd'
-    })
-
-    if (!response.checkout_url) {
-      throw new Error(
-        t('toastMessages.failedToPurchaseCredits', {
-          error: 'No checkout URL returned'
-        })
-      )
-    }
-
-    const pendingTopup = usePendingTopup()
-    pendingTopup.startPendingTopup()
-    if (!openBillingUrl(response.checkout_url)) {
-      pendingTopup.clearPendingTopup()
-      throw new PaymentPopupBlockedError(
-        t('subscription.preview.paymentPopupBlocked')
-      )
-    }
-    watchForTopupBalanceUpdate({
-      onBalanceIncreased: () => refreshBilling('account')
-    })
-  }
-
-  const purchaseCredits = wrapWithErrorHandlingAsync(
-    purchaseCreditsDirect,
-    reportError
-  )
-
-  /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
-  const accessBillingPortalDirect = async (
-    targetTier?: BillingPortalTargetTier,
-    options?: { cancelSubscription?: boolean }
-  ): Promise<boolean> => {
-    const response = await authStore.accessBillingPortal(targetTier, options)
-    if (!response.billing_portal_url) {
-      throw new Error(
-        t('toastMessages.failedToAccessBillingPortal', {
-          error: 'No billing portal URL returned'
-        })
-      )
-    }
-    return window.open(response.billing_portal_url, '_blank') !== null
-  }
-
-  const accessBillingPortal = wrapWithErrorHandlingAsync(
-    accessBillingPortalDirect,
-    reportError
-  )
-
-  const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    const result = await authStore.fetchBalance()
-    // Top-up completion tracking happens in UsageLogsTable when events are fetched
-    return result
-  }, reportError)
-
   const signInWithGoogle = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGoogle(options),
@@ -295,11 +221,6 @@ export const useAuthActions = () => {
   return {
     logout,
     sendPasswordReset,
-    purchaseCredits,
-    purchaseCreditsDirect,
-    accessBillingPortal,
-    accessBillingPortalDirect,
-    fetchBalance,
     signInWithGoogle,
     signInWithGithub,
     signInWithEmail,

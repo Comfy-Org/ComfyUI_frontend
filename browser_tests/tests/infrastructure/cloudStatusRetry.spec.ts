@@ -12,6 +12,7 @@ import {
   STATUS_RETRY_PROBE_ROUTE,
   fetchThroughApp,
   fulfillUnavailable,
+  recordFinishedCapabilityReads,
   routeUnavailableGets
 } from '@e2e/fixtures/utils/statusRetryRoutes'
 
@@ -50,11 +51,7 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
       CAPABILITIES_ROUTE,
       Number.POSITIVE_INFINITY
     )
-    const finishedReads: Request[] = []
-    page.on('requestfinished', (request) => {
-      if (request.url().endsWith('/api/billing/capabilities'))
-        finishedReads.push(request)
-    })
+    const finishedReads = recordFinishedCapabilityReads(page)
 
     const content = await workspace.openPlanAndCreditsSettings()
 

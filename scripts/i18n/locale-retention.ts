@@ -7,6 +7,7 @@ import type {
   LocaleTrackedLeaf
 } from './locale-tree'
 import { getLeaf } from './locale-tree'
+import { countPluralForms, hasBlankPluralForm } from './protected-tokens'
 
 function usesEnglishFallback({
   current,
@@ -24,13 +25,56 @@ function usesEnglishFallback({
   )
 }
 
+function hasLocalePluralForms(
+  source: string,
+  current: string,
+  pluralFormCount: number
+): boolean {
+  return (
+    countPluralForms(source) > 1 &&
+    countPluralForms(source) !== pluralFormCount &&
+    countPluralForms(current) === pluralFormCount &&
+    !hasBlankPluralForm(current)
+  )
+}
+
+export type LeafCorrupted = (
+  source: LocaleTrackedLeaf,
+  target: LocaleTrackedLeaf
+) => boolean
+
+function retainLocalePluralForms(
+  sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>,
+  existing: LocaleObject,
+  modifiedKeys: ReadonlySet<string>,
+  pluralFormCount: number | undefined,
+  leafCorrupted: LeafCorrupted
+): Map<string, LocaleTrackedLeaf> {
+  const retained = new Map<string, LocaleTrackedLeaf>()
+  if (pluralFormCount === undefined) return retained
+  for (const [key, leaf] of sourceLeaves) {
+    const current = getLeaf(existing, leaf.path)
+    if (
+      !modifiedKeys.has(key) &&
+      typeof leaf.value === 'string' &&
+      typeof current === 'string' &&
+      hasLocalePluralForms(leaf.value, current, pluralFormCount) &&
+      !leafCorrupted(leaf.value, current)
+    )
+      retained.set(key, current)
+  }
+  return retained
+}
+
 export function partitionLocale({
   sourceLeaves,
   previousEnglish,
   existing,
   modifiedKeys,
   policy,
-  excludedKeys
+  excludedKeys,
+  pluralFormCount,
+  leafCorrupted = () => false
 }: {
   sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>
   previousEnglish: LocaleObject
@@ -38,13 +82,25 @@ export function partitionLocale({
   modifiedKeys: ReadonlySet<string>
   policy: TranslationPipelineConfig['existingCopy']
   excludedKeys: ReadonlySet<string>
+  pluralFormCount?: number
+  leafCorrupted?: LeafCorrupted
 }): {
   omitted: Set<string>
   retained: Map<string, LocaleTrackedLeaf>
 } {
   const omitted = new Set<string>()
   const retained = new Map<string, LocaleTrackedLeaf>()
-  if (policy.kind === 'regenerate') return { omitted, retained }
+  if (policy.kind === 'regenerate')
+    return {
+      omitted,
+      retained: retainLocalePluralForms(
+        sourceLeaves,
+        existing,
+        modifiedKeys,
+        pluralFormCount,
+        leafCorrupted
+      )
+    }
   for (const [key, leaf] of sourceLeaves) {
     const excluded = excludedKeys.has(key)
     const current = getLeaf(existing, leaf.path)

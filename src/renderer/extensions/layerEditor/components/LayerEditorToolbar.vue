@@ -27,19 +27,15 @@
 
     <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
-        <button
-          :class="
-            cn(
-              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-foreground transition-colors',
-              'hover:bg-accent'
-            )
-          "
+        <Button
+          variant="textonly"
+          class="gap-1 rounded-full"
           :title="t('layerEditor.zoom')"
           :aria-label="t('layerEditor.zoom')"
         >
           <span class="min-w-8 text-center">{{ zoomPercent }}</span>
           <i class="icon-[lucide--chevron-down] size-3" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
@@ -95,6 +91,7 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,

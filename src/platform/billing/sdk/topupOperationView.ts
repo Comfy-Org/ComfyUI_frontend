@@ -83,7 +83,7 @@ export function projectTopupOperation(
  * handles, carrying the terminal its status cannot: the decline reason, or
  * that this tab stopped watching, or that support must reconcile it.
  */
-export class UncreditedTopupResponse implements CreateTopupResponse {
+class UncreditedTopupResponse implements CreateTopupResponse {
   readonly topup_id = ''
 
   constructor(
@@ -112,7 +112,9 @@ function topupFailureError(
     serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
-    topupFailureCategory(failure)
+    topupFailureCategory(failure),
+    undefined,
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
   )
 }
 

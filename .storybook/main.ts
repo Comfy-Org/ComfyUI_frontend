@@ -19,7 +19,8 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../packages/account-ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   staticDirs: ['../public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],

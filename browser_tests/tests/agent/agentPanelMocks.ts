@@ -55,6 +55,25 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+export function toolCallEvent(
+  toolCallId: string,
+  toolName: string,
+  status: 'running' | 'success' | 'error',
+  skill?: string
+): AgentWsEvent {
+  return {
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: toolCallId,
+      tool_name: toolName,
+      status,
+      message_id: TURN_ID,
+      thread_id: THREAD_ID,
+      ...(skill === undefined ? {} : { skill })
+    }
+  }
+}
+
 export function pushHostFrames(
   ws: WebSocketRoute,
   frames: readonly HostFrame[]
@@ -90,6 +109,7 @@ const FUNDED_BILLING_STATUS = {
   scoped_effective_has_funds: { agent: true },
   scoped_has_funds: { agent: true },
   scheduled_change: null,
+  next_charge: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
@@ -294,6 +314,17 @@ export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   data: {
     tool_call_id: 'call-new-tab',
     tool_name: 'new_tab',
+    status: 'running',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const RUNNING_RUN_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-run',
+    tool_name: 'run',
     status: 'running',
     message_id: TURN_ID,
     thread_id: THREAD_ID

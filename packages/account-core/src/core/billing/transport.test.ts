@@ -376,20 +376,42 @@ describe('createSessionBillingTransport', () => {
     }
   )
 
-  it('never replays a write the backend cannot deduplicate', async () => {
-    const { transport, fetchImpl, remint } = makeTransport({
+  it.for(['POST', 'PUT'] as const)(
+    'never replays a %s the backend cannot deduplicate',
+    async (method) => {
+      const { transport, fetchImpl, remint } = makeTransport({
+        remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
+        responses: [jsonResponse(401, {})]
+      })
+
+      const result = await transport({ method, route: '/billing/topup' })
+
+      expect(remint).not.toHaveBeenCalled()
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { httpStatus: 401, authenticationRetrySkipped: true }
+      })
+    }
+  )
+
+  it('replays a PUT that carries an idempotency key', async () => {
+    const { transport, fetchImpl } = makeTransport({
       remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
-      responses: [jsonResponse(401, {})]
+      responses: [jsonResponse(401, {}), jsonResponse(200, { enabled: true })]
     })
 
-    const result = await transport({ method: 'POST', route: '/billing/topup' })
-
-    expect(remint).not.toHaveBeenCalled()
-    expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(result).toMatchObject({
-      status: 'ok',
-      value: { httpStatus: 401, authenticationRetrySkipped: true }
+    const result = await transport({
+      method: 'PUT',
+      route: '/billing/auto-reload',
+      body: { enabled: true },
+      idempotencyKey: 'key-1'
     })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl.mock.calls[1]?.[1]?.method).toBe('PUT')
+    expect(fetchImpl.mock.calls[1]?.[1]?.body).toBe('{"enabled":true}')
+    expect(result).toMatchObject({ status: 'ok', value: { httpStatus: 200 } })
   })
 
   it('replays a write that carries an idempotency key', async () => {
@@ -652,19 +674,23 @@ describe('createCredentialedBillingTransport', () => {
     }
   )
 
-  it('forwards a write body and the key the backend deduplicates it by', async () => {
-    const { transport, fetchImpl } = makeTransport()
+  it.for(['POST', 'PUT'] as const)(
+    'forwards a %s body and the key the backend deduplicates it by',
+    async (method) => {
+      const { transport, fetchImpl } = makeTransport()
 
-    await transport({
-      method: 'POST',
-      route: '/billing/topup',
-      body: { amount_cents: 500 },
-      idempotencyKey: 'key-1'
-    })
+      await transport({
+        method,
+        route: '/billing/topup',
+        body: { amount_cents: 500 },
+        idempotencyKey: 'key-1'
+      })
 
-    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
-    expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
-  })
+      expect(fetchImpl.mock.calls[0]?.[1]?.method).toBe(method)
+      expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
+      expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
+    }
+  )
 
   it('reports NOT_AUTHENTICATED without sending a request when no scope is established', async () => {
     const { transport, fetchImpl } = makeTransport({ initialScope: undefined })

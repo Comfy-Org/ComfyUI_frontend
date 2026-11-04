@@ -105,13 +105,22 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
@@ -771,6 +780,11 @@ export type AgentComposerDropReason =
   | 'no_target'
   | 'empty'
   | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
 /** `not_completed`: the consent flow ended without accept, decline or dismiss. */
 export type AgentConsentDropReason =
   | 'declined'
@@ -795,6 +809,13 @@ type AgentSendGateOutcome =
       outcome: 'dropped'
       reason: AgentComposerDropReason
       client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
       held_ms: null
     }
   | {

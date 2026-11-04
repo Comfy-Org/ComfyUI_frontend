@@ -1,10 +1,8 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type {
   RetentionFlowEventRequest,
   RetentionFlowResponse
 } from '@comfyorg/ingest-types'
 
-import { supportsInAppCancellation } from '@/platform/billing/composables/billingRail'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -104,10 +102,7 @@ function canOfferRetention(launchWorkspaceId: string | null): boolean {
   return (
     useBillingContext().type.value === 'workspace' &&
     !!launchWorkspaceId &&
-    workspaceStore.isInPersonalWorkspace &&
-    supportsInAppCancellation(
-      useWorkspaceBillingStateStore().activeWorkspaceBillingRail
-    )
+    workspaceStore.isInPersonalWorkspace
   )
 }
 

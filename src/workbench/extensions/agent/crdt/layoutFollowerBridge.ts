@@ -145,6 +145,14 @@ export class LayoutFollowerBridge extends EventTarget {
     return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
   }
 
+  /** True from a subscribe until its catch-up, if any, has been integrated. */
+  get isCatchingUp(): boolean {
+    return (
+      this.sentWorkflowId !== null &&
+      (this.ackSeq === null || this.catchUpPending)
+    )
+  }
+
   get isSubscribeBaselineIntegrated(): boolean {
     return (
       this.ackSeq !== null &&

@@ -6,7 +6,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Installs `addDOMWidget` on the LGraphNode prototype for the real-graph cases.
 import '@/scripts/domWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { DOMWidget } from '@/types/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'

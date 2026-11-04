@@ -56,6 +56,7 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-01-01',
@@ -69,6 +70,7 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false

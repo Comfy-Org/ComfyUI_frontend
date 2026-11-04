@@ -114,16 +114,14 @@ afterEach(() => stopDesktopHostSession())
 
 function desktopHostBridge(signInResult: DesktopHostAuthState) {
   return {
-    getState: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({
-        status: 'signed_out'
-      })
-    ),
+    getState: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     getWorkspaceToken: vi.fn(async () => null),
     requestSignIn: vi.fn(async () => signInResult),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     onChanged: vi.fn(() => () => {})
   }
 }

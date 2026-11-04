@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 export interface BaseDOMWidget<
   V extends object | string = object | string

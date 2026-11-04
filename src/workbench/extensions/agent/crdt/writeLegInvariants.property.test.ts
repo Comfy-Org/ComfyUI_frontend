@@ -70,6 +70,7 @@ describe('CRDT human write-leg invariants (property)', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 0,
+      observedCounter: () => undefined,
       observedVersion: () => 0,
       reserveVersions: (
         _workflowId: string,
@@ -142,6 +143,7 @@ describe('CRDT human write-leg invariants (property)', () => {
           tab: TAB,
           actor: () => ACTOR,
           baseVersion: () => ++producerVersion,
+          observedCounter: () => undefined,
           observedVersion: () => 41,
           reserveVersions: (
             _workflowId: string,
@@ -206,6 +208,7 @@ describe('CRDT human write-leg invariants (property)', () => {
             tab: TAB,
             actor: () => ACTOR,
             baseVersion: () => 73,
+            observedCounter: () => undefined,
             observedVersion: () => 72,
             reserveVersions: (
               _workflowId: string,

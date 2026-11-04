@@ -6,11 +6,16 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+
+import { resetImageFailureProbesForTest } from '@/platform/telemetry/imageFailureDiagnostics'
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
+
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -53,6 +58,36 @@ describe('VideoPreview', () => {
       }
     })
   }
+
+  describe('load failure telemetry', () => {
+    it('reports a failed video load once, attributed to the Vue node preview', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 404 })
+      )
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=broken.mp4&type=output']
+      })
+
+      await fireEvent.error(screen.getByTestId('main-video'))
+      await nextTick()
+
+      expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            source: 'node_video_preview',
+            resource_kind: 'output',
+            probe_outcome: 'probed',
+            status: 404,
+            page_age_ms: expect.any(Number)
+          })
+        )
+      )
+    })
+  })
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {

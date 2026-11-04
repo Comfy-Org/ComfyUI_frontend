@@ -25,6 +25,11 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
   let storageFailureReported = false
   const reportStorageFailure = (error: unknown) => {
+    // Some embedded or privacy-restricted browser contexts expose Storage but
+    // throw SecurityError when it is read. The store already degrades to an
+    // in-memory key and tells the user, so this expected restriction is not an
+    // actionable application error.
+    if (error instanceof DOMException && error.name === 'SecurityError') return
     if (storageFailureReported) return
     storageFailureReported = true
     reportTelemetryError(error, {
