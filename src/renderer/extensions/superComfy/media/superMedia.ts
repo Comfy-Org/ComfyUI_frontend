@@ -87,20 +87,11 @@ export function toResultItem(item: MediaItem): AugmentedResultItem {
 }
 
 export function itemViewUrl(item: MediaItem): string {
-  switch (item.kind) {
-    case 'file':
-      return resultItemUrl(fileResultItem(item.ref, item.modality))
-    case 'link':
-      return item.url
-    case 'text':
-      return ''
-  }
+  return resultItemUrl(toResultItem(item))
 }
 
 export function itemPreviewUrl(item: MediaItem): string {
-  return item.kind === 'file'
-    ? resultItemPreviewUrl(fileResultItem(item.ref, item.modality))
-    : itemViewUrl(item)
+  return resultItemPreviewUrl(toResultItem(item))
 }
 
 export function toLoaderValue(
