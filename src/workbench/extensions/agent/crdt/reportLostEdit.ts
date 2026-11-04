@@ -5,6 +5,15 @@ import { api } from '@/scripts/api'
 
 import { recordDevEvent } from './devPanelLog'
 
+/**
+ * Which caller invoked {@link OpSender.abortIfUnbound}, carried through to
+ * this report's context/tags so a refused resubscribe (PM-1320's
+ * `doc_unsubscribe`-then-`undeliverable` shape) is distinguishable from a
+ * tab-switch retarget, instead of both collapsing into the bare `'unbound'`
+ * code.
+ */
+export type UnboundAbortReason = 'subscribe_refused' | 'retarget'
+
 type LostEditKind =
   | 'undeliverable'
   | 'unconfirmed'
@@ -25,6 +34,13 @@ export function reportLostEdit(
     widget?: string
     message?: string
     failedIndex?: number
+    /**
+     * Which caller drove the `'unbound'` code (refused resubscribe vs.
+     * tab-switch retarget). Undefined for every other code, and for the
+     * transmit-time/admission-time `'unbound'` races that have no
+     * identifiable caller to attribute.
+     */
+    reason?: UnboundAbortReason
   },
   { shouldReport = true }: { shouldReport?: boolean } = {}
 ): void {
@@ -42,7 +58,12 @@ export function reportLostEdit(
       errorType,
       fingerprint: [errorType],
       level: kind === 'host_rejected' ? 'warning' : 'error',
-      tags: { tab: api.clientId, outcome: kind, code: cause.code },
+      tags: {
+        tab: api.clientId,
+        outcome: kind,
+        code: cause.code,
+        ...(cause.reason ? { reason: cause.reason } : {})
+      },
       context
     })
   if (kind === 'mint_divergence' || kind === 'host_rejected') {

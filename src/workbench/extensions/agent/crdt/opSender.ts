@@ -29,6 +29,7 @@ import {
 } from './opEnvelope'
 import type { SizedOp } from './opEnvelope'
 import { reportLostEdit } from './reportLostEdit'
+import type { UnboundAbortReason } from './reportLostEdit'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -161,8 +162,12 @@ export interface OpSender {
    * a live socket, so this stays a no-op there by design — the batch rides
    * the result timer to its idempotent resend, which is the right outcome
    * (the ops may well have landed), not `undeliverable`.
+   *
+   * `reason`, when given, is carried into the lost-edit report so a refused
+   * resubscribe and a tab-switch retarget are distinguishable instead of
+   * both collapsing into the bare `'unbound'` code.
    */
-  abortIfUnbound(): void
+  abortIfUnbound(reason?: UnboundAbortReason): void
   /**
    * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
    * transmitted, 'undeliverable' otherwise) and every queued batch
@@ -285,16 +290,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function guardedSettlementNotifier(
     errorType: string,
     code: string
-  ): (outcome: BatchOutcome, workflowId: string | null) => void {
+  ): (
+    outcome: BatchOutcome,
+    workflowId: string | null,
+    reason?: UnboundAbortReason
+  ) => void {
     let reportedFailure = false
-    return (outcome, workflowId) => {
+    return (outcome, workflowId, reason) => {
       if (outcome.state !== 'acknowledged')
         reportLostEdit(
           outcome.state,
           outcome.ops,
           {
             code,
-            workflowId: workflowId ?? undefined
+            workflowId: workflowId ?? undefined,
+            reason
           },
           { shouldReport: mayReportLostEdit() }
         )
@@ -312,13 +322,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     'failure_settling_agent_op_sender_detach',
     'detached'
   )
-  function settle(outcome: BatchOutcome, code: string): void {
+  function settle(
+    outcome: BatchOutcome,
+    code: string,
+    reason?: UnboundAbortReason
+  ): void {
     const workflowId = inFlight?.workflowId ?? null
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
     guardedSettlementNotifier('failure_settling_agent_op_sender', code)(
       outcome,
-      workflowId
+      workflowId,
+      reason
     )
     pump()
   }
@@ -401,7 +416,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function settleUnbound(batch: InFlight, code: string): void {
+  function settleUnbound(
+    batch: InFlight,
+    code: string,
+    reason?: UnboundAbortReason
+  ): void {
     if (inFlight !== batch) return
     retire(batch, 0)
     settle(
@@ -409,7 +428,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops
       },
-      code
+      code,
+      reason
     )
   }
 
@@ -753,9 +773,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       inFlight.awaitingTransport = false
       transmit(inFlight, 0)
     },
-    abortIfUnbound() {
+    abortIfUnbound(reason) {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
-        settleUnbound(inFlight, 'unbound')
+        settleUnbound(inFlight, 'unbound', reason)
       }
     },
     abortAll() {

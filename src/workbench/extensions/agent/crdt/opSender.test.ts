@@ -542,6 +542,39 @@ describe('createOpSender', () => {
     )
   })
 
+  it('abortIfUnbound reports which caller triggered it, so a subscribe refusal is distinguishable from a retarget', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound('subscribe_refused')
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'subscribe_refused' }),
+        context: expect.objectContaining({
+          code: 'unbound',
+          reason: 'subscribe_refused'
+        })
+      })
+    )
+  })
+
+  it('abortIfUnbound omits the reason tag/context when the caller gives none', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.not.objectContaining({ reason: expect.anything() }),
+        context: expect.objectContaining({ code: 'unbound', reason: undefined })
+      })
+    )
+  })
+
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
     enqueueNodeBacklog(sender, 20_000)
     boundWorkflow = null
