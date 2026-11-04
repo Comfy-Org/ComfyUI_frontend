@@ -64,18 +64,14 @@ function legacyControlName(
   options: ValueControlOptions,
   inputData: InputSpec | undefined
 ): string {
-  const optionNameValue = options[optionName]
-  if (typeof optionNameValue === 'string' && optionNameValue.trim()) {
-    return optionNameValue
-  }
   const inputName = inputData?.[1]?.[defaultName]
-  if (
-    typeof inputName === 'string' &&
-    inputName.trim() &&
-    (defaultName !== 'control_after_generate' || !isValueControlMode(inputName))
-  ) {
-    return inputName
-  }
+  const override = [
+    options[optionName],
+    defaultName === 'control_after_generate' && isValueControlMode(inputName)
+      ? undefined
+      : inputName
+  ].find((name): name is string => typeof name === 'string' && !!name.trim())
+  if (override) return override
   const prefix = inputData?.[1]?.control_prefix
   return prefix ? `${prefix} ${defaultName}` : defaultName
 }

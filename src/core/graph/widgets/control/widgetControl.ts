@@ -111,27 +111,16 @@ function betterLayout(
 ): WidgetValueLayoutCandidate | undefined {
   if (!candidate) return current
   if (!current) return candidate
-  if (
-    candidate.preferredControlValueCount !== current.preferredControlValueCount
-  ) {
-    return candidate.preferredControlValueCount >
-      current.preferredControlValueCount
-      ? candidate
-      : current
+  for (const key of [
+    'preferredControlValueCount',
+    'targetValueCount',
+    'targetTypeMatchCount',
+    'controlValueCount'
+  ] as const) {
+    const difference = candidate[key] - current[key]
+    if (difference !== 0) return difference > 0 ? candidate : current
   }
-  if (candidate.targetValueCount !== current.targetValueCount) {
-    return candidate.targetValueCount > current.targetValueCount
-      ? candidate
-      : current
-  }
-  if (candidate.targetTypeMatchCount !== current.targetTypeMatchCount) {
-    return candidate.targetTypeMatchCount > current.targetTypeMatchCount
-      ? candidate
-      : current
-  }
-  return candidate.controlValueCount > current.controlValueCount
-    ? candidate
-    : current
+  return current
 }
 
 export function decodeWidgetValueLayout(
@@ -142,7 +131,7 @@ export function decodeWidgetValueLayout(
   >
 ): WidgetValueLayoutEntry[] {
   const store = useWidgetValueStore()
-  const memo = new Map<string, WidgetValueLayoutCandidate | null>()
+  const memo = new Map<string, WidgetValueLayoutCandidate | undefined>()
   const constraints = widgets.map((widget) => {
     const control =
       (widget.widgetId ? store.getWidgetControl(widget.widgetId) : undefined) ??
@@ -165,8 +154,7 @@ export function decodeWidgetValueLayout(
     valueIndex: number
   ): WidgetValueLayoutCandidate | undefined => {
     const key = `${widgetIndex}:${valueIndex}`
-    const cached = memo.get(key)
-    if (cached !== undefined) return cached ?? undefined
+    if (memo.has(key)) return memo.get(key)
 
     if (widgetIndex === widgets.length) {
       const result =
@@ -179,7 +167,7 @@ export function decodeWidgetValueLayout(
               controlValueCount: 0
             }
           : undefined
-      memo.set(key, result ?? null)
+      memo.set(key, result)
       return result
     }
 
@@ -232,7 +220,7 @@ export function decodeWidgetValueLayout(
       }
     }
 
-    memo.set(key, best ?? null)
+    memo.set(key, best)
     return best
   }
 
