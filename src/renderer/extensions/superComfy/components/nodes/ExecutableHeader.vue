@@ -98,6 +98,7 @@ const menuItems = computed<MenuItem[]>(() => [
     "
   >
     <RunButton
+      v-if="running || !disabled"
       :plan
       :running
       :disabled

@@ -117,7 +117,7 @@ function stop() {
         :plan
         :running="ownSession !== null"
         :disabled="graphRunning"
-        :emphasized="selected || busy"
+        :emphasized="selected || ownSession !== null"
         @run="run"
         @stop="stop"
       />
