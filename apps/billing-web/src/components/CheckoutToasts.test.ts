@@ -30,7 +30,7 @@ describe('CheckoutToasts', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('Escape on a focused toast closes only that toast', async () => {
+  it('Escape on a focused toast closes only that toast and keeps focus in the toast list', async () => {
     const onClose = await renderToasts()
     const [failureClose] = screen.getAllByRole('button', { name: 'Close' })
 
@@ -38,6 +38,7 @@ describe('CheckoutToasts', () => {
     await userEvent.keyboard('{Escape}')
 
     expect(onClose.mock.calls).toEqual([['failure']])
+    expect(screen.getByRole('list')).toHaveFocus()
   })
 
   it('Close still works after an Escape another handler already prevented', async () => {

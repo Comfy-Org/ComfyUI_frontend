@@ -84,9 +84,14 @@ function ignoreEscapeOutside(event: KeyboardEvent, key: string) {
   if (event.defaultPrevented) return
   const focusedToast =
     event.target instanceof Element
-      ? event.target.closest('[data-toast-key]')?.getAttribute('data-toast-key')
-      : undefined
-  escapeIgnoredFor = focusedToast === key ? undefined : key
+      ? event.target.closest('[data-toast-key]')
+      : null
+  if (focusedToast?.getAttribute('data-toast-key') !== key) {
+    escapeIgnoredFor = key
+    return
+  }
+  escapeIgnoredFor = undefined
+  focusedToast.parentElement?.focus()
 }
 
 function closeUnlessIgnored(key: string) {
