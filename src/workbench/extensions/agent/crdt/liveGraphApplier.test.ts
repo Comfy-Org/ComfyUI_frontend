@@ -218,6 +218,42 @@ class TestNestedGrowing extends LGraphNode {
   }
 }
 
+/**
+ * A selector whose options declare DIFFERENT sub-widgets, which is the shape
+ * `ByteDance2ReferenceNodeV2`, `ByteDanceSeedreamNodeV3`, `ResizeImageMaskNode`
+ * and `TextGenerate` have in production. Only the selected option's sub-widget
+ * is built, so a document that still carries the other option's retained value
+ * addresses a widget this node does not have (PM-2356, PM-1932).
+ */
+class TestSelectionCombo extends LGraphNode {
+  constructor() {
+    super('Test Selection Combo')
+    const model = this.addWidget('combo', 'model', 'seedream', () => {}, {
+      values: ['seedream', 'reference']
+    })
+    let selected: unknown = 'seedream'
+    const mount = (next: unknown) => {
+      this.widgets = this.widgets?.filter(
+        ({ name }) => !name.startsWith('model.')
+      )
+      if (next === 'seedream')
+        this.addWidget('number', 'model.size_preset', 1, () => {})
+      else if (next === 'reference')
+        this.addWidget('string', 'model.task_type', 'edit', () => {})
+    }
+    Object.defineProperty(model, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        mount(next)
+      }
+    })
+    mount(selected)
+    this.serialize_widgets = true
+  }
+}
+
 /** Grows and shrinks its rows from the row-count controller's own setter. */
 class TestPlainDynamicGroup extends LGraphNode {
   constructor() {
@@ -338,6 +374,10 @@ const CATALOG: WidgetCatalog = {
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
+    // comfy-cli expands a dynamic combo at its FIRST option only, so the
+    // `reference` option's `model.task_type` is absent from the order by
+    // design — the value-blind catalog this class exists to exercise.
+    TestSelectionCombo: { widget_order: ['model', 'model.size_preset'] },
     TestPlainDynamicGroup: { widget_order: ['before', 'rows'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
@@ -407,6 +447,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
+  LiteGraph.registerNodeType('TestSelectionCombo', TestSelectionCombo)
   LiteGraph.registerNodeType('TestPlainDynamicGroup', TestPlainDynamicGroup)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
@@ -433,6 +474,33 @@ beforeEach(() => {
   ]) {
     nodeType.nodeData = dynamicNodeData
   }
+
+  // Unlike the classes above, this one declares real OPTIONS, so its widget
+  // layout genuinely depends on the selection.
+  TestSelectionCombo.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      model: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'seedream',
+                inputs: { required: { size_preset: ['INT', {}] } }
+              },
+              {
+                key: 'reference',
+                inputs: { required: { task_type: ['STRING', {}] } }
+              }
+            ]
+          }
+        ],
+        { name: 'model' }
+      )
+    }
+  })
 })
 
 describe('LiveGraphApplier', () => {
@@ -812,6 +880,98 @@ describe('LiveGraphApplier', () => {
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
+  })
+
+  describe('a selection-dependent layout (PM-2356, PM-1932)', () => {
+    const selectionComboNode = (widgets_values: unknown[]) => ({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestSelectionCombo',
+          pos: [0, 0] as [number, number],
+          size: [210, 100] as [number, number],
+          widgets_values
+        }
+      ],
+      links: []
+    })
+
+    /** The document name a retained non-selected option owns. */
+    const setDocWidget = (doc: Y.Doc, name: string, value: unknown) => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(name, value)
+    }
+
+    it('does not report a sub-value only a non-selected option owns', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.task_type', 'inpaint'))
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node?.widgets?.map(({ name }) => name)).toEqual([
+        'model',
+        'model.size_preset'
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not report an overflow slot the current selection shortened', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, '_extra_10', 99))
+
+      expect(
+        graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+      ).toEqual(['seedream', 3])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports a sub-value NO option owns, which is catalog drift', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.retired_field', 7))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            "Node 1 (TestSelectionCombo) has no widget 'model.retired_field'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('resolves a sub-value once its own option is selected', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => {
+        setDocWidget(doc, 'model', 'reference')
+        setDocWidget(doc, 'model.task_type', 'outpaint')
+      })
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(
+        node?.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'model', value: 'reference' },
+        { name: 'model.task_type', value: 'outpaint' }
+      ])
+      // `model.size_preset` is now the retained non-selected value, so the
+      // suppression and the resolve-after-selection retry hold together.
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   it('keeps a named entry authoritative over its own overflow alias', () => {
