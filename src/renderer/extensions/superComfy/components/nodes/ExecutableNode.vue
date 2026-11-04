@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { AcceptableValue } from 'reka-ui'
 import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -90,6 +92,10 @@ const previewModality = computed<Modality>(
       ?.modality ?? (node.kind === 'generate' ? node.modality : 'image')
 )
 
+function chooseOutput(value: AcceptableValue | AcceptableValue[]) {
+  if (typeof value === 'string') chosenOutput.value = value
+}
+
 function run() {
   void store.runNode(node.id)
 }
@@ -123,20 +129,26 @@ function stop() {
       />
     </template>
     <template #preview>
-      <div v-if="ports.outputs.length > 1" class="flex gap-1 p-1" data-no-drag>
-        <Button
+      <ToggleGroup
+        v-if="ports.outputs.length > 1"
+        type="single"
+        :allow-empty="false"
+        :model-value="activeOutput"
+        class="justify-start p-1"
+        data-no-drag
+        @update:model-value="chooseOutput"
+      >
+        <ToggleGroupItem
           v-for="output in ports.outputs"
           :key="output.name"
-          :variant="
-            output.name === activeOutput ? 'secondary' : 'muted-textonly'
-          "
+          :value="output.name"
           size="sm"
+          class="px-2"
           :aria-label="t('superComfy.node.showOutput', { name: output.label })"
-          @click="chosenOutput = output.name"
         >
           {{ output.label }}
-        </Button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
       <MediaBatchPreview
         v-model:index="index"
         :entries
