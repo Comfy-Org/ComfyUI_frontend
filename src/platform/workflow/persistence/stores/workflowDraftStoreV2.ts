@@ -66,7 +66,7 @@ export interface StagedDraftRelocation {
   readonly prewrittenKey: string | null
 }
 
-export type StageDraftRelocationResult =
+type StageDraftRelocationResult =
   | { kind: 'staged'; relocation: StagedDraftRelocation }
   | { kind: 'refused' }
 

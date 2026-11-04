@@ -18,6 +18,7 @@ import {
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { StagedDraftRelocation } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
@@ -549,14 +550,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       const staged = draftStore.stageDraftRelocation(oldPath, newPath, newKey)
       if (staged.kind === 'refused') return false
+      // The handle is opaque and must be handed back exactly once, so name its
+      // type rather than leaving the obligation to the call shape.
+      const relocation: StagedDraftRelocation = staged.relocation
 
       try {
         await workflow.rename(newPath)
       } catch (error) {
-        draftStore.abortDraftRelocation(staged.relocation)
+        draftStore.abortDraftRelocation(relocation)
         throw error
       }
-      draftStore.commitDraftRelocation(staged.relocation)
+      draftStore.commitDraftRelocation(relocation)
       void workflowRenamed.trigger(workflow)
 
       delete workflowLookup.value[oldPath]
