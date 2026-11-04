@@ -105,10 +105,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type {
-  AgentActiveTabData,
-  TurnId
-} from './schemas/agentApiSchema'
+import type { AgentActiveTabData, TurnId } from './schemas/agentApiSchema'
 import { toTurnId } from './schemas/agentApiSchema'
 import type {
   ConversationEntry,
