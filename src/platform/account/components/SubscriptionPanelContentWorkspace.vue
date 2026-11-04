@@ -409,8 +409,8 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
-  isSalesManagedTier,
-  isWithinEnterpriseEndingNotice
+  hasEndingNoticeStarted,
+  isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/billing/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/billing/subscription/utils/tierBenefits'
@@ -446,8 +446,12 @@ const {
   canReactivatePlan,
   canOpenPricingSurface
 } = useBillingUI()
-const { canChangeSeats, canSubscribeSelfServe, runDeniedPaymentPastDue } =
-  useBillingCapabilities()
+const {
+  canChangeSeats,
+  canSubscribeSelfServe,
+  runDeniedPaymentPastDue,
+  endingNoticeStartsAt
+} = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -616,16 +620,12 @@ const hasScheduledEnterpriseEnd = computed(() => {
   return !Number.isNaN(Date.parse(endDate))
 })
 
-// Coarse shared clock so the notice window opens mid-session too.
 const now = useTimestamp({ interval: 60_000 })
 
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !pendingServerFact(
-      'BE-25244',
-      isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
-    )
+    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
 )
 
 const { kind: billingBannerKind } = useBillingBanner()

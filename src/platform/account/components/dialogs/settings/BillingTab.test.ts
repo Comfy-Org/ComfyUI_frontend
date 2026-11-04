@@ -26,6 +26,10 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -167,6 +171,12 @@ function arrange(scenario: Scenario = {}) {
       resubscribe
     })
   )
+  const servedNoticePlan = () => ({
+    isTeamPlan: false,
+    ...(scenario.subscription === undefined
+      ? activeSubscription
+      : scenario.subscription)
+  })
   vi.mocked(useBillingCapabilities).mockReturnValue(
     fromPartial({
       canSubscribeSelfServe: computed(
@@ -205,6 +215,18 @@ function arrange(scenario: Scenario = {}) {
       ),
       runDeniedPaymentPastDue: computed(() =>
         receiveServerFact('denied_reasons.can_run_workflows', false)
+      ),
+      billingNoticeAudience: computed(() =>
+        receiveServerFact(
+          'billing_notice_audience',
+          servedBillingNoticeAudience(servedNoticePlan())
+        )
+      ),
+      endingNoticeStartsAt: computed(() =>
+        receiveServerFact(
+          'ending_notice_starts_at',
+          servedEndingNoticeStartsAt(servedNoticePlan())
+        )
       ),
       canTopUp: computed(() => scenario.canTopUp ?? true),
       topUpDenial: computed(() => scenario.topUpDenial),
