@@ -179,12 +179,32 @@ export function mapAllNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
+  return mapAllNodesWithVisited(graph, mapFn, new Set())
+}
+
+/**
+ * Path-local cycle guard (add-on-descent, delete-on-return): seeded with
+ * the current graph at function entry so a self-referential SubgraphNode
+ * (`node.subgraph === graph`, directly or transitively) is short-circuited
+ * instead of recursing forever. Deleting on return still lets two sibling
+ * SubgraphNodes that reference the *same* Subgraph (e.g. a copy-pasted
+ * subgraph node) each have their contents mapped — a set that were never
+ * removed on return would under-count the second sibling's contents.
+ */
+function mapAllNodesWithVisited<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<LGraph | Subgraph>
+): T[] {
+  if (visited.has(graph)) return []
+  visited.add(graph)
+
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
     // Recursively map over subgraphs first
     if (isSubgraphNode(node)) {
-      results.push(...mapAllNodes(node.subgraph, mapFn))
+      results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
     // Apply map function to current node
@@ -194,6 +214,7 @@ export function mapAllNodes<T>(
     }
   })
 
+  visited.delete(graph)
   return results
 }
 
@@ -249,15 +270,29 @@ export function forEachNode(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void
 ): void {
+  forEachNodeWithVisited(graph, fn, new Set())
+}
+
+/** See {@link mapAllNodesWithVisited} for the path-local cycle-guard rationale. */
+function forEachNodeWithVisited(
+  graph: LGraph | Subgraph,
+  fn: (node: LGraphNode) => void,
+  visited: Set<LGraph | Subgraph>
+): void {
+  if (visited.has(graph)) return
+  visited.add(graph)
+
   visitGraphNodes(graph, (node) => {
     // Recursively process subgraphs first
     if (isSubgraphNode(node)) {
-      forEachNode(node.subgraph, fn)
+      forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
     // Execute function on current node
     fn(node)
   })
+
+  visited.delete(graph)
 }
 
 /**

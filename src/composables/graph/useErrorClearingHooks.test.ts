@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -74,6 +75,31 @@ function createNestedSubgraphRuntime() {
     innerSubgraphNode,
     outerSubgraphNode
   }
+}
+
+/**
+ * Builds a malformed graph where a Subgraph contains a SubgraphNode that
+ * points back to that same Subgraph — a cycle that `loadGraphData`
+ * validation and the editor's "Make Subgraph" command do not produce
+ * through normal use, but which a hand-authored or externally-generated
+ * workflow JSON can still carry into `graph.add` / `node:added`.
+ */
+function createSelfReferencingSubgraphRuntime() {
+  const rootGraph = new LGraph()
+  const cyclicSubgraph: Subgraph = createTestSubgraph({ rootGraph })
+
+  const innerSelfReference = createTestSubgraphNode(cyclicSubgraph, {
+    parentGraph: cyclicSubgraph,
+    id: 101
+  })
+  cyclicSubgraph.add(innerSelfReference)
+
+  const hostNode = createTestSubgraphNode(cyclicSubgraph, {
+    parentGraph: rootGraph,
+    id: 102
+  })
+
+  return { rootGraph, cyclicSubgraph, innerSelfReference, hostNode }
 }
 
 function setNodeMode(
@@ -464,6 +490,27 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Install again on the same graph — should be a no-op for existing nodes
     installErrorClearingHooks(graph)
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
+  })
+
+  it('installs hooks without stack-overflowing on a self-referencing subgraph', () => {
+    const { rootGraph, hostNode } = createSelfReferencingSubgraphRuntime()
+    installErrorClearingHooks(rootGraph)
+
+    expect(() => rootGraph.add(hostNode)).not.toThrow()
+    expect(hostNode.onConnectionsChange).toBeDefined()
+  })
+
+  it('restores hooks without stack-overflowing when a self-referencing subgraph host is removed', () => {
+    const { rootGraph, hostNode } = createSelfReferencingSubgraphRuntime()
+    const originalOnConnectionsChange = hostNode.onConnectionsChange
+
+    const cleanup = installErrorClearingHooks(rootGraph)
+    rootGraph.add(hostNode)
+
+    expect(() => rootGraph.remove(hostNode)).not.toThrow()
+    expect(hostNode.onConnectionsChange).toBe(originalOnConnectionsChange)
+
+    cleanup()
   })
 
   it('scans added-node missing models after widget values are restored', async () => {

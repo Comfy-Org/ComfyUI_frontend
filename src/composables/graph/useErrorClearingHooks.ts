@@ -142,21 +142,41 @@ function restoreNodeHooks(node: LGraphNode): void {
   hookedNodes.delete(node)
 }
 
-function installNodeHooksRecursive(node: LGraphNode): void {
+/**
+ * `visited` is path-local (add-on-descent, delete-on-return): it guards
+ * against a subgraph that (directly or transitively) contains itself, while
+ * still letting two sibling SubgraphNodes that reference the *same*
+ * Subgraph (e.g. a copy-pasted subgraph node) each have their interior
+ * visited. A global/memoized visited set would silently skip the second
+ * sibling's interior instead.
+ */
+function installNodeHooksRecursive(
+  node: LGraphNode,
+  visited: Set<Subgraph> = new Set()
+): void {
   installNodeHooks(node)
   if (node.isSubgraphNode()) {
+    if (visited.has(node.subgraph)) return
+    visited.add(node.subgraph)
     for (const innerNode of node.subgraph._nodes) {
-      installNodeHooksRecursive(innerNode)
+      installNodeHooksRecursive(innerNode, visited)
     }
+    visited.delete(node.subgraph)
   }
 }
 
-function restoreNodeHooksRecursive(node: LGraphNode): void {
+function restoreNodeHooksRecursive(
+  node: LGraphNode,
+  visited: Set<Subgraph> = new Set()
+): void {
   restoreNodeHooks(node)
   if (node.isSubgraphNode()) {
+    if (visited.has(node.subgraph)) return
+    visited.add(node.subgraph)
     for (const innerNode of node.subgraph._nodes) {
-      restoreNodeHooksRecursive(innerNode)
+      restoreNodeHooksRecursive(innerNode, visited)
     }
+    visited.delete(node.subgraph)
   }
 }
 
