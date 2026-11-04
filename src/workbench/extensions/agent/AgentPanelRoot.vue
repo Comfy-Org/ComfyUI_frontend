@@ -169,6 +169,9 @@ import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
@@ -257,7 +260,18 @@ const rest = createAgentRestClient()
 // able to resubscribe on reopen rather than cold-seed. See
 // docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
 // Stage 1a. There is deliberately no `onBeforeUnmount` teardown here.
-const { events, docTransport, onIdentityChange } = useAgentPageSession()
+// The identity is read here rather than imported there: the page session is on
+// this component's import graph, so pulling the auth stores into it would put
+// them on a path they were not on before. The *watcher* still lives in the
+// page's scope, which is the part that has to outlive this component.
+const authStore = useAuthStore()
+const apiKeyAuthStore = useApiKeyAuthStore()
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const { events, docTransport, onIdentityChange } = useAgentPageSession(() => [
+  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+  teamWorkspaceStore.activeWorkspaceId ?? null,
+  desktopHostUser.value?.workspaceId ?? null
+])
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
@@ -272,7 +286,6 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const teamWorkspaceStore = useTeamWorkspaceStore()
 // Reconnecting the socket on an identity change is the page session's job now,
 // because the socket outlives this component: a workspace switch made while
 // the panel is closed must not leave a live connection authenticated for the

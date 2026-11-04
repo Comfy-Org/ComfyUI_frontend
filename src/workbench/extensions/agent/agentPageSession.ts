@@ -2,10 +2,6 @@ import { computed, effectScope, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { assert } from '@/base/assert'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
@@ -50,11 +46,25 @@ export interface AgentPageSession {
   onIdentityChange(listener: () => void): () => void
 }
 
-type SocketIdentity = readonly [
+export type SocketIdentity = readonly [
   account: string | null,
   workspace: string | null,
   hostWorkspace: string | null
 ]
+
+/**
+ * Reads the signed-in identity the socket authenticates as.
+ *
+ * Passed in rather than imported, deliberately. This module is reached from
+ * `AgentPanelRoot.vue`'s import graph, and pulling the auth, API-key and
+ * workspace stores in here put them on a path they were not on before, which
+ * hung an unrelated suite's app bootstrap (`AssetsSidebarListView`) at
+ * `appBridge.loading`. The caller already imports those stores, so handing over
+ * a getter keeps the import graph exactly as it was while the *watcher* still
+ * lives — and still survives — in the page's own scope, which is the property
+ * that matters.
+ */
+export type SocketIdentitySource = () => SocketIdentity
 
 /**
  * Whether an identity tuple change should re-authenticate the socket.
@@ -88,7 +98,7 @@ interface PageSessionInternals extends AgentPageSession {
 
 let session: PageSessionInternals | null = null
 
-function create(): PageSessionInternals {
+function create(readIdentity: SocketIdentitySource): PageSessionInternals {
   // One transport per page, so a follower session cannot end up holding a
   // different socket than the one the agent session streams over, and a panel
   // remount cannot leave an orphaned connection behind.
@@ -119,14 +129,7 @@ function create(): PageSessionInternals {
     })
     const docTransport = createAgentDocFrameTransport(events)
 
-    const authStore = useAuthStore()
-    const apiKeyAuthStore = useApiKeyAuthStore()
-    const teamWorkspaceStore = useTeamWorkspaceStore()
-    const identity = computed<SocketIdentity>(() => [
-      authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-      teamWorkspaceStore.activeWorkspaceId ?? null,
-      desktopHostUser.value?.workspaceId ?? null
-    ])
+    const identity = computed<SocketIdentity>(() => readIdentity())
     watch(identity, (next, previous) => {
       if (!needsReauthentication(next, previous)) return
       events.reconnect()
@@ -161,9 +164,16 @@ function create(): PageSessionInternals {
  * Idempotent by construction: every caller in a page gets the same event source
  * and the same doc-frame transport, so a panel remount re-taps a live socket
  * instead of opening a second one.
+ *
+ * @param readIdentity reads the signed-in identity the socket authenticates as.
+ * Only the first resolution in a page installs it, because it is watched for
+ * the page's lifetime and not the caller's; later callers get the existing
+ * session and their argument is ignored.
  */
-export function useAgentPageSession(): AgentPageSession {
-  session ??= create()
+export function useAgentPageSession(
+  readIdentity: SocketIdentitySource
+): AgentPageSession {
+  session ??= create(readIdentity)
   return session
 }
 

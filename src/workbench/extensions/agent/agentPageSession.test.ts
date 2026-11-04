@@ -2,6 +2,7 @@ import { effectScope, getCurrentScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
+import type { SocketIdentity } from './agentPageSession'
 import {
   destroyAgentPageSession,
   useAgentPageSession
@@ -11,13 +12,16 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 vi.mock(import('@/scripts/api'))
 vi.mock(import('./services/agent/agentAuth'))
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
-// The page session watches the signed-in identity, so it reaches the auth
-// store and through it Firebase, which cannot initialize under vitest.
-vi.mock(import('firebase/auth'))
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 
+// Stands in for the stores the panel reads. The page session takes a getter
+// rather than importing them, so a test supplies one directly.
+let identity: SocketIdentity = [null, null, null]
+const readIdentity = () => identity
+
 beforeEach(() => {
+  identity = [null, null, null]
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
   // Each test is a fresh page load.
@@ -30,8 +34,8 @@ afterEach(() => {
 
 describe('useAgentPageSession', () => {
   it('returns the same transport to every caller in a page', () => {
-    const first = useAgentPageSession()
-    const second = useAgentPageSession()
+    const first = useAgentPageSession(readIdentity)
+    const second = useAgentPageSession(readIdentity)
 
     expect(second.events).toBe(first.events)
     expect(second.docTransport).toBe(first.docTransport)
@@ -43,10 +47,10 @@ describe('useAgentPageSession', () => {
   // reopen instead of resubscribing. A remount must re-tap a live socket. See
   // docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
   it('survives a panel remount without minting a second event source', () => {
-    const beforeUnmount = useAgentPageSession()
+    const beforeUnmount = useAgentPageSession(readIdentity)
 
     // A panel unmount runs no teardown against the page session at all.
-    const afterRemount = useAgentPageSession()
+    const afterRemount = useAgentPageSession(readIdentity)
 
     expect(afterRemount.events).toBe(beforeUnmount.events)
     expect(createAgentEventSource).toHaveBeenCalledTimes(1)
@@ -54,11 +58,14 @@ describe('useAgentPageSession', () => {
 
   it('keeps one doc-frame tap on the shared socket across a remount', () => {
     const tap = vi.spyOn(agentSocket.socket, 'subscribe')
-    const { docTransport } = useAgentPageSession()
+    const { docTransport } = useAgentPageSession(readIdentity)
 
     docTransport.addEventListener('doc_update', () => {})
     // What a panel remount does: resolve again and attach another listener.
-    useAgentPageSession().docTransport.addEventListener('doc_update', () => {})
+    useAgentPageSession(readIdentity).docTransport.addEventListener(
+      'doc_update',
+      () => {}
+    )
 
     // The event source closes its socket when its last listener
     // unsubscribes, so one surviving tap is exactly what keeps a panel close
@@ -83,7 +90,7 @@ describe('useAgentPageSession', () => {
 
     // Stand in for the panel's setup scope, which is what resolves first.
     const panelScope = effectScope()
-    panelScope.run(() => useAgentPageSession())
+    panelScope.run(() => useAgentPageSession(readIdentity))
 
     expect(builtIn).toBeDefined()
     expect(builtIn).not.toBe(panelScope)
@@ -100,7 +107,7 @@ describe('useAgentPageSession', () => {
       builtIn = getCurrentScope()
       return agentSocket.socket
     })
-    useAgentPageSession()
+    useAgentPageSession(readIdentity)
 
     destroyAgentPageSession()
 
@@ -108,10 +115,10 @@ describe('useAgentPageSession', () => {
   })
 
   it('mints a fresh transport after an explicit page teardown', () => {
-    const first = useAgentPageSession()
+    const first = useAgentPageSession(readIdentity)
 
     destroyAgentPageSession()
-    const second = useAgentPageSession()
+    const second = useAgentPageSession(readIdentity)
 
     // Identity cannot tell these apart — the stubbed factory hands back one
     // socket object every call — so assert the mint instead: a second event
