@@ -62,7 +62,12 @@ export async function runTransform(
       options.force ? undefined : { flag: 'wx' }
     )
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'EEXIST'
+    ) {
       console.log(
         pc.red(`  Refusing to overwrite existing file: ${outputPath}`)
       )
