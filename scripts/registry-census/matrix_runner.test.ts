@@ -649,13 +649,17 @@ describe('registry form census', () => {
         'plus-custom-widget'
       ])
 
-      for (const probe of probes) {
-        expect(probe.err).toBeUndefined()
-        expect(probe.coreIsLastWriter).toBe(false)
-        expect(probe.verdict).toBe('class_may_rewrite_payload')
-        expect(probe.widgets).toBeGreaterThan(0)
-        expect(probe.ifAssumedFinalAtHookSite).toBe('provable')
+      const refusedButProvableAtHookSite = {
+        coreIsLastWriter: false,
+        verdict: 'class_may_rewrite_payload',
+        ifAssumedFinalAtHookSite: 'provable'
       }
+      expect(probes.map((p) => p.err)).toEqual([undefined, undefined])
+      expect(probes.map((p) => (p.widgets ?? 0) > 0)).toEqual([true, true])
+      expect(probes).toMatchObject([
+        refusedButProvableAtHookSite,
+        refusedButProvableAtHookSite
+      ])
 
       const [, withExtra] = probes
       expect(withExtra.wrongOrder).toEqual(['text', 'EXTRA'])
