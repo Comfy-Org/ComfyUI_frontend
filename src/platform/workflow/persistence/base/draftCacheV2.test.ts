@@ -164,7 +164,9 @@ describe('draftCacheV2', () => {
 
   describe('moveEntry', () => {
     it('moves entry to new path with new name', () => {
-      // workflows/ewip.json and workflows/4hbab.json share an 8-character hash.
+      expect(hashPath('workflows/4hbab.json')).toBe(
+        hashPath('workflows/ewip.json')
+      )
       let index = createEmptyIndex()
       index = upsertEntry(index, 'workflows/ewip.json', {
         name: 'retained',

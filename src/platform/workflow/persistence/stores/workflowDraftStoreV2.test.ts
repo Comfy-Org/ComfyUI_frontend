@@ -29,7 +29,6 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 const WORKSPACE = 'personal'
-// These two paths share an 8-character draft hash.
 const COLLIDING_PATH_A = 'workflows/ewip.json'
 const COLLIDING_PATH_B = 'workflows/4hbab.json'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
@@ -228,7 +227,6 @@ describe('workflowDraftStoreV2', () => {
     it('evicts the oldest draft and retries when a payload write hits quota', () => {
       const store = useWorkflowDraftStoreV2()
 
-      // The oldest draft owns the hash that the incoming draft collides with.
       store.saveDraft(COLLIDING_PATH_A, '{"id":"a"}', {
         name: 'a',
         isTemporary: true
@@ -486,14 +484,13 @@ describe('workflowDraftStoreV2', () => {
   })
 
   describe('moveDraft', () => {
-    it('moves draft to new path with new name', () => {
+    it('moves a draft onto a same-hash path without a second payload write', () => {
       const store = useWorkflowDraftStoreV2()
 
       store.saveDraft(COLLIDING_PATH_A, '{"data":"test"}', {
         name: 'old',
         isTemporary: true
       })
-      // Storage is full: the rename must not need room for a second payload.
       failPayloadWrites()
 
       store.moveDraft(COLLIDING_PATH_A, COLLIDING_PATH_B, 'new')

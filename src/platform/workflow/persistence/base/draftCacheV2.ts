@@ -135,8 +135,8 @@ export function moveEntry(
   newName: string
 ): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
   const oldKey = resolveDraftKey(index, oldPath)
-  // The source releases its key, so it does not compete for the destination.
-  const newKey = resolveDraftKey(removeEntry(index, oldPath).index, newPath)
+  const indexWithoutSource = removeEntry(index, oldPath).index
+  const newKey = resolveDraftKey(indexWithoutSource, newPath)
 
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
   const oldEntry = entriesByKey[oldKey]
