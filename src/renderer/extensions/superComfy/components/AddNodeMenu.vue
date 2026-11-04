@@ -118,11 +118,7 @@ onMounted(() => {
       class="pointer-events-none absolute size-0"
       :style="anchorStyle"
     />
-    <PopoverContent
-      align="start"
-      side="bottom"
-      class="flex max-h-96 flex-col gap-1 p-2"
-    >
+    <PopoverContent align="start" side="bottom" class="flex flex-col gap-1 p-2">
       <SearchInput
         v-model="query"
         size="sm"
@@ -132,7 +128,7 @@ onMounted(() => {
         :accessible-label="t('superComfy.menu.search')"
         :clear-label="t('superComfy.menu.clearSearch')"
       />
-      <div class="flex min-h-0 flex-col gap-1 overflow-y-auto">
+      <div class="flex scrollbar-custom min-h-0 flex-col gap-1 overflow-y-auto">
         <section
           v-for="section in sections"
           :key="section.key"
