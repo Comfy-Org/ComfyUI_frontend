@@ -1,3 +1,4 @@
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
@@ -16,13 +17,11 @@ export type JobId = string
  * map's contents merged into the frame object. So a `Pick` or `Partial` of the
  * map would describe the wrong shape here even though it would compile.
  *
- * The member is `string` rather than `PromptWorkflowMetadata[string]` because
- * these frame interfaces are re-exported from the published
- * `@comfyorg/comfyui-frontend-types`, and the generated package is private — an
- * external consumer could not resolve the reference. The tie to the spec lives
- * in `./workflowMetadataContract`, outside the published graph.
+ * The generated package is bundled into the published declarations by
+ * `tsconfig.types.json`, so this reference is inlined rather than emitted as an
+ * import of a private package that an external consumer could not resolve.
  */
-type StampedWorkflowId = { workflow_id?: string }
+type StampedWorkflowId = { workflow_id?: PromptWorkflowMetadata[string] }
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
