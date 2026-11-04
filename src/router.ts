@@ -135,6 +135,7 @@ export async function createAppRouter(): Promise<Router> {
 }
 
 const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
+const AUTHORITATIVE_CONFIG_STATES = new Set(['anonymous', 'authenticated'])
 const RECOVERING_SESSION_PHASES = new Set([
   'reading',
   'retry_wait',
@@ -220,7 +221,8 @@ function installCloudAuthGuards(router: Router): void {
       ([state, enabled, configState]) => {
         if (state === 'signed_in') {
           hadAccount = true
-          if (enabled || configState !== 'unloaded') rerouteEnabled = enabled
+          if (enabled || AUTHORITATIVE_CONFIG_STATES.has(configState))
+            rerouteEnabled = enabled
         }
         if (state !== 'signed_out' || !hadAccount) return
         hadAccount = false

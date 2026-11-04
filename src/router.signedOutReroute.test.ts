@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
@@ -31,10 +32,6 @@ vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('firebase/auth'))
 
-async function flushPromises() {
-  await new Promise((resolve) => setTimeout(resolve, 0))
-}
-
 const REROUTE_FLAG = 'ff:signed_out_reroute_enabled'
 
 const sessionFor = (id: string) =>
@@ -47,6 +44,7 @@ async function openSurveySignedIn() {
   const router = await createAppRouter()
   await router.push('/cloud/survey')
   expect(router.currentRoute.value.name).toBe('cloud-survey')
+  vi.spyOn(router, 'replace')
   return router
 }
 
@@ -67,8 +65,9 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     const router = await openSurveySignedIn()
 
     useAuthStore().currentUser = null
-    await flushPromises()
+    await nextTick()
 
+    expect(router.replace).not.toHaveBeenCalled()
     expect(router.currentRoute.value.name).toBe('cloud-survey')
   })
 
@@ -103,15 +102,15 @@ describe('a requiresAuth route whose account leaves the tab', () => {
       webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
       const router = await openSurveySignedIn()
       useAuthStore().currentUser = null
-      await flushPromises()
+      await nextTick()
 
       webSession.state = { phase, failures: 1 }
-      await flushPromises()
-      expect(router.currentRoute.value.name).toBe('cloud-survey')
+      await nextTick()
+      expect(router.replace).not.toHaveBeenCalled()
 
       webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
-      await flushPromises()
-      expect(router.currentRoute.value.name).toBe('cloud-survey')
+      await nextTick()
+      expect(router.replace).not.toHaveBeenCalled()
 
       webSession.state = { phase: 'signed_out', outcome: 'signed_out' }
       await vi.waitFor(() =>
@@ -129,10 +128,25 @@ describe('a requiresAuth route whose account leaves the tab', () => {
 
     invalidateRemoteConfig()
     useAuthStore().currentUser = null
-    await flushPromises()
-    expect(router.currentRoute.value.name).toBe('cloud-survey')
+    await nextTick()
+    expect(router.replace).not.toHaveBeenCalled()
 
     webSession.state = { phase: 'signed_out', outcome: 'signed_out' }
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.name).toBe('cloud-login')
+    )
+  })
+
+  it('lands on sign-in when the remote config fails to load before the account leaves', async () => {
+    remoteConfig.value = { signed_out_reroute_enabled: true }
+    remoteConfigState.value = 'authenticated'
+    const router = await openSurveySignedIn()
+
+    remoteConfig.value = {}
+    remoteConfigState.value = 'error'
+    await nextTick()
+    useAuthStore().currentUser = null
+
     await vi.waitFor(() =>
       expect(router.currentRoute.value.name).toBe('cloud-login')
     )
