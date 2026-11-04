@@ -50,6 +50,7 @@ import type { SaveLocation } from './superComfyPersistence'
 export const RUN_LIMIT = 50
 const NODES_IN_PARALLEL = 2
 const AUTOSAVE_DELAY_MS = 1000
+const AUTOSAVE_MAX_WAIT_MS = 5000
 
 type AppFailure = Extract<
   Awaited<ReturnType<typeof resolveAppContract>>,
@@ -134,7 +135,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
     async (doc) => {
       if (save) saveLocation.value = await save(doc)
     },
-    { debounce: AUTOSAVE_DELAY_MS }
+    { debounce: AUTOSAVE_DELAY_MS, maxWait: AUTOSAVE_MAX_WAIT_MS }
   )
 
   async function load() {
