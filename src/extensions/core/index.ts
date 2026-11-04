@@ -75,6 +75,33 @@ function register(extension: ComfyExtension) {
   disposers.push(useExtensionService().registerExtension(extension))
 }
 
+/**
+ * Loads a cloud-only extension module and returns its named export, or
+ * `undefined` if a suppressed `vite:preloadError` resolved the import to
+ * something without that export. Outside cloud this throws instead, so a
+ * malformed module still fails fast in desktop/localhost/dev builds.
+ */
+async function loadGuardedCoreExtension(
+  importExtension: () => Promise<unknown>,
+  exportName: string,
+  errorType: string
+): Promise<ComfyExtension | undefined> {
+  const module: unknown = await importExtension()
+  const extension =
+    typeof module === 'object' && module !== null && exportName in module
+      ? (module as Record<string, unknown>)[exportName]
+      : undefined
+
+  if (extension === undefined) {
+    const error = new TypeError(`${exportName} did not load from its module`)
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, { surface: 'agent', errorType })
+    return undefined
+  }
+
+  return extension as ComfyExtension
+}
+
 async function loadAgentPanelExtension() {
   const agentPanelModule: unknown = await import('./agentPanel')
   const registerAgentPanelExtension =
@@ -109,17 +136,37 @@ async function registerInOrder() {
   await registerElectronAdapterExtension()
 
   if (__DISTRIBUTION__ === 'cloud') {
-    register((await import('./cloudRemoteConfig')).cloudRemoteConfigExtension)
-    register((await import('./cloudBadges')).cloudBadgesExtension)
-    register((await import('./cloudSessionCookie')).cloudSessionCookieExtension)
+    const cloudRemoteConfig = await loadGuardedCoreExtension(
+      () => import('./cloudRemoteConfig'),
+      'cloudRemoteConfigExtension',
+      'error_loading_cloud_remote_config_extension'
+    )
+    if (cloudRemoteConfig) register(cloudRemoteConfig)
+
+    const cloudBadges = await loadGuardedCoreExtension(
+      () => import('./cloudBadges'),
+      'cloudBadgesExtension',
+      'error_loading_cloud_badges_extension'
+    )
+    if (cloudBadges) register(cloudBadges)
+
+    const cloudSessionCookie = await loadGuardedCoreExtension(
+      () => import('./cloudSessionCookie'),
+      'cloudSessionCookieExtension',
+      'error_loading_cloud_session_cookie_extension'
+    )
+    if (cloudSessionCookie) register(cloudSessionCookie)
   }
 
   await loadAgentPanelExtension()
 
   if (isCloud || isNightly) {
-    register(
-      (await import('./cloudFeedbackTopbarButton')).feedbackButtonExtension
+    const feedbackButton = await loadGuardedCoreExtension(
+      () => import('./cloudFeedbackTopbarButton'),
+      'feedbackButtonExtension',
+      'error_loading_feedback_button_extension'
     )
+    if (feedbackButton) register(feedbackButton)
   }
 }
 
