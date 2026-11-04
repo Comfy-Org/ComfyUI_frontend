@@ -21,6 +21,10 @@ interface GatheredPort {
   contributions: Contribution[]
 }
 
+function hasContent(item: MediaItem): boolean {
+  return item.kind !== 'text' || item.text.trim() !== ''
+}
+
 export function sourceItems(
   doc: SuperGraphDocument,
   edge: SuperEdge,
@@ -28,7 +32,7 @@ export function sourceItems(
 ): MediaItem[] {
   const source = findNode(doc, edge.from.node)
   if (!source || exclude?.has(source.id)) return []
-  if (source.kind === 'io') return source.items
+  if (source.kind === 'io') return source.items.filter(hasContent)
   return source.result?.outputs[edge.from.port] ?? []
 }
 

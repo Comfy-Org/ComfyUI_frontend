@@ -213,6 +213,40 @@ describe(planRuns, () => {
     expect(new Set(plan.runs.map(({ key }) => key)).size).toBe(2)
   })
 
+  it.for([
+    {
+      name: 'skips a blank entry in a batch',
+      texts: ['a red fox', ''],
+      expected: {
+        ok: true,
+        runs: [{ inputs: { prompt: [textItem('a red fox')] } }]
+      }
+    },
+    {
+      name: 'marks a required input that holds only blank text',
+      texts: ['  '],
+      expected: {
+        ok: false,
+        block: { reason: 'missingInputs', ports: ['prompt'] }
+      }
+    }
+  ])(
+    '[R5f] blank text from an I/O node is not content: $name',
+    ({ texts, expected }) => {
+      const doc = docWith(
+        [
+          ioNode('prompts', 'text', texts.map(textItem)),
+          generateNode('gen', 'image', {
+            inputs: [port('prompt', 'text', { required: true })]
+          })
+        ],
+        [edge('prompts', 'out', 'gen', 'prompt')]
+      )
+
+      expect(planRuns(doc, 'gen', limits)).toMatchObject(expected)
+    }
+  )
+
   it('[R3c] an executable feeding an executable directly passes the full output batch', () => {
     const doc = docWith(
       [
