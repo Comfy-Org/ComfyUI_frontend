@@ -82,7 +82,7 @@ function openLightbox() {
       v-if="canExpand"
       variant="secondary"
       size="icon-sm"
-      class="absolute top-2 right-2 opacity-0 group-hover/node:opacity-100"
+      class="absolute right-2 bottom-2 opacity-0 group-hover/node:opacity-100"
       :aria-label="t('mediaAsset.actions.zoom')"
       @click="openLightbox"
     >
