@@ -265,6 +265,36 @@ describe('OAuthConsentView', () => {
     }
   )
 
+  it('falls back to the English credit-spending label for an untranslated locale', () => {
+    render(OAuthConsentView, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'ja',
+            fallbackLocale: 'en',
+            missingWarn: false,
+            fallbackWarn: false,
+            messages: { en: enMessages, ja: {} }
+          })
+        ]
+      },
+      props: {
+        initialChallenge: {
+          ...challenge,
+          resource_display_name: 'Comfy Router',
+          scopes: ['comfy-router:models:invoke']
+        }
+      }
+    })
+
+    expect(
+      screen.getByText(
+        'Run partner models through Comfy Router, using your credits'
+      )
+    ).toBeVisible()
+  })
+
   it('renders the registered redirect URI verbatim', () => {
     renderConsent()
     // Verbatim render — the user must be able to read the loopback URL
