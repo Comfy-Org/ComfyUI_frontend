@@ -113,8 +113,18 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Served display-only plan remainder in cents; absent when omitted. */
+  cloudCreditDisplayBalanceCents?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
+  /** Served `min_topup_cents`. Absent when the balance response omits it. */
+  minTopupCents?: number
+  /** Served `min_topup_credits`. Absent when the balance response omits it. */
+  minTopupCredits?: number
+  /** Served `max_topup_cents`. Absent when the balance response omits it. */
+  maxTopupCents?: number
+  /** Served `max_topup_credits`. Absent when the balance response omits it. */
+  maxTopupCredits?: number
   /** Served `low_balance`. Absent when the balance response omits it. */
   lowBalance?: boolean
 }
@@ -196,6 +206,8 @@ export interface BillingState {
   renewalInvoice: ComputedRef<RenewalInvoice | null>
   /** Served configured plan allowance; null when the server omits it. */
   periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
+  /** Served next credit refill; null when the server omits it. */
+  nextCreditRefillAt: ComputedRef<string | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {

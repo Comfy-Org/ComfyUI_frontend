@@ -285,6 +285,15 @@ A failure that also reproduces on the merge base is not caused by the change. Th
 dev server serves whatever the checkout holds, so rerun the spec after
 `git switch --detach "$(git merge-base HEAD origin/main)"`, then switch back.
 
+`vueDirectiveSentryAttribution.spec.ts` needs a production build: the dev
+server initialises Sentry with `enabled: false`, so no envelope is ever sent and
+the spec waits out its timeout. CI runs it in the `mobile-safari` project
+against the `frontend-dist-cloud` artifact. Locally, run
+`DISTRIBUTION=cloud pnpm build:cloud`, start ComfyUI with
+`--front-end-root <repo>/dist`, and run the spec with
+`PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud`
+and `--project=mobile-safari`.
+
 ### Slowing the browser down
 
 With `--headed` or `--ui`, set `SLOW_MO` (ms) to slow every action. Applies only

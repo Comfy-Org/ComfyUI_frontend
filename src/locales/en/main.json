@@ -2523,6 +2523,7 @@
     "angle": "Angle"
   },
   "boundingBoxes": {
+    "boxCount": "{current} of {max} box | {current} of {max} boxes",
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
     "typeObj": "obj",
@@ -2733,7 +2734,10 @@
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
-      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?",
+      "switchAccount": "Switch account"
     },
     "scopes": {
       "mcp:tools:read": {
@@ -2986,6 +2990,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "addCreditsRefusal": {
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later.",
+      "paymentPastDue": "Update your payment method to add credits.",
+      "unavailable": "Adding credits isn't available for this workspace right now."
+    },
     "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
@@ -3081,6 +3090,7 @@
     "additionalInfo": "Additional Info",
     "charge": "Charge",
     "lessThanOne": "<1",
+    "creditUnit": "Credit | Credits",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3639,6 +3649,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Add payment method",
           "manage": "Manage",
           "turnOn": "Turn on",
           "updatePayment": "Update payment"
@@ -3648,7 +3659,9 @@
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
-        "off": "Refills credits when your balance runs low",
+        "off": "Refills credits when your balance runs low.",
+        "noPaymentMethod": "Auto top-up needs a payment method. Add one to turn it on.",
+        "noDefaultPaymentMethod": "Auto top-up needs a default payment method. Set one to turn it on.",
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
@@ -3656,6 +3669,7 @@
         "pausedByRemainderNoDate": "Next top-up would go over your monthly limit.",
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
+        "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
@@ -3678,12 +3692,12 @@
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
-        "planTooltip": "Credits included with your plan. They refill each billing period.",
-        "rateInfo": "About credits",
-        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "planTooltip": "Plan credits are spent before top-up credits.",
+        "tooltipLabel": "About credits",
+        "tooltip": "Credits work across Comfy Cloud, ComfyUI, and Comfy API.",
         "title": "Credits",
         "topUp": "Top-up",
-        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "topUpTooltip": "Used after plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
       "footer": {
@@ -3777,6 +3791,12 @@
         "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
+        "refusedBody": "Your team has used all its credits.",
+        "refusedPersonalBody": "You've used all your credits.",
+        "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
+        "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -3793,7 +3813,8 @@
         "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
         "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
         "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
-        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out.",
+        "pausedBody": "You have {credits} credit left. Buying credits isn't available right now. | You have {credits} credits left. Buying credits isn't available right now."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -4107,7 +4128,7 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
@@ -6061,6 +6082,12 @@
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "extensionChange": {
+      "disabled": "Turned off the node pack {pack}",
+      "enabled": "Turned on the node pack {pack}",
+      "removed": "Removed the node pack {pack}",
+      "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
+    },
     "askUser": {
       "card": "Question from the agent",
       "chooseUpTo": "Choose up to {max}",
@@ -6225,6 +6252,8 @@
     "worked": "Worked",
     "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
     "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
+    "toolOutcomeUnknown": "{tool} — outcome unknown",
+    "toolFailed": "{tool} failed",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6265,6 +6294,10 @@
     "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
+    "toolRemovedNodePack": "Removed a node pack",
+    "toolRemovingNodePack": "Removing a node pack",
+    "toolSwitchedNodePack": "Switched a node pack",
+    "toolSwitchingNodePack": "Switching a node pack",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
@@ -6281,6 +6314,8 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
+      "overwritten": "Your edit conflicted with a newer change and was not saved. The workflow was refreshed to show the saved version.",
+      "unconfirmed": "Your edit could not be confirmed as saved. The workflow was refreshed to show the saved version.",
       "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
@@ -6380,5 +6415,85 @@
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
     "reload": "Reload"
+  },
+  "addCreditsDialog": {
+    "title": "Add credits",
+    "customAmountLabel": "Or enter an amount",
+    "amountError": {
+      "below_min": "Minimum is {amount}.",
+      "above_max": "The largest top-up is {amount}. Add more with another top-up.",
+      "whole_dollars": "Whole dollars only."
+    },
+    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "planLine": {
+      "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
+      "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    "credits": "{credits} credits",
+    "creditsUnavailable": "— credits",
+    "paidAtCheckout": "{amount}, paid at checkout",
+    "continue": "Continue",
+    "opening": "Opening…",
+    "processing": {
+      "title": "A {amount} payment is still processing",
+      "titleNoAmount": "A payment is still processing",
+      "body": "No need to pay again."
+    },
+    "needsVerification": {
+      "title": "Your {amount} payment needs verification",
+      "titleNoAmount": "Your payment needs verification",
+      "body": "Your bank is waiting for you to confirm it. Verify it to finish this top-up.",
+      "footer": "{amount}, unverified",
+      "action": "Verify payment"
+    },
+    "notVerified": {
+      "title": "Your {amount} payment wasn't verified",
+      "titleNoAmount": "Your payment wasn't verified",
+      "body": "Your bank didn't confirm it. Try again later, or contact support.",
+      "footerTitle": "{amount} top-up",
+      "footer": "Not verified",
+      "action": "Contact support"
+    },
+    "checkoutFailed": {
+      "title": "Couldn't open checkout",
+      "body": "Nothing was charged. Try again."
+    },
+    "notAllowed": {
+      "title": "You can't add credits right now",
+      "body": "Check Billing settings to see why."
+    },
+    "rateLimited": {
+      "title": "You've hit the top-up limit for now",
+      "body": "Try again in {wait}, or {support}.",
+      "bodyNoWait": "Try again later, or {support}."
+    },
+    "purchasesPaused": {
+      "title": "Buying credits isn't available right now",
+      "body": "Try again later, or {support}."
+    },
+    "messageSupport": "message support",
+    "wait": {
+      "minute": "a minute",
+      "minutes": "{count} minutes",
+      "hour": "an hour",
+      "hours": "{count} hours",
+      "day": "a day",
+      "days": "{count} days"
+    },
+    "opened": {
+      "title": "Checkout opened in a new tab",
+      "titleBrowser": "Checkout opened in your browser",
+      "body": "Credits are added to this workspace as soon as your payment goes through.",
+      "credits": "Credits",
+      "amount": "Amount",
+      "reopen": "Reopen checkout"
+    },
+    "close": "Close",
+    "blocked": {
+      "title": "Checkout didn't open",
+      "body": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "action": "Open checkout"
+    }
   }
 }

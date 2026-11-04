@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-12" data-testid="billing-tab">
+  <div class="flex flex-col gap-12 pt-7 pb-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
@@ -32,7 +32,7 @@
       </h2>
       <div
         v-if="load === 'loading'"
-        class="rounded-xl border border-card px-5 py-4"
+        class="rounded-xl border border-border px-5 py-4"
         data-testid="billing-plan-skeleton"
         aria-busy="true"
       >
@@ -43,7 +43,7 @@
       </div>
       <div
         v-else-if="load === 'error'"
-        class="flex items-center justify-between gap-4 rounded-xl border border-card px-5 py-4"
+        class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
         role="alert"
         data-testid="billing-load-error"
       >
@@ -71,85 +71,96 @@
     >
       <BillingCreditsCard
         :state="creditsCard"
-        :can-top-up="capabilities.canTopUp.value"
+        :add-credits="
+          addCreditsAvailability({
+            resolved: capabilities.hasResolvedCapabilities.value,
+            canTopUp: capabilities.canTopUp.value,
+            denial: capabilities.topUpDenial.value
+          })
+        "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="capabilities.autoTopUpEnabled.value">
-        <template v-if="capabilities.canManageAutoTopUp.value">
-          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
-        </template>
-      </template>
+      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
+      <BillingAutoTopUpMemberCard
+        v-else-if="autoTopUpSection.kind === 'memberBlock'"
+      />
     </section>
 
-    <section class="flex flex-col gap-3" data-testid="billing-handoff">
-      <h2 class="m-0 text-base font-medium text-foreground">
-        {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
-      </h2>
-      <div
-        class="flex items-center gap-4 rounded-xl border border-card px-5 py-4"
-        data-testid="billing-handoff-card"
-      >
-        <i18n-t
-          v-if="handoffAudience === 'owner'"
-          keypath="workspacePanel.billingTab.handoff.owner.line"
-          tag="p"
-          class="m-0 text-sm text-muted-foreground"
+    <div class="flex flex-col gap-6">
+      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+        <h2 class="m-0 text-base font-medium text-foreground">
+          {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
+        </h2>
+        <div
+          class="flex items-center gap-4 rounded-xl border border-border px-5 py-4"
+          data-testid="billing-handoff-card"
         >
-          <template #platform>
-            <a
-              :href="handoffHref"
-              target="_blank"
-              rel="noopener"
-              class="text-muted-foreground underline"
-              @click="trackHandoff"
-            >
-              {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
-            </a>
-          </template>
-        </i18n-t>
+          <i18n-t
+            v-if="handoffAudience === 'owner'"
+            keypath="workspacePanel.billingTab.handoff.owner.line"
+            tag="p"
+            class="m-0 text-sm text-muted-foreground"
+          >
+            <template #platform>
+              <a
+                :href="handoffHref"
+                target="_blank"
+                rel="noopener"
+                class="text-muted-foreground underline hover:text-foreground"
+                @click="trackHandoff"
+              >
+                {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
+              </a>
+            </template>
+          </i18n-t>
+          <Button
+            as="a"
+            :href="handoffHref"
+            target="_blank"
+            rel="noopener"
+            variant="secondary"
+            size="md"
+            class="ml-auto shrink-0 no-underline"
+            @click="trackHandoff"
+          >
+            {{
+              $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
+            }}
+            <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+          </Button>
+        </div>
+      </section>
+
+      <footer class="flex items-center gap-4" data-testid="billing-footer">
         <Button
           as="a"
-          :href="handoffHref"
+          :href="partnerNodesPricingHref"
           target="_blank"
           rel="noopener"
-          variant="secondary"
+          variant="muted-textonly"
           size="md"
-          class="ml-auto shrink-0"
-          @click="trackHandoff"
+          class="no-underline"
         >
-          {{
-            $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
-          }}
-          <i :class="handoffIcon" aria-hidden="true" />
+          <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
+          {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
         </Button>
-      </div>
-    </section>
-
-    <footer class="flex items-center gap-4" data-testid="billing-footer">
-      <Button
-        as="a"
-        :href="partnerNodesPricingHref"
-        target="_blank"
-        rel="noopener"
-        variant="muted-textonly"
-        size="md"
-      >
-        <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
-        {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
-      </Button>
-      <Button
-        variant="muted-textonly"
-        size="md"
-        :loading="isLoadingSupport"
-        @click="handleMessageSupport"
-      >
-        <i class="icon-[lucide--message-circle] size-3.5" aria-hidden="true" />
-        {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
-      </Button>
-    </footer>
+        <Button
+          variant="muted-textonly"
+          size="md"
+          :loading="isLoadingSupport"
+          @click="handleMessageSupport"
+        >
+          <i
+            class="icon-[lucide--message-circle] size-3.5"
+            aria-hidden="true"
+          />
+          {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
+        </Button>
+      </footer>
+    </div>
   </div>
 </template>
 
@@ -174,13 +185,16 @@ import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
+import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
+  addCreditsAvailability,
+  addCreditsEmphasis,
+  deriveAutoTopUpSection,
   deriveBillingTabLoad,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -189,8 +203,10 @@ import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpP
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
+const workspaceStore = useTeamWorkspaceStore()
 const capabilities = useBillingCapabilities()
 const { isPaused } = usePausedBanner()
 const planCheckout = usePlanCheckoutBanner()
@@ -225,6 +241,7 @@ const handoffAudience = computed(() =>
 
 const load = computed(() =>
   deriveBillingTabLoad({
+    workspaceLoadFailed: workspaceStore.initState === 'error',
     billingError: billing.error.value,
     billingInitialized: billing.isInitialized.value,
     capabilitiesReady: capabilities.isReady.value,
@@ -240,6 +257,13 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+const autoTopUpSection = computed(() =>
+  deriveAutoTopUpSection({
+    autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
+    canViewAutoTopUpCard: capabilities.canViewAutoTopUpCard.value,
+    manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
+  })
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -269,12 +293,6 @@ const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
-const handoffIcon = computed(() =>
-  handoffAudience.value === 'owner'
-    ? 'icon-[lucide--arrow-up-right]'
-    : 'icon-[lucide--external-link]'
-)
-
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
 }
@@ -287,6 +305,9 @@ function addCredits(source: 'credits_panel' | 'settings_billing_panel') {
 }
 
 async function retry() {
+  if (workspaceStore.initState === 'error') {
+    await workspaceStore.initialize().catch(() => undefined)
+  }
   await Promise.allSettled([billing.initialize(), capabilities.refresh()])
 }
 
