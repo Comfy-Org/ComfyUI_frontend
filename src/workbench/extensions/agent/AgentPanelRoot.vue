@@ -2044,13 +2044,6 @@ function warnWorkflowChanged(): void {
   toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
 }
 
-/**
- * Puts the chat of the errored workflow in front before its diagnostics are
- * attached, and reports whether that chat still belongs to `workflow` once the
- * follow has settled. Returns false when the window closed while the follow was
- * loading — a newer attachment started, this root was disposed, or the user
- * moved to another tab — so the caller must not attach anything.
- */
 async function openChatForErroredWorkflow(
   workflow: ComfyWorkflow,
   run: number

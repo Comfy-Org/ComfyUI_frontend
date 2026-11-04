@@ -512,11 +512,6 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
   })
 
-  /**
-   * Holds the first thread-list request the follow makes for `workflowId`, so
-   * the window between asking to follow a tab and that follow settling can be
-   * acted on. Later requests fall through to the ordinary responder.
-   */
   function deferFollowOf(workflowId: string): () => Promise<void> {
     let release!: () => void
     const held = new Promise<void>((resolve) => {
@@ -542,8 +537,6 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     return async () => {
       release()
       await answered
-      // Let the held follow run to completion, including whatever it would
-      // have written to the composer had it still been allowed to.
       await new Promise((resolve) => setTimeout(resolve, 0))
       await nextTick()
     }
