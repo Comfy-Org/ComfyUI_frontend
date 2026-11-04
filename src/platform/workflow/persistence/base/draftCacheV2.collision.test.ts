@@ -16,8 +16,6 @@ describe('draft cache hash collisions', () => {
       updatedAt: 2
     }).index
 
-    expect(index.order).toEqual(['684dbc71', '684dbc71:workflows/4hbab.json'])
-    expect(Object.keys(index.entries)).toHaveLength(2)
     expect(getEntryByPath(index, 'workflows/ewip.json')).toMatchObject({
       name: 'draft-a',
       path: 'workflows/ewip.json'

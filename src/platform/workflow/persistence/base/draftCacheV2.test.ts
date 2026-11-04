@@ -164,7 +164,13 @@ describe('draftCacheV2', () => {
 
   describe('moveEntry', () => {
     it('moves entry to new path with new name', () => {
+      // workflows/ewip.json and workflows/4hbab.json share an 8-character hash.
       let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/ewip.json', {
+        name: 'retained',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
       index = upsertEntry(index, 'workflows/old.json', {
         name: 'old',
         isTemporary: true,
@@ -174,16 +180,18 @@ describe('draftCacheV2', () => {
       const result = moveEntry(
         index,
         'workflows/old.json',
-        'workflows/new.json',
+        'workflows/4hbab.json',
         'new'
       )
 
       expect(result).not.toBeNull()
-      expect(result!.index.entries[result!.newKey].name).toBe('new')
-      expect(result!.index.entries[result!.newKey].path).toBe(
-        'workflows/new.json'
-      )
-      expect(result!.index.entries[result!.oldKey]).toBeUndefined()
+      expect(
+        getEntryByPath(result!.index, 'workflows/ewip.json')
+      ).toMatchObject({ name: 'retained', path: 'workflows/ewip.json' })
+      expect(
+        getEntryByPath(result!.index, 'workflows/4hbab.json')
+      ).toMatchObject({ name: 'new', path: 'workflows/4hbab.json' })
+      expect(getEntryByPath(result!.index, 'workflows/old.json')).toBeNull()
     })
 
     it('returns null for non-existent source', () => {

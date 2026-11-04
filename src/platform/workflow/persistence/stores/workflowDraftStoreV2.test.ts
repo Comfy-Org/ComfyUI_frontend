@@ -29,6 +29,9 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 const WORKSPACE = 'personal'
+// These two paths share an 8-character draft hash.
+const COLLIDING_PATH_A = 'workflows/ewip.json'
+const COLLIDING_PATH_B = 'workflows/4hbab.json'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
@@ -104,22 +107,38 @@ describe('workflowDraftStoreV2', () => {
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
-      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+      store.saveDraft(COLLIDING_PATH_A, '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":[]}', {
         name: 'test',
         isTemporary: true
       })
 
-      store.saveDraft('workflows/test.json', '{"nodes":[1,2,3]}', {
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":[1,2,3]}', {
         name: 'test-updated',
         isTemporary: false
       })
+      store.reset()
 
-      const draft = store.getDraft('workflows/test.json')
+      expect(store.getDraft(COLLIDING_PATH_A)?.data).toBe('{"id":"a"}')
+      const draft = store.getDraft(COLLIDING_PATH_B)
       expect(draft).not.toBeNull()
       expect(draft!.data).toBe('{"nodes":[1,2,3]}')
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
       expect(draft!.updatedAt).toEqual(expect.any(Number))
+
+      store.removeDraft(COLLIDING_PATH_A)
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":[4]}', {
+        name: 'test-updated',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_B)?.data).toBe('{"nodes":[4]}')
     })
 
     it('retains CRDT lineage when draft content changes', () => {
@@ -161,26 +180,28 @@ describe('workflowDraftStoreV2', () => {
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
       const store = useWorkflowDraftStoreV2()
 
-      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+      store.saveDraft(COLLIDING_PATH_A, '{"id":"a"}', {
         name: 'a',
         isTemporary: true
       })
-      const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
-
-      vi.advanceTimersByTime(60_000)
-      store.saveDraft('workflows/b.json', '{"id":"b"}', {
+      store.saveDraft(COLLIDING_PATH_B, '{"id":"b"}', {
         name: 'b',
         isTemporary: true
       })
-      expect(store.getMostRecentPath()).toBe('workflows/b.json')
+      const initialUpdatedAt = store.getDraft(COLLIDING_PATH_B)!.updatedAt
 
       vi.advanceTimersByTime(60_000)
-      store.markDraftUsed('workflows/a.json')
+      store.saveDraft('workflows/c.json', '{"id":"c"}', {
+        name: 'c',
+        isTemporary: true
+      })
+      expect(store.getMostRecentPath()).toBe('workflows/c.json')
 
-      expect(store.getDraft('workflows/a.json')!.updatedAt).toBe(
-        initialUpdatedAt
-      )
-      expect(store.getMostRecentPath()).toBe('workflows/a.json')
+      vi.advanceTimersByTime(60_000)
+      store.markDraftUsed(COLLIDING_PATH_B)
+
+      expect(store.getDraft(COLLIDING_PATH_B)!.updatedAt).toBe(initialUpdatedAt)
+      expect(store.getMostRecentPath()).toBe(COLLIDING_PATH_B)
     })
 
     it('evicts oldest when over limit', () => {
@@ -207,33 +228,39 @@ describe('workflowDraftStoreV2', () => {
     it('evicts the oldest draft and retries when a payload write hits quota', () => {
       const store = useWorkflowDraftStoreV2()
 
-      for (let i = 0; i < MAX_DRAFTS - 1; i++) {
+      // The oldest draft owns the hash that the incoming draft collides with.
+      store.saveDraft(COLLIDING_PATH_A, '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      for (let i = 1; i < MAX_DRAFTS - 1; i++) {
         store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
           name: `draft${i}`,
           isTemporary: true
         })
       }
 
-      const newDraftPayloadKey = StorageKeys.draftPayload(
-        'workflows/new.json',
-        'personal'
-      )
       let quotaFailureInjected = false
-      withQuotaMock((key) => {
-        if (key !== newDraftPayloadKey || quotaFailureInjected) return false
+      withQuotaMock((key, value) => {
+        const isIncomingPayload =
+          key.startsWith(PAYLOAD_PREFIX) &&
+          value.includes(JSON.stringify('{"id":"new"}'))
+        if (!isIncomingPayload || quotaFailureInjected) return false
         quotaFailureInjected = true
         return true
       })
 
-      const result = store.saveDraft('workflows/new.json', '{"id":"new"}', {
+      const result = store.saveDraft(COLLIDING_PATH_B, '{"id":"new"}', {
         name: 'new',
         isTemporary: true
       })
 
       expect(result).toBe(true)
       expect(quotaFailureInjected).toBe(true)
-      expect(store.getDraft('workflows/draft0.json')).toBeNull()
-      expect(store.getDraft('workflows/new.json')?.data).toBe('{"id":"new"}')
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_B)?.data).toBe('{"id":"new"}')
+      store.reset()
+      expect(store.getDraft(COLLIDING_PATH_B)?.data).toBe('{"id":"new"}')
     })
 
     it('keeps overflow-evicted payloads on disk when the index write fails', () => {
@@ -462,16 +489,19 @@ describe('workflowDraftStoreV2', () => {
     it('moves draft to new path with new name', () => {
       const store = useWorkflowDraftStoreV2()
 
-      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+      store.saveDraft(COLLIDING_PATH_A, '{"data":"test"}', {
         name: 'old',
         isTemporary: true
       })
+      // Storage is full: the rename must not need room for a second payload.
+      failPayloadWrites()
 
-      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+      store.moveDraft(COLLIDING_PATH_A, COLLIDING_PATH_B, 'new')
+      store.reset()
 
-      expect(store.getDraft('workflows/old.json')).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
 
-      const newDraft = store.getDraft('workflows/new.json')
+      const newDraft = store.getDraft(COLLIDING_PATH_B)
       expect(newDraft).not.toBeNull()
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')

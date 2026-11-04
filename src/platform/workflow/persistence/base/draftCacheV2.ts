@@ -48,15 +48,18 @@ export function touchOrder(order: string[], draftKey: string): string[] {
  * Adds or updates a draft entry in the index.
  * Handles LRU eviction if over the limit.
  *
+ * Pass `draftKey` when the payload was already written under a key resolved
+ * against an earlier index, so the entry stays on that key.
+ *
  * @returns Object with updated index and list of evicted draft keys
  */
 export function upsertEntry(
   index: DraftIndexV2,
   path: string,
   meta: Omit<DraftEntryMeta, 'path'>,
-  limit: number = MAX_DRAFTS
+  limit: number = MAX_DRAFTS,
+  draftKey: string = resolveDraftKey(index, path)
 ): { index: DraftIndexV2; evicted: string[] } {
-  const draftKey = resolveDraftKey(index, path)
   const effectiveLimit = Math.max(1, limit)
 
   const entries = {
@@ -132,16 +135,13 @@ export function moveEntry(
   newName: string
 ): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
   const oldKey = resolveDraftKey(index, oldPath)
-  const newKey = resolveDraftKey(index, newPath)
+  // The source releases its key, so it does not compete for the destination.
+  const newKey = resolveDraftKey(removeEntry(index, oldPath).index, newPath)
 
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
   const oldEntry = entriesByKey[oldKey]
   if (!oldEntry) return null
-  if (
-    oldKey !== newKey &&
-    Object.values(index.entries).some((entry) => entry.path === newPath)
-  )
-    return null
+  if (oldKey !== newKey && entriesByKey[newKey]) return null
 
   const entries = { ...index.entries }
   delete entries[oldKey]
