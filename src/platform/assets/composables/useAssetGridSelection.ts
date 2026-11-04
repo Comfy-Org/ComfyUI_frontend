@@ -1,4 +1,5 @@
 import { useElementHover, useEventListener } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
 
@@ -12,6 +13,7 @@ import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-u
 
 const DRAG_THRESHOLD_PX = 4
 const CARD_SELECTOR = '[data-asset-id]'
+const SCROLLER_SELECTOR = '[data-asset-grid-scroller]'
 const INTERACTIVE_SELECTOR =
   'button, input, textarea, select, a[href], [role="slider"], [role="tab"], [contenteditable]'
 
@@ -23,6 +25,10 @@ interface AssetGridSelectionOptions {
   setSelectedIds: (ids: string[], allAssets: AssetItem[]) => void
   selectAll: (assets: AssetItem[]) => void
   isEnabled?: () => boolean
+}
+
+function shiftRectY(rect: RectEdges, dy: number): RectEdges {
+  return { ...rect, top: rect.top + dy, bottom: rect.bottom + dy }
 }
 
 function isTextEntryTarget(element: Element | null): boolean {
@@ -56,42 +62,55 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   let isDragging = false
   let suppressNextClick = false
   let suppressClickResetTimeout: ReturnType<typeof setTimeout> | null = null
-  let dragCards: { id: string; rect: DOMRect }[] = []
+  const dragCards = new Map<string, RectEdges>()
   let dragBounds: DOMRect | null = null
+  let dragScroller: HTMLElement | null = null
+  let startScrollTop = 0
   let pointerClientX = 0
   let pointerClientY = 0
   let hasPointerSample = false
 
-  function collectCards(container: HTMLElement) {
-    return [...container.querySelectorAll<HTMLElement>(CARD_SELECTOR)].flatMap(
-      (el) => {
-        const id = el.dataset.assetId
-        return id ? [{ id, rect: el.getBoundingClientRect() }] : []
-      }
-    )
+  function recordRenderedCards(container: HTMLElement, dy: number) {
+    for (const el of container.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
+      const id = el.dataset.assetId
+      if (id) dragCards.set(id, shiftRectY(el.getBoundingClientRect(), dy))
+    }
   }
 
   function snapshotDrag() {
     const container = marqueeContainerRef.value
     if (!container) return
-    dragCards = collectCards(container)
+    dragScroller = container.querySelector<HTMLElement>(SCROLLER_SELECTOR)
+    startScrollTop = dragScroller?.scrollTop ?? 0
     dragBounds = container.getBoundingClientRect()
   }
 
   function applyMarquee(clientX: number, clientY: number) {
-    if (!dragBounds) return
-    const rect = clipRectToBounds(
-      normalizeMarqueeRect(
-        { x: startX, y: startY },
-        { x: clientX, y: clientY }
-      ),
+    const container = marqueeContainerRef.value
+    if (!dragBounds || !container) return
+    const dy = (dragScroller?.scrollTop ?? 0) - startScrollTop
+    recordRenderedCards(container, dy)
+    const pointer = {
+      x: clientX,
+      y: clamp(clientY, dragBounds.top, dragBounds.bottom) + dy
+    }
+    const contentRect = normalizeMarqueeRect({ x: startX, y: startY }, pointer)
+    marqueeRect.value = clipRectToBounds(
+      shiftRectY(contentRect, -dy),
       dragBounds
     )
-    marqueeRect.value = rect
+    const cards = [...dragCards].map(([id, rect]) => ({ id, rect }))
     setSelectedIds(
-      [...selectMarqueeIds(dragCards, rect, baseIds, isSubtractive)],
+      [...selectMarqueeIds(cards, contentRect, baseIds, isSubtractive)],
       getAssets()
     )
+  }
+
+  function onScroll() {
+    if (!isDragging) return
+    requestAnimationFrame(() => {
+      if (isDragging) applyMarquee(pointerClientX, pointerClientY)
+    })
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -125,7 +144,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     if (!isTracking) return
     isTracking = false
     marqueeRect.value = null
-    dragCards = []
+    dragCards.clear()
     dragBounds = null
     if (isDragging) scheduleSuppressNextClick()
     isDragging = false
@@ -228,6 +247,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   useEventListener(window, 'pointermove', onPointerMove)
   useEventListener(window, ['pointerup', 'pointercancel', 'dragend'], endDrag)
   useEventListener(window, 'click', onClickCapture, { capture: true })
+  useEventListener(window, 'scroll', onScroll, { capture: true, passive: true })
   useEventListener(window, 'keydown', onKeydown, { capture: true })
   useEventListener(window, 'selectstart', preventTextSelection, {
     capture: true
