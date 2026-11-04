@@ -71,7 +71,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-model="selectValue"
       size="md"
       class="bg-input"
-      :label="t('superComfy.node.modelDefault')"
+      :label="t('superComfy.node.default')"
       :accessible-label="spec.label"
       :options
     />
@@ -80,7 +80,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-model="selectValue"
       size="md"
       class="bg-input"
-      :label="t('superComfy.node.modelDefault')"
+      :label="t('superComfy.node.default')"
       :accessible-label="spec.label"
       :search-label="t('g.search')"
       :empty-text="t('g.noResults')"
@@ -100,7 +100,7 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
     >
       <NumberFieldInput
         :aria-label="spec.label"
-        :placeholder="t('superComfy.node.modelDefault')"
+        :placeholder="t('superComfy.node.default')"
         class="text-xs placeholder:text-muted-foreground"
       />
     </NumberField>
@@ -113,14 +113,14 @@ const isWide = computed(() => spec.control === 'text' && spec.multiline)
       v-else-if="spec.control === 'text' && spec.multiline"
       v-model="textValue"
       :aria-label="spec.label"
-      :placeholder="t('superComfy.node.modelDefault')"
+      :placeholder="t('superComfy.node.default')"
       class="min-h-14 bg-input px-2 py-1 text-xs"
     />
     <Input
       v-else
       v-model="textValue"
       :aria-label="spec.label"
-      :placeholder="t('superComfy.node.modelDefault')"
+      :placeholder="t('superComfy.node.default')"
       class="h-7 rounded-md bg-input px-2 text-xs"
     />
   </label>

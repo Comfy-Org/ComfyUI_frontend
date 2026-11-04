@@ -28,15 +28,15 @@ const formatSpec: SettingSpec = {
 }
 
 describe('SettingField', () => {
-  it('names the model default in an unset select', () => {
+  it('names the default in an unset select', () => {
     renderField(formatSpec)
 
     expect(
       screen.getByRole('combobox', { name: 'Output format' })
-    ).toHaveTextContent('Model default')
+    ).toHaveTextContent('Default')
   })
 
-  it('shows the chosen option instead of the model default', async () => {
+  it('shows the chosen option instead of the default', async () => {
     renderField(formatSpec, 'jpeg')
 
     await vi.waitFor(() =>
@@ -67,10 +67,10 @@ describe('SettingField', () => {
         required: false
       }
     }
-  ])('names the model default in an empty $name field', ({ spec }) => {
+  ])('names the default in an empty $name field', ({ spec }) => {
     renderField(spec)
 
-    expect(screen.getByPlaceholderText('Model default')).toHaveAccessibleName(
+    expect(screen.getByPlaceholderText('Default')).toHaveAccessibleName(
       spec.label
     )
   })

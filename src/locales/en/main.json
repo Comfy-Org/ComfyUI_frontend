@@ -6553,7 +6553,7 @@
       "upstreamFailed": "An input node failed",
       "timedOut": "Timed out waiting for the result",
       "droppedParams": "Comfy Router ignored: {params}",
-      "modelDefault": "Model default"
+      "default": "Default"
     },
     "model": {
       "pick": "Pick a model",
