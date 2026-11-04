@@ -55,10 +55,14 @@ provide(SuperCanvasKey, {
   onPortPointerDown: gestures.onPortPointerDown
 })
 
+const GRID_DOT =
+  'radial-gradient(circle, var(--color-border) 1px, transparent 1px)'
+
 const gridStyle = computed(() => {
   const { x, y, zoom } = camera.camera.value
   const spacing = gridSpacing(zoom)
   return {
+    backgroundImage: GRID_DOT,
     backgroundSize: `${spacing}px ${spacing}px`,
     backgroundPosition: `${x}px ${y}px`
   }
@@ -114,7 +118,7 @@ defineExpose({
 <template>
   <div
     ref="viewport"
-    class="relative size-full touch-none overflow-hidden bg-radial from-border from-[1px] to-transparent to-[1px] select-none"
+    class="relative size-full touch-none overflow-hidden select-none"
     :style="gridStyle"
     data-testid="supercomfy-canvas"
     @pointerdown.self="gestures.onBackgroundPointerDown"
