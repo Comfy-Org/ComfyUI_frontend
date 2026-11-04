@@ -655,6 +655,42 @@ describe(createEngine, () => {
       })
     })
 
+    it("[O5] a run started right after Stop is not settled by the stopped run's late result, and commits only its own", async () => {
+      const generate = deferredExecutor()
+      const harness = testHost(
+        docWith(
+          [
+            ioNode('source', 'image', [fileItem('a')]),
+            generateNode('gen', 'image', { inputs: [imageIn] })
+          ],
+          [edge('source', 'out', 'gen', 'image')]
+        ),
+        { app: deferredExecutor(), generate }
+      )
+      const engine = createEngine(harness.host)
+      const stopped = engine.runGraph()
+      await generate.untilCalls(1)
+      engine.stop()
+      const restarted = engine.runGraph()
+      await generate.untilCalls(2)
+
+      generate.calls[0].resolve(succeeded(fileItem('late')))
+      await stopped
+
+      expect(nodeProgress(activityOf(harness.state(), 'gen'))).toEqual({
+        settled: 0,
+        failed: 0,
+        total: 1
+      })
+
+      generate.calls[1].resolve(succeeded(fileItem('fresh')))
+      await restarted
+
+      expect(findNode(harness.state().doc, 'gen')).toMatchObject({
+        result: { status: 'complete', outputs: { out: [fileItem('fresh')] } }
+      })
+    })
+
     it("[O6] a stopped run's late success is reused by the next graph run", async () => {
       const generate = deferredExecutor()
       const harness = testHost(

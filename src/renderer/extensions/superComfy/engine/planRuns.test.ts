@@ -122,7 +122,7 @@ describe(planRuns, () => {
     })
   })
 
-  it('[R1e] multiplies runs by the run count, repeats grouped per input: 3 items × 3 = 9 distinct keys', () => {
+  it('[R1e] multiplies runs by the run count, repeats grouped per input and numbered in plan order: 3 items × 3 = 9 distinct keys', () => {
     const doc = docWith(
       [
         ioNode('images', 'image', [
@@ -142,17 +142,21 @@ describe(planRuns, () => {
 
     assert(plan.ok)
     expect(
-      plan.runs.map(({ inputs, repeat }) => [inputs.image, repeat])
+      plan.runs.map(({ index, inputs, repeat }) => [
+        index,
+        inputs.image,
+        repeat
+      ])
     ).toEqual([
-      [[fileItem('a1')], 0],
-      [[fileItem('a1')], 1],
-      [[fileItem('a1')], 2],
-      [[fileItem('a2')], 0],
-      [[fileItem('a2')], 1],
-      [[fileItem('a2')], 2],
-      [[fileItem('a3')], 0],
-      [[fileItem('a3')], 1],
-      [[fileItem('a3')], 2]
+      [0, [fileItem('a1')], 0],
+      [1, [fileItem('a1')], 1],
+      [2, [fileItem('a1')], 2],
+      [3, [fileItem('a2')], 0],
+      [4, [fileItem('a2')], 1],
+      [5, [fileItem('a2')], 2],
+      [6, [fileItem('a3')], 0],
+      [7, [fileItem('a3')], 1],
+      [8, [fileItem('a3')], 2]
     ])
     expect(new Set(plan.runs.map(({ key }) => key)).size).toBe(9)
   })

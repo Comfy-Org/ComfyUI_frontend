@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SuperGraphDocument } from './documentSchema'
-import { docWith, fileItem, generateNode, ioNode, port } from './engineFixtures'
+import {
+  docWith,
+  edge,
+  fileItem,
+  generateNode,
+  ioNode,
+  port,
+  withLastResult
+} from './engineFixtures'
 import { findNode } from './graphTopology'
 import { initialRuntime, reduceSuperComfy } from './reduce'
 import { activityOf } from './selectors'
@@ -31,6 +39,40 @@ describe(reduceSuperComfy, () => {
 
     expect(findNode(next.doc, 'images')).toMatchObject({
       items: [fileItem('a'), fileItem('b'), fileItem('c')]
+    })
+  })
+
+  it("[R3a] an I/O node wired from two nodes collects every source's items as one batch, in wire order", () => {
+    const doc = docWith(
+      [
+        withLastResult(generateNode('first', 'image'), [
+          fileItem('first-0'),
+          fileItem('first-1')
+        ]),
+        withLastResult(generateNode('second', 'image'), [fileItem('second-0')]),
+        ioNode('results', 'image')
+      ],
+      [
+        edge('first', 'out', 'results', 'in'),
+        edge('second', 'out', 'results', 'in')
+      ]
+    )
+
+    const next = replay(stateOf(doc), [
+      {
+        type: 'sessionStarted',
+        session: {
+          id: 'session-1',
+          scope: 'graph',
+          nodeIds: ['results'],
+          startedAt: 1
+        }
+      },
+      { type: 'ioCollected', sessionId: 'session-1', nodeId: 'results' }
+    ])
+
+    expect(findNode(next.doc, 'results')).toMatchObject({
+      items: [fileItem('first-0'), fileItem('first-1'), fileItem('second-0')]
     })
   })
 
