@@ -20,6 +20,32 @@ it('gives every main push its own concurrency group', () => {
   )
 })
 
+it.for`
+  job             | artifact
+  ${'test-shards'}   | ${'unit-shard-${{ matrix.shard }}'}
+  ${'test-packages'} | ${'unit-package-coverage'}
+`(
+  'keeps $job retention long enough to survive a next-day re-run',
+  ({ job, artifact }) => {
+    const steps = z
+      .array(
+        z.object({ uses: z.string().optional(), with: z.unknown().optional() })
+      )
+      .parse(workflow.toJS().jobs[job].steps)
+    const upload = steps.find(
+      (step) =>
+        step.uses?.startsWith('actions/upload-artifact@') &&
+        z.object({ name: z.string() }).parse(step.with).name === artifact
+    )
+
+    expect(
+      z.object({ 'retention-days': z.number() }).parse(upload?.with)[
+        'retention-days'
+      ]
+    ).toBeGreaterThanOrEqual(7)
+  }
+)
+
 it('runs the required check even when a dependency fails or is skipped', () => {
   expect(workflow.toJS()).toMatchObject({
     jobs: {
