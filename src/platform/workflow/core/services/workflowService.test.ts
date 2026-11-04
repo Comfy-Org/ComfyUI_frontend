@@ -3568,6 +3568,41 @@ describe('useWorkflowService', () => {
       expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
     })
 
+    it('should restore the confirmed overwrite destination when the replacement save throws', async () => {
+      const workflow = createTemporaryWorkflow()
+      const destination = new ComfyWorkflowClass({
+        path: 'workflows/my-workflow.json',
+        modified: Date.now(),
+        size: 100
+      })
+      destination.content = '{"destination":true}'
+      destination.originalContent = '{"destination":true}'
+
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValue(
+        new Error("Failed to save file 'workflows/my-workflow.json': 500")
+      )
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+
+      await expect(
+        service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
+      ).rejects.toThrow('500')
+
+      expect(workflowStore.deleteWorkflow).toHaveBeenCalledWith(destination)
+      expect(storeUserData).toHaveBeenCalledWith(
+        'workflows/my-workflow.json',
+        '{"destination":true}',
+        expect.objectContaining({ overwrite: true })
+      )
+      expect(workflowStore.syncWorkflows).toHaveBeenCalled()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
     it('should return false when no filename is provided', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -4034,6 +4069,63 @@ describe('useWorkflowService', () => {
       )
       expect(workflowStore.syncWorkflows).toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('restores the confirmed overwrite destination when the suffix rename throws', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const destination = createSaveableWorkflow('workflows/test.app.json')
+      destination.originalContent = '{"destination":true}'
+
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      // `UserFile.rename` throws on a non-200 `moveUserData`, so a server-side
+      // rename failure reaches the caller as a rejection rather than `false`.
+      vi.mocked(workflowStore.renameWorkflow).mockRejectedValue(
+        new Error("Failed to rename file 'workflows/test.json': 500")
+      )
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+
+      await expect(service.saveWorkflow(workflow)).rejects.toThrow('500')
+
+      expect(workflowStore.deleteWorkflow).toHaveBeenCalledWith(destination)
+      expect(storeUserData).toHaveBeenCalledWith(
+        'workflows/test.app.json',
+        '{"destination":true}',
+        expect.objectContaining({ overwrite: true })
+      )
+      expect(workflowStore.syncWorkflows).toHaveBeenCalled()
+    })
+
+    it('does not write the overwrite destination back once the suffix rename has taken the path', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const destination = createSaveableWorkflow('workflows/test.app.json')
+      destination.originalContent = '{"destination":true}'
+
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      // The rename succeeds, so `workflows/test.app.json` now holds the user's
+      // own workflow. Restoring the old destination here would destroy it.
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValue(
+        new Error("Failed to save file 'workflows/test.app.json': 500")
+      )
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+
+      await expect(service.saveWorkflow(workflow)).rejects.toThrow('500')
+
+      expect(storeUserData).not.toHaveBeenCalled()
+      expect(workflowStore.syncWorkflows).not.toHaveBeenCalled()
     })
 
     it('saves without renaming when user declines overwrite', async () => {
