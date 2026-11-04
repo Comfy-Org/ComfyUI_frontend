@@ -536,7 +536,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       await workflow.rename(newPath)
 
-      const draftRelocated = draftStore.commitDraftRelocation(relocation)
+      const destinationIsOwnDraft =
+        activeWorkflow.value?.path === newPath && !workflowLookup.value[newPath]
+      const draftRelocated = draftStore.commitDraftRelocation(
+        relocation,
+        destinationIsOwnDraft
+      )
       void workflowRenamed.trigger(workflow)
 
       delete workflowLookup.value[oldPath]

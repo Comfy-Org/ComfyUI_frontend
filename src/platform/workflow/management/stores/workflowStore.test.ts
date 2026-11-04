@@ -811,6 +811,69 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(oldPath)).toBeNull()
     })
 
+    it('should keep the draft the renamed workflow persisted at its new path before the rename resolved', async () => {
+      const workflow = await store.createTemporary('test.json').load()
+      store.activeWorkflow = workflow
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"before"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          ;(this as typeof workflow).path = args[0] as string
+          draftStore.saveDraft(newPath, '{"edits":"after"}', {
+            name: 'renamed.json',
+            isTemporary: true
+          })
+          return this as typeof workflow
+        }
+      )
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toEqual({
+        renamed: true,
+        draftRelocated: true
+      })
+
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"edits":"after"}')
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+    })
+
+    it('should keep the draft at the original path when another draft takes the new path before the rename resolves', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"before"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          ;(this as typeof workflow).path = args[0] as string
+          draftStore.saveDraft(newPath, '{"other":"workflow"}', {
+            name: 'renamed.json',
+            isTemporary: true
+          })
+          return this as typeof workflow
+        }
+      )
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toEqual({
+        renamed: true,
+        draftRelocated: false
+      })
+
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"other":"workflow"}')
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"edits":"before"}')
+    })
+
     it('should carry an in-flight edit onto the new path when a successful rename lands on a device with no room left', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path

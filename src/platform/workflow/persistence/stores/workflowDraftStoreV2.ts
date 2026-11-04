@@ -52,6 +52,7 @@ export interface StagedDraftRelocation {
   readonly oldPath: string
   readonly newPath: string
   readonly name: string
+  readonly destinationWasFree: boolean
 }
 
 type StageDraftRelocationResult =
@@ -310,15 +311,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Removes a draft.
    */
-  function removeDraft(path: string): void {
-    const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+  function removeDraft(
+    path: string,
+    workspaceId: string = currentWorkspaceId()
+  ): void {
+    const index = loadIndex(workspaceId)
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
     if (removedKey) {
       deletePayload(workspaceId, removedKey)
       lineageByDraft.delete(lineageKey(workspaceId, removedKey))
-      persistIndex(newIndex)
+      persistIndex(newIndex, workspaceId)
     }
   }
 
@@ -346,7 +349,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const index = loadIndex(workspaceId)
     const staged: StageDraftRelocationResult = {
       kind: 'staged',
-      relocation: { workspaceId, oldPath, newPath, name }
+      relocation: {
+        workspaceId,
+        oldPath,
+        newPath,
+        name,
+        destinationWasFree: !getEntryByPath(index, newPath)
+      }
     }
 
     if (!getEntryByPath(index, oldPath)) return staged
@@ -356,13 +365,21 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return staged
   }
 
-  function commitDraftRelocation(relocation: StagedDraftRelocation): boolean {
-    const { workspaceId, oldPath, newPath, name } = relocation
+  function commitDraftRelocation(
+    relocation: StagedDraftRelocation,
+    destinationIsOwnDraft: boolean = false
+  ): boolean {
+    const { workspaceId, oldPath, newPath, name, destinationWasFree } =
+      relocation
     const index = loadIndex(workspaceId)
 
     if (!getEntryByPath(index, oldPath)) return true
 
     const retargeted = retargetEntry(index, oldPath, newPath, name)
+    if (!retargeted && destinationWasFree && destinationIsOwnDraft) {
+      removeDraft(oldPath, workspaceId)
+      return true
+    }
     if (!retargeted) {
       reportRelocationFailure(
         'rename_draft_relocation_commit_refused',
