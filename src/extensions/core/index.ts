@@ -1,3 +1,6 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -121,6 +124,22 @@ async function loadGuardedCoreExtension<
   return extension as Extension
 }
 
+/**
+ * `cloudSessionCookieExtension`'s `onAuthUserLogout` hook is the only
+ * production caller of `deleteSession()`, so a failed load of that module
+ * would otherwise leave the server-side session cookie alive past sign-out.
+ * Wired directly rather than through an extension object, since
+ * `clearOAuthRequestId` and `useSessionCookie` live outside the chunk that
+ * failed to load.
+ */
+function wireSessionCookieLogoutFallback(): () => void {
+  const { onUserLogout } = useCurrentUser()
+  return onUserLogout(() => {
+    clearOAuthRequestId()
+    void useSessionCookie().deleteSession()
+  })
+}
+
 async function loadAgentPanelExtension() {
   const agentPanelModule: unknown = await import('./agentPanel')
   const registerAgentPanelExtension =
@@ -177,7 +196,11 @@ async function registerInOrder() {
       'error_loading_cloud_session_cookie_extension',
       'auth'
     )
-    if (cloudSessionCookie) register(cloudSessionCookie)
+    if (cloudSessionCookie) {
+      register(cloudSessionCookie)
+    } else {
+      disposers.push(wireSessionCookieLogoutFallback())
+    }
   }
 
   await loadAgentPanelExtension()
