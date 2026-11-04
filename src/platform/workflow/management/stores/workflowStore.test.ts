@@ -874,6 +874,39 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(oldPath)?.data).toBe('{"edits":"before"}')
     })
 
+    it('should keep the draft at the original path when a new workflow opened during the rename takes the new path', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"before"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          const other = await store.createTemporary('renamed.json').load()
+          store.activeWorkflow = other
+          draftStore.saveDraft(other.path, '{"other":"workflow"}', {
+            name: other.key,
+            isTemporary: true
+          })
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toEqual({
+        renamed: true,
+        draftRelocated: false
+      })
+
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"other":"workflow"}')
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"edits":"before"}')
+    })
+
     it('should carry an in-flight edit onto the new path when a successful rename lands on a device with no room left', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
