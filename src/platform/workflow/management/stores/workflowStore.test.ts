@@ -864,6 +864,146 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(newPath)).toBeNull()
     })
 
+    it('should keep the draft recoverable at the original path when a deferred rename rejection leaves no room to write', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        data: '{"edits":"unsaved"}',
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      const fillStorage = () =>
+        vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+          if (key.startsWith('Comfy.Workflow.Draft.v2:')) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return realSetItem(key, value)
+        })
+
+      const renameError = new Error('server rejected the move')
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async () => {
+          // Storage fills while the request is in flight, so any recovery that
+          // needs its own payload write is refused by the time it is needed.
+          fillStorage()
+          throw renameError
+        }
+      )
+
+      await expect(store.renameWorkflow(workflow, newPath)).rejects.toBe(
+        renameError
+      )
+
+      expect(workflow.path).toBe(oldPath)
+      expect(store.getWorkflowByPath(newPath)).toBeNull()
+
+      vi.mocked(localStorage.setItem).mockRestore()
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"edits":"unsaved"}')
+      expect(draftStore.getDraft(newPath)).toBeNull()
+    })
+
+    it('should complete a deferred rename in the identity that began it, leaving the new account untouched', async () => {
+      const draftStore = useWorkflowDraftStoreV2()
+      draftStore.setAuthSubject('account-a')
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      draftStore.saveDraft(oldPath, '{"owner":"a"}', {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      let completeRename = () => {}
+      const renameAccepted = new Promise<void>((resolve) => {
+        completeRename = resolve
+      })
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          await renameAccepted
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      const renaming = store.renameWorkflow(workflow, newPath)
+      await Promise.resolve()
+
+      // The account changes while the remote move is still in flight, and the
+      // newly selected one has its own draft under the same name.
+      draftStore.setAuthSubject('account-b')
+      draftStore.saveDraft(oldPath, '{"owner":"b"}', {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      completeRename()
+      await expect(renaming).resolves.toBe(true)
+
+      // B's drafts and lineage are not a rename this account never made.
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"owner":"b"}')
+      expect(draftStore.getDraft(newPath)).toBeNull()
+
+      // A's draft still followed A's file.
+      draftStore.setAuthSubject('account-a')
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"owner":"a"}')
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+    })
+
+    it('should abandon a deferred rejected rename in the identity that began it, leaving the new account untouched', async () => {
+      const draftStore = useWorkflowDraftStoreV2()
+      draftStore.setAuthSubject('account-a')
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      draftStore.saveDraft(oldPath, '{"owner":"a"}', {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      const renameError = new Error('server rejected the move')
+      let rejectRename = () => {}
+      const renameSettled = new Promise<void>((resolve) => {
+        rejectRename = resolve
+      })
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async () => {
+          await renameSettled
+          throw renameError
+        }
+      )
+
+      const renaming = store.renameWorkflow(workflow, newPath)
+      await Promise.resolve()
+
+      // The account changes while the remote move is still in flight, and the
+      // newly selected one has its own draft at the rename destination.
+      draftStore.setAuthSubject('account-b')
+      draftStore.saveDraft(newPath, '{"owner":"b"}', {
+        name: 'renamed.json',
+        isTemporary: true
+      })
+
+      rejectRename()
+      await expect(renaming).rejects.toBe(renameError)
+
+      // B's draft was not dragged back onto A's old path.
+      draftStore.reset()
+      expect(draftStore.getDraft(newPath)?.data).toBe('{"owner":"b"}')
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+
+      // A's draft is still recoverable where A's file still is.
+      draftStore.setAuthSubject('account-a')
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.data).toBe('{"owner":"a"}')
+      expect(draftStore.getDraft(newPath)).toBeNull()
+    })
+
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
       const workflow = store.createTemporary('test.json')
 

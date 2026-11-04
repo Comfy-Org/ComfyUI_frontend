@@ -1150,6 +1150,111 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => restoredNode.isCollapsed()).toBe(true)
   })
 
+  test('Keeps unsaved edits at the original name when a rejected rename has no room to recover', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/22857#discussion_r4469103853 — the draft was relocated before the rename request resolved, so a rejection had to write it back, and with storage full that write was refused and the unsaved edits were stranded under the name the workflow never took'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Sidebar'
+    )
+
+    const originalName = generateUniqueFilename()
+    const renamedName = generateUniqueFilename()
+    const otherName = generateUniqueFilename()
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
+    await comfyPage.menu.topbar.saveWorkflow(originalName)
+
+    // A second open workflow to switch to, which is what persists the draft.
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(otherName)
+    await waitForWorkflowTabState(comfyPage)
+
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.switchToWorkflow(originalName)
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // Make an unsaved edit and leave it persisted as a draft under the
+    // original name.
+    await workflowsTab.close()
+    const editedNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available before the rename'
+    )
+    await editedNode.centerOnNode()
+    const draftSaveStartedAt = Date.now()
+    await editedNode.toggleCollapse()
+    await expect.poll(() => editedNode.isCollapsed()).toBe(true)
+    await workflowsTab.open()
+    await workflowsTab.switchToWorkflow(otherName)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+    await workflowsTab.switchToWorkflow(originalName)
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // The server rejects the move, and the device runs out of room for a draft
+    // payload *while the request is in flight* — which is the only ordering
+    // that matters here. Filling storage before the rename starts refuses the
+    // relocation up front instead, which is an already-covered path. Draft
+    // payload writes are refused specifically: every other storage key keeps
+    // working, so this is a full-device condition rather than a broken app.
+    await comfyPage.page.route('**/userdata/**/move/**', async (route) => {
+      await comfyPage.page.evaluate(() => {
+        const realSetItem = localStorage.setItem.bind(localStorage)
+        localStorage.setItem = (key: string, value: string) => {
+          if (key.startsWith('Comfy.Workflow.Draft.v2:')) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return realSetItem(key, value)
+        }
+      })
+      await route.fulfill({ status: 500, body: 'no space left on device' })
+    })
+
+    const openedItem = workflowsTab.getOpenedItem(originalName)
+    await openedItem.click({ button: 'right' })
+    await comfyPage.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
+    await comfyPage.page.keyboard.type(renamedName)
+    await comfyPage.page.keyboard.press('Enter')
+    await comfyPage.page.waitForFunction(
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          .isBusy
+    )
+    await comfyPage.page.unroute('**/userdata/**/move/**')
+
+    // Read back at the name the workflow still has: the rename never happened,
+    // so the unsaved edit must still be there.
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await workflowsTab.open()
+    // The leading marker is the unsaved-changes indicator, so the recovered
+    // draft is visible as such before the graph is even opened.
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual(expect.arrayContaining([`*${originalName}`]))
+    await workflowsTab.switchToWorkflow(originalName)
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await comfyPage.expectNodeCount(1)
+
+    const restoredNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'The original workflow should restore its node after the reload'
+    )
+    await expect.poll(() => restoredNode.isCollapsed()).toBe(true)
+  })
+
   test('Unedited saved workflows reopen as saved after a reload', async ({
     comfyPage
   }) => {

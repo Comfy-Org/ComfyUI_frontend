@@ -517,53 +517,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   /**
-   * Carries a draft written while a rename was still in flight onto the new
-   * path.
+   * Renames a workflow, relocating its draft in step with the remote move.
    *
-   * `renameWorkflow` relocates the draft before awaiting the remote rename so
-   * that a refused relocation can abort the rename instead of leaving the
-   * visible path pointing at a draft that never moved. That ordering leaves a
-   * window: `workflow.path` is still the old path until the request resolves,
-   * so an edit plus a tab switch during the await runs
-   * `persistActiveWorkflowDraft()` against the old path. Anything found there
-   * once the rename has succeeded was therefore written during the window and
-   * is newer than the copy relocated up front.
+   * The draft relocation is staged before the remote rename is awaited and
+   * committed only after it resolves. Staging reserves the destination without
+   * touching the draft, so the two failure shapes this ordering exists to rule
+   * out are both unrepresentable rather than guarded: a quota refusal is known
+   * before anything is destroyed, and a rejected rename is abandoned with
+   * nothing to roll back — there is no reverse write that could itself refuse.
    *
-   * The newer draft is written over the relocated copy in place rather than
-   * moved onto it: a move needs a second payload allocation and can refuse
-   * under quota, which would leave the renamed path with no draft at all.
+   * Committing afterwards also closes the in-flight window on its own. While
+   * the request is pending `workflow.path` is still the old path, so an edit
+   * plus a tab switch runs `persistActiveWorkflowDraft()` against it; the
+   * commit reads the source again at that point and carries the newer draft
+   * forward.
+   *
+   * @returns false when the draft could not be relocated, leaving both the
+   * workflow and its draft at the old path.
    */
-  function carryInFlightDraftForward(
-    draftStore: ReturnType<typeof useWorkflowDraftStoreV2>,
-    oldPath: string,
-    newPath: string,
-    newKey: string
-  ): void {
-    const inFlight = draftStore.getDraft(oldPath)
-    if (!inFlight) return
-
-    if (
-      !draftStore.saveDraft(newPath, inFlight.data, {
-        name: newKey,
-        isTemporary: inFlight.isTemporary
-      })
-    ) {
-      reportError(
-        new Error('could not carry an in-flight draft onto the renamed path'),
-        {
-          surface: 'graph',
-          errorType: 'rename_draft_carry_forward_failed',
-          level: 'warning',
-          context: { oldPath, newPath }
-        }
-      )
-      return
-    }
-
-    if (inFlight.lineage) draftStore.setLineage(newPath, inFlight.lineage)
-    draftStore.removeDraft(oldPath)
-  }
-
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
@@ -576,25 +547,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const draftStore = useWorkflowDraftStoreV2()
       const newKey = newPath.substring(ComfyWorkflow.basePath.length)
 
-      if (!draftStore.moveDraft(oldPath, newPath, newKey)) return false
+      const staged = draftStore.stageDraftRelocation(oldPath, newPath, newKey)
+      if (staged.kind === 'refused') return false
 
       try {
         await workflow.rename(newPath)
       } catch (error) {
-        if (!draftStore.moveDraft(newPath, oldPath, oldKey)) {
-          reportError(
-            new Error('draft rollback failed after a rejected workflow rename'),
-            {
-              surface: 'graph',
-              errorType: 'rename_draft_rollback_failed',
-              level: 'warning',
-              context: { oldPath, newPath }
-            }
-          )
-        }
+        draftStore.abortDraftRelocation(staged.relocation)
         throw error
       }
-      carryInFlightDraftForward(draftStore, oldPath, newPath, newKey)
+      draftStore.commitDraftRelocation(staged.relocation)
       void workflowRenamed.trigger(workflow)
 
       delete workflowLookup.value[oldPath]

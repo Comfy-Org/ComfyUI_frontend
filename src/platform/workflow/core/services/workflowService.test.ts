@@ -3603,6 +3603,39 @@ describe('useWorkflowService', () => {
       expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
     })
 
+    it('should abandon the overwrite and leave the destination intact when its contents cannot be read', async () => {
+      const workflow = createTemporaryWorkflow()
+      // Never loaded, so there is no in-memory snapshot to fall back on, and
+      // the stored copy cannot be read either.
+      const destination = new ComfyWorkflowClass({
+        path: 'workflows/my-workflow.json',
+        modified: Date.now(),
+        size: 100
+      })
+      expect(destination.originalContent).toBeNull()
+
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      const getUserData = vi
+        .spyOn(api, 'getUserData')
+        .mockResolvedValue(new Response(null, { status: 500 }))
+      const storeUserData = vi.spyOn(api, 'storeUserData')
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(getUserData).toHaveBeenCalledWith('workflows/my-workflow.json')
+      // Nothing destructive ran, so there is nothing to restore.
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(storeUserData).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
     it('should return false when no filename is provided', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -4100,6 +4133,38 @@ describe('useWorkflowService', () => {
         expect.objectContaining({ overwrite: true })
       )
       expect(workflowStore.syncWorkflows).toHaveBeenCalled()
+    })
+
+    it('abandons the suffix overwrite and leaves the destination intact when its contents cannot be read', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      // Never loaded, so there is no in-memory snapshot to fall back on, and
+      // the stored copy cannot be read either.
+      const destination = new ComfyWorkflowClass({
+        path: 'workflows/test.app.json',
+        modified: Date.now(),
+        size: 100
+      })
+      expect(destination.originalContent).toBeNull()
+
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      const getUserData = vi
+        .spyOn(api, 'getUserData')
+        .mockResolvedValue(new Response(null, { status: 500 }))
+      const storeUserData = vi.spyOn(api, 'storeUserData')
+
+      const result = await service.saveWorkflow(workflow)
+
+      expect(result).toBe(false)
+      expect(getUserData).toHaveBeenCalledWith('workflows/test.app.json')
+      // Nothing destructive ran, so there is nothing to restore.
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(storeUserData).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('does not write the overwrite destination back once the suffix rename has taken the path', async () => {

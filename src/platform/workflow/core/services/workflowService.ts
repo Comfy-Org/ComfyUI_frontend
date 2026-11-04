@@ -290,6 +290,14 @@ export const useWorkflowService = () => {
    * a replacement. The destination's content is read into memory before the
    * delete so the restore does not depend on anything the delete removed.
    *
+   * A readable snapshot is a precondition of the delete, not something the
+   * restore checks for: `originalContent` is null for a destination that was
+   * never loaded and `readStoredWorkflow` returns null on a transient GET
+   * failure, and deleting on either would leave a restore that can only report
+   * that it has nothing to write. Refusing instead keeps the destination the
+   * user confirmed overwriting intact, which is the weaker of the two outcomes
+   * to hand back from a save.
+   *
    * @returns the restore function, or null when the destination was not
    * deleted (nothing to restore, and the caller must not continue).
    */
@@ -305,21 +313,25 @@ export const useWorkflowService = () => {
     // content, so an already-loaded destination costs no extra request.
     const content = existing.originalContent ?? (await readStoredWorkflow(path))
 
+    if (content === null) {
+      reportError(
+        new Error('could not read the overwrite destination before deleting'),
+        {
+          surface: 'graph',
+          errorType: 'overwrite_destination_snapshot_unavailable',
+          level: 'error',
+          context: { path }
+        }
+      )
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToReadOverwriteTarget')
+      })
+      return null
+    }
+
     if (!(await deleteWorkflow(existing, true))) return null
 
     return async () => {
-      if (content === null) {
-        reportError(
-          new Error('no snapshot to restore a deleted overwrite destination'),
-          {
-            surface: 'graph',
-            errorType: 'overwrite_destination_restore_failed',
-            level: 'error',
-            context: { path }
-          }
-        )
-        return
-      }
       try {
         await api.storeUserData(path, content, {
           overwrite: true,
