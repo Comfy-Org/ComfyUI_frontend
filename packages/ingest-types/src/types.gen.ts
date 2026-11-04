@@ -6823,9 +6823,12 @@ export type BillingCapabilitiesResponse = {
    * per-credit or retired seat-based Team plan slug.
    * - personal: a STANDARD, CREATOR, PRO or FOUNDERS_EDITION plan that is not
    * a Team plan.
-   * It ignores the plan's status (an ended plan keeps its audience) and the
-   * user's role. It is not a capability and not authorization. Absent in the
-   * same cases as recovery_route.
+   * It classifies the workspace's pointed subscription, the one the
+   * subscription status reports; a scheduled replacement never stands in for
+   * it. It ignores the plan's status (an ended plan keeps its audience) and
+   * the user's role. It is not a capability and not authorization. Absent in
+   * the same cases as recovery_route, and when
+   * subscription_state_authoritative is false (unknown, not none).
    *
    */
   billing_notice_audience?: 'none' | 'team' | 'personal'
@@ -6833,11 +6836,11 @@ export type BillingCapabilitiesResponse = {
   denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
   /**
-   * When the ending notice of a canceled sales-managed plan starts: its
+   * When the ending notice of a canceled ENTERPRISE plan starts: its
    * cancel_at minus 14 days. The notice applies once the current time is
    * at or after this instant; compare it on the client clock rather than
-   * caching a yes/no answer. Present only while plan_kind is sales_managed,
-   * the subscription is canceled and its cancel_at is still in the future.
+   * caching a yes/no answer. Present only while the plan is ENTERPRISE, the
+   * subscription is canceled and its cancel_at is still in the future.
    * Absent otherwise (including for self-serve plans, whose ending notice
    * shows as soon as they are canceled), when billing is disabled, when
    * talking to a billing-api version that predates it, and when the
