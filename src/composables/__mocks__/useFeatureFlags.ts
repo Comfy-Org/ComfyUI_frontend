@@ -48,7 +48,8 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   assetsEnabled: false,
-  agentInAppExperienceEnabled: false
+  agentInAppExperienceEnabled: false,
+  superComfyEnabled: false
 }
 
 const featureFlags: ReturnType<typeof realUseFeatureFlags> = {

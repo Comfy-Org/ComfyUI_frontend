@@ -187,7 +187,7 @@ export function freshOutputs(): Answer {
   }
 }
 
-export interface FakeCall {
+interface FakeCall {
   readonly request: RunRequest
   resolve(outcome: RunOutcome): void
   reject(error: Error): void

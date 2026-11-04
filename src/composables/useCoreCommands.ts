@@ -4,6 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
@@ -34,6 +35,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSuperComfyNavigationStore } from '@/platform/superComfy/stores/superComfyNavigationStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -133,6 +135,8 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
+  const { flags } = useFeatureFlags()
+  const superComfyNavigation = useSuperComfyNavigationStore()
 
   const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -1425,6 +1429,14 @@ export function useCoreCommands(): ComfyCommand[] {
         const newMode = !canvasStore.linearMode
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
         canvasStore.linearMode = newMode
+      }
+    },
+    {
+      id: 'Comfy.ToggleSuperComfy',
+      icon: 'icon-[lucide--network]',
+      label: 'Toggle SuperComfy',
+      function: () => {
+        if (flags.superComfyEnabled) superComfyNavigation.toggle()
       }
     }
   ]

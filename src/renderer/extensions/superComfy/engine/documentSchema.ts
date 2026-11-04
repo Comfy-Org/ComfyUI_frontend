@@ -10,7 +10,7 @@ const zComfyFileRef = z.object({
   type: z.enum(['input', 'output', 'temp'])
 })
 
-export const zMediaItem = z.discriminatedUnion('kind', [
+const zMediaItem = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('text'), text: z.string() }),
   z.object({
     kind: z.literal('file'),
@@ -27,7 +27,7 @@ export const zMediaItem = z.discriminatedUnion('kind', [
   })
 ])
 
-export const zPortSpec = z.object({
+const zPortSpec = z.object({
   name: z.string(),
   label: z.string(),
   modality: zModality,
@@ -37,7 +37,7 @@ export const zPortSpec = z.object({
   inline: z.boolean().optional()
 })
 
-export const zSettingSpec = z.discriminatedUnion('control', [
+const zSettingSpec = z.discriminatedUnion('control', [
   z.object({
     control: z.literal('select'),
     name: z.string(),
@@ -79,14 +79,14 @@ const zWidgetTarget = z.object({
   widgetName: z.string()
 })
 
-export const zGenerateContract = z.object({
+const zGenerateContract = z.object({
   version: z.string(),
   inputs: z.array(zPortSpec),
   outputs: z.array(zPortSpec),
   settings: z.array(zSettingSpec)
 })
 
-export const zAppContract = z.object({
+const zAppContract = z.object({
   version: z.number(),
   inputs: z.array(
     zPortSpec.extend({ target: zWidgetTarget, default: z.string().optional() })
@@ -176,7 +176,7 @@ const zSuperEdge = z.object({
   to: zPortRef
 })
 
-export const zSuperGraphDocument = z.object({
+const zSuperGraphDocument = z.object({
   version: z.literal(1),
   savedAt: z.number(),
   nodes: z.array(zSuperNode),

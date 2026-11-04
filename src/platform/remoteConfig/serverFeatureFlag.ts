@@ -38,5 +38,6 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
-  AGENT = 'agent'
+  AGENT = 'agent',
+  SUPERCOMFY_ENABLED = 'supercomfy_enabled'
 }

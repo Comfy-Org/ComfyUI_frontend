@@ -998,6 +998,7 @@
           "src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts",
           "src/workbench/eventHelpers.ts",
+          "src/workbench/eventHelpers.superComfy.test.ts",
           "src/workbench/eventHelpers.test.ts",
           "src/lib/litegraph/src/docBoundGraphs.ts",
           "src/lib/litegraph/src/graphIntents.ts",

@@ -1,6 +1,5 @@
 import type { NodeId, SuperGraphDocument } from './documentSchema'
-import { findNode } from './graphTopology'
-import { planRuns, portHasContent, samePlanKeys } from './planRuns'
+import { planRuns, portHasContent } from './planRuns'
 import type { NodeActivity, RunPlan, SuperComfyState } from './types'
 
 export function activityOf(
@@ -42,20 +41,5 @@ export function visibleMissingPorts(
   if (activity.block.reason !== 'missingInputs') return []
   return activity.block.ports.filter(
     (port) => !portHasContent(state.doc, nodeId, port)
-  )
-}
-
-export function isStale(
-  doc: SuperGraphDocument,
-  nodeId: NodeId,
-  runLimit: number
-): boolean {
-  const node = findNode(doc, nodeId)
-  if (!node || node.kind === 'io' || !node.result) return false
-  const plan = planRuns(doc, nodeId, { runLimit })
-  if (!plan.ok) return false
-  return !samePlanKeys(
-    node.result.planKeys,
-    plan.runs.map(({ key }) => key)
   )
 }

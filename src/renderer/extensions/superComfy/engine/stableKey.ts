@@ -5,7 +5,7 @@ function compareKeys([a]: [string, unknown], [b]: [string, unknown]): number {
   return a > b ? 1 : 0
 }
 
-export function stableStringify(value: unknown): string {
+function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((entry: unknown) => stableStringify(entry)).join(',')}]`
   }

@@ -38,6 +38,7 @@
         @click="onAgentEntryClick"
       />
     </template>
+    <SuperComfyEntryButton />
   </div>
   <div v-else class="ml-auto flex h-full shrink-0 items-center">
     <TopbarBadges />
@@ -53,6 +54,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
+import SuperComfyEntryButton from '@/renderer/extensions/superComfy/components/SuperComfyEntryButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud, isNightly } from '@/platform/distribution/types'

@@ -99,7 +99,7 @@ export function executionOrder(doc: SuperGraphDocument): {
   return { order, cyclic: ids.filter((id) => !ordered.has(id)) }
 }
 
-export function wouldCreateCycle(
+function wouldCreateCycle(
   doc: SuperGraphDocument,
   from: NodeId,
   to: NodeId

@@ -379,6 +379,13 @@ export function useFeatureFlags() {
         sessionAgentGrant,
         sessionAgentGrantValidUntil
       )
+    },
+    get superComfyEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SUPERCOMFY_ENABLED,
+        remoteConfig.value.supercomfy_enabled,
+        import.meta.env.DEV
+      )
     }
   })
 
@@ -435,6 +442,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
+      [ServerFeatureFlag.SUPERCOMFY_ENABLED]: flags.superComfyEnabled,
       assets: flags.assetsEnabled
     }
 

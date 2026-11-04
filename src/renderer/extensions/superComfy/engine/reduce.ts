@@ -570,7 +570,7 @@ function concatOutputs(records: RunRecord[]): Record<string, MediaItem[]> {
   }, {})
 }
 
-export function materializeResult(
+function materializeResult(
   node: ExecutableNode,
   planKeys: RunKey[],
   slots: RunSlot[],
@@ -615,10 +615,7 @@ function commitNode(
   return setActivity(withDoc(state, doc), nodeId, { phase: 'idle' })
 }
 
-export function collectIoItems(
-  doc: SuperGraphDocument,
-  ioId: NodeId
-): MediaItem[] {
+function collectIoItems(doc: SuperGraphDocument, ioId: NodeId): MediaItem[] {
   return incomingEdges(doc, ioId, 'in').flatMap((edge) =>
     sourceItems(doc, edge)
   )

@@ -6547,7 +6547,10 @@
       "noOutput": "Finished without output",
       "temporary": "Temporary link, expires soon",
       "credits": "{credits} credits",
-      "showOutput": "Show {name}"
+      "showOutput": "Show {name}",
+      "upstreamFailed": "An input node failed",
+      "timedOut": "Timed out waiting for the result",
+      "droppedParams": "Comfy Router ignored: {params}"
     },
     "model": {
       "pick": "Pick a model",
@@ -6556,7 +6559,9 @@
       "loading": "Loading models {done} of {total}",
       "unsupported": "{count} more model is not supported yet | {count} more models are not supported yet",
       "signInRefused": "Comfy Router didn't accept your sign-in",
-      "loadFailed": "Couldn't load models"
+      "loadFailed": "Couldn't load models",
+      "notSupported": "This model isn't supported yet",
+      "needsFirstFrame": "Add a first frame to use a last frame"
     },
     "app": {
       "open": "Open app",
@@ -6566,13 +6571,17 @@
       "notFound": "App not found",
       "prepareFailed": "Couldn't prepare this app",
       "workspaceChanged": "The workspace changed during the run",
-      "notSignedIn": "Sign in to run apps"
+      "notSignedIn": "Sign in to run apps",
+      "runFailed": "The run failed",
+      "cancelled": "The run was cancelled",
+      "timedOut": "The run took over 30 minutes and was stopped"
     },
     "media": {
       "unreadable": "Couldn't read an input file",
       "tooLarge": "Inputs are {size} MB. This model takes up to 20 MB.",
       "expired": "An input link expired. Run its source again.",
-      "uploadFailed": "Upload failed: {reason}"
+      "uploadFailed": "Upload failed: {reason}",
+      "wrongType": "This file type doesn't fit this node"
     }
   }
 }

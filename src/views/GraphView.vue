@@ -8,6 +8,7 @@
       v-show="!linearMode"
       id="graph-canvas-container"
       class="graph-canvas-container isolate"
+      :inert="superComfyOpen"
     >
       <GraphCanvas @ready="onGraphReady">
         <template #legacy-menu>
@@ -15,7 +16,8 @@
         </template>
       </GraphCanvas>
     </div>
-    <LinearView v-if="linearMode" />
+    <LinearView v-if="linearMode" :inert="superComfyOpen" />
+    <SuperComfyView v-if="superComfyOpen" />
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
@@ -42,6 +44,7 @@ import { storeToRefs } from 'pinia'
 
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -87,6 +90,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSuperComfyNavigationStore } from '@/platform/superComfy/stores/superComfyNavigationStore'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -128,6 +132,10 @@ import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
+const SuperComfyView = defineAsyncComponent(
+  () => import('@/renderer/extensions/superComfy/components/SuperComfyView.vue')
+)
+
 setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
@@ -152,6 +160,9 @@ const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const { isVisible: superComfyOpen } = storeToRefs(
+  useSuperComfyNavigationStore()
+)
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   getReferencedInputNames: () =>

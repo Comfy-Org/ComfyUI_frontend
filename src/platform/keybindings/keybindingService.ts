@@ -1,6 +1,7 @@
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSuperComfyNavigationStore } from '@/platform/superComfy/stores/superComfyNavigationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
@@ -70,6 +71,13 @@ export function useKeybindingService() {
     }
 
     const keybinding = getExecutableKeybinding(keyCombo)
+    if (
+      keybinding &&
+      useSuperComfyNavigationStore().isVisible &&
+      keybinding.commandId !== 'Comfy.ToggleSuperComfy'
+    ) {
+      return
+    }
     if (keybinding) {
       const targetElementId =
         keybinding.targetElementId === 'graph-canvas'

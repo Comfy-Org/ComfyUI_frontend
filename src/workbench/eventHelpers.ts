@@ -1,3 +1,4 @@
+import { useSuperComfyNavigationStore } from '@/platform/superComfy/stores/superComfyNavigationStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /**
@@ -82,6 +83,9 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'submit'
       ].includes(target.type))
   return (
-    isTextInput || useCanvasStore().linearMode || activeTextSelection() !== null
+    isTextInput ||
+    useCanvasStore().linearMode ||
+    useSuperComfyNavigationStore().isVisible ||
+    activeTextSelection() !== null
   )
 }

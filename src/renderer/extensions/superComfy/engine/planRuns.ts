@@ -69,7 +69,7 @@ export function portHasContent(
   return spec !== undefined && contributionsFor(doc, node, spec).length > 0
 }
 
-export function configFingerprint(node: ExecutableNode): string {
+function configFingerprint(node: ExecutableNode): string {
   const identity =
     node.kind === 'generate'
       ? { kind: node.kind, modality: node.modality, modelId: node.modelId }
@@ -84,7 +84,7 @@ export function configFingerprint(node: ExecutableNode): string {
   })
 }
 
-export function runKey(
+function runKey(
   config: string,
   inputs: Record<string, MediaItem[]>,
   repeat: number
