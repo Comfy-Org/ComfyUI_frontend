@@ -5,6 +5,8 @@ import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import type { SocketIdentity } from './agentPageSession'
 import {
   destroyAgentPageSession,
+  needsReauthentication,
+  toSocketIdentity,
   useAgentPageSession
 } from './agentPageSession'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -125,5 +127,76 @@ describe('useAgentPageSession', () => {
     // source was constructed rather than the disposed one being handed out.
     expect(createAgentEventSource).toHaveBeenCalledTimes(2)
     expect(second.docTransport).not.toBe(first.docTransport)
+  })
+})
+
+describe('toSocketIdentity', () => {
+  it('treats an API key user as the account when there is no Firebase account', () => {
+    expect(toSocketIdentity(null, 'key-user', 'ws', 'host-ws')).toEqual([
+      'key-user',
+      'ws',
+      'host-ws'
+    ])
+  })
+
+  it('prefers the Firebase account over an API key user', () => {
+    expect(toSocketIdentity('account', 'key-user', null, null)).toEqual([
+      'account',
+      null,
+      null
+    ])
+  })
+
+  it('collapses undefined to null so "not loaded yet" is not a change', () => {
+    expect(
+      toSocketIdentity(undefined, undefined, undefined, undefined)
+    ).toEqual([null, null, null])
+  })
+})
+
+describe('needsReauthentication', () => {
+  it('is false when nothing moved', () => {
+    expect(needsReauthentication(['a', 'ws', null], ['a', 'ws', null])).toBe(
+      false
+    )
+  })
+
+  it.for([
+    { change: 'the account', from: ['a', 'ws', null], to: ['b', 'ws', null] },
+    { change: 'a sign-out', from: ['a', 'ws', null], to: [null, 'ws', null] },
+    {
+      change: 'the workspace',
+      from: ['a', 'ws-a', null],
+      to: ['a', 'ws-b', null]
+    },
+    {
+      change: 'the host workspace',
+      from: ['a', null, 'host-a'],
+      to: ['a', null, 'host-b']
+    }
+  ])('is true when $change changes', ({ from, to }) => {
+    expect(needsReauthentication(to as never, from as never)).toBe(true)
+  })
+
+  // The one intentional exception, and the reason it exists: during an
+  // ordinary workspace refresh the active workspace reads as null for a beat
+  // while the account is unchanged. Reconnecting there would bounce the socket
+  // on every refresh.
+  it('ignores a workspace blanking for an unchanged signed-in account', () => {
+    expect(needsReauthentication(['a', null, null], ['a', 'ws', null])).toBe(
+      false
+    )
+  })
+
+  it('does not extend that exception to a signed-out account', () => {
+    expect(needsReauthentication([null, null, null], ['a', 'ws', null])).toBe(
+      true
+    )
+  })
+
+  it('does not extend that exception while Desktop pins a workspace', () => {
+    expect(
+      needsReauthentication(['a', null, 'host-a'], ['a', 'ws', 'host-a'])
+    ).toBe(true)
   })
 })

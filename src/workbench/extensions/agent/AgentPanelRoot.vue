@@ -172,7 +172,7 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useAgentPageSession } from './agentPageSession'
+import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -267,11 +267,14 @@ const rest = createAgentRestClient()
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { events, docTransport, onIdentityChange } = useAgentPageSession(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
+const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
+  toSocketIdentity(
+    authStore.userId,
+    apiKeyAuthStore.currentUser?.id,
+    teamWorkspaceStore.activeWorkspaceId,
+    desktopHostUser.value?.workspaceId
+  )
+)
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),

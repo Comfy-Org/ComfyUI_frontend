@@ -67,6 +67,27 @@ export type SocketIdentity = readonly [
 export type SocketIdentitySource = () => SocketIdentity
 
 /**
+ * Normalise the identity the socket authenticates as.
+ *
+ * A signed-in Firebase account and an API key are alternative spellings of the
+ * same thing here — whichever is present identifies the caller — and every slot
+ * collapses `undefined` to `null` so the watcher compares like with like
+ * instead of treating "not loaded yet" as a change.
+ */
+export function toSocketIdentity(
+  accountId: string | null | undefined,
+  apiKeyUserId: string | null | undefined,
+  workspaceId: string | null | undefined,
+  hostWorkspaceId: string | null | undefined
+): SocketIdentity {
+  return [
+    accountId ?? apiKeyUserId ?? null,
+    workspaceId ?? null,
+    hostWorkspaceId ?? null
+  ]
+}
+
+/**
  * Whether an identity tuple change should re-authenticate the socket.
  *
  * Moved verbatim from `AgentPanelRoot.vue` so the rule did not change while its
@@ -74,7 +95,7 @@ export type SocketIdentitySource = () => SocketIdentity
  * workspace reads as null for an unchanged signed-in account, which would
  * otherwise reconnect the socket on an ordinary workspace refresh.
  */
-function needsReauthentication(
+export function needsReauthentication(
   [account, workspace, hostWorkspace]: SocketIdentity,
   [wasAccount, wasWorkspace, wasHostWorkspace]: SocketIdentity
 ): boolean {

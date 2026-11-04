@@ -224,7 +224,9 @@ onBeforeUnmount(() => docTransport.destroy())
       expect.objectContaining({ line: 6 })
     ])
   })
+})
 
+describe('checkPageSessionOwnsTransport allowed shapes', () => {
   test('passes the owner module itself', () => {
     const fixture = `
       const events = createAgentEventSource({ endpoint, getAuthParams })
