@@ -218,18 +218,9 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
-  // The form is proven against the POST-HOOK serialization, not derived from
-  // the live widget list alone: `serialize()` above already ran the extension
-  // serialize hook, which may have replaced either widget-values field.
   const form = provenWidgetValuesForm(node, values, serialized)
   if (form)
     return { ...snapshot, widgets_values: values, widgets_values_form: form }
-  // A catalogued class (e.g. a dynamic combo, whose value-dependent layout
-  // suppresses proof deliberately) still resolves named values through the
-  // catalog on the receiving end. An uncatalogued virtual node has no catalog
-  // to fall back on, so a name-keyed write with no declared form would reject
-  // the whole add_node (`uncatalogued_widget_write`) instead of landing
-  // opaquely as it did before this node type gained the A24 path.
   return node.isVirtualNode ? snapshot : { ...snapshot, widgets_values: values }
 }
 
