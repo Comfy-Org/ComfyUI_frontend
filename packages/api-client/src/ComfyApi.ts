@@ -11,6 +11,7 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
@@ -90,7 +91,7 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
-  workflow_metadata?: { workflow_id: string }
+  workflow_metadata?: Pick<PromptWorkflowMetadata, 'workflow_id'>
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON

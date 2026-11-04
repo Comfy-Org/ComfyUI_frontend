@@ -1,13 +1,23 @@
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-import type { WorkflowId } from '@comfyorg/graph-model/workflowSchema'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
 import { resultItemType } from './resultItemTypeSchema'
 
 export type JobId = string
 
-type StampedWorkflowId = { workflow_id?: WorkflowId }
+/**
+ * Core's OpenAPI defines no websocket frame schemas. It documents that
+ * `workflow_metadata` is echoed onto every JSON frame carrying a `prompt_id`,
+ * so this field is the request contract read back rather than a separate one.
+ *
+ * What transfers from the spec is the map's VALUE type, not the map: core types
+ * `workflow_metadata` as an arbitrary string map, and the frame carries that
+ * map's contents merged into the frame object. So a `Pick` or `Partial` of the
+ * map would describe the wrong shape here even though it would compile.
+ */
+type StampedWorkflowId = { workflow_id?: PromptWorkflowMetadata[string] }
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
