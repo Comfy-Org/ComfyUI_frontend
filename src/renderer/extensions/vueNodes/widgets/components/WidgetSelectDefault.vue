@@ -232,8 +232,6 @@ const inputId = useId()
 const widgetLabel = computed(() => widget.label || widget.name)
 const listboxId = useId()
 
-const MAX_VISIBLE_OPTIONS = 15
-
 function resolveRawValues(values: unknown): unknown[] {
   try {
     const resolved = typeof values === 'function' ? values() : values
@@ -411,8 +409,6 @@ const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
 const viewportStyle = computed<CSSProperties>(() => ({
   maxHeight:
     'min(30.5rem, max(2rem, calc(var(--reka-combobox-content-available-height, 100dvh) - 3rem)))',
-  overflowY:
-    browseOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
   scrollbarGutter: 'stable'
 }))
 
