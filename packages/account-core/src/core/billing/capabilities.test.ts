@@ -54,6 +54,8 @@ const CAPABILITIES = {
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
