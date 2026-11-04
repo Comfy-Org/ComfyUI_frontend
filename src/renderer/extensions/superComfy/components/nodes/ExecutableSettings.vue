@@ -24,6 +24,7 @@ import {
   inlinePorts,
   resultCredits,
   resultNotices,
+  settingValue,
   summaryValues
 } from './nodeView'
 
@@ -74,12 +75,6 @@ const credits = computed(() => {
 })
 
 const notices = computed(() => resultNotices(node))
-
-function settingValue(spec: SettingSpec): SettingValue | undefined {
-  return Object.hasOwn(node.values, spec.name)
-    ? node.values[spec.name]
-    : spec.default
-}
 
 function setValue(spec: SettingSpec, value: SettingValue | undefined) {
   store.dispatch({
@@ -146,7 +141,7 @@ function toggle() {
         v-for="spec in settings"
         :key="spec.name"
         :spec
-        :model-value="settingValue(spec)"
+        :model-value="settingValue(spec, node.values)"
         @update:model-value="setValue(spec, $event)"
       />
       <label class="flex min-w-0 flex-col gap-1">

@@ -201,7 +201,8 @@ export function nodeStatus({
   return blocked ?? resultStatus(node, plan) ?? planStatus(node, plan)
 }
 
-function settingValue(
+/** A setting's value on the node, or its default when the node has none. */
+export function settingValue(
   spec: SettingSpec,
   values: Record<string, SettingValue>
 ): SettingValue | undefined {
