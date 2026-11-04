@@ -212,7 +212,7 @@ Usage: comfy-test <command>
 Commands:
   record (alias: recorder) [--distribution <id>] [--backend <url>] [--workflow <name>]
          [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
-         [--description <text>] [--name <slug>] [--pr <number>]
+         [--description <text>] [--name <slug>] [--pr <number>] [--force]
               Record a browser test; supplied answers skip setup prompts
               --backend <url> points the dev server at any backend host, such
               as a nightly environment, instead of a named distribution

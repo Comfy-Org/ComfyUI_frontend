@@ -761,16 +761,15 @@ export async function runRecord(
   const testsDir = join(projectRoot, 'browser_tests', 'tests')
   mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
-  let allowOverwrite = false
-  if (existsSync(outputPath)) {
+  let allowOverwrite = prefill.force === true
+  if (!allowOverwrite && existsSync(outputPath)) {
     if (!stdinOpen) {
-      // stdin is at EOF, so asking for consent here would hang. Keeping the
-      // existing spec is the safe answer the prompt defaults to anyway.
       fail(
         'Refusing to overwrite existing test',
         `${outputPath} already exists, and stdin is closed so the overwrite ` +
           'prompt cannot be answered. Delete that file, or re-record and end ' +
-          'the paste with a single "." line to stay interactive.'
+          'the paste with a single "." line to stay interactive, or pass ' +
+          '--force to replace it.'
       )
       process.exit(1)
     }

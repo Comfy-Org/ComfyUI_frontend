@@ -12,20 +12,18 @@ afterEach(() => {
   process.exitCode = undefined
 })
 
-/** Runs the real CLI entry point, which dispatches on `process.argv` at import. */
 async function runCli(...args: string[]) {
   process.argv = ['node', 'comfy-test', ...args]
   vi.resetModules()
   await import('./index')
 }
 
-// Overwrite consent comes from how the entry point reads --force, so these go
-// through it rather than handing runTransform a boolean.
 describe('comfy-test transform --force', () => {
   it.for([
-    { flag: '--force', replaced: true },
-    { flag: '--force=false', replaced: false }
-  ])('$flag replaced the spec: $replaced', async ({ flag, replaced }) => {
+    { flags: ['--force'], replaced: true },
+    { flags: ['--force=false'], replaced: false },
+    { flags: [], replaced: false }
+  ])('$flags replaced the spec: $replaced', async ({ flags, replaced }) => {
     const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
     try {
       const input = join(dir, 'demo.raw.spec.ts')
@@ -37,7 +35,7 @@ describe('comfy-test transform --force', () => {
       })
       vi.mocked(console.log).mockImplementation(() => {})
 
-      await runCli('transform', input, '--output', output, flag)
+      await runCli('transform', input, '--output', output, ...flags)
 
       const saved = readFileSync(output, 'utf-8')
       if (replaced) {

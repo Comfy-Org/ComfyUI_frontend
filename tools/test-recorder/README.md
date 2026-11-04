@@ -38,6 +38,7 @@ Record flags:
 - `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
 - `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
 - `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
+- `--force` replaces an existing spec with the same name without asking. Without it, `record` asks before overwriting and refuses when stdin is closed.
 
 ### Backends behind Cloudflare Access
 

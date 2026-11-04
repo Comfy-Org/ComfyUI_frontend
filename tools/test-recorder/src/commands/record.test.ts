@@ -92,7 +92,6 @@ vi.mock(import('../recorder/runner'), () => ({
   runRecording
 }))
 vi.mock(import('../devserver/manager'), () => ({ ensureDevServer }))
-// Keeps step 7 from finding and launching a real coding-agent CLI on this host.
 vi.mock(import('../checks/agentCli'), () => ({ detectAgentClis: () => [] }))
 vi.mock(import('../ui/logger'), () => ({
   alert: vi.fn(),
@@ -149,11 +148,6 @@ const RECORDED_CODE =
   "await page.getByText('Queue').click();\n" +
   "await expect(page.getByText('Queue')).toBeVisible();\n"
 
-/**
- * The overwrite guard sits behind the whole guided flow, so these drive
- * `runRecord` with a complete prefill against a real temp checkout — every
- * prompt before step 6 is answered by the prefill rather than mocked away.
- */
 function seedExistingSpec(slug: string) {
   const root = mkdtempSync(join(tmpdir(), 'comfy-record-'))
   const testsDir = join(root, 'browser_tests', 'tests')
@@ -182,8 +176,6 @@ const overwritePrompt = expect.objectContaining({
 })
 
 describe('runRecord overwrite guard', () => {
-  // The no and cancel rows keep the committed bytes; only an explicit yes may
-  // replace them, and it must write the transformed recording.
   it.for([
     {
       outcome: 'declined',
@@ -197,16 +189,23 @@ describe('runRecord overwrite guard', () => {
       exitCode: 0,
       kept: true
     },
-    { outcome: 'accepted', answer: true, exitCode: undefined, kept: false }
+    { outcome: 'accepted', answer: true, exitCode: undefined, kept: false },
+    {
+      outcome: 'skipped by --force',
+      answer: false,
+      exitCode: undefined,
+      kept: false,
+      force: true
+    }
   ])(
     'honours an overwrite prompt that is $outcome',
-    async ({ outcome, answer, exitCode, kept }) => {
+    async ({ outcome, answer, exitCode, kept, force }) => {
       vi.clearAllMocks()
       Object.defineProperty(process.stdin, 'isTTY', {
         configurable: true,
         value: true
       })
-      const slug = `${outcome}-overwrite`
+      const slug = `${outcome.replaceAll(' ', '-')}-overwrite`
       const { root, outputPath } = seedExistingSpec(slug)
       try {
         runRecording.mockResolvedValue({
@@ -222,11 +221,12 @@ describe('runRecord overwrite guard', () => {
           throw new Error(`exit:${code}`)
         })
 
-        const run = runRecord(prefillFor(slug))
+        const run = runRecord({ ...prefillFor(slug), force })
         if (exitCode === undefined) await run
         else await expect(run).rejects.toThrow(`exit:${exitCode}`)
 
-        expect(confirm).toHaveBeenCalledWith(overwritePrompt)
+        if (force) expect(confirm).not.toHaveBeenCalledWith(overwritePrompt)
+        else expect(confirm).toHaveBeenCalledWith(overwritePrompt)
         const saved = readFileSync(outputPath, 'utf-8')
         if (kept) {
           expect(saved).toBe(EXISTING_SPEC)
@@ -245,17 +245,12 @@ describe('runRecord overwrite guard', () => {
     const { root, outputPath } = seedExistingSpec('eof-overwrite')
     const realStdin = process.stdin
     try {
-      // No automatic capture, so runRecord falls back to the manual paste.
       runRecording.mockResolvedValue({ success: true, recordedCode: '' })
-      // Answers yes to anything, so a surviving overwrite prompt would
-      // clobber the seeded spec rather than quietly pass.
       confirm.mockImplementation(async () => true)
       const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
 
-      // Ends the paste with EOF rather than the "." sentinel, which is what
-      // closes stdin for every later prompt.
       const fakeStdin = Readable.from([RECORDED_CODE])
       Object.defineProperty(fakeStdin, 'isTTY', {
         configurable: true,
@@ -270,7 +265,6 @@ describe('runRecord overwrite guard', () => {
         'exit:1'
       )
 
-      // The regression: prompting here hangs, so the guard must refuse first.
       expect(confirm).not.toHaveBeenCalledWith(overwritePrompt)
       expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
       expect(exit).toHaveBeenCalledWith(1)

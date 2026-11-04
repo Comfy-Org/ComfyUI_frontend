@@ -54,9 +54,6 @@ describe('runTransform overwrite guard', () => {
     }
   })
 
-  // existsSync reports a dangling link as absent and a plain write follows it,
-  // so only exclusive creation refuses here — a check-then-write guard would
-  // create the link's target.
   it('refuses a dangling symlink destination instead of writing through it', async () => {
     const { dir, input, output } = seedInput()
     try {
