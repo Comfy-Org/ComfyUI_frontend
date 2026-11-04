@@ -650,7 +650,6 @@ describe('createOpSender', () => {
     expect(
       unboundReports.every(([, options]) => options.tags?.reason === 'retarget')
     ).toBe(true)
-    // The live wf-2 batch is unaffected: sent normally, no report.
     expect(sent[1].workflowId).toBe('wf-2')
   })
 
