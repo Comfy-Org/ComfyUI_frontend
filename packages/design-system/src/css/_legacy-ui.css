@@ -1,3 +1,14 @@
+.comfy-multiline-input,
+.comfy-markdown .tiptap,
+.litegraph.litecontextmenu,
+.litegraph.litesearchbox,
+.litegraph .dialog,
+.comfy-menu,
+.comfy-modal,
+.graphdialog {
+  line-height: normal;
+}
+
 .dom-widget .comfy-multiline-input {
   background-color: var(--comfy-input-bg);
   color: var(--input-text);
