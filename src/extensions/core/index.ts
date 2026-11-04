@@ -80,7 +80,8 @@ function isNamedComfyExtension(value: unknown): value is ComfyExtension {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof (value as { name?: unknown }).name === 'string'
+    'name' in value &&
+    typeof value.name === 'string'
   )
 }
 
