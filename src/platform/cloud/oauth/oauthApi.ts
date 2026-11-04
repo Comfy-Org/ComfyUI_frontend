@@ -3,7 +3,10 @@ import type {
   OAuthConsentChallengeWorkspace,
   OAuthConsentVerifiedClient
 } from '@comfyorg/ingest-types'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zErrorResponse,
+  zOAuthConsentVerifiedClient
+} from '@comfyorg/ingest-types/zod'
 
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -62,12 +65,12 @@ export function verifiedClient(
     'client_provenance' | 'verified_client'
   >
 ): OAuthConsentVerifiedClient | undefined {
-  const verified = challenge.verified_client
-  if (challenge.client_provenance !== 'dynamic' || !verified?.display_name)
-    return undefined
-  return Object.hasOwn(verifiedClientIcons, verified.platform)
-    ? verified
-    : undefined
+  if (challenge.client_provenance !== 'dynamic') return undefined
+  const parsed = zOAuthConsentVerifiedClient.safeParse(
+    challenge.verified_client
+  )
+  if (!parsed.success || !parsed.data.display_name.trim()) return undefined
+  return parsed.data
 }
 
 export function redirectHost(uri: string | undefined): string | undefined {

@@ -48,8 +48,8 @@ const i18n = createI18n({
             'This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.',
           unverifiedNoticeNoHost:
             'This name was provided by whoever registered this app and has not been verified by Comfy.',
-          verifiedNotice: "Verified · you'll return to {host}",
-          verifiedNoticeNoHost: "Verified · you'll return to {client}",
+          verifiedNotice:
+            "Verified destination: {platform} · you'll return to {host}",
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -206,7 +206,7 @@ describe('OAuthConsentView', () => {
       icon: 'icon-[comfy--anthropic]'
     }
   ] as const)(
-    'renders a verified $platform client by its registry name and icon',
+    'renders a verified $platform destination without hiding the registrant name',
     ({ platform, displayName, redirectUri, host, icon }) => {
       renderConsent({
         client_display_name: 'Totally Legit Connector',
@@ -215,10 +215,12 @@ describe('OAuthConsentView', () => {
         verified_client: { platform, display_name: displayName }
       })
 
-      expect(screen.getByText(`${displayName} wants access`)).toBeVisible()
+      expect(
+        screen.getByText('Totally Legit Connector wants access')
+      ).toBeVisible()
       expect(screen.getByTestId('client-icon')).toHaveClass(icon)
       expect(screen.getByTestId('client-verified')).toHaveTextContent(
-        `Verified · you'll return to ${host}`
+        `Verified destination: ${displayName} · you'll return to ${host}`
       )
       expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
       expect(
@@ -227,21 +229,49 @@ describe('OAuthConsentView', () => {
     }
   )
 
+  const chatgptCallback = 'https://chatgpt.com/connector/oauth/abc123'
+  const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' }
+
   it.for([
-    { case: 'no verified_client', verifiedClient: undefined },
+    {
+      case: 'no verified_client',
+      verifiedClient: undefined,
+      redirectUri: chatgptCallback
+    },
     {
       case: 'an unknown platform',
-      verifiedClient: { platform: 'gemini', display_name: 'Gemini' }
+      verifiedClient: { platform: 'gemini', display_name: 'Gemini' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a non-string display name',
+      verifiedClient: { platform: 'chatgpt', display_name: 123 },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a whitespace-only display name',
+      verifiedClient: { platform: 'chatgpt', display_name: '  ' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a loopback redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'http://127.0.0.1:8765/callback'
+    },
+    {
+      case: 'a custom-scheme redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'comfy://oauth/callback'
     }
   ])(
     'renders a dynamic client with $case as unverified',
-    async ({ verifiedClient }) => {
+    async ({ verifiedClient, redirectUri }) => {
       vi.mocked(fetch).mockResolvedValueOnce(
         Response.json({
           ...challenge,
           client_display_name: 'ChatGPT Connector',
           client_provenance: 'dynamic',
-          redirect_uri: 'https://chatgpt.com/connector/oauth/abc123',
+          redirect_uri: redirectUri,
           verified_client: verifiedClient
         })
       )

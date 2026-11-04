@@ -6058,13 +6058,13 @@ export type OAuthConsentChallengeWorkspace = {
  */
 export type OAuthConsentVerifiedClient = {
   /**
-   * Stable identifier of the verified platform.
-   */
-  platform: 'chatgpt' | 'claude'
-  /**
    * Human-readable platform name from the server registry (e.g. "ChatGPT"), never from client_name.
    */
   display_name: string
+  /**
+   * Stable identifier of the verified platform.
+   */
+  platform: 'chatgpt' | 'claude'
 }
 
 /**
@@ -18556,18 +18556,18 @@ export type GetCccPublicMediaBytesData = {
 
 export type GetCccPublicMediaBytesErrors = {
   /**
-   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias
+   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias; no-store
    */
   404: unknown
   /**
-   * Requested range is outside the file
+   * Requested range is outside the file; no-store
    */
   416: unknown
 }
 
 export type GetCccPublicMediaBytesResponses = {
   /**
-   * Exact current LIVE bytes; authority checked before byte access; no-store
+   * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
    */
   200: Blob | File
   /**
@@ -18598,7 +18598,7 @@ export type HeadCccPublicMediaBytesErrors = {
 
 export type HeadCccPublicMediaBytesResponses = {
   /**
-   * Headers of the current LIVE bytes; no-store; no body
+   * Headers of the current LIVE bytes; public, max-age=120, must-revalidate; no body
    */
   200: unknown
 }

@@ -3255,8 +3255,8 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  *
  */
 export const zOAuthConsentVerifiedClient = z.object({
-  platform: z.enum(['chatgpt', 'claude']),
-  display_name: z.string()
+  display_name: z.string(),
+  platform: z.enum(['chatgpt', 'claude'])
 })
 
 /**
@@ -7368,7 +7368,7 @@ export const zGetCccPublicMediaBytesPath = z.object({
 })
 
 /**
- * Exact current LIVE bytes; authority checked before byte access; no-store
+ * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
  */
 export const zGetCccPublicMediaBytesResponse = z.string()
 

@@ -408,6 +408,12 @@ describe('verifiedClient', () => {
       'dynamic',
       { platform: 'chatgpt', display_name: '' },
       undefined
+    ],
+    [
+      'a dynamic client with a whitespace-only display name',
+      'dynamic',
+      { platform: 'chatgpt', display_name: '   ' },
+      undefined
     ]
   ] as const)('for %s', ([, provenance, verified, expected]) => {
     expect(

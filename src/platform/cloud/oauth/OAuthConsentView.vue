@@ -36,7 +36,7 @@
           <h1 class="m-0 text-2xl/tight font-semibold text-foreground">
             {{
               t('oauth.consent.title', {
-                client: verified?.display_name ?? challenge.client_display_name
+                client: challenge.client_display_name
               })
             }}
           </h1>
@@ -46,11 +46,10 @@
             data-testid="client-verified"
           >
             {{
-              destinationHost
-                ? t('oauth.consent.verifiedNotice', { host: destinationHost })
-                : t('oauth.consent.verifiedNoticeNoHost', {
-                    client: verified.display_name
-                  })
+              t('oauth.consent.verifiedNotice', {
+                platform: verified.display_name,
+                host: destinationHost
+              })
             }}
           </p>
           <template v-else-if="!isFirstPartyClient(challenge)">
@@ -272,12 +271,14 @@ const resourceName = computed(
     t('oauth.consent.resourceFallback')
 )
 
-const verified = computed(() =>
-  challenge.value ? verifiedClient(challenge.value) : undefined
-)
-
 const destinationHost = computed(() =>
   redirectHost(challenge.value?.redirect_uri)
+)
+
+const verified = computed(() =>
+  challenge.value && destinationHost.value
+    ? verifiedClient(challenge.value)
+    : undefined
 )
 
 const selectedWorkspaceIsValid = computed(() =>
