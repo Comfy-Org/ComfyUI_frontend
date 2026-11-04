@@ -81,6 +81,7 @@ const { t } = useI18n()
 let escapeIgnoredFor: string | undefined
 
 function ignoreEscapeOutside(event: KeyboardEvent, key: string) {
+  if (event.defaultPrevented) return
   const focusedToast =
     event.target instanceof Element
       ? event.target.closest('[data-toast-key]')?.getAttribute('data-toast-key')

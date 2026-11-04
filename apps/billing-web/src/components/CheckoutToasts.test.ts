@@ -17,7 +17,7 @@ async function renderToasts() {
     },
     global: { plugins: [createBillingI18n()] }
   })
-  await screen.findAllByRole('alert')
+  expect(await screen.findAllByRole('alert')).toHaveLength(2)
   return onClose
 }
 
@@ -38,5 +38,18 @@ describe('CheckoutToasts', () => {
     await userEvent.keyboard('{Escape}')
 
     expect(onClose.mock.calls).toEqual([['failure']])
+  })
+
+  it('Close still works after an Escape another handler already prevented', async () => {
+    const onClose = await renderToasts()
+    const preventEscape = (event: KeyboardEvent) => event.preventDefault()
+    document.addEventListener('keydown', preventEscape)
+    onTestFinished(() => document.removeEventListener('keydown', preventEscape))
+
+    await userEvent.keyboard('{Escape}')
+    const [, successClose] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(successClose)
+
+    expect(onClose.mock.calls).toEqual([['success']])
   })
 })
