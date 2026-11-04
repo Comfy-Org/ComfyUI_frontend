@@ -7,6 +7,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { generateSameHashWorkflowNames } from '@e2e/fixtures/utils/sameHashWorkflowNames'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -1026,6 +1027,9 @@ test.describe('Workflow Persistence', () => {
     test.setTimeout(45_000)
 
     const [workflowA, workflowB] = generateSameHashWorkflowNames()
+    expect(hashPath(`workflows/${workflowA}.json`)).toBe(
+      hashPath(`workflows/${workflowB}.json`)
+    )
 
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
@@ -1046,7 +1050,7 @@ test.describe('Workflow Persistence', () => {
       await nodeA.centerOnNode()
       const draftASaveStartedAt = Date.now()
       await nodeA.toggleCollapse()
-      expect(await nodeA.isCollapsed()).toBe(true)
+      await expect.poll(() => nodeA.isCollapsed()).toBe(true)
       await comfyPage.workflow.waitForDraftIndexUpdatedSince(
         draftASaveStartedAt
       )

@@ -27,8 +27,6 @@ function withBothDrafts() {
   return index
 }
 
-// These two paths share the same 32-bit `hashPath` value. Fixed inputs, so
-// this is colocated here rather than in draftCacheV2.property.test.ts.
 describe('draft cache hash collisions', () => {
   it('confirms the fixture paths really do collide', () => {
     expect(hashPath(PATH_A)).toBe(hashPath(PATH_B))

@@ -183,7 +183,55 @@ describe('draftCacheV2', () => {
       expect(result!.index.entries[result!.newKey].path).toBe(
         'workflows/new.json'
       )
-      expect(result!.index.entries[result!.oldKey]).toBeUndefined()
+      expect(getEntryByPath(result!.index, 'workflows/new.json')).toMatchObject(
+        {
+          name: 'new',
+          path: 'workflows/new.json'
+        }
+      )
+      expect(getEntryByPath(result!.index, 'workflows/old.json')).toBeNull()
+    })
+
+    it('keeps the entry in the slot it was written to', () => {
+      let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/old.json', {
+        name: 'old',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
+
+      const result = moveEntry(
+        index,
+        'workflows/old.json',
+        'workflows/new.json',
+        'new'
+      )
+
+      expect(result!.oldKey).toBe(result!.newKey)
+      expect(result!.newKey).toBe(hashPath('workflows/old.json'))
+      expect(Object.keys(result!.index.entries)).toEqual([result!.newKey])
+    })
+
+    it('keeps the slot when the destination shares the source hash', () => {
+      let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/ewip.json', {
+        name: 'a',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
+
+      const result = moveEntry(
+        index,
+        'workflows/ewip.json',
+        'workflows/4hbab.json',
+        'renamed'
+      )
+
+      expect(result!.oldKey).toBe(result!.newKey)
+      expect(
+        getEntryByPath(result!.index, 'workflows/4hbab.json')
+      ).toMatchObject({ name: 'renamed', path: 'workflows/4hbab.json' })
+      expect(getEntryByPath(result!.index, 'workflows/ewip.json')).toBeNull()
     })
 
     it('returns null for non-existent source', () => {
@@ -240,8 +288,7 @@ describe('draftCacheV2', () => {
       )
 
       const keyB = hashPath('workflows/b.json')
-      const keyC = hashPath('workflows/c.json')
-      expect(result!.index.order).toEqual([keyB, keyC])
+      expect(result!.index.order).toEqual([keyB, result!.newKey])
     })
   })
 

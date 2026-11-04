@@ -29,7 +29,6 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 const WORKSPACE = 'personal'
-// These two paths share the same 32-bit `hashPath` value.
 const COLLIDING_PATH_A = 'workflows/ewip.json'
 const COLLIDING_PATH_B = 'workflows/4hbab.json'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
@@ -221,6 +220,36 @@ describe('workflowDraftStoreV2', () => {
         data: '{"nodes":["a"]}'
       })
       expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
+    })
+
+    it('renames onto a free same-hash path without a second payload write', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+
+      const payloadWrites = () =>
+        vi
+          .mocked(localStorage.setItem)
+          .mock.calls.filter(([key]) => String(key).startsWith(PAYLOAD_PREFIX))
+          .length
+
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      activeSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => realSetItem(key, value))
+
+      store.moveDraft(COLLIDING_PATH_A, COLLIDING_PATH_B, 'renamed')
+
+      expect(payloadWrites()).toBe(0)
+      store.reset()
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'renamed'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
     })
 
     it('renames a colliding draft without disturbing its neighbour', () => {
