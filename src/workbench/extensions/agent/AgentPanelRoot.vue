@@ -16,6 +16,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { hasActiveSelectionStore } from '@/core/selection/selectionStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -2292,6 +2293,7 @@ watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
 })
 
 function onSelectNodes(): void {
+  if (!hasActiveSelectionStore()) return
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
   const canvas = app.canvas
   if (!canvas) return
@@ -2311,7 +2313,8 @@ function onSelectNodes(): void {
   }
   canvasStore.startNodePicking()
   void nextTick(() => {
-    if (canvasStore.isPickingNodes) canvas.canvas.focus()
+    if (!hasActiveSelectionStore() || !canvasStore.isPickingNodes) return
+    canvas.canvas.focus()
   })
 }
 

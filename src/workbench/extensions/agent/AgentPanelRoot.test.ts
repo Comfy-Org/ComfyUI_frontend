@@ -15805,6 +15805,31 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
+  it('does not read canvas selection after the panel store is gone', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const { canvas, rootGraph, rootNode } = setupOwnedSelectionCanvas()
+
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
+    syncFakeSelection()
+    await nextTick()
+    await openAddMenu()
+    const nodesItem = screen.getByRole('menuitem', {
+      name: i18n.global.t('agent.nodes')
+    })
+    const selectItems = vi.spyOn(canvas, 'selectItems')
+    const { disposePinia, getActivePinia } = await import('pinia')
+    disposePinia(getActivePinia()!)
+
+    nodesItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(selectItems).not.toHaveBeenCalled()
+  })
+
   it('keeps every staged reference and the incoming graph saved selection when the viewed graph is replaced while picking', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')

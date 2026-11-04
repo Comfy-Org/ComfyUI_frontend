@@ -122,6 +122,11 @@ type SelectionStore = ReturnType<typeof useSelectionStore>
 
 let memoized: { pinia: Pinia | undefined; store: SelectionStore } | undefined
 
+/** True when `useSelectionStore()` can run. */
+export function hasActiveSelectionStore(): boolean {
+  return getActivePinia()?._e.active === true
+}
+
 function selectionStore(): SelectionStore {
   const pinia = getActivePinia()
   if (memoized && memoized.pinia === pinia) return memoized.store
