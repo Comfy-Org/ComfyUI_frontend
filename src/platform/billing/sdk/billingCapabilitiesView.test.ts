@@ -57,6 +57,20 @@ describe('projectBillingCapabilities', () => {
     }
   )
 
+  it.for([
+    { state: 'ready' },
+    { state: 'frozen', reason: 'payment_past_due' },
+    { state: 'unavailable' }
+  ] as const)(
+    'passes auto_top_up_setup $state through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({ ...SNAPSHOT, autoTopUpSetup: served })
+          .auto_top_up_setup
+      ).toStrictEqual(served)
+    }
+  )
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,
