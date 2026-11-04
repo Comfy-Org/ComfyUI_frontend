@@ -1,0 +1,334 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "veo/veo-3.1-generate-001",
+    "description": "The request body Comfy Router accepts for the model \"veo/veo-3.1-generate-001\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "56727421d95b"
+  },
+  "paths": {
+    "/v2/models/veo/veo-3.1-generate-001": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "example": {
+                  "instances": [
+                    {
+                      "prompt": "a single red maple leaf falling onto still water, slow motion"
+                    }
+                  ],
+                  "parameters": {
+                    "durationSeconds": 4,
+                    "generateAudio": false,
+                    "sampleCount": 1
+                  }
+                },
+                "properties": {
+                  "instances": {
+                    "items": {
+                      "properties": {
+                        "cameraControl": {
+                          "description": "Camera motion type. Requires image to be provided.",
+                          "enum": [
+                            "fixed",
+                            "pan_left",
+                            "pan_right",
+                            "tilt_up",
+                            "tilt_down",
+                            "truck_left",
+                            "truck_right",
+                            "pedestal_up",
+                            "pedestal_down",
+                            "push_in",
+                            "pull_out"
+                          ],
+                          "type": "string"
+                        },
+                        "image": {
+                          "description": "Optional first frame image to guide video generation",
+                          "oneOf": [
+                            {
+                              "required": ["bytesBase64Encoded"]
+                            },
+                            {
+                              "required": ["gcsUri"]
+                            }
+                          ],
+                          "properties": {
+                            "bytesBase64Encoded": {
+                              "description": "Base64-encoded image data",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            "gcsUri": {
+                              "description": "Cloud Storage URI of the image. On a non-BYOK request a `gs://` URI (or its `https://storage.googleapis.com` form) naming a Comfy-owned bucket is refused with 400 unless the object is under your own `POST /customers/storage` prefix or is a video a previous Veo generate wrote for you.",
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "description": "MIME type of the image (image/jpeg or image/png)",
+                              "enum": ["image/jpeg", "image/png"],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "lastFrame": {
+                          "description": "Optional last frame image. Used with image to generate video between first and last frames. Supported by Veo 3.0+ models.",
+                          "oneOf": [
+                            {
+                              "required": ["bytesBase64Encoded"]
+                            },
+                            {
+                              "required": ["gcsUri"]
+                            }
+                          ],
+                          "properties": {
+                            "bytesBase64Encoded": {
+                              "description": "Base64-encoded image data",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            "gcsUri": {
+                              "description": "Cloud Storage URI of the image. On a non-BYOK request a `gs://` URI (or its `https://storage.googleapis.com` form) naming a Comfy-owned bucket is refused with 400 unless the object is under your own `POST /customers/storage` prefix or is a video a previous Veo generate wrote for you.",
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "description": "MIME type of the image (image/jpeg or image/png)",
+                              "enum": ["image/jpeg", "image/png"],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "mask": {
+                          "description": "Optional mask for video editing. Applies to input video.",
+                          "oneOf": [
+                            {
+                              "required": ["bytesBase64Encoded"]
+                            },
+                            {
+                              "required": ["gcsUri"]
+                            }
+                          ],
+                          "properties": {
+                            "bytesBase64Encoded": {
+                              "description": "Base64-encoded mask bytes",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            "gcsUri": {
+                              "description": "Cloud Storage URI to mask file. On a non-BYOK request a `gs://` URI (or its `https://storage.googleapis.com` form) naming a Comfy-owned bucket is refused with 400 unless the object is under your own `POST /customers/storage` prefix or is a video a previous Veo generate wrote for you.",
+                              "type": "string"
+                            },
+                            "maskMode": {
+                              "description": "How the mask is applied",
+                              "enum": [
+                                "insert",
+                                "remove",
+                                "remove_static",
+                                "outpaint"
+                              ],
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "description": "MIME type of the mask (image/png, image/jpeg, image/webp, or video formats)",
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "prompt": {
+                          "description": "Text description of the video to generate",
+                          "type": "string"
+                        },
+                        "referenceImages": {
+                          "description": "Optional reference images to guide video generation. Supports up to 3 asset images or 1 style image. Supported by Veo 3.1 models (preview).",
+                          "items": {
+                            "properties": {
+                              "image": {
+                                "oneOf": [
+                                  {
+                                    "required": ["bytesBase64Encoded"]
+                                  },
+                                  {
+                                    "required": ["gcsUri"]
+                                  }
+                                ],
+                                "properties": {
+                                  "bytesBase64Encoded": {
+                                    "description": "Base64-encoded image data",
+                                    "format": "byte",
+                                    "type": "string"
+                                  },
+                                  "gcsUri": {
+                                    "description": "Cloud Storage URI of the image. On a non-BYOK request a `gs://` URI (or its `https://storage.googleapis.com` form) naming a Comfy-owned bucket is refused with 400 unless the object is under your own `POST /customers/storage` prefix or is a video a previous Veo generate wrote for you.",
+                                    "type": "string"
+                                  },
+                                  "mimeType": {
+                                    "description": "MIME type of the image (image/jpeg or image/png)",
+                                    "enum": ["image/jpeg", "image/png"],
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "referenceId": {
+                                "description": "Optional identifier for the reference image",
+                                "type": "string"
+                              },
+                              "referenceType": {
+                                "description": "Type of reference image",
+                                "enum": ["asset", "style"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["image", "referenceType"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "video": {
+                          "description": "Optional input video for video extension or editing. Incompatible with image and referenceImages.",
+                          "oneOf": [
+                            {
+                              "required": ["bytesBase64Encoded"]
+                            },
+                            {
+                              "required": ["gcsUri"]
+                            }
+                          ],
+                          "properties": {
+                            "bytesBase64Encoded": {
+                              "description": "Base64-encoded video bytes",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            "gcsUri": {
+                              "description": "Cloud Storage URI of the input video. On a non-BYOK request a `gs://` URI (or its `https://storage.googleapis.com` form) naming a Comfy-owned bucket is refused with 400 unless the object is under your own `POST /customers/storage` prefix or is a video a previous Veo generate wrote for you.",
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "description": "MIME type of the video",
+                              "enum": [
+                                "video/mov",
+                                "video/mpeg",
+                                "video/mp4",
+                                "video/mpg",
+                                "video/avi",
+                                "video/wmv",
+                                "video/mpegps",
+                                "video/x-flv"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "required": ["prompt"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "parameters": {
+                    "properties": {
+                      "aspectRatio": {
+                        "description": "Aspect ratio of the generated video. Default: 16:9",
+                        "enum": ["16:9", "9:16"],
+                        "example": "16:9",
+                        "type": "string"
+                      },
+                      "compressionQuality": {
+                        "description": "Video compression quality. Default: optimized",
+                        "enum": ["optimized", "lossless"],
+                        "type": "string"
+                      },
+                      "durationSeconds": {
+                        "description": "Target duration of the generated video in seconds. Veo 2: 5-8. Veo 3/3.1: 4, 6, or 8. Default: 8",
+                        "type": "number"
+                      },
+                      "enhancePrompt": {
+                        "description": "Automatically improve prompt for higher quality. Defaults to true.",
+                        "type": "boolean"
+                      },
+                      "fps": {
+                        "description": "Frame rate of generated videos in frames per second",
+                        "type": "integer"
+                      },
+                      "generateAudio": {
+                        "description": "Whether to generate audio along with the video. Defaults to true. Supported by Veo 3.0+ models.",
+                        "type": "boolean"
+                      },
+                      "negativePrompt": {
+                        "description": "Text describing what to avoid in the generated video",
+                        "type": "string"
+                      },
+                      "personGeneration": {
+                        "description": "Controls people in generated videos. Default: allow_adult",
+                        "enum": ["dont_allow", "allow_adult", "allowAll"],
+                        "type": "string"
+                      },
+                      "pubsubTopic": {
+                        "description": "Cloud Pub/Sub topic for progress updates (projects/{project}/topics/{topic}). Not accepted on Comfy-credentialed (non-BYOK) requests: the generate route answers 400 if it is present, because the operation runs in Comfy's project and Vertex would publish as Comfy's service agent. Accepted only on bring-your-own-key requests, where Vertex evaluates the topic grant in your own project.",
+                        "type": "string"
+                      },
+                      "resizeMode": {
+                        "description": "Resize approach for input image. Default: pad",
+                        "enum": ["pad", "crop"],
+                        "type": "string"
+                      },
+                      "resolution": {
+                        "description": "Output video resolution. Supported by Veo 3.0+ models. Default: 720p",
+                        "enum": ["720p", "1080p", "4k"],
+                        "type": "string"
+                      },
+                      "sampleCount": {
+                        "description": "Number of videos to generate. If not specified, 1 video is generated.",
+                        "maximum": 4,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "seed": {
+                        "description": "Random seed for deterministic output. Different seeds used per video if sampleCount > 1.",
+                        "format": "uint32",
+                        "type": "integer"
+                      },
+                      "storageUri": {
+                        "description": "Optional Cloud Storage destination for the generated videos, as a `gs://` URI.\nIT MUST NAME A BUCKET OF YOUR OWN. Outside bring-your-own-key, this route runs under Comfy's own Google Cloud credentials rather than yours, so a destination inside a Comfy-owned bucket would be a write performed by Comfy's service account, into a shared layout, billed to Comfy's project. A request naming one is refused with a 400 and nothing is generated — with one exception on a synchronous Comfy Router call (`POST /v2/models/{provider}/{model}`) where platform storage is enabled: a value naming Router's own Veo or Gemini asset bucket is replaced with a destination Router mints under your own platform prefix for that call (see the Router Veo route), and only that exact Router-minted destination is let through. A queued Router submit (`POST /v2/models/{provider}/{model}/requests`) makes no such replacement, so it refuses that value with a 400 like any other Comfy-owned bucket. Any other destination is forwarded to Vertex unchanged and is yours to grant access to. A bring-your-own-key call runs in your own project and is forwarded as sent.",
+                        "type": "string"
+                      },
+                      "task": {
+                        "description": "Operation type for the video generation request",
+                        "enum": [
+                          "textToVideo",
+                          "imageToVideo",
+                          "referenceToVideo",
+                          "edit",
+                          "extend",
+                          "upscale"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "veo/veo-3.1-generate-001",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image", "video"],
+  "x-comfy-router-output-modalities": ["video", "audio"]
+}

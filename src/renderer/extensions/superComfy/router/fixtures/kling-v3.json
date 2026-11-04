@@ -1,0 +1,319 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "kling/kling-v3",
+    "description": "The request body Comfy Router accepts for the model \"kling/kling-v3\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "3476d7d7caa8"
+  },
+  "paths": {
+    "/v2/models/kling/kling-v3": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for a Kling text-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/text2video may add it (the proxy forwards an absent one as-is and Kling applies its own default). One example cannot serve both surfaces -- this component is the Router input schema for all three spellings, so an example naming one of them is refused by the other two routes for naming a different model, while the omitting form is valid on all three.",
+                "example": {
+                  "aspect_ratio": "16:9",
+                  "duration": "5",
+                  "mode": "std",
+                  "prompt": "A red fox trotting through falling snow, cinematic lighting."
+                },
+                "properties": {
+                  "aspect_ratio": {
+                    "$ref": "#/components/schemas/KlingVideoGenAspectRatio"
+                  },
+                  "callback_url": {
+                    "description": "The callback notification address. Ignored: comfy-api drops this field before forwarding; Comfy Router polls on your behalf.",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "camera_control": {
+                    "$ref": "#/components/schemas/KlingCameraControl"
+                  },
+                  "cfg_scale": {
+                    "$ref": "#/components/schemas/KlingVideoGenCfgScale"
+                  },
+                  "duration": {
+                    "$ref": "#/components/schemas/KlingVideoGenDuration"
+                  },
+                  "external_task_id": {
+                    "description": "Customized Task ID. Ignored: comfy-api drops this field before forwarding; Comfy Router polls on your behalf.",
+                    "type": "string"
+                  },
+                  "mode": {
+                    "$ref": "#/components/schemas/KlingVideoGenMode"
+                  },
+                  "model_name": {
+                    "description": "Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "multi_prompt": {
+                    "description": "Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize.",
+                    "items": {
+                      "properties": {
+                        "duration": {
+                          "description": "Duration of this storyboard in seconds. Must not exceed total task duration and must not be less than 1. Sum of all storyboard durations equals total task duration.",
+                          "type": "string"
+                        },
+                        "index": {
+                          "description": "Shot sequence number",
+                          "type": "integer"
+                        },
+                        "prompt": {
+                          "description": "Prompt word for this storyboard. Maximum length 512 characters.",
+                          "maxLength": 512,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "maxItems": 6,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "multi_shot": {
+                    "default": false,
+                    "description": "Whether to generate multi-shot video. When true, the prompt parameter is invalid. When false, the shot_type and multi_prompt parameters are invalid.",
+                    "type": "boolean"
+                  },
+                  "negative_prompt": {
+                    "description": "Negative text prompt. It is recommended to supplement negative prompt information through negative sentences directly within positive prompts.",
+                    "maxLength": 2500,
+                    "type": "string"
+                  },
+                  "prompt": {
+                    "description": "Positive text prompt. Use <<<voice_1>>> to specify a voice matching the voice_list parameter order. A task can reference up to 2 tones. When specifying a tone, the sound parameter value must be on.",
+                    "maxLength": 2500,
+                    "type": "string"
+                  },
+                  "shot_type": {
+                    "description": "Storyboard method. Required when the multi_shot parameter is set to true.",
+                    "enum": ["customize", "intelligence"],
+                    "type": "string"
+                  },
+                  "sound": {
+                    "default": "off",
+                    "description": "Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.",
+                    "enum": ["on", "off"],
+                    "type": "string"
+                  },
+                  "voice_list": {
+                    "description": "List of voices referenced when generating videos. Supports up to 2 voices; reference them in `prompt` as <<<voice_1>>> and <<<voice_2>>> in list order. Requires `sound` set to \"on\", which only V2.6 and subsequent versions of the model support; on an earlier model, or with `sound` left at its \"off\" default, voices are not applied.",
+                    "items": {
+                      "properties": {
+                        "voice_id": {
+                          "description": "Voice ID returned through the voice customization API or a system preset voice ID.",
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["voice_id"],
+                      "type": "object"
+                    },
+                    "maxItems": 2,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "watermark_info": {
+                    "description": "Whether to generate watermarked results simultaneously. Custom watermark is not supported at this time.",
+                    "properties": {
+                      "enabled": {
+                        "description": "true means generate watermark, false means do not generate.",
+                        "type": "boolean"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "KlingCameraConfig": {
+        "properties": {
+          "horizontal": {
+            "description": "Controls camera's movement along horizontal axis (x-axis). Negative indicates left, positive indicates right.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          },
+          "pan": {
+            "description": "Controls camera's rotation in vertical plane (x-axis). Negative indicates downward rotation, positive indicates upward rotation.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          },
+          "roll": {
+            "description": "Controls camera's rolling amount (z-axis). Negative indicates counterclockwise, positive indicates clockwise.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          },
+          "tilt": {
+            "description": "Controls camera's rotation in horizontal plane (y-axis). Negative indicates left rotation, positive indicates right rotation.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          },
+          "vertical": {
+            "description": "Controls camera's movement along vertical axis (y-axis). Negative indicates downward, positive indicates upward.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          },
+          "zoom": {
+            "description": "Controls change in camera's focal length. Negative indicates narrower field of view, positive indicates wider field of view.",
+            "maximum": 10,
+            "minimum": -10,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "KlingCameraControl": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/KlingCameraConfig"
+          },
+          "type": {
+            "$ref": "#/components/schemas/KlingCameraControlType"
+          }
+        },
+        "type": "object"
+      },
+      "KlingCameraControlType": {
+        "description": "Predefined camera movements type. simple: Customizable camera movement. down_back: Camera descends and moves backward. forward_up: Camera moves forward and tilts up. right_turn_forward: Rotate right and move forward. left_turn_forward: Rotate left and move forward.",
+        "enum": [
+          "simple",
+          "down_back",
+          "forward_up",
+          "right_turn_forward",
+          "left_turn_forward"
+        ],
+        "type": "string"
+      },
+      "KlingVideoGenAspectRatio": {
+        "default": "16:9",
+        "description": "Video aspect ratio",
+        "enum": ["16:9", "9:16", "1:1"],
+        "type": "string"
+      },
+      "KlingVideoGenCfgScale": {
+        "default": 0.5,
+        "description": "Flexibility in video generation. The higher the value, the lower the model's degree of flexibility, and the stronger the relevance to the user's prompt.",
+        "format": "float",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
+      "KlingVideoGenDuration": {
+        "default": "5",
+        "description": "Video length in seconds",
+        "enum": [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "type": "string"
+      },
+      "KlingVideoGenMode": {
+        "default": "std",
+        "description": "Video generation mode. std: Standard Mode, which is cost-effective. pro: Professional Mode, generates videos with longer duration but higher quality output.",
+        "enum": ["std", "pro"],
+        "type": "string"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "kling/kling-v3",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text"],
+  "x-comfy-router-output-modalities": ["video"],
+  "x-comfy-router-alt-providers": [
+    {
+      "provider": "higgsfield",
+      "model_id": "higgsfield/higgsfield-kling-3-std"
+    },
+    {
+      "provider": "tencent",
+      "limits": {
+        "resolutions": ["720P"],
+        "audio": ["silent"],
+        "duration_seconds": {
+          "min": 3,
+          "max": 15,
+          "default": 5
+        },
+        "aspect_ratios": ["16:9", "9:16", "1:1"],
+        "rejected_inputs": [
+          {
+            "field": "image",
+            "rule": "set",
+            "reason": "Tencent MPS's kling 3.0 endpoint is text-to-video only; for image-conditioned video use kling/kling-v3-omni with image_list"
+          },
+          {
+            "field": "image_tail",
+            "rule": "set",
+            "reason": "Tencent MPS's kling 3.0 endpoint is text-to-video only; for image-conditioned video use kling/kling-v3-omni with image_list"
+          },
+          {
+            "field": "sound",
+            "rule": "equals",
+            "values": ["on"],
+            "example": "on",
+            "reason": "Tencent MPS's kling 3.0 endpoint does not support audio yet; send sound \"off\" or omit it"
+          },
+          {
+            "field": "mode",
+            "rule": "not_in",
+            "values": ["std"],
+            "example": "pro",
+            "reason": "Tencent MPS's kling 3.0 endpoint serves the std tier only"
+          },
+          {
+            "field": "multi_shot",
+            "rule": "set",
+            "example": true,
+            "reason": "Tencent MPS's kling 3.0 endpoint generates a single shot; a multi-shot sequence cannot be honoured"
+          },
+          {
+            "field": "multi_prompt",
+            "rule": "set",
+            "reason": "Tencent MPS's kling 3.0 endpoint generates a single shot; a multi-shot sequence cannot be honoured"
+          },
+          {
+            "field": "shot_type",
+            "rule": "set",
+            "example": "customize",
+            "reason": "Tencent MPS's kling 3.0 endpoint generates a single shot; a multi-shot sequence cannot be honoured"
+          }
+        ],
+        "rejected_with": "invalid_input",
+        "fallback": {
+          "provider": "kling",
+          "default": true,
+          "opt_out": "fallback_provider=false"
+        }
+      }
+    }
+  ]
+}

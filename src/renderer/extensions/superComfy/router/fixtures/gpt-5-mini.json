@@ -1,0 +1,153 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "openai/gpt-5-mini",
+    "description": "The request body Comfy Router accepts for the model \"openai/gpt-5-mini\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "911a21de1382"
+  },
+  "paths": {
+    "/v2/models/openai/gpt-5-mini": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "The request body Comfy Router accepts for the seventeen OpenAI Responses chat and reasoning models, and the schema `routervalidate.Guard` validates a `POST /v2/models/openai/{model}` call against before it reaches OpenAI.\nIt describes the SHAPE of a Responses request -- which fields exist and what JSON type each carries -- and deliberately does not restate OpenAI's own sub-vocabularies for `input` items, `tools` or `include`. Router forwards the body unchanged, OpenAI extends those vocabularies continuously, and a schema that enumerated them would refuse calls that run today. OpenAI's Responses API reference is authoritative for the contents of those fields; this schema is authoritative for what Router itself will accept.\nFields not listed here are forwarded to OpenAI untouched. Two of them are SETTLED to `false` on the Router surface when a caller names them -- `stream` and `background` -- because Router captures the provider response rather than streaming it, and a streamed or queued document is one this route can neither return nor meter (routerSettledBoolFields, server/middleware/router_model_catalog.go).",
+                "example": {
+                  "input": "Reply with the single word: ok",
+                  "max_output_tokens": 1024
+                },
+                "properties": {
+                  "include": {
+                    "description": "Additional output data to include in the model response.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true,
+                    "type": "array"
+                  },
+                  "input": {
+                    "description": "Text, image or file inputs to the model, used to generate a response. The one field of this contract Router cannot supply, and the only entry in `required` below.",
+                    "oneOf": [
+                      {
+                        "description": "A text input to the model, equivalent to a text input with the `user` role.",
+                        "title": "Text input",
+                        "type": "string"
+                      },
+                      {
+                        "description": "A list of one or many input items. See OpenAI's Responses API reference for the item taxonomy; Router does not narrow it.",
+                        "items": {},
+                        "title": "Input item list",
+                        "type": "array"
+                      }
+                    ]
+                  },
+                  "instructions": {
+                    "description": "Inserts a system (or developer) message as the first item in the model's context.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "max_output_tokens": {
+                    "description": "An upper bound for the number of tokens generated for a response, including visible output tokens and reasoning tokens. On a reasoning id this ceiling is shared with the hidden reasoning tokens, so a small value can consume the whole budget before any visible text -- which is why the reasoning smoke cases send 1024 where the chat ones send 16.",
+                    "minimum": 1,
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  "model": {
+                    "description": "OpenAI model identifier. On Comfy Router this field is OPTIONAL and Router fills it from the `{model}` path segment; an explicit `null` is replaced the same way. Sending a value that disagrees with the path is refused.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "parallel_tool_calls": {
+                    "description": "Whether to allow the model to run tool calls in parallel.",
+                    "nullable": true,
+                    "type": "boolean"
+                  },
+                  "previous_response_id": {
+                    "description": "The ID of a previous response, for multi-turn conversations.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "reasoning": {
+                    "description": "REASONING TIER ONLY. Configuration for reasoning models, e.g. `{\"effort\": \"medium\"}`. Forwarded unchanged; see OpenAI's reasoning guide for the accepted keys. A chat-tier id ignores it.",
+                    "nullable": true,
+                    "type": "object"
+                  },
+                  "store": {
+                    "description": "Whether OpenAI stores the generated response for later retrieval.",
+                    "nullable": true,
+                    "type": "boolean"
+                  },
+                  "stream": {
+                    "description": "Declared so a caller who sends it is not refused, but INERT on this surface: Router SETTLES it to `false` before dispatch, because it captures the provider response rather than relaying a `text/event-stream` -- which it cannot decode, so a streamed generation would be billed by OpenAI and metered by nobody. No Comfy surface serves the stream: the v1 `POST /proxy/openai/v1/responses` ingress refuses `stream: true` with a 400 and never forwards the request upstream, so omit the field or send `false` on either surface and read the completed response as one JSON body.",
+                    "nullable": true,
+                    "type": "boolean"
+                  },
+                  "temperature": {
+                    "description": "Sampling temperature. CHAT TIER ONLY: the o-series reasoning ids (`o1`, `o1-pro`, `o3`, `o4-mini`) reject this parameter at OpenAI. Router does not refuse it for them -- see this component's note on why the two tiers share one schema -- so a reasoning call that sends it is answered by OpenAI's own error.",
+                    "maximum": 2,
+                    "minimum": 0,
+                    "nullable": true,
+                    "type": "number"
+                  },
+                  "text": {
+                    "description": "Output-format configuration, e.g. `{\"format\": {\"type\": \"json_schema\", ...}}` for Structured Outputs. Forwarded unchanged.",
+                    "nullable": true,
+                    "type": "object"
+                  },
+                  "tool_choice": {
+                    "description": "How the model should select which tool to use. Either a string mode or an object naming a tool.",
+                    "nullable": true,
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "tools": {
+                    "description": "Tool definitions the model may call. Router does not narrow the tool taxonomy; see OpenAI's Responses API reference for the accepted shapes.",
+                    "items": {},
+                    "nullable": true,
+                    "type": "array"
+                  },
+                  "top_p": {
+                    "description": "Nucleus-sampling cutoff. CHAT TIER ONLY, on the same terms as `temperature`.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "nullable": true,
+                    "type": "number"
+                  },
+                  "truncation": {
+                    "description": "Truncation strategy when the context exceeds the model's window. The enum IS enforced here, unlike the three vocabularies above, because these two values are the complete set OpenAI documents and it has not grown. An explicit `null` is still accepted, on the same terms as the fields above it.",
+                    "enum": ["auto", "disabled"],
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "usage": {
+                    "description": "Token-usage envelope. Present on this contract because the v1 operation declares it on the request body; OpenAI populates it on the RESPONSE, so a caller has no reason to send it.",
+                    "nullable": true,
+                    "type": "object"
+                  }
+                },
+                "required": ["input"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "openai/gpt-5-mini",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["text"]
+}

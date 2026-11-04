@@ -1,0 +1,150 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "byteplus/seedream-5-0-260128",
+    "description": "The request body Comfy Router accepts for the model \"byteplus/seedream-5-0-260128\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "5bf306c182f9"
+  },
+  "paths": {
+    "/v2/models/byteplus/seedream-5-0-260128": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "required": ["prompt"]
+                  },
+                  {
+                    "required": ["image"]
+                  }
+                ],
+                "description": "Request body for a BytePlus Seedream / Seededit image generation. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/images/generations must add `model` to it. The example illustrates text-to-image calls; an edit call also supplies the `image` URL or base64 image to edit. Layer decomposition accepts `image` without `prompt`. At least one of `prompt` or `image` is required; BytePlus validates the model-specific combination. The v1 wrapper separately requires `model`.",
+                "example": {
+                  "prompt": "A red fox trotting through a snowy pine forest, cinematic lighting",
+                  "response_format": "url",
+                  "watermark": false
+                },
+                "properties": {
+                  "guidance_scale": {
+                    "description": "Controls how closely the output image aligns with the input prompt. Range [1, 10]. Higher values result in stronger prompt adherence. Not supported by seedream-5.0-pro, 5.0-lite, 4.5 and 4.0.",
+                    "format": "float",
+                    "maximum": 10,
+                    "minimum": 1,
+                    "type": "number"
+                  },
+                  "image": {
+                    "description": "Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support this parameter.\n\nEnter the Base64 encoding or an accessible URL of the image to edit. Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support inputting a single image or multiple images (see the multi-image blending example).\n\n• Image URL: Make sure that the image URL is accessible.\n• Base64 encoding: The format must be data:image/<image format>;base64,<Base64 encoding>. Note: <image format> must be in lowercase, e.g., data:image/png;base64,<base64_image>.\n\nComfy Router limits the entire JSON request to 100 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.\n\nAn input image must meet the following requirements:\n• Image format: jpeg, png (seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 also support webp, bmp, tiff and gif; seedream-5.0-pro also supports heic and heif)\n• Aspect ratio (width/height): In the range [1/16, 16] for seedream-5.0-pro, 5.0-lite, 4.5 and 4.0\n• Width and height (px): > 14\n• Size: No more than 10 MB (30 MB for seedream-5.0-pro)\n• Total pixels: No more than 6000x6000 (36,000,000 px) for seedream-5.0-pro\n• Maximum of 14 reference images (10 for seedream-5.0-pro and 5.0-flash)\n\nIn the layer-separation scenario (layer_decomposition enabled), image is required and only a single input image is supported (passing multiple images returns an error). Input images must be png, jpeg, webp, bmp, tiff or gif (heic and heif are not supported), up to 30 MB, with total pixels in the range [512x512, 6000x6000] and aspect ratio in [1/16, 16].\n",
+                    "oneOf": [
+                      {
+                        "description": "Single image (URL or Base64)",
+                        "type": "string"
+                      },
+                      {
+                        "description": "Multiple images (URLs or Base64) - supported by seedream-5.0-pro, 5.0-lite, 4.5 and 4.0",
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 14,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    ]
+                  },
+                  "layer_decomposition": {
+                    "default": false,
+                    "description": "Controls whether layer separation is enabled. Only seedream-5.0-pro and 5.0-flash support this parameter.\ntrue: Layer-separation mode. The model decomposes the single input image into one base image plus multiple layers (up to 16), and returns the position and content information of each produced layer, including the stacking order (z_index), bounding box (bounding_box), name (name) and description (description).\nfalse: Standard image-generation mode; no layer separation is performed.\nNotes on layer-separation mode: only a single input image is supported (passing multiple images returns an error); if any single layer fails to generate, the whole request fails — partial success is not supported; at most 17 images are returned (1 base image + 16 layers). sequential_image_generation, sequential_image_generation_options, tools and stream return an error if passed.\n",
+                    "type": "boolean"
+                  },
+                  "model": {
+                    "description": "Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128, seedream-5-0-pro-260628 and seedream-5-0-flash-260915. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "optimize_prompt_options": {
+                    "description": "Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter.\n",
+                    "properties": {
+                      "mode": {
+                        "default": "standard",
+                        "description": "Set the mode for the prompt optimization feature. standard = Higher quality, longer generation time. fast = Faster but at a more average quality.",
+                        "enum": ["standard", "fast"],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "output_format": {
+                    "default": "jpeg",
+                    "description": "Specifies the format of the output image. Only seedream-5.0-pro, 5.0-flash and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.",
+                    "enum": ["png", "jpeg"],
+                    "type": "string"
+                  },
+                  "prompt": {
+                    "description": "Text description for image generation or transformation.\nOptional in the layer-separation scenario (seedream-5.0-pro or 5.0-flash with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.\n",
+                    "type": "string"
+                  },
+                  "response_format": {
+                    "default": "url",
+                    "description": "Specifies the format of the generated image returned in the response",
+                    "enum": ["url", "b64_json"],
+                    "type": "string"
+                  },
+                  "seed": {
+                    "default": -1,
+                    "description": "Random seed to control the stochasticity of image generation. Range: [-1, 2147483647]. If not specified, a seed will be automatically generated. To reproduce the same output, use the same seed value.",
+                    "maximum": 2147483647,
+                    "minimum": -1,
+                    "type": "integer"
+                  },
+                  "sequential_image_generation": {
+                    "description": "Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro or 5.0-flash). Valid values:\nauto: In automatic mode, the model automatically determines whether to return multiple images and how many images it will contain based on the user's prompt.\ndisabled: Disables batch generation feature. The model will only generate one image.\n",
+                    "enum": ["auto", "disabled"],
+                    "type": "string"
+                  },
+                  "sequential_image_generation_options": {
+                    "description": "Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash).\nConfiguration for the batch image generation feature. This parameter is only effective when sequential_image_generation is set to auto.\n",
+                    "properties": {
+                      "max_images": {
+                        "default": 15,
+                        "description": "Specifies the maximum number of images to generate in this request. Number of input reference images + Number of generated images ≤ 15.",
+                        "maximum": 15,
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "size": {
+                    "description": "\"seedream-4-0-250828\": Set the specification for the generated image. Two methods are available but cannot be used together.\n  Method 1 | Specify the resolution. Optional values: 1K, 2K, 4K\n  Method 2 | Specify width and height in pixels. Default: 2048x2048, total pixels: [1024x1024, 4096x4096], aspect ratio: [1/16, 16]\n\"seedream-4-5-251128\": Two methods available.\n  Method 1 | Specify the resolution. Optional values: 2K, 4K\n  Method 2 | Specify width and height in pixels. Default: 2048x2048, total pixels: [2560x1440, 4096x4096], aspect ratio: [1/16, 16]\n\"seedream-5-0-260128\": Two methods available.\n  Method 1 | Specify the resolution. Optional values: 2K, 3K\n  Method 2 | Specify width and height in pixels. Default: 2048x2048, total pixels: [2560x1440, ~3072x3072], aspect ratio: [1/16, 16]\n\"seedream-5-0-pro-260628\": Two methods available (cannot be used together).\n  Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 2K\n  Method 2 | Specify width and height in pixels. Default: 1024x1024, total pixels: [1024x1024 (1048576), 2048x2048 (4194304)], aspect ratio: [1/16, 16]\n\"seedream-5-0-flash-260915\": Two methods available (cannot be used together).\n  Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 1.5K, 2K. Default: 2K\n  Method 2 | Specify width and height in pixels. Total pixels: [1280x720 (921600), 2048x2048x1.1025 (4624220)], aspect ratio: [1/16, 16]\n\"seedream-5-0-pro-260628\" and \"seedream-5-0-flash-260915\" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.\n  The base image is output at the specified resolution with the aspect ratio of the original input image; each layer is output close to the specified resolution, keeping the aspect ratio it had in the original image.\n  auto: Output is based on the size and aspect ratio of the input image. Inputs within [1280x720, ~2048x2048] are output at the original input size; inputs smaller than 1K are output at 1K; inputs larger than 2K are output at 2K.\n",
+                    "type": "string"
+                  },
+                  "stream": {
+                    "default": false,
+                    "description": "Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash). false = All output images are returned at once. true = Each output image is returned immediately after generated.",
+                    "type": "boolean"
+                  },
+                  "watermark": {
+                    "default": true,
+                    "description": "Specifies whether to add a watermark to the generated image. false = No watermark, true = Adds watermark with 'AI generated' label",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "byteplus/seedream-5-0-260128",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["image"]
+}

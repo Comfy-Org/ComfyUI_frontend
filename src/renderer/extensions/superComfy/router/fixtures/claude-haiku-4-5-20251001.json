@@ -1,0 +1,84 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "anthropic/claude-haiku-4-5-20251001",
+    "description": "The request body Comfy Router accepts for the model \"anthropic/claude-haiku-4-5-20251001\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "14241c76bd6a"
+  },
+  "paths": {
+    "/v2/models/anthropic/claude-haiku-4-5-20251001": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "description": "Request body for Anthropic Messages API (`/v1/messages`). Mirrors the upstream schema with strict typing only on fields the proxy reads (model, prompt extraction, streaming, billing). Other top-level fields (`tools`, `temperature`, `top_p`, `thinking`, `metadata`, etc.) pass through unchanged via `additionalProperties`.",
+                "example": {
+                  "max_tokens": 16,
+                  "messages": [
+                    {
+                      "content": "Reply with the single word: ok",
+                      "role": "user"
+                    }
+                  ]
+                },
+                "properties": {
+                  "max_tokens": {
+                    "description": "Maximum number of tokens to generate before stopping.",
+                    "type": "integer"
+                  },
+                  "messages": {
+                    "description": "Conversation turns. See Anthropic Messages API docs for the full content-block taxonomy.",
+                    "items": {
+                      "$ref": "#/components/schemas/AnthropicMessageParam"
+                    },
+                    "type": "array"
+                  },
+                  "model": {
+                    "description": "Anthropic model identifier (e.g. `claude-sonnet-4-5`, `claude-opus-4-7`).",
+                    "type": "string"
+                  },
+                  "stream": {
+                    "description": "When true, the response is a `text/event-stream` of Anthropic message events instead of a single JSON body.",
+                    "type": "boolean"
+                  },
+                  "system": {
+                    "description": "Top-level system prompt. Either a string or an array of content blocks; both reach Anthropic unchanged."
+                  }
+                },
+                "required": ["max_tokens", "messages"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnthropicMessageParam": {
+        "additionalProperties": true,
+        "description": "A single conversation turn. The proxy only reads `role` and `content` (string or array of content blocks) for prompt capture; additional fields pass through.",
+        "properties": {
+          "content": {
+            "description": "Either a string shorthand or an array of content blocks (text, image, document, tool_use, tool_result, ...)."
+          },
+          "role": {
+            "enum": ["user", "assistant"],
+            "type": "string"
+          }
+        },
+        "required": ["role", "content"],
+        "type": "object"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "anthropic/claude-haiku-4-5-20251001",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["text"]
+}

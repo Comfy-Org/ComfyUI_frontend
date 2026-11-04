@@ -1,0 +1,199 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "kling/kling-v3-omni",
+    "description": "The request body Comfy Router accepts for the model \"kling/kling-v3-omni\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "33cc4e13574d"
+  },
+  "paths": {
+    "/v2/models/kling/kling-v3-omni": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for a Kling omni-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/omni-video may add it (the proxy defaults an absent one to kling-video-o1). One example cannot serve both spellings, so the omitting form is the only one valid on both Router routes.",
+                "example": {
+                  "aspect_ratio": "16:9",
+                  "duration": "5",
+                  "mode": "pro",
+                  "prompt": "A paper boat drifting down a rain-soaked street at dusk."
+                },
+                "properties": {
+                  "aspect_ratio": {
+                    "description": "The aspect ratio of the generated video frame (width:height). Required when first-frame reference or video editing features are not used.",
+                    "enum": ["16:9", "9:16", "1:1"],
+                    "type": "string"
+                  },
+                  "callback_url": {
+                    "description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes. Ignored: comfy-api drops this field before forwarding; Comfy Router polls on your behalf.",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "duration": {
+                    "default": "5",
+                    "description": "Video Length in seconds. When using video editing function (refer_type: base), output duration is the same as input video and this parameter is invalid.",
+                    "enum": [
+                      "3",
+                      "4",
+                      "5",
+                      "6",
+                      "7",
+                      "8",
+                      "9",
+                      "10",
+                      "11",
+                      "12",
+                      "13",
+                      "14",
+                      "15"
+                    ],
+                    "type": "string"
+                  },
+                  "element_list": {
+                    "description": "Reference Element List based on element ID configuration.",
+                    "items": {
+                      "properties": {
+                        "element_id": {
+                          "description": "Element ID",
+                          "format": "int64",
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["element_id"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "external_task_id": {
+                    "description": "Customized Task ID. Must be unique within a single user account. Ignored: comfy-api drops this field before forwarding; Comfy Router polls on your behalf.",
+                    "type": "string"
+                  },
+                  "image_list": {
+                    "description": "Reference Image List. Can include reference images of the element, scene, style, etc., or be used as the first or last frame to generate videos.",
+                    "items": {
+                      "properties": {
+                        "image_url": {
+                          "description": "Image Base64 encoding or image URL (ensure accessibility). Supported formats include .jpg/.jpeg/.png. File size cannot exceed 10MB. Width and height dimensions shall not be less than 300px, aspect ratio between 1:2.5 ~ 2.5:1.",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "Whether the image is in the first or last frame. first_frame is the first frame, end_frame is the last frame. Currently does not support only the end frame.",
+                          "enum": ["first_frame", "end_frame"],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "mode": {
+                    "default": "pro",
+                    "description": "Video generation mode. std: Standard Mode, generating 720P videos, cost-effective. pro: Professional Mode, generating 1080P videos, higher quality video output.",
+                    "enum": ["pro", "std"],
+                    "type": "string"
+                  },
+                  "model_name": {
+                    "description": "Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "multi_prompt": {
+                    "description": "Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize.",
+                    "items": {
+                      "properties": {
+                        "duration": {
+                          "description": "Duration of this storyboard in seconds. Must not exceed total task duration and must not be less than 1. Sum of all storyboard durations equals total task duration.",
+                          "type": "string"
+                        },
+                        "index": {
+                          "description": "Shot sequence number",
+                          "type": "integer"
+                        },
+                        "prompt": {
+                          "description": "Prompt word for this storyboard. Maximum length 512 characters.",
+                          "maxLength": 512,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "maxItems": 6,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "multi_shot": {
+                    "default": false,
+                    "description": "Whether to generate multi-shot video. When true, the prompt parameter is invalid. When false, the shot_type and multi_prompt parameters are invalid.",
+                    "type": "boolean"
+                  },
+                  "prompt": {
+                    "description": "Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. Can specify elements, images, or videos in the format <<<>>> such as <<element_1>>, <<<image_1>>>, <<<video_1>>>.",
+                    "maxLength": 2500,
+                    "type": "string"
+                  },
+                  "shot_type": {
+                    "description": "Storyboard method. Required when the multi_shot parameter is set to true.",
+                    "enum": ["customize", "intelligence"],
+                    "type": "string"
+                  },
+                  "sound": {
+                    "default": "off",
+                    "description": "Whether sound is generated simultaneously when generating videos.",
+                    "enum": ["on", "off"],
+                    "type": "string"
+                  },
+                  "video_list": {
+                    "description": "Reference Video list. Can be used as a reference video for feature or as a video to be edited, with the default being the video to be edited.",
+                    "items": {
+                      "properties": {
+                        "keep_original_sound": {
+                          "description": "Whether to keep the video original sound. yes indicates retention, no indicates non retention.",
+                          "enum": ["yes", "no"],
+                          "type": "string"
+                        },
+                        "refer_type": {
+                          "description": "Reference video type. feature is the feature reference video, base is the video to be edited.",
+                          "enum": ["feature", "base"],
+                          "type": "string"
+                        },
+                        "video_url": {
+                          "description": "URL of uploaded video. Only .mp4/.mov formats are supported. Duration between 3-10 seconds. Resolution must be between 720px and 2160px. Frame rates of 24-60 fps supported. Only 1 video can be uploaded, with size not exceeding 200MB.",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["video_url"],
+                      "type": "object"
+                    },
+                    "maxItems": 1,
+                    "type": "array"
+                  },
+                  "watermark_info": {
+                    "description": "Whether to generate watermarked results simultaneously. Custom watermark is not supported at this time.",
+                    "properties": {
+                      "enabled": {
+                        "description": "true means generate watermark, false means do not generate.",
+                        "type": "boolean"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "kling/kling-v3-omni",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image", "video"],
+  "x-comfy-router-output-modalities": ["video"]
+}

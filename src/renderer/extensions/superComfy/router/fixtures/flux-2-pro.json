@@ -1,0 +1,115 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "bfl/flux-2-pro",
+    "description": "The request body Comfy Router accepts for the model \"bfl/flux-2-pro\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "6b84e55eac4e"
+  },
+  "paths": {
+    "/v2/models/bfl/flux-2-pro": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for the BFL Flux 2 image generation API.",
+                "example": {
+                  "prompt": "A single red maple leaf on a plain white background."
+                },
+                "properties": {
+                  "height": {
+                    "default": 1024,
+                    "description": "Height of the image.",
+                    "maximum": 2048,
+                    "minimum": 256,
+                    "type": "integer"
+                  },
+                  "input_image": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_2": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_3": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_4": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_5": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_6": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_7": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_8": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "input_image_9": {
+                    "description": "Base64 encoded image for image-to-image generation.",
+                    "type": "string"
+                  },
+                  "output_format": {
+                    "default": "jpeg",
+                    "description": "Output format for the generated image.",
+                    "enum": ["jpeg", "png"],
+                    "type": "string"
+                  },
+                  "prompt": {
+                    "description": "Text description of the image to generate.",
+                    "type": "string"
+                  },
+                  "prompt_upsampling": {
+                    "default": true,
+                    "description": "Automatically modify prompt for generation.",
+                    "type": "boolean"
+                  },
+                  "safety_tolerance": {
+                    "default": 2,
+                    "description": "Moderation tolerance level (Flux 2 Max only).",
+                    "maximum": 5,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "seed": {
+                    "description": "Seed for reproducibility.",
+                    "type": "integer"
+                  },
+                  "width": {
+                    "default": 1024,
+                    "description": "Width of the image.",
+                    "maximum": 2048,
+                    "minimum": 256,
+                    "type": "integer"
+                  }
+                },
+                "required": ["prompt"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "bfl/flux-2-pro",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["image"]
+}

@@ -1,0 +1,173 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "openai/gpt-image-2",
+    "description": "The request body Comfy Router accepts for the model \"openai/gpt-image-2\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "67963ddc4470"
+  },
+  "paths": {
+    "/v2/models/openai/gpt-image-2": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "The request body for a gpt-image model. ONE model id reaches TWO upstream OpenAI operations and this body is what selects between them: OMIT `image` for text-to-image generation, INCLUDE it to edit the image you send. The example below is the generation call; adding `image` to it is the whole of the structural difference, and `image`'s own description carries a copyable edit body.",
+                "example": {
+                  "prompt": "a rocketship on a launchpad",
+                  "quality": "low",
+                  "size": "1024x1024"
+                },
+                "properties": {
+                  "background": {
+                    "description": "Background transparency. `auto` lets the model choose.",
+                    "enum": ["transparent", "opaque", "auto"],
+                    "example": "opaque",
+                    "type": "string"
+                  },
+                  "image": {
+                    "$ref": "#/components/schemas/OpenAIImageRouterSource"
+                  },
+                  "mask": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/OpenAIImageRouterMedia"
+                      }
+                    ],
+                    "description": "Optional. Marks the region to edit: its fully transparent areas are what the model replaces. Must be a PNG with an alpha channel, under 4 MiB -- the bound routerOpenAIMaskMaxBytes ENFORCES on the resolved bytes, so an oversize mask is refused here by its size rather than relayed from the provider -- and matching the dimensions of the first `image`. Same accepted forms as `image`. Ignored -- and meaningless -- when `image` is absent, because there is nothing to mask: Router strips it from the request rather than forwarding it to the text-to-image operation, which would reject it as an unknown parameter."
+                  },
+                  "model": {
+                    "description": "The gpt-image model to run. Router splices the addressed model id in, so a caller addressing /v2/models/openai/gpt-image-2 does not send this.",
+                    "example": "gpt-image-2.5-flare",
+                    "type": "string"
+                  },
+                  "moderation": {
+                    "description": "Content moderation setting",
+                    "enum": ["low", "auto"],
+                    "example": "auto",
+                    "type": "string"
+                  },
+                  "n": {
+                    "description": "The number of images to generate (1-10).",
+                    "example": 1,
+                    "maximum": 10,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "output_compression": {
+                    "description": "Compression level for JPEG or WebP (0-100)",
+                    "example": 100,
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "output_format": {
+                    "description": "Format of the output image",
+                    "enum": ["png", "webp", "jpeg"],
+                    "example": "png",
+                    "type": "string"
+                  },
+                  "partial_images": {
+                    "description": "Meaningful only alongside a live stream, which this surface cannot serve -- `stream` is settled to `false` even when you send it. On a generation, any value other than `0` or `null` is refused with a 400, whether or not the request also sends `stream: true`; on a request carrying `image` the field is dropped rather than forwarded. Omit it.",
+                    "example": 0,
+                    "maximum": 3,
+                    "minimum": 0,
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  "prompt": {
+                    "description": "A text description of the image to generate, or of the edit to make to `image`.",
+                    "example": "Give the rocketship rainbow coloring",
+                    "type": "string"
+                  },
+                  "quality": {
+                    "description": "The quality of the generated or edited image. `xhigh` and `max` are the two tiers gpt-image-2.5-flare and gpt-image-2.5-sunburst were added for; `standard` and `hd` are dall-e-era spellings no admitted model reads.",
+                    "enum": [
+                      "auto",
+                      "low",
+                      "medium",
+                      "high",
+                      "xhigh",
+                      "max",
+                      "standard",
+                      "hd"
+                    ],
+                    "example": "high",
+                    "type": "string"
+                  },
+                  "size": {
+                    "description": "Size of the image (e.g., 1024x1024, 1536x1024, auto)",
+                    "example": "1024x1536",
+                    "type": "string"
+                  },
+                  "stream": {
+                    "description": "Declared so a caller who sends it is not refused, but INERT on this surface: Router SETTLES it to `false` before dispatch, because it captures the provider response rather than relaying a `text/event-stream` (a request carrying `image` drops the field instead, since the edit is re-encoded without it). No Comfy surface serves gpt-image partial-image streaming: the v1 `POST /proxy/openai/images/generations` ingress refuses `stream: true` with a 400 and never forwards the request upstream, so omit the field and read the completed response as one JSON body. Because the stream never opens, OpenAI's restriction on combining `stream: true` with `n` greater than 1 does not apply here; `n` is forwarded as sent.",
+                    "example": false,
+                    "nullable": true,
+                    "type": "boolean"
+                  },
+                  "user": {
+                    "description": "A unique identifier for end-user monitoring",
+                    "example": "user-1234",
+                    "type": "string"
+                  }
+                },
+                "required": ["prompt"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OpenAIImageRouterMedia": {
+        "description": "One image, as either an https URL Router fetches on the caller's behalf or a `data:image/<format>;base64,<payload>` URI carrying the bytes inline. Accepted image types are png, webp and jpeg, and that set is ENFORCED at resolve time rather than left to the provider -- an svg, gif, avif or tiff is refused here, naming the image you sent, instead of becoming a partner error two hops from the cause.\nPrefer the URL form. A base64 payload inflates roughly 4/3 and the whole request body is capped at 100 MiB, so the inline form caps out near a 75 MB source image; a URL sidesteps that entirely. The per-image and per-request media ceilings stated at the end of this description are tighter than the body cap, so for an image of any real size they are what you meet first.\nTHE URL MUST RESOLVE WITHOUT YOUR CREDENTIALS. Router fetches it server-side and sends no caller credential with the request, so a presigned URL -- one whose signature is in the query string -- is the supported form. An authenticated endpoint such as `/api/assets/{id}/content` answers Router 401 rather than the image; request that URL yourself and pass the signed URL it redirects to.\nTHE FETCH IS CONFINED TO A NAMED SET OF HOSTS rather than the open internet, and the same list is re-applied to every redirect hop as well as to the URL you send -- so a URL on any other host, or one that redirects off the list, is refused before any provider is contacted. Today that list is Comfy's own asset delivery only: a signed `storage.googleapis.com` URL under a Comfy asset bucket, which is the form `/api/assets/{id}/content` redirects you to. A partner CDN or a plain https host is NOT on the list.\nTWO WIDENINGS ARE BEING ROLLED OUT AND ARE BOTH OFF BY DEFAULT TODAY. They ship behind ONE switch and are enabled together, so treat everything below as forthcoming rather than as something to build against yet -- ask before you rely on either.\nThe FIRST is the bucket `POST /customers/storage` signs your upload into. Until the rollout reaches your environment an upload URL from that endpoint is refused here, even though the bucket is Comfy's own and the host is the same one -- so \"upload to Comfy, then pass the URL\" does NOT work yet, and the form that does is the signed URL `/api/assets/{id}/content` redirects to.\nThe SECOND is ENABLED PER ACCOUNT rather than for everyone at once, because the bucket behind these hosts is yours rather than ours: even once the switch above is on, an account that has not had third-party inbound media enabled is refused, and told so in those words rather than told the host is unsupported. Ask your Comfy contact to enable it for your account. It additionally admits these third-party object-storage hosts, where the bucket is yours and Router makes no ownership claim on it: Cloudflare R2 (`<account>.r2.cloudflarestorage.com`, `pub-<hash>.r2.dev`), Amazon S3 (`s3.amazonaws.com` and `s3.<region>.amazonaws.com`, in either the path-style or the `<bucket>.`-prefixed form), Azure Blob Storage (`<account>.blob.core.windows.net`) and Alibaba Cloud OSS (`<bucket>.oss-<region>.aliyuncs.com`, including the `oss-accelerate` endpoint). Those are object-storage endpoints specifically: a general-purpose endpoint on the same provider domain, such as an Alibaba Function Compute trigger, is not on the list and is refused.\nWHAT IS MATCHED IS THE HOSTNAME FORM, NOT THE PROVIDER -- so naming a provider above does NOT mean every URL that provider can issue is accepted, and three near-misses are worth stating outright because a caller can reasonably arrive with each of them. An R2 CUSTOM DOMAIN (`cdn.example.com`) is NOT accepted: Cloudflare documents `pub-<hash>.r2.dev` as a rate-limited debug hostname and points production traffic at a custom domain instead, but a custom domain carries nothing in its hostname identifying it as R2, so Router cannot tell it from any other host and refuses it -- presign the `<account>.r2.cloudflarestorage.com` endpoint, or use the `pub-<hash>.r2.dev` form. S3's IPv6 dualstack endpoint (`s3.dualstack.<region>.amazonaws.com`) is not accepted either; use the plain regional endpoint. Nor is Azure Blob's alternate DNS zone (`<account>.z<N>.blob.storage.azure.net`); use `<account>.blob.core.windows.net`. The refusal you get back names these same forms, so you do not have to come here to read them.\nThe `<account>` and `pub-<hash>` placeholders above show the form you will normally arrive with; they are not a depth restriction. Matching is on the object-storage domain suffix, so a deeper name under the same namespace (`a.b.pub-<hash>.r2.dev`) is accepted as well. What is NOT widened by that is the namespace itself -- the suffix still has to be one of the ones listed.\nThe example below shows the shape only: a real value also carries the signing query parameters, which are deliberately omitted here because a published example lives in the spec forever and a real signature is both a leaked credential and a link that stops working.\nEach image is capped at 25 MiB and one request's images at 64 MiB in total. The one exception is ideogram/ideogram-4-5 Precise Edit (a call that sends `image`) where `context_window` is available: there each image may be up to 50 MB (50,000,000 bytes) and 67,108,864 pixels, and one request's images up to 128 MiB in total.",
+        "example": "https://storage.googleapis.com/comfy-cloud-assets/0199b3f4-1d2e-7a3b-8c4d-5e6f70819234.png",
+        "type": "string"
+      },
+      "OpenAIImageRouterSource": {
+        "description": "The source image(s) to edit. PRESENCE OF THIS FIELD SELECTS THE EDIT OPERATION -- omit it entirely for text-to-image generation.\nThe model's published example is the GENERATION call, which omits this field. Adding `image` is the whole of the difference between the two modes -- same endpoint, same model id -- except that an edit prompt describes the CHANGE you want rather than the scene, so the edit body below reads differently from the generation example even though only this field is structurally new.\nIt is copyable exactly as printed: `{\"prompt\": \"give the rocketship rainbow coloring\", \"image\": [\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==\"], \"size\": \"1024x1024\"}` -- the payload is a complete 1x1 PNG, not an abbreviation, and this body is pinned as an accepted case in Router's own request-validation tests. Swap in your own image's bytes.\nAccepts one image or an array of them; gpt-image-1 and later take up to 16, which Router enforces from this schema before dispatching.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OpenAIImageRouterMedia"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/OpenAIImageRouterMedia"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "type": "array"
+          }
+        ]
+      }
+    }
+  },
+  "x-comfy-router-model-id": "openai/gpt-image-2",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["image"],
+  "x-comfy-router-alt-providers": [
+    {
+      "provider": "fal",
+      "model_id": "fal/fal-gpt-image-2"
+    },
+    {
+      "provider": "pika",
+      "model_id": "pika/pika-gpt-image-2"
+    },
+    {
+      "provider": "runware",
+      "model_id": "runware/runware-gpt-image-2"
+    },
+    {
+      "provider": "wavespeed",
+      "model_id": "wavespeed/wavespeed-gpt-image-2"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "elevenlabs/eleven_v3",
+    "description": "The request body Comfy Router accepts for the model \"elevenlabs/eleven_v3\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "6f10f163c78d"
+  },
+  "paths": {
+    "/v2/models/elevenlabs/eleven_v3": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for ElevenLabs Text-to-Dialogue (multi-voice TTS). The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/text-to-dialogue may send it, and the route admits `eleven_v3`, `eleven_v4` and `eleven_v4_turbo`.",
+                "example": {
+                  "inputs": [
+                    {
+                      "text": "Hello from Comfy Router.",
+                      "voice_id": "21m00Tcm4TlvDq8ikWAM"
+                    }
+                  ]
+                },
+                "properties": {
+                  "apply_text_normalization": {
+                    "default": "auto",
+                    "description": "Controls text normalization with three modes:\n'auto' - system automatically decides whether to apply text normalization\n'on' - text normalization will always be applied\n'off' - text normalization will be skipped\n",
+                    "enum": ["auto", "on", "off"],
+                    "type": "string"
+                  },
+                  "inputs": {
+                    "description": "A list of dialogue inputs, each containing text and a voice ID which will be converted into speech.\nThe maximum number of unique voice IDs is 10.\n",
+                    "items": {
+                      "$ref": "#/components/schemas/ElevenLabsDialogueInput"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "language_code": {
+                    "description": "Language code (ISO 639-1) used to enforce a language for the model and text normalization.\nIf the model does not support provided language code, an error will be returned.\n",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "model_id": {
+                    "description": "Identifier of the model that will be used. This route admits\n'eleven_v3', 'eleven_v4' and 'eleven_v4_turbo' and nothing else;\nany other value is rejected with 400 before the request reaches\nElevenLabs.\nThe upstream ElevenLabs advice to query GET /v1/models for the\navailable set does NOT describe this route, which serves only these\nmodels.\nIt is NOT in this schema's `required` list because Comfy Router\nfills it from the `{model}` path segment of\n/v2/models/elevenlabs/{model}, so a Router caller omits it.\n",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "pronunciation_dictionary_locators": {
+                    "description": "A list of pronunciation dictionary locators (id, version_id) to be applied to the text.\nThey will be applied in order. You may have up to 3 locators per request.\n",
+                    "items": {
+                      "$ref": "#/components/schemas/ElevenLabsPronunciationDictionaryLocator"
+                    },
+                    "maxItems": 3,
+                    "nullable": true,
+                    "type": "array"
+                  },
+                  "seed": {
+                    "description": "If specified, our system will make a best effort to sample deterministically.\nRepeated requests with the same seed and parameters should return the same result.\nMust be integer between 0 and 4294967295.\n",
+                    "maximum": 4294967295,
+                    "minimum": 0,
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  "settings": {
+                    "$ref": "#/components/schemas/ElevenLabsDialogueSettings"
+                  }
+                },
+                "required": ["inputs"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ElevenLabsDialogueInput": {
+        "description": "A single dialogue input containing text and voice ID",
+        "properties": {
+          "text": {
+            "description": "The text to be converted into speech.",
+            "type": "string"
+          },
+          "voice_id": {
+            "description": "The ID of the voice to be used for the generation.",
+            "type": "string"
+          }
+        },
+        "required": ["text", "voice_id"],
+        "type": "object"
+      },
+      "ElevenLabsDialogueSettings": {
+        "description": "Settings controlling the dialogue generation",
+        "nullable": true,
+        "properties": {
+          "stability": {
+            "default": 0.5,
+            "description": "Determines how stable the voice is and the randomness between each generation.\nLower values introduce broader emotional range for the voice.\nHigher values can result in a monotonous voice with limited emotion.\n",
+            "format": "double",
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "ElevenLabsPronunciationDictionaryLocator": {
+        "description": "Locator for a pronunciation dictionary",
+        "properties": {
+          "pronunciation_dictionary_id": {
+            "description": "The ID of the pronunciation dictionary",
+            "type": "string"
+          },
+          "version_id": {
+            "description": "The version ID of the pronunciation dictionary",
+            "type": "string"
+          }
+        },
+        "required": ["pronunciation_dictionary_id", "version_id"],
+        "type": "object"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "elevenlabs/eleven_v3",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text"],
+  "x-comfy-router-output-modalities": ["audio"]
+}

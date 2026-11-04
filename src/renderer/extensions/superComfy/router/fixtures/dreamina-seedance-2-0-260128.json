@@ -1,0 +1,311 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "byteplus/dreamina-seedance-2-0-260128",
+    "description": "The request body Comfy Router accepts for the model \"byteplus/dreamina-seedance-2-0-260128\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "10cd089d81a1"
+  },
+  "paths": {
+    "/v2/models/byteplus/dreamina-seedance-2-0-260128": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BytePlusVideoGenerationInputs"
+                  },
+                  {
+                    "properties": {
+                      "duration": {
+                        "description": "Video duration in seconds. Seedance 2.0, 2.0 fast and 2.0 mini: [4,15] or -1 (auto).",
+                        "enum": [-1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                        "type": "integer"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ],
+                "description": "Comfy Router input schema for Seedance 2.0, 2.0 fast and 2.0 mini: the shared BytePlus Seedance / Dreamina request fields, with `duration` narrowed to the values this model accepts.",
+                "example": {
+                  "content": [
+                    {
+                      "text": "A red fox trotting through a snowy pine forest",
+                      "type": "text"
+                    }
+                  ],
+                  "duration": 5,
+                  "ratio": "16:9",
+                  "resolution": "720p"
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BytePlusVideoGenerationContent": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": ["text"]
+              }
+            },
+            "required": ["text"]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": ["image_url"]
+              }
+            },
+            "required": ["image_url"]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": ["video_url"]
+              }
+            },
+            "required": ["video_url"]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": ["audio_url"]
+              }
+            },
+            "required": ["audio_url"]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": ["draft_task"]
+              }
+            },
+            "required": ["draft_task"]
+          }
+        ],
+        "properties": {
+          "audio_url": {
+            "description": "Input audio object. Only Seedance 2.5, 2.0, 2.0 fast & 2.0 mini support audio input. Seedance 2.0, 2.0 fast & 2.0 mini cannot use audio alone - they must include at least 1 image or video; Seedance 2.5 supports audio-only input.",
+            "properties": {
+              "url": {
+                "description": "Audio URL, Base64 encoding, or Asset ID.\nAudio URL: Public URL of the audio (wav, mp3).\nBase64: Format data:audio/<format>;base64,<content>\nAsset ID: Format asset://<ASSET_ID>\n",
+                "type": "string"
+              }
+            },
+            "required": ["url"],
+            "type": "object"
+          },
+          "draft_task": {
+            "description": "Seedance 2.5 only. The Draft task to render as the final video. It must be the only content item.\nThe final video reuses the Draft task's prompt, input assets, duration, ratio, seed, generate_audio and omni_reference_task_type; do not send them again. resolution defaults to and only supports 1080p.\n",
+            "properties": {
+              "id": {
+                "description": "The task ID returned when the Draft video was created with `draft` set to true.",
+                "type": "string"
+              }
+            },
+            "required": ["id"],
+            "type": "object"
+          },
+          "image_url": {
+            "properties": {
+              "url": {
+                "description": "Image content for image-to-video generation (when type is \"image_url\")\nImage URL: Make sure that the image URL is accessible.\nBase64-encoded content: Format must be data:image/<format>;base64,<content>\nAsset ID: Format asset://<ASSET_ID>\n",
+                "type": "string"
+              }
+            },
+            "required": ["url"],
+            "type": "object"
+          },
+          "role": {
+            "description": "The role/position of the content item.\nFor images: first_frame, last_frame, or reference_image.\nFor videos: reference_video (Seedance 2.5, 2.0, 2.0 fast & 2.0 mini only).\nFor audio: reference_audio (Seedance 2.5, 2.0, 2.0 fast & 2.0 mini only).\n",
+            "enum": [
+              "first_frame",
+              "last_frame",
+              "reference_image",
+              "reference_video",
+              "reference_audio"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "description": "The input text information for the model. Includes text prompt and optional parameters.\n\nText prompt (required): Description of the video to be generated using Chinese and English characters.\n\nParameters (optional): Add --[parameters] after the text prompt to control video specifications:\n- --resolution (--rs): 480p, 720p, 1080p (default: 720p)\n- --ratio (--rt): 21:9, 16:9, 4:3, 1:1, 3:4, 9:16, 9:21, adaptive (default: 16:9 or adaptive)\n- --duration (--dur): 3-12 seconds (default: 5)\n- --framepersecond (--fps): 24 (default: 24)\n- --watermark (--wm): true/false (default: false)\n- --seed (--seed): -1 to 2^32-1 (default: -1)\n- --camerafixed (--cf): true/false (default: false)\n\nExample: \"A beautiful landscape --ratio 16:9 --resolution 720p --duration 5\"\n\nComfy-side guardrail, not a BytePlus constraint. BytePlus publishes no\ntext-length limit and accepted 40,000 characters under test (2026-09-17).\nIt counts characters, not bytes, so a multi-byte prompt may be several\ntimes this size on the wire. It bounds this one field, not the request:\n`content` is an array, and the per-request body limit is what bounds the\nwhole document. Comfy Router (/v2/models/byteplus/{model}) is the surface\nthat enforces it; on a direct v1 /proxy call BytePlus's own validator\nanswers instead. Set far above real traffic so it never adjudicates a\ngenuine prompt — raise it if a caller needs more.\n",
+            "maxLength": 100000,
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of the input content",
+            "enum": [
+              "text",
+              "image_url",
+              "video_url",
+              "audio_url",
+              "draft_task"
+            ],
+            "type": "string"
+          },
+          "video_url": {
+            "description": "Input video object. Only Seedance 2.5, 2.0, 2.0 fast & 2.0 mini support video input.",
+            "properties": {
+              "url": {
+                "description": "Video URL or Asset ID.\nVideo URL: Public URL of the video (mp4, mov).\nAsset ID: Format asset://<ASSET_ID>\n",
+                "type": "string"
+              }
+            },
+            "required": ["url"],
+            "type": "object"
+          }
+        },
+        "required": ["type"],
+        "type": "object"
+      },
+      "BytePlusVideoGenerationInputs": {
+        "description": "Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example omits the `content` item with `type: image_url` and an `image_url.url` that an image-to-video call supplies; text-only models must omit that image item.\n`content` is the whole `required` floor, and it is the floor the v1 surface already published and videoGenerationProxy's Rewrite already refuses an empty value for. Everything else BytePlus accepts varies by model — the per-model resolutions, durations, ratios and input kinds are documented on the individual fields — so the enums and bounds below are the union BytePlus admits across the family and BytePlus stays the authority on which member accepts which value. The exception is `duration`, which Comfy Router also enforces per model.",
+        "example": {
+          "content": [
+            {
+              "text": "A red fox trotting through a snowy pine forest",
+              "type": "text"
+            }
+          ],
+          "duration": 5,
+          "ratio": "16:9",
+          "resolution": "720p"
+        },
+        "properties": {
+          "callback_url": {
+            "description": "Ignored. Accepted for compatibility with the BytePlus request shape, but removed before the task is submitted, so no callback is ever sent; poll the task status route for the result instead.",
+            "format": "uri",
+            "type": "string"
+          },
+          "content": {
+            "description": "The input content for the model to generate a video",
+            "items": {
+              "$ref": "#/components/schemas/BytePlusVideoGenerationContent"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "draft": {
+            "default": false,
+            "description": "Seedance 2.5 only. Generates a 480p Draft video; resolution must be 480p.\nPass the returned task ID in a `draft_task` content item to render the final 1080p video. The Draft task ID stays valid for 7 days.\n",
+            "type": "boolean"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "enum": [-1]
+              },
+              {
+                "maximum": 30,
+                "minimum": 2
+              }
+            ],
+            "description": "Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0, 2.0 fast & 2.0 mini: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12].\n",
+            "type": "integer"
+          },
+          "execution_expires_after": {
+            "description": "Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200].\n",
+            "maximum": 259200,
+            "minimum": 3600,
+            "type": "integer"
+          },
+          "generate_audio": {
+            "default": true,
+            "description": "Supported by Seedance 2.5, 2.0, 2.0 fast, 2.0 mini, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.\ntrue: The model outputs a video with synchronized audio.\nfalse: The model outputs a silent video.\nOn models that support it, the generated audio track is content-checked by the provider separately from the video; a refusal there is reported as `content_policy_violation` and, because the audio differs each run, can be intermittent for an input the provider otherwise accepts. Send `false` for a silent video if that happens; this helps only when the audio was the refused modality, which a synchronous Router response names as `refusal_subject: output_audio` (a queued request does not identify it yet). A Seedance 2.5 final render inherits `generate_audio` from its Draft task, so recreate the Draft with `false` instead.\n",
+            "type": "boolean"
+          },
+          "model": {
+            "description": "The ID of the model to call. Supported models: seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, dreamina-seedance-2-0-260128, dreamina-seedance-2-0-fast-260128, dreamina-seedance-2-0-mini and dreamina-seedance-2-5-260628. A direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it.",
+            "nullable": true,
+            "type": "string"
+          },
+          "output_format": {
+            "default": "mp4",
+            "description": "Seedance 2.5 only. Container format of the output video.\nmp4: General-purpose container (H.264/AAC, yuv420p) with broad compatibility and smaller file size.\nmov: Professional container (H.264 High 4:4:4 Predictive/PCM, yuv444p) with high color precision, suited for post-production; larger file size.\n",
+            "enum": ["mp4", "mov"],
+            "type": "string"
+          },
+          "ratio": {
+            "description": "Aspect ratio of the generated video. Seedance 2.0, 2.0 fast & 2.0 mini, 1.5 pro default: adaptive.\nSeedance 2.5 first-frame / first-last-frame generation: the output follows the first frame's aspect ratio, so only `adaptive` (or omitting the field) is accepted; a concrete ratio is refused with a 400 before dispatch. Seedance 2.0 accepts a concrete ratio in those modes.\n",
+            "enum": [
+              "16:9",
+              "4:3",
+              "1:1",
+              "3:4",
+              "9:16",
+              "21:9",
+              "9:21",
+              "adaptive"
+            ],
+            "type": "string"
+          },
+          "resolution": {
+            "description": "Video resolution. Seedance 2.5, 2.0, 2.0 fast & 2.0 mini, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.\nNote: Seedance 2.0, 2.0 fast & 2.0 mini do not support 1080p. Seedance 2.5 supports 480p, 720p, and 1080p.\n",
+            "enum": ["480p", "720p", "1080p", "4k"],
+            "type": "string"
+          },
+          "return_last_frame": {
+            "default": false,
+            "description": "Whether to return the last frame image of the generated video.\ntrue: Returns the last frame image of the generated video. After setting this parameter to true, you can obtain the last frame image by calling the Querying the information about a video generation task. The last frame image is in PNG format, with its pixel width and height consistent with those of the generated video, and it contains no watermarks. Using this parameter allows the generation of multiple consecutive videos: the last frame of the previously generated video is used as the first frame of the next video task, enabling quick generation of multiple consecutive videos.\nfalse: Does not return the last frame image of the generated video.\n",
+            "type": "boolean"
+          },
+          "seed": {
+            "description": "Seed integer for controlling randomness. Range: [-1, 2^32-1]. -1 uses a random seed.\n",
+            "maximum": 4294967295,
+            "minimum": -1,
+            "type": "integer"
+          },
+          "service_tier": {
+            "description": "Service tier for processing. Seedance 2.5, 2.0 & 2.0 fast do not support flex (offline inference).\n",
+            "enum": ["default", "flex"],
+            "type": "string"
+          },
+          "watermark": {
+            "default": false,
+            "description": "Whether the generated video includes a watermark.",
+            "type": "boolean"
+          }
+        },
+        "required": ["content"],
+        "type": "object"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "byteplus/dreamina-seedance-2-0-260128",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image", "video", "audio"],
+  "x-comfy-router-output-modalities": ["video", "audio"],
+  "x-comfy-router-alt-providers": [
+    {
+      "provider": "fal",
+      "model_id": "fal/fal-seedance-2.0"
+    },
+    {
+      "provider": "higgsfield",
+      "model_id": "higgsfield/higgsfield-seedance-2.0"
+    },
+    {
+      "provider": "pika",
+      "model_id": "pika/pika-seedance-2.0"
+    },
+    {
+      "provider": "runware",
+      "model_id": "runware/runware-seedance-2.0"
+    },
+    {
+      "provider": "wavespeed",
+      "model_id": "wavespeed/wavespeed-seedance-2.0"
+    }
+  ]
+}

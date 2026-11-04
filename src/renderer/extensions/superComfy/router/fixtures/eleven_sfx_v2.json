@@ -1,0 +1,69 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "elevenlabs/eleven_sfx_v2",
+    "description": "The request body Comfy Router accepts for the model \"elevenlabs/eleven_sfx_v2\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "863e7d2aae2a"
+  },
+  "paths": {
+    "/v2/models/elevenlabs/eleven_sfx_v2": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for generating sound effects from text. The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/sound-generation may send it, and the route admits `eleven_sfx_v2` alone. `eleven_sfx_v2` is Comfy's id for the model ElevenLabs calls `eleven_text_to_sound_v2`; the proxy forwards the vendor spelling, so no caller sends it.",
+                "example": {
+                  "duration_seconds": 5,
+                  "text": "A distant rumble of thunder rolling across a valley."
+                },
+                "properties": {
+                  "duration_seconds": {
+                    "description": "The duration of the sound which will be generated in seconds.\nMust be at least 0.5 and at most 30.\nREQUIRED on this route: unlike the upstream ElevenLabs API, which\nguesses an optimal duration when the field is null, this route\nrejects a request that omits it with 400 \"Duration is required\".\nThe field stays nullable only so an explicit null is a well-formed\ndocument; it is still refused.\nThis value is the quantity the request is metered on.\n",
+                    "format": "double",
+                    "maximum": 30,
+                    "minimum": 0.5,
+                    "nullable": true,
+                    "type": "number"
+                  },
+                  "loop": {
+                    "default": false,
+                    "description": "Whether to create a sound effect that loops smoothly.\nElevenLabs documents this as available only for the\n'eleven_text_to_sound_v2' model, which is the model this route\nforwards 'eleven_sfx_v2' as (see model_id), so it applies here.\n",
+                    "type": "boolean"
+                  },
+                  "model_id": {
+                    "description": "The model ID to use for the sound generation. This route admits\n'eleven_sfx_v2' and nothing else; any other value is rejected with\n400 before the request reaches ElevenLabs. 'eleven_sfx_v2' is\nComfy's id for the model ElevenLabs calls 'eleven_text_to_sound_v2';\nthe proxy rewrites the forwarded body to that vendor spelling, which\nElevenLabs' own enum requires (it refuses 'eleven_sfx_v2' with 422),\nso a caller never sends the vendor id. It is NOT in this\nschema's `required` list because Comfy Router fills it from the\n`{model}` path segment of /v2/models/elevenlabs/{model}, so a Router\ncaller omits it.\n",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "prompt_influence": {
+                    "description": "A higher prompt influence makes your generation follow the prompt\nmore closely while also making generations less variable.\nMust be a value between 0 and 1. Defaults to 0.3.\n",
+                    "format": "double",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "text": {
+                    "description": "The text that will get converted into a sound effect.",
+                    "type": "string"
+                  }
+                },
+                "required": ["text", "duration_seconds"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "elevenlabs/eleven_sfx_v2",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text"],
+  "x-comfy-router-output-modalities": ["audio"]
+}

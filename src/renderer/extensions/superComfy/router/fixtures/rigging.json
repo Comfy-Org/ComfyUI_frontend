@@ -1,0 +1,67 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "meshy/rigging",
+    "description": "The request body Comfy Router accepts for the model \"meshy/rigging\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "22c936758338"
+  },
+  "paths": {
+    "/v2/models/meshy/rigging": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Request body for Meshy's rigging operation (docs.meshy.ai/en/api/rigging): fit a skeleton to an existing humanoid mesh. Supply exactly one of input_task_id or model_url; Meshy requires no single field, so the only structural narrowing is that an empty body is refused.",
+                "example": {
+                  "height_meters": 1.8,
+                  "input_task_id": "0193abcd-0000-0000-0000-000000000000"
+                },
+                "minProperties": 1,
+                "oneOf": [
+                  {
+                    "required": ["input_task_id"]
+                  },
+                  {
+                    "required": ["model_url"]
+                  }
+                ],
+                "properties": {
+                  "height_meters": {
+                    "default": 1.7,
+                    "description": "The approximate height of the character model in meters. Must be a positive number.",
+                    "exclusiveMinimum": true,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "input_task_id": {
+                    "description": "The input task that needs to be rigged. Required if model_url is not provided.",
+                    "type": "string"
+                  },
+                  "model_url": {
+                    "description": "A publicly accessible URL or Data URI to a textured humanoid GLB file. Required if input_task_id is not provided.",
+                    "type": "string"
+                  },
+                  "texture_image_url": {
+                    "description": "The model's UV-unwrapped base color texture image. Publicly accessible URL or Data URI. Supports .png format.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "x-comfy-router-model-id": "meshy/rigging",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["3d"],
+  "x-comfy-router-output-modalities": ["3d"]
+}

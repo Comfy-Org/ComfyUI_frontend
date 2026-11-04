@@ -1,0 +1,421 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "vertexai/gemini-3-pro-image",
+    "description": "The request body Comfy Router accepts for the model \"vertexai/gemini-3-pro-image\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "6d3ab4216852"
+  },
+  "paths": {
+    "/v2/models/vertexai/gemini-3-pro-image": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "example": {
+                  "contents": [
+                    {
+                      "parts": [
+                        {
+                          "text": "Describe a robot learning to paint, in two sentences."
+                        }
+                      ],
+                      "role": "user"
+                    }
+                  ]
+                },
+                "properties": {
+                  "contents": {
+                    "items": {
+                      "$ref": "#/components/schemas/GeminiContent"
+                    },
+                    "type": "array"
+                  },
+                  "generationConfig": {
+                    "$ref": "#/components/schemas/GeminiGenerationConfig"
+                  },
+                  "safetySettings": {
+                    "items": {
+                      "$ref": "#/components/schemas/GeminiSafetySetting"
+                    },
+                    "type": "array"
+                  },
+                  "systemInstruction": {
+                    "$ref": "#/components/schemas/GeminiSystemInstructionContent"
+                  },
+                  "tools": {
+                    "items": {
+                      "$ref": "#/components/schemas/GeminiTool"
+                    },
+                    "type": "array"
+                  },
+                  "uploadImagesToStorage": {
+                    "description": "If true, generated images will be uploaded to cloud storage and returned as signed URLs instead of inline base64 data. The URLs expire after 24 hours.",
+                    "type": "boolean"
+                  },
+                  "videoMetadata": {
+                    "$ref": "#/components/schemas/GeminiVideoMetadata"
+                  }
+                },
+                "required": ["contents"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GeminiContent": {
+        "description": "The content of the current conversation with the model. For single-turn queries, this is a single instance. For multi-turn queries, this is a repeated field that contains conversation history and the latest request.\n",
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/GeminiPart"
+            },
+            "type": "array"
+          },
+          "role": {
+            "enum": ["user", "model"],
+            "example": "user",
+            "type": "string"
+          }
+        },
+        "required": ["parts"],
+        "type": "object"
+      },
+      "GeminiFileData": {
+        "description": "URI based data.",
+        "properties": {
+          "fileUri": {
+            "description": "URI",
+            "type": "string"
+          },
+          "mimeType": {
+            "$ref": "#/components/schemas/GeminiMimeType"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiFunctionDeclaration": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parameters": {
+            "description": "JSON schema for the function parameters",
+            "type": "object"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "GeminiGenerationConfig": {
+        "description": "Sampling, length and output settings for the generation. Every field is optional: the fields below that declare a `default` apply it when omitted, and the rest fall back to the model's own behaviour.\n",
+        "properties": {
+          "imageConfig": {
+            "description": "Configuration for image generation",
+            "properties": {
+              "aspectRatio": {
+                "description": "Aspect ratio for generated images",
+                "type": "string"
+              },
+              "imageOutputOptions": {
+                "description": "Optional. The image output format for generated images.",
+                "properties": {
+                  "compressionQuality": {
+                    "description": "Optional. The compression quality of the output image.",
+                    "type": "integer"
+                  },
+                  "mimeType": {
+                    "description": "Optional. The image format that the output should be saved as, on the Vertex AI paths: requests served by Comfy's own credentials, and BYOK requests authenticated with a GCP service account. Accepted values there are `image/png` and `image/jpeg`, matched case-insensitively and normalised to lower case before the request is forwarded; any other value is rejected with a 400 naming this field. Defaults to `image/png` when omitted. A BYOK request authenticated with a Google AI Studio API key is the exception: that upstream has no such property and rejects the whole call if it is present, so the field is dropped from the request rather than honoured or rejected, and the output format is whatever AI Studio chooses. On every path, read the media type back from the response part you are given (`inlineData.mimeType`, or `fileData.mimeType` when `uploadImagesToStorage` is set) rather than assuming the value you sent.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "imageSize": {
+                "description": "Optional. Specifies the size of generated images. Supported values are 1K, 2K, 4K. If not specified, the model will use default value 1K.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "maxOutputTokens": {
+            "description": "Maximum number of tokens that can be generated in the response. A token is approximately 4 characters. 100 tokens correspond to roughly 60-80 words.\n",
+            "example": 2048,
+            "maximum": 65536,
+            "minimum": 16,
+            "type": "integer"
+          },
+          "responseModalities": {
+            "items": {
+              "enum": ["TEXT", "IMAGE"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "seed": {
+            "description": "When seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used. Available for the following models:, gemini-2.5-flash, gemini-2.5-pro, gemini-2.5-flash-preview-04-1, gemini-2.5-pro-preview-05-0, gemini-2.0-flash-lite-00, gemini-2.0-flash-001\n",
+            "example": 343940597,
+            "type": "integer"
+          },
+          "stopSequences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "temperature": {
+            "default": 1,
+            "description": "The temperature is used for sampling during response generation, which occurs when topP and topK are applied. Temperature controls the degree of randomness in token selection. Lower temperatures are good for prompts that require a less open-ended or creative response, while higher temperatures can lead to more diverse or creative results. A temperature of 0 means that the highest probability tokens are always selected. In this case, responses for a given prompt are mostly deterministic, but a small amount of variation is still possible. If the model returns a response that's too generic, too short, or the model gives a fallback response, try increasing the temperature\n",
+            "format": "float",
+            "maximum": 2,
+            "minimum": 0,
+            "type": "number"
+          },
+          "thinkingConfig": {
+            "description": "Optional. Configuration for thinking features. Thinking is a process where the model breaks down a complex task into smaller steps to generate a higher-quality response.",
+            "properties": {
+              "includeThoughts": {
+                "description": "Optional. If true, the model will include its thoughts in the response.",
+                "type": "boolean"
+              },
+              "thinkingBudget": {
+                "description": "Optional. The token budget for the model's thinking process. The model will make a best effort to stay within this budget.",
+                "type": "integer"
+              },
+              "thinkingLevel": {
+                "description": "Optional. The thinking level for the model.",
+                "enum": [
+                  "THINKING_LEVEL_UNSPECIFIED",
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "MINIMAL"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "topK": {
+            "default": 40,
+            "description": "Top-K changes how the model selects tokens for output. A top-K of 1 means the next selected token is the most probable among all tokens in the model's vocabulary. A top-K of 3 means that the next token is selected from among the 3 most probable tokens by using temperature.\n",
+            "example": 40,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "topP": {
+            "default": 0.95,
+            "description": "If specified, nucleus sampling is used.\nTop-P changes how the model selects tokens for output. Tokens are selected from the most (see top-K) to least probable until the sum of their probabilities equals the top-P value. For example, if tokens A, B, and C have a probability of 0.3, 0.2, and 0.1 and the top-P value is 0.5, then the model will select either A or B as the next token by using temperature and excludes C as a candidate.\nSpecify a lower value for less random responses and a higher value for more random responses.\n",
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiInlineData": {
+        "description": "Inline data in raw bytes. For gemini-2.0-flash-lite and gemini-2.0-flash, you can specify up to 3000 images by using inlineData.\n",
+        "properties": {
+          "data": {
+            "description": "The base64 encoding of the image, PDF, or video to include inline in the prompt. When including media inline, you must also specify the media type (mimeType) of the data. Size limit: 20MB\n",
+            "format": "byte",
+            "type": "string"
+          },
+          "mimeType": {
+            "$ref": "#/components/schemas/GeminiMimeType"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiMimeType": {
+        "description": "The media type of the file specified in the data or fileUri fields. Acceptable values include the following. For gemini-2.0-flash-lite and gemini-2.0-flash, the maximum length of an audio file is 8.4 hours and the maximum length of a video file (without audio) is one hour. For more information, see Gemini audio and video requirements. Text files must be UTF-8 encoded. The contents of the text file count toward the token limit. There is no limit on image resolution.",
+        "enum": [
+          "application/pdf",
+          "audio/mpeg",
+          "audio/mp3",
+          "audio/wav",
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+          "text/plain",
+          "video/mov",
+          "video/mpeg",
+          "video/mp4",
+          "video/mpg",
+          "video/avi",
+          "video/wmv",
+          "video/mpegps",
+          "video/flv",
+          "image/heic",
+          "image/heif",
+          "audio/flac",
+          "video/webm"
+        ],
+        "type": "string"
+      },
+      "GeminiOffset": {
+        "description": "Represents a duration offset for video timeline positions.\n",
+        "properties": {
+          "nanos": {
+            "description": "Signed fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values.\n",
+            "example": 0,
+            "maximum": 999999999,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "seconds": {
+            "description": "Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive.\n",
+            "example": 60,
+            "maximum": 315576000000,
+            "minimum": -315576000000,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiPart": {
+        "properties": {
+          "fileData": {
+            "$ref": "#/components/schemas/GeminiFileData"
+          },
+          "inlineData": {
+            "$ref": "#/components/schemas/GeminiInlineData"
+          },
+          "mediaProcessing": {
+            "description": "How the model reads this part's video. Set \"AGENTIC\" to let the model decide which segments to inspect, instead of fixed-rate frame sampling. Omit for the default fixed-rate sampling. Supported on gemini-3.7-flash and newer Flash models.\n",
+            "type": "string"
+          },
+          "text": {
+            "description": "A text prompt or code snippet.",
+            "example": "Write a story about a robot learning to paint",
+            "type": "string"
+          },
+          "thought": {
+            "description": "Indicates this part is a thinking/reasoning step from the model.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiSafetyCategory": {
+        "enum": [
+          "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "HARM_CATEGORY_HATE_SPEECH",
+          "HARM_CATEGORY_HARASSMENT",
+          "HARM_CATEGORY_DANGEROUS_CONTENT"
+        ],
+        "type": "string"
+      },
+      "GeminiSafetySetting": {
+        "description": "Per request settings for blocking unsafe content. Enforced on GenerateContentResponse.candidates.\n",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/GeminiSafetyCategory"
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/GeminiSafetyThreshold"
+          }
+        },
+        "required": ["category", "threshold"],
+        "type": "object"
+      },
+      "GeminiSafetyThreshold": {
+        "enum": [
+          "OFF",
+          "BLOCK_NONE",
+          "BLOCK_LOW_AND_ABOVE",
+          "BLOCK_MEDIUM_AND_ABOVE",
+          "BLOCK_ONLY_HIGH"
+        ],
+        "type": "string"
+      },
+      "GeminiSystemInstructionContent": {
+        "description": "Instructions for the model to steer it toward better performance. For example, \"Answer as concisely as possible\" or \"Don't use technical terms in your response\". The text strings count toward the token limit. The role field of systemInstruction is ignored and doesn't affect the performance of the model. Note: Only text should be used in parts and content in each part should be in a separate paragraph.\n",
+        "properties": {
+          "parts": {
+            "description": "A list of ordered parts that make up a single message. Different parts may have different IANA MIME types. For limits on the inputs, such as the maximum number of tokens or the number of images, see the model specifications on the Google models page.\n",
+            "items": {
+              "$ref": "#/components/schemas/GeminiTextPart"
+            },
+            "type": "array"
+          },
+          "role": {
+            "description": "The identity of the entity that creates the message. The following values are supported: user: This indicates that the message is sent by a real person, typically a user-generated message. model: This indicates that the message is generated by the model. The model value is used to insert messages from the model into the conversation during multi-turn conversations. For non-multi-turn conversations, this field can be left blank or unset.\n",
+            "enum": ["user", "model"],
+            "example": "user",
+            "type": "string"
+          }
+        },
+        "required": ["parts"],
+        "type": "object"
+      },
+      "GeminiTextPart": {
+        "properties": {
+          "text": {
+            "description": "A text prompt or code snippet.",
+            "example": "Answer as concisely as possible",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiTool": {
+        "description": "A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model. See Function calling.\n",
+        "properties": {
+          "functionDeclarations": {
+            "items": {
+              "$ref": "#/components/schemas/GeminiFunctionDeclaration"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "GeminiVideoMetadata": {
+        "description": "For video input, the start and end offset of the video in Duration format. For example, to specify a 10 second clip starting at 1:00, set \"startOffset\": { \"seconds\": 60 } and \"endOffset\": { \"seconds\": 70 }. The metadata should only be specified while the video data is presented in inlineData or fileData.\n",
+        "properties": {
+          "endOffset": {
+            "$ref": "#/components/schemas/GeminiOffset"
+          },
+          "startOffset": {
+            "$ref": "#/components/schemas/GeminiOffset"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "vertexai/gemini-3-pro-image",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text", "image"],
+  "x-comfy-router-output-modalities": ["image", "text"],
+  "x-comfy-router-alt-providers": [
+    {
+      "provider": "fal",
+      "model_id": "fal/fal-nano-banana-pro"
+    },
+    {
+      "provider": "pika",
+      "model_id": "pika/pika-nano-banana-pro"
+    },
+    {
+      "provider": "runware",
+      "model_id": "runware/runware-nano-banana-pro"
+    },
+    {
+      "provider": "wavespeed",
+      "model_id": "wavespeed/wavespeed-nano-banana-pro"
+    }
+  ]
+}

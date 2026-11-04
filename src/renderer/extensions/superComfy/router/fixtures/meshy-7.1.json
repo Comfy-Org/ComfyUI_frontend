@@ -1,0 +1,198 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "meshy/meshy-7.1",
+    "description": "The request body Comfy Router accepts for the model \"meshy/meshy-7.1\", and the response body it returns. The INPUT schema is the same schema the server validates a call against before it reaches the provider, so what is published and what is enforced cannot differ. `x-comfy-router-input-modalities` records the media kinds the model is documented to accept; the request schema is shared across sibling models and may admit media kinds this model ignores. The OUTPUT schema describes the provider's native result document exactly as Router returns it: Router does not validate, narrow or re-envelope the response, so the output schema is descriptive rather than enforced, and Comfy owns no output shape of its own.",
+    "version": "899cd9077376"
+  },
+  "paths": {
+    "/v2/models/meshy/meshy-7.1": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/MeshyTextTo3DInputs"
+                  }
+                ],
+                "description": "The Comfy Router input schema for `meshy/meshy-7.1` text-to-3d.\nmeshy-7.1 (PN-1223) is the tier every conditional option is available on -- Ultra generation (`ultra_mode`, preview mode), the full `standard`/`2k`/`4k` geometry range, and the full `2k`/`4k`/`8k` texture range -- so it narrows nothing and is the shared shape in MeshyTextTo3DInputs under its own id.",
+                "example": {
+                  "art_style": "realistic",
+                  "mode": "preview",
+                  "prompt": "a red cube"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MeshyArtStyle": {
+        "default": "realistic",
+        "description": "Describe your desired art style of the object.",
+        "enum": ["realistic", "sculpture"],
+        "type": "string"
+      },
+      "MeshyPoseMode": {
+        "description": "Specify the pose mode for the generated model.",
+        "enum": ["a-pose", "t-pose", ""],
+        "type": "string"
+      },
+      "MeshySymmetryMode": {
+        "default": "auto",
+        "description": "Controls symmetry behavior during model generation.",
+        "enum": ["off", "auto", "on"],
+        "type": "string"
+      },
+      "MeshyTextTo3DInputs": {
+        "description": "The model-agnostic Comfy Router input shape for the `meshy/*` text-to-3d models: either a PREVIEW body (`mode: preview`, which generates the untextured mesh) or a REFINE body (`mode: refine`, which textures a preview task's output).\nIt composes the same two branches the v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body does, differing only in `ai_model`: on this route the model comes from the path (`/v2/models/meshy/{model}`), so `ai_model` may be omitted or sent as null and Comfy Router writes the path's model into it before the call is forwarded.",
+        "discriminator": {
+          "mapping": {
+            "preview": "#/components/schemas/MeshyTextTo3DPreviewInputs",
+            "refine": "#/components/schemas/MeshyTextTo3DRefineInputs"
+          },
+          "propertyName": "mode"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MeshyTextTo3DPreviewInputs"
+          },
+          {
+            "$ref": "#/components/schemas/MeshyTextTo3DRefineInputs"
+          }
+        ]
+      },
+      "MeshyTextTo3DPreviewInputs": {
+        "description": "The meshy text-to-3d PREVIEW fields, shared by the `preview` branch of the v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body and the `preview` branch of the Comfy Router input schema for the `meshy/*` models.\nThe two surfaces share every property and both `required` entries. They differ only in `ai_model`: the v1 body restates it as a fixed enum, because that route carries no path segment to supply the model from, while on the Comfy Router route the path supplies it.",
+        "properties": {
+          "ai_model": {
+            "description": "The Meshy model to run. On the Comfy Router route this is supplied by the path (`/v2/models/meshy/{model}`) and may be omitted or sent as null; Router writes the path's model here after validation. On the v1 /proxy route see MeshyTextTo3DPreviewRequest, which constrains it to MeshyAiModel.",
+            "nullable": true,
+            "type": "string"
+          },
+          "art_style": {
+            "$ref": "#/components/schemas/MeshyArtStyle"
+          },
+          "geometry_resolution": {
+            "default": "standard",
+            "description": "Geometry resolution of the generated mesh. 2k and 4k run the Ultra pass for finer surface detail. 2k and 4k require ai_model meshy-7.1 or latest.",
+            "enum": ["standard", "2k", "4k"],
+            "type": "string"
+          },
+          "is_a_t_pose": {
+            "default": false,
+            "description": "Deprecated. Use pose_mode instead. Whether to generate the model in an A/T pose.",
+            "type": "boolean"
+          },
+          "mode": {
+            "description": "This field should be set to \"preview\" when creating a preview task.",
+            "enum": ["preview"],
+            "type": "string"
+          },
+          "moderation": {
+            "default": false,
+            "description": "When true, input content will be screened for potentially harmful content.",
+            "type": "boolean"
+          },
+          "pose_mode": {
+            "$ref": "#/components/schemas/MeshyPoseMode"
+          },
+          "prompt": {
+            "description": "Describe what kind of object the 3D model is. Maximum 800 characters.",
+            "maxLength": 800,
+            "type": "string"
+          },
+          "should_remesh": {
+            "default": false,
+            "description": "Controls whether to enable the remesh phase. When false, returns highest-precision triangular mesh. Defaults to true for Meshy 5 and false for Meshy 6 and 7.",
+            "type": "boolean"
+          },
+          "symmetry_mode": {
+            "$ref": "#/components/schemas/MeshySymmetryMode"
+          },
+          "target_polycount": {
+            "default": 30000,
+            "description": "Specify the target number of polygons in the generated model. Valid range is 100 to 300,000.",
+            "maximum": 300000,
+            "minimum": 100,
+            "type": "integer"
+          },
+          "topology": {
+            "$ref": "#/components/schemas/MeshyTopology"
+          },
+          "ultra_mode": {
+            "default": false,
+            "deprecated": true,
+            "description": "Deprecated. Use geometry_resolution instead; true is equivalent to geometry_resolution 2k. Only supported when ai_model is meshy-7, meshy-7.1 or latest. The exception is meshy-7: geometry_resolution 2k requires meshy-7.1 or latest, so on meshy-7 ultra_mode true is the way to request the Ultra pass.",
+            "type": "boolean"
+          }
+        },
+        "required": ["mode", "prompt"],
+        "type": "object"
+      },
+      "MeshyTextTo3DRefineInputs": {
+        "description": "The meshy text-to-3d REFINE fields, shared by the `refine` branch of the v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body and the `refine` branch of the Comfy Router input schema for the `meshy/*` models.\nThe two surfaces share every property and both `required` entries. They differ only in `ai_model`: the v1 body restates it as a fixed enum, because that route carries no path segment to supply the model from, while on the Comfy Router route the path supplies it.",
+        "properties": {
+          "ai_model": {
+            "description": "The Meshy model to run. On the Comfy Router route this is supplied by the path (`/v2/models/meshy/{model}`) and may be omitted or sent as null; Router writes the path's model here after validation. On the v1 /proxy route see MeshyTextTo3DRefineRequest, which constrains it to MeshyAiModel.",
+            "nullable": true,
+            "type": "string"
+          },
+          "enable_pbr": {
+            "default": false,
+            "description": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color. Note that enable_pbr should be set to false when using Sculpture style.",
+            "type": "boolean"
+          },
+          "mode": {
+            "description": "This field should be set to \"refine\" when creating a refine task.",
+            "enum": ["refine"],
+            "type": "string"
+          },
+          "moderation": {
+            "default": false,
+            "description": "When true, input content will be screened for potentially harmful content.",
+            "type": "boolean"
+          },
+          "preview_task_id": {
+            "description": "The corresponding preview task id. The status of the given preview task must be SUCCEEDED.",
+            "type": "string"
+          },
+          "texture_image_url": {
+            "description": "Provide a 2d image to guide the texturing process. Supports .jpg, .jpeg, .png formats or base64-encoded data URI.",
+            "type": "string"
+          },
+          "texture_prompt": {
+            "description": "Provide an additional text prompt to guide the texturing process. Maximum 800 characters.",
+            "maxLength": 800,
+            "type": "string"
+          },
+          "texture_resolution": {
+            "default": "2k",
+            "description": "Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7, meshy-7.1 or latest.",
+            "enum": ["2k", "4k", "8k"],
+            "type": "string"
+          }
+        },
+        "required": ["mode", "preview_task_id"],
+        "type": "object"
+      },
+      "MeshyTopology": {
+        "default": "triangle",
+        "description": "Specify the topology of the generated model.",
+        "enum": ["quad", "triangle"],
+        "type": "string"
+      }
+    }
+  },
+  "x-comfy-router-model-id": "meshy/meshy-7.1",
+  "x-comfy-input-schema-authored": true,
+  "x-comfy-output-schema-authored": true,
+  "x-comfy-router-input-modalities": ["text"],
+  "x-comfy-router-output-modalities": ["3d"]
+}
