@@ -3,6 +3,7 @@
     <router-view />
     <GlobalDialog />
     <SessionReconnecting v-if="isCloud" />
+    <CanvasContrastSwitcher v-if="isDev" />
   </TooltipProvider>
   <div
     v-show="isLoading"
@@ -15,6 +16,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 
+import CanvasContrastSwitcher from '@/components/dev/CanvasContrastSwitcher.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import config from '@/config'
@@ -31,6 +33,8 @@ import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
+
+const isDev = import.meta.env.DEV
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()

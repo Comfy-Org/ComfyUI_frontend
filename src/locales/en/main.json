@@ -6379,5 +6379,9 @@
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
     "reload": "Reload"
+  },
+  "canvasContrastPrototype": {
+    "canvas": "Canvas (dark)",
+    "nodes": "Nodes (dark)"
   }
 }
