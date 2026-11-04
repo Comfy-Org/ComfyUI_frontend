@@ -6520,7 +6520,9 @@
     },
     "port": {
       "input": "Input {name}",
-      "output": "Output {name}"
+      "output": "Output {name}",
+      "in": "in",
+      "out": "out"
     },
     "node": {
       "run": "Run",

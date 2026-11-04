@@ -29,6 +29,11 @@ const canvas = inject(SuperCanvasKey, null)
 
 const DOT_HALF = 12
 
+const DEFAULT_LABEL_KEYS: Partial<Record<string, string>> = {
+  in: 'superComfy.port.in',
+  out: 'superComfy.port.out'
+}
+
 function slotOf(port: PortSpec): INodeSlot {
   return { name: port.name, type: '*', boundingRect: [0, 0, 0, 0] }
 }
@@ -56,10 +61,15 @@ function labelClass(port: PortSpec): string {
   )
 }
 
+function portLabel(port: PortSpec): string {
+  const key = DEFAULT_LABEL_KEYS[port.label]
+  return key ? t(key) : port.label
+}
+
 function portName(port: PortSpec): string {
   return side === 'in'
-    ? t('superComfy.port.input', { name: port.label })
-    : t('superComfy.port.output', { name: port.label })
+    ? t('superComfy.port.input', { name: portLabel(port) })
+    : t('superComfy.port.output', { name: portLabel(port) })
 }
 
 function onPointerDown(event: PointerEvent, port: PortSpec) {
@@ -84,6 +94,6 @@ function onPointerDown(event: PointerEvent, port: PortSpec) {
       :class="cn('transition-opacity', isDimmed(port) && 'opacity-30')"
       @pointerdown="onPointerDown($event, port)"
     />
-    <span :class="labelClass(port)">{{ port.label }}</span>
+    <span :class="labelClass(port)">{{ portLabel(port) }}</span>
   </div>
 </template>
