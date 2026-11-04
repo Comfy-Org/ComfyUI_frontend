@@ -271,7 +271,6 @@ onMounted(async () => {
     failElementInit()
     return
   }
-  // The quoted amount goes to Stripe as served; Stripe owns which amounts a mode accepts.
   try {
     stripeElements.value = stripe.elements({
       ...intentOptions(),

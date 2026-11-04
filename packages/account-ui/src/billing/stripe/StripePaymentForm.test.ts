@@ -670,17 +670,23 @@ describe('StripePaymentForm', () => {
     ).toBe(true)
   })
 
-  it('updates Stripe Elements when the quote changes', async () => {
-    const { rerender } = renderForm()
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+  it.for([
+    { amountCents: 72000, currency: 'EUR' },
+    { amountCents: 0, currency: 'USD' }
+  ])(
+    'updates Stripe Elements when the quote changes to $amountCents $currency',
+    async ({ amountCents, currency }) => {
+      const { rerender } = renderForm()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
 
-    await rerender({ amountCents: 72000, currency: 'EUR' })
+      await rerender({ amountCents, currency })
 
-    expect(stripeMocks.update).toHaveBeenCalledWith({
-      amount: 72000,
-      currency: 'eur'
-    })
-  })
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        amount: amountCents,
+        currency: currency.toLowerCase()
+      })
+    }
+  )
 
   it('destroys the Stripe elements when the preview unmounts', async () => {
     const { unmount } = renderForm()
