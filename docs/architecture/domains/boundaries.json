@@ -869,6 +869,7 @@
           "src/extensions/core/index.cloudAgentFailure.test.ts",
           "src/extensions/core/index.cloudExtensionFailure.test.ts",
           "src/extensions/core/index.cloudModuleRejection.test.ts",
+          "src/extensions/core/index.cloudSessionCookieLogoutFallback.test.ts",
           "src/extensions/core/index.test.ts",
           "src/scripts/__mocks__/**",
           "src/scripts/api.ts",
