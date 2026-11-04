@@ -130,7 +130,7 @@ test.describe(
 
       const beforeAdd = outboundFrames.length
       await page.evaluate(() => {
-        window.app!.graph.add(window.LiteGraph!.createNode('Note')!)
+        window.app!.graph.add(window.LiteGraph!.createNode('Note'))
       })
       await expect
         .poll(() => outboundFrames.slice(beforeAdd), { timeout: 15_000 })
