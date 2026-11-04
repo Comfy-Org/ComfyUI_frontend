@@ -2,11 +2,12 @@
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
-import { provide, useTemplateRef } from 'vue'
+import { computed, provide, useTemplateRef } from 'vue'
 
 import { SuperCanvasKey } from '@/renderer/extensions/superComfy/canvas/canvasContext'
 import {
   fitView,
+  gridSpacing,
   screenToWorld
 } from '@/renderer/extensions/superComfy/canvas/canvasGeometry'
 import { useCanvasCamera } from '@/renderer/extensions/superComfy/canvas/useCanvasCamera'
@@ -52,6 +53,15 @@ provide(SuperCanvasKey, {
   draftActive: gestures.draftActive,
   isCompatible: gestures.isCompatible,
   onPortPointerDown: gestures.onPortPointerDown
+})
+
+const gridStyle = computed(() => {
+  const { x, y, zoom } = camera.camera.value
+  const spacing = gridSpacing(zoom)
+  return {
+    backgroundSize: `${spacing}px ${spacing}px`,
+    backgroundPosition: `${x}px ${y}px`
+  }
 })
 
 function scrollsItself(target: EventTarget | null): boolean {
@@ -104,7 +114,8 @@ defineExpose({
 <template>
   <div
     ref="viewport"
-    class="relative size-full touch-none overflow-hidden select-none"
+    class="relative size-full touch-none overflow-hidden bg-radial from-border from-[1px] to-transparent to-[1px] select-none"
+    :style="gridStyle"
     data-testid="supercomfy-canvas"
     @pointerdown.self="gestures.onBackgroundPointerDown"
     @dblclick.self="onDoubleClick"

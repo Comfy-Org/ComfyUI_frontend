@@ -35,6 +35,8 @@ const NODE_EST_HEIGHT = 260
 const FIT_PADDING = 64
 const MIN_LINK_BEND = 48
 const PLACEMENT_GAP = 80
+const GRID_SPACING = 24
+const MIN_GRID_SPACING = 12
 
 export function portAnchor(
   node: SuperNode,
@@ -133,6 +135,12 @@ export function placeNode(
         width
       )
     : at
+}
+
+/** Screen distance between background grid dots, doubled until they are not crowded. */
+export function gridSpacing(zoom: number): number {
+  const spacing = GRID_SPACING * zoom
+  return spacing >= MIN_GRID_SPACING ? spacing : gridSpacing(zoom * 2)
 }
 
 export function cardMinHeight(rows: number): number {

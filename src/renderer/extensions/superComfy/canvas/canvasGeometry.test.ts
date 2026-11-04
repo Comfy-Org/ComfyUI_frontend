@@ -10,6 +10,7 @@ import {
 import {
   cardMinHeight,
   fitView,
+  gridSpacing,
   hitPort,
   linkPath,
   placeNode,
@@ -183,5 +184,17 @@ describe('placeNode', () => {
     }
   ])('$name', ({ at, expected }) => {
     expect(placeNode(doc, at, 240)).toEqual(expected)
+  })
+})
+
+describe('gridSpacing', () => {
+  it.for([
+    { zoom: 1, expected: 24 },
+    { zoom: 2, expected: 48 },
+    { zoom: 0.5, expected: 12 },
+    { zoom: 0.25, expected: 12 },
+    { zoom: 0.2, expected: 19.2 }
+  ])('spaces dots $expected px apart at zoom $zoom', ({ zoom, expected }) => {
+    expect(gridSpacing(zoom)).toBeCloseTo(expected)
   })
 })
