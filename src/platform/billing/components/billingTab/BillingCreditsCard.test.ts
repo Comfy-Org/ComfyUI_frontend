@@ -239,8 +239,7 @@ describe('BillingCreditsCard', () => {
       case: 'paused top-up purchases on a plan',
       facts: {},
       reasonKey: 'credits.addCreditsRefusal.topupPurchasesPaused',
-      reason:
-        "Buying credits isn't available right now. Try again later, or message support."
+      reason: "Buying credits isn't available right now. Try again later."
     },
     {
       case: 'a past-due payment on a plan',
@@ -576,7 +575,7 @@ describe('BillingCreditsCard', () => {
       ).toEqual(addCreditsDisabled)
       expect(
         screen.queryAllByText(
-          "Buying credits isn't available right now. Try again later, or message support."
+          "Buying credits isn't available right now. Try again later."
         )
       ).toHaveLength(pausedNotes)
     }
