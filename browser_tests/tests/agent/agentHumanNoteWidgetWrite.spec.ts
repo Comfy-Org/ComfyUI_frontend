@@ -96,11 +96,6 @@ test.describe(
     test.use({ connectWebSocketToServer: false })
     test.describe.configure({ timeout: 90_000 })
 
-    // Red before the fix: the add ships a positional `widgets_values`, the
-    // host stores it under `__widgets_opaque` because `Note` has no
-    // `widget_order`, and the real applier then refuses the edit
-    // `opaque_widgets` — the follower reports it and rolls the text back, so
-    // the sticky note cannot be typed in at all. PM-2371.
     test('keeps the text the user typed into a Note, with no rejection notice', async ({
       page,
       toast,
@@ -148,20 +143,8 @@ test.describe(
       await nextFrame(page)
       await nextFrame(page)
 
-      // The user-visible outcome, which is the whole assertion: the text they
-      // typed is still on the note. Before the fix the follower put the
-      // document's value back and this read the empty default.
       await expect(noteText).toHaveValue(TYPED_NOTE)
 
-      // And the shared document agrees, so a reload or another tab shows the
-      // same note rather than silently dropping the edit.
-      //
-      // Name-keyed, beside the form the producer declared: that is the A24
-      // round trip, not an accident of this spec. The node is stored under the
-      // `self` strategy, so `project()` re-emits the shape the producer sent
-      // rather than a positional array it would need a catalog to rebuild.
-      // The saved workflow file is untouched by this — it comes from
-      // `graph.serialize()`, which still writes `["…"]`.
       const stored = host
         .projection()
         .nodes.find((node) => String(node.id) === String(noteId))
@@ -171,9 +154,6 @@ test.describe(
         widgets_values_form: { order: ['text'] }
       })
 
-      // No "rejected" notice, because nothing was rejected. Filtered to the
-      // text and required absent on screen, the inverse of the assertion the
-      // duplicate-insert spec makes for a genuinely refused write.
       await expect(
         toast.toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
