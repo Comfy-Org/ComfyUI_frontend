@@ -456,6 +456,21 @@ function isFactObjectCapability(node: AstNode): boolean {
   )
 }
 
+function isCapabilityDetail(node: AstNode): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    CAPABILITY_BINDING.test(node.property.name) &&
+    CAPABILITY_DETAIL.test(node.property.name)
+  )
+}
+
+function memberKey(member: Member): string | undefined {
+  if (member.computed) return undefined
+  const holder = memberPath(member.object)
+  return holder && `${holder}.${member.property.name}`
+}
+
 function combinesFactObjectCapabilities(operands: AstNode[]): boolean {
   return (
     operands.filter(
@@ -561,20 +576,29 @@ export const noCapabilityRecombination: Rule = {
       )
     }
 
-    const isServedDetail = (member: AstNode): boolean => {
-      if (member.type !== 'MemberExpression' || member.computed) return false
-      const holder = factName(member.object) ?? ''
-      return (
-        CAPABILITY_BINDING.test(member.property.name) &&
-        CAPABILITY_DETAIL.test(member.property.name) &&
-        (capabilityObjects.has(holder) || SERVER_FACT_OWNER.test(holder))
-      )
-    }
+    const isPairableCapability = (node: AstNode): boolean =>
+      isCapabilityReference(node) || isFactObjectCapability(node)
 
-    const isFactOperand = (operand: AstNode): boolean =>
-      !isLiteral(operand) &&
-      capabilityMember(negated(operand) ?? operand, isServedDetail) ===
-        undefined
+    const capabilityKeys = (operands: AstNode[]): Set<string> =>
+      new Set(
+        operands.flatMap((operand) => {
+          const member = capabilityMember(
+            negated(operand) ?? operand,
+            isPairableCapability
+          )
+          const key = member && memberKey(member)
+          return key ?? []
+        })
+      )
+
+    const isDetailOfPairedCapability = (
+      operand: AstNode,
+      paired: Set<string>
+    ): boolean => {
+      const detail = capabilityMember(operand, isCapabilityDetail)
+      const key = detail && memberKey(detail)?.replace(CAPABILITY_DETAIL, '')
+      return key !== undefined && paired.has(key)
+    }
 
     const isCapabilitySource = (init: AstNode | null): boolean =>
       isCapabilitySourceCall(init) ||
@@ -660,7 +684,11 @@ export const noCapabilityRecombination: Rule = {
       LogicalExpression(node) {
         if (unwrap(node.parent).type === 'LogicalExpression') return
         const operands = logicalOperands(node)
-        const factOperands = operands.filter(isFactOperand)
+        const paired = capabilityKeys(operands)
+        const factOperands = operands.filter(
+          (operand) =>
+            !isLiteral(operand) && !isDetailOfPairedCapability(operand, paired)
+        )
         if (
           factOperands.length < 2 ||
           !(

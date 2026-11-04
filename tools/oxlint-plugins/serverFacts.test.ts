@@ -292,6 +292,28 @@ const b = capabilities.canTopUp.value && options.canTopUpReason
       ]
     },
     {
+      name: 'a capability gated by a served detail of another capability or holder',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = capabilities.canTopUp.value && !billingFacts.canManageBillingReason
+const b = !capabilities.canTopUp.value && billingFacts.canTopUpRefusal
+const c = capabilities.canTopUp.value && capabilities.canManageBillingRefusal.value
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
+    {
+      name: 'a capability gated by its own served refusal as a boolean',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = capabilities.canTopUp.value || !capabilities.canTopUpRefusal.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
       name: '#15675 capability chosen by isCloud with a role fallback',
       code: `
 const { canChangeSeats } = useBillingCapabilities()
