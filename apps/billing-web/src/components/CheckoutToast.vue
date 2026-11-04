@@ -59,11 +59,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * A severity-tinted checkout toast. `operation` is the payment-progress toast
- * (spinner or prompt beside one line); `message` the error and success toast
- * (severity icon, summary, detail).
- */
 import { cn } from '@comfyorg/tailwind-utils'
 
 const SEVERITY = {
