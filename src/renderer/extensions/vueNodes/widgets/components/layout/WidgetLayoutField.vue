@@ -35,10 +35,6 @@ const {
 const hideLayoutField = useHideLayoutField()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const fullWidthRow = computed(() => unifiedRows && fullWidthControl)
-const leadingPadding = computed(() => {
-  if (!unifiedRows) return undefined
-  return hasLeadingButton ? 'pl-8' : 'pl-3'
-})
 const labelElement = useTemplateRef<HTMLLabelElement>('labelElement')
 const rowElement = useTemplateRef<HTMLDivElement>('rowElement')
 const label = computed(() =>
@@ -55,7 +51,7 @@ const rowClass = computed(() =>
     unifiedRows
       ? 'relative isolate flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
       : 'grid min-w-0 grid-cols-subgrid justify-between gap-2',
-    leadingPadding.value,
+    unifiedRows && (hasLeadingButton ? 'pl-8' : 'pl-3'),
     fullWidthRow.value && 'py-2',
     unifiedRows && !noBorder && widget.borderStyle,
     rootClass
