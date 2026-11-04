@@ -432,6 +432,30 @@ describe('ComfyHubPublishDialog', () => {
     expect(screen.getByTestId('publish-save-prompt')).toBeTruthy()
   })
 
+  it('keeps the save prompt and reports a refused save of a saved modified workflow', async () => {
+    setActiveWorkflow({
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: true
+    })
+    vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValue(false)
+
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /Save workflow/i })
+    )
+    await flushPromises()
+
+    expect(useToast().error).toHaveBeenCalledWith('Failed to save workflow', {
+      description: 'Your workflow was not saved.'
+    })
+    expect(screen.getByTestId('publish-save-prompt')).toBeTruthy()
+  })
+
   it('refetches prefill when the active workflow path changes (e.g. rename)', async () => {
     renderComponent()
     await flushPromises()

@@ -491,6 +491,35 @@ describe('ShareWorkflowDialogContent', () => {
       )
     })
 
+    it('keeps the save prompt and reports a refused save of a saved modified workflow', async () => {
+      Object.assign(useWorkflowStore(), {
+        activeWorkflow: {
+          path: 'workflows/test.json',
+          directory: 'workflows',
+          filename: 'test.json',
+          isTemporary: false,
+          isModified: true,
+          lastModified: 1000
+        }
+      })
+      vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValue(false)
+
+      const { container } = renderComponent()
+      await flushPromises()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/i })
+      )
+      await flushPromises()
+
+      expect(useToast().error).toHaveBeenCalledWith('Failed to save workflow', {
+        description: 'Your workflow was not saved.'
+      })
+      expect(container.textContent).toContain(
+        'You must save your workflow before sharing.'
+      )
+    })
+
     it('shows error toast when getPublishStatus rejects', async () => {
       mockGetPublishStatus.mockRejectedValue(new Error('Server down'))
 
