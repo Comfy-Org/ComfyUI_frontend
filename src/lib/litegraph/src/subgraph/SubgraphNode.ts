@@ -17,8 +17,9 @@ import {
   decodeWidgetValueLayout
 } from '@/core/graph/widgets/control/widgetControl'
 import {
-  clearPromotedWidgetControl,
-  copyPromotedWidgetControl
+  clearPromotedWidget,
+  copyPromotedWidgetControl,
+  getSerializablePromotedInputs
 } from '@/core/graph/subgraph/promotedWidgetControl'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 
@@ -453,7 +454,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
-      clearPromotedWidgetControl(input)
+      clearPromotedWidget(input)
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
@@ -515,10 +516,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
-    const promotedInputs = this.inputs.filter(
-      (input): input is INodeInputSlot & { widgetId: WidgetId } =>
-        Boolean(input.widgetId)
-    )
+    const promotedInputs = getSerializablePromotedInputs(this.inputs)
     const values = widgetValues ?? []
     const valueLayout = decodeWidgetValueLayout(promotedInputs, values)
     for (const [index, input] of promotedInputs.entries()) {
@@ -616,7 +614,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) {
-        clearPromotedWidgetControl(input)
+        clearPromotedWidget(input)
         delete input.widget
         delete input.pos
         delete input.widgetId
@@ -708,24 +706,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     this.invalidatePromotedViews()
 
-    clearPromotedWidgetControl(input)
-
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     if (this.id === UNASSIGNED_NODE_ID) {
-      // Registering now would key the store under a construction-time id
-      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
-      // that gets discarded), letting a later unrelated instance inherit
-      // this value. onAdded() performs the deferred registration once a
-      // real id is assigned.
+      clearPromotedWidget(input)
       input.widgetId = undefined
       return
     }
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
+    clearPromotedWidget(input, { retainControl: input.widgetId === id })
+
     const visibility = cloneDeep(
       interiorWidget.visibility ?? deriveWidgetVisibility(interiorWidget)
     )
@@ -781,9 +775,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     for (const input of this.inputs) {
       const previousId = input.widgetId
       if (!previousId) {
-        // Registration deferred by _setWidget while this.id was still
-        // UNASSIGNED_NODE_ID (e.g. widget resolution during construction).
-        // Perform it now that a real id is assigned.
         if (input._subgraphSlot)
           this._resolveInputWidget(input._subgraphSlot, input)
         continue
@@ -808,7 +799,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.setValue(nextId, state.value)
       store.deleteWidget(previousId)
       input.widgetId = nextId
-      clearPromotedWidgetControl(input)
+      clearPromotedWidget(input)
       if (input._subgraphSlot) {
         this._resolveInputWidget(input._subgraphSlot, input)
       }
@@ -998,7 +989,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ) {
         input._listenerController.abort()
       }
-      clearPromotedWidgetControl(input)
+      clearPromotedWidget(input)
     }
     for (const widget of this._extraWidgets) widget.onRemove?.()
   }
@@ -1065,8 +1056,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     serialized.properties = serializedProperties
 
     const widgetValues: TWidgetValue[] = []
-    for (const input of this.inputs) {
-      if (!input.widgetId) continue
+    for (const input of getSerializablePromotedInputs(this.inputs)) {
       const value = useWidgetValueStore().getWidget(input.widgetId)?.value
       widgetValues.push(isWidgetValue(value) ? value : undefined)
       appendControlValues(input.widgetId, widgetValues)

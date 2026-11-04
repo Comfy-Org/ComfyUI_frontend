@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, onTestFinished } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import { getControlProjections } from './controlProjection'
 import {
   getWidgetControlView,
   registerWidgetControlFromConfig
@@ -22,6 +24,95 @@ function createControlledNode(): { graph: LGraph; node: LGraphNode } {
 }
 
 describe('widget control persistence', () => {
+  it('preserves independent controls through named save and configure', () => {
+    const namedValuesRestore = LiteGraph.namedValuesRestore
+    onTestFinished(() => {
+      LiteGraph.namedValuesRestore = namedValuesRestore
+    })
+    LiteGraph.namedValuesRestore = true
+    const { node } = createControlledNode()
+    const first = node.widgets?.[0]
+    assert.exists(first)
+    const second = node.addWidget('number', 'steps', 20, () => {})
+    second.controlConfig = { mode: 'decrement', hasFilter: false }
+    registerWidgetControlFromConfig(second)
+    getControlProjections(first)
+    const reserved = node.addWidget(
+      'text',
+      'control_after_generate',
+      'real',
+      () => {}
+    )
+    const [secondControl] = getControlProjections(second)
+    const [firstControl] = getControlProjections(first)
+    assert.exists(firstControl)
+    assert.exists(secondControl)
+    firstControl.value = 'increment'
+
+    const saved = node.serialize()
+    firstControl.value = 'fixed'
+    secondControl.value = 'fixed'
+    node.configure(saved)
+
+    expect([firstControl.value, secondControl.value]).toEqual([
+      'increment',
+      'decrement'
+    ])
+    const { node: reconstructed } = createControlledNode()
+    const reconstructedFirst = reconstructed.widgets?.[0]
+    assert.exists(reconstructedFirst)
+    const reconstructedSecond = reconstructed.addWidget(
+      'number',
+      'steps',
+      20,
+      () => {}
+    )
+    reconstructedSecond.controlConfig = { mode: 'fixed', hasFilter: false }
+    registerWidgetControlFromConfig(reconstructedSecond)
+    reconstructed.addWidget('text', 'control_after_generate', '', () => {})
+    reconstructed.configure(saved)
+    expect([
+      getControlProjections(reconstructedFirst)[0]?.value,
+      getControlProjections(reconstructedSecond)[0]?.value
+    ]).toEqual(['increment', 'decrement'])
+    expect(saved.widgets_values_named).toMatchObject({
+      control_after_generate: 'real',
+      'control_after_generate#1': 'increment',
+      'control_after_generate#2': 'decrement'
+    })
+    expect(reserved.name).toBe('control_after_generate')
+    expect(reserved.value).toBe('real')
+  })
+
+  it('persists mode and filter edits through non-adopting classic wrappers', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('ComboNode')
+    const target = node.addWidget('combo', 'model', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    target.controlConfig = { mode: 'increment', hasFilter: true, filter: '' }
+    graph.add(node)
+    const [mode, filter] = getControlProjections(target)
+    assert.exists(mode)
+    assert.exists(filter)
+
+    const modeWidget = toConcreteWidget(mode, node, false)
+    const filterWidget = toConcreteWidget(filter, node, false)
+    assert.exists(modeWidget)
+    assert.exists(filterWidget)
+    modeWidget.setValue('decrement', { node })
+    filterWidget.setValue('/portrait/', { node })
+
+    expect(getControlProjections(target).map(({ value }) => value)).toEqual([
+      'decrement',
+      '/portrait/'
+    ])
+    expect(target.controlConfig).toMatchObject({
+      mode: 'decrement',
+      filter: '/portrait/'
+    })
+  })
+
   it('round-trips the component through the legacy positional layout', () => {
     const { node } = createControlledNode()
 

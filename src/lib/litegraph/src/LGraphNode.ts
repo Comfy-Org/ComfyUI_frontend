@@ -24,7 +24,7 @@ import {
   createNodeShellState,
   setTrackedNodeState
 } from '@/core/graph/nodeShell/nodeShellState'
-import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
+import { getControlProjectionBatch } from '@/core/graph/widgets/control/controlProjection'
 import {
   appendControlValues,
   applyControlValues,
@@ -228,7 +228,11 @@ interface IMouseOverData {
 function renderWidgets(node: LGraphNode): IBaseWidget[] {
   const widgets = node.widgets ?? []
   if (LiteGraph.vueNodesMode) return [...widgets]
-  return widgets.flatMap((widget) => [widget, ...getControlProjections(widget)])
+  const projections = getControlProjectionBatch(widgets)
+  return widgets.flatMap((widget) => [
+    widget,
+    ...(projections.get(widget) ?? [])
+  ])
 }
 
 function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
@@ -253,9 +257,10 @@ function cloneWidgetValueTwice(
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
+  const projections = getControlProjectionBatch(widgets)
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    for (const valueWidget of [widget, ...getControlProjections(widget)]) {
+    for (const valueWidget of [widget, ...(projections.get(widget) ?? [])]) {
       const [positionalValue, namedValue] = cloneWidgetValueTwice(
         valueWidget.value
       )
@@ -454,6 +459,10 @@ const NAMED_SHAPES = {
  */
 
 const wireExecutionOrders = new WeakMap<LGraphNode, number>()
+const widgetValuesAtRegistration = new WeakMap<
+  LGraphNode,
+  Map<IBaseWidget, IBaseWidget['value']>
+>()
 
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
@@ -1364,6 +1373,8 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    const registeredValues = new Map<IBaseWidget, IBaseWidget['value']>()
+    widgetValuesAtRegistration.set(this, registeredValues)
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1402,6 +1413,7 @@ export class LGraphNode
             serializableWidgets.filter((widget) => !initialWidgets.has(widget))
           )
         )
+        const projections = getControlProjectionBatch(this.widgets ?? [])
         for (const [index, widget] of serializableWidgets.entries()) {
           if (restoredWidgets.has(widget)) continue
           restoredWidgets.add(widget)
@@ -1417,7 +1429,12 @@ export class LGraphNode
               restoration.positional.length
             )
           )
-          if (restored) widget.value = restored.value
+          if (
+            restored &&
+            (!registeredValues.has(widget) ||
+              Object.is(widget.value, registeredValues.get(widget)))
+          )
+            widget.value = restored.value
           applyControlValues(
             widget,
             restoration.positional,
@@ -1425,7 +1442,7 @@ export class LGraphNode
             controlValueCount
           )
           if (restoration.restoreNamed && namedValues) {
-            for (const control of getControlProjections(widget)) {
+            for (const control of projections.get(widget) ?? []) {
               if (Object.hasOwn(namedValues, control.name)) {
                 const value = namedValues[control.name]
                 if (typeof value === 'string') control.value = value
@@ -1475,6 +1492,7 @@ export class LGraphNode
         )
       }
     } finally {
+      widgetValuesAtRegistration.delete(this)
       clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
@@ -2532,6 +2550,7 @@ export class LGraphNode
       positionalIndex
     )
     if (restored) widget.value = restored.value
+    widgetValuesAtRegistration.get(this)?.set(widget, widget.value)
 
     return widget
   }

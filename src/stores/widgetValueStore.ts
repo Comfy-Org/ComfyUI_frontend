@@ -209,16 +209,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  function getPositionalRestoredWidgetValue(
-    graphId: UUID,
-    nodeId: NodeId,
-    positionalIndex: number
-  ): WidgetValue | undefined {
-    return graphWidgetRestorations.get(graphId)?.get(nodeId)?.positional[
-      positionalIndex
-    ]
-  }
-
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
     clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
   }
@@ -696,7 +686,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,

@@ -1390,7 +1390,6 @@
           "src/composables/node/useWatchWidget.test.ts",
           "src/core/graph/widgets/__fixtures__/**",
           "src/core/graph/widgets/comboWidgetInventory.ts",
-          "src/core/graph/widgets/controlWidgetMarker.ts",
           "src/core/graph/widgets/dynamicGroupWidget.ts",
           "src/core/graph/widgets/dynamicGroupWidget.test.ts",
           "src/core/graph/widgets/dynamicInputSpec.ts",

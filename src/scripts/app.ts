@@ -1849,8 +1849,14 @@ export class ComfyApp implements IComfyApp {
             .activeWorkflow as ComfyWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
+          const queuedGraph = this.rootGraph
+          const queuedGraphId = queuedGraph.id
+          const queuedNodes = collectAllNodes(queuedGraph)
+          const queuedWidgets = queuedNodes.map((node) => [
+            ...(node.widgets ?? [])
+          ])
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(queuedGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1862,7 +1868,6 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -2054,12 +2059,22 @@ export class ComfyApp implements IComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          runWidgetControl(
-            this.rootGraph,
-            'after',
-            widgetControlMode,
-            isPartialExecution ? new Set(queueNodeIds.map(String)) : undefined
-          )
+          if (
+            this.rootGraph === queuedGraph &&
+            queuedGraph.id === queuedGraphId &&
+            collectAllNodes(queuedGraph).length === queuedNodes.length &&
+            queuedNodes.every(
+              (node, index) =>
+                node.graph?.getNodeById(node.id) === node &&
+                (node.widgets?.length ?? 0) === queuedWidgets[index].length &&
+                queuedWidgets[index].every(
+                  (widget, widgetIndex) =>
+                    node.widgets?.[widgetIndex] === widget
+                )
+            )
+          ) {
+            runWidgetControl(queuedGraph, 'after', widgetControlMode)
+          }
           useFreeTierQuota().trackRun()
         }
 

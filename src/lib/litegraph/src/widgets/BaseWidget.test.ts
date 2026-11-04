@@ -74,6 +74,17 @@ describe('BaseWidget store integration', () => {
     graph.add(node)
   })
 
+  it('restores a connected widget after constructing a view of its visibility', () => {
+    const widget = createTestWidget(node)
+    widget.connectionSuppressed = true
+
+    const view = new NumberWidget(widget, node)
+    widget.connectionSuppressed = false
+
+    expect(node.isWidgetRowVisible(widget)).toBe(true)
+    expect(node.isWidgetVisible(view)).toBe(true)
+  })
+
   it('draws only the label for a connection-suppressed row', () => {
     const widget = createTestWidget(node, {
       label: 'Input label',

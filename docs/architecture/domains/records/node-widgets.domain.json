@@ -13,9 +13,6 @@
       "path": "src/core/graph/widgets/comboWidgetInventory.ts"
     },
     {
-      "path": "src/core/graph/widgets/controlWidgetMarker.ts"
-    },
-    {
       "path": "src/core/graph/widgets/dynamicGroupWidget.ts"
     },
     {

@@ -1123,6 +1123,51 @@ describe('SubgraphWidgetPromotion', () => {
         }
       })
 
+      it.for([false, true])(
+        'omits nonserializable promoted values and restores following controls with named restore %s',
+        (namedRestore, { onTestFinished }) => {
+          const previousNamedRestore = LiteGraph.namedValuesRestore
+          onTestFinished(() => {
+            LiteGraph.namedValuesRestore = previousNamedRestore
+          })
+          LiteGraph.namedValuesRestore = namedRestore
+          const subgraph = createTestSubgraph()
+          const transient = createNodeWithWidget('Transient')
+          transient.widget.serialize = false
+          transient.widget.controlConfig = {
+            mode: 'decrement',
+            hasFilter: false
+          }
+          subgraph.add(transient.node)
+          subgraph
+            .addInput('transient', 'number')
+            .connect(transient.input, transient.node)
+          const saved = createNodeWithWidget('Saved')
+          saved.widget.controlConfig = { mode: 'increment', hasFilter: false }
+          subgraph.add(saved.node)
+          subgraph.addInput('saved', 'number').connect(saved.input, saved.node)
+          const host = createTestSubgraphNode(subgraph, { id: 101 })
+          writePromotedWidgetValue(host, 0, 73)
+          writePromotedWidgetValue(host, 1, 29)
+          const store = useWidgetValueStore()
+          store.updateWidgetControl(promotedInputs(host)[1].widgetId, {
+            mode: 'randomize'
+          })
+
+          const serialized = host.serialize()
+          expect(serialized.widgets_values).toEqual([29, 'randomize'])
+          store.deleteWidget(promotedInputs(host)[0].widgetId)
+          store.deleteWidget(promotedInputs(host)[1].widgetId)
+          const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+          reloaded.configure(serialized)
+
+          expect(
+            promotedWidgetStates(reloaded).map((state) => state.value)
+          ).toEqual([42, 29])
+          expect(reloaded.serialize().widgets_values).toEqual([29, 'randomize'])
+        }
+      )
+
       it('serializes promoted values from each host independently', () => {
         const subgraph = createTestSubgraph({
           inputs: [{ name: 'value', type: 'number' }]

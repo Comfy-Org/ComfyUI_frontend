@@ -321,19 +321,7 @@ export class PrimitiveNode extends LGraphNode {
         !inputData[1]?.control_after_generate &&
         (widget.type === 'number' || widget.type === 'combo')
       ) {
-        const store = useWidgetValueStore()
-        const mode = store.getPositionalRestoredWidgetValue(
-          this.graph?.rootGraph.id ?? zeroUuid,
-          this.id,
-          1
-        )
-        const filter = store.getPositionalRestoredWidgetValue(
-          this.graph?.rootGraph.id ?? zeroUuid,
-          this.id,
-          2
-        )
-        addValueControlWidgets(widget, String(mode ?? 'fixed'))
-        applyControlValues(widget, [mode, filter], 0)
+        addValueControlWidgets(widget, 'fixed')
       }
 
       const store = useWidgetValueStore()

@@ -10,15 +10,8 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@comfyorg/graph-model/widgets'
-import { registerWidgetControlLabelProvider } from '@/lib/litegraph/src/widgetControlLabel'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@comfyorg/object-info-parser'
-
-registerWidgetControlLabelProvider(() =>
-  useSettingStore().get('Comfy.WidgetControlMode') === 'before'
-    ? t('g.control_before_generate')
-    : t('g.control_after_generate')
-)
 
 function toControlMode(value: string | undefined): ValueControlMode {
   return isValueControlMode(value) ? value : value ? 'fixed' : 'randomize'
@@ -114,16 +107,16 @@ export function addValueControlWidget(
   )
   if (!legacyTarget) return
 
-  const projections = configuredControlProjections(targetWidget)
-  if (!projections) return
+  const projections = getControlProjections(targetWidget, [targetWidget])
   const [mode] = projections
+  if (!mode) return
   mode.name = legacyControlName(
     'control_after_generate',
     'controlAfterGenerateName',
     { controlAfterGenerateName: legacyWidgetName },
     legacyInputData
   )
-  return mode
+  return configuredControlProjections(targetWidget)?.[0]
 }
 
 export function addValueControlWidgets(
@@ -170,9 +163,10 @@ export function addValueControlWidgets(
   )
   if (!legacyTarget) return
 
-  const projections = configuredControlProjections(targetWidget)
-  if (!projections) return
-  projections[0].name = legacyControlName(
+  const projections = getControlProjections(targetWidget, [targetWidget])
+  const [mode] = projections
+  if (!mode) return
+  mode.name = legacyControlName(
     'control_after_generate',
     'controlAfterGenerateName',
     options,
@@ -187,7 +181,7 @@ export function addValueControlWidgets(
       legacyInputData
     )
   }
-  return projections
+  return configuredControlProjections(targetWidget)
 }
 
 export function updateControlWidgetLabel(widget: IBaseWidget): void {

@@ -2,7 +2,10 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
-import { COMBO_CONTROL_MODES } from '@/core/graph/widgets/control/valueControl'
+import {
+  COMBO_CONTROL_MODES,
+  isValueControlMode
+} from '@/core/graph/widgets/control/valueControl'
 import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -15,12 +18,8 @@ export type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 export const CONTROL_OPTIONS = COMBO_CONTROL_MODES
 export type ControlOptions = ValueControlMode
 
-function isControlOption(value: unknown): value is ControlOptions {
-  return CONTROL_OPTIONS.some((option) => option === value)
-}
-
 export function normalizeControlOption(val: WidgetValue): ControlOptions {
-  if (isControlOption(val)) return val
+  if (isValueControlMode(val)) return val
   return 'randomize'
 }
 

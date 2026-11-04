@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -48,6 +48,60 @@ function createPromotedSeedHost(controlMode: string): SubgraphNode {
 }
 
 describe('runWidgetControl with promoted targets', () => {
+  it('preserves an edited host control and execution history through rewiring', async () => {
+    const host = createPromotedSeedHost('increment')
+    const source = host.subgraph.nodes.find((node) => node.title === 'SeedNode')
+    assert.exists(source)
+    const input = host.inputs.find((input) => input.name === 'seed')
+    assert.exists(input?.widgetId)
+    const store = useWidgetValueStore()
+    store.setValue(input.widgetId, 10)
+    runWidgetControl(host.rootGraph, 'before', 'before')
+    store.updateWidgetControl(input.widgetId, { mode: 'decrement' })
+
+    host.subgraph.inputNode.slots[0].disconnect()
+    host.subgraph.inputNode.slots[0].connect(source.inputs[0], source)
+    await Promise.resolve()
+    runWidgetControl(host.rootGraph, 'before', 'before')
+
+    expect(promotedSeedValue(host)).toBe(9)
+    expect(source.widgets?.[0].value).toBe(1)
+  })
+
+  it('advances only the authoritative outer value through nested promotion', () => {
+    const outerGraph = createTestSubgraph()
+    const innerGraph = createTestSubgraph({ rootGraph: outerGraph.rootGraph })
+    const leaf = new SeedNode('increment')
+    innerGraph.add(leaf)
+    const inner = createTestSubgraphNode(innerGraph, {
+      parentGraph: outerGraph
+    })
+    outerGraph.add(inner)
+    const leafWidget = leaf.widgets?.[0]
+    assert.exists(leafWidget)
+    expect(promoteValueWidgetViaSubgraphInput(inner, leaf, leafWidget)).toEqual(
+      {
+        ok: true
+      }
+    )
+    const innerWidget = inner.widgets[0]
+    innerWidget.value = 17
+    const outer = createTestSubgraphNode(outerGraph)
+    outerGraph.rootGraph.add(outer)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outer, inner, innerWidget)
+    ).toEqual({
+      ok: true
+    })
+    outer.widgets[0].value = 31
+
+    runWidgetControl(outer.rootGraph, 'after', 'after')
+
+    expect(promotedSeedValue(outer)).toBe(32)
+    expect(promotedSeedValue(inner)).toBe(17)
+    expect(leafWidget.value).toBe(1)
+  })
+
   it('increments the host-owned value of a promoted seed after queueing', () => {
     const host = createPromotedSeedHost('increment')
     expect(promotedSeedValue(host)).toBe(1)

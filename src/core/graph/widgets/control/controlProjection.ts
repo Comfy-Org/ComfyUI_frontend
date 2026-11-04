@@ -3,10 +3,14 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@comfyorg/graph-model/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { t } from '@/i18n'
-import { widgetControlLabel } from '@/lib/litegraph/src/widgetControlLabel'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  parseWidgetId
+} from '@comfyorg/graph-model/widgetId'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
@@ -17,6 +21,28 @@ import {
 
 const modeProjectionCache = new WeakMap<IBaseWidget, IComboWidget>()
 const filterProjectionCache = new WeakMap<IBaseWidget, IStringWidget>()
+const projectionNames = new WeakMap<
+  IBaseWidget,
+  { requested: string; resolved: string; get: () => string }
+>()
+
+function trackProjectionName(projection: IBaseWidget): void {
+  const state = {
+    requested: projection.name,
+    resolved: projection.name,
+    get: () => state.resolved
+  }
+  projectionNames.set(projection, state)
+  Object.defineProperty(projection, 'name', {
+    configurable: true,
+    enumerable: true,
+    get: state.get,
+    set(name: string) {
+      state.requested = name
+      state.resolved = name
+    }
+  })
+}
 
 function announceControlValue(
   target: IBaseWidget,
@@ -44,7 +70,7 @@ export function announceControlValues(target: IBaseWidget): void {
 
 function createModeProjection(target: IBaseWidget): IComboWidget {
   const store = useWidgetValueStore()
-  return {
+  const projection: IComboWidget = {
     type: 'combo',
     name: 'control_after_generate',
     options: {
@@ -75,7 +101,9 @@ function createModeProjection(target: IBaseWidget): IComboWidget {
       return target.computedDisabled
     },
     get label() {
-      return widgetControlLabel()
+      return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+        ? t('g.control_before_generate')
+        : t('g.control_after_generate')
     },
     get value() {
       return target.widgetId
@@ -96,15 +124,17 @@ function createModeProjection(target: IBaseWidget): IComboWidget {
     },
     callback(value) {
       if (isValueControlMode(value)) {
-        this.value = value
+        projection.value = value
       }
     }
   }
+  trackProjectionName(projection)
+  return projection
 }
 
 function createFilterProjection(target: IBaseWidget): IStringWidget {
   const store = useWidgetValueStore()
-  return {
+  const projection: IStringWidget = {
     type: 'string',
     name: 'control_filter_list',
     options: { serialize: false },
@@ -145,12 +175,14 @@ function createFilterProjection(target: IBaseWidget): IStringWidget {
       if (value !== previous) announceControlValue(target, this, previous)
     },
     callback(value) {
-      this.value = String(value)
+      projection.value = String(value)
     }
   }
+  trackProjectionName(projection)
+  return projection
 }
 
-export function getControlProjections(
+function getCachedControlProjections(
   target: IBaseWidget
 ): [] | [IComboWidget, ...IStringWidget[]] {
   const control = target.widgetId
@@ -163,7 +195,10 @@ export function getControlProjections(
     mode = createModeProjection(target)
     modeProjectionCache.set(target, mode)
   }
-  if (control?.filter === undefined && !target.controlConfig?.hasFilter) {
+  const hasFilter = control
+    ? control.filter !== undefined
+    : target.controlConfig?.hasFilter
+  if (!hasFilter) {
     return [mode]
   }
 
@@ -173,4 +208,36 @@ export function getControlProjections(
     filterProjectionCache.set(target, filter)
   }
   return [mode, filter]
+}
+
+export function getControlProjectionBatch(widgets: readonly IBaseWidget[]) {
+  const batch = new Map(
+    widgets.map((widget) => [widget, getCachedControlProjections(widget)])
+  )
+  const projections = [...batch.values()].flat()
+  const names = projections.map((projection) => {
+    const state = projectionNames.get(projection)
+    const tracked =
+      state &&
+      Object.getOwnPropertyDescriptor(projection, 'name')?.get === state.get
+    return tracked ? { name: state.requested } : projection
+  })
+  ensureUniqueWidgetNames([...widgets.map(({ name }) => ({ name })), ...names])
+  projections.forEach((projection, index) => {
+    const state = projectionNames.get(projection)
+    if (state && names[index] !== projection) {
+      state.resolved = names[index].name
+    }
+  })
+  return batch
+}
+
+export function getControlProjections(
+  target: IBaseWidget & { readonly node?: Pick<LGraphNode, 'widgets'> },
+  widgets = target.node?.widgets ?? [target]
+): [] | [IComboWidget, ...IStringWidget[]] {
+  return (
+    getControlProjectionBatch(widgets).get(target) ??
+    getCachedControlProjections(target)
+  )
 }

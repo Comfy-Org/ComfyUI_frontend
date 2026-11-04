@@ -72,9 +72,9 @@ Configuration consumes valid control slots after registering the target. A
 missing or invalid control slot must not consume the next target widget's
 value. Control values remain absent from API prompt serialization.
 
-Named widget values continue to describe target widgets only; control
-component values remain a compatibility concern of positional
-`widgets_values`.
+Named widget values include compatibility entries for each control mode and
+optional filter, using the same stable names as the classic projections.
+API prompt serialization excludes these control entries.
 
 ## Promotion and graph scope
 
