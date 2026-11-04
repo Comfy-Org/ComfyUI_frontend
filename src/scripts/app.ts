@@ -103,7 +103,6 @@ import {
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
   isGraphLoadHookOrigin,
@@ -116,16 +115,16 @@ import {
 } from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
-import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import {
+  resolvePartnerCredentials,
+  workspaceDrifted
+} from '@/platform/auth/partnerNode/partnerNodeQueueCredentials'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
@@ -174,6 +173,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
+import { installGraphConfigureCallbacks } from '@/utils/graphConfigureCallbacks'
 import {
   collectAllNodes,
   forEachNode,
@@ -856,21 +856,6 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
-  private addAfterConfigureHandler(graph: LGraph) {
-    const { onConfigure } = graph
-    graph.onConfigure = function (...args) {
-      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
-
-      const r = onConfigure?.apply(this, args)
-
-      // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-      return r
-    }
-  }
-
   /**
    * Set up the app on the page
    */
@@ -888,7 +873,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
-    //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
     this.addProcessKeyHandler()
@@ -897,7 +881,6 @@ export class ComfyApp implements IComfyApp {
 
     const graph = new LGraph()
 
-    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
     graph.events.addEventListener('subgraph-created', (e) => {
       try {
         const { subgraph, data } = e.detail
@@ -910,14 +893,13 @@ export class ComfyApp implements IComfyApp {
       }
     })
 
-    this.addAfterConfigureHandler(graph)
+    installGraphConfigureCallbacks(graph)
 
     this.rootGraphInternal = graph
     installNodeAddedTelemetry(graph)
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
-    // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')!
@@ -956,13 +938,10 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure subgraphs are scaled when entering them
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
         const { newGraph, oldGraph } = e.detail
-        // Only scale when switching between graphs (not during initial setup)
-        // oldGraph is null/undefined during initial setup, so skip scaling then
         if (oldGraph) {
           ensureCorrectLayoutScale(
             newGraph.extra.workflowRendererVersion,
@@ -974,7 +953,6 @@ export class ComfyApp implements IComfyApp {
 
     this.rootGraph.start()
 
-    // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
         this.resizeCanvas(canvasEl.target)
@@ -1748,50 +1726,12 @@ export class ComfyApp implements IComfyApp {
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
-    const teamWorkspaceStore = useTeamWorkspaceStore()
-    try {
-      await teamWorkspaceStore.waitForWorkspaceSwitch()
-    } catch (error) {
-      useDialogService().showErrorDialog(error, {
-        title: t('errorDialog.promptExecutionError'),
-        reportType: 'promptExecutionError'
-      })
-      this.queueItems.length = 0
-      this.processingQueue = false
-      return false
-    }
-    const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
-    const workspaceGenerationBeforeAuthentication =
-      teamWorkspaceStore.workspaceTransitionGeneration
-    const workspaceAuthToken = await useAuthStore().getWorkspaceAuthToken()
-    const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
-    const executionWorkspaceGeneration =
-      teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await queueAuthToken(
-      workspaceAuthToken,
-      executionWorkspaceId
-    )
-    const workspaceChangedWhileAuthenticating =
-      (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
-        workspaceGenerationBeforeAuthentication !==
-          executionWorkspaceGeneration) &&
-      (isCloud || workspaceIdBeforeAuthentication !== null)
-    const desktopHostAuth = isDesktopHostSignedIn()
-    const comfyOrgApiKey = desktopHostAuth
-      ? null
-      : useApiKeyAuthStore().getApiKey()
-    const isApiKeySessionExecution =
-      !desktopHostAuth &&
-      !useAuthStore().currentUser &&
-      !useAuthStore().sessionOnlyUser &&
-      useApiKeyAuthStore().isAuthenticated
-    if (
-      executionWorkspaceId &&
-      !comfyOrgAuthToken &&
-      !isApiKeySessionExecution
-    ) {
+    const resolvedCredentials = await resolvePartnerCredentials()
+    if (!resolvedCredentials.ok) {
       useDialogService().showErrorDialog(
-        new Error(t('toastMessages.userNotAuthenticated')),
+        resolvedCredentials.reason === 'workspaceSwitchFailed'
+          ? resolvedCredentials.error
+          : new Error(t('toastMessages.userNotAuthenticated')),
         {
           title: t('errorDialog.promptExecutionError'),
           reportType: 'promptExecutionError'
@@ -1801,6 +1741,7 @@ export class ComfyApp implements IComfyApp {
       this.processingQueue = false
       return false
     }
+    const { credentials } = resolvedCredentials
 
     try {
       while (this.queueItems.length) {
@@ -1868,12 +1809,7 @@ export class ComfyApp implements IComfyApp {
               viewMode: queuedMode
             })
           }
-          if (
-            workspaceChangedWhileAuthenticating ||
-            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
-            executionWorkspaceGeneration !==
-              teamWorkspaceStore.workspaceTransitionGeneration
-          ) {
+          if (workspaceDrifted(credentials)) {
             useDialogService().showErrorDialog(
               new Error(t('errorDialog.workspaceChangedDuringExecution')),
               {
@@ -1885,8 +1821,8 @@ export class ComfyApp implements IComfyApp {
             break
           }
           try {
-            api.authToken = comfyOrgAuthToken
-            api.apiKey = comfyOrgApiKey ?? undefined
+            api.authToken = credentials.authToken
+            api.apiKey = credentials.apiKey
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
               previewMethod

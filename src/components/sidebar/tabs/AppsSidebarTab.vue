@@ -40,14 +40,10 @@ import Badge from '@comfyorg/design-system/badge/Badge'
 import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { isAppWorkflow } from '@/platform/workflow/management/appWorkflow'
 
 const commandStore = useCommandStore()
-
-function isAppWorkflow(workflow: ComfyWorkflow): boolean {
-  return workflow.suffix === 'app.json'
-}
 
 function createApp() {
   void commandStore.execute('Comfy.NewBlankWorkflow')
