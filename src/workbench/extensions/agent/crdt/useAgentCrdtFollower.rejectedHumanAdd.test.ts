@@ -8,7 +8,10 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
-import { useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  SUBSCRIBE_CATCHUP_GRACE_MS,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
 // real host would (`parseWireOps`) instead of casting `JSON.parse`'s
@@ -115,9 +118,8 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
   )
 })
 
-it('surfaces an overwritten human add and resubscribes to the canonical document', async () => {
+function mountBoundFollower() {
   const agentSocket = createFakeAgentSocket()
-  const { send } = agentSocket
   const store = useAgentPanelStore()
   store.enabled = true
   onTestFinished(() => {
@@ -135,30 +137,44 @@ it('surfaces an overwritten human add and resubscribes to the canonical document
     })
   )
   onTestFinished(unmount)
-  agentSocket.receive('doc_subscribed', {
-    v: 1,
-    workflow_id: WORKFLOW_ID,
-    ok: true,
-    seq: 0
-  })
+  const confirmSubscribe = () =>
+    agentSocket.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 0
+    })
+  confirmSubscribe()
+  const sentFrames = (type: string) =>
+    agentSocket.send.mock.calls
+      .map(([raw]) => raw)
+      .filter((raw) => JSON.parse(raw).type === type)
+  return { agentSocket, follower, confirmSubscribe, sentFrames }
+}
 
-  follower.enqueueHumanOperations([
-    {
-      op: 'add_node',
-      node_id: 7,
-      class_type: 'Note',
+function addNote(nodeId: number) {
+  return {
+    op: 'add_node' as const,
+    node_id: nodeId,
+    class_type: 'Note',
+    pos: [400, 400] as [number, number],
+    node: {
+      id: nodeId,
+      type: 'Note',
       pos: [400, 400],
-      node: {
-        id: 7,
-        type: 'Note',
-        pos: [400, 400],
-        size: [300, 200],
-        inputs: [],
-        outputs: [],
-        widgets_values: { text: 'keep me' }
-      }
+      size: [300, 200],
+      inputs: [],
+      outputs: [],
+      widgets_values: { text: 'keep me' }
     }
-  ])
+  }
+}
+
+it('surfaces an overwritten human add and resubscribes to the canonical document', async () => {
+  const { agentSocket, follower } = mountBoundFollower()
+  const { send } = agentSocket
+
+  follower.enqueueHumanOperations([addNote(7)])
   await vi.waitFor(() => expect(send.mock.calls.length).toBeGreaterThan(1))
   const { op_id } = sentOp(send.mock.calls[1][0])
 
@@ -187,4 +203,81 @@ it('surfaces an overwritten human add and resubscribes to the canonical document
     'doc_ops',
     'doc_subscribe'
   ])
+})
+
+it('keeps the next edit queued while the recovery subscribe cannot be sent', async () => {
+  const { agentSocket, follower, confirmSubscribe, sentFrames } =
+    mountBoundFollower()
+  const { send } = agentSocket
+  follower.enqueueHumanOperations([addNote(7)])
+  await vi.waitFor(() => expect(sentFrames('doc_ops')).toHaveLength(1))
+  const { op_id } = sentOp(sentFrames('doc_ops')[0])
+  follower.enqueueHumanOperations([addNote(8)])
+  await Promise.resolve()
+
+  send.mockImplementation((raw) => JSON.parse(raw).type !== 'doc_subscribe')
+  agentSocket.receive('doc_ops_result', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 2,
+    applied: [],
+    skipped: [op_id],
+    lww_dropped: [op_id]
+  })
+
+  expect(reportError).not.toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      tags: expect.objectContaining({ code: 'unbound' })
+    })
+  )
+  expect(sentFrames('doc_ops')).toHaveLength(1)
+
+  send.mockImplementation(() => true)
+  agentSocket.open()
+  confirmSubscribe()
+
+  await vi.waitFor(() => expect(sentFrames('doc_ops')).toHaveLength(2))
+  expect(sentOp(sentFrames('doc_ops')[1]).op_id).not.toBe(op_id)
+})
+
+it('refreshes and reports an edit whose resend is acknowledged only as a replay', async () => {
+  vi.useFakeTimers()
+  onTestFinished(() => {
+    vi.useRealTimers()
+  })
+  const { agentSocket, follower, confirmSubscribe, sentFrames } =
+    mountBoundFollower()
+  follower.enqueueHumanOperations([addNote(7)])
+  await vi.waitFor(() => expect(sentFrames('doc_ops')).toHaveLength(1))
+  const { op_id } = sentOp(sentFrames('doc_ops')[0])
+  // The first confirmed subscribe arms a catch-up probe; answer it so the
+  // resend below is not held behind an unacknowledged subscribe.
+  await vi.advanceTimersByTimeAsync(SUBSCRIBE_CATCHUP_GRACE_MS)
+  confirmSubscribe()
+
+  await vi.advanceTimersByTimeAsync(10_000 - SUBSCRIBE_CATCHUP_GRACE_MS)
+  expect(sentFrames('doc_ops')).toHaveLength(2)
+  const subscribesBeforeResult = sentFrames('doc_subscribe').length
+  agentSocket.receive('doc_ops_result', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 2,
+    applied: [],
+    skipped: [op_id]
+  })
+
+  expect(reportError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      context: expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        opId: op_id,
+        code: 'replayed_without_outcome'
+      })
+    })
+  )
+  expect(sentFrames('doc_subscribe')).toHaveLength(subscribesBeforeResult + 1)
 })

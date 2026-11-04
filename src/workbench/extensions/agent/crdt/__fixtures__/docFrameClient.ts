@@ -1,4 +1,4 @@
-import type { DocResetData } from '@comfyorg/ingest-types'
+import type { DocOpsResultData, DocResetData } from '@comfyorg/ingest-types'
 
 type ServerFrameType =
   | 'doc_update'
@@ -27,13 +27,6 @@ interface DocSubscribedWireData extends CommonWireData {
   message?: unknown
 }
 
-interface DocOpsResultWireData extends DocSubscribedWireData {
-  applied?: unknown
-  skipped?: unknown
-  lww_dropped?: unknown
-  failed?: unknown
-}
-
 interface AwarenessWireData extends CommonWireData {
   actor?: unknown
   state?: unknown
@@ -60,7 +53,9 @@ export function docSubscribedFrame(data: DocSubscribedWireData = {}) {
   return serverFrame('doc_subscribed', { ok: true, seq: 1, ...data })
 }
 
-export function docOpsResultFrame(data: DocOpsResultWireData = {}) {
+export function docOpsResultFrame(
+  data: Partial<Record<keyof DocOpsResultData, unknown>> = {}
+) {
   return serverFrame('doc_ops_result', { ok: true, ...data })
 }
 

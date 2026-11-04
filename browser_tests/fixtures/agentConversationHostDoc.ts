@@ -293,19 +293,12 @@ export class HostDoc {
 
   // A batch the client minted itself (envelope included), answered the way
   // the relay answers a human write: one `doc_ops_result`, then the delta as
-  // a `doc_update` when anything landed. The applier stays the only judge.
-  //
-  // Per `ApplyOutcome`'s contract (comfy-multi-player `dist/types.d.ts`
-  // ~L456-461): `applied` counts every op that consumed its `op_id` THIS
-  // call, including LWW-dropped writes and delete-wins no-ops (protocol-level
-  // applies); `skipped` is idempotency only — an `op_id` the document had
-  // already applied before this call OR earlier in this same batch. This
-  // fixture derives that split by walking `outcomes` in order and advancing a
-  // seen-ID set as it goes (seeded from `hasAppliedOp`, the ADR-004 read
-  // surface, `dist/read.d.ts` L133), so a same-batch duplicate op_id is
-  // classified by position, not just by pre-batch state — without the
-  // package's deprecated `result.applied`/`result.skipped` accessors
-  // (`dist/applier.js` L183-199, marked "Remove in 0.3").
+  // a `doc_update` whenever an op consumed its `op_id`. The applier stays the
+  // only judge. An op that lost a last-writer-wins race is acknowledged in
+  // `skipped` and named in `lww_dropped`, yet its consumed `op_id` still
+  // changes the document, so its delta and sequence advance are emitted too.
+  // An `op_id` the document already held before this call, or earlier in this
+  // batch, is a replay: `skipped` with no delta.
   //
   // `ops` is typed `WireOpEnvelope`, not `Op`: a deferred kind such as
   // `reset_doc` must reach the real applier verbatim so its `op_deferred` +
@@ -338,7 +331,8 @@ export class HostDoc {
       }
     }
     const rejected = outcomes.find(isRejected)
-    if (applied.length > 0) this.seq += 1
+    const consumed = applied.length + lwwDropped.length > 0
+    if (consumed) this.seq += 1
     const result: HostFrame = {
       type: 'doc_ops_result',
       data: {
@@ -360,14 +354,13 @@ export class HostDoc {
         })
       }
     }
-    const update =
-      applied.length > 0
-        ? this.updateFrame(
-            Y.encodeStateAsUpdate(this.doc, before),
-            advisoryActor(ops[0]),
-            applied
-          )
-        : null
+    const update = consumed
+      ? this.updateFrame(
+          Y.encodeStateAsUpdate(this.doc, before),
+          advisoryActor(ops[0]),
+          applied
+        )
+      : null
     return { result, update, outcomes }
   }
 

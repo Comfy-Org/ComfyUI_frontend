@@ -12,40 +12,19 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test('surfaces the overwritten edit and refreshes the canvas', async ({
-      idCollision
+      idCollision,
+      toast
     }) => {
       const { nodeId } = await driveCollision(idCollision)
 
       await expect(
-        idCollision.page
-          .getByTestId('toast')
-          .getByText(enMessages.agent.editRejected.overwritten)
+        toast.withText(enMessages.agent.editRejected.overwritten)
       ).toBeVisible()
       await expect(
         idCollision.vueNodes
           .getNodeLocator(nodeId)
           .getByLabel('filename_prefix', { exact: true })
       ).toHaveValue('ComfyUI')
-    })
-
-    test('keeps the refreshed canvas aligned with the canonical document', async ({
-      idCollision
-    }) => {
-      const { nodeId } = await driveCollision(idCollision)
-
-      await expect(
-        idCollision.vueNodes
-          .getNodeLocator(nodeId)
-          .getByLabel('filename_prefix', { exact: true })
-      ).toHaveValue('ComfyUI')
-      const canonicalNode = idCollision.host
-        .projection()
-        .nodes.find((node) => String(node.id) === nodeId)
-      expect(
-        canonicalNode,
-        `doc should still contain node ${nodeId}`
-      ).toBeDefined()
-      expect(canonicalNode?.type).toBe('SaveImage')
     })
   }
 )

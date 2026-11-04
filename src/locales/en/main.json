@@ -6311,6 +6311,7 @@
     "showLess": "Show less",
     "editRejected": {
       "overwritten": "Your edit conflicted with a newer change and was not saved. The workflow was refreshed to show the saved version.",
+      "unconfirmed": "Your edit could not be confirmed as saved. The workflow was refreshed to show the saved version.",
       "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",

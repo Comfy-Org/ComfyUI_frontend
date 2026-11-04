@@ -61,6 +61,7 @@ import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
   recordUnsyncedHumanOps,
@@ -528,48 +529,58 @@ function startAgentCrdtFollower(
   }
 
   const revertRejectedOps = (
-    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+    workflowId: string,
+    rejected: readonly Op[],
+    seq: number | undefined
   ) => {
-    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (workflowId === null) return
-
-    const applied = new Set(outcome.result.applied)
-    const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    if (!isTargetActive.value) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...rejected
-      ])
+    if (isTargetActive.value && applyRejectedOps(workflowId, rejected, seq))
       return
-    }
-    if (!applyRejectedOps(workflowId, rejected, outcome.result.seq))
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...rejected
-      ])
+    pendingRejected.set(workflowId, [
+      ...(pendingRejected.get(workflowId) ?? []),
+      ...rejected
+    ])
   }
 
-  const reconcileOverwrittenOps = (
+  const classifyLostEdits = ({
+    ops,
+    result,
+    resent
+  }: Extract<BatchOutcome, { state: 'acknowledged' }>): LostEdits => {
+    const dropped = new Set(result.lwwDropped)
+    const skipped = new Set(resent ? result.skipped : [])
+    return {
+      overwritten: ops.filter((op) => dropped.has(op.op_id)),
+      unconfirmed: ops.filter(
+        (op) => skipped.has(op.op_id) && !dropped.has(op.op_id)
+      )
+    }
+  }
+
+  // Parks later edits until the re-read subscription is confirmed, so a
+  // subscribe that cannot leave the socket does not settle them unbound.
+  const refreshCanonicalDocument = (workflowId: string): void => {
+    if (!isTargetActive.value || workflowId !== subscribedWorkflowId.value)
+      return
+    heldForWorkflowId = workflowId
+    sender.suspend()
+    lifecycle.refresh()
+  }
+
+  const compensateAcknowledgedOps = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
-    if (!outcome.result.lwwDropped?.length) return
-    const dropped = new Set(outcome.result.lwwDropped)
-    const overwritten = outcome.ops.filter((op) => dropped.has(op.op_id))
-    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (workflowId === null) return
-    rejectedOpNotifier.notifyOverwritten(outcome.ops, outcome.result)
-    if (!isTargetActive.value) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...overwritten
-      ])
-    } else if (!applyRejectedOps(workflowId, overwritten, outcome.result.seq)) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...overwritten
-      ])
-    }
-    bridge.resubscribe()
+    const { result } = outcome
+    const lost = classifyLostEdits(outcome)
+    const anyLost = lost.overwritten.length + lost.unconfirmed.length > 0
+    if (anyLost) rejectedOpNotifier.notifyLostEdits(result, lost)
+    const applied = new Set(result.applied)
+    const reverted = result.ok
+      ? [...lost.overwritten, ...lost.unconfirmed]
+      : outcome.ops.filter((op) => !applied.has(op.op_id))
+    const workflowId = result.workflowId ?? bridge.subscribedWorkflowId
+    if (workflowId === null || (result.ok && !anyLost)) return
+    revertRejectedOps(workflowId, reverted, result.seq)
+    if (anyLost) refreshCanonicalDocument(workflowId)
   }
 
   const workflowsWithUnsyncedOps = new Set<string>()
@@ -593,9 +604,7 @@ function startAgentCrdtFollower(
       recordDevEvent('human_ops_settled', outcome)
     }
     projection.settleLocalWrites(outcome.ops)
-    if (outcome.state === 'acknowledged') reconcileOverwrittenOps(outcome)
-    if (outcome.state === 'acknowledged' && !outcome.result.ok)
-      revertRejectedOps(outcome)
+    if (outcome.state === 'acknowledged') compensateAcknowledgedOps(outcome)
     noteSettledHumanOps(outcome, workflowId)
   }
 

@@ -8,10 +8,6 @@
  * Batches are strictly serialized: one in-flight batch at a time, FIFO, so
  * op order on the wire matches mint order. `base_version` is read at mint
  * time from the follower's last observed sequence.
- *
- * Outcome handling distinguishes a harmless replay from an edit that lost a
- * last-writer-wins race. `onResult` is the seam that carries both outcomes to
- * the projection and user-notification boundary.
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
@@ -38,7 +34,7 @@ const MAX_FAILURE_REPORTS_PER_WINDOW = 3
  * Admits at most {@link MAX_FAILURE_REPORTS_PER_WINDOW} reports per
  * {@link FAILURE_REPORT_WINDOW_MS}; the window re-arms by time, not by success.
  */
-function createReportBudget(): () => boolean {
+export function createReportBudget(): () => boolean {
   let reports = 0
   let windowStartedAt: number | null = null
   return () => {
@@ -98,7 +94,13 @@ export interface OpSenderDeps {
 }
 
 export type BatchOutcome =
-  | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
+  | {
+      state: 'acknowledged'
+      ops: Op[]
+      result: OpsResultView
+      /** The batch was sent again, so a skipped op may be a lost first send. */
+      resent?: boolean
+    }
   | { state: 'unacknowledged'; ops: Op[] }
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
@@ -682,7 +684,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleResult(batch: InFlight, result: OpsResultView): void {
     retire(batch, 1)
-    settle({ state: 'acknowledged', ops: batch.ops, result }, 'host_result')
+    settle(
+      {
+        state: 'acknowledged',
+        ops: batch.ops,
+        result,
+        ...(batch.sends > 1 && { resent: true })
+      },
+      'host_result'
+    )
   }
 
   function settleIdentifiedResult(

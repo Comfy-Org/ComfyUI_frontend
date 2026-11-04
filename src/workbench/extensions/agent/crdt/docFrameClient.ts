@@ -1,5 +1,5 @@
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
-import type { DocResetData } from '@comfyorg/ingest-types'
+import type { DocOpsResultData, DocResetData } from '@comfyorg/ingest-types'
 import { zDocSubscribedData, zDocUpdateData } from '@comfyorg/ingest-types/zod'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -60,7 +60,7 @@ export interface DocOpsResult {
   seq?: number
   applied: string[]
   skipped: string[]
-  lwwDropped?: string[]
+  lwwDropped?: DocOpsResultData['lww_dropped']
   code?: string
   message?: string
   /** Validated diagnostics for the first rejected operation in a batch. */

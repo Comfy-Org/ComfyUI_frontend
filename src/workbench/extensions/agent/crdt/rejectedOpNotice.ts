@@ -7,11 +7,22 @@ import { i18n } from '@/i18n'
 import { createToastId } from '@/types/toastId'
 
 import type { DocOpFailure } from './docFrameClient'
+import { createReportBudget } from './opSender'
 import type { OpsResultView } from './opSender'
 import { reportLostEdit } from './reportLostEdit'
 
 const NOTICE_LIFE_MS = 10_000
 const NOTICE_ID = createToastId()
+
+/**
+ * Acknowledged ops the document does not show as written: `overwritten` lost
+ * a last-writer-wins race; `unconfirmed` were skipped on a resend, so an
+ * earlier send whose result was lost may have applied them or let them lose.
+ */
+export interface LostEdits {
+  overwritten: readonly Op[]
+  unconfirmed: readonly Op[]
+}
 
 function rejectedOp(ops: readonly Op[], failed: DocOpFailure): Op | undefined {
   return ops.find((op) => op.op_id === failed.op_id) ?? ops[failed.index]
@@ -198,18 +209,40 @@ export function createRejectedOpNotifier() {
     showToast(kind, withReason(notice, target, code))
   }
 
-  function notifyOverwritten(ops: readonly Op[], result: OpsResultView): void {
-    const dropped = new Set(result.lwwDropped ?? [])
-    const overwritten = ops.filter((op) => dropped.has(op.op_id))
-    reportLostEdit('host_rejected', overwritten, {
-      code: 'lww_dropped',
-      workflowId: result.workflowId,
-      errorType: 'error_applying_agent_graph_edit'
-    })
-    showToast(
-      'agent.editRejected.overwritten',
-      i18n.global.t('agent.editRejected.overwritten')
-    )
+  const mayReportLostEdit = createReportBudget()
+
+  /**
+   * A rejected result already showed the notice naming its failed op and
+   * reason, so only an accepted result replaces it with the lost-edit notice.
+   */
+  function notifyLostEdits(
+    result: OpsResultView,
+    { overwritten, unconfirmed }: LostEdits
+  ): void {
+    if (overwritten.length > 0)
+      reportLostEdit(
+        'host_rejected',
+        overwritten,
+        {
+          code: 'lww_dropped',
+          workflowId: result.workflowId,
+          errorType: 'error_applying_agent_graph_edit'
+        },
+        { shouldReport: mayReportLostEdit() }
+      )
+    if (unconfirmed.length > 0)
+      reportLostEdit(
+        'unconfirmed',
+        unconfirmed,
+        { code: 'replayed_without_outcome', workflowId: result.workflowId },
+        { shouldReport: mayReportLostEdit() }
+      )
+    if (!result.ok) return
+    const kind =
+      overwritten.length > 0
+        ? 'agent.editRejected.overwritten'
+        : 'agent.editRejected.unconfirmed'
+    showToast(kind, i18n.global.t(kind))
   }
 
   return {
@@ -217,7 +250,7 @@ export function createRejectedOpNotifier() {
       if (result.ok) return
       notifyRejected(ops, result)
     },
-    notifyOverwritten,
+    notifyLostEdits,
     notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
       const notice = i18n.global.t('agent.editRejected.widgetWrite')
       showToast(
