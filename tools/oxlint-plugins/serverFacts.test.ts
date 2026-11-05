@@ -200,6 +200,7 @@ function describe(facts: AddCreditsFacts) {
   const a = !facts.canTopUp && facts.canTopUpRefusal
   const b = facts.canTopUpRefusal ?? facts.canTopUpReason
   const c = facts.canChangeSeats || facts.canChangeSeatsDenial
+  const d = !facts.canTopUp && facts.canTopUpRefusal && !isLoading
 }
 `
     },
@@ -312,6 +313,23 @@ const capabilities = useBillingCapabilities()
 const a = capabilities.canTopUp.value || !capabilities.canTopUpRefusal.value
 `,
       errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'a fact-object capability gated by a served detail of another capability or holder',
+      code: `
+function f(billingFacts: BillingFacts, seatFacts: SeatFacts) {
+  return !billingFacts.canTopUp && seatFacts.canTopUpRefusal
+}
+function g(facts: SectionFacts) {
+  const a = facts.canTopUp && !facts.canManageBillingReason
+  const b = facts.canTopUp && !facts.canTopUpRefusal
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
     },
     {
       name: '#15675 capability chosen by isCloud with a role fallback',

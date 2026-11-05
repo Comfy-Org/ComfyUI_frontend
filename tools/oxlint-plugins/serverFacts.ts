@@ -471,15 +471,22 @@ function memberKey(member: Member): string | undefined {
   return holder && `${holder}.${member.property.name}`
 }
 
-function combinesFactObjectCapabilities(operands: AstNode[]): boolean {
+function isFactObjectField(node: AstNode): boolean {
   return (
-    operands.filter(
-      (operand) =>
-        capabilityMember(
-          negated(operand) ?? operand,
-          isFactObjectCapability
-        ) !== undefined
-    ).length >= 2
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    CAPABILITY_BINDING.test(node.property.name) &&
+    SERVER_FACT_OWNER.test(factName(node.object) ?? '')
+  )
+}
+
+function combinesFactObjectCapabilities(operands: AstNode[]): boolean {
+  const fields = operands.flatMap(
+    (operand) =>
+      capabilityMember(negated(operand) ?? operand, isFactObjectField) ?? []
+  )
+  return (
+    fields.length >= 2 && fields.some((field) => !isCapabilityDetail(field))
   )
 }
 
@@ -693,7 +700,7 @@ export const noCapabilityRecombination: Rule = {
           factOperands.length < 2 ||
           !(
             operands.some(containsCapability) ||
-            combinesFactObjectCapabilities(operands)
+            combinesFactObjectCapabilities(factOperands)
           ) ||
           onlyNarrowedByLocalState(node) ||
           isInsidePendingFact(node)
