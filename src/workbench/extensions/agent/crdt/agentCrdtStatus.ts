@@ -51,10 +51,43 @@ export type AgentCrdtTerminalState =
   | 'schema_error'
   | null
 
+/**
+ * Which edge last set `canvasMayBeStale`, recorded where that edge is decided
+ * rather than inferred afterwards from the cumulative counters above (a
+ * counter says a gap happened at some point in the session, never that the
+ * CURRENT staleness came from one).
+ *
+ * `canvasMayBeStale` is one boolean over five unrelated causes, so a consumer
+ * reporting it — `AgentPanelRoot.reportWithheldDraft` — could say that a draft
+ * was withheld but not why. In production that made the withhold warning
+ * unattributable: 955 events across two Sentry groups in the five days to
+ * 2026-11-05 could not be split between the schema skew `BE-21356` addressed
+ * and the subscribe-acknowledgement failures tracked separately, which is the
+ * comparison PM-2118 exists to make.
+ *
+ * - `doc_reset` — an explicit lineage break arrived for the bound workflow.
+ * - `schema_error` — the merged doc failed the KA-11 read gate (schema skew).
+ * - `doc_gap` — a sequence jump was detected upstream.
+ * - `socket_closed` — the document socket dropped while connected.
+ * - `tab_inactive` — the bound tab was deactivated with its subscription live.
+ * - `projection_failed` — frames arrived but the projection could not apply
+ *   them; carried on `projectionFailureFor`, not on the sync flag.
+ */
+export type AgentCanvasStaleCause =
+  | 'doc_reset'
+  | 'schema_error'
+  | 'doc_gap'
+  | 'socket_closed'
+  | 'tab_inactive'
+  | 'projection_failed'
+  | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   canvasMayBeStale: boolean
+  /** Null exactly when `canvasMayBeStale` is false. */
+  canvasStaleCause: AgentCanvasStaleCause
   workflowId: string | null
   terminal: AgentCrdtTerminalState
   /**
