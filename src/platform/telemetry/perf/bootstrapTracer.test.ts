@@ -241,12 +241,68 @@ describe('bootstrapTracer', () => {
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
     expect(metadata.outcome).toBe('failed')
+    expect(metadata.failure_phase).toBe('bootstrap/object-info')
+    expect(metadata).not.toHaveProperty('failure_error')
     expect(Object.keys(metadata.phases)).toEqual(['bootstrap/object-info'])
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BOOTSTRAP_COMPLETE,
       metadata
     )
     expect(setViewLoadingTime).not.toHaveBeenCalled()
+  })
+
+  it('names the innermost phase whose work rejected when startup fails', async () => {
+    const tracer = new BootstrapTracer()
+    class UnauthorizedError extends Error {
+      override name = 'UnauthorizedError'
+    }
+
+    await expect(
+      tracer.settle('bootstrap/extensions-load', () =>
+        tracer.settle('bootstrap/extensions-load-custom', () =>
+          Promise.reject(new UnauthorizedError('secret detail'))
+        )
+      )
+    ).rejects.toThrow('secret detail')
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      outcome: 'failed',
+      failure_phase: 'bootstrap/extensions-load-custom',
+      failure_error: 'UnauthorizedError'
+    })
+    expect(
+      JSON.stringify(metadata),
+      'error messages can carry user data and must never reach RUM'
+    ).not.toContain('secret detail')
+  })
+
+  it('reports a failure outside every phase as untraced', () => {
+    const tracer = new BootstrapTracer()
+
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      outcome: 'failed',
+      failure_phase: 'untraced'
+    })
+  })
+
+  it('adds no failure fields to a completed startup', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () =>
+        Promise.reject(new Error('handled by the caller'))
+      )
+    ).rejects.toThrow()
+    tracer.complete()
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).not.toHaveProperty('failure_phase')
+    expect(metadata).not.toHaveProperty('failure_error')
   })
 
   it('exposes the startup outcome once it is known', () => {
