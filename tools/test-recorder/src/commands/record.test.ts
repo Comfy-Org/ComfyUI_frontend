@@ -336,7 +336,7 @@ describe('runRecord overwrite guard', () => {
 
   it('refuses without prompting when stdin closed at EOF during the paste', async () => {
     const { root, outputPath } = seedExistingSpec('eof-overwrite')
-    const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
+    const stdinDescriptor = Object.getOwnPropertyDescriptors(process).stdin
     try {
       vi.mocked(runRecording).mockResolvedValue({
         success: true,
