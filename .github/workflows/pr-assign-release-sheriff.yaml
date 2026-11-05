@@ -1,5 +1,8 @@
-# Assigns the on-call release sheriff to backport and release version-bump PRs
-# so they are never left unowned. Details: docs/release-process.md.
+# Assigns the release sheriff named in .github/release-sheriff.json to
+# backport, release version-bump and automation-authored PRs so they are never
+# left unowned. The sheriff is a fixed role, deliberately not the Datadog
+# on-call rotation: on-call pages for incidents, the sheriff shepherds
+# releases. Details: docs/release-process.md.
 name: 'PR: Assign Release Sheriff'
 
 on:
@@ -50,8 +53,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
         run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts
 
       # A failed scheduled run only notifies whoever last pushed to main, which

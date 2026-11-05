@@ -1,14 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 /** `isConnected` is on the class, not the INodeInputSlot interface. */
 function inputSlot(node: LGraphNode, index: number): NodeInputSlot | null {
   const slot = node.inputs[index]
@@ -32,8 +30,6 @@ describe('NodeInputSlot', () => {
   const originalCallbacks = LiteGraph.onDeprecationWarning
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
   })
@@ -133,10 +129,6 @@ describe('NodeInputSlot', () => {
 })
 
 describe('NodeInputSlot.isConnected', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('reflects connect and disconnect', () => {
     const { target } = createConnectedPair()
     expect(inputSlot(target, 0)?.isConnected).toBe(true)

@@ -1,10 +1,8 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
@@ -14,8 +12,30 @@ import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
  * Use {@link IWidgetOptions.step2} if available, otherwise fallback to
  * {@link IWidgetOptions.step} which is scaled up by 10x in the legacy frontend logic.
  */
-export function getWidgetStep(options: IWidgetOptions<unknown>): number {
+export function getWidgetStep(options: IWidgetOptions): number {
   return options.step2 || (options.step || 10) * 0.1
+}
+
+/**
+ * Coerces a numeric widget value for legacy canvas rendering.
+ *
+ * Persisted workflows and extension-provided widgets can contain values that do
+ * not match the current numeric widget type. Keep coercion at this runtime
+ * boundary so an invalid value cannot throw and stop the canvas render loop.
+ */
+export function coerceNumericWidgetValue(value: unknown): number {
+  try {
+    return Number(value)
+  } catch {
+    return Number.NaN
+  }
+}
+
+export function formatNumericWidgetValue(
+  value: unknown,
+  precision = 3
+): string {
+  return coerceNumericWidgetValue(value).toFixed(precision)
 }
 
 export function evaluateInput(input: string): number | undefined {
@@ -27,6 +47,16 @@ export function evaluateInput(input: string): number | undefined {
   const newValue = Number(input)
   if (!isFinite(newValue)) return undefined
   return newValue
+}
+
+export function findComboValueIndex(
+  values: readonly (string | number)[],
+  currentValue: string | number
+): number {
+  const exactIndex = values.indexOf(currentValue)
+  return exactIndex === -1
+    ? values.findIndex((value) => String(value) === String(currentValue))
+    : exactIndex
 }
 
 export function getWidgetIds(
@@ -51,7 +81,6 @@ export function deriveWidgetRenderState(
   widget: Readonly<IBaseWidget>
 ): WidgetRenderState {
   return {
-    advanced: widget.options?.advanced ?? widget.advanced,
     hasLayoutSize: typeof widget.computeLayoutSize === 'function',
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip

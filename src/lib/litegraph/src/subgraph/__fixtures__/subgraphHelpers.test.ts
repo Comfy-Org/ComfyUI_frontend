@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -51,7 +49,6 @@ describe('setupComplexPromotionFixture', () => {
 
 describe('enableSubgraphNodeCreation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 

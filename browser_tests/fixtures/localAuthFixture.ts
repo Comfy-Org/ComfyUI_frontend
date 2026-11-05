@@ -1,7 +1,16 @@
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
+import type {
+  CreateTopupQuoteRequest,
+  TopupQuoteResponse
+} from '@comfyorg/ingest-types'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS
+} from '@e2e/fixtures/data/cloudWorkspace'
 import {
   createSubscriptionHelper,
   withUnsubscribed
@@ -30,13 +39,35 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     const userId = await comfyPage.setupUser(
       `playwright-local-auth-${testInfo.parallelIndex}`
     )
-    await comfyPage.setupSettings({
-      'Comfy.TutorialCompleted': true,
-      'Comfy.userId': userId
-    })
+    await comfyPage.setupSettings({ userId })
 
     await comfyPage.cloudAuth.mockAuth()
-    await mockWorkspace(page, workspace('personal', 'owner'), [])
+    const personalWorkspace = workspace('personal', 'owner')
+    await mockWorkspace(page, personalWorkspace, [])
+    await page.route('**/api/billing/capabilities', (route) =>
+      route.fulfill({ json: createBillingCapabilities(personalWorkspace.id) })
+    )
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
+    await page.route('**/api/billing/balance', (route) =>
+      route.fulfill({ json: EMPTY_BILLING_BALANCE })
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill({ json: EMPTY_BILLING_PLANS })
+    )
+    await page.route('**/api/billing/topup/quote', (route) => {
+      const { amount_cents } = route
+        .request()
+        .postDataJSON() as CreateTopupQuoteRequest
+      return route.fulfill({
+        json: {
+          amount_cents,
+          credits: Math.round(amount_cents * 2.11),
+          expires_at: '2099-01-01T00:00:00Z'
+        } satisfies TopupQuoteResponse
+      })
+    })
     await page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,

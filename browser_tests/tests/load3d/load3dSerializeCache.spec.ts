@@ -20,14 +20,14 @@ type PromptBody = {
 function getLoad3dImageInput(body: unknown, nodeId: string): Load3dImageInput {
   const prompt = (body as PromptBody).prompt ?? {}
   const node = prompt[nodeId]
-  expect(node?.class_type, `node ${nodeId} should be Load3D`).toBe('Load3D')
-  const input = node!.inputs!.image as Load3dImageInput
+  expect(node.class_type, `node ${nodeId} should be Load3D`).toBe('Load3D')
+  const input = node.inputs!.image as Load3dImageInput
   expect(typeof input.image).toBe('string')
   expect(typeof input.recording).toBe('string')
   return input
 }
 
-test.describe('Load3D serialize cache', () => {
+test.describe('Load3D serialize cache', { tag: '@vue-nodes' }, () => {
   test('starting a recording forces the next queue to re-capture (FE-905)', async ({
     comfyPage,
     load3d

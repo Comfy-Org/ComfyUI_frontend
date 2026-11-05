@@ -1,22 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
-import { toNodeId } from '@/types/nodeId'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 import { useNodeDataStore } from './nodeDataStore'
 
 const rootA: UUID = 'root-a'
-
 function node(id: number, graphId: UUID = rootA): NodeState {
   return createNodeState({ id: toNodeId(id), graphId, title: `Node ${id}` })
 }
@@ -29,10 +29,6 @@ function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
 }
 
 describe('useNodeDataStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('re-runs consumers when membership changes', () => {
     const store = useNodeDataStore()
     const ids = computed(() =>
@@ -136,10 +132,6 @@ describe('useNodeDataStore', () => {
 })
 
 describe('nodeDataStore registration via LGraph', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function registeredState(graph: LGraph, node: LGraphNode) {
     return useNodeDataStore()
       .getGraphNodesFor(graph.id, graph.id)
@@ -218,7 +210,7 @@ describe('nodeDataStore registration via LGraph', () => {
     replacement.id = original.id
 
     expect(transferReplacementOwnership(original, replacement)).toBe(true)
-    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(original.last_serialization.type).toBe('missing/Node')
     expect(replacement.last_serialization).toBeUndefined()
     expect(
       registeredState(graph, replacement)?.lastSerialization
@@ -326,5 +318,15 @@ describe('nodeDataStore registration via LGraph', () => {
     graph.remove(lgraphNode)
 
     expect(registeredState(graph, lgraphNode)).toBeUndefined()
+  })
+
+  it('does not crash the litegraph module graph on load', async () => {
+    vi.resetModules()
+    await import('@/lib/litegraph/src/LGraphGroup')
+    await import('@/stores/nodeDataStore')
+    const { SubgraphNode } =
+      await import('@/lib/litegraph/src/subgraph/SubgraphNode')
+
+    expect(SubgraphNode).toBeTypeOf('function')
   })
 })

@@ -12,7 +12,7 @@ export function createTestNode(
   title?: string
 ): LGraphNode {
   const type = JSON.stringify({ inputs, outputs })
-  if (!LiteGraph.registered_node_types[type]) {
+  if (!Object.hasOwn(LiteGraph.registered_node_types, type)) {
     class TestNode extends LGraphNode {
       constructor(title: string) {
         super(title)
@@ -36,7 +36,7 @@ export function createTestNode(
 }
 
 export function createTestWidgetNode(graph: LGraph | Subgraph): LGraphNode {
-  if (!LiteGraph.registered_node_types[WIDGET_NODE_TYPE]) {
+  if (!Object.hasOwn(LiteGraph.registered_node_types, WIDGET_NODE_TYPE)) {
     class WidgetTestNode extends LGraphNode {
       constructor(title: string) {
         super(title)

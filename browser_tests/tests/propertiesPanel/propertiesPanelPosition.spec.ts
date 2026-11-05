@@ -4,8 +4,9 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Properties panel position', () => {
+  test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     // Open a sidebar tab to ensure sidebar is visible
     await comfyPage.menu.nodeLibraryTab.open()
     await comfyPage.actionbar.propertiesButton.click()

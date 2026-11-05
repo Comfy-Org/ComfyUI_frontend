@@ -1,14 +1,18 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -19,28 +23,22 @@ vi.mock(
   })
 )
 
-const mockResolveOutputAssetItems = vi.fn()
+const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 function createMockMediaAssets() {
   return {
-    media: ref<AssetItem[]>([]),
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
     hasMore: ref(false),
-    isLoadingMore: ref(false)
+    invalidate: vi.fn(),
+    isLoading: ref(false),
+    items: ref<AssetItem[]>([]),
+    loadNew: vi.fn(),
+    loadMore: vi.fn()
   }
 }
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
-
-vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
+vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
     ownershipOptions: computed(() => []),
     availableBaseModels: computed(() => []),
@@ -48,14 +46,24 @@ vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: (...args: unknown[]) =>
-    mockResolveOutputAssetItems(...args)
-}))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+
+function makeResolvedOutput(
+  id: string,
+  name: string,
+  previewUrl = ''
+): AssetItem {
+  return fromPartial({
+    id,
+    name,
+    preview_url: previewUrl,
+    tags: ['output']
+  })
+}
 
 function createDefaultOptions(
-  overrides: Partial<Parameters<typeof useWidgetSelectItems>[0]> = {}
-) {
+  overrides: Partial<UseWidgetSelectItemsOptions> = {}
+): UseWidgetSelectItemsOptions {
   return {
     values: () => ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
     getOptionLabel: () =>
@@ -70,14 +78,6 @@ function createDefaultOptions(
 }
 
 describe('display label behavior', () => {
-  it('uses values as labels when no label function provided', () => {
-    const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-    expect(dropdownItems.value[0]).toMatchObject({
-      name: 'img_001.png',
-      label: 'img_001.png'
-    })
-  })
-
   it('applies custom label function', () => {
     const getOptionLabel = (v?: string | null) => `Custom: ${v}`
     const { dropdownItems } = useWidgetSelectItems(
@@ -87,9 +87,6 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value on label function error', () => {
-    const consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => {})
     const getOptionLabel = (v?: string | null) => {
       if (v === 'photo_abc.jpg') throw new Error('fail')
       return `Labeled: ${v}`
@@ -100,8 +97,7 @@ describe('display label behavior', () => {
     expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
     expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
     expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
-    expect(consoleWarnSpy).toHaveBeenCalled()
-    consoleWarnSpy.mockRestore()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('falls back to value when label function returns empty string', () => {
@@ -180,9 +176,7 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -197,9 +191,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -212,11 +204,78 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
+
+    it.for([
+      {
+        value: 'x.png [output]',
+        query: { filename: 'x.png', type: 'output' }
+      },
+      {
+        value: 'sub/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: 'a/b/x.png [temp]',
+        query: { filename: 'x.png', type: 'temp', subfolder: 'a/b' }
+      },
+      {
+        value: 'clipspace/x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'clipspace' }
+      },
+      {
+        value: 'sub\\x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: '12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output' }
+      },
+      {
+        value: 'pasted/12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output', subfolder: 'pasted' }
+      },
+      {
+        value: '12:30/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: '12:30' }
+      }
+    ])(
+      'previews the fallback for $value from its root, subfolder and filename',
+      ({ value, query }) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for([
+      '/x.png [output]',
+      '\\x.png [output]',
+      'sub/x.png/ [output]',
+      'sub//x.png [output]',
+      'D:\\x.png [output]',
+      '1:/x.png [output]',
+      'D:x.png [output]',
+      'C:sub/x.png [output]',
+      'sub/../x.png [output]'
+    ])(
+      'shows no fallback preview for %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
 
     it('no fallback when modelValue is undefined', () => {
       const { dropdownItems } = useWidgetSelectItems(
@@ -227,9 +286,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
   })
@@ -249,7 +306,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-1',
           name: 'scene.glb',
@@ -450,30 +507,71 @@ describe('useWidgetSelectItems', () => {
       })
     }
 
+    function makeGroupedJobAsset(
+      jobId: string,
+      filenames: readonly [string, ...string[]]
+    ): AssetItem {
+      const name = filenames[0]
+      return fromPartial({
+        id: jobId,
+        name,
+        preview_url: `/api/view?filename=${name}&type=output`,
+        tags: ['output'],
+        user_metadata: {
+          jobId,
+          nodeId: '5',
+          subfolder: '',
+          outputCount: filenames.length,
+          allOutputs: filenames.map((filename) => ({
+            filename,
+            subfolder: '',
+            type: 'output',
+            nodeId: '5',
+            mediaType: 'images'
+          }))
+        }
+      })
+    }
+
+    function resolvedFromMetadata(meta: {
+      jobId: string
+      allOutputs?: readonly { filename: string }[]
+    }): AssetItem[] {
+      return [...(meta.allOutputs ?? [])]
+        .reverse()
+        .map((output) =>
+          makeResolvedOutput(
+            `${meta.jobId}-${output.filename}`,
+            output.filename
+          )
+        )
+    }
+
+    async function flushQueuedPromises() {
+      for (let i = 0; i < 8; i += 1) await Promise.resolve()
+    }
+
     it('shows all outputs after resolving multi-output jobs', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-1', 'preview.png', '5', 3)
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'job-1-5-output_001.png',
-          name: 'output_001.png',
-          preview_url: '/api/view?filename=output_001.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_002.png',
-          name: 'output_002.png',
-          preview_url: '/api/view?filename=output_002.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_003.png',
-          name: 'output_003.png',
-          preview_url: '/api/view?filename=output_003.png&type=output',
-          tags: ['output']
-        }
+        makeResolvedOutput(
+          'job-1-5-output_001.png',
+          'output_001.png',
+          '/api/view?filename=output_001.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_002.png',
+          'output_002.png',
+          '/api/view?filename=output_002.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_003.png',
+          'output_003.png',
+          '/api/view?filename=output_003.png&type=output'
+        )
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -496,7 +594,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('shows preview when job has only one output', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-2', 'single.png', '3', 1)
       ]
 
@@ -514,46 +612,153 @@ describe('useWidgetSelectItems', () => {
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
     })
 
+    it.for([
+      ['tag temp', ['temp'], undefined],
+      ['tags output and temp', ['output', 'temp'], undefined],
+      [
+        'a type=temp preview URL',
+        ['output'],
+        '/api/view?filename=t.png&type=temp'
+      ]
+    ] as const)(
+      'annotates an output listed from an asset with %s with the temp root',
+      async ([, tags, previewUrl]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'temp-asset',
+            name: 't.png',
+            hash: 'blake3:aa7ecf08.png',
+            preview_url: previewUrl,
+            tags: [...tags]
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'blake3:aa7ecf08.png [temp]'
+        ])
+      }
+    )
+
+    it.for([
+      [
+        'an input asset tagged temp',
+        ['input', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a model asset tagged temp',
+        ['models', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'an output tagged temp whose preview URL says input',
+        ['output', 'temp'],
+        '/api/view?filename=probe.png&type=input',
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a generated output tagged temp',
+        ['output', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [temp]'
+      ]
+    ] as const)(
+      'lists %s at its prior output root unless it is a generated output',
+      async ([, tags, preview_url, name]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'probe-asset',
+            name: 'probe.png',
+            hash: 'blake3:ab12cd34.png',
+            tags: [...tags],
+            preview_url
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([name])
+      }
+    )
+
+    it('prefixes the subfolder of a temp output with no job whose metadata names only the subfolder', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'flat-temp-asset',
+          name: 'flat_temp.png',
+          hash: 'blake3:ff34ab12.png',
+          tags: ['output', 'temp'],
+          user_metadata: { subfolder: 'previews' }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:ff34ab12.png [temp]'
+      ])
+    })
+
+    it('prefixes the subfolder onto a temp image output listed by hash', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'temp-asset',
+          name: 't.png',
+          hash: 'blake3:aa7ecf08.png',
+          tags: ['output', 'temp'],
+          user_metadata: {
+            jobId: 'job-temp',
+            nodeId: '4',
+            subfolder: 'previews'
+          }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:aa7ecf08.png [temp]'
+      ])
+    })
+
     it('resolves two multi-output jobs independently', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-A', 'previewA.png', '1', 2),
         makeMultiOutputAsset('job-B', 'previewB.png', '2', 2)
       ]
 
-      mockResolveOutputAssetItems.mockImplementation(
-        async (meta: { jobId: string }) => {
-          if (meta.jobId === 'job-A') {
-            return [
-              {
-                id: 'A-1',
-                name: 'a1.png',
-                preview_url: '',
-                tags: ['output']
-              },
-              {
-                id: 'A-2',
-                name: 'a2.png',
-                preview_url: '',
-                tags: ['output']
-              }
-            ]
-          }
+      mockResolveOutputAssetItems.mockImplementation(async (meta) => {
+        if (meta.jobId === 'job-A') {
           return [
-            {
-              id: 'B-1',
-              name: 'b1.png',
-              preview_url: '',
-              tags: ['output']
-            },
-            {
-              id: 'B-2',
-              name: 'b2.png',
-              preview_url: '',
-              tags: ['output']
-            }
+            makeResolvedOutput('A-1', 'a1.png'),
+            makeResolvedOutput('A-2', 'a2.png')
           ]
         }
-      )
+        return [
+          makeResolvedOutput('B-1', 'b1.png'),
+          makeResolvedOutput('B-2', 'b2.png')
+        ]
+      })
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
@@ -575,7 +780,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('resolves outputs when allOutputs already contains all items', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'job-complete',
           name: 'preview.png',
@@ -607,18 +812,8 @@ describe('useWidgetSelectItems', () => {
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'c-1',
-          name: 'out1.png',
-          preview_url: '',
-          tags: ['output']
-        },
-        {
-          id: 'c-2',
-          name: 'out2.png',
-          preview_url: '',
-          tags: ['output']
-        }
+        makeResolvedOutput('c-1', 'out1.png'),
+        makeResolvedOutput('c-2', 'out2.png')
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -642,11 +837,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to preview when resolver rejects', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)
       ]
       mockResolveOutputAssetItems.mockRejectedValue(new Error('network error'))
@@ -660,7 +851,7 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Failed to resolve multi-output job',
           'job-fail',
           expect.any(Error)
@@ -669,7 +860,6 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].name).toBe('preview.png [output]')
-      consoleWarnSpy.mockRestore()
     })
 
     it('does not expand a hash-keyed asset even if its metadata reports outputCount > 1', async () => {
@@ -677,7 +867,7 @@ describe('useWidgetSelectItems', () => {
       // ever ships with both hash AND multi-output user_metadata, the
       // watcher must NOT replace it with synthesized AssetItems lacking the
       // hash, or select+load reverts to the FE-227 broken state.
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-flat-1',
           name: 'z-image-turbo_00093_.png',
@@ -719,7 +909,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('uses hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-out-1',
           name: 'z-image-turbo_00093_.png',
@@ -750,7 +940,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to asset.name when hash is absent (local/history path)', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'local-1',
           name: 'ComfyUI_00001_.png',
@@ -772,7 +962,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not partially expand the list while some multi-output jobs are still resolving (FE-227)', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-FIRST', 'previewFirst.png', '1', 3),
         makeMultiOutputAsset('job-SECOND', 'previewSecond.png', '2', 2)
       ]
@@ -864,11 +1054,176 @@ describe('useWidgetSelectItems', () => {
         'out2b.png [output]'
       ])
     })
+
+    it('shows outputs loaded on a later asset page of the same job', async () => {
+      const firstPage: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png'
+      ]
+      const bothPages: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png',
+        'batch_003.png'
+      ]
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', firstPage)
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_002.png [output]',
+          'batch_001.png [output]'
+        ])
+      })
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', bothPages)
+      ]
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_003.png [output]',
+          'batch_002.png [output]',
+          'batch_001.png [output]'
+        ])
+      })
+    })
+
+    it('does not resolve again when the same job is re-emitted with the same output count', async () => {
+      const filenames: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png'
+      ]
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', filenames)
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_002.png [output]',
+          'batch_001.png [output]'
+        ])
+      })
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', filenames)
+      ]
+      await flushQueuedPromises()
+
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'batch_002.png [output]',
+        'batch_001.png [output]'
+      ])
+    })
+
+    it('keeps shown outputs until a grown job and a new job both finish resolving', async () => {
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', ['a.png', 'b.png'])
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'b.png [output]',
+          'a.png [output]'
+        ])
+      })
+
+      let resolveGrown!: (items: AssetItem[]) => void
+      let resolveNew!: (items: AssetItem[]) => void
+      mockResolveOutputAssetItems.mockImplementation(
+        async (meta: { jobId: string }) => {
+          if (meta.jobId === 'job-paged') {
+            return new Promise<AssetItem[]>((resolve) => {
+              resolveGrown = resolve
+            })
+          }
+          return new Promise<AssetItem[]>((resolve) => {
+            resolveNew = resolve
+          })
+        }
+      )
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', ['a.png', 'b.png', 'c.png']),
+        makeGroupedJobAsset('job-new', ['d.png', 'e.png'])
+      ]
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'b.png [output]',
+        'a.png [output]',
+        'd.png [output]'
+      ])
+
+      resolveNew([
+        makeResolvedOutput('job-new-e.png', 'e.png'),
+        makeResolvedOutput('job-new-d.png', 'd.png')
+      ])
+      await flushQueuedPromises()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'b.png [output]',
+        'a.png [output]',
+        'd.png [output]'
+      ])
+
+      resolveGrown([
+        makeResolvedOutput('job-paged-c.png', 'c.png'),
+        makeResolvedOutput('job-paged-b.png', 'b.png'),
+        makeResolvedOutput('job-paged-a.png', 'a.png')
+      ])
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value).toHaveLength(5)
+      })
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'c.png [output]',
+        'b.png [output]',
+        'a.png [output]',
+        'e.png [output]',
+        'd.png [output]'
+      ])
+    })
   })
 
   describe('output asset subfolder', () => {
     it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-1',
           name: 'ComfyUI_00105_.glb',
@@ -897,7 +1252,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('omits the subfolder prefix when the asset has none', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-2',
           name: 'plain.glb',
@@ -925,8 +1280,8 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
     })
 
-    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
-      mockMediaAssets.media.value = [
+    it('prefixes the subfolder for image outputs too', async () => {
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-image-1',
           name: 'photo.png',
@@ -951,13 +1306,188 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+      expect(dropdownItems.value[0].name).toBe('sub/photo.png [output]')
+    })
+  })
+
+  describe('option preview URLs', () => {
+    it.for([
+      { value: 'x.png', query: { filename: 'x.png', type: 'input' } },
+      {
+        value: 'sub/x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'sub' }
+      },
+      {
+        value: 'a\\b\\x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'a/b' }
+      }
+    ])(
+      'previews the input option $value from its subfolder and filename',
+      ({ value, query }) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            values: () => [value],
+            modelValue: ref(value)
+          })
+        )
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for(['../x.png', 'folder/./photo.png', '/abs/x.png', 'C:photo.png'])(
+      'shows no preview for the input option %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            values: () => [value],
+            modelValue: ref(value)
+          })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
+
+    it.for([
+      {
+        title: 'an output in a subfolder',
+        tags: ['output'],
+        subfolder: 'sub',
+        query: { filename: 'photo.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        title: 'a generated temp output',
+        tags: ['output', 'temp'],
+        subfolder: 'previews',
+        query: { filename: 'photo.png', type: 'temp', subfolder: 'previews' }
+      }
+    ])(
+      'falls back to a preview of $title from its root and subfolder',
+      async ({ tags, subfolder, query }) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-no-preview',
+            name: 'photo.png',
+            preview_url: '',
+            tags,
+            user_metadata: { subfolder }
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+  })
+
+  describe('HDR image outputs', () => {
+    it.for(['sky_00001.exr', 'sky_00001.hdr'])(
+      'lists %s under image outputs with its stored preview',
+      async (name) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-hdr-1',
+            name,
+            preview_id: 'preview-1',
+            preview_url: '',
+            tags: ['output']
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value).toMatchObject([
+          {
+            name: `${name} [output]`,
+            preview_url: expect.stringContaining('/assets/preview-1/content')
+          }
+        ])
+      }
+    )
+
+    it.for([
+      {
+        source: 'the job thumbnail',
+        asset: {
+          thumbnail_url: '/api/assets/thumb-1/content',
+          preview_url: '/api/view?filename=sky_00001.exr&type=output'
+        },
+        previewUrl: '/api/assets/thumb-1/content'
+      },
+      {
+        source: 'no thumbnail when only the raw file is known',
+        asset: { preview_url: '/api/view?filename=sky_00001.exr&type=output' },
+        previewUrl: ''
+      }
+    ])(
+      'shows $source for an HDR output without a stored preview id',
+      async ({ asset, previewUrl }) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-hdr-1',
+            name: 'sky_00001.exr',
+            tags: ['output'],
+            ...asset
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value).toMatchObject([
+          { name: 'sky_00001.exr [output]', preview_url: previewUrl }
+        ])
+      }
+    )
+
+    it('does not list HDR outputs for video widgets', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'asset-hdr-1',
+          name: 'sky_00001.exr',
+          preview_id: 'preview-1',
+          tags: ['output']
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'video' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toEqual([])
     })
   })
 
   describe('FE-228: output dropdown label uses human-readable filename', () => {
     it('renders metadata.filename in label when asset.name is a hash', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-hash-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
@@ -984,7 +1514,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'job-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
@@ -1051,9 +1581,29 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
+    it('still drops missing media when the missing media warning is off', async () => {
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingMediaWarning'
+      ] = false
+
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+
+      expect(dropdownItems.value.map((i) => i.name)).not.toContain(
+        'photo_abc.jpg'
+      )
+    })
+
     it('drops input items whose name is in the missing-media store', async () => {
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1074,7 +1624,7 @@ describe('useWidgetSelectItems', () => {
 
     it('drops output items whose annotated path is in the missing-media store', async () => {
       mockMediaAssets = createMockMediaAssets()
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial<AssetItem>({
           id: 'a1',
           name: 'gone.png',
@@ -1091,8 +1641,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1120,7 +1668,7 @@ describe('useWidgetSelectItems', () => {
 
     it('does not cross-match basenames across input and output sources', async () => {
       mockMediaAssets = createMockMediaAssets()
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial<AssetItem>({
           id: 'a1',
           name: 'photo_abc.jpg',
@@ -1130,8 +1678,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1157,8 +1703,6 @@ describe('useWidgetSelectItems', () => {
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {

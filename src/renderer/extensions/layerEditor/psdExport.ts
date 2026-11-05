@@ -1,19 +1,17 @@
 import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
 
-import type { Compositor } from './engine/compositor'
-import type { ContentEntry, ContentStore } from './engine/content'
-import type { Document } from './engine/document'
+import type { Compositor } from '@comfyorg/layer-editor/compositor'
+import type { ContentEntry, ContentStore } from '@comfyorg/layer-editor/content'
+import type { Document } from '@comfyorg/layer-editor/document'
 import type {
-  FillData,
-  GroupData,
   RasterData,
-  Rect,
   SceneNode,
   Transform
-} from './engine/node'
-import { getNodeKind } from './engine/nodeKind'
-import type { RenderNodeCtx } from './engine/nodeKind'
-import { placeBitmap } from './engine/render/place'
+} from '@comfyorg/layer-editor/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import { getNodeKind } from '@comfyorg/layer-editor/nodeKind'
+import type { RenderNodeCtx } from '@comfyorg/layer-editor/nodeKind'
+import { placeBitmap } from '@comfyorg/layer-editor/render/place'
 import { PSD_BLEND_MODES, fillToVectorContent } from './psdMapping'
 
 export interface PsdGuides {
@@ -128,7 +126,7 @@ async function buildLayer(
     mask: maskData(node, deps)
   }
   if (node.kind === 'group') {
-    const g = node as GroupData
+    const g = node
     if (g.passThrough) layer.blendMode = 'pass through'
     layer.opened = true
     layer.children = []
@@ -145,10 +143,13 @@ async function buildLayer(
     layer.right = placed.left + placed.canvas.width
     layer.bottom = placed.top + placed.canvas.height
   }
-  if (node.kind === 'fill')
-    layer.vectorFill = fillToVectorContent((node as FillData).fill)
-  else if (node.kind === 'raster')
-    await applyPlacedLayer(layer, node as RasterData, deps, linkedFiles)
+  switch (node.kind) {
+    case 'fill':
+      layer.vectorFill = fillToVectorContent(node.fill)
+      break
+    case 'raster':
+      await applyPlacedLayer(layer, node, deps, linkedFiles)
+  }
   return layer
 }
 
@@ -183,21 +184,20 @@ export function rasterizeLeafPlaced(
   content: PsdContentSource
 ): PlacedLeaf | null {
   const bounds = leafPlacedBounds(node.transform, doc)
-  let captured: HTMLCanvasElement | null = null
+  const captured: HTMLCanvasElement[] = []
   const ctx: RenderNodeCtx = {
     compositor: null as unknown as Compositor,
     content: content as ContentStore,
     renderChild: () => null,
     placed: (_key, _stamp, bitmap, tf, linear) => {
-      captured = placeBitmap(
+      const canvas = placeBitmap(
         bitmap,
         { ...tf, x: tf.x - bounds.x, y: tf.y - bounds.y },
         bounds.w,
         bounds.h
       )
-      return captured
-        ? { source: captured, rect: bounds, linear: !!linear }
-        : null
+      if (canvas) captured.push(canvas)
+      return canvas ? { source: canvas, rect: bounds, linear: !!linear } : null
     },
     region: { x: 0, y: 0, w: bounds.w, h: bounds.h },
     devicePixelRatio: 1
@@ -207,7 +207,8 @@ export function rasterizeLeafPlaced(
   } catch {
     return null
   }
-  return captured ? { canvas: captured, left: bounds.x, top: bounds.y } : null
+  const canvas = captured.at(-1)
+  return canvas ? { canvas, left: bounds.x, top: bounds.y } : null
 }
 
 export function maskToPlacedCanvas(

@@ -1,12 +1,13 @@
 import { expect } from '@playwright/test'
 import type { PreviewSubscribeResponse } from '@comfyorg/ingest-types'
 
-import type { BillingPlansResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingPlansResponse } from '@comfyorg/billing-core'
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import {
   DEFAULT_TEAM_MEMBERS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -14,23 +15,16 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+const CREATOR_MONTHLY_PLAN = createPlan({
+  slug: 'creator-monthly',
+  tier: 'CREATOR',
+  duration: 'MONTHLY',
+  priceCents: 2000,
+  monthlyCredits: 2400
+})
+
 const CREATOR_MONTHLY_PLANS = {
-  plans: [
-    {
-      slug: 'creator-monthly',
-      tier: 'CREATOR',
-      duration: 'MONTHLY',
-      price_cents: 2000,
-      credits_cents: 2400,
-      max_seats: 1,
-      availability: { available: true },
-      seat_summary: {
-        seat_count: 1,
-        total_cost_cents: 2000,
-        total_credits_cents: 2400
-      }
-    }
-  ]
+  plans: [CREATOR_MONTHLY_PLAN]
 } satisfies BillingPlansResponse
 
 const CREATOR_MONTHLY_PREVIEW = {
@@ -40,20 +34,9 @@ const CREATOR_MONTHLY_PREVIEW = {
   effective_at: '2026-08-24T00:00:00Z',
   cost_today_cents: 2000,
   cost_next_period_cents: 2000,
-  credits_today_cents: 2400,
-  credits_next_period_cents: 2400,
-  new_plan: {
-    slug: 'creator-monthly',
-    tier: 'CREATOR',
-    duration: 'MONTHLY',
-    price_cents: 2000,
-    credits_cents: 2400,
-    seat_summary: {
-      seat_count: 1,
-      total_cost_cents: 2000,
-      total_credits_cents: 2400
-    }
-  }
+  credits_today_cents: CREATOR_MONTHLY_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_MONTHLY_PLAN.credits_cents,
+  new_plan: CREATOR_MONTHLY_PLAN
 } satisfies PreviewSubscribeResponse
 
 test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
@@ -63,10 +46,11 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
     page
   }) => {
     const helper = new CloudWorkspaceMockHelper(page)
-    await helper.setup(DEFAULT_TEAM_MEMBERS, workspace('personal', 'owner'), {
-      ...LEGACY_PERSONAL_BILLING_STATUS,
-      billing_rail: 'stripe'
-    })
+    await helper.setup(
+      DEFAULT_TEAM_MEMBERS,
+      workspace('personal', 'owner'),
+      PERSONAL_BILLING_STATUS
+    )
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(jsonRoute(CREATOR_MONTHLY_PLANS))
     )
@@ -100,6 +84,10 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Confirm your payment' })
     ).toBeVisible({ timeout: 45_000 })
+    await expect(page.getByText('$20.00', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('Renews at $20.00. Cancel anytime.')
+    ).toBeVisible()
     await expect(page.locator('#splash-loader')).toHaveCount(0)
     expect(legacyCheckoutRequests).toEqual([])
   })

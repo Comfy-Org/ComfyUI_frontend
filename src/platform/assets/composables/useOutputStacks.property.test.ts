@@ -6,24 +6,24 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  getOutputKey: () => null,
-  resolveOutputAssetItems: () => Promise.resolve([])
-}))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
-    if (
-      metadata &&
-      typeof metadata.jobId === 'string' &&
-      (typeof metadata.nodeId === 'string' ||
-        typeof metadata.nodeId === 'number')
-    ) {
-      return metadata
+vi.mock<unknown>(
+  import('@/platform/assets/schemas/assetMetadataSchema'),
+  () => ({
+    getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
+      if (
+        metadata &&
+        typeof metadata.jobId === 'string' &&
+        (typeof metadata.nodeId === 'string' ||
+          typeof metadata.nodeId === 'number')
+      ) {
+        return metadata
+      }
+      return null
     }
-    return null
-  }
-}))
+  })
+)
 
 import { useOutputStacks } from './useOutputStacks'
 
@@ -34,13 +34,12 @@ function arbAssetList(
   maxLength = 20
 ): fc.Arbitrary<AssetItem[]> {
   return fc.uniqueArray(arbAssetId, { minLength, maxLength }).map((ids) =>
-    ids.map(
-      (id): AssetItem =>
-        fromPartial({
-          id,
-          name: `${id}.png`,
-          tags: ['output']
-        })
+    ids.map((id): AssetItem =>
+      fromPartial({
+        id,
+        name: `${id}.png`,
+        tags: ['output']
+      })
     )
   )
 }

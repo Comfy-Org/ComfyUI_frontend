@@ -1,10 +1,22 @@
-import { useAsyncState, whenever } from '@vueuse/core'
-import { delay, difference } from 'es-toolkit'
+import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
+import { delay, difference, uniqBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import {
+  computed,
+  effectScope,
+  reactive,
+  ref,
+  shallowReactive,
+  toValue,
+  watch
+} from 'vue'
+import type { EffectScope } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
@@ -12,20 +24,20 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  INPUT_TAG,
-  OUTPUT_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
-
-const INPUT_LIMIT = 100
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -45,15 +57,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
-}
-
-/**
- * Fetch input files from cloud service
- */
-async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag(INPUT_TAG, false, {
-    limit: INPUT_LIMIT
-  })
 }
 
 /**
@@ -90,18 +93,18 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() -
-      new Date(a.created_at ?? 0).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
-const FLAT_OUTPUT_PAGE_SIZE = 200
+const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const { flags } = useFeatureFlags()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -118,23 +121,11 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state
-  const historyOffset = ref(0)
-  const hasMoreHistory = ref(true)
-  const isLoadingMore = ref(false)
-
-  const allHistoryItems = ref<AssetItem[]>([])
-
-  const loadedIds = shallowReactive(new Set<string>())
-
-  const fetchInputFiles = isCloud
-    ? fetchInputFilesFromCloud
-    : fetchInputFilesFromAPI
+  const fetchInputFiles = fetchInputFilesFromAPI
 
   const {
-    state: inputAssets,
+    state: rawInputAssets,
     isLoading: inputLoading,
-    error: inputError,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
@@ -144,221 +135,234 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
-    const result = await executeUpdateInputs()
-    assetService.invalidateInputAssetsIncludingPublic()
-    return result
+  const historyInputs: PagedList<AssetItem> = {
+    hasMore: false,
+    invalidate: async () => {
+      await executeUpdateInputs()
+    },
+    isLoading: inputLoading,
+    items: rawInputAssets,
+    loadMore: async () => false,
+    loadNew: async () => undefined
   }
 
-  /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
-   */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
-    if (!loadMore) {
-      historyOffset.value = 0
-      hasMoreHistory.value = true
-      allHistoryItems.value = []
-      loadedIds.clear()
-    }
+  function useHistoryAssets(): PagedList<AssetItem> {
+    // Pagination state
+    const historyOffset = ref(0)
+    const hasMoreHistory = ref(true)
+    const isLoadingMore = ref(false)
+    const allHistoryItems = ref<AssetItem[]>([])
+    const loadedIds = shallowReactive(new Set<string>())
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    /**
+     * Fetch history assets with pagination support
+     * @param loadMore - true for pagination (append), false for initial load (replace)
+     */
+    const fetchHistoryAssets = async (
+      loadMore = false
+    ): Promise<AssetItem[]> => {
+      // Reset state for initial load
+      if (!loadMore) {
+        historyOffset.value = 0
+        hasMoreHistory.value = true
+        allHistoryItems.value = []
+        loadedIds.clear()
+      }
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+      // Fetch from server with offset
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset: historyOffset.value
+      })
 
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
+      // Convert JobListItems to AssetItems
+      const newAssets = mapHistoryToAssets(history)
+
+      if (loadMore) {
+        // Filter out duplicates and insert in sorted order
+        for (const asset of newAssets) {
+          if (loadedIds.has(asset.id)) {
+            continue // Skip duplicates
+          }
+          loadedIds.add(asset.id)
+
+          // Find insertion index to maintain sorted order (newest first)
+          const assetTime = new Date(asset.created_at).getTime()
+          const insertIndex = allHistoryItems.value.findIndex(
+            (item) => new Date(item.created_at).getTime() < assetTime
+          )
+
+          if (insertIndex === -1) {
+            // Asset is oldest, append to end
+            allHistoryItems.value.push(asset)
+          } else {
+            // Insert at the correct position
+            allHistoryItems.value.splice(insertIndex, 0, asset)
+          }
         }
-        loadedIds.add(asset.id)
+      } else {
+        // Initial load: replace all
+        allHistoryItems.value = newAssets
+        newAssets.forEach((asset) => loadedIds.add(asset.id))
+      }
 
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+      // Update pagination state
+      historyOffset.value += BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+
+      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+        allHistoryItems.value = allHistoryItems.value.slice(
+          0,
+          MAX_HISTORY_ITEMS
         )
 
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
+        // Clean up Set
+        removed.forEach((item) => loadedIds.delete(item.id))
       }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
+
+      return allHistoryItems.value
     }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
+    const historyAssets = ref<AssetItem[]>([])
+    const historyLoading = ref(false)
+    const historyError = ref<unknown>(null)
+    let historyQueue = Promise.resolve()
+    let refreshPromise: Promise<void> | undefined
+    let loadMorePromise: Promise<boolean> | undefined
 
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
-
-    return allHistoryItems.value
-  }
-
-  const historyAssets = ref<AssetItem[]>([])
-  const historyLoading = ref(false)
-  const historyError = ref<unknown>(null)
-
-  /**
-   * Initial load of history assets
-   */
-  const updateHistory = async () => {
-    historyLoading.value = true
-    historyError.value = null
-    try {
-      await fetchHistoryAssets(false)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      historyError.value = err
-      // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      historyLoading.value = false
-    }
-  }
-
-  /**
-   * Load more history items (infinite scroll)
-   */
-  const loadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
-    if (!hasMoreHistory.value || isLoadingMore.value) return
-
-    isLoadingMore.value = true
-    historyError.value = null
-
-    try {
-      await fetchHistoryAssets(true)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      isLoadingMore.value = false
-    }
-  }
-
-  const flatOutputAssets = ref<AssetItem[]>([])
-  const flatOutputLoading = ref(false)
-  const flatOutputError = ref<unknown>(null)
-  const flatOutputOffset = ref(0)
-  const flatOutputHasMore = ref(true)
-  const flatOutputIsLoadingMore = ref(false)
-  const flatOutputSeenIds = new Set<string>()
-  let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
-
-  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
-    if (loadMore) {
-      if (!flatOutputHasMore.value) return flatOutputAssets.value
-      flatOutputIsLoadingMore.value = true
-    } else {
-      flatOutputLoading.value = true
-      flatOutputOffset.value = 0
-      flatOutputNextCursor = undefined
-      flatOutputHasMore.value = true
-      flatOutputSeenIds.clear()
-    }
-    flatOutputError.value = null
-
-    flatOutputInFlight = (async () => {
-      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
+    /**
+     * Initial load of history assets
+     */
+    const doUpdateHistory = async () => {
+      historyLoading.value = true
+      historyError.value = null
       try {
-        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
-          limit: FLAT_OUTPUT_PAGE_SIZE,
-          ...(requestedAfter !== undefined
-            ? { after: requestedAfter }
-            : { offset: flatOutputOffset.value })
-        })
-        const batch = page.assets
-        const fresh = loadMore
-          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : batch
-        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
-        flatOutputAssets.value = loadMore
-          ? [...flatOutputAssets.value, ...fresh]
-          : batch
-        flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor
-        const cursorStuck =
-          nextCursor !== undefined && nextCursor === requestedAfter
-        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
-        flatOutputHasMore.value =
-          fresh.length > 0 && page.has_more && !cursorStuck
-        return flatOutputAssets.value
+        await fetchHistoryAssets(false)
+        historyAssets.value = allHistoryItems.value
       } catch (err) {
-        flatOutputError.value = err
-        console.error('Failed to fetch output assets:', err)
-        return loadMore ? flatOutputAssets.value : []
+        console.error('Error fetching history assets:', err)
+        historyError.value = err
+        // Keep existing data when error occurs
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
-      }
-    })()
-
-    return flatOutputInFlight
-  }
-
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
-    if (flatOutputIsLoadingMore.value) return
-    await fetchFlatOutputs(true)
-  }
-
-  /**
-   * Patch preview_id/preview_url for a single asset already in memory,
-   * matched by name. Used after persistThumbnail succeeds so an open Asset
-   * panel reflects the new thumbnail without refetching the whole history.
-   * Match by name because the cloud assets API and the history API use
-   * different id spaces; name is the stable cross-API identifier.
-   */
-  const setAssetPreview = (
-    name: string,
-    previewId: string,
-    previewUrl: string
-  ) => {
-    const patch = (list: AssetItem[]) => {
-      const idx = list.findIndex((a) => a.name === name)
-      if (idx < 0) return
-      list[idx] = {
-        ...list[idx],
-        preview_id: previewId,
-        preview_url: previewUrl
+        historyLoading.value = false
       }
     }
-    patch(historyAssets.value)
-    patch(allHistoryItems.value)
-    patch(inputAssets.value)
+
+    const updateHistory = () => {
+      if (!refreshPromise) {
+        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
+          refreshPromise = undefined
+        })
+        historyQueue = refreshPromise
+      }
+      return refreshPromise
+    }
+
+    /**
+     * Load more history items (infinite scroll)
+     */
+    const doLoadMoreHistory = async () => {
+      isLoadingMore.value = true
+      historyError.value = null
+
+      try {
+        await fetchHistoryAssets(true)
+        historyAssets.value = allHistoryItems.value
+        return true
+      } catch (err) {
+        console.error('Error loading more history:', err)
+        historyError.value = err
+        // Keep existing data when error occurs (consistent with updateHistory)
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
+        return false
+      } finally {
+        isLoadingMore.value = false
+      }
+    }
+
+    const loadMoreHistory = () => {
+      if (!loadMorePromise) {
+        const operation = historyQueue.then(() =>
+          hasMoreHistory.value ? doLoadMoreHistory() : false
+        )
+        loadMorePromise = operation.finally(() => {
+          loadMorePromise = undefined
+        })
+        historyQueue = operation.then(() => undefined)
+      }
+      return loadMorePromise
+    }
+
+    return {
+      hasMore: hasMoreHistory,
+      invalidate: updateHistory,
+      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
+      items: historyAssets,
+      loadMore: loadMoreHistory,
+      loadNew: updateHistory
+    }
   }
+
+  const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let assetsScope: EffectScope | undefined
+  watch(
+    () => flags.assetsEnabled,
+    (isAssets) => {
+      if (assetsScope) assetsScope.stop()
+      assetsScope = undefined
+
+      if (isAssets) {
+        assetsScope = effectScope()
+        assetsScope.run(() => {
+          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          outputAssets.value = new WrappedList(
+            flatAssets,
+            unflattenOutputAssets
+          )
+        })
+      } else {
+        inputAssets.value = historyInputs
+        outputAssets.value = useHistoryAssets()
+      }
+    },
+    { immediate: true }
+  )
+
+  async function loadOutputAsset(assetId: string): Promise<boolean> {
+    const assets = outputAssets.value
+    const hasAsset = () =>
+      toValue(assets.items).some(({ id }) => id === assetId)
+
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
+    ) {
+      if (!(await assets.loadMore())) break
+    }
+    return hasAsset()
+  }
+  useEventListener(
+    api,
+    'assets.seed.completed',
+    async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
+      if (detail.phase !== 'fast') {
+        await outputAssets.value.invalidate()
+        await inputAssets.value.invalidate()
+      } else if (detail.created) {
+        await outputAssets.value.loadNew()
+        await inputAssets.value.loadNew()
+      }
+    }
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -366,7 +370,7 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
-    for (const asset of inputAssets.value) {
+    for (const asset of toValue(inputAssets.value.items)) {
       const hash = asset.hash
       if (hash) {
         map.set(hash, asset)
@@ -408,6 +412,10 @@ export const useAssetsStore = defineStore('assets', () => {
     error?: Error
   }
 
+  interface ModelRefreshOptions {
+    restart?: boolean
+  }
+
   /**
    * Model assets cached by category (e.g., 'checkpoints', 'loras')
    * Multiple node types sharing the same category share the same cache entry.
@@ -415,8 +423,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    *
    * Runs on every distribution; whether anything fetches through it is
-   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
-   * the authoritative off-cloud gate.
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
@@ -429,6 +437,10 @@ export const useAssetsStore = defineStore('assets', () => {
     const pendingRequestByCategory = new Map<string, ModelPaginationState>()
     const pendingPromiseByCategory = new Map<string, Promise<void>>()
     const abortByCategory = new Map<string, AbortController>()
+    const replacementBySupersededFetch = new WeakMap<
+      AbortController,
+      Promise<void>
+    >()
 
     function createState(
       existingAssets?: Map<string, AssetItem>
@@ -522,49 +534,34 @@ export const useAssetsStore = defineStore('assets', () => {
       )
     }
 
-    /**
-     * Internal helper to fetch and cache assets for a category.
-     * Loads first batch immediately, then progressively loads remaining batches.
-     * Keeps existing data visible until new data is successfully fetched.
-     *
-     * Concurrent calls for the same category are short-circuited: if a request
-     * is already in progress (tracked via pendingRequestByCategory), subsequent
-     * calls return immediately to avoid redundant work.
-     */
     async function updateModelsForCategory(
       category: string,
-      fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>
+      fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>,
+      { restart = false }: ModelRefreshOptions = {}
     ): Promise<void> {
-      if (pendingPromiseByCategory.has(category)) {
+      if (!restart && pendingPromiseByCategory.has(category)) {
         return pendingPromiseByCategory.get(category)!
       }
 
       const existingState = modelStateByCategory.value.get(category)
       const state = createState(existingState?.assets)
 
-      abortByCategory.get(category)?.abort()
+      const supersededFetch = abortByCategory.get(category)
+      supersededFetch?.abort()
       const controller = new AbortController()
       abortByCategory.set(category, controller)
 
       const seenIds = new Set<string>()
 
-      const hasExistingData = modelStateByCategory.value.has(category)
-      if (hasExistingData) {
-        pendingRequestByCategory.set(category, state)
-      } else {
-        // Also track in pending map for initial loads to prevent concurrent calls
-        pendingRequestByCategory.set(category, state)
+      const hasExistingData = existingState?.isLoading === false
+      pendingRequestByCategory.set(category, state)
+      if (!hasExistingData) {
         modelStateByCategory.value.set(category, state)
       }
 
       async function loadBatches(): Promise<void> {
         let isFirstBatch = true
-        // Only prune unseen cached ids when the walk reaches a genuine end
-        // of list; bailing out on an anomaly (empty page, cursor cycle,
-        // batch cap) must not delete assets we simply never re-fetched.
         let walkCompleted = false
-        // Cursors already requested this walk. A repeat means the server is
-        // cycling (immediate A->A or alternating A->B->A...), so we stop.
         const seenCursors = new Set<string>()
         let batchCount = 0
         while (state.hasMore) {
@@ -573,9 +570,6 @@ export const useAssetsStore = defineStore('assets', () => {
             break
           }
           try {
-            // Keyset cursor walk when the server provides one (stable under
-            // concurrent inserts/deletes); offset walk otherwise. The first
-            // batch sends offset 0, which the service omits from the request.
             const after = state.nextCursor
             const response = await fetcher(
               after !== undefined
@@ -603,7 +597,6 @@ export const useAssetsStore = defineStore('assets', () => {
               }
             }
 
-            // Merge new assets into existing map and track seen IDs
             for (const asset of newAssets) {
               seenIds.add(asset.id)
               state.assets.set(asset.id, asset)
@@ -613,27 +606,18 @@ export const useAssetsStore = defineStore('assets', () => {
             state.offset += newAssets.length
 
             if (!response.has_more) {
-              // Server signalled a genuine end of list — safe to prune ids
-              // that no longer exist server-side.
               state.hasMore = false
               walkCompleted = true
             } else if (newAssets.length === 0) {
-              // Anomaly: server claims more but returned an empty page. Stop,
-              // but do not prune — unseen cached assets may still live on a
-              // page we never received.
               state.hasMore = false
             } else if (response.next_cursor !== undefined) {
               if (seenCursors.has(response.next_cursor)) {
-                // Repeated cursor: the server is cycling. Stop without
-                // pruning rather than loop forever.
                 state.hasMore = false
               } else {
                 seenCursors.add(response.next_cursor)
                 state.nextCursor = response.next_cursor
               }
             } else {
-              // Cursor-less backend: legacy offset walk. A short page is the
-              // reliable natural end of the list, so it is safe to prune.
               state.nextCursor = undefined
               if (newAssets.length < MODEL_BATCH_SIZE) {
                 state.hasMore = false
@@ -660,9 +644,6 @@ export const useAssetsStore = defineStore('assets', () => {
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             state.isLoading = false
-            // A refresh that fails before its first batch never replaces the
-            // committed state, so mirror the error onto the state consumers
-            // actually read (getError) instead of only the discarded one.
             const committed = modelStateByCategory.value.get(category)
             if (committed && committed !== state) {
               committed.error = state.error
@@ -675,9 +656,6 @@ export const useAssetsStore = defineStore('assets', () => {
           }
         }
 
-        // Prune ids that vanished server-side, but only after a complete
-        // walk — an early bail-out hasn't seen the whole list, so unseen
-        // cached assets must be kept rather than deleted.
         if (walkCompleted) {
           const staleIds = [...state.assets.keys()].filter(
             (id) => !seenIds.has(id)
@@ -692,14 +670,16 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
-      const promise = loadBatches()
+      const promise = loadBatches().then(() =>
+        replacementBySupersededFetch.get(controller)
+      )
+      if (supersededFetch) {
+        replacementBySupersededFetch.set(supersededFetch, promise)
+      }
       pendingPromiseByCategory.set(category, promise)
       try {
         await promise
       } finally {
-        // Only clear the guards if this walk still owns them — an
-        // invalidateCategory() + fresh walk can register a newer promise and
-        // controller for the same category before this teardown runs.
         if (pendingPromiseByCategory.get(category) === promise) {
           pendingPromiseByCategory.delete(category)
         }
@@ -714,25 +694,36 @@ export const useAssetsStore = defineStore('assets', () => {
      * Translates nodeType to category internally - multiple node types
      * sharing the same category will share the same cache entry.
      * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
      */
-    async function updateModelsForNodeType(nodeType: string): Promise<void> {
+    async function updateModelsForNodeType(
+      nodeType: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
       const category = modelToNodeStore.getCategoryForNodeType(nodeType)
       if (!category) return
 
-      // Use category as cache key but fetch using nodeType for API compatibility
-      await updateModelsForCategory(category, (opts) =>
-        assetService.getAssetsPageForNodeType(nodeType, opts)
+      await updateModelsForCategory(
+        category,
+        (opts) => assetService.getAssetsPageForNodeType(nodeType, opts),
+        options
       )
     }
 
     /**
      * Fetch and cache model assets for a specific tag
      * @param tag The tag to fetch assets for (e.g., 'models')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
      */
-    async function updateModelsForTag(tag: string): Promise<void> {
+    async function updateModelsForTag(
+      tag: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
       const category = `tag:${tag}`
-      await updateModelsForCategory(category, (opts) =>
-        assetService.getAssetsPageByTag(tag, true, opts)
+      await updateModelsForCategory(
+        category,
+        (opts) => assetService.getAssetsPageByTag(tag, true, opts),
+        options
       )
     }
 
@@ -871,7 +862,7 @@ export const useAssetsStore = defineStore('assets', () => {
               category,
               state
             ] of modelStateByCategory.value.entries()) {
-              if (state.assets?.has(asset.id)) {
+              if (state.assets.has(asset.id)) {
                 categoriesToInvalidate.add(category)
               }
             }
@@ -933,18 +924,22 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
-        .filter((provider) => provider.nodeDef?.name)
+        .filter((provider) => provider.nodeDef.name)
 
-      const nodeTypeUpdates = providers.map((provider) =>
-        updateModelsForNodeType(provider.nodeDef.name).then(
-          () => provider.nodeDef.name
+      const firstProviderOfEachCategory = new Set(
+        uniqBy(providers, (provider) =>
+          modelToNodeStore.getCategoryForNodeType(provider.nodeDef.name)
         )
       )
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name, {
+          restart: firstProviderOfEachCategory.has(provider)
+        }).then(() => provider.nodeDef.name)
+      )
 
-      // Also update by tag in case modal was opened with assetType
       const tagUpdates = [
-        updateModelsForTag(modelType),
-        updateModelsForTag('models')
+        updateModelsForTag(modelType, { restart: true }),
+        updateModelsForTag('models', { restart: true })
       ]
 
       const results = await Promise.allSettled([
@@ -965,33 +960,14 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
-    historyAssets,
-    inputLoading,
-    historyLoading,
-    inputError,
-    historyError,
-    hasMoreHistory,
-    isLoadingMore,
+    outputAssets,
+    invalidateAll,
+    loadOutputAsset,
 
     // Deletion tracking
     deletingAssetIds,
     setAssetDeleting,
     isAssetDeleting,
-
-    // Actions
-    updateInputs,
-    updateHistory,
-    loadMoreHistory,
-    setAssetPreview,
-
-    // Flat output assets (cloud-only, tag-based)
-    flatOutputAssets,
-    flatOutputLoading,
-    flatOutputError,
-    flatOutputHasMore,
-    flatOutputIsLoadingMore,
-    updateFlatOutputs,
-    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

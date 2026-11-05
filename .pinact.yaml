@@ -11,20 +11,20 @@ files:
 # Actions that don't need SHA pinning (official GitHub actions are trusted)
 ignore_actions:
   - name: actions/cache
-    ref: v5
+    ref: 'v\d+'
   - name: actions/cache/restore
-    ref: v5
+    ref: 'v\d+'
   - name: actions/cache/save
-    ref: v5
+    ref: 'v\d+'
   - name: actions/checkout
-    ref: v7
+    ref: 'v\d+'
   - name: actions/setup-node
-    ref: v6
+    ref: 'v\d+'
   - name: actions/setup-python
-    ref: v6
+    ref: 'v\d+'
   - name: actions/upload-artifact
-    ref: v6
+    ref: 'v\d+'
   - name: actions/download-artifact
-    ref: v8
+    ref: 'v\d+'
   - name: actions/github-script
-    ref: v9
+    ref: 'v\d+'

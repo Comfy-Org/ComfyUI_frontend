@@ -3,22 +3,35 @@ import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+  ResultItem
+} from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  executionIdToNodeLocatorId,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -39,27 +52,54 @@ const createOutputs = (
 ): ExecutedWsMessage['output'] => {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map(
-      (image) =>
-        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
-    )
+    animated: filenames.map((image) => {
+      const { filepath } = parseAnnotatedPath(image, type)
+      return (
+        isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
+      )
+    })
   }
 }
+
+function isResolvedPreviewOf(
+  output: ExecutedWsMessage['output'] | undefined,
+  widgetValue: string
+): boolean {
+  const images = output?.images ?? []
+  if (images.length !== 1 || !images[0].preview_id) return false
+  const [image] = images
+  const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+  return (
+    image.filename === filename &&
+    (image.subfolder ?? '') === subfolder &&
+    image.type === type
+  )
+}
+
+const isResultItem = (
+  image: ResultItem | null | undefined
+): image is ResultItem => image != null
 
 interface SetOutputOptions {
   merge?: boolean
 }
 
+type NodePreviewMap = Partial<Record<string, string[]>>
+type RuntimeOutput = Pick<ExecutedWsMessage['output'], 'animated'> & {
+  images?: (ResultItem | null)[]
+}
+
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
-  const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+  const scheduledRevoke: Partial<Record<NodeLocatorId, { stop: () => void }>> =
+    {}
   const latestPreview = ref<string[]>([])
   /**
    * Previews belonging to open-but-inactive workflows, keyed by workflow path.
    * The stash owns the object URL retain taken when the previews were set.
    */
-  const stashedPreviews = new Map<string, Record<string, string[]>>()
+  const stashedPreviews = new Map<string, NodePreviewMap>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -72,15 +112,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     scheduledRevoke[locator] = { stop }
   }
 
-  const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({
-    ...app.nodeOutputs
-  })
-  const nodePreviewImages = ref<Record<string, string[]>>(
+  const nodeOutputs = ref<Partial<Record<string, ExecutedWsMessage['output']>>>(
+    {
+      ...useApp().nodeOutputs
+    }
+  )
+  const nodePreviewImages = ref<NodePreviewMap>(
     Object.fromEntries(
-      Object.entries(app.nodePreviewImages || {}).map(([id, urls]) => [
-        id,
-        [...urls]
-      ])
+      Object.entries(useApp().nodePreviewImages).flatMap(([id, urls]) =>
+        urls ? [[id, [...urls]]] : []
+      )
     )
   )
 
@@ -96,14 +137,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   const isImageOutputs = (
     node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
+    outputs: RuntimeOutput
   ): boolean => {
     if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
-    if (!outputs?.images?.length) return false
-
-    const images = outputs.images.filter((image) => image != null)
-    if (!images.length) return false
+    const images = outputs.images?.filter((image) => image !== null)
+    if (!images?.length) return false
 
     if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
       return false
@@ -115,7 +154,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode,
     outputs: ExecutedWsMessage['output']
   ): string {
-    return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
+    return isImageOutputs(node, outputs) ? useApp().getPreviewFormatParam() : ''
   }
 
   function buildImageUrls(
@@ -124,15 +163,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = app.getRandParam()
+    const rand = useApp().getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images
-      .filter((image) => image != null)
-      .map((image) => {
-        const params = new URLSearchParams(image)
-        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+    return outputs.images.filter(isResultItem).map((image) => {
+      const filename = image.filename ?? ''
+      const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
+      const params = new URLSearchParams({
+        ...image,
+        filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
+        type: rootFolder
       })
+      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+    })
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
@@ -145,7 +188,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function getNodeOutputByExecutionId(
     executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    const locatorId = executionIdToNodeLocatorId(
+      useApp().rootGraph,
+      executionId
+    )
     if (!locatorId) return undefined
     return nodeOutputs.value[locatorId]
   }
@@ -153,7 +199,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function getNodePreviewImagesByExecutionId(
     executionId: NodeExecutionId
   ): string[] | undefined {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    const locatorId = executionIdToNodeLocatorId(
+      useApp().rootGraph,
+      executionId
+    )
     if (!locatorId) return undefined
     return nodePreviewImages.value[locatorId]
   }
@@ -170,50 +219,44 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setOutputsByLocatorId(
     nodeLocatorId: NodeLocatorId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
     options: SetOutputOptions = {}
   ) {
     if (outputs == null) return
 
-    const incomingImages = (outputs as ExecutedWsMessage['output']).images
+    const incomingImages = 'images' in outputs ? outputs.images : undefined
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
-    if (
-      !hasIncomingImages &&
-      isInputPreviewOutput(nodeOutputs.value[nodeLocatorId])
-    ) {
+    const existingOutput = nodeOutputs.value[nodeLocatorId]
+    if (!hasIncomingImages && isInputPreviewOutput(existingOutput)) {
       outputs = {
         ...outputs,
-        images: nodeOutputs.value[nodeLocatorId].images
+        images: existingOutput.images
       }
     }
 
-    if (options.merge) {
-      const existingOutput = nodeOutputs.value[nodeLocatorId]
-      if (existingOutput && outputs) {
-        const mergedOutput = { ...existingOutput }
-        for (const k in outputs) {
-          const existingValue = existingOutput[k]
-          const newValue = (outputs as Record<string, unknown>)[k]
+    if (options.merge && existingOutput) {
+      const mergedOutput = { ...existingOutput }
+      for (const [key, newValue] of Object.entries(outputs)) {
+        const existingValue = existingOutput[key]
 
-          if (Array.isArray(existingValue) && Array.isArray(newValue)) {
-            mergedOutput[k] = existingValue.concat(newValue)
-          } else {
-            mergedOutput[k] = newValue
-          }
+        if (Array.isArray(existingValue) && Array.isArray(newValue)) {
+          mergedOutput[key] = existingValue.concat(newValue)
+        } else {
+          mergedOutput[key] = newValue
         }
-        nodeOutputs.value[nodeLocatorId] = mergedOutput
-        app.nodeOutputs[nodeLocatorId] = clone(mergedOutput)
-        return
       }
+      nodeOutputs.value[nodeLocatorId] = mergedOutput
+      useApp().nodeOutputs[nodeLocatorId] = clone(mergedOutput)
+      return
     }
 
     nodeOutputs.value[nodeLocatorId] = outputs
-    app.nodeOutputs[nodeLocatorId] = clone(outputs)
+    useApp().nodeOutputs[nodeLocatorId] = clone(outputs)
   }
 
   function setNodeOutputs(
-    node: LGraphNode,
+    node: LGraphNode | null | undefined,
     filenames: string | string[] | ResultItem,
     {
       folder = 'input',
@@ -225,15 +268,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
     if (typeof filenames === 'string') {
+      const existingOutput = nodeOutputs.value[locatorId]
+      const outputs = createOutputs([filenames], folder, isAnimated)
       setOutputsByLocatorId(
         locatorId,
-        createOutputs([filenames], folder, isAnimated)
+        isResolvedPreviewOf(existingOutput, filenames)
+          ? { ...outputs, images: existingOutput?.images }
+          : outputs
       )
     } else if (!Array.isArray(filenames)) {
       setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
-      if (!resultItems?.images?.length) return
+      if (!resultItems.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
   }
@@ -252,21 +299,76 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node.images = images
   }
 
+  /**
+   * Replaces a node's output with exactly these images, dropping any media
+   * metadata the previous output carried. `animated`, `video` and friends are
+   * parallel to the images they were produced with, so an editor that rewrites
+   * the image list wholesale must not inherit them.
+   */
+  function replaceNodeOutputImages(
+    node: LGraphNode,
+    images: NonNullable<ExecutedWsMessage['output']['images']>
+  ) {
+    if (!images.length) return
+
+    const locatorId = nodeToNodeLocatorId(node)
+    if (!locatorId) return
+
+    revokePreviewsByLocatorId(locatorId)
+    setOutputsByLocatorId(locatorId, { images })
+    node.images = images
+  }
+
   function setNodeOutputsByExecutionId(
     executionId: NodeExecutionId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
     options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
-    if (!nodeLocatorId) return
+    const rootGraph = useApp().rootGraphOrUndefined
+    const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
+    if (
+      !nodeLocatorId ||
+      (rootGraph && !getNodeByLocatorId(rootGraph, nodeLocatorId))
+    ) {
+      reportUnresolvedExecutionId(executionId, outputs)
+      return
+    }
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
+  }
+
+  function reportUnresolvedExecutionId(
+    executionId: NodeExecutionId,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined
+  ) {
+    const incomingImages =
+      typeof outputs === 'object' && outputs !== null && 'images' in outputs
+        ? outputs.images
+        : undefined
+    const filenames = Array.isArray(incomingImages)
+      ? incomingImages
+          .filter(isResultItem)
+          .map((image) => image.filename)
+          .filter((filename): filename is string => !!filename)
+      : undefined
+    reportError(new Error('No live node resolves the executed output'), {
+      surface: 'graph',
+      errorType: 'failure_resolving_node_output_execution_id',
+      level: 'warning',
+      tags: { executionId },
+      context: {
+        filenames: filenames?.length ? filenames : undefined
+      }
+    })
   }
 
   function setNodePreviewsByExecutionId(
     executionId: NodeExecutionId,
     previewImages: string[]
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(
+      useApp().rootGraph,
+      executionId
+    )
     if (!nodeLocatorId) return
     setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
     latestPreview.value = [...previewImages]
@@ -277,11 +379,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     previewImages: string[]
   ) {
     const existingPreviews = nodePreviewImages.value[nodeLocatorId]
-    if (scheduledRevoke[nodeLocatorId]) {
-      scheduledRevoke[nodeLocatorId].stop()
-      delete scheduledRevoke[nodeLocatorId]
-    }
-    if (existingPreviews?.[Symbol.iterator]) {
+    scheduledRevoke[nodeLocatorId]?.stop()
+    delete scheduledRevoke[nodeLocatorId]
+    if (existingPreviews) {
       for (const url of existingPreviews) {
         releaseSharedObjectUrl(url)
       }
@@ -290,7 +390,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       retainSharedObjectUrl(url)
     }
     nodePreviewImages.value[nodeLocatorId] = [...previewImages]
-    app.nodePreviewImages[nodeLocatorId] = [...previewImages]
+    useApp().nodePreviewImages[nodeLocatorId] = [...previewImages]
   }
 
   function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
@@ -298,7 +398,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
-    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(
+      useApp().rootGraph,
+      executionId
+    )
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>
       revokePreviewsByLocatorId(nodeLocatorId)
@@ -307,19 +410,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function revokePreviewsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const previews = nodePreviewImages.value[nodeLocatorId]
-    if (!previews?.[Symbol.iterator]) return
+    if (!previews) return
 
     for (const url of previews) {
       releaseSharedObjectUrl(url)
     }
 
     delete nodePreviewImages.value[nodeLocatorId]
-    delete app.nodePreviewImages[nodeLocatorId]
+    delete useApp().nodePreviewImages[nodeLocatorId]
   }
 
-  function releasePreviewUrls(previews: Record<string, string[]>) {
+  function releasePreviewUrls(previews: NodePreviewMap) {
     for (const urls of Object.values(previews)) {
-      if (!urls?.[Symbol.iterator]) continue
+      if (!urls) continue
 
       for (const url of urls) {
         releaseSharedObjectUrl(url)
@@ -330,7 +433,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function revokeAllPreviews() {
     releasePreviewUrls(nodePreviewImages.value)
     nodePreviewImages.value = {}
-    app.nodePreviewImages = {}
+    useApp().nodePreviewImages = {}
   }
 
   /** Release the previews held for a workflow that is going away. */
@@ -344,7 +447,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function discardClosedWorkflowPreviews() {
     const openPaths = new Set(workflowStore.openWorkflows.map((wf) => wf.path))
-    for (const path of [...stashedPreviews.keys()]) {
+    for (const path of Array.from(stashedPreviews.keys())) {
       if (!openPaths.has(path)) discardPreviewsForWorkflow(path)
     }
   }
@@ -364,7 +467,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       stashedPreviews.set(workflowPath, previews)
     }
     nodePreviewImages.value = {}
-    app.nodePreviewImages = {}
+    useApp().nodePreviewImages = {}
   }
 
   function restorePreviewsForWorkflow(workflowPath: string | undefined) {
@@ -377,20 +480,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const live = nodePreviewImages.value
     const superseded: Record<string, string[]> = {}
     for (const [nodeLocatorId, urls] of Object.entries(stashed)) {
+      if (!urls) continue
+
       // A preview that arrived while the graph was loading wins; the stashed
       // copy for that node then has no owner left to release it.
-      if (nodeLocatorId in live) superseded[nodeLocatorId] = urls
+      if (live[nodeLocatorId]) superseded[nodeLocatorId] = urls
       else live[nodeLocatorId] = urls
     }
     releasePreviewUrls(superseded)
     nodePreviewImages.value = { ...live }
-    app.nodePreviewImages = clone(nodePreviewImages.value)
+    useApp().nodePreviewImages = clone(nodePreviewImages.value)
   }
 
-  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const { graph } = subgraphNode
-    if (!graph) return
-
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode, graph: LGraph) {
     revokePreviewsByLocatorId(
       createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
     )
@@ -404,17 +506,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const hadOutputs = !!nodeOutputs.value[nodeLocatorId]
     delete nodeOutputs.value[nodeLocatorId]
-    delete app.nodeOutputs[nodeLocatorId]
+    delete useApp().nodeOutputs[nodeLocatorId]
 
-    if (nodePreviewImages.value[nodeLocatorId]) {
-      const previews = nodePreviewImages.value[nodeLocatorId]
-      if (previews?.[Symbol.iterator]) {
-        for (const url of previews) {
-          releaseSharedObjectUrl(url)
-        }
+    const previews = nodePreviewImages.value[nodeLocatorId]
+    if (previews) {
+      for (const url of previews) {
+        releaseSharedObjectUrl(url)
       }
       delete nodePreviewImages.value[nodeLocatorId]
-      delete app.nodePreviewImages[nodeLocatorId]
+      delete useApp().nodePreviewImages[nodeLocatorId]
     }
 
     return hadOutputs
@@ -431,15 +531,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
-    return clone(nodeOutputs.value)
+    return Object.fromEntries(
+      Object.entries(nodeOutputs.value).flatMap(([id, output]) =>
+        output ? [[id, clone(output)]] : []
+      )
+    )
   }
 
   function replaceOutputsFromLegacy(
-    outputs: Record<string, ExecutedWsMessage['output']>
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
     const parsedOutputs = mapKeys(
       outputs,
-      (_, id) => executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+      (_, id) => executionIdToNodeLocatorId(useApp().rootGraph, id) ?? id
     )
     nodeOutputs.value = { ...parsedOutputs }
   }
@@ -448,20 +552,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     id: string,
     output: ExecutedWsMessage['output']
   ): void {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    const locatorId = executionIdToNodeLocatorId(useApp().rootGraph, id) ?? id
     nodeOutputs.value[locatorId] = { ...output }
   }
 
   function removeOutputFromLegacy(id: string): void {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    const locatorId = executionIdToNodeLocatorId(useApp().rootGraph, id) ?? id
     delete nodeOutputs.value[locatorId]
   }
 
   function restoreOutputs(
-    outputs: Record<string, ExecutedWsMessage['output']>
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
     replaceOutputsFromLegacy(outputs)
-    app.nodeOutputs = clone(nodeOutputs.value)
+    useApp().nodeOutputs = snapshotOutputs()
   }
 
   function refreshNodeOutputs(node: LGraphNode) {
@@ -476,7 +580,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function resetAllOutputsAndPreviews() {
     nodeOutputs.value = {}
-    app.nodeOutputs = {}
+    useApp().nodeOutputs = {}
     revokeAllPreviews()
   }
 
@@ -508,6 +612,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     setNodeOutputs,
     setNodeOutputImages,
+    replaceNodeOutputImages,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByLocatorId,

@@ -1,94 +1,800 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
-const STEP: CoachStep = {
-  target: '#coach-target',
-  title: 'Meet the agent',
-  body: 'Ask it to build or edit graphs.'
+vi.mock(import('@comfyorg/telemetry'))
+
+const telemetry = () => vi.mocked(useTelemetry())!
+
+const KEY = 'coach-test'
+const STEPS: CoachStep[] = [
+  {
+    card: 'intro',
+    target: '#panel',
+    title: 'Meet the agent',
+    body: 'Build and run workflows.',
+    placement: 'left-center'
+  },
+  {
+    card: 'workflow',
+    target: '#composer',
+    title: 'Choose a workflow',
+    body: 'Choose what to edit.',
+    placement: 'left-end'
+  },
+  {
+    card: 'history',
+    target: '#history',
+    title: 'Previous chats',
+    body: 'Continue an earlier chat.',
+    placement: 'left-start'
+  }
+]
+const LAST = STEPS.length - 1
+const rectangles: Record<string, DOMRect> = {
+  panel: new DOMRect(950, 60, 420, 700),
+  composer: new DOMRect(966, 600, 388, 144),
+  history: new DOMRect(970, 104, 24, 24)
+}
+const tooltipRect = new DOMRect(998, 105, 84, 22)
+const ARROW_SIZE = 16
+
+function cardPlacement(card: HTMLElement, target: DOMRect) {
+  const left = parseFloat(card.style.left)
+  const top = parseFloat(card.style.top)
+  const right = left + card.offsetWidth
+  const bottom = top + card.offsetHeight
+  return {
+    inViewport:
+      left >= 8 &&
+      top >= 8 &&
+      right <= window.innerWidth - 8 &&
+      bottom <= window.innerHeight - 8,
+    besideTarget:
+      right <= target.left && top < target.bottom && bottom > target.top
+  }
 }
 
-let target: HTMLElement | undefined
+async function expectCard(step: CoachStep, progress: string) {
+  const dialog = await screen.findByRole('dialog', { name: step.title })
+  expect(dialog).toHaveAccessibleDescription(step.body)
+  await waitFor(() => expect(screen.getByText(progress)).toBeVisible())
+  expect(localStorage.getItem(KEY)).toBe('false')
+}
 
-function mountWithTarget(rect: { left: number; top: number }) {
-  target = document.createElement('div')
-  target.id = 'coach-target'
-  target.getBoundingClientRect = vi.fn(
-    () =>
-      ({
-        left: rect.left,
-        top: rect.top,
-        right: rect.left + 400,
-        bottom: 800,
-        width: 400,
-        height: 700,
-        x: rect.left,
-        y: rect.top,
-        toJSON: () => ({})
-      }) as DOMRect
+function mount(steps = STEPS) {
+  return render(
+    {
+      components: { OnboardingCoach },
+      setup: () => {
+        const coach = ref<{ restart: () => void } | null>(null)
+        return {
+          steps,
+          storageKey: KEY,
+          coach,
+          replay: () => coach.value?.restart()
+        }
+      },
+      template:
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
+    },
+    { global: { plugins: [i18n] } }
   )
-  document.body.appendChild(target)
-  return render(OnboardingCoach, {
-    props: { step: STEP, storageKey: `coach-${Math.random()}` },
-    global: { plugins: [i18n] }
-  })
 }
+
+beforeEach(() => {
+  localStorage.clear()
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
+  telemetry().trackAgentOnboardingShown.mockClear()
+  telemetry().trackAgentOnboardingStep.mockClear()
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    function (this: HTMLElement) {
+      if (this.getAttribute('role') === 'tooltip') return tooltipRect
+      if (this.dataset.testid === 'agent-coach-arrow')
+        return new DOMRect(0, 0, ARROW_SIZE, ARROW_SIZE)
+      return (
+        rectangles[this.id] ??
+        new DOMRect(
+          0,
+          0,
+          this.getAttribute('role') === 'dialog' ? 307 : 0,
+          this.getAttribute('role') === 'dialog' ? 184 : 0
+        )
+      )
+    }
+  )
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+    function (this: HTMLElement) {
+      return this.getBoundingClientRect().width
+    }
+  )
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+    function (this: HTMLElement) {
+      return this.getBoundingClientRect().height
+    }
+  )
+  vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1400)
+  vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(800)
+  window.innerWidth = 1400
+  window.innerHeight = 800
+})
 
 describe('OnboardingCoach', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    target?.remove()
-    localStorage.clear()
+  it('presents every card in order and finishes with Done', async () => {
+    const user = userEvent.setup()
+    const { unmount } = mount()
+    await expectCard(STEPS[0], '1 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[1], '2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[2], '3 of 3')
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+    unmount()
+    mount()
+    await nextTick()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('places the card fully left of the docked panel', async () => {
-    mountWithTarget({ left: 700, top: 100 })
+  it('offers only Done on the last card', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
 
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    )
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+  })
+
+  it.for([...STEPS.keys()].slice(0, LAST))(
+    'dismisses through Skip from card index %i',
+    async (index) => {
+      const user = userEvent.setup()
+      mount()
+      await screen.findByRole('dialog', { name: STEPS[0].title })
+      for (let i = 0; i < index; i++)
+        await user.click(screen.getByRole('button', { name: 'Next' }))
+      await user.click(screen.getByRole('button', { name: 'Skip' }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(localStorage.getItem(KEY)).toBe('true')
+    }
+  )
+
+  it('returns to the previous card without completing the tour', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(
+      await screen.findByRole('dialog', { name: STEPS[1].title })
+    ).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(
+      await screen.findByRole('dialog', { name: STEPS[0].title })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('false')
+  })
+
+  it('dismisses on Escape without forwarding it to the graph or blocking later keys', async () => {
+    const user = userEvent.setup()
+    const escaped = vi.fn()
+    window.addEventListener('keydown', escaped)
+    const { unmount } = mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+    expect(escaped).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    expect(escaped).toHaveBeenCalledTimes(1)
+    unmount()
+    await user.keyboard('{Escape}')
+    expect(escaped).toHaveBeenCalledTimes(2)
+    window.removeEventListener('keydown', escaped)
+  })
+
+  it('keeps keyboard focus inside the tour', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    const skip = screen.getByRole('button', { name: 'Skip' })
+    expect(skip).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
+    await user.tab()
+    expect(skip).toHaveFocus()
+  })
+
+  it('places each card against its intended surface and moves the spotlight with it', async () => {
+    const user = userEvent.setup()
+    mount()
+    for (const [index, step] of STEPS.entries()) {
+      const dialog = await screen.findByRole('dialog', { name: step.title })
+      const targetRect = rectangles[step.target.slice(1)]
+      await waitFor(() =>
+        expect(cardPlacement(dialog, targetRect)).toEqual({
+          inViewport: true,
+          besideTarget: true
+        })
+      )
+      const spotlight = screen.getByTestId('agent-coach-spotlight')
+      expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
+      expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
+      expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
+      if (index < LAST)
+        await user.click(screen.getByRole('button', { name: 'Next' }))
+    }
+  })
+
+  it.for(STEPS)(
+    'points the $placement card arrow at the middle of its target',
+    async (step) => {
+      mount([step])
+      const dialog = await screen.findByRole('dialog', { name: step.title })
+      const arrow = screen.getByTestId('agent-coach-arrow')
+      const targetRect = rectangles[step.target.slice(1)]
+
+      expect(dialog).toContainElement(arrow)
+      await waitFor(() =>
+        expect(
+          parseFloat(dialog.style.top) +
+            parseFloat(arrow.style.top) +
+            ARROW_SIZE / 2
+        ).toBeCloseTo(targetRect.top + targetRect.height / 2, 0)
+      )
+      expect(arrow).not.toHaveStyle({ visibility: 'hidden' })
+    }
+  )
+
+  it('hides the arrow when the target center is outside the arrow reach', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(950, 0, 420, 24)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeLessThanOrEqual(rectangles.panel.left)
+      expect(screen.getByTestId('agent-coach-arrow')).toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('keeps the arrow when a small shift still leaves a gap beside the target', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(330, 60, 420, 700)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(parseFloat(dialog.style.left)).toBe(8)
+      expect(screen.getByTestId('agent-coach-arrow')).not.toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('draws attention to the card and focuses it when the user clicks the dimmed screen or the highlighted area', async () => {
+    const user = userEvent.setup()
+    mount()
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(dialog).not.toHaveAttribute('data-nudged')
+
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+
+    expect(dialog).toHaveAttribute('data-nudged')
+    expect(dialog).toHaveFocus()
+    expect(screen.getByRole('dialog', { name: STEPS[0].title })).toBe(dialog)
+    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(telemetry().trackAgentOnboardingStep).not.toHaveBeenCalled()
+  })
+
+  it('stops drawing attention to the card when the user moves to the next card', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    const second = await screen.findByRole('dialog', { name: STEPS[1].title })
+    expect(second).not.toHaveAttribute('data-nudged')
+  })
+
+  it('hides the arrow when there is no room beside the target and the card overlaps it', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(100, 60, 1290, 700)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeGreaterThan(rectangles.panel.left)
+      expect(screen.getByTestId('agent-coach-arrow')).toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('stops drawing attention to the card shortly after the click', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mount()
     const dialog = await screen.findByRole('dialog', {
-      name: 'Meet the agent'
+      name: STEPS[0].title
     })
-    // eslint-disable-next-line testing-library/no-node-access -- position lands on the styled child
-    const card = dialog.querySelector('[style]') as HTMLElement
-    const left = Number.parseFloat(card.style.left)
-    const renderedWidth = Number.parseFloat(getComputedStyle(card).width)
-    expect(renderedWidth).toBe(256)
-    expect(left + renderedWidth).toBeLessThanOrEqual(700 - 8)
-    expect(left).toBeGreaterThanOrEqual(8)
-    // Anchored near the panel's top, not its bottom edge.
-    expect(Number.parseFloat(card.style.top)).toBe(108)
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    expect(dialog).toHaveAttribute('data-nudged')
+
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(dialog).not.toHaveAttribute('data-nudged')
   })
 
-  it('finds a target mounted in the same render', async () => {
+  it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
+    const user = userEvent.setup()
+    const steps = STEPS.map((step, index) =>
+      index === LAST ? { ...step, tooltip: 'Show chat history' } : step
+    )
+    mount(steps)
+    const history = screen.getByTestId('history')
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    for (let i = 0; i < LAST; i++)
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
+    expect(history).toHaveAttribute('data-coach-hover')
+    const spotlight = screen.getByTestId('agent-coach-spotlight')
+    await waitFor(() => {
+      expect(parseFloat(spotlight.style.left)).toBe(rectangles.history.left - 4)
+      expect(parseFloat(spotlight.style.top)).toBe(rectangles.history.top - 4)
+      expect(parseFloat(spotlight.style.width)).toBe(
+        tooltipRect.right - rectangles.history.left + 8
+      )
+      expect(parseFloat(spotlight.style.height)).toBe(
+        rectangles.history.height + 8
+      )
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST - 1].title })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(history).not.toHaveAttribute('data-coach-hover')
+  })
+
+  it('keeps the card reachable when the viewport narrows or shortens', async () => {
+    mount()
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(
+      700
+    )
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(
+      240
+    )
+    window.innerWidth = 700
+    window.innerHeight = 240
+    window.dispatchEvent(new Event('resize'))
+    await waitFor(() => {
+      expect(parseFloat(dialog.style.left)).toBeGreaterThanOrEqual(8)
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeLessThanOrEqual(window.innerWidth - 8)
+      expect(
+        parseFloat(dialog.style.top) + dialog.offsetHeight
+      ).toBeLessThanOrEqual(window.innerHeight - 8)
+      expect(parseFloat(dialog.style.top)).toBeGreaterThanOrEqual(8)
+    })
+  })
+
+  it.for([
+    {
+      label: 'shows and announces the hold notice when one is set',
+      holdNotice: 'Held',
+      description: 'Build and run workflows. Held'
+    },
+    {
+      label: 'shows no hold notice by default',
+      holdNotice: undefined,
+      description: 'Build and run workflows.'
+    }
+  ])('$label', async ({ holdNotice, description }) => {
     render(
       {
         components: { OnboardingCoach },
-        setup: () => ({ step: STEP }),
+        setup: () => ({ steps: STEPS, holdNotice }),
         template:
-          '<div id="coach-target" /><OnboardingCoach :step="step" storage-key="coach-same-render" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
       },
       { global: { plugins: [i18n] } }
     )
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
 
     expect(
-      await screen.findByRole('dialog', { name: 'Meet the agent' })
-    ).toBeInTheDocument()
+      screen.queryByTestId('agent-coach-hold-notice')?.textContent.trim()
+    ).toBe(holdNotice)
+    expect(dialog).toHaveAccessibleDescription(description)
   })
 
-  it('offers a single Got it action and no Skip', async () => {
-    mountWithTarget({ left: 700, top: 100 })
-
-    expect(
-      await screen.findByRole('button', { name: 'Got it' })
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Got it' }))
+  it('neither completes the tour nor signals the overlay while its target is absent', async () => {
+    const overlay = useOnboardingOverlayStore()
+    render(OnboardingCoach, {
+      props: { steps: STEPS, storageKey: KEY },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+    await nextTick()
     expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(overlay.active).toBe(false)
+  })
+
+  it('signals the onboarding overlay while running and clears it when dismissed', async () => {
+    const overlay = useOnboardingOverlayStore()
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(overlay.active).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(overlay.active).toBe(false)
+  })
+
+  it('clears the onboarding overlay signal when it unmounts mid-tour', async () => {
+    const overlay = useOnboardingOverlayStore()
+    const { unmount } = mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(overlay.active).toBe(true)
+
+    unmount()
+    expect(overlay.active).toBe(false)
+  })
+
+  it('reports the card as shown once it is on screen, and not before', async () => {
+    const storageKey = 'coach-shown-telemetry-test'
+    const lateSteps = [{ ...STEPS[0], target: '#late-shown-panel' }]
+    render(OnboardingCoach, {
+      props: { steps: lateSteps, storageKey },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+    await nextTick()
+    expect(telemetry().trackAgentOnboardingShown).not.toHaveBeenCalled()
+
+    const target = document.createElement('div')
+    target.id = 'late-shown-panel'
+    document.body.appendChild(target)
+
+    await screen.findByRole('dialog', { name: lateSteps[0].title })
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports the card as shown again when the tour is replayed', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    for (const index of STEPS.keys())
+      await user.click(
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
+      )
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+
+    // `reportedShown` latches per tour. A replay reuses the mounted component,
+    // so without clearing it the second showing goes unreported.
+    await user.click(screen.getByTestId('coach-restart'))
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports the card as shown once across the whole tour', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    for (const index of STEPS.keys())
+      await user.click(
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
+      )
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { advance: 0, dismiss: 'Next', step: 1, card: 'intro', action: 'next' },
+    { advance: 1, dismiss: 'Next', step: 2, card: 'workflow', action: 'next' },
+    { advance: 2, dismiss: 'Done', step: 3, card: 'history', action: 'finish' },
+    { advance: 0, dismiss: 'Skip', step: 1, card: 'intro', action: 'skip' },
+    { advance: 1, dismiss: 'Skip', step: 2, card: 'workflow', action: 'skip' },
+    { advance: 2, dismiss: 'Escape', step: 3, card: 'history', action: 'skip' },
+    { advance: 1, dismiss: 'Escape', step: 2, card: 'workflow', action: 'skip' }
+  ])(
+    'reports $dismiss on card $step as action $action',
+    async ({ advance, dismiss, step, card, action }) => {
+      const user = userEvent.setup()
+      mount()
+      await screen.findByRole('dialog', { name: STEPS[0].title })
+      for (let i = 0; i < advance; i++)
+        await user.click(screen.getByRole('button', { name: 'Next' }))
+      telemetry().trackAgentOnboardingStep.mockClear()
+
+      if (dismiss === 'Escape') await user.keyboard('{Escape}')
+      else await user.click(screen.getByRole('button', { name: dismiss }))
+
+      expect(telemetry().trackAgentOnboardingStep.mock.calls).toEqual([
+        [{ step, card, total: STEPS.length, action }]
+      ])
+    }
+  )
+
+  it('waits for a late target without letting Escape complete an unseen tour', async () => {
+    const storageKey = 'coach-late-target-test'
+    const lateSteps = [{ ...STEPS[0], target: '#late-panel' }]
+    render(OnboardingCoach, {
+      props: { steps: lateSteps, storageKey },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+    await nextTick()
+
+    await userEvent.keyboard('{Escape}')
+    expect(localStorage.getItem(storageKey)).toBe('false')
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    const target = document.createElement('div')
+    target.id = 'late-panel'
+    document.body.appendChild(target)
+
+    const dialog = await screen.findByRole('dialog', {
+      name: lateSteps[0].title
+    })
+    await waitFor(() => expect(dialog).toBeVisible())
+    expect(useOnboardingOverlayStore().active).toBe(true)
+  })
+
+  function mountWithFinished(
+    storageKey: string,
+    onFinished: () => void,
+    steps = STEPS
+  ) {
+    return render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps, storageKey, onFinished }),
+        template:
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+  }
+
+  it('reports the tour finished when another tab completes it', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-elsewhere', onFinished)
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalled())
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledExactlyOnceWith('elsewhere')
+  })
+
+  it('reports finished once when the user skips', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-skip-once', onFinished)
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user clicks Done', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-done-once', onFinished, [STEPS[0]])
+    await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports a later completion in another tab after a replay', async () => {
+    const onFinished = vi.fn()
+    const coach = ref<{ restart: () => void } | null>(null)
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, coach, onFinished }),
+        template:
+          '<div id="panel" /><OnboardingCoach ref="coach" :steps="steps" storage-key="coach-replay-elsewhere" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    coach.value?.restart()
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-replay-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-replay-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(2))
+  })
+
+  describe('reporting a step whose target never mounts', () => {
+    const renderMissing = (target: string) =>
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target }],
+          storageKey: `coach-missing-${target}`
+        },
+        global: { plugins: [i18n] }
+      })
+
+    it('reports only once the grace period has passed', async () => {
+      renderMissing('#never-a')
+
+      await vi.advanceTimersByTimeAsync(7_000)
+      expect(reportError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-a', step: 1 }
+      })
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'target_missing', step: 1 })
+    })
+
+    it('reports a target once per session however often the panel remounts', async () => {
+      renderMissing('#never-b').unmount()
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('re-arms for a later step whose target is missing', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const found = document.createElement('div')
+      found.id = 'found-e'
+      document.body.appendChild(found)
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#found-e' },
+            { ...STEPS[1], target: '#never-e' }
+          ],
+          storageKey: 'coach-missing-rearm'
+        },
+        global: { plugins: [i18n] }
+      })
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-e', step: 2 }
+      })
+    })
+
+    it('stays quiet when the target arrives inside the grace period', async () => {
+      renderMissing('#late-c')
+      await vi.advanceTimersByTimeAsync(5_000)
+      const target = document.createElement('div')
+      target.id = 'late-c'
+      document.body.appendChild(target)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for a user who already finished the tour', async () => {
+      localStorage.setItem('coach-missing-#never-f', 'true')
+      renderMissing('#never-f')
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('signals a stall once without completing the tour', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const onStalled = vi.fn()
+      const onFinished = vi.fn()
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#late-g' },
+            { ...STEPS[1], target: '#never-g' }
+          ],
+          storageKey: 'coach-stalled',
+          onStalled,
+          onFinished
+        },
+        global: { plugins: [i18n] }
+      })
+
+      await vi.advanceTimersByTimeAsync(7_000)
+      expect(onStalled).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(onStalled).toHaveBeenCalledOnce()
+
+      const late = document.createElement('div')
+      late.id = 'late-g'
+      document.body.appendChild(late)
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(onStalled).toHaveBeenCalledOnce()
+      expect(onFinished).not.toHaveBeenCalled()
+      expect(localStorage.getItem('coach-stalled')).toBe('false')
+    })
+
+    it('stays quiet when the panel closes before the grace period ends', async () => {
+      const { unmount } = renderMissing('#never-d')
+      await vi.advanceTimersByTimeAsync(5_000)
+      unmount()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 })

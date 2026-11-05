@@ -1,0 +1,83 @@
+{
+  "id": "mask-editor",
+  "capability": "Mask editor",
+  "description": "Mask editing UI, host adapters (loader, saver, image widget, dialog, brush persistence), and the core extension contract. The @comfyorg/mask-editor package holds the stroke, GPU, pan/zoom, canvas-history and tool-manager engine.",
+  "modules": [
+    {
+      "path": "src/extensions/core/clipspace.ts"
+    },
+    {
+      "path": "src/extensions/core/maskeditor.ts"
+    },
+    {
+      "path": "src/renderer/extensions/maskEditor/**"
+    },
+    {
+      "path": "src/scripts/clipspace.ts"
+    },
+    {
+      "path": "src/utils/__fixtures__/**"
+    },
+    {
+      "path": "src/utils/pngEncodeUtil.ts"
+    },
+    {
+      "path": "packages/mask-editor/src/**"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/extensions/core/clipspace.ts",
+    "src/extensions/core/maskeditor.ts",
+    "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts",
+    "src/scripts/clipspace.ts",
+    "packages/mask-editor/src/brushUtils.ts",
+    "packages/mask-editor/src/maskEditorStore.ts",
+    "packages/mask-editor/src/StrokeProcessor.ts"
+  ],
+  "characterizationScenarios": [
+    {
+      "name": "Drawing operations preserve brush and canvas-history behavior",
+      "checks": [
+        "packages/mask-editor/src/useBrushDrawing.test.ts",
+        "packages/mask-editor/src/useCanvasHistory.test.ts"
+      ]
+    },
+    {
+      "name": "Loading and saving preserve image-layer and widget boundaries",
+      "checks": [
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.test.ts"
+      ]
+    },
+    {
+      "name": "Mask PNG encoding round-trips through the decoder fixture",
+      "checks": ["src/utils/pngEncodeUtil.test.ts"]
+    },
+    {
+      "name": "Core extensions register the clipspace and mask editor and open the editor from node menus",
+      "checks": [
+        "src/extensions/core/index.test.ts",
+        "src/extensions/core/maskeditor.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditor.test.ts"
+      ]
+    },
+    {
+      "name": "Clipspace copies and pastes node images",
+      "checks": ["src/scripts/clipspace.test.ts"]
+    },
+    {
+      "name": "The stroke engine and editor store keep their contract for the painter and undo commands",
+      "checks": [
+        "packages/mask-editor/src/StrokeProcessor.test.ts",
+        "packages/mask-editor/src/brushUtils.test.ts",
+        "packages/mask-editor/src/maskEditorStore.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension remains the host integration seam for opening the editor.",
+    "Image widget values and layer output remain covered by loader and saver characterization tests."
+  ],
+  "deepImports": "enforced"
+}

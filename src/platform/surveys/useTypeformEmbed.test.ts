@@ -16,7 +16,7 @@ describe('useTypeformEmbed', () => {
   })
 
   afterEach(() => {
-    scope?.stop()
+    scope.stop()
   })
 
   it('marks alphanumeric ids as valid', () => {
