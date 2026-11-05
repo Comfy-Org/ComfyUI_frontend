@@ -350,6 +350,26 @@ function finishSnapshotTurn(
   )
 }
 
+function keepStrongerAskResolutions(
+  persistedParts: AssistantMessage['parts'],
+  localParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const local = new Map(
+    localParts.flatMap((part) =>
+      (part.type === 'askUser' || part.type === 'deleteApproval') &&
+      part.resolution
+        ? [[part.askId, part.resolution] as const]
+        : []
+    )
+  )
+  return persistedParts.map((part) => {
+    if (part.type !== 'askUser' && part.type !== 'deleteApproval') return part
+    const shown = local.get(part.askId)
+    if (!shown || !part.resolution) return part
+    return { ...part, resolution: settleResolution(part.resolution, shown) }
+  })
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined,
@@ -364,15 +384,16 @@ function finishWithPersistedParts(
     }
     return
   }
-  const persistedHasThinking = persistedParts.some(
+  const persisted = keepStrongerAskResolutions(persistedParts, message.parts)
+  const persistedHasThinking = persisted.some(
     (part) => part.type === 'thinking'
   )
   const persistedAskIds = new Set(
-    persistedParts.map(askIdOf).filter((askId) => askId !== undefined)
+    persisted.map(askIdOf).filter((askId) => askId !== undefined)
   )
   message.parts = interleaveLocalParts(
     preserveLiveToolStartTimes(
-      preserveCanvasVerdicts(message.parts, persistedParts),
+      preserveCanvasVerdicts(message.parts, persisted),
       message.parts
     ),
     anchorLocalParts(message.parts)
