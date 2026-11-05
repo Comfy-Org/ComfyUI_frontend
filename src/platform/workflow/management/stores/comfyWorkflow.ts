@@ -82,6 +82,8 @@ export interface WorkflowRuntime {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
+  /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
+  graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
   getDraft(path: string): WorkflowDraft | null
   removeDraft(path: string): void
   markDraftUsed(path: string): void
@@ -102,6 +104,18 @@ function workflowRuntime(): WorkflowRuntime {
     'Workflow runtime not registered; import the workflow store first'
   )
   return registeredRuntime
+}
+
+function draftMatchesSavedFile(
+  runtime: WorkflowRuntime,
+  saved: ComfyWorkflowJSON,
+  draft: ComfyWorkflowJSON
+): boolean {
+  return (
+    Array.isArray(saved.nodes) &&
+    Array.isArray(draft.nodes) &&
+    runtime.graphEqual(saved, draft)
+  )
 }
 
 /** i18n keys for the dialog shown when a workflow is saved without a name. */
@@ -235,9 +249,11 @@ export class ComfyWorkflow extends UserFile {
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
       this.content = draftContent
-      this._isModified = true
-      // Saved-workflow draft overlay path; direct persisted-draft restores
-      // are touched in workflowDraftStoreV2.loadDraft().
+      this._isModified = !draftMatchesSavedFile(
+        runtime,
+        initialState,
+        draftState
+      )
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow

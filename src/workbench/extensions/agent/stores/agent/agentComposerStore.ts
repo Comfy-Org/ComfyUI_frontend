@@ -620,11 +620,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   return {
     draftState,
     draft,
-    hasDraft,
     attachments,
     workflowReferences,
     prompt,
     nodes,
+    hasDraft,
     nodeScope,
     promptEpoch,
     promptOrigin,

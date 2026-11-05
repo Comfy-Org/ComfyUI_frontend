@@ -22,6 +22,7 @@ import {
   askResolved,
   askUserQuestionFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -59,9 +60,6 @@ interface Turn {
   send: (frame: AgentWsEvent | HostFrame) => void
 }
 
-// Boots the agent panel on a fresh canvas and sends one user message, answering
-// the document subscription the way the host does, so every frame after it is
-// the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
   const hostSocket = new AgentFollowerHostSocket(
     page,
@@ -70,8 +68,8 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   )
   const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
