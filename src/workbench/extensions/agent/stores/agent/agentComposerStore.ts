@@ -1,7 +1,20 @@
+import { StorageSerializers, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowReactive,
+  shallowRef,
+  watch
+} from 'vue'
 import { v4 as uuidv4 } from 'uuid'
+import { z } from 'zod'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
@@ -47,6 +60,19 @@ function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
+const zSavedDraft = z.object({
+  threadId: z.string().nullable(),
+  text: z.string(),
+  workflowReferences: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      unavailable: z.boolean().optional(),
+      textOffset: z.number()
+    })
+  )
+})
+
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
   nodes: SelectedNode[]
@@ -78,6 +104,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
+  const selectionModeNodeKeys = ref<Set<string>>(new Set())
   const hasDraft = computed(
     () =>
       draft.value.trim() !== '' ||
@@ -383,9 +410,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: draft.value,
       references: [
-        ...references.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...references.map((item): ComposerReference => ({
+          ...item,
+          kind: 'workflow'
+        })),
         ...prompt.value.references.filter((item) => item.kind !== 'workflow')
       ].sort((a, b) => a.textOffset - b.textOffset)
     })
@@ -409,6 +437,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function setNodeScope(scope: string | null): void {
     if (scope === nodeScope.value) return
     nodeScope.value = scope
+    selectionModeNodeKeys.value = new Set()
     if (nodes.value.length === 0) return
     resetPromptHistory()
     const references = prompt.value.references.filter(
@@ -472,6 +501,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
     })
+  }
+
+  function setSelectionModeNodeKeys(keys: ReadonlySet<string>): void {
+    const stagedKeys = new Set(nodes.value.map(selectedNodeKey))
+    selectionModeNodeKeys.value = new Set(
+      [...keys].filter((key) => stagedKeys.has(key))
+    )
   }
 
   function setSkillScope(scope: string | null): void {
@@ -639,6 +675,46 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function clearDraft(): void {
+    resetPromptHistory()
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
+    attachmentIds.value = []
+    updateDraft({ text: '', references: [] })
+    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
+    releaseUnusedAssets()
+  }
+
+  const savedDraft = useLocalStorage<unknown>(
+    StorageKeys.agentComposerDraft(getWorkspaceId()),
+    null,
+    { serializer: StorageSerializers.object }
+  )
+  const draftThreadId = ref<string | null>()
+
+  watch([draftState, draftThreadId], ([state, threadId]) => {
+    if (threadId === undefined) return
+    const references = workflowReferences.value
+    savedDraft.value =
+      state.text.trim() !== '' || references.length > 0
+        ? { threadId, text: state.text, workflowReferences: references }
+        : null
+  })
+
+  function trackDraftThread(threadId: string | null): void {
+    if (draftThreadId.value === undefined) {
+      const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
+      if (!saved.success) savedDraft.value = null
+      else if (saved.data?.threadId === threadId && !hasDraft.value)
+        replaceDraft({
+          text: saved.data.text,
+          workflowReferences: saved.data.workflowReferences,
+          attachments: []
+        })
+    }
+    draftThreadId.value = threadId
+  }
+
   return {
     draftState,
     draft,
@@ -646,6 +722,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    selectionModeNodeKeys,
     hasDraft,
     nodeScope,
     promptEpoch,
@@ -675,6 +752,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setNodeScope,
     setSkillScope,
     setNodes,
+    setSelectionModeNodeKeys,
     addAttachment,
     referenceAttachment,
     updateAttachment,
@@ -683,6 +761,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    clearDraft,
+    trackDraftThread
   }
 })

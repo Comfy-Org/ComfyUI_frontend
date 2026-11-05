@@ -1,5 +1,10 @@
 import { computed, reactive, ref } from 'vue'
 
+import type { ServedNoticePlan } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 interface BillingCapabilitiesMockState {
@@ -12,9 +17,11 @@ interface BillingCapabilitiesMockState {
   canLeaveWorkspace: boolean
   canManageSubscription: boolean
   canDowngradeToPersonal: boolean
+  canOpenPlans: boolean
 }
 
 const canTopUpState = ref(true)
+const noticePlan = ref<ServedNoticePlan>({ isTeamPlan: true })
 const defaultCapabilityState: BillingCapabilitiesMockState = {
   canSubscribeSelfServe: false,
   canCancel: true,
@@ -24,7 +31,8 @@ const defaultCapabilityState: BillingCapabilitiesMockState = {
   canInviteMembers: true,
   canLeaveWorkspace: true,
   canManageSubscription: true,
-  canDowngradeToPersonal: true
+  canDowngradeToPersonal: true,
+  canOpenPlans: true
 }
 const capabilityState = reactive<BillingCapabilitiesMockState>({
   ...defaultCapabilityState
@@ -42,6 +50,10 @@ export function setBillingCapabilitiesMock(
 
 export function setCanSubscribeSelfServeMock(canSubscribeSelfServe: boolean) {
   capabilityState.canSubscribeSelfServe = canSubscribeSelfServe
+}
+
+export function setBillingNoticePlanMock(plan: ServedNoticePlan) {
+  noticePlan.value = plan
 }
 
 export function useBillingCapabilities() {
@@ -73,6 +85,24 @@ export function useBillingCapabilities() {
     ),
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
+    ),
+    topUpDenial: computed<string | undefined>(() => undefined),
+    canManageBilling: computed(() => capabilityState.canManageSubscription),
+    canOpenPlans: computed(() =>
+      receiveServerFact('can_open_plans', capabilityState.canOpenPlans)
+    ),
+    runDeniedPaymentPastDue: computed(() => false),
+    billingNoticeAudience: computed(() =>
+      receiveServerFact(
+        'billing_notice_audience',
+        servedBillingNoticeAudience(noticePlan.value)
+      )
+    ),
+    endingNoticeStartsAt: computed(() =>
+      receiveServerFact(
+        'ending_notice_starts_at',
+        servedEndingNoticeStartsAt(noticePlan.value)
+      )
     ),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),

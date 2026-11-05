@@ -63,7 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="additionalInfoTooltip(event)"
+                :tooltip="customerEventService.getTooltipContent(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -101,25 +101,19 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import {
-  formatCredits,
-  isSubCreditCharge,
-  microUsdToCredits
-} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
+import { toFiniteNumber } from '@/services/customerEventParams'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -128,6 +122,7 @@ const error = ref<string | null>(null)
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const routingPending = computed(() => !shouldUseWorkspaceBilling.value)
 
 const pagination = ref({
   page: 1,
@@ -135,55 +130,24 @@ const pagination = ref({
   total: 0
 })
 
-function toFiniteNumber(raw: unknown) {
-  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)
-}
-
-function formatChargeCredits(microUsd: number) {
-  const credits = microUsdToCredits(microUsd)
-  const amount = isSubCreditCharge(credits)
-    ? t('credits.lessThanOne')
-    : formatCredits({
-        value: credits,
-        locale: locale.value,
-        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-      })
-  return `${amount} ${t('credits.credits')}`
-}
-
-function formatParam(key: string, value: unknown) {
-  const microUsd =
-    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
-  if (microUsd !== undefined) {
-    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
-  }
-  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-}
-
-function additionalInfoTooltip(event: AuditLog) {
-  return Object.entries(event.params ?? {})
-    .map(([key, value]) => formatParam(key, value))
-    .join('\n')
 }
 
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
-const readWorkspaceEvents = (params: { page: number; limit: number }) => {
-  const rail = useBillingReadRail()
-  return rail === null
-    ? billingApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
-}
-
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
+  if (routingPending.value) {
+    dropRenderedEvents()
+    error.value = workspaceInitSettled.value
+      ? t('credits.loadEventsError')
+      : null
+    loading.value = !workspaceInitSettled.value
+    return
+  }
   loading.value = true
   error.value = null
 
@@ -192,13 +156,10 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = shouldUseWorkspaceBilling.value
-      ? await readWorkspaceEvents(params)
-      : await customerEventService.getMyEvents(params)
+    const response = await readWorkspaceBillingEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since legacy and workspace backends emit different
-    // top-up events and the winning fetch may not carry the completion yet.
+    // supersedes this load.
     const completedTopup = usePendingTopup().consumeCompletedTopup(
       response?.events
     )
@@ -242,10 +203,7 @@ const loadEvents = async () => {
         pagination.value.total = response.total
       }
     } else {
-      const legacyError = shouldUseWorkspaceBilling.value
-        ? null
-        : customerEventService.error.value
-      error.value = legacyError || t('credits.loadEventsError')
+      error.value = t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
@@ -279,12 +237,17 @@ const refresh = async () => {
 }
 
 const workspaceStore = useWorkspaceIdentity()
+const workspaceInitSettled = computed(() => workspaceStore.initSettled)
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this
 // nothing reloads it at all when no read happens to be in flight.
 watch(
-  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  [
+    shouldUseWorkspaceBilling,
+    () => workspaceStore.activeWorkspaceId,
+    workspaceInitSettled
+  ],
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()

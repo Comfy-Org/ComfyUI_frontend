@@ -6,6 +6,7 @@ import type { LocationQueryRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -120,13 +121,19 @@ export function useWorkspaceUrlLoader() {
       return false
     }
 
-    await stripParam(query)
-    const switched = await switchWorkspace(link.workspaceId)
-    if (!switched) {
-      notifyStayed()
-      return false
-    }
-    return true
+    return switchFromLink(query, link.workspaceId)
+  }
+
+  async function switchFromLink(
+    query: LocationQueryRaw,
+    workspaceId: string
+  ): Promise<boolean> {
+    const keepSafeBoot = isSafeExtensionBootActive()
+    await stripParam(keepSafeBoot ? { ...query, safe: '' } : query)
+    if (await switchWorkspace(workspaceId)) return true
+    if (keepSafeBoot) await stripParam(query)
+    notifyStayed()
+    return false
   }
 
   return {

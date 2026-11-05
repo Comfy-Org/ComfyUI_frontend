@@ -10,7 +10,7 @@
           cn(
             'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
             'cursor-crosshair',
-            dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+            effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
             {
               'lg-slot--connected': props.connected,
               'lg-slot--compatible': props.compatible,
@@ -105,7 +105,7 @@ const hasNoLabel = computed(
     !props.slotData.localized_name &&
     props.slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 const accessibleName = computed(
   () =>
     props.slotData.label ||

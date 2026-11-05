@@ -148,6 +148,7 @@
             v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
+            :data-group-key="group.groupKey"
             :title="group.displayTitle"
             :count="group.count"
             :severity="group.severity"
@@ -364,6 +365,11 @@
                 v-for="card in group.cards"
                 :key="card.id"
                 :card="card"
+                :expand-details-token="
+                  detailGroupKeys.includes(group.groupKey)
+                    ? expandDetailsToken
+                    : 0
+                "
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
@@ -511,6 +517,8 @@ const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
+const expandDetailsToken = ref(0)
+const detailGroupKeys = ref<string[]>([])
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
@@ -930,6 +938,35 @@ watch(
       setSectionCollapsed(group.groupKey, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
+  },
+  { immediate: true }
+)
+
+function openClosedErrorDetails(groupKeys: readonly string[]) {
+  searchQuery.value = ''
+  severityFilter.value = null
+  const keys = new Set(groupKeys)
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  for (const group of allErrorGroups.value) {
+    if (!keys.has(group.groupKey)) continue
+    if (isSectionCollapsed(group.groupKey)) {
+      setSectionCollapsed(group.groupKey, false)
+    }
+    for (const item of getExecutionItemList(group)) {
+      if (item.displayDetails) nextKeys.add(item.key)
+    }
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+  detailGroupKeys.value = [...keys]
+  expandDetailsToken.value += 1
+}
+
+watch(
+  () => rightSidePanelStore.errorDetailsRequest,
+  (request) => {
+    if (!request) return
+    openClosedErrorDetails(request)
+    rightSidePanelStore.errorDetailsRequest = null
   },
   { immediate: true }
 )

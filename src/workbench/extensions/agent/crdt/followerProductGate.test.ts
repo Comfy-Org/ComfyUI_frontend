@@ -5,6 +5,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
@@ -66,4 +67,41 @@ it('gates real document transport and removes reconnect listeners on revocation'
     type: 'doc_unsubscribe',
     data: { workflow_id: 'wf-2' }
   })
+})
+
+it('hands an unconfirmed local edit to the follower created after a gate restart', async () => {
+  const agentSocket = createFakeAgentSocket()
+  const store = useAgentPanelStore()
+  store.enabled = true
+  const workflowId = ref<string | null>('wf-gate-restart')
+  let follower!: ReturnType<typeof useAgentCrdtFollower>
+  const { unmount } = render(
+    defineComponent({
+      setup() {
+        follower = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
+        return () => null
+      }
+    })
+  )
+  onTestFinished(unmount)
+
+  follower.noteUnboundLocalIntent()
+  expect(hasUnsyncedHumanOps('wf-gate-restart')).toBe(true)
+
+  store.enabled = false
+  await nextTick()
+  expect(hasUnsyncedHumanOps('wf-gate-restart')).toBe(true)
+
+  store.enabled = true
+  await nextTick()
+  agentSocket.receive('doc_subscribed', {
+    v: 1,
+    workflow_id: 'wf-gate-restart',
+    ok: true,
+    seq: 0,
+    lineage_seq: 0
+  })
+  expect(hasUnsyncedHumanOps('wf-gate-restart')).toBe(false)
 })

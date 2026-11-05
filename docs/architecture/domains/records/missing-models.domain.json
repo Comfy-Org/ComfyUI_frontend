@@ -4,53 +4,40 @@
   "description": "Scans workflows for model files that are not installed, verifies them against assets, groups and stores results, fetches model metadata, dispatches downloads (browser, desktop, or model library), and renders the missing-model card and rows.",
   "modules": [
     {
-      "path": "src/platform/workflowErrors/missingModel/components/**",
-      "role": "presentation"
+      "path": "src/platform/workflowErrors/missingModel/components/**"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/composables/**",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/composables/**"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/folderPathCache.ts",
-      "role": "infrastructure"
+      "path": "src/platform/workflowErrors/missingModel/folderPathCache.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelDownload.ts",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/missingModelDownload.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.ts",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelMetadata.ts",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/missingModelMetadata.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.ts",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelScan.ts",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/missingModelScan.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelStore.ts",
-      "role": "application"
+      "path": "src/platform/workflowErrors/missingModel/missingModelStore.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/types.ts",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/missingModel/types.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Missing model scan finds, verifies, and groups models absent from the installation",
@@ -77,7 +64,7 @@
   "adrs": [],
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "missingModelDownload mixes metadata fetching with download dispatch through electron and sidebar stores; that mix and the pure grouping and view helpers importing from application modules remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "missingModelDownload mixes metadata fetching with download dispatch through electron and sidebar stores; that mix and the pure grouping and view helpers importing from application modules remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

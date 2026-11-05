@@ -36,6 +36,7 @@ import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import type { AgentMessages } from './schemas/agentApiSchema'
 import { zAgentMessages } from './schemas/agentApiSchema'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
@@ -285,6 +286,7 @@ beforeEach(() => {
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),
@@ -310,9 +312,11 @@ beforeEach(() => {
         fromPartial({ hasFunds: true, agentHasFunds: true })
       ),
       tier: computed(() => 'STANDARD' as const),
-      type: computed(() => 'legacy' as const),
+      type: computed(() => 'workspace' as const),
       billingStatus: computed(() => 'paid' as const),
       canAccessSubscriptionFeatures: computed(() => true),
+      isInitialized: computed(() => true),
+      subscriptionState: computed(() => 'active' as const),
       fetchStatus: vi.fn(async () => {})
     })
   )
@@ -510,6 +514,137 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     )
     expect(useAgentConversationStore().threadId).toBeNull()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+  })
+
+  function deferFollowOf(workflowId: string): () => Promise<void> {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let answered: Promise<Response> | undefined
+    respondToFetch(
+      new RegExp(`/agent/threads\\?workflow_id=${workflowId}`),
+      () => {
+        answered = held.then(() =>
+          json(200, {
+            ...threadList,
+            threads: [
+              { ...agentThread('th-2', 'Other chat'), workflow_id: workflowId }
+            ],
+            pagination: { has_more: false, limit: 1, offset: 0, total: 1 }
+          })
+        )
+        return answered
+      },
+      { times: 1 }
+    )
+    return async () => {
+      release()
+      await answered
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await nextTick()
+    }
+  }
+
+  async function waitForFollowOf(workflowId: string): Promise<void> {
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests(new RegExp(`/agent/threads\\?workflow_id=${workflowId}`))
+      ).toHaveLength(1)
+    )
+  }
+
+  it('attaches nothing when the user returns to the first tab while the follow is still loading', async () => {
+    const running = workflowStore.activeWorkflow!
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    const releaseFollow = deferFollowOf('wf-other')
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+    await waitForFollowOf('wf-other')
+
+    await useWorkflowService().openWorkflow(running)
+    await releaseFollow()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('keeps a fresh chat and its chip on the errored workflow when the user switches tabs afterwards', async () => {
+    const running = workflowStore.activeWorkflow!
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+
+    await useWorkflowService().openWorkflow(running)
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(runningTab)
+    )
+    await nextTick()
+
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+  })
+
+  it('does not let an attachment left over from a closed panel replace a newer one', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    const releaseFollow = deferFollowOf('wf-other')
+    const closed = renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      label: 'Obsolete failure'
+    }
+    await waitForFollowOf('wf-other')
+
+    closed.unmount()
+    renderPanel()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      label: 'Newer failure'
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext?.label).toBe('Newer failure')
+    )
+
+    await releaseFollow()
+
+    expect(useAgentComposerStore().errorContext?.label).toBe('Newer failure')
   })
 })
 

@@ -55,7 +55,7 @@
             variant="textonly"
             size="sm"
             data-testid="error-overlay-see-errors"
-            @click="emit('viewErrors')"
+            @click="emit('viewErrors', overlayGroupKeys)"
           >
             {{
               appMode
@@ -101,7 +101,7 @@ import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
-const emit = defineEmits<{ viewErrors: [] }>()
+const emit = defineEmits<{ viewErrors: [groupKeys: readonly string[]] }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
@@ -113,6 +113,7 @@ const {
   isVisible,
   overlayMessage,
   overlayTitle,
+  overlayGroupKeys,
   askAgentContext
 } = useErrorOverlayState()
 
