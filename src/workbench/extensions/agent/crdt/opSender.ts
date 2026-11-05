@@ -1,5 +1,6 @@
 import { inspectOps, tickLamport } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
+import { isPlainObject } from 'es-toolkit'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -542,22 +543,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     for (const op of minted) {
       try {
         const [inspection] = inspectOps([op])
-        const wire: unknown = JSON.parse(
+        const decoded: unknown = JSON.parse(
           new TextDecoder().decode(inspection.canonical_op)
         )
-        if (
-          typeof wire !== 'object' ||
-          wire === null ||
-          !('op_id' in wire) ||
-          typeof wire.op_id !== 'string' ||
-          !('actor' in wire) ||
-          typeof wire.actor !== 'string'
-        ) {
-          rejected.push(op)
-          cause ??= new TypeError(
-            'Operation did not serialize to a wire object'
-          )
-          continue
+        if (!isPlainObject(decoded)) {
+          throw new TypeError('Operation did not serialize to a wire object')
+        }
+        const wire: Record<string, unknown> = decoded
+        if (typeof wire.op_id !== 'string' || typeof wire.actor !== 'string') {
+          throw new TypeError('Operation did not serialize to a wire object')
         }
         admitted.push({
           op,
