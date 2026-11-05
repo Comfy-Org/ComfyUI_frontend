@@ -94,12 +94,12 @@ function visiblePromptCount(): number {
   ).length
 }
 
-function onPromptClick(text: string, index: number): void {
+function onPromptClick(prompt: string, label: string, index: number): void {
   emit(
     'insert',
-    text,
+    prompt,
     starterPromptAttribution(
-      text,
+      label,
       index,
       suggestions.value.length,
       promptLocale.value,
@@ -143,7 +143,9 @@ function onPromptClick(text: string, index: number): void {
               displayIndex >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
             )
           "
-          @click="onPromptClick(suggestion.prompt, suggestion.index)"
+          @click="
+            onPromptClick(suggestion.prompt, suggestion.text, suggestion.index)
+          "
         >
           <i
             :class="cn('size-3 text-muted-foreground', suggestion.icon)"

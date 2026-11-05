@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import EmptyState from './EmptyState.vue'
@@ -50,23 +51,40 @@ describe('approved proactive variants', () => {
     }
   )
 
-  it('control retains three actionable suggestions and an empty draft', async () => {
-    const { emitted } = render(EmptyState, {
-      props: { greeting: { variant: 'A', canvas: 'workflow' } },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getAllByRole('button')).toHaveLength(3)
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Start from an idea' })
-    )
-    await nextTick()
-    expect(emitted('insert')).toEqual([
-      expect.arrayContaining([
-        "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
-      ])
-    ])
-    expect(useAgentComposerStore().draft).toBe('')
-  })
+  it.for(['en', 'zh'] as const)(
+    'control inserts its prompt and attributes the displayed English label in %s',
+    async (locale) => {
+      const previousLocale = i18n.global.locale.value
+      i18n.global.locale.value = locale
+      try {
+        const { emitted } = render(EmptyState, {
+          props: { greeting: { variant: 'A', canvas: 'workflow' } },
+          global: { plugins: [i18n] }
+        })
+        expect(screen.getAllByRole('button')).toHaveLength(3)
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Start from an idea' })
+        )
+        await nextTick()
+        expect(emitted('insert')).toEqual([
+          [
+            "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node",
+            {
+              promptId: 'slot_3',
+              promptIndex: 2,
+              promptCount: 3,
+              visiblePromptCount: 3,
+              promptTextHash: hashPath('Start from an idea'),
+              locale: 'en'
+            }
+          ]
+        ])
+        expect(useAgentComposerStore().draft).toBe('')
+      } finally {
+        i18n.global.locale.value = previousLocale
+      }
+    }
+  )
 
   it('removes its untouched prefill on a variant change but preserves retyped text', async () => {
     const composer = useAgentComposerStore()
