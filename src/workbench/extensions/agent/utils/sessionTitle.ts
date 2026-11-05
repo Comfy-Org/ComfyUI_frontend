@@ -3,9 +3,36 @@ import type { ConversationEntry } from '../stores/agent/agentConversationStore'
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+let graphemeSegmenter: Intl.Segmenter | undefined | null = null
 
-/** First user message, trimmed and capped at 60 graphemes. */
+/** Built on first use; undefined when the browser lacks `Intl.Segmenter`. */
+function getGraphemeSegmenter(): Intl.Segmenter | undefined {
+  if (graphemeSegmenter === null) {
+    graphemeSegmenter =
+      typeof Intl.Segmenter === 'function'
+        ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+        : undefined
+  }
+  return graphemeSegmenter
+}
+
+function truncatedTitle(text: string): string {
+  const segmenter = getGraphemeSegmenter()
+  const title: string[] = []
+
+  for (const item of segmenter ? segmenter.segment(text) : text) {
+    const segment = typeof item === 'string' ? item : item.segment
+    title.push(segment)
+    if (title.length === MAX_DERIVED_TITLE_LENGTH) break
+  }
+
+  return title.join('').trimEnd()
+}
+
+/**
+ * First user message, trimmed and capped at 60 graphemes, or 60 Unicode code
+ * points when the browser does not provide `Intl.Segmenter`.
+ */
 export function deriveSessionTitle(
   entries: ConversationEntry[]
 ): string | undefined {
@@ -14,12 +41,7 @@ export function deriveSessionTitle(
       entry.role === 'user'
   )
   const text = firstUser?.text.trim() ?? ''
-  return (
-    Array.from(graphemes.segment(text), ({ segment }) => segment)
-      .slice(0, MAX_DERIVED_TITLE_LENGTH)
-      .join('')
-      .trimEnd() || undefined
-  )
+  return truncatedTitle(text) || undefined
 }
 
 export function withCurrentSessionTitle(
