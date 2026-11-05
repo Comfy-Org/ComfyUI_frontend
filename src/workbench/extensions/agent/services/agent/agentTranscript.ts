@@ -451,7 +451,7 @@ function resolvedAskIndex(
   rowStart: number
 ): number {
   const after = Math.min(afterToolCalls ?? rowCallIds.length, rowCallIds.length)
-  const next = rowCallIds[after]
+  const next = after < rowCallIds.length ? rowCallIds[after] : undefined
   const index = parts.findIndex((part, i) =>
     next === undefined
       ? i >= rowStart && part.type === 'text'
