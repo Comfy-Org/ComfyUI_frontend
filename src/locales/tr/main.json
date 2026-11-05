@@ -1216,6 +1216,7 @@
     "apiPricing": "API Fiyatlandırması",
     "charge": "Ücretlendirme",
     "credits": "Krediler",
+    "creditUnit": "Krediler",
     "creditsAvailable": "Mevcut kredi",
     "details": "Detaylar",
     "eventType": "Etkinlik Türü",
