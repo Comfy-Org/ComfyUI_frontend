@@ -28,6 +28,18 @@ export const HighestPlan: Story = {
   render: renderAtMinimumWidth
 }
 
+// A Cloud owner with no plan: credits fund the agent but not workflow runs.
+export const NoPlan: Story = {
+  args: {
+    presentation: {
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredFreeRuns'
+    }
+  },
+  render: renderAtMinimumWidth
+}
+
 export const SubscriptionRequired: Story = {
   args: { presentation: { kind: 'subscriptionRequired' } },
   render: renderAtMinimumWidth

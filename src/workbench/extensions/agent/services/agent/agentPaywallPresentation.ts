@@ -4,12 +4,21 @@ import type {
   AgentPaywallCta,
   AgentPaywallReason
 } from '@comfyorg/telemetry/types'
+import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
 
 export type AgentPaywallPresentation =
-  | { kind: 'subscribed'; showUpgrade: boolean }
+  | {
+      kind: 'subscribed'
+      showUpgrade: boolean
+      /**
+       * The account can top up but has no Cloud plan: credits fund the agent,
+       * not workflow runs, so the card says so before anyone pays.
+       */
+      planCreditLine?: TopUpPlanCreditLine
+    }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
   | { kind: 'salesManaged' }
@@ -22,6 +31,8 @@ interface AgentPaywallPresentationInput {
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+  /** Plan-required Add credits line for this account, when one applies. */
+  planCreditLine?: TopUpPlanCreditLine | null
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -82,7 +93,8 @@ export function resolveAgentPaywallPresentation({
   role,
   tier,
   canTopUp,
-  canSubscribeSelfServe
+  canSubscribeSelfServe,
+  planCreditLine
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (distribution === 'local') return { kind: 'local' }
   if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -94,6 +106,7 @@ export function resolveAgentPaywallPresentation({
   }
   return {
     kind: 'subscribed',
+    ...(planCreditLine && { planCreditLine }),
     showUpgrade:
       canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
   }

@@ -7,6 +7,36 @@ import {
 } from './agentPaywallPresentation'
 
 describe('resolveAgentPaywallPresentation', () => {
+  it('carries the plan-required line for a Cloud owner who can top up but has no plan', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredFreeRuns'
+      })
+    ).toEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredFreeRuns'
+    })
+  })
+
+  it('omits the plan-required line on Local', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'owner',
+        tier: null,
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'local' })
+  })
+
   it.for([
     {
       name: 'both self-serve actions',
