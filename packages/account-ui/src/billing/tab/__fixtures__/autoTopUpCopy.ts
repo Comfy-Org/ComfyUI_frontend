@@ -24,7 +24,7 @@ export const autoTopUpCardCopy: AutoTopUpCardCopy = {
     "Your charge didn't go through. Update your payment method or add credits manually.",
   turnedOff:
     'Turned off after 3 declined charges. Update your payment method, then turn it back on.',
-  off: 'Refills credits when your balance runs low',
+  off: 'Refills credits when your balance runs low.',
   noPaymentMethod: 'Auto top-up needs a payment method. Add one to turn it on.',
   noDefaultPaymentMethod:
     'Auto top-up needs a default payment method. Set one to turn it on.',

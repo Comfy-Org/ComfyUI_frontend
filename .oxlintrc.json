@@ -309,6 +309,11 @@
             "object": "URL",
             "property": "canParse",
             "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "Intl",
+            "property": "Segmenter",
+            "message": "Missing on Firefox < 125 (Firefox 115 ESR is still in use). Read Intl.Segmenter once into a local under a one-line disable, typeof-check the local and fall back, as graphemeSegmenter in src/workbench/extensions/agent/utils/sessionTitle.ts does."
           }
         ]
       }

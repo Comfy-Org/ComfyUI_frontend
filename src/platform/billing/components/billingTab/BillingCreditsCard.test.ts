@@ -243,8 +243,7 @@ describe('BillingCreditsCard', () => {
       case: 'paused top-up purchases on a plan',
       facts: {},
       reasonKey: 'credits.addCreditsRefusal.topupPurchasesPaused',
-      reason:
-        "Buying credits isn't available right now. Try again later, or message support."
+      reason: "Buying credits isn't available right now. Try again later."
     },
     {
       case: 'a past-due payment on a plan',
@@ -532,7 +531,7 @@ describe('BillingCreditsCard', () => {
     )
     expect(screen.getByTestId('billing-credits-surface')).toHaveClass(
       'rounded-xl',
-      'border-card'
+      'border-border'
     )
     expect(screen.getByTestId('billing-credits-available')).toHaveClass(
       'text-2xl',
@@ -580,7 +579,7 @@ describe('BillingCreditsCard', () => {
       ).toEqual(addCreditsDisabled)
       expect(
         screen.queryAllByText(
-          "Buying credits isn't available right now. Try again later, or message support."
+          "Buying credits isn't available right now. Try again later."
         )
       ).toHaveLength(pausedNotes)
     }

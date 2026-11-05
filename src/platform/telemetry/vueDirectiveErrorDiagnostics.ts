@@ -2,6 +2,15 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 const MAX_SCRIPT_PATHS = 250
 
+export interface VueDirectiveRuntimeContext {
+  frontend_version: string
+  frontend_commit: string
+  loaded_script_count: number
+  first_party_script_paths: string[]
+}
+
+export const VUE_DIRECTIVE_DIAGNOSTIC_TAG = 'vue_directive_runtime'
+
 function eventMessages(event: ErrorEvent, hint: EventHint): string[] {
   const messages = [event.message]
   const originalException = hint.originalException
@@ -60,16 +69,16 @@ export function addVueDirectiveDiagnostics(
     ...event,
     tags: {
       ...event.tags,
-      diagnostic: 'vue_directive_runtime'
+      diagnostic: VUE_DIRECTIVE_DIAGNOSTIC_TAG
     },
     contexts: {
       ...event.contexts,
-      vue_directive_runtime: {
+      [VUE_DIRECTIVE_DIAGNOSTIC_TAG]: {
         frontend_version: __COMFYUI_FRONTEND_VERSION__,
         frontend_commit: __COMFYUI_FRONTEND_COMMIT__,
         loaded_script_count: scriptPaths.length,
         first_party_script_paths: scriptPaths
-      }
+      } satisfies VueDirectiveRuntimeContext
     }
   }
 }

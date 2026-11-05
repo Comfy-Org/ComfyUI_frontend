@@ -70,6 +70,8 @@
   "checkout": {
     "back": "Back",
     "close": "Close",
+    "notification": "Notification",
+    "notifications": "Notifications ({hotkey})",
     "singleSelectDropdown": "Single-select dropdown",
     "genericError": "Error",
     "usdPerMonth": "USD / mo",

@@ -8,10 +8,7 @@ import type {
   CreditsCardState,
   PlanCreditsState
 } from '@comfyorg/account-core/billing'
-import {
-  CREDITS_PER_USD,
-  BillingCreditsCard as PackageCreditsCard
-} from '@comfyorg/account-ui/billing'
+import { BillingCreditsCard as PackageCreditsCard } from '@comfyorg/account-ui/billing'
 import type { CreditsCardCopy } from '@comfyorg/account-ui/billing'
 
 import enMessages from '@/locales/en/main.json'
@@ -28,8 +25,8 @@ const k = 'workspacePanel.billingTab.credits'
 
 const copy: CreditsCardCopy = {
   title: t(`${k}.title`),
-  rateInfo: t(`${k}.rateInfo`),
-  rateTooltip: t(`${k}.rateTooltip`, { credits: CREDITS_PER_USD }),
+  rateInfo: t(`${k}.tooltipLabel`),
+  rateTooltip: t(`${k}.tooltip`),
   available: t(`${k}.available`),
   unavailable: t(`${k}.unavailable`),
   tryAgain: t('workspacePanel.billingTab.tryAgain'),

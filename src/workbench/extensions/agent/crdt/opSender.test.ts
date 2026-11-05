@@ -200,6 +200,7 @@ describe('createOpSender', () => {
   let observedSequence: number
   let observedCounter: number | undefined
   let sender: ReturnType<typeof createOpSender>
+  let settleBatch: (outcome: BatchOutcome) => void
   const unsubscribe = vi.fn(() => {
     resultListener = null
   })
@@ -233,6 +234,7 @@ describe('createOpSender', () => {
     boundWorkflow = WORKFLOW
     observedSequence = 41
     observedCounter = undefined
+    settleBatch = (outcome) => settled.push(outcome)
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -249,7 +251,7 @@ describe('createOpSender', () => {
       actor: () => ACTOR,
       baseVersion: () => observedSequence,
       observedCounter: () => observedCounter,
-      onBatchSettled: (outcome) => settled.push(outcome)
+      onBatchSettled: (outcome) => settleBatch(outcome)
     })
   })
 
@@ -542,6 +544,39 @@ describe('createOpSender', () => {
     )
   })
 
+  it('abortIfUnbound reports which caller triggered it, so a subscribe refusal is distinguishable from a retarget', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound('subscribe_refused')
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'subscribe_refused' }),
+        context: expect.objectContaining({
+          code: 'unbound',
+          reason: 'subscribe_refused'
+        })
+      })
+    )
+  })
+
+  it('abortIfUnbound omits the reason tag/context when the caller gives none', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.not.objectContaining({ reason: expect.anything() }),
+        context: expect.objectContaining({ code: 'unbound', reason: undefined })
+      })
+    )
+  })
+
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
     enqueueNodeBacklog(sender, 20_000)
     boundWorkflow = null
@@ -599,6 +634,70 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(sender.pending()).toBe(1)
+  })
+
+  it('abortIfUnbound attributes its reason to every cascaded queued batch for the dead workflow, not just the first', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+
+    sender.abortIfUnbound('retarget')
+
+    const unboundReports = vi
+      .mocked(reportError)
+      .mock.calls.filter(([, options]) => options.tags?.code === 'unbound')
+    expect(unboundReports).toHaveLength(3)
+    expect(
+      unboundReports.every(([, options]) => options.tags?.reason === 'retarget')
+    ).toBe(true)
+    expect(sent[1].workflowId).toBe('wf-2')
+  })
+
+  it('abortIfUnbound attributes its reason to every dead-workflow batch while delivery is suspended', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+    sender.suspend()
+
+    sender.abortIfUnbound('subscribe_refused')
+
+    const unboundReports = vi
+      .mocked(reportError)
+      .mock.calls.filter(([, options]) => options.tags?.code === 'unbound')
+    expect(unboundReports).toHaveLength(3)
+    expect(
+      unboundReports.every(
+        ([, options]) => options.tags?.reason === 'subscribe_refused'
+      )
+    ).toBe(true)
+    expect(sender.pending()).toBe(1)
+    expect(sent).toHaveLength(1)
+
+    sender.resume()
+    expect(sent[1].workflowId).toBe('wf-2')
+  })
+
+  it('keeps the next batch parked when settlement rebinds its workflow while suspended', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    boundWorkflow = 'wf-2'
+    sender.suspend()
+    settleBatch = (outcome) => {
+      settled.push(outcome)
+      boundWorkflow = WORKFLOW
+    }
+
+    sender.abortIfUnbound('retarget')
+
+    expect(sent).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+    sender.resume()
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {

@@ -1269,6 +1269,7 @@ export type {
   OAuthAuthorizeRedirectResponse,
   OAuthConsentChallenge,
   OAuthConsentChallengeWorkspace,
+  OAuthConsentVerifiedClient,
   OAuthProtectedResourceMetadata,
   OAuthRegisterBadRequestResponse,
   OAuthRegisterError,
