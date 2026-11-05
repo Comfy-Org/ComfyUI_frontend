@@ -293,6 +293,8 @@ beforeEach(() => {
       type: computed(() => 'legacy' as const),
       billingStatus: computed(() => 'paid' as const),
       canAccessSubscriptionFeatures: computed(() => true),
+      isInitialized: computed(() => true),
+      subscriptionState: computed(() => 'active' as const),
       fetchStatus: vi.fn(async () => {})
     })
   )

@@ -83,6 +83,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanCreditLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -222,6 +223,7 @@ const {
   isReady: capabilityReadSettled,
   snapshotAuthoritative
 } = useBillingCapabilities()
+const planCreditLine = usePlanCreditLine()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -231,7 +233,8 @@ const paywallPresentation = computed(() => {
     role: workspaceRole.value,
     tier: subscriptionTier.value,
     canTopUp: canTopUp.value,
-    canSubscribeSelfServe: canSubscribeSelfServe.value
+    canSubscribeSelfServe: canSubscribeSelfServe.value,
+    planCreditLine: planCreditLine.value
   })
 })
 const sidebarTabStore = useSidebarTabStore()
