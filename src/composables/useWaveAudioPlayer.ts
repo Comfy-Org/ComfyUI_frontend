@@ -9,6 +9,7 @@ import type { Surface } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { createToastId } from '@/types/toastId'
 import { formatTime } from '@/utils/formatUtil'
+import { reloadFailedMedia } from '@/utils/mediaReloadUtil'
 
 interface WaveformBar {
   height: number
@@ -142,7 +143,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
     const attempt = ++playAttempt
     try {
-      if (audio.error) audio.load()
+      if (audio.error) reloadFailedMedia(audio)
       await audio.play()
       if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
     } catch (error) {
