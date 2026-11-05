@@ -280,7 +280,8 @@ function requireActiveStateForSave(
     method,
     workflow
   )
-  throw new Error(`Cannot save workflow '${workflow.path}' before it is loaded`)
+  // No path in the message: error trackers group by it and show it in alerts.
+  throw new Error('Cannot save a workflow before it is loaded')
 }
 
 export class ComfyWorkflow extends UserFile {

@@ -51,6 +51,7 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { t } from '@/i18n'
+import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -3969,6 +3970,110 @@ describe('useWorkflowService', () => {
       expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+  })
+
+  describe('saving a tab that is not loaded', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+      vi.spyOn(api, 'getUserData').mockImplementation(
+        async () => new Response(JSON.stringify(defaultGraph))
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(
+        async (path) =>
+          new Response(JSON.stringify({ path, modified: 300, size: 2 }))
+      )
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      resetReportedWorkflowStateAnomaliesForTests()
+      mockAssert.mockClear()
+    })
+
+    // The shape Sentry reports: a saved tab whose content was dropped while it
+    // still carries its modified mark (isPersisted, !isLoaded).
+    function unloadedModifiedTab(path: string): ComfyWorkflow {
+      const tab = new ComfyWorkflowClass({ path, modified: 100, size: 1 })
+      workflowStore.attachWorkflow(tab)
+      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+      tab.isModified = true
+      return tab
+    }
+
+    function storedContent(path: string): ComfyWorkflowJSON {
+      const call = vi
+        .mocked(api.storeUserData)
+        .mock.calls.find(([stored]) => stored === path)
+      assert(call, `nothing was stored at ${path}`)
+      return JSON.parse(call[1] as string) as ComfyWorkflowJSON
+    }
+
+    it('loads and saves it when Save is chosen in the close dialog', async () => {
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.closeWorkflow(tab)).toBe(true)
+
+      expect(storedContent('workflows/background.json').nodes).toHaveLength(
+        defaultGraph.nodes.length
+      )
+      expect(workflowStore.openWorkflows).not.toContain(tab)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow was not loaded when saved',
+        expect.objectContaining({
+          method: 'workflowService.loadForSave',
+          isPersisted: true,
+          isLoaded: false
+        })
+      )
+    })
+
+    it('saves the draft the user edited, not the stored file', async () => {
+      useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
+        id: 'Comfy.Workflow.Persist',
+        name: 'Persist workflow state',
+        type: 'boolean',
+        defaultValue: true
+      }
+      const draft = { ...defaultGraph, extra: { editedInDraft: true } }
+      vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue({
+        data: JSON.stringify(draft),
+        name: 'background.json',
+        isTemporary: false,
+        updatedAt: 200
+      })
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.saveWorkflow(tab)).toBe(true)
+
+      expect(storedContent('workflows/background.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(tab.isModified).toBe(false)
+    })
+
+    it('saves an unsaved tab that a reload restored without opening it', async () => {
+      const restored = workflowStore.createTemporary('Restored.json', {
+        ...blankGraph,
+        id: '7b1e2c3d-4f5a-4b6c-8d7e-9f0a1b2c3d4e'
+      })
+      workflowStore.openWorkflowsInBackground({ right: [restored.path] })
+      restored.isModified = true
+      expect(restored.isLoaded).toBe(false)
+      vi.mocked(useDialogService().prompt).mockResolvedValue('Restored')
+
+      expect(await service.closeWorkflow(restored)).toBe(true)
+
+      expect(storedContent('workflows/Restored.json').id).toBe(
+        '7b1e2c3d-4f5a-4b6c-8d7e-9f0a1b2c3d4e'
+      )
+      expect(mockAssert).not.toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow was not loaded when saved',
+        expect.anything()
+      )
     })
   })
 })

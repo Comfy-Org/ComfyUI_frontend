@@ -461,6 +461,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
             return
           }
 
+          // A modified tab holds edits that exist only in memory, as the
+          // active one does. Its draft is older than the new remote file, so
+          // a reload would drop them and leave the modified mark behind.
+          if (existingWorkflow.isModified) {
+            return
+          }
+
           existingWorkflow.unload()
         },
         /* exclude */ (workflow) => workflow.isTemporary,

@@ -169,6 +169,61 @@ describe('useWorkflowStore', () => {
       expect(workflow.size).toBe(2)
     })
 
+    it('keeps the unsaved edits of a background tab whose file changed remotely', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const edited = store.getWorkflowByPath('workflows/edited.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await store.openWorkflow(edited)
+      edited.changeTracker!.activeState = {
+        ...edited.changeTracker!.activeState,
+        extra: { unsaved: true }
+      }
+      edited.isModified = true
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(edited.isLoaded).toBe(true)
+      expect(edited.isModified).toBe(true)
+      expect(edited.activeState?.extra).toEqual({ unsaved: true })
+      expect(edited.lastModified).toBe(200)
+    })
+
+    it('still drops the cached content of an unmodified background tab whose file changed', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const clean = store.getWorkflowByPath('workflows/clean.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await store.openWorkflow(clean)
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(clean.isLoaded).toBe(false)
+      expect(clean.isModified).toBe(false)
+    })
+
     describe('node widget histories', () => {
       const rootGraphId = '00000000-0000-4000-8000-0000000000a1'
 
@@ -1664,7 +1719,11 @@ describe('useWorkflowStore', () => {
             ? workflow.save()
             : workflow.saveAs('workflows/copy.json')
 
-        await expect(attempt).rejects.toThrow('before it is loaded')
+        // Static message: the path would split the error into one group per
+        // file and put user file names in alert titles.
+        await expect(attempt).rejects.toThrow(
+          /^Cannot save a workflow before it is loaded$/
+        )
         expect(api.storeUserData).not.toHaveBeenCalled()
         expect(workflow.content).toBe(contentBefore)
         expectReported('Workflow saved without an active state', {

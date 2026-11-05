@@ -333,6 +333,25 @@ export const useWorkflowService = () => {
     downloadBlob(file, blob)
   }
   /**
+   * A tab can lose its loaded content and keep its modified mark: a reload
+   * restores unsaved tabs without opening them, and a superseded open drops
+   * what it fetched. Saving needs the content back first; loading picks up
+   * the tab's draft when one is still usable.
+   */
+  const loadForSave = async (workflow: ComfyWorkflow): Promise<void> => {
+    if (workflow.isLoaded) return
+    // A restored unsaved tab is expected here. A saved file that is modified
+    // but unloaded means something dropped in-memory edits: keep it visible.
+    if (workflow.isPersisted && workflow.isModified)
+      reportWorkflowStateAnomaly(
+        'Modified saved workflow was not loaded when saved',
+        'workflowService.loadForSave',
+        workflow
+      )
+    await loadWorkflowInBackground(workflow)
+  }
+
+  /**
    * Save a workflow as a new file
    * @param workflow The workflow to save
    * @param options.filename Pre-supplied filename (skips the prompt dialog)
@@ -341,6 +360,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { filename?: string; isApp?: boolean } = {}
   ): Promise<boolean> => {
+    await loadForSave(workflow)
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
@@ -396,6 +416,7 @@ export const useWorkflowService = () => {
       return await saveWorkflowAs(workflow)
     }
 
+    await loadForSave(workflow)
     workflow.changeTracker?.prepareForSave()
     const isApp = workflow.initialMode === 'app'
     const expectedPath =
