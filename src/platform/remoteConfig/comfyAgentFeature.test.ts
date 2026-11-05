@@ -8,8 +8,8 @@ vi.mock(import('@/scripts/api'))
 
 function serve(agent: unknown): void {
   vi.mocked(api.getServerFeature).mockImplementation(
-    <T>(name: string, fallback?: T) =>
-      (name === 'agent' ? agent : fallback)
+    <T>(name: string, fallback?: T): T | undefined =>
+      name === 'agent' ? (agent as T) : fallback
   )
 }
 
