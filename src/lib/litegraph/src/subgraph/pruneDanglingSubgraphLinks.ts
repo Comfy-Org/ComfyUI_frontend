@@ -84,29 +84,30 @@ function lostItsInput(
   })
 }
 
+const isMissingNode = (subgraph: Subgraph, id: NodeId, ioId: NodeId) =>
+  isNodeEndpoint(id, ioId) && !subgraph.getNodeById(id)
+
+function isBoundarySlotOutOfRange(subgraph: Subgraph, link: LLink): boolean {
+  const originOut =
+    link.origin_id === SUBGRAPH_INPUT_ID &&
+    !isSlotInRange(link.origin_slot, subgraph.inputs.length)
+  const targetOut =
+    link.target_id === SUBGRAPH_OUTPUT_ID &&
+    !isSlotInRange(link.target_slot, subgraph.outputs.length)
+  return originOut || targetOut
+}
+
 function classify(
   subgraph: Subgraph,
   link: LLink,
   serialisedInputLinks: ReadonlyMap<LinkId, readonly string[]>
 ): DanglingLinkKind | undefined {
   if (!isUnresolvableSubgraphLink(subgraph, link)) return
-
-  if (
-    isNodeEndpoint(link.origin_id, SUBGRAPH_INPUT_ID) &&
-    !subgraph.getNodeById(link.origin_id)
-  )
+  if (isMissingNode(subgraph, link.origin_id, SUBGRAPH_INPUT_ID))
     return 'origin_node_missing'
-  if (
-    isNodeEndpoint(link.target_id, SUBGRAPH_OUTPUT_ID) &&
-    !subgraph.getNodeById(link.target_id)
-  )
+  if (isMissingNode(subgraph, link.target_id, SUBGRAPH_OUTPUT_ID))
     return 'target_node_missing'
-  if (
-    (link.origin_id === SUBGRAPH_INPUT_ID &&
-      !isSlotInRange(link.origin_slot, subgraph.inputs.length)) ||
-    (link.target_id === SUBGRAPH_OUTPUT_ID &&
-      !isSlotInRange(link.target_slot, subgraph.outputs.length))
-  )
+  if (isBoundarySlotOutOfRange(subgraph, link))
     return 'boundary_slot_out_of_range'
   if (lostItsInput(subgraph, link, serialisedInputLinks)) return 'dropped_input'
 }
