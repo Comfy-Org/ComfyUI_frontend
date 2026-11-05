@@ -46,7 +46,7 @@ jobs:
         run: pnpm size:collect
 
       - name: Upload size data
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: size-data
           path: temp/size
