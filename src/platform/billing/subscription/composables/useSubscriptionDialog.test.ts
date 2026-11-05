@@ -29,6 +29,8 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
+import { openBillingUrl } from '@/platform/billing/billingTab'
+
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
 vi.mock(
@@ -68,6 +70,7 @@ const mockSubscription = vi.hoisted(() => ({
 const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
+vi.mock(import('@/platform/billing/billingTab'), { spy: true })
 
 vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction: mockRumAddAction }
@@ -158,6 +161,7 @@ beforeEach(() => {
 
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
+    vi.mocked(openBillingUrl).mockReturnValue(false)
     mockIsCloud.value = true
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsFreeTier.value = false
@@ -173,6 +177,72 @@ describe('useSubscriptionDialog', () => {
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     sessionStorage.clear()
+  })
+
+  describe('showPricingTable on the platform Plans page', () => {
+    beforeEach(() => {
+      vi.mocked(openBillingUrl).mockReturnValue(true)
+    })
+
+    function openedUrl(): URL {
+      const [url] = vi.mocked(openBillingUrl).mock.calls[0]
+      return new URL(url)
+    }
+
+    it('opens the Plans page instead of the pricing table', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await expect(
+        showPricingTable({ reason: 'subscribe_to_run' })
+      ).resolves.toBe(true)
+
+      expect(openedUrl().pathname).toBe('/profile/billing/plans')
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    })
+
+    it('reports the hand-off with the journey id the link carries', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'platform_handoff',
+          target: 'plans',
+          correlation_id: openedUrl().searchParams.get('correlation_id')
+        })
+      )
+    })
+
+    it('still shows the read-only member dialog to a member who cannot manage the plan', async () => {
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingUI().permissions.value.canManageSubscription =
+        receiveServerFact('can_manage_subscription', false)
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(openBillingUrl).not.toHaveBeenCalled()
+      expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+    })
+
+    it('falls back to the pricing table when the browser blocks the tab', async () => {
+      vi.mocked(openBillingUrl).mockReturnValue(false)
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+    })
+
+    it('opens nothing off Cloud', async () => {
+      mockIsCloud.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await expect(showPricingTable()).resolves.toBe(false)
+
+      expect(openBillingUrl).not.toHaveBeenCalled()
+    })
   })
 
   describe('showPricingTable', () => {
