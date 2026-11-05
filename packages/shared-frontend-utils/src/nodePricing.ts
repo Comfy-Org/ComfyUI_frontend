@@ -466,9 +466,8 @@ export const evaluateNodeDefPricing = memoize(
 const PER_RUN_SUFFIX = '/Run'
 
 /**
- * What one evaluated price result can contribute to a per-run total:
- * `per-run` is summable, `per-unit` is a real figure priced by a unit the
- * graph does not fix, and `unpriced` contributes nothing.
+ * What one evaluated price result contributes to a per-run total: `per-run` is
+ * summable, `per-unit` carries its unit, `unpriced` contributes nothing.
  */
 export type NodeRunPrice =
   | {
@@ -492,17 +491,19 @@ export type NodeRunPrice =
 const INVALID_PRICE: NodeRunPrice = { basis: 'unpriced', reason: 'invalid' }
 const AMBIGUOUS_PRICE: NodeRunPrice = { basis: 'unpriced', reason: 'ambiguous' }
 
-const declaredUnit = (suffix: string | undefined): string =>
-  (suffix ?? PER_RUN_SUFFIX).trim().replace(/^\//, '')
+function declaredUnit(suffix: string | undefined): string {
+  return (suffix ?? PER_RUN_SUFFIX).trim().replace(/^\//, '')
+}
 
-const isUsableBound = (usd: number | null): usd is number =>
-  usd !== null && usd >= 0
+function isUsableBound(usd: number | null): usd is number {
+  return usd !== null && usd >= 0
+}
 
-const numericBasis = (
+function numericBasis(
   minUsd: number,
   maxUsd: number,
   format: CreditFormatOptions | undefined
-): NodeRunPrice => {
+): NodeRunPrice {
   const suffix = format?.suffix
   if (suffix !== undefined && typeof suffix !== 'string') return INVALID_PRICE
   const unit = declaredUnit(suffix)
@@ -517,18 +518,18 @@ const numericBasis = (
   return { basis: 'per-unit', unit, minUsd, maxUsd, approximate }
 }
 
-const classifyScalar = (
+function classifyScalar(
   usd: unknown,
   format: CreditFormatOptions | undefined
-): NodeRunPrice => {
+): NodeRunPrice {
   const value = asFiniteNumber(usd)
   if (!isUsableBound(value)) return INVALID_PRICE
   return numericBasis(value, value, format)
 }
 
-const classifyRange = (
+function classifyRange(
   result: Extract<PricingResult, { type: 'range_usd' }>
-): NodeRunPrice => {
+): NodeRunPrice {
   const minUsd = asFiniteNumber(result.min_usd)
   const maxUsd = asFiniteNumber(result.max_usd)
   if (!isUsableBound(minUsd) || !isUsableBound(maxUsd)) return INVALID_PRICE
@@ -539,9 +540,9 @@ const classifyRange = (
   )
 }
 
-const classifyList = (
+function classifyList(
   result: Extract<PricingResult, { type: 'list_usd' }>
-): NodeRunPrice => {
+): NodeRunPrice {
   if (result.usd.length === 0) return INVALID_PRICE
   let minUsd = Number.POSITIVE_INFINITY
   let maxUsd = Number.NEGATIVE_INFINITY
@@ -558,19 +559,17 @@ const classifyList = (
   return basis
 }
 
-const isLegacyUsdResult = (result: unknown): result is { usd: unknown } =>
-  !!result &&
-  typeof result === 'object' &&
-  !('type' in result) &&
-  'usd' in result
+function isLegacyUsdResult(result: unknown): result is { usd: unknown } {
+  return (
+    !!result &&
+    typeof result === 'object' &&
+    !('type' in result) &&
+    'usd' in result
+  )
+}
 
-/**
- * Read an evaluated pricing result as a per-run cost basis, failing closed:
- * an unreadable result, a negative or non-finite figure and prose all report
- * `unpriced` rather than zero, and a figure not provably charged once per run
- * reports `per-unit` or `unpriced` rather than being summed.
- */
-export const classifyPricingResult = (result: unknown): NodeRunPrice => {
+/** Read an evaluated pricing result as a per-run cost basis, failing closed. */
+export function classifyPricingResult(result: unknown): NodeRunPrice {
   if (isLegacyUsdResult(result)) return classifyScalar(result.usd, undefined)
   if (!isPricingResult(result)) return INVALID_PRICE
 
@@ -594,11 +593,8 @@ export type ApiNodeCostEntry = {
 }
 
 /**
- * A per-run cost estimate over the API nodes it was given, in USD and in
- * unrounded Comfy credits. It excludes cloud GPU/execution cost, which is
- * billed separately and is not published per node, so it is not a whole-run
- * figure. `isLowerBound` is true whenever a cost-bearing node was left out of
- * the bounds, and the figure may only be presented as a floor while it holds.
+ * API-node per-run cost bounds in USD and unrounded credits, excluding cloud
+ * GPU/execution cost; presentable only as a floor while `isLowerBound` holds.
  */
 export type ApiNodeCostEstimate = {
   minUsd: number
@@ -613,22 +609,20 @@ export type ApiNodeCostEstimate = {
   approximate: boolean
 }
 
-const isSummableEntry = (entry: ApiNodeCostEntry): boolean =>
-  entry.price.basis === 'per-run' &&
-  Number.isFinite(entry.price.minUsd) &&
-  Number.isFinite(entry.price.maxUsd) &&
-  entry.price.minUsd >= 0 &&
-  entry.price.minUsd <= entry.price.maxUsd
+function isSummableEntry(entry: ApiNodeCostEntry): boolean {
+  return (
+    entry.price.basis === 'per-run' &&
+    Number.isFinite(entry.price.minUsd) &&
+    Number.isFinite(entry.price.maxUsd) &&
+    entry.price.minUsd >= 0 &&
+    entry.price.minUsd <= entry.price.maxUsd
+  )
+}
 
-/**
- * Sum the per-run entries and declare what was left out, returning the
- * excluded entries so a caller can name them. An entry whose own bounds are
- * unusable, and a sum that does not stay finite, degrade the coverage rather
- * than poisoning the figure.
- */
-export const estimateApiNodeRunCost = (
+/** Sum the per-run entries and return what was excluded from the bounds. */
+export function estimateApiNodeRunCost(
   entries: readonly ApiNodeCostEntry[]
-): ApiNodeCostEstimate => {
+): ApiNodeCostEstimate {
   let minUsd = 0
   let maxUsd = 0
   let pricedCount = 0
@@ -680,9 +674,8 @@ export const estimateApiNodeRunCost = (
 }
 
 /**
- * Evaluate one node's badge and report its per-run basis, the twin of
- * `evaluatePricingContext` for callers that need the figure instead of the
- * label. An absent or uncompilable badge is `unpriced`, never free.
+ * Evaluate one node's badge and report its per-run basis; an absent or
+ * uncompilable badge is `unpriced`, never free.
  */
 export async function evaluatePricingBasis(
   name: string,
