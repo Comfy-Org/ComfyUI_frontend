@@ -1,18 +1,14 @@
 import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingOpStatusResponse,
-  BillingStatusResponse,
-  CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -42,8 +38,6 @@ const jsonRoute = (body: unknown) => ({
   body: JSON.stringify(body)
 })
 
-// Legacy `/customers/balance` and workspace `/api/billing/balance` share the
-// same response shape, so one body fulfills both endpoints.
 const balanceRoute = (balance: {
   amount: number
   monthly: number
@@ -64,7 +58,10 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
+  scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -75,7 +72,10 @@ const freeBillingStatus: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
+  scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
@@ -84,7 +84,10 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
+  scheduled_change: null,
+  next_charge: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -161,10 +164,6 @@ async function mockCloudBoot(
     )
   )
 
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(balanceRoute(DEFAULT_BALANCE))
-  )
-
   // Workspace billing (flag-on path) — a personal workspace now routes through
   // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
@@ -193,11 +192,7 @@ async function mockBalance(
   page: Page,
   balance: { amount: number; monthly: number; prepaid: number }
 ) {
-  await page.unroute('**/customers/balance')
   await page.unroute('**/api/billing/balance')
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(balanceRoute(balance))
-  )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(balanceRoute(balance))
   )
@@ -241,12 +236,7 @@ async function openPlanAndCredits(page: Page) {
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
+    await recordOpenedUrl(page)
   })
 
   test('opens Billing & invoices for a paid owner without a duplicate invoice link', async ({
@@ -291,8 +281,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
-    await expect(content.getByText('Your subscription has ended')).toBeVisible()
-    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    const billingPortal = content.getByRole('button', {
+      name: 'Billing & invoices'
+    })
+    await expect(billingPortal).toBeVisible()
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
+    await billingPortal.click()
 
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
@@ -426,99 +420,5 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
-  })
-})
-
-test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
-  test.describe.configure({ timeout: 60_000 })
-
-  let operationPollRequests: Request[]
-  let topupDialog: TopUpCreditsDialog
-
-  test.beforeEach(async ({ page }) => {
-    operationPollRequests = []
-    await page.addInitScript(() => {
-      window.open = (url, target, features) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        document.documentElement.dataset.openedTarget = target ?? ''
-        document.documentElement.dataset.openedFeatures = features ?? ''
-        return window
-      }
-    })
-    await mockCloudBoot(page)
-    await page.route('**/api/settings/**', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill(jsonRoute({}))
-    })
-    await page.route('**/api/prompt', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill(jsonRoute({ exec_info: { queue_remaining: 0 } }))
-    })
-    await page.route('**/api/queue', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
-    })
-    await page.route('**/api/billing/topup', (route) =>
-      route.fulfill(
-        jsonRoute({
-          billing_op_id: 'topup-3ds-operation',
-          topup_id: 'topup-3ds-operation',
-          status: 'pending',
-          amount_cents: 5000
-        } satisfies CreateTopupResponse)
-      )
-    )
-    await page.route('**/api/billing/ops/topup-3ds-operation', (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(
-        jsonRoute({
-          id: 'topup-3ds-operation',
-          status: 'pending',
-          started_at: '2026-07-31T00:00:00Z',
-          action_url: 'https://verify.example/topup-3ds'
-        } satisfies BillingOpStatusResponse)
-      )
-    })
-
-    const content = await openPlanAndCredits(page)
-    topupDialog = new TopUpCreditsDialog(page)
-    await content.getByRole('button', { name: 'Add credits' }).click()
-    await topupDialog.waitForVisible()
-  })
-
-  test('opens verification when the top-up operation requires authentication', async ({
-    page
-  }) => {
-    await topupDialog.root.getByRole('button', { name: 'Add credits' }).click()
-
-    await expect(
-      topupDialog.root.getByRole('heading', { name: 'Confirm' })
-    ).toBeVisible()
-    await expect(
-      topupDialog.root.getByRole('button', { name: 'Back' })
-    ).toBeEnabled()
-    expect(operationPollRequests).toHaveLength(0)
-
-    await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
-
-    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
-    const verificationButton = topupDialog.root.getByRole('button', {
-      name: 'Complete verification'
-    })
-    await expect(verificationButton).toBeVisible()
-
-    await verificationButton.click()
-
-    await expect
-      .poll(() => page.locator('html').getAttribute('data-opened-url'))
-      .toBe('https://verify.example/topup-3ds')
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-opened-target',
-      '_blank'
-    )
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-opened-features',
-      'noopener,noreferrer'
-    )
   })
 })

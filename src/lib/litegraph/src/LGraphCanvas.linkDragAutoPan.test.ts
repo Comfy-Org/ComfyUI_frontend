@@ -1,18 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 describe('LGraphCanvas link drag auto-pan', () => {
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers()
 
     canvasElement = document.createElement('canvas')
@@ -45,59 +42,104 @@ describe('LGraphCanvas link drag auto-pan', () => {
     canvas.pointer.finally?.()
   })
 
-  function startLinkDrag() {
-    canvas['_linkConnectorDrop']()
-  }
-
-  it('starts auto-pan when link drag begins', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    startLinkDrag()
-    expect(canvas['_autoPan']).not.toBeNull()
-  })
-
-  it('resumes auto-pan after Space panning during a link drag', () => {
+  function pressLink(clientX: number, clientY: number) {
     canvas.processMouseDown(
       new PointerEvent('pointerdown', {
         button: 0,
         buttons: 1,
-        clientX: 400,
-        clientY: 300,
+        clientX,
+        clientY,
         isPrimary: true
       })
     )
     canvas.linkConnector.state.connectingTo = 'output'
-    startLinkDrag()
+    canvas['_linkConnectorDrop']()
+  }
+
+  function movePointer(clientX: number, clientY: number) {
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
         buttons: 1,
-        clientX: 5,
-        clientY: 300,
+        clientX,
+        clientY,
         isPrimary: true
       })
     )
-    const keydown = new KeyboardEvent('keydown', { key: ' ' })
-    const keyup = new KeyboardEvent('keyup', { key: ' ' })
-    Object.defineProperty(keydown, 'target', { value: canvasElement })
-    Object.defineProperty(keyup, 'target', { value: canvasElement })
+  }
 
-    canvas.processKey(keydown)
+  function dragLinkTo(clientX: number, clientY: number) {
+    pressLink(400, 300)
+    movePointer(clientX, clientY)
+  }
+
+  function space(type: 'keydown' | 'keyup') {
+    const event = new KeyboardEvent(type, { key: ' ' })
+    Object.defineProperty(event, 'target', { value: canvasElement })
+    canvas.processKey(event)
+  }
+
+  it('does not pan while a press near the edge stays within click drift', () => {
+    pressLink(5, 300)
+    const offsetBefore = [...canvas.ds.offset]
+
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).toEqual(offsetBefore)
+  })
+
+  it('pans once a press near the edge drags past click drift', () => {
+    pressLink(5, 300)
+    movePointer(5, 340)
+    const offsetBefore = [...canvas.ds.offset]
+
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).not.toEqual(offsetBefore)
+  })
+
+  it('does not pan when Space is tapped during a still press near the edge', () => {
+    pressLink(5, 300)
+    space('keydown')
+    space('keyup')
+    const offsetBefore = [...canvas.ds.offset]
+
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).toEqual(offsetBefore)
+  })
+
+  it.for([
+    {
+      name: 'a link drag',
+      start: () => {
+        dragLinkTo(5, 300)
+        space('keydown')
+      }
+    },
+    {
+      name: 'a drag that starts while Space is held',
+      start: () => {
+        pressLink(5, 300)
+        space('keydown')
+        movePointer(5, 340)
+      }
+    }
+  ])('auto-pans $name only once Space is released', ({ start }) => {
+    start()
     const offsetWhileSpacePanning = [...canvas.ds.offset]
 
     vi.advanceTimersByTime(16)
 
     expect([...canvas.ds.offset]).toEqual(offsetWhileSpacePanning)
 
-    canvas.processKey(keyup)
+    space('keyup')
     vi.advanceTimersByTime(16)
 
     expect([...canvas.ds.offset]).not.toEqual(offsetWhileSpacePanning)
   })
 
   it('keeps graph_mouse consistent with offset after auto-pan', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
-    startLinkDrag()
+    dragLinkTo(5, 300)
 
     vi.advanceTimersByTime(16)
 
@@ -111,10 +153,8 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('keeps graph_mouse consistent with zoom applied', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
     canvas.ds.scale = 2
-    startLinkDrag()
+    dragLinkTo(5, 300)
 
     vi.advanceTimersByTime(16)
 
@@ -127,9 +167,7 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('pans the viewport when pointer is near edge', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
-    startLinkDrag()
+    dragLinkTo(5, 300)
 
     const offsetBefore = canvas.ds.offset[0]
 
@@ -139,9 +177,7 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('marks canvas dirty when auto-pan fires', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
-    startLinkDrag()
+    dragLinkTo(5, 300)
 
     canvas.dirty_canvas = false
     canvas.dirty_bgcanvas = false
@@ -153,9 +189,7 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('stops auto-pan when pointer.finally fires', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    startLinkDrag()
+    pressLink(400, 300)
     expect(canvas['_autoPan']).not.toBeNull()
 
     canvas.pointer.finally!()
@@ -164,9 +198,7 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('does not pan when pointer is in the center', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    startLinkDrag()
+    dragLinkTo(440, 300)
 
     const offsetBefore = [...canvas.ds.offset]
 

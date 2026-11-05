@@ -2,16 +2,15 @@
   <section
     class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
+    @scroll="handlePanelScroll"
   >
     <h2 id="partner-node-access-title" class="sr-only">
       {{ $t('workspacePanel.partnerNodes.title') }}
     </h2>
 
-    <div
-      class="flex items-start gap-4 rounded-2xl border border-interface-stroke p-4 font-inter"
-    >
+    <div class="flex items-start gap-4 rounded-2xl border p-4 font-inter">
       <span class="shrink-0" @click.prevent="requestAccessModeToggle">
-        <ToggleSwitch
+        <Switch
           :model-value="!isRestricted"
           readonly
           :disabled="!isGated && (!canEditPolicy || isSaving)"
@@ -22,18 +21,18 @@
         />
       </span>
       <div class="min-w-0 flex-1">
-        <div class="flex h-6 items-center gap-2">
-          <p
-            class="m-0 text-sm leading-[normal] font-normal text-base-foreground"
-          >
+        <div class="flex h-6 items-center gap-2 text-foreground">
+          <p class="m-0 text-sm leading-[normal] font-normal">
             {{ $t('workspacePanel.partnerNodes.allowAll') }}
           </p>
-          <span
+          <Badge
             v-if="isGated"
-            class="rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+            variant="pill"
+            severity="secondary"
+            class="text-xs"
           >
             {{ $t('workspacePanel.partnerNodes.enterpriseBadge') }}
-          </span>
+          </Badge>
         </div>
         <p
           v-if="isGated"
@@ -52,7 +51,7 @@
           class="m-0 mt-1 flex items-center gap-2 text-sm/4 font-normal text-muted-foreground"
         >
           <i
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+            class="icon-[lucide--circle-alert] text-warning"
             aria-hidden="true"
           />
           <span>{{ $t('workspacePanel.partnerNodes.allowAllOffHint') }}</span>
@@ -85,7 +84,7 @@
     <div
       v-else-if="status === 'error'"
       role="alert"
-      class="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-interface-stroke p-6 text-center"
+      class="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border p-6 text-center"
     >
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.loadError') }}
@@ -98,7 +97,7 @@
     <div
       v-else-if="(status === 'ineligible' && !isGated) || status === 'inactive'"
       role="status"
-      class="flex min-h-48 items-center justify-center rounded-2xl border border-interface-stroke p-6 text-center"
+      class="flex min-h-48 items-center justify-center rounded-2xl border p-6 text-center"
     >
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.unavailable') }}
@@ -113,36 +112,33 @@
           </span>
           <SearchInput
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="
+              $t('workspacePanel.partnerNodes.searchPlaceholder')
+            "
             :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
             size="lg"
             class="w-full"
           />
         </label>
-        <DropdownMenu
-          v-if="isRestricted"
-          :entries="bulkMenuEntries"
-          :modal="false"
-        >
-          <template #button>
+        <Menu v-if="isRestricted" :items="bulkMenuEntries" :modal="false">
+          <template #trigger>
             <Button
               variant="secondary"
               size="lg"
               :disabled="isSaving || !canEditPolicy"
             >
               {{ $t('workspacePanel.partnerNodes.disableAll') }}
-              <i
-                class="icon-[lucide--chevron-down] size-4"
-                aria-hidden="true"
-              />
+              <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
             </Button>
           </template>
-        </DropdownMenu>
+        </Menu>
       </div>
 
       <p
         v-if="saveError"
         role="alert"
-        class="rounded-lg bg-destructive-background/10 px-4 py-3 text-sm text-destructive-background"
+        class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         {{ $t('workspacePanel.partnerNodes.saveError') }}
       </p>
@@ -150,14 +146,14 @@
       <div
         role="table"
         :aria-label="$t('workspacePanel.partnerNodes.tableLabel')"
-        class="flex min-h-0 grow flex-col rounded-2xl border border-interface-stroke px-4 py-3"
+        class="flex min-h-0 grow flex-col rounded-2xl border px-4 py-3"
       >
         <div class="min-h-0 grow scrollbar-gutter-stable overflow-y-auto">
           <div
             role="row"
             :class="
               cn(
-                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b border-border-default bg-base-background px-2 text-sm text-muted-foreground',
+                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b bg-background px-2 text-sm text-muted-foreground',
                 rowGridClass
               )
             "
@@ -167,16 +163,14 @@
               :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
             >
               <Button
-                variant="textonly"
+                variant="muted-textonly"
                 size="unset"
-                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                class="-m-2 p-2 font-normal"
                 @click="sortBy('provider')"
               >
                 {{ $t('workspacePanel.partnerNodes.columns.provider') }}
                 <i
-                  :class="
-                    cn('size-4 transition-transform', sortIcon('provider'))
-                  "
+                  :class="cn('transition-transform', sortIcon('provider'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -187,14 +181,14 @@
               class="hidden lg:block"
             >
               <Button
-                variant="textonly"
+                variant="muted-textonly"
                 size="unset"
-                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                class="-m-2 p-2 font-normal"
                 @click="sortBy('models')"
               >
                 {{ $t('workspacePanel.partnerNodes.columns.models') }}
                 <i
-                  :class="cn('size-4 transition-transform', sortIcon('models'))"
+                  :class="cn('transition-transform', sortIcon('models'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -206,14 +200,14 @@
             >
               <Button
                 v-if="isRestricted"
-                variant="textonly"
+                variant="muted-textonly"
                 size="unset"
-                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                class="-m-2 p-2 font-normal"
                 @click="sortBy('state')"
               >
                 {{ $t('workspacePanel.partnerNodes.columns.state') }}
                 <i
-                  :class="cn('size-4 transition-transform', sortIcon('state'))"
+                  :class="cn('transition-transform', sortIcon('state'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -225,7 +219,7 @@
               role="row"
               :class="
                 cn(
-                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40',
+                  'grid h-10 items-center gap-2 border-b border-secondary px-2 last:border-b-0 hover:bg-secondary/40',
                   rowGridClass
                 )
               "
@@ -234,14 +228,14 @@
                 <Button
                   variant="textonly"
                   size="unset"
-                  class="h-10 w-full justify-start gap-2 p-0 text-left font-normal hover:bg-transparent"
+                  class="h-10 w-full justify-start p-0 text-left font-normal hover:bg-transparent"
                   :aria-expanded="isProviderExpanded(provider)"
                   @click="toggleExpanded(provider.id)"
                 >
                   <i
                     :class="
                       cn(
-                        'size-4 shrink-0 text-muted-foreground transition-transform',
+                        'text-muted-foreground transition-transform',
                         'icon-[lucide--chevron-down]',
                         !isProviderExpanded(provider) && '-rotate-90'
                       )
@@ -249,7 +243,7 @@
                     aria-hidden="true"
                   />
                   <span
-                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-interface-panel-hover-surface"
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent"
                     aria-hidden="true"
                   >
                     <i
@@ -291,7 +285,7 @@
                 role="cell"
                 class="flex h-8 items-center justify-end justify-self-end"
               >
-                <ToggleSwitch
+                <Switch
                   v-if="isRestricted"
                   :model-value="provider.enabled"
                   :disabled="isSaving || !canEditPolicy"
@@ -312,7 +306,7 @@
               role="row"
               :class="
                 cn(
-                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 text-sm last:border-b-0',
+                  'grid h-10 items-center gap-2 border-b border-secondary px-2 text-sm last:border-b-0',
                   rowGridClass
                 )
               "
@@ -335,7 +329,7 @@
 
         <div
           v-if="sortedProviders.length > 0"
-          class="mt-2 flex shrink-0 justify-end border-t border-border-default px-2 pt-3 text-sm text-base-foreground"
+          class="mt-2 flex shrink-0 justify-end border-t px-2 pt-3 text-sm text-foreground"
         >
           <i18n-t
             keypath="workspacePanel.partnerNodes.allowedSummary"
@@ -357,24 +351,28 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
-import ToggleSwitch from 'primevue/toggleswitch'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
-import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import Button from '@comfyorg/design-system/button/Button'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const governanceStore = usePartnerNodeGovernanceStore()
 const { governedWorkspaceId, isSaving, policy, providers, status } =
@@ -580,6 +578,7 @@ function confirmDisableAll() {
     headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
     props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('workspacePanel.partnerNodes.disableAll'),
       confirmVariant: 'destructive',
       optionsDisabled: isSaving,
@@ -650,6 +649,7 @@ function confirmAccessModeChange(
       )}`
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.confirm'),
       confirmVariant: 'secondary',
       optionsDisabled: isSaving,

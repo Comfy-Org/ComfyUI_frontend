@@ -1,13 +1,7 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
-  })
-
   test(
     'should not capture drag while zooming with ctrl+shift+drag',
     { tag: '@screenshot' },
@@ -29,7 +23,8 @@ test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
         { x: nodeMidpointX, y: nodeMidpointY }
       )
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectElementScreenshot(
+        comfyPage.canvas,
         'zoomed-in-ctrl-shift.png'
       )
     }

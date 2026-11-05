@@ -213,7 +213,7 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const fallbackIcons = Array.from(container.querySelectorAll('i')).filter(
       (i) => i.classList.contains('icon-[lucide--image]')
     )

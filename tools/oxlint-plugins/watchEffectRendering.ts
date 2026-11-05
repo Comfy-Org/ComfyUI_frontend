@@ -146,7 +146,7 @@ function runsDirectlyInWatchEffect(
 
   const callback = ancestors[callbackIndex]
   const parent = ancestors[callbackIndex - 1]
-  if (parent?.type !== 'CallExpression') return false
+  if (parent.type !== 'CallExpression') return false
 
   const call = parent as CallExpression
   return (

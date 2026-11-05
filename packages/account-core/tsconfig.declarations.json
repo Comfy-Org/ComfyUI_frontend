@@ -1,0 +1,8 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [
+    {
+      "path": "../ingest-types/tsconfig.declarations.json"
+    }
+  ]
+}

@@ -49,7 +49,7 @@ export function useAssetSelection() {
     index: number,
     allAssets: AssetItem[]
   ) {
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -70,7 +70,7 @@ export function useAssetSelection() {
     allAssets: AssetItem[]
   ) {
     // Input validation
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }

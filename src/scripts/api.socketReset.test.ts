@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
+
+vi.mock(import('firebase/auth'))
 
 let currentToken: string | undefined = 'token-a'
 // When set, each getAuthToken() call parks until released, capturing the token
@@ -14,19 +18,7 @@ const releaseNextToken = async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    getAuthToken: () => {
-      if (!deferTokenFetch) return Promise.resolve(currentToken)
-      const captured = currentToken
-      return new Promise<string | undefined>((resolve) => {
-        pendingTokenReleases.push(() => resolve(captured))
-      })
-    }
-  })
-}))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 class FakeWebSocket {
   static readonly OPEN = 1
@@ -68,6 +60,14 @@ describe('ComfyApi realtime socket reset', () => {
     pendingTokenReleases = []
     vi.stubGlobal('WebSocket', FakeWebSocket)
     api.socket = null
+    installCloudApiAuth()
+    vi.mocked(useAuthStore().getAuthToken).mockImplementation(() => {
+      if (!deferTokenFetch) return Promise.resolve(currentToken)
+      const captured = currentToken
+      return new Promise<string | undefined>((resolve) => {
+        pendingTokenReleases.push(() => resolve(captured))
+      })
+    })
   })
 
   afterEach(() => {

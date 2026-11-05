@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
 // Mock release data with realistic CMS content
@@ -109,7 +109,7 @@ const meta: Meta<StoryArgs> = {
 
       return {
         template: `
-          <div class="min-h-screen flex items-center justify-center bg-base-background p-8">
+          <div class="min-h-screen flex items-center justify-center bg-background p-8">
             <story />
           </div>
         `

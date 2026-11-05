@@ -30,9 +30,9 @@ Rules:
 
 - User-facing error messages must be actionable and friendly (per AGENTS.md)
 - Use the shared `useErrorHandling` composable (`src/composables/useErrorHandling.ts`) for centralized error handling:
-  - `wrapWithErrorHandling` / `wrapWithErrorHandlingAsync` automatically catch errors and surface them as toast notifications via `useToastStore`
+  - `wrapWithErrorHandling` / `wrapWithErrorHandlingAsync` automatically catch errors and surface them as toast notifications via `useToast`
   - `toastErrorHandler` can be used directly for custom error handling flows
   - Supports `ErrorRecoveryStrategy` for retry/fallback patterns (e.g., reauthentication, network reconnect)
-- API errors from `api.get()`/`api.post()` should be caught and surfaced to the user via `useToastStore` (`src/platform/updates/common/toastStore.ts`)
+- API errors from `api.get()`/`api.post()` should be caught and surfaced to the user via `useToast` (`src/components/ui/toast/toastStore.ts`)
 - Electron/desktop code paths: IPC errors should be caught and not crash the renderer process
 - Workflow execution errors should be displayed in the UI status bar, not silently swallowed

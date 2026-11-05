@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import '../../agentPanel.css'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import ConversationView from './ConversationView.vue'
 
@@ -21,7 +21,7 @@ const meta: Meta<typeof ConversationView> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-agent-surface-raised h-120 w-100"><story /></div>'
+        '<div class="agent-scope bg-secondary h-120 w-100"><story /></div>'
     })
   ]
 }

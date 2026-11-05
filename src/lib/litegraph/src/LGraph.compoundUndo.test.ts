@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 /**
@@ -182,7 +182,7 @@ describe('compound undo', () => {
       // The reroute is *not* removed with the link it was on. It stays in the
       // graph, and the floating-link id it holds resolves to a real registered
       // floating link — the store migration made the preserved reroute chain
-      // authoritative instead of leaving a dangling id (see ADR-0003).
+      // authoritative instead of leaving a dangling id (see ADR-CRDT-LAYOUT-0003).
       const orphan = graph.reroutes.get(rerouteId)!
       expect(orphan).toBeDefined()
       expect([...orphan.linkIds]).toEqual([])
@@ -326,7 +326,7 @@ describe('compound undo', () => {
       // reroute survives validation on reload: redo and the original delete
       // now leave the same graph. (The dedicated stores made the preserved
       // chain a real floating link where it used to be a dangling id that
-      // reload validation discarded; see ADR-0003.)
+      // reload validation discarded; see ADR-CRDT-LAYOUT-0003.)
       expect(graph.reroutes.size).toBe(1)
       expect(
         serialisedReroutes(snapshot(graph)).map((reroute) => reroute.id)

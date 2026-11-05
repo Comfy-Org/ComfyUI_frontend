@@ -1,11 +1,10 @@
 import type { Layer, RGB, VectorContent } from 'ag-psd'
 
-import type { FillSpec, GradientStop } from './engine/fill'
-import type { BlendFn } from './engine/mode'
+import type { FillSpec, GradientStop } from '@comfyorg/layer-editor/fill'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
 
-export const PSD_BLEND_MODES: Record<
-  BlendFn,
-  NonNullable<Layer['blendMode']>
+export const PSD_BLEND_MODES: Partial<
+  Record<BlendFn, NonNullable<Layer['blendMode']>>
 > = {
   normal: 'normal',
   multiply: 'multiply',

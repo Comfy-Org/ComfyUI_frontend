@@ -107,7 +107,7 @@ function roundTrip(source: ISerialisedGraph) {
  * output, widget value or title still passes.
  */
 function nodeKeys(graph: Pick<ISerialisedGraph, 'nodes'>) {
-  return (graph.nodes ?? [])
+  return graph.nodes
     .map((node) =>
       JSON.stringify({
         id: node.id,
@@ -143,8 +143,8 @@ function rerouteKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
       JSON.stringify({
         id: reroute.id,
         parentId: reroute.parentId ?? null,
-        pos: reroute.pos ?? null,
-        linkIds: [...(reroute.linkIds ?? [])].sort(ascending),
+        pos: reroute.pos,
+        linkIds: [...reroute.linkIds].sort(ascending),
         floating: reroute.floating ?? null
       })
     )
@@ -174,7 +174,7 @@ function expectPreserved<T>(before: T[], after: T[]) {
 }
 
 function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
-  return (graph.links ?? []).map((link) => JSON.stringify(link)).sort()
+  return graph.links.map((link) => JSON.stringify(link)).sort()
 }
 
 function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
@@ -182,7 +182,7 @@ function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
 }
 
 function groupKeys(graph: Pick<ISerialisedGraph, 'groups'>) {
-  return (graph.groups ?? [])
+  return graph.groups
     .map(({ id, title, bounding }) => JSON.stringify({ id, title, bounding }))
     .sort()
 }
@@ -259,12 +259,12 @@ describe('LGraph round trip preserves the input', () => {
 
         expect(twice).toEqual(once)
       })
+
+      test('keeps every group, by identity and bounds', () => {
+        const grouped = withGroups(graph)
+
+        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
+      })
     })
   }
-
-  test('keeps every group, by identity and bounds', () => {
-    const grouped = withGroups(fixtures[0].graph)
-
-    expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
-  })
 })

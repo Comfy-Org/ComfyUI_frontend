@@ -3,7 +3,9 @@
  * (which Python's `json.dumps` emits) by replacing them with `null` on
  * fallback. Coercion is lossy; a one-time warning is logged when it fires.
  */
-export function parseJsonWithNonFinite<T = unknown>(text: string): T {
+export function parseJsonWithNonFinite<T = unknown>(
+  text: string & { readonly parsedType?: T }
+): T {
   try {
     return JSON.parse(text) as T
   } catch {

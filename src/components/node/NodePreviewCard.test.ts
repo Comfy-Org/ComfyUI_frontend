@@ -2,13 +2,14 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 import NodePreviewCard from './NodePreviewCard.vue'
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
+
   () => ({
     default: { template: '<div data-testid="node-preview" />' }
   })

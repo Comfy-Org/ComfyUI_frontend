@@ -50,6 +50,8 @@ jobs:
         with:
           workflow-id: ci-perf-report.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          artifact-name: perf-metrics
+          not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download size data (current)

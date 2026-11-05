@@ -1,15 +1,34 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia } from 'pinia'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
+
+beforeEach(() => {
+  const store = useAssetsStore()
+  store.outputAssets = {
+    items: [],
+    hasMore: false,
+    isLoading: false,
+    loadMore: vi.fn(async () => false),
+    loadNew: vi.fn(async () => {}),
+    invalidate: vi.fn(async () => {})
+  }
+  vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
+})
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
@@ -25,90 +44,46 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
-const storeControls = vi.hoisted(() => ({
-  setOutputItems: (_items: AssetItem[]) => {}
-}))
-
-const selectionMocks = vi.hoisted(() => ({
-  reconcileSelection:
-    vi.fn<ReturnType<typeof useAssetSelection>['reconcileSelection']>()
-}))
-
-vi.mock('@/stores/assetsStore', async () => {
-  const { ref } = await import('vue')
-  const outputItems = ref<AssetItem[]>([folderAsset])
-  storeControls.setOutputItems = (items) => {
-    outputItems.value = items
-  }
-
-  const store = {
-    outputAssets: {
-      items: outputItems,
-      isLoading: ref(false),
-      hasMore: ref(false),
-      loadMore: vi.fn(),
-      loadNew: vi.fn(),
-      invalidate: vi.fn()
-    },
-    inputAssets: {
-      items: ref([]),
-      isLoading: ref(false),
-      hasMore: ref(false),
-      loadMore: vi.fn(),
-      loadNew: vi.fn(),
-      invalidate: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetGridSelection'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
     }
   }
+)
 
-  return {
-    useAssetsStore: () => store
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetSelection'),
+  async () => {
+    const { ref } = await import('vue')
+
+    return {
+      useAssetSelection: () => ({
+        isSelected: vi.fn(() => false),
+        selectedIds: ref(new Set<string>()),
+        handleAssetClick: vi.fn(),
+        selectAll: vi.fn(),
+        setSelectedIds: vi.fn(),
+        hasSelection: ref(false),
+        clearSelection: vi.fn(),
+        getSelectedAssets: vi.fn(() => []),
+        reconcileSelection: vi.fn(),
+        getOutputCount: vi.fn(() => 2),
+        getTotalOutputCount: vi.fn(() => 0),
+        activate: vi.fn(),
+        deactivate: vi.fn()
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useAssetGridSelection', async () => {
-  const { ref } = await import('vue')
-  return {
-    useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
-  }
-})
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
-vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
-  const { ref } = await import('vue')
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-  return {
-    useAssetSelection: () => ({
-      isSelected: vi.fn(() => false),
-      selectedIds: ref(new Set<string>()),
-      handleAssetClick: vi.fn(),
-      selectAll: vi.fn(),
-      setSelectedIds: vi.fn(),
-      hasSelection: ref(false),
-      clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn(() => []),
-      reconcileSelection: selectionMocks.reconcileSelection,
-      getOutputCount: vi.fn(() => 2),
-      getTotalOutputCount: vi.fn(() => 0),
-      activate: vi.fn(),
-      deactivate: vi.fn()
-    })
-  }
-})
-
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({
-    downloadAssets: vi.fn(),
-    deleteAssets: vi.fn(),
-    addMultipleToWorkflow: vi.fn(),
-    openMultipleWorkflows: vi.fn(),
-    exportMultipleWorkflows: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/assets/utils/outputAssetUtil')
-
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock(import('@/services/hdrViewerService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -119,6 +94,7 @@ const i18n = createI18n({
       g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
+        closeSidebar: 'Close sidebar',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
       }
@@ -140,55 +116,60 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
   template: `
-    <div>
+    <div data-testid="assets-grid">
       <button
-        v-if="assets.length"
         aria-label="Enter output folder"
         @click="$emit('output-count-click', assets[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
-      <span v-for="asset in assets" :key="asset.id" data-testid="asset-id">
-        {{ asset.id }}
-      </span>
+      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
+      <ul aria-label="Shown assets">
+        <li v-for="asset in assets" :key="asset.id">{{ asset.name }}</li>
+      </ul>
     </div>
   `
 }
 
-const buttonStub = {
-  template: '<button><slot /></button>'
+const mediaLightboxStub = {
+  props: ['allGalleryItems', 'activeIndex'],
+  template: `<div data-testid="lightbox-url">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
-function renderTab() {
+function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
-      plugins: [createPinia(), i18n],
-      directives: {
-        tooltip: {}
-      },
+      plugins: [i18n],
       stubs: {
-        SidebarTabTemplate: sidebarTabTemplateStub,
+        ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
-        Button: buttonStub,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true,
-        MediaAssetContextMenu: true,
-        NoResultsPlaceholder: true,
-        Skeleton: true
+        MediaLightbox: mediaLightboxStub
       }
     }
   })
 }
 
-describe('AssetsSidebarTab folder navigation', () => {
-  beforeEach(() => {
-    storeControls.setOutputItems([folderAsset])
-    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
-  })
+beforeEach(() => {
+  useAssetsStore().outputAssets.items = [folderAsset]
+  useAssetsStore().outputAssets.hasMore = false
+})
 
+it('keeps pagination mounted when more assets can be loaded', () => {
+  useAssetsStore().outputAssets.items = []
+  useAssetsStore().outputAssets.hasMore = true
+
+  renderTab()
+
+  expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
+describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
@@ -217,81 +198,201 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
 
-  const existingChild = {
+  const siblingOutput = {
     ...folderAsset,
-    id: 'existing-child',
-    name: 'existing-child.png'
-  }
-  const replacementPrimary = {
-    ...folderAsset,
-    id: 'replacement-primary',
-    name: 'replacement-primary.png'
-  }
-  const addedChild = {
-    ...folderAsset,
-    id: 'added-child',
-    name: 'added-child.png'
+    id: 'multi-output-b',
+    name: 'multi-output-b.png'
   }
 
-  // Renders the folder and enters it, leaving the DOM/resolver in the
-  // pre-refresh, in-folder state for both tests below to build on. Queues a
-  // second resolved value so a refresh (triggered separately by each test)
-  // has refreshed data available if the component ever fetches it.
-  async function renderOpenFolder() {
-    vi.mocked(resolveOutputAssetItems)
-      .mockReset()
-      .mockResolvedValueOnce([folderAsset, existingChild])
-      .mockResolvedValueOnce([replacementPrimary, existingChild, addedChild])
+  function shownAssetNames() {
+    return within(screen.getByRole('list', { name: 'Shown assets' }))
+      .queryAllByRole('listitem')
+      .map((item) => item.textContent.trim())
+  }
 
+  async function deleteFirstOutputInsideFolder() {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([
+      folderAsset,
+      siblingOutput
+    ])
+    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(true)
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
     )
     await waitFor(() =>
-      expect(screen.getAllByTestId('asset-id')).toHaveLength(2)
+      expect(shownAssetNames()).toEqual([
+        'multi-output.png',
+        'multi-output-b.png'
+      ])
+    )
+
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([siblingOutput])
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'mediaAsset.actions.delete' })
     )
   }
 
-  it('reconciles an open output folder when refreshed assets replace its primary output', async () => {
-    await renderOpenFolder()
+  it('deletes the chosen output from inside an open folder', async () => {
+    await deleteFirstOutputInsideFolder()
 
-    expect(screen.getByText('multi-output-job')).toBeVisible()
-    expect(selectionMocks.reconcileSelection).toHaveBeenLastCalledWith([
-      folderAsset,
-      existingChild
+    expect(useMediaAssetActions().deleteAssets).toHaveBeenCalledExactlyOnceWith(
+      folderAsset
+    )
+  })
+
+  // Known defect: a successful delete refreshes the output store, but the open
+  // folder lists its own resolved outputs and nothing re-resolves or prunes
+  // them, so the deleted output stays on screen until the folder is reopened.
+  // The test above guards this setup, so only the final assertion is pinned.
+  it.fails('stops showing an output deleted from inside an open folder', async () => {
+    await deleteFirstOutputInsideFolder()
+
+    await waitFor(() =>
+      expect(shownAssetNames()).toEqual(['multi-output-b.png'])
+    )
+  })
+})
+
+it('gives the lightbox a playable URL for a video without a preview_url', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
+})
+
+it('shows the sidebar close button when mounted as a sidebar tab', () => {
+  renderTab({ realTemplate: true })
+
+  expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
+})
+
+describe('AssetsSidebarTab context menu', () => {
+  it('inspects an HDR output in the HDR viewer', async () => {
+    useAssetsStore().outputAssets.items = [
+      {
+        ...folderAsset,
+        name: 'sky.exr',
+        loader_path: 'renders/sky.exr',
+        preview_url: '/api/assets/sky-preview/content'
+      }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\/view\?filename=sky\.exr&type=output&subfolder=renders$/
+      )
+    )
+  })
+
+  it('inserts a loadable image as a node', async () => {
+    const asset = { ...folderAsset, name: 'image.png' }
+    useAssetsStore().outputAssets.items = [asset]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    )
+
+    expect(useMediaAssetActions().addWorkflow).toHaveBeenCalledWith(asset)
+  })
+
+  it('does not offer insertion for an unloadable file', async () => {
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, name: 'result.txt' }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await screen.findByRole('menu')
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    ).not.toBeInTheDocument()
+  })
+
+  it('downloads grouped outputs through the multi-asset download action', async () => {
+    renderTab()
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.download'
+      })
+    )
+
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([
+      folderAsset
     ])
   })
 
-  // Known bug: the store-level asset list is refreshed while a folder is
-  // open, but the open folder never re-fetches or reconciles against the
-  // refreshed data (`AssetsSidebarTab.vue` has no watcher on the output
-  // store while `isInFolderView`). Both the in-folder view and the parent
-  // grid after leaving the folder keep showing the stale pre-refresh primary
-  // asset instead of `replacementPrimary`.
-  it.fails('shows the refreshed primary asset after leaving the folder', async () => {
-    await renderOpenFolder()
+  it.for(['pointerDown', 'scroll'] as const)(
+    'dismisses on outside %s',
+    async (event) => {
+      renderTab()
+      await fireEvent.contextMenu(
+        screen.getByRole('button', { name: 'Enter output folder' })
+      )
+      await screen.findByRole('menu')
 
-    storeControls.setOutputItems([replacementPrimary])
-    await nextTick()
+      await fireEvent[event](
+        screen.getByRole('heading', { name: 'Media Assets' })
+      )
 
-    await waitFor(() =>
-      expect(
-        screen
-          .getAllByTestId('asset-id')
-          .map((item) => item.textContent?.trim())
-      ).toEqual(['replacement-primary', 'existing-child', 'added-child'])
-    )
-    expect(selectionMocks.reconcileSelection).toHaveBeenLastCalledWith([
-      replacementPrimary,
-      existingChild,
-      addedChild
-    ])
+      await waitFor(() =>
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      )
+    }
+  )
+})
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Back to all assets' })
-    )
+describe('AssetsSidebarTab tab panel', () => {
+  it('labels the asset list with the selected tab', async () => {
+    renderTab()
+
     expect(
-      screen.getAllByTestId('asset-id').map((item) => item.textContent?.trim())
-    ).toEqual(['replacement-primary'])
+      screen.getByRole('tabpanel', { name: 'Generated' })
+    ).toContainElement(screen.getByTestId('assets-grid'))
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+    expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
+  })
+
+  it('keeps the panel in the tab order', () => {
+    renderTab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveAttribute(
+      'tabindex',
+      '0'
+    )
   })
 })

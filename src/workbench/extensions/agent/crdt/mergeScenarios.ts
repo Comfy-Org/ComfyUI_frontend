@@ -157,7 +157,7 @@ function simulateOpStream(
     })
 
     batch.forEach((op, position) => {
-      const outcome = result.outcomes[position]
+      const outcome = result.outcomes.at(position)
       const nodeId = nodeIds[position]
       const verdict: MergeVerdict = outcome
         ? verdictFor(

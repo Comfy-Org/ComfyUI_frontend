@@ -49,7 +49,7 @@ export function evaluateMathExpression(input: string): number | undefined {
       return t.value
     }
 
-    if (t.type === 'op' && t.value === '(') {
+    if (t.value === '(') {
       if (++depth > MAX_DEPTH) return undefined
       consume()
       const result = expr()

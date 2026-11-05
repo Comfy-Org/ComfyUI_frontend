@@ -3,13 +3,17 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
+import {
+  createSecret,
+  SecretsApiError,
+  updateSecret
+} from '@/platform/secrets/api/secretsApi'
 import {
   DEFAULT_PROVIDER_IDS,
   getProviderHelpKey,
   getProviderLabel,
   getProviderLogo
-} from '../providers'
+} from '@/platform/secrets/providers'
 import type {
   SecretCredentialOption,
   SecretCredentialType,
@@ -17,7 +21,7 @@ import type {
   SecretInputType,
   SecretMetadata,
   SecretProviderInfo
-} from '../types'
+} from '@/platform/secrets/types'
 
 interface SecretFormState {
   name: string
@@ -150,7 +154,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
       (
         credentialOptions.value.find(
           (option) => option.credential_type === selectedCredentialType.value
-        ) ?? credentialOptions.value[0]
+        ) ?? credentialOptions.value.at(0)
       )?.credential_type ??
       null,
     set: (value) => {

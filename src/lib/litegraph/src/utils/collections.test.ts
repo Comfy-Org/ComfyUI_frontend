@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { getDraggedItems } from '@/lib/litegraph/src/utils/collections'
 
 class TestNode extends LGraphNode {
@@ -20,7 +18,6 @@ describe('getDraggedItems', () => {
   let selected: Set<Positionable>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     graph = new LGraph()
 
     group = new LGraphGroup('TestGroup')

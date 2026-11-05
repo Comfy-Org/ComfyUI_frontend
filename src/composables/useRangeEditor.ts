@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { clamp } from 'es-toolkit'
 
 import { denormalize, normalize } from '@/utils/mathUtil'
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 type HandleType = 'min' | 'max' | 'midpoint'
 
@@ -16,6 +16,7 @@ interface UseRangeEditorOptions {
   showMidpoint: Ref<boolean>
   contentInsetX?: Ref<number>
   handleCenterOffsetX?: Ref<number>
+  onEditEnd?: () => void
 }
 
 export function useRangeEditor({
@@ -25,7 +26,8 @@ export function useRangeEditor({
   valueMax,
   showMidpoint,
   contentInsetX,
-  handleCenterOffsetX
+  handleCenterOffsetX,
+  onEditEnd
 }: UseRangeEditorOptions) {
   const activeHandle = ref<HandleType | null>(null)
   let cleanupDrag: (() => void) | null = null
@@ -117,6 +119,7 @@ export function useRangeEditor({
       el.removeEventListener('pointerup', endDrag)
       el.removeEventListener('lostpointercapture', endDrag)
       cleanupDrag = null
+      onEditEnd?.()
     }
 
     cleanupDrag = endDrag

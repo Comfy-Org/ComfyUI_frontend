@@ -1,8 +1,8 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
@@ -75,6 +75,9 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
     },
     get options() {
       return store.getWidget(id)?.options ?? {}
+    },
+    set options(next) {
+      store.setOptions(id, next)
     },
     get value() {
       return store.getWidget(id)?.value

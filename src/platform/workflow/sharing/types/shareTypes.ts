@@ -1,8 +1,8 @@
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import type {
   ComfyWorkflowJSON,
   WorkflowId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 export interface WorkflowPublishResult {
@@ -15,10 +15,14 @@ export interface PublishPrefill {
   name?: string
   description?: string
   tags?: string[]
+  models?: string[]
+  customNodes?: string[]
   thumbnailType?: ThumbnailType
   thumbnailUrl?: string
   thumbnailComparisonUrl?: string
   sampleImageUrls?: string[]
+  tutorialUrl?: string
+  metadata?: Record<string, unknown>
 }
 
 export type WorkflowPublishStatus =

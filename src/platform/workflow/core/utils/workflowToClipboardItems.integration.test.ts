@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import {
   LGraph,
   LGraphCanvas,
@@ -14,22 +12,14 @@ import type {
   ClipboardItems,
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toRerouteId } from '@/types/rerouteId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/graph-model/serialisation'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+vi.mock(import('@/services/litegraphService'))
 
 describe('workflow clipboard insertion', () => {
   it('pastes reroutes at their source-relative position', () => {
