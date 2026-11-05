@@ -17,6 +17,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+const savedFileUrlLoader = vi.hoisted(() => ({
+  openSavedFileFromUrl: vi.fn(async () => 'absent' as const)
+}))
+vi.mock(
+  import('@/platform/workflow/management/composables/useSavedFileUrlLoader'),
+  () => ({ useSavedFileUrlLoader: () => savedFileUrlLoader })
+)
+
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
   loadDeployment: vi.fn(async (): Promise<boolean> => false),
@@ -326,6 +334,56 @@ describe('useUrlActionLoaders', () => {
 
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBeUndefined()
+  })
+
+  it.for(['deployment', 'workspace'] as const)(
+    'preserves the saved-file intent across a %s reload without opening it',
+    async (kind) => {
+      await router.replace({
+        query: { savedFile: 'file-id', workflows: 'ignored' }
+      })
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.SAVED_FILE,
+        { savedFile: 'file-id' },
+        ['savedFile']
+      )
+      const loader =
+        kind === 'deployment' ? mocks.loadDeployment : mocks.loadWorkspace
+      loader.mockResolvedValueOnce(true)
+
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expect(savedFileUrlLoader.openSavedFileFromUrl).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.query.savedFile).toBe('file-id')
+      expect(
+        getPreservedQueryParam(
+          PRESERVED_QUERY_NAMESPACES.SAVED_FILE,
+          'savedFile'
+        )
+      ).toBe('file-id')
+    }
+  )
+
+  it('finishes the saved-file link after navigation and clears the URL and stash', async () => {
+    await router.replace({ query: { savedFile: 'file-id', keep: 'yes' } })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.SAVED_FILE,
+      { savedFile: 'file-id' },
+      ['savedFile']
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(
+      savedFileUrlLoader.openSavedFileFromUrl
+    ).toHaveBeenCalledExactlyOnceWith(true)
+    expect(
+      savedFileUrlLoader.openSavedFileFromUrl.mock.invocationCallOrder[0]
+    ).toBeGreaterThan(mocks.loadWorkspace.mock.invocationCallOrder[0])
+    expect(router.currentRoute.value.query).toEqual({ keep: 'yes' })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.SAVED_FILE, 'savedFile')
     ).toBeUndefined()
   })
 

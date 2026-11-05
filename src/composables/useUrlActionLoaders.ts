@@ -1,3 +1,4 @@
+import { useSavedFileUrlLoader } from '@/platform/workflow/management/composables/useSavedFileUrlLoader'
 import { useRouter } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
@@ -28,6 +29,7 @@ interface UrlActionStep {
 }
 
 type UrlActionLoaders = {
+  savedFileUrlLoader: ReturnType<typeof useSavedFileUrlLoader> | null
   deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
   workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
   inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
@@ -62,6 +64,7 @@ const HANDLED_PARAMS = [
   'workspace',
   'deployment',
   'workflows',
+  'savedFile',
   'invite',
   'create_workspace',
   'pricing',
@@ -86,14 +89,6 @@ function deploymentLinkSteps(
   ]
 }
 
-/**
- * Orders the deep-link loaders: the deployment link first, since with
- * `?deployment` it owns `?workspace` too (it switches, then picks after the
- * reload); then workspace, so `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets` all act on the requested workspace rather
- * than the one the app happened to load with. Only the loaders present
- * (cloud-gated by the caller) become steps.
- */
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
   router: ReturnType<typeof useRouter>
@@ -105,6 +100,15 @@ function buildUrlActionSteps(
     steps.push({
       failureMessage: 'Failed to load workspace from URL:',
       run: () => loader.loadWorkspaceFromUrl()
+    })
+  }
+  if (loaders.savedFileUrlLoader) {
+    const loader = loaders.savedFileUrlLoader
+    steps.push({
+      failureMessage: 'Failed to open saved workflow from URL:',
+      run: async () => {
+        await loader.openSavedFileFromUrl(true)
+      }
     })
   }
   if (loaders.inviteUrlLoader) {
@@ -128,7 +132,6 @@ function buildUrlActionSteps(
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     steps.push({
@@ -154,6 +157,7 @@ function buildUrlActionSteps(
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SAVED_FILE)
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       if (!HANDLED_PARAMS.some((param) => param in query)) return
@@ -212,16 +216,11 @@ function useIfCloud<T>(create: () => T): T | null {
   return isCloud ? create() : null
 }
 
-/**
- * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?deployment`, `?workspace`, `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
- * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
- * `runUrlActionLoaders()` from `onMounted` once the app is ready.
- */
+/** Runs Cloud URL actions after workflow boot and recovers interrupted checkout. */
 export function useUrlActionLoaders() {
   const router = useRouter()
 
+  const savedFileUrlLoader = useIfCloud(useSavedFileUrlLoader)
   const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
@@ -235,6 +234,7 @@ export function useUrlActionLoaders() {
   const steps = isCloud
     ? buildUrlActionSteps(
         {
+          savedFileUrlLoader,
           deploymentUrlLoader,
           workspaceUrlLoader,
           inviteUrlLoader,

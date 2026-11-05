@@ -115,6 +115,7 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  SavedFileLinkOpenedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
@@ -703,6 +704,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackSavedFileLinkOpened(metadata: SavedFileLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SAVED_FILE_LINK_OPENED, metadata)
   }
 
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {

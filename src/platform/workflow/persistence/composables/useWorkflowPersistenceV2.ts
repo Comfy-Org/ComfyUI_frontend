@@ -22,6 +22,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSavedFileUrlLoader } from '@/platform/workflow/management/composables/useSavedFileUrlLoader'
 import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -56,7 +57,8 @@ export function useWorkflowPersistenceV2() {
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
-  let openedFolderWorkflows = false
+  const savedFileUrlLoader = useSavedFileUrlLoader()
+  let openedLinkedWorkflow = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
@@ -318,10 +320,15 @@ export function useWorkflowPersistenceV2() {
     return { paths, activeIndex }
   }
 
+  async function openLinkedWorkflowFromUrl(): Promise<boolean> {
+    const savedFileStatus = await savedFileUrlLoader.openSavedFileFromUrl()
+    if (savedFileStatus !== 'absent') return savedFileStatus === 'opened'
+    return folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+  }
+
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
-    openedFolderWorkflows =
-      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
-    if (openedFolderWorkflows) return 'restored'
+    openedLinkedWorkflow = await openLinkedWorkflowFromUrl()
+    if (openedLinkedWorkflow) return 'restored'
 
     if (!workflowPersistenceEnabled.value) {
       return await resolveStartupOutcome()
@@ -491,7 +498,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
-    if (openedFolderWorkflows) return
+    if (openedLinkedWorkflow) return
 
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath

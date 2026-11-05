@@ -61,6 +61,19 @@ vi.mock(
   })
 )
 
+const savedFileUrlLoader = vi.hoisted(() => ({
+  openSavedFileFromUrl: vi.fn<
+    ReturnType<
+      typeof import('@/platform/workflow/management/composables/useSavedFileUrlLoader').useSavedFileUrlLoader
+    >['openSavedFileFromUrl']
+  >(async () => 'absent')
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useSavedFileUrlLoader'),
+  () => ({ useSavedFileUrlLoader: () => savedFileUrlLoader })
+)
+
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
   openFolderWorkflowsFromUrl: vi.fn(async () => false)
 }))
@@ -837,6 +850,39 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+  })
+
+  describe('a link that names one saved workflow', () => {
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the saved-file result is %s',
+      async (status) => {
+        savedFileUrlLoader.openSavedFileFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the saved file without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      savedFileUrlLoader.openSavedFileFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {
