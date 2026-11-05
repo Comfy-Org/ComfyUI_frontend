@@ -1,4 +1,5 @@
 import { useTelemetry } from '@comfyorg/telemetry'
+import { effectScope } from 'vue'
 
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { openBillingUrl } from '@/platform/billing/billingTab'
@@ -8,6 +9,13 @@ import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 let stopReturnRefresh: (() => void) | null = null
+
+async function refreshAfterPlans(): Promise<void> {
+  const scope = effectScope(true)
+  const capabilities = scope.run(useBillingCapabilities)
+  await Promise.allSettled([refreshBilling('account'), capabilities?.refresh()])
+  scope.stop()
+}
 
 /** Opens the platform Plans page for the active workspace in a new tab, as Manage does, and re-reads billing on return; `false` when the browser blocked it. */
 export function openPlatformPlans(): boolean {
@@ -23,11 +31,6 @@ export function openPlatformPlans(): boolean {
     target: 'plans'
   })
   stopReturnRefresh?.()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      refreshBilling('account'),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(refreshAfterPlans)
   return true
 }

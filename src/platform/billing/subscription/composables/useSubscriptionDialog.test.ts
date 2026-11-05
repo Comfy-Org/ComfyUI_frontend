@@ -31,6 +31,7 @@ import {
 
 import { openBillingUrl } from '@/platform/billing/billingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
@@ -229,13 +230,19 @@ describe('useSubscriptionDialog', () => {
       )
     })
 
-    it('re-reads capabilities when the customer returns from the Plans page', async () => {
+    it('re-reads the account and capabilities when the customer returns from the Plans page', async () => {
+      const refreshedScopes: string[] = []
+      const stopListening = onBillingRefresh((scope) => {
+        refreshedScopes.push(scope)
+      })
       const { showPricingTable } = useSubscriptionDialog()
 
       await showPricingTable({ reason: 'subscribe_to_run' })
       const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
       await refresh()
+      stopListening()
 
+      expect(refreshedScopes).toEqual(['account'])
       expect(useBillingCapabilities().refresh).toHaveBeenCalled()
     })
 
