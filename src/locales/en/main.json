@@ -5230,7 +5230,7 @@
     "errorHelpSupport": "contact our support",
     "askAgent": "Ask agent",
     "askAgentAbout": "Ask agent about {title}",
-    "askAgentAboutAll": "Ask agent about all issues ({count})",
+    "askAgentAboutAll": "Ask agent about {count} issue | Ask agent about all {count} issues",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {

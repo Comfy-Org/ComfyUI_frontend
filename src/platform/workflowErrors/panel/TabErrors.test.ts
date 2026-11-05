@@ -8,6 +8,8 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -134,8 +136,7 @@ describe('TabErrors.vue', () => {
             errorHelp: 'Error help',
             askAgent: 'Ask agent',
             askAgentAbout: 'Ask agent about {title}',
-            askAgentAboutAll:
-              'Ask agent about {count} issue | Ask agent about all {count} issues',
+            askAgentAboutAll: enMessages.rightSidePanel.askAgentAboutAll,
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
