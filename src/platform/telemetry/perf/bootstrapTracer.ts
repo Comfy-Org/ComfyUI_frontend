@@ -76,7 +76,14 @@ const SAFE_ERROR_NAME = /^[A-Z][A-Za-z0-9_]{0,63}$/
 
 function safeErrorName(error: unknown): string {
   if (!(error instanceof Error)) return typeof error
-  return SAFE_ERROR_NAME.test(error.name) ? error.name : 'Error'
+  try {
+    const { name } = error
+    return typeof name === 'string' && SAFE_ERROR_NAME.test(name)
+      ? name
+      : 'Error'
+  } catch {
+    return 'Error'
+  }
 }
 
 function toRumTimingName(name: string): string {
@@ -298,24 +305,38 @@ export class BootstrapTracer {
   /**
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
-   * locally. Idempotent — only the first call reports.
+   * locally. Idempotent — only the first call reports. A failed startup may
+   * pass the error that ended it, so a rejection the caller handled earlier is
+   * not blamed for it.
    */
-  complete(outcome: 'completed' | 'failed' = 'completed'): void {
+  complete(
+    outcome: 'completed' | 'failed' = 'completed',
+    terminal?: { error: unknown }
+  ): void {
     if (this._completed) return
     this._completed = true
     this._outcome = outcome
     clearTimeout(this._watchdog)
-    const failure = outcome === 'failed' ? this._failureCause() : undefined
+    const failure =
+      outcome === 'failed' ? this._failureCause(terminal) : undefined
     this._failure = undefined
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome, undefined, failure)
     this._hidden.stop()
   }
 
-  private _failureCause(): Pick<
-    BootstrapCompleteMetadata,
-    'failure_phase' | 'failure_error'
-  > {
+  private _failureCause(
+    terminal: { error: unknown } | undefined
+  ): Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'> {
+    const newestOpen = Array.from(this._spans.keys()).at(-1)
+    if (terminal) {
+      const rejection =
+        this._failure?.error === terminal.error ? this._failure : undefined
+      return {
+        failure_phase: rejection?.phase ?? newestOpen ?? 'untraced',
+        failure_error: safeErrorName(terminal.error)
+      }
+    }
     if (this._failure) {
       const { phase, error } = this._failure
       return {
@@ -323,8 +344,7 @@ export class BootstrapTracer {
         failure_error: safeErrorName(error)
       }
     }
-    const open = Array.from(this._spans.keys())
-    return { failure_phase: open.at(-1) ?? 'untraced' }
+    return { failure_phase: newestOpen ?? 'untraced' }
   }
 
   /**
