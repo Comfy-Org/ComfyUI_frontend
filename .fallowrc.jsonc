@@ -33,8 +33,6 @@
   "entry": [
     "index.html",
     "src/main.ts",
-    // Generated window.comfyAPI surface; keep in sync with COMFY_API_DIRS in
-    // build/comfyAPISurface.ts.
     "src/extensions/core/**/*.ts",
     "src/scripts/**/*.ts"
   ],
