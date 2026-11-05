@@ -30,7 +30,8 @@ clears the unsent draft (text, attachments and staged node references), cancels 
 and starts following again, so a new chat never carries input aimed at another workflow
 (amended 2026-11-01 for PM-2251). Leaving a failed history selection with Back keeps the unsent
 text and follows the visible workflow. Switching to another existing chat through history keeps
-the unsent draft; only New Chat clears it, and the draft also survives a page refresh (amended
+the unsent draft; only New Chat clears it. A page refresh restores the draft's text and workflow
+references for the same chat; attachments and staged node references are not restored (amended
 2026-11-05 for PM-1517 and PM-2002).
 
 The panel store owns a single target-state union so it survives component
