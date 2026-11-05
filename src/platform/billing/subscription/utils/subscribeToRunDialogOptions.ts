@@ -20,7 +20,7 @@ export function subscribeToRunDialogOptions(
   // 402 refusal carries (BE-24447).
   const creditsLocked = pendingServerFact(
     'BE-24447',
-    subscription?.isActive === false &&  subscription.hasFunds
+    subscription?.isActive === false && subscription.hasFunds
   )
   return {
     reason: 'subscribe_to_run',
