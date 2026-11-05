@@ -2617,9 +2617,9 @@ describe('useWorkflowService', () => {
       )
 
       expect(await service.openWorkflow(workflow, { force: true })).toBe(true)
-      await options.action!.onClick()
-
       expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+
+      await options.action!.onClick()
       expect(deleteSpy).not.toHaveBeenCalled()
     })
 
@@ -2633,6 +2633,25 @@ describe('useWorkflowService', () => {
       await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
 
       expect(isUnreadableWorkflow(workflow)).toBe(false)
+    })
+
+    it('dismisses the toast when a retry fails for another reason', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/flaky.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+      await options.action!.onClick()
+      expect(deleteSpy).not.toHaveBeenCalled()
     })
 
     it('shows one toast per file however often it is clicked', async () => {
