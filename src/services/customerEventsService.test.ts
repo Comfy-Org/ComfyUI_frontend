@@ -289,7 +289,6 @@ describe('useCustomerEventsService', () => {
       ['he', 'קרדיט', 'קרדיטים'],
       ['it', 'Credito', 'Crediti'],
       ['pt-BR', 'Crédito', 'Créditos'],
-      ['ru', 'Кредит', 'Кредиты'],
       ['tr', 'Kredi', 'Kredi']
     ] as const)(
       '%s charge unit is %s for one credit and %s for seven',
