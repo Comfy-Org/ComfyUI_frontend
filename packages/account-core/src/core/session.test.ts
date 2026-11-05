@@ -973,7 +973,9 @@ describe('exchange response contract', () => {
     expect(await client.ensureFresh(testUser())).toEqual({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED',
-      httpStatus: 200
+      httpStatus: 200,
+      reason: 'schema_mismatch',
+      detail: 'expires_at'
     })
   })
 })
