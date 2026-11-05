@@ -306,7 +306,7 @@ describe('useComfyRegistryStore', () => {
     const firstResult = store.getPacksByIds.call([sharedId, onlyFirstId])
     const secondResult = await store.getPacksByIds.call([sharedId])
     releaseFirst({
-      nodes: [sharedPack, onlyFirstPack],
+      nodes: [onlyFirstPack],
       total: 2,
       page: 1,
       limit: 2
@@ -315,6 +315,38 @@ describe('useComfyRegistryStore', () => {
 
     expect(secondResult.map((pack) => pack.id)).toEqual([sharedId])
     expect(firstPacks.map((pack) => pack.id)).toEqual([sharedId, onlyFirstId])
+  })
+
+  it('returns a pack another lookup cached when this request fails', async () => {
+    const sharedId = 'failed-page-pack'
+    const onlyFirstId = 'failed-page-pack-other'
+    const sharedPack = { id: sharedId, name: sharedId }
+    let releaseFirst: (page: ListPacksPage | null) => void = () => {}
+    const firstPage = new Promise<ListPacksPage | null>((resolve) => {
+      releaseFirst = resolve
+    })
+
+    mockRegistryService.listAllPacks.mockImplementation(
+      (params?: ListPacksQuery) => {
+        const requestedIds = params?.node_id ?? []
+        if (requestedIds.includes(onlyFirstId)) return firstPage
+        return Promise.resolve({
+          nodes: [sharedPack],
+          total: 1,
+          page: 1,
+          limit: requestedIds.length
+        })
+      }
+    )
+
+    const store = useComfyRegistryStore()
+    const firstResult = store.getPacksByIds.call([sharedId, onlyFirstId])
+    const secondResult = await store.getPacksByIds.call([sharedId])
+    releaseFirst(null)
+    const firstPacks = await firstResult
+
+    expect(secondResult.map((pack) => pack.id)).toEqual([sharedId])
+    expect(firstPacks.map((pack) => pack.id)).toEqual([sharedId])
   })
 
   describe('inferPackFromNodeName', () => {

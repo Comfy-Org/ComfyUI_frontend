@@ -37,6 +37,25 @@ function rememberResolvedPacks(
   }
 }
 
+function rememberCachedPendingPacks(
+  cache: QuickLRU<NodePack['id'], NodePack>,
+  pendingIds: Set<string>,
+  resolvedPacks: NodePack[]
+) {
+  const resolvedIds = new Set(
+    resolvedPacks.flatMap((pack) => (pack.id ? [pack.id] : []))
+  )
+  for (const id of pendingIds) {
+    const pack = cache.get(id)
+    if (!isNodePack(pack) || !pack.id) continue
+    if (!resolvedIds.has(pack.id)) {
+      resolvedPacks.push(pack)
+      resolvedIds.add(pack.id)
+    }
+    pendingIds.delete(id)
+  }
+}
+
 function packPageCapacity(
   servedLimit: number | undefined,
   requestedCount: number
@@ -115,6 +134,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
         signal
       )
       const unresolvedBefore = pendingIds.size
+      rememberCachedPendingPacks(getPacksByIdCache, pendingIds, resolvedPacks)
       if (pageResult) {
         rememberResolvedPacks(
           pageResult.nodes ?? [],
