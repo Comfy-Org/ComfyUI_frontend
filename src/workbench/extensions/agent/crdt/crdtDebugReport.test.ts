@@ -48,6 +48,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     enabled: true,
     connected: true,
     canvasMayBeStale: false,
+    canvasStaleCause: null,
     terminal: null,
     workflowId: 'doc-1',
     updatesApplied: 3,

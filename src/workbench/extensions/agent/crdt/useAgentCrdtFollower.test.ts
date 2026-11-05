@@ -345,6 +345,7 @@ describe('useAgentCrdtFollower', () => {
       enabled: false,
       connected: false,
       canvasMayBeStale: false,
+      canvasStaleCause: null,
       workflowId: null,
       updatesApplied: 0
     })
@@ -375,6 +376,7 @@ describe('useAgentCrdtFollower', () => {
       enabled: false,
       connected: false,
       canvasMayBeStale: false,
+      canvasStaleCause: null,
       workflowId: null
     })
 
@@ -626,6 +628,67 @@ describe('useAgentCrdtFollower', () => {
       expect(status().connected).toBe(false)
       expect(status().canvasMayBeStale).toBe(true)
       expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    // PM-2118: `canvasMayBeStale` is one boolean over five unrelated edges, so
+    // the withhold warning it drives could not be attributed in production.
+    // The cause is recorded AT the edge, not re-derived from the counters.
+    it('names the socket drop that made the canvas stale', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      expect(status().canvasStaleCause).toBeNull()
+
+      agentSocket.drop()
+
+      expect(status().canvasMayBeStale).toBe(true)
+      expect(status().canvasStaleCause).toBe('socket_closed')
+      unmount()
+    })
+
+    it('names a sequence gap rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+
+      expect(status().canvasStaleCause).toBe('doc_gap')
+      unmount()
+    })
+
+    it('names a lineage reset rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 43 })
+
+      expect(status().canvasStaleCause).toBe('doc_reset')
+      unmount()
+    })
+
+    // The BE-21356 condition: this is the only cause that server-side fix
+    // addressed, and it has to be separable from the other four.
+    it('names the schema read-gate failure rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+      expect(status().canvasStaleCause).toBe('schema_error')
+      unmount()
+    })
+
+    it('drops the cause when the catch-up clears the staleness', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      agentSocket.drop()
+      agentSocket.open()
+      expect(status().canvasStaleCause).toBe('socket_closed')
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 0 })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      expect(status().canvasStaleCause).toBeNull()
       unmount()
     })
 
