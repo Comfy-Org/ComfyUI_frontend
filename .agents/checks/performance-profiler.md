@@ -24,7 +24,7 @@ Rules:
 - Include Big-O analysis when relevant
 - Do NOT suggest micro-optimizations that a JIT compiler handles
 - Quantify the impact when possible: "This is O(n²) where n = number of nodes"
-- Component and composable lifecycle leaks belong to the `vue-patterns` check; in every other module, flag listeners, timers, observers, sockets, workers, and animation frames that are never released, and module-level Maps, Sets, or arrays keyed by node, workflow, or user input that never evict
+- Component and composable lifecycle leaks belong to the `vue-patterns` check; in every other module, flag listeners, intervals and repeating timers, observers, sockets, workers, and animation frames that are never released, and module-level Maps, Sets, or arrays keyed by node, workflow, or user input that never evict
 - When a finding needs measurement, follow `docs/guidance/performance-incident-runbook.md`
 
 ## Repo-Specific Performance Concerns
