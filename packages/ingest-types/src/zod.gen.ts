@@ -1060,12 +1060,41 @@ export const zAutoReloadSettingsRequest = z.object({
 })
 
 /**
+ * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
+ */
+export const zAutoTopUpMemberView = z.object({
+  cycle_resets_at: z.iso.datetime().nullable(),
+  disabled_reason: z.enum(['consecutive_declines']).optional(),
+  monthly_budget_is_default: z.boolean(),
+  status: z.enum(['off', 'on', 'on_hold', 'paused_by_budget', 'failed']),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable()
+})
+
+/**
  * Recorded account setup guidance, separate from owner authority in
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
  * These states do not determine surface visibility. Unified billing settings
- * hide the auto top-up card when can_top_up is false, including paused or
- * payment-failed billing.
+ * show the auto top-up card only when capabilities.can_view_auto_top_up is
+ * true; it is false when can_top_up is, including paused or payment-failed
+ * billing.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -1126,8 +1155,9 @@ export const zBillingAddress = z.object({
  *
  * When the deployment has billing disabled, this endpoint answers without
  * consulting billing-api: can_top_up is true; can_manage_members,
- * can_invite_members, can_manage_subscription and can_manage_auto_top_up
- * follow the owner role. Other billing-action fields are false. These role
+ * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
+ * can_view_auto_top_up follow the owner role, and
+ * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
  * facts do not promise that billing endpoints are available.
  *
  */
@@ -1151,6 +1181,8 @@ export const zBillingCapabilities = z.object({
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean(),
   can_upgrade: z.boolean(),
+  can_view_auto_top_up: z.boolean(),
+  can_view_auto_top_up_member_notice: z.boolean(),
   can_view_own_usage: z.boolean().optional(),
   can_view_pending_invites: z.boolean(),
   can_view_team_usage: z.boolean()
@@ -1375,6 +1407,27 @@ export const zBillingCapabilityDenials = z.object({
       'billing_operation_in_progress',
       'sales_managed',
       'no_upgrade_available'
+    ])
+    .optional(),
+  can_view_auto_top_up: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'payment_past_due',
+      'tier_not_self_serve',
+      'subscription_status_unrecognized',
+      'topup_purchases_paused'
+    ])
+    .optional(),
+  can_view_auto_top_up_member_notice: z
+    .enum([
+      'not_a_member',
+      'workspace_owner',
+      'payment_past_due',
+      'tier_not_self_serve',
+      'subscription_status_unrecognized',
+      'topup_purchases_paused'
     ])
     .optional(),
   can_view_own_usage: z
@@ -3239,6 +3292,27 @@ export const zOAuthConsentChallengeWorkspace = z.object({
 })
 
 /**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export const zOAuthConsentVerifiedClient = z.object({
+  display_name: z.string(),
+  platform: z.enum(['chatgpt', 'claude'])
+})
+
+/**
  * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
  *
  */
@@ -3250,6 +3324,7 @@ export const zOAuthConsentChallenge = z.object({
   redirect_uri: z.url(),
   resource_display_name: z.string(),
   scopes: z.array(z.string()),
+  verified_client: zOAuthConsentVerifiedClient.optional(),
   workspaces: z.array(zOAuthConsentChallengeWorkspace)
 })
 
@@ -3708,7 +3783,7 @@ export const zReleaseUnsupportedPacks = z.object({
 })
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export const zRenewalInvoice = z.object({
   amount_due: z.coerce
@@ -4503,7 +4578,7 @@ export const zScheduledPlanChange = z.object({
  */
 export const zBillingStatusResponse = z.object({
   action_url: z.string().optional(),
-  billing_rail: z.enum(['legacy_stripe', 'metronome', 'stripe']).optional(),
+  billing_rail: z.enum(['stripe']).optional(),
   billing_status: zBillingStatus.optional(),
   cancel_at: z.iso.datetime().optional(),
   current_period_start: z.iso.datetime().optional(),
@@ -5149,10 +5224,13 @@ export const zBillingCapabilityDenialParams = z.object({
  */
 export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_enabled: z.boolean(),
+  auto_top_up_member_view: zAutoTopUpMemberView.optional(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),
+  billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),
+  ending_notice_starts_at: z.iso.datetime().optional(),
   expires_at: z.iso.datetime(),
   has_parked_billing_operation: z.boolean().optional(),
   payment_recovery_available: z.boolean().optional(),
@@ -7346,7 +7424,7 @@ export const zGetCccPublicMediaBytesPath = z.object({
 })
 
 /**
- * Exact current LIVE bytes; authority checked before byte access; no-store
+ * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
  */
 export const zGetCccPublicMediaBytesResponse = z.string()
 

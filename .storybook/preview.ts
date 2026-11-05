@@ -5,6 +5,7 @@ import 'primeicons/primeicons.css'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import {
+  DEFAULT_COLOR_PALETTE,
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
@@ -24,11 +25,10 @@ setup((app) => {
 
 export const withTheme = (Story: StoryFn, context: StoryContext) => {
   const palette =
-    context.globals.theme === 'dark'
-      ? DEFAULT_DARK_COLOR_PALETTE
-      : DEFAULT_LIGHT_COLOR_PALETTE
+    context.globals.theme === 'light'
+      ? DEFAULT_LIGHT_COLOR_PALETTE
+      : DEFAULT_DARK_COLOR_PALETTE
   applyPaletteTheme(document.documentElement.style, palette)
-  document.body.classList.add('font-inter')
 
   return Story(context.args, context)
 }
@@ -49,11 +49,13 @@ const preview: Preview = {
       }
     }
   },
+  initialGlobals: {
+    theme: DEFAULT_COLOR_PALETTE.id
+  },
   globalTypes: {
     theme: {
       name: 'Theme',
       description: 'Global theme for components',
-      defaultValue: 'light',
       toolbar: {
         icon: 'circlehollow',
         items: [

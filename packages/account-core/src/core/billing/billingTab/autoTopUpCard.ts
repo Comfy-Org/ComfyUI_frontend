@@ -25,18 +25,17 @@ export type AutoTopUpSection =
 
 export interface AutoTopUpSectionFacts {
   autoTopUpEnabled: boolean
-  canManageAutoTopUp: boolean
-  canTopUp: boolean
-  manageAutoTopUpDenial: string | undefined
+  canViewAutoTopUpCard: boolean
+  canViewAutoTopUpMemberNotice: boolean
 }
 
-/** The card for an owner who can top up; the member block only for a served `not_workspace_owner` denial. */
+/** The card when `can_view_auto_top_up` is served true, else the member block when `can_view_auto_top_up_member_notice` is. */
 export function deriveAutoTopUpSection(
   facts: AutoTopUpSectionFacts
 ): AutoTopUpSection {
   if (!facts.autoTopUpEnabled) return { kind: 'hidden' }
-  if (facts.canManageAutoTopUp && facts.canTopUp) return { kind: 'card' }
-  return facts.manageAutoTopUpDenial === 'not_workspace_owner'
+  if (facts.canViewAutoTopUpCard) return { kind: 'card' }
+  return facts.canViewAutoTopUpMemberNotice
     ? { kind: 'memberBlock' }
     : { kind: 'hidden' }
 }

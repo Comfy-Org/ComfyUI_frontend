@@ -1364,7 +1364,11 @@
     "enterFilenamePrompt": "Enter the filename:",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
-    "savedAsWorkflow": "Converted to node graph only workflow"
+    "savedAsWorkflow": "Converted to node graph only workflow",
+    "unreadableWorkflowTitle": "Can't open this workflow",
+    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
+    "unsavedChangesLostTitle": "Unsaved changes were not saved",
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2523,6 +2527,7 @@
     "angle": "Angle"
   },
   "boundingBoxes": {
+    "boxCount": "{current} of {max} box | {current} of {max} boxes",
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
     "typeObj": "obj",
@@ -2733,7 +2738,10 @@
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
-      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?",
+      "switchAccount": "Switch account"
     },
     "scopes": {
       "mcp:tools:read": {
@@ -2987,7 +2995,7 @@
   "credits": {
     "activity": "Activity",
     "addCreditsRefusal": {
-      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later, or message support.",
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later.",
       "paymentPastDue": "Update your payment method to add credits.",
       "unavailable": "Adding credits isn't available for this workspace right now."
     },
@@ -3655,7 +3663,7 @@
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
-        "off": "Refills credits when your balance runs low",
+        "off": "Refills credits when your balance runs low.",
         "noPaymentMethod": "Auto top-up needs a payment method. Add one to turn it on.",
         "noDefaultPaymentMethod": "Auto top-up needs a default payment method. Set one to turn it on.",
         "onHold": "No default payment method. Set one to resume auto top-up.",
@@ -3688,12 +3696,12 @@
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
-        "planTooltip": "Credits included with your plan. They refill each billing period.",
-        "rateInfo": "About credits",
-        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "planTooltip": "Plan credits are spent before top-up credits.",
+        "tooltipLabel": "About credits",
+        "tooltip": "Credits work across Comfy Cloud, ComfyUI, and Comfy API.",
         "title": "Credits",
         "topUp": "Top-up",
-        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "topUpTooltip": "Used after plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
       "footer": {
@@ -3790,9 +3798,9 @@
         "refusedBody": "Your team has used all its credits.",
         "refusedPersonalBody": "You've used all your credits.",
         "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
         "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -5212,6 +5220,9 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
+    "askAgent": "Ask agent",
+    "askAgentAbout": "Ask agent about {title}",
+    "askAgentAboutAll": "Ask agent about all issues ({count})",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {
@@ -5265,6 +5276,7 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "askAgent": "Ask agent",
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
@@ -5481,6 +5493,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Generation failed",
         "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
+      },
+      "server_out_of_memory": {
+        "title": "Ran out of memory",
+        "message": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Ran out of memory",
+        "toastMessage": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again."
       },
       "content_blocked": {
         "title": "Content blocked",
@@ -6144,6 +6163,13 @@
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
+    "errorContext": {
+      "remove": "Remove attached issue",
+      "problemCount": "{count} problem | {count} problems",
+      "allLabel": "All issues",
+      "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+    },
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",
@@ -6310,6 +6336,8 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
+      "overwritten": "Your edit conflicted with a newer change and was not saved. The workflow was refreshed to show the saved version.",
+      "unconfirmed": "Your edit could not be confirmed as saved. The workflow was refreshed to show the saved version.",
       "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
@@ -6409,5 +6437,85 @@
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
     "reload": "Reload"
+  },
+  "addCreditsDialog": {
+    "title": "Add credits",
+    "customAmountLabel": "Or enter an amount",
+    "amountError": {
+      "below_min": "Minimum is {amount}.",
+      "above_max": "The largest top-up is {amount}. Add more with another top-up.",
+      "whole_dollars": "Whole dollars only."
+    },
+    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "planLine": {
+      "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
+      "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    "credits": "{credits} credits",
+    "creditsUnavailable": "— credits",
+    "paidAtCheckout": "{amount}, paid at checkout",
+    "continue": "Continue",
+    "opening": "Opening…",
+    "processing": {
+      "title": "A {amount} payment is still processing",
+      "titleNoAmount": "A payment is still processing",
+      "body": "No need to pay again."
+    },
+    "needsVerification": {
+      "title": "Your {amount} payment needs verification",
+      "titleNoAmount": "Your payment needs verification",
+      "body": "Your bank is waiting for you to confirm it. Verify it to finish this top-up.",
+      "footer": "{amount}, unverified",
+      "action": "Verify payment"
+    },
+    "notVerified": {
+      "title": "Your {amount} payment wasn't verified",
+      "titleNoAmount": "Your payment wasn't verified",
+      "body": "Your bank didn't confirm it. Try again later, or contact support.",
+      "footerTitle": "{amount} top-up",
+      "footer": "Not verified",
+      "action": "Contact support"
+    },
+    "checkoutFailed": {
+      "title": "Couldn't open checkout",
+      "body": "Nothing was charged. Try again."
+    },
+    "notAllowed": {
+      "title": "You can't add credits right now",
+      "body": "Check Billing settings to see why."
+    },
+    "rateLimited": {
+      "title": "You've hit the top-up limit for now",
+      "body": "Try again in {wait}, or {support}.",
+      "bodyNoWait": "Try again later, or {support}."
+    },
+    "purchasesPaused": {
+      "title": "Buying credits isn't available right now",
+      "body": "Try again later, or {support}."
+    },
+    "messageSupport": "message support",
+    "wait": {
+      "minute": "a minute",
+      "minutes": "{count} minutes",
+      "hour": "an hour",
+      "hours": "{count} hours",
+      "day": "a day",
+      "days": "{count} days"
+    },
+    "opened": {
+      "title": "Checkout opened in a new tab",
+      "titleBrowser": "Checkout opened in your browser",
+      "body": "Credits are added to this workspace as soon as your payment goes through.",
+      "credits": "Credits",
+      "amount": "Amount",
+      "reopen": "Reopen checkout"
+    },
+    "close": "Close",
+    "blocked": {
+      "title": "Checkout didn't open",
+      "body": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "action": "Open checkout"
+    }
   }
 }

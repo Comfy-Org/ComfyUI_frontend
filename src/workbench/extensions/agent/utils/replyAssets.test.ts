@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { marked } from 'marked'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
@@ -45,6 +45,13 @@ function removeUrlParse() {
     else Reflect.deleteProperty(URL, 'parse')
   })
 }
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
+beforeEach(() => {
+  distribution.isCloud = false
+})
 
 describe('resolveAgentAssetUrl', () => {
   it('re-homes a loopback asset when URL.parse is unavailable', () => {
@@ -426,6 +433,24 @@ describe('tokenReplyAssets', () => {
 })
 
 describe('replyAssetResultItem', () => {
+  it.for([
+    { isCloud: true, expected: true },
+    { isCloud: false, expected: false }
+  ])(
+    'marks the filename as a display name only on Cloud ($isCloud)',
+    ({ isCloud, expected }) => {
+      distribution.isCloud = isCloud
+
+      const item = replyAssetResultItem({
+        url: 'https://x/y?filename=a.mp4',
+        filename: 'a.mp4',
+        kind: 'video'
+      })
+
+      expect(item.filenameIsDisplayName).toBe(expected)
+    }
+  )
+
   it('pins the exact source url and classifies from the filename', () => {
     const item = replyAssetResultItem({
       url: 'https://x/y?filename=a.png',

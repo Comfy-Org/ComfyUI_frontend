@@ -109,6 +109,11 @@
       "count": 3
     }
   },
+  "browser_tests/fixtures/agentConversationHostDoc.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "browser_tests/fixtures/agentConversationHostDoc.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -874,7 +879,7 @@
   },
   "packages/account-ui/src/billing/tab/billingBannerView.ts": {
     "typescript/no-restricted-types": {
-      "count": 13
+      "count": 15
     }
   },
   "packages/account-ui/src/billing/tab/creditsCardCopy.ts": {
@@ -1440,7 +1445,7 @@
   },
   "packages/shared-frontend-utils/src/nodePricing.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 5
     }
   },
   "packages/shared-frontend-utils/src/piiUtil.ts": {
@@ -2656,7 +2661,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 3
     }
   },
   "src/composables/useCoreCommands.ts": {
@@ -2771,7 +2776,7 @@
   },
   "src/composables/useWaveAudioPlayer.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/composables/useWidgetValueHistory.test.ts": {
@@ -3232,7 +3237,7 @@
   },
   "src/extensions/core/load3d/exportMenuHelper.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/extensions/core/load3d/load3d.test.ts": {
@@ -3618,7 +3623,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     },
     "typescript/no-restricted-types": {
       "count": 1
@@ -4104,6 +4109,11 @@
       "count": 13
     }
   },
+  "src/platform/billing/addCredits/addCreditsFacts.ts": {
+    "typescript/no-restricted-types": {
+      "count": 4
+    }
+  },
   "src/platform/billing/billingTab.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -4277,12 +4287,12 @@
   },
   "src/platform/billing/components/settings/BillingStatusBanner.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 9
     }
   },
   "src/platform/billing/components/settings/BillingStatusBanner.vue": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 6
     }
   },
   "src/platform/billing/components/settings/CreditsPanel.test.ts": {
@@ -4311,6 +4321,16 @@
     }
   },
   "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/__mocks__/servedBillingNotices.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/__mocks__/useBillingCapabilities.ts": {
     "typescript/no-restricted-types": {
       "count": 2
     }
@@ -4352,12 +4372,12 @@
   },
   "src/platform/billing/composables/useBillingBanner.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 5
     }
   },
   "src/platform/billing/composables/useBillingBanner.ts": {
     "typescript/no-restricted-types": {
-      "count": 13
+      "count": 17
     }
   },
   "src/platform/billing/composables/useBillingCapabilities.crossUser.test.ts": {
@@ -4493,6 +4513,11 @@
       "count": 2
     }
   },
+  "src/platform/billing/composables/useTopupOperation.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/billing/composables/useWorkspaceBilling.test.ts": {
     "typescript/no-restricted-types": {
       "count": 3
@@ -4537,6 +4562,11 @@
   "src/platform/billing/processingTopupPayment.ts": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "src/platform/billing/sdk/billingSdkStore.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/billing/sdk/operationRecordView.ts": {
@@ -4653,6 +4683,11 @@
       "count": 1
     }
   },
+  "src/platform/billing/subscription/constants/tierPricing.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/billing/subscription/constants/tierPricing.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 2
@@ -4687,6 +4722,11 @@
   "src/platform/billing/subscription/utils/planCreditGrant.ts": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "src/platform/billing/subscription/utils/subscribeToRunDialogOptions.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/billing/subscription/utils/subscriptionCancellationTelemetry.ts": {
@@ -5360,7 +5400,7 @@
   },
   "src/platform/workflow/core/services/workflowService.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 7
+      "count": 8
     }
   },
   "src/platform/workflow/core/services/workflowService.ts": {
@@ -5385,7 +5425,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     },
     "typescript/no-restricted-types": {
       "count": 13
@@ -6057,7 +6097,7 @@
   },
   "src/platform/workspace/stores/deploymentPickStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 16
+      "count": 18
     }
   },
   "src/platform/workspace/stores/deploymentStartStore.ts": {
@@ -6855,6 +6895,11 @@
       "count": 1
     }
   },
+  "src/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "src/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -7510,6 +7555,11 @@
       "count": 4
     }
   },
+  "src/storybook/mocks/useCurrentUser.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/systems/badgeSystem.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -7772,12 +7822,17 @@
       "count": 4
     },
     "typescript/no-restricted-types": {
-      "count": 13
+      "count": 14
     }
   },
   "src/workbench/extensions/agent/AgentPanelRoot.vue": {
     "typescript/no-restricted-types": {
       "count": 11
+    }
+  },
+  "src/workbench/extensions/agent/agentPageSession.ts": {
+    "typescript/no-restricted-types": {
+      "count": 8
     }
   },
   "src/workbench/extensions/agent/components/AgentGraphActivityBar.vue": {
@@ -7838,6 +7893,11 @@
   "src/workbench/extensions/agent/components/agent/OnboardingCoach.vue": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "src/workbench/extensions/agent/components/agent/composer/InlinePromptEditor.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/workbench/extensions/agent/components/agent/composer/RunModePopover.vue": {
@@ -8164,7 +8224,7 @@
   },
   "src/workbench/extensions/agent/crdt/opSender.ts": {
     "typescript/no-restricted-types": {
-      "count": 15
+      "count": 16
     }
   },
   "src/workbench/extensions/agent/crdt/restoreOpMinter.test.ts": {
@@ -8189,7 +8249,7 @@
   },
   "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.rejectedHumanAdd.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.rejectedWidgetWrite.test.ts": {
@@ -8252,7 +8312,7 @@
   },
   "src/workbench/extensions/agent/services/agent/agentPaywallPresentation.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/services/agent/agentRequestFailure.ts": {
@@ -8297,7 +8357,7 @@
   },
   "src/workbench/extensions/agent/stores/agent/agentComposerStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 10
+      "count": 12
     }
   },
   "src/workbench/extensions/agent/stores/agent/agentConsentStore.ts": {
@@ -8328,7 +8388,7 @@
   },
   "src/workbench/extensions/agent/stores/agent/agentPanelStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 10
+      "count": 11
     }
   },
   "src/workbench/extensions/agent/stores/agent/agentRunModeStore.ts": {
