@@ -59,6 +59,10 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     return snapshot().inputs
   }
 
+  function buildBrief(): string {
+    return buildAgentHandoffDocument({ distribution, inputs: captureInputs() })
+  }
+
   async function copyBrief(): Promise<boolean> {
     try {
       const { graph, inputs } = snapshot()
@@ -95,5 +99,5 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     }
   }
 
-  return { captureInputs, copyBrief }
+  return { buildBrief, captureInputs, copyBrief }
 }
