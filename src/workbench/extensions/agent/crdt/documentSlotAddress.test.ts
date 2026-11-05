@@ -115,7 +115,19 @@ const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: [] },
     TestSink: { widget_order: [] },
-    TestAutogrowSink: { widget_order: [] }
+    TestAutogrowSink: { widget_order: [] },
+    TestFloatSource: { widget_order: [] },
+    TestDynamicGroup: {
+      widget_order: ['loras'],
+      dynamic_groups: {
+        loras: {
+          min: 0,
+          max: 3,
+          widgets: ['strength'],
+          defaults: { strength: 1 }
+        }
+      }
+    }
   }
 }
 
@@ -422,18 +434,22 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21316: a DynamicGroup row field the document lacks grows its widget socket',
+      name: '#21316: a DynamicGroup row field the document lacks grows its widget socket after the row-count write',
       sink: 'TestDynamicGroup',
       source: 'TestFloatSource',
       seed: (_sources, sink) => {
         setWidget(sink, 'loras', 1)
       },
       act: async ({ sources, sink }) => {
-        withGraphIntentSource('agent-remote', () => setWidget(sink, 'loras', 2))
+        setWidget(sink, 'loras', 2)
         sources[0].connect(0, sink, 1)
         await afterFlush()
       },
-      sent: ['connect grow loras.1.strength (widget)'],
+      sent: [
+        'set_widget',
+        'set_widget',
+        'connect grow loras.1.strength (widget)'
+      ],
       docSlots: [
         ['loras.0.strength', null],
         ['loras.1.strength', 0]
@@ -729,6 +745,27 @@ describe('a local link edit lands on the document slot that carries its input', 
       expect(reportedErrorTypes()).toEqual(reported)
     }
   )
+
+  it('a follower already live on the document grows a DynamicGroup row and keeps its link', async () => {
+    const { sources, sink, doc, echo, outcomes } = bind(
+      'TestDynamicGroup',
+      'TestFloatSource',
+      (_sources, sink) => setWidget(sink, 'loras', 1)
+    )
+    const live = follow(doc)
+    live.sync('replace')
+
+    setWidget(sink, 'loras', 2)
+    sources[0].connect(0, sink, 1)
+    await afterFlush()
+    echo()
+    live.sync('merge')
+
+    expect(outcomes).toEqual(['applied', 'applied', 'applied'])
+    expect(liveLinksBySource(live.graph, sink, sources)).toEqual([
+      '0 -> loras.1.strength'
+    ])
+  })
 
   it('FE-2682: a hand-wired grown autogrow link keeps its origin when a tab reloads from the document', async () => {
     const { sources, sink, doc, echo } = bind(
