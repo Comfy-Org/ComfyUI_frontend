@@ -721,7 +721,7 @@ describe('normalizeAgentTranscript', () => {
       })
     })
 
-    it('places a later row\'s card among that row\'s own tool calls', () => {
+    it("places a later row's card among that row's own tool calls", () => {
       const history = zAgentMessages.parse([
         {
           ...row(1, 'assistant', 'turn-a', 'First', 'row-1'),
