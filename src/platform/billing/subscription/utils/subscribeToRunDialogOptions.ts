@@ -8,7 +8,6 @@ export function subscribeToRunDialogOptions(facts: {
   subscriptionState: SubscriptionState | null
   hasFunds: boolean | undefined
 }): SubscriptionDialogOptions {
-  // Interim until billing status serves `credits_locked` (BE-24447).
   const creditsLocked = pendingServerFact(
     'BE-24447',
     facts.hasFunds === true &&
