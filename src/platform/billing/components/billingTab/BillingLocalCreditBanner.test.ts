@@ -347,7 +347,7 @@ describe('BillingLocalCreditBanner', () => {
       owner: true,
       isTeamPlan: true,
       nextCreditRefillAt: null,
-      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {
@@ -363,7 +363,7 @@ describe('BillingLocalCreditBanner', () => {
       owner: true,
       isTeamPlan: false,
       nextCreditRefillAt: null,
-      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {

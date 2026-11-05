@@ -1,9 +1,4 @@
 {
-  "apps/billing-web/src/components/CheckoutToast.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "apps/billing-web/src/components/PaymentMethodsPanel.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1

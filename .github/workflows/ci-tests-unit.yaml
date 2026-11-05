@@ -57,7 +57,11 @@ jobs:
           name: unit-shard-${{ matrix.shard }}
           path: .vitest/blob/*.json
           include-hidden-files: true
-          retention-days: 1
+          # 1-day retention expired before a next-day re-run of only the
+          # failed jobs could download it, so test-report failed on a
+          # missing artifact rather than a real test result (see the
+          # matching unit-package-coverage comment below).
+          retention-days: 7
           if-no-files-found: error
 
   test-packages:
@@ -94,7 +98,16 @@ jobs:
         with:
           name: unit-package-coverage
           path: packages/*/coverage/lcov.info
-          retention-days: 1
+          # test-report downloads this by name in the same run. A 1-day
+          # retention does not survive "re-run failed jobs" clicked more
+          # than a day later: test-packages keeps its original (already
+          # expired) artifact, so test-report fails on a missing-artifact
+          # error that has nothing to do with the PR under test (hit on
+          # #22645 and #22507, run_attempt 3 and 2, both >24h after the
+          # first attempt). 7 days matches ci-tests-e2e.yaml's
+          # snapshot-updates artifacts, the existing precedent in this repo
+          # for a short-lived artifact that must still survive a re-run.
+          retention-days: 7
           if-no-files-found: error
 
   test-report:

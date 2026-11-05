@@ -169,6 +169,12 @@ const isEnterprisePlan = computed(
 )
 const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
+const planEndedDate = computed(() => {
+  const current = subscription.value
+  return longDate(
+    current?.endedAt === undefined ? current?.endDate : current.endedAt
+  )
+})
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
 interface BannerView {
@@ -230,7 +236,7 @@ function planEndedCopy(): {
   ownerBody: string
   memberBody: string
 } {
-  const date = planEndDate.value
+  const date = planEndedDate.value
   if (audience.value === 'personal') {
     const plan = planName.value
     const body = t(`${bs}.planEnded.personalBody`)

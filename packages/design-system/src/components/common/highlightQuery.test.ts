@@ -72,4 +72,31 @@ describe('highlightQuery', () => {
       { text: 'ge  to', highlighted: false }
     ])
   })
+
+  it('should not throw when the query is longer than the text', () => {
+    const text = 'Load Checkpoint'
+    const query = 'a'.repeat(6000)
+
+    expect(() => highlightQuery(text, query)).not.toThrow()
+    expect(highlightQuery(text, query)).toEqual([{ text, highlighted: false }])
+  })
+
+  it('should not throw when both the text and the query are oversized', () => {
+    const text = 'a'.repeat(6000)
+    const query = 'a'.repeat(6000)
+
+    expect(() => highlightQuery(text, query)).not.toThrow()
+    expect(highlightQuery(text, query)).toEqual([{ text, highlighted: false }])
+  })
+
+  it('should still highlight a query at the length limit', () => {
+    const query = 'a'.repeat(1024)
+    const text = `x${query}y`
+
+    expect(highlightQuery(text, query)).toEqual([
+      { text: 'x', highlighted: false },
+      { text: query, highlighted: true },
+      { text: 'y', highlighted: false }
+    ])
+  })
 })
