@@ -435,6 +435,7 @@ function oneSideIsLocal(
 function memberPath(node: AstNode): string | undefined {
   const expression = unwrap(node)
   if (expression.type === 'Identifier') return expression.name
+  if (expression.type === 'ThisExpression') return 'this'
   if (expression.type !== 'MemberExpression' || expression.computed) {
     return undefined
   }

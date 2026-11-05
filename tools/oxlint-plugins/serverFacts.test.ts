@@ -201,6 +201,7 @@ function describe(facts: AddCreditsFacts) {
   const b = facts.canTopUpRefusal ?? facts.canTopUpReason
   const c = facts.canChangeSeats || facts.canChangeSeatsDenial
   const d = !facts.canTopUp && facts.canTopUpRefusal && !isLoading
+  const e = !this.facts.canTopUp && this.facts.canTopUpRefusal
 }
 `
     },
