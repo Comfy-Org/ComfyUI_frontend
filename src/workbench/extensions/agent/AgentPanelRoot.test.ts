@@ -12432,6 +12432,22 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
   })
 
+  it('agent_active_tab without a thread leaves the target', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+
+    dispatchApiEvent('agent_active_tab', { workflow_id: 'wf-other' })
+
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
+    )
+    await settleFollow()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+  })
+
   it('agent_active_tab leaves a target the user picks during the move', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')

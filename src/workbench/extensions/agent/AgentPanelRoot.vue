@@ -1407,12 +1407,11 @@ function enqueueActiveTab(
     data.message_id === undefined
       ? conversationTurnId.value
       : toTurnId(data.message_id)
-  const thread = threadId.value
   const tracking = toRaw(agentPanelStore.targetTracking)
   const takeTarget = (tab: ComfyWorkflow) => {
     if (
       initiator === 'agent' &&
-      threadId.value === thread &&
+      data.thread_id === threadId.value &&
       toRaw(agentPanelStore.targetTracking) === tracking
     )
       agentPanelStore.setWorkflowTarget(tab)
