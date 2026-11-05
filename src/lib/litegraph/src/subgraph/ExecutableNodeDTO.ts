@@ -16,6 +16,7 @@ import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexErro
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { reportError } from '@/platform/telemetry/reportError'
 
 export type ExecutionId = string
 
@@ -408,17 +409,28 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (!node.isSubgraphNode())
       throw new TypeError(`Node is not a subgraph node: ${node.id}`)
 
-    // Link inside the subgraph
     const innerResolved = node.resolveSubgraphOutputLink(slot)
     if (!innerResolved) return
 
-    const innerNode = innerResolved.outputNode
-    if (!innerNode)
-      throw new Error(
-        `No output node found for id [${this.id}] slot [${slot}] ${output.name}`
+    if (innerResolved.link.originIsIoNode) {
+      return this.resolvePassThroughOutput(
+        node,
+        innerResolved.link.origin_slot,
+        visited,
+        type
       )
+    }
 
-    // Recurse into the subgraph
+    const innerNode = innerResolved.outputNode
+    if (!innerNode) {
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output link has no origin node; skipping output [${slot}] ${output.name}`,
+        { id: this.id, originId: innerResolved.link.origin_id }
+      )
+      reportDanglingSubgraphOutput(node.subgraph)
+      return
+    }
+
     const innerNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       node.id,
@@ -436,6 +448,46 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       visited
     )
   }
+
+  private resolvePassThroughOutput(
+    node: SubgraphNode,
+    inputSlot: number,
+    visited: Set<string>,
+    type: ISlotType
+  ): ResolvedInput | undefined {
+    const input = this.inputs.at(inputSlot)
+    if (!input) {
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output passes through a missing input; skipping it`,
+        { id: this.id, inputSlot }
+      )
+      return
+    }
+    if (input.linkId != null) return this.resolveInput(inputSlot, visited, type)
+
+    const id = node.inputs.at(inputSlot)?.widgetId
+    if (!id) return
+    return {
+      node: this,
+      origin_id: this.id,
+      origin_slot: -1,
+      widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
+    }
+  }
+}
+
+const reportedDanglingSubgraphs = new WeakSet<object>()
+
+function reportDanglingSubgraphOutput(subgraph: object): void {
+  if (reportedDanglingSubgraphs.has(subgraph)) return
+  reportedDanglingSubgraphs.add(subgraph)
+  reportError(new Error('Subgraph output link has no origin node'), {
+    surface: 'graph',
+    errorType: 'error_resolving_subgraph_output_origin',
+    level: 'warning',
+    fingerprint: ['error_resolving_subgraph_output_origin'],
+    logToConsole: false
+  })
 }
 
 type RegisteredExecutableLGraphNode = ExecutableLGraphNode
