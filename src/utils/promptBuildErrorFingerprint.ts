@@ -1,7 +1,10 @@
 import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const IDENTITY_POSITIONS: readonly (readonly [RegExp, string])[] = [
-  [/ of node [\s\S]*$/, ' of node N'],
+  [
+    /^(Circular reference detected while resolving (?:input|output) \d+ of node) [\s\S]*$/,
+    '$1 N'
+  ],
   [/ in node [\s\S]*? of subgraph [\s\S]*$/, ' in node N of subgraph N'],
   [/\b(Subgraph)?Node \S+ has no graph/, '$1Node N has no graph'],
   [

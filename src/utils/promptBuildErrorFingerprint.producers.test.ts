@@ -64,5 +64,8 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     expect(selfVisitingInnerNodes('beta', 'Upscale', 'Refiner')).toEqual(
       selfVisitingInnerNodes('alpha', 'Load. Image', 'Detailer')
     )
+    expect(
+      selfVisitingInnerNodes('gamma', 'Load of node Image', 'Enhancer')
+    ).toEqual(selfVisitingInnerNodes('alpha', 'Load. Image', 'Detailer'))
   })
 })
