@@ -12360,12 +12360,14 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
@@ -12374,26 +12376,57 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('agent_active_tab keeps the target when the tab cannot be opened', async () => {
+  it('opening the workflow from a run approval keeps the target of the next message', async () => {
     const first = makeTab('wf-42')
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     mockMessagesEndpoint('wf-42')
     await renderAndSend('work here')
-    telemetry.trackAgentError.mockClear()
-    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
 
-    dispatchApiEvent('agent_active_tab', {
-      workflow_id: 'wf-other',
-      thread_id: 'th-1'
+    dispatchApiEvent('agent_ask', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-1',
+      kind: 'run_approval',
+      context: { workflow_id: 'wf-other', workflow_name: 'Other' },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
     })
+    await userEvent.click(await screen.findByRole('button', { name: 'Other' }))
 
     await vi.waitFor(() =>
-      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-        expect.objectContaining({ error_class: 'workflow_open_failed' })
-      )
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
     )
+    await settleFollow()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+  })
+
+  it('agent_active_tab leaves a chat started during the move following the visible tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.click(screen.getByRole('button', { name: 'New chat' }))
+    await vi.advanceTimersByTimeAsync(400)
+
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
+    )
+    expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
   })
 
   it('agent_active_tab reports when a bound tab cannot be opened', async () => {

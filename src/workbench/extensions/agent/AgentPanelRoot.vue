@@ -12,6 +12,7 @@ import {
   onMounted,
   provide,
   ref,
+  toRaw,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -1070,7 +1071,7 @@ const {
     },
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab,
+    activeTab: (data) => enqueueActiveTab(data, 'agent'),
     draft: targetWorkflowDraft
   }
 })
@@ -1396,15 +1397,34 @@ watch(
 
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
+let agentSetTracking: unknown = null
 
-function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
+function enqueueActiveTab(
+  data: AgentActiveTabData,
+  initiator: 'agent' | 'approval'
+): Promise<boolean> {
   const generation = ++activeTabGeneration
   const turnId =
     data.message_id === undefined
       ? conversationTurnId.value
       : toTurnId(data.message_id)
+  const thread = threadId.value
+  const tracking = toRaw(agentPanelStore.targetTracking)
+  // Only the agent's own move takes the message target, and only while the
+  // user hasn't changed chat or target since it was sent.
+  const takeTarget = (tab: ComfyWorkflow) => {
+    const current = toRaw(agentPanelStore.targetTracking)
+    if (
+      initiator !== 'agent' ||
+      threadId.value !== thread ||
+      (current !== tracking && current !== agentSetTracking)
+    )
+      return
+    agentPanelStore.setWorkflowTarget(tab)
+    agentSetTracking = toRaw(agentPanelStore.targetTracking)
+  }
   const result = activeTabChain.then(() =>
-    onAgentActiveTab(data, generation, turnId)
+    onAgentActiveTab(data, generation, turnId, takeTarget)
   )
   activeTabChain = result.then(() => undefined)
   return result
@@ -1416,7 +1436,12 @@ async function onOpenApprovalWorkflow(
   workflowName?: string
 ): Promise<void> {
   const decidedAt = Date.now()
-  if (await enqueueActiveTab({ workflow_id: workflowId, name: workflowName }))
+  if (
+    await enqueueActiveTab(
+      { workflow_id: workflowId, name: workflowName },
+      'approval'
+    )
+  )
     trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
@@ -1479,12 +1504,14 @@ function agentTabFilename(name: string | undefined): string | undefined {
 interface ActiveTabActivation {
   stale: () => boolean
   showTurnOn: (tab: ComfyWorkflow) => void
+  takeTarget: (tab: ComfyWorkflow) => void
 }
 
 async function onAgentActiveTab(
   data: AgentActiveTabData,
   generation: number,
-  turnId: TurnId | null
+  turnId: TurnId | null,
+  takeTarget: (tab: ComfyWorkflow) => void
 ): Promise<boolean> {
   const previousWorkflowId = boundWorkflowId.value
   const stale = () => generation !== activeTabGeneration
@@ -1494,7 +1521,8 @@ async function onAgentActiveTab(
     showTurnOn: (tab) => {
       if (turnId !== null)
         conversationStore.moveTurnToTab(turnId, tab.instanceId)
-    }
+    },
+    takeTarget
   }
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
@@ -1528,7 +1556,7 @@ async function activateExistingAgentTab(
   data: AgentActiveTabData,
   bound: ComfyWorkflow,
   previousWorkflowId: string | null,
-  { stale, showTurnOn }: ActiveTabActivation
+  { stale, showTurnOn, takeTarget }: ActiveTabActivation
 ): Promise<boolean> {
   const opened = await workflowService.openWorkflow(bound)
   if (stale()) return false
@@ -1538,7 +1566,7 @@ async function activateExistingAgentTab(
     return false
   }
   bindingStore.bind(data.workflow_id, bound.path)
-  agentPanelStore.setWorkflowTarget(bound)
+  takeTarget(bound)
   showTurnOn(bound)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
@@ -1552,7 +1580,7 @@ async function activateExistingAgentTab(
 async function createAndActivateAgentTab(
   data: AgentActiveTabData,
   previousWorkflowId: string | null,
-  { stale, showTurnOn }: ActiveTabActivation
+  { stale, showTurnOn, takeTarget }: ActiveTabActivation
 ): Promise<boolean> {
   const creatingStartedAt = Date.now()
   tabActivity.setCreating(true)
@@ -1583,7 +1611,7 @@ async function createAndActivateAgentTab(
   }
   showTurnOn(tab)
   bindingStore.bind(data.workflow_id, tab.path)
-  agentPanelStore.setWorkflowTarget(tab)
+  takeTarget(tab)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
   useTelemetry()?.trackAgentWorkflowApplied({
