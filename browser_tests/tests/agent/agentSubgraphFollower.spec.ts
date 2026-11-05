@@ -21,6 +21,7 @@ import {
   AGENT_SUBGRAPH_INITIAL_TEXT,
   AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
   AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
+  AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS,
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_REUSED_HOST_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
@@ -489,6 +490,88 @@ test.describe(
         await page.screenshot({
           path: test.info().outputPath('subgraph-interior-edited.png')
         })
+        expect(outboundFrames.some((frame) => frame.includes('doc_ops'))).toBe(
+          false
+        )
+      })
+    })
+
+    test('shows an interior edit while the user is inside the subgraph', async ({
+      page,
+      getAgentSocket
+    }) => {
+      const nodes = new VueNodeHelpers(page)
+      const interiorSteps = nodes
+        .getNodeByTitle('KSampler')
+        .getByLabel('steps', { exact: true })
+        .getByRole('spinbutton')
+
+      await test.step('open the agent-enabled workflow', async () => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          settings: { 'Comfy.VueNodes.Enabled': true },
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: '0f2b7c1d-5e4a-4f3b-9a6c-7d8e9f0a1b2c',
+              thread_id: '6c5b4a39-2817-4635-8d4e-3f2a1b0c9d8e',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
+        })
+      })
+
+      const outboundFrames: string[] = []
+
+      const socket = await test.step('open the agent panel', async () => {
+        await loadSeedIntoActiveTab(page, subgraphWorkflow)
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        const opened = await getAgentSocket()
+        opened.onMessage((message) => outboundFrames.push(String(message)))
+        return opened
+      })
+
+      await test.step('select the workflow and send an agent turn', async () => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Edit inside the subgraph')
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(expect.stringContaining('doc_subscribe'))
+      })
+
+      const frames = agentSubgraphInteriorFrames()
+
+      await test.step('materialize the host and its subgraph', async () => {
+        for (const frame of frames.initial) socket.send(JSON.stringify(frame))
+        await expect(
+          nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+        ).toBeVisible()
+      })
+
+      await test.step('the user opens the subgraph', async () => {
+        await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
+        await nextFrame(page)
+        await expect(interiorSteps).toHaveValue(
+          String(AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS)
+        )
+      })
+
+      await test.step('the agent edit lands on the open subgraph view', async () => {
+        socket.send(JSON.stringify(frames.stepsEdit))
+
+        // No click, fit-view or navigation between the frame and this
+        // assertion: the subgraph view the user is already looking at has to
+        // show the agent's edit on its own.
+        await expect(interiorSteps).toHaveValue(
+          String(AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS)
+        )
+      })
+
+      await test.step('the follower stayed read-only', async () => {
         expect(outboundFrames.some((frame) => frame.includes('doc_ops'))).toBe(
           false
         )

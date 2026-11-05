@@ -10,6 +10,8 @@ export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID =
   'b92718a4-02ae-41e6-ae85-c33b7bb880f7'
 export const AGENT_SUBGRAPH_HOST_ID = 11
+/** The `CLIPTextEncode` inside the subgraph definition, as the asset numbers it. */
+const AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID = 10
 export const AGENT_SUBGRAPH_REUSED_HOST_ID = 5_123_456_789_012
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
@@ -247,6 +249,12 @@ export function agentOutOfOrderSubgraphFrames(): HostFrame[] {
 
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT = 'a lighthouse at dawn'
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS = 33
+/**
+ * The interior `KSampler`'s `steps` before the agent edits it. `steps` is the
+ * one interior widget the definition does not promote, so it is the value a
+ * user sees only while the subgraph itself is open.
+ */
+export const AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS = 20
 
 export function agentSubgraphInteriorFrames(): {
   initial: HostFrame[]
@@ -273,10 +281,13 @@ export function agentSubgraphInteriorFrames(): {
   const textEdit = host.apply([
     {
       op: 'set_widget',
-      node_id: 10,
+      node_id: AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID,
       widget: 'text',
       value: AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
-      path: ['11', '10'],
+      path: [
+        String(AGENT_SUBGRAPH_HOST_ID),
+        String(AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID)
+      ],
       inner_widget: 'text'
     }
   ])
