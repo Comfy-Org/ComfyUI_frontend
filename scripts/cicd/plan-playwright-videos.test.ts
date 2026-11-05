@@ -12,7 +12,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, delimiter, join } from 'node:path'
+import { basename, delimiter, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { assert, describe, expect, it, onTestFinished } from 'vitest'
@@ -29,15 +29,16 @@ function isExecutableFile(path: string): boolean {
     return false
   }
 }
-function resolveBashPath(): string {
+function resolveOnPath(name: string): string {
   const found = (process.env.PATH ?? '')
     .split(delimiter)
-    .map((dir) => join(dir, 'bash'))
+    .filter(isAbsolute)
+    .map((dir) => join(dir, name))
     .find(isExecutableFile)
-  if (!found) throw new Error('bash not found on PATH')
+  if (!found) throw new Error(`${name} not found on PATH`)
   return found
 }
-const bash = resolveBashPath()
+const bash = resolveOnPath('bash')
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 const bin = join(import.meta.dirname, '../../node_modules/.bin')
 
@@ -303,6 +304,9 @@ describe('independent video workflow', () => {
       const bin = join(root, 'bin')
       mkdirSync(bin)
       symlinkSync(process.execPath, join(bin, 'node'))
+      for (const tool of ['mkdir', 'touch']) {
+        symlinkSync(resolveOnPath(tool), join(bin, tool))
+      }
       writeFileSync(
         join(bin, 'pnpm'),
         `#!${process.execPath}
