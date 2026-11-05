@@ -149,7 +149,9 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null
+  subscriptionTier: null as string | null,
+  hasFunds: false,
+  subscriptionState: null as string | null
 }))
 vi.mock<unknown>(
   import('@/platform/billing/composables/useBillingContext'),
@@ -160,10 +162,19 @@ vi.mock<unknown>(
           return mockBillingState.canAccessSubscriptionFeatures
         }
       },
+      subscriptionState: {
+        get value() {
+          return mockBillingState.subscriptionState
+        }
+      },
       subscription: {
         get value() {
-          return mockBillingState.subscriptionTier
-            ? { tier: mockBillingState.subscriptionTier }
+          return mockBillingState.subscriptionTier || mockBillingState.hasFunds
+            ? {
+                tier: mockBillingState.subscriptionTier,
+                isActive: false,
+                hasFunds: mockBillingState.hasFunds
+              }
             : null
         }
       }
@@ -233,6 +244,8 @@ describe('useCoreCommands', () => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
+    mockBillingState.hasFunds = false
+    mockBillingState.subscriptionState = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
@@ -837,6 +850,23 @@ describe('useCoreCommands', () => {
         })
       }
     )
+
+    it('explains locked credits when an inactive Cloud account holds funds', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.hasFunds = true
+      mockBillingState.subscriptionState = 'ended'
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).toHaveBeenCalledWith({
+        reason: 'subscribe_to_run',
+        creditsLocked: true
+      })
+    })
 
     it.for(['ENTERPRISE', 'GALACTIC'] as const)(
       'explains the block instead of a subscribe dialog on a sales-managed %s plan',

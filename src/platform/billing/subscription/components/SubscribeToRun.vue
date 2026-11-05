@@ -27,6 +27,8 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 
 const { t } = useI18n()
 
@@ -36,6 +38,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useWorkspaceUI()
+const { subscription, subscriptionState } = useBillingContext()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 
@@ -59,6 +62,11 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog({ reason: 'subscribe_to_run' })
+  showSubscriptionDialog(
+    subscribeToRunDialogOptions({
+      subscriptionState: subscriptionState.value,
+      hasFunds: subscription.value?.hasFunds
+    })
+  )
 }
 </script>
