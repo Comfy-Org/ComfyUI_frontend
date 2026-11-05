@@ -715,8 +715,13 @@ export const useAgentConversationStore = defineStore(
         )
       }
       if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
-      for (const entry of backgroundTurns.values())
-        if (entry.threadId === key) reopen(entry.message)
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId !== key) continue
+        reopen(entry.message)
+        const pendingAskIds = pendingAskIdsOf(entry.message)
+        if (!isEqual(pendingAskIds, entry.pendingAskIds))
+          updateBackgroundTurn(entry.messageId, { pendingAskIds })
+      }
       if (key === threadKey()) messages.value.forEach(reopen)
     }
 
