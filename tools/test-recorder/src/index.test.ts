@@ -20,34 +20,45 @@ async function runCli(...args: string[]) {
 
 describe('comfy-test transform --force', () => {
   it.for([
-    { flags: ['--force'], replaced: true },
-    { flags: ['--force=false'], replaced: false },
-    { flags: ['--force', 'false'], replaced: false },
-    { flags: [], replaced: false }
-  ])('$flags replaced the spec: $replaced', async ({ flags, replaced }) => {
-    const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
-    try {
-      const input = join(dir, 'demo.raw.spec.ts')
-      const output = join(dir, 'demo.spec.ts')
-      writeFileSync(input, "await page.getByText('Queue').click();\n")
-      writeFileSync(output, EXISTING_SPEC)
-      vi.spyOn(process, 'exit').mockImplementation((code) => {
-        throw new Error(`exit:${code}`)
-      })
-      vi.mocked(console.log).mockImplementation(() => {})
+    {
+      flags: ['--force'],
+      expectedExitCode: undefined,
+      expectedSaved: expect.stringContaining(
+        "comfyPage.page.getByText('Queue').click()"
+      )
+    },
+    {
+      flags: ['--force=false'],
+      expectedExitCode: 1,
+      expectedSaved: EXISTING_SPEC
+    },
+    {
+      flags: ['--force', 'false'],
+      expectedExitCode: 1,
+      expectedSaved: EXISTING_SPEC
+    },
+    { flags: [], expectedExitCode: 1, expectedSaved: EXISTING_SPEC }
+  ])(
+    '$flags exits with $expectedExitCode',
+    async ({ flags, expectedExitCode, expectedSaved }) => {
+      const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
+      try {
+        const input = join(dir, 'demo.raw.spec.ts')
+        const output = join(dir, 'demo.spec.ts')
+        writeFileSync(input, "await page.getByText('Queue').click();\n")
+        writeFileSync(output, EXISTING_SPEC)
+        vi.spyOn(process, 'exit').mockImplementation((code) => {
+          throw new Error(`exit:${code}`)
+        })
+        vi.mocked(console.log).mockImplementation(() => {})
 
-      await runCli('transform', input, '--output', output, ...flags)
+        await runCli('transform', input, '--output', output, ...flags)
 
-      const saved = readFileSync(output, 'utf-8')
-      if (replaced) {
-        expect(process.exitCode).toBeUndefined()
-        expect(saved).toContain("comfyPage.page.getByText('Queue').click()")
-      } else {
-        expect(process.exitCode).toBe(1)
-        expect(saved).toBe(EXISTING_SPEC)
+        expect(process.exitCode).toBe(expectedExitCode)
+        expect(readFileSync(output, 'utf-8')).toEqual(expectedSaved)
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
       }
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
     }
-  })
+  )
 })

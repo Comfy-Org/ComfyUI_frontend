@@ -4,9 +4,8 @@ export interface ParsedArgs {
 }
 
 /**
- * Only the named flags take a value, so a positional argument following a
- * flag that takes none is never swallowed. A separated `true` or `false` is
- * the exception: it is read as that flag's value.
+ * Named flags take a following value, as does any flag followed by a bare
+ * `true` or `false`; other flags never swallow the next argument.
  */
 export function parseFlags(
   args: string[],

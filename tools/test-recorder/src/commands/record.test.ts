@@ -1,10 +1,12 @@
 import type { AutocompleteOptions } from '@clack/prompts'
 import type { SpawnSyncReturns } from 'node:child_process'
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -154,14 +156,18 @@ const RECORDED_CODE =
   "await page.getByText('Queue').click();\n" +
   "await expect(page.getByText('Queue')).toBeVisible();\n"
 
-function seedExistingSpec(slug: string) {
+function seedMissingSpec(slug: string) {
   const root = mkdtempSync(join(tmpdir(), 'comfy-record-'))
   const testsDir = join(root, 'browser_tests', 'tests')
   mkdirSync(testsDir, { recursive: true })
-  const outputPath = join(testsDir, `${slug}.spec.ts`)
-  writeFileSync(outputPath, EXISTING_SPEC)
   findProjectRoot.mockReturnValue(root)
-  return { root, outputPath }
+  return { root, outputPath: join(testsDir, `${slug}.spec.ts`) }
+}
+
+function seedExistingSpec(slug: string) {
+  const seeded = seedMissingSpec(slug)
+  writeFileSync(seeded.outputPath, EXISTING_SPEC)
+  return seeded
 }
 
 function prefillFor(slug: string) {
@@ -181,32 +187,76 @@ const overwritePrompt = expect.objectContaining({
   message: expect.stringContaining('Overwrite it?')
 })
 
+const refactorOrPrPrompt = expect.objectContaining({
+  message: expect.stringMatching(/refactor|Pull Request/)
+})
+
+const overwriteQuestions = () =>
+  confirm.mock.calls.filter(([options]) =>
+    String(options?.message).includes('Overwrite it?')
+  )
+
+function answerOverwriteWith(answer: boolean | symbol) {
+  confirm.mockResolvedValue(true)
+  vi.when(confirm).calledWith(overwritePrompt).thenResolve(answer)
+  vi.when(confirm).calledWith(refactorOrPrPrompt).thenResolve(false)
+}
+
 describe('runRecord overwrite guard', () => {
   it.for([
-    {
-      outcome: 'declined',
-      answer: false,
-      exitCode: 1,
-      kept: true
-    },
+    { outcome: 'declined', answer: false, expectedExitCode: 1 },
     {
       outcome: 'cancelled',
       answer: Symbol('clack:cancel'),
-      exitCode: 0,
-      kept: true
-    },
-    { outcome: 'accepted', answer: true, exitCode: undefined, kept: false },
-    {
-      outcome: 'skipped by --force',
-      answer: false,
-      exitCode: undefined,
-      kept: false,
-      force: true
+      expectedExitCode: 0
     }
   ])(
-    'honours an overwrite prompt that is $outcome',
-    async ({ outcome, answer, exitCode, kept, force }) => {
-      vi.clearAllMocks()
+    'keeps the existing spec when the overwrite prompt is $outcome',
+    async ({ outcome, answer, expectedExitCode }) => {
+      Object.defineProperty(process.stdin, 'isTTY', {
+        configurable: true,
+        value: true
+      })
+      const slug = `${outcome}-overwrite`
+      const { root, outputPath } = seedExistingSpec(slug)
+      try {
+        runRecording.mockResolvedValue({
+          success: true,
+          recordedCode: RECORDED_CODE
+        })
+        answerOverwriteWith(answer)
+        vi.spyOn(process, 'exit').mockImplementation((code) => {
+          throw new Error(`exit:${code}`)
+        })
+
+        await expect(runRecord(prefillFor(slug))).rejects.toThrow(
+          `exit:${expectedExitCode}`
+        )
+
+        expect(confirm).toHaveBeenCalledWith(overwritePrompt)
+        expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
+      } finally {
+        rmSync(root, { recursive: true, force: true })
+      }
+    }
+  )
+
+  it.for([
+    {
+      outcome: 'accepted at the prompt',
+      force: undefined,
+      answer: true,
+      expectedOverwriteQuestions: 1
+    },
+    {
+      outcome: 'skipped by --force',
+      force: true,
+      answer: false,
+      expectedOverwriteQuestions: 0
+    }
+  ])(
+    'replaces the existing spec when overwrite is $outcome',
+    async ({ outcome, force, answer, expectedOverwriteQuestions }) => {
       Object.defineProperty(process.stdin, 'isTTY', {
         configurable: true,
         value: true
@@ -218,38 +268,85 @@ describe('runRecord overwrite guard', () => {
           success: true,
           recordedCode: RECORDED_CODE
         })
-        confirm.mockImplementation(async ({ message }: { message: string }) =>
-          message.includes('Overwrite it?')
-            ? answer
-            : !/refactor|Pull Request/.test(message)
-        )
-        const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+        answerOverwriteWith(answer)
+        vi.spyOn(process, 'exit').mockImplementation((code) => {
           throw new Error(`exit:${code}`)
         })
 
-        const run = runRecord({ ...prefillFor(slug), force })
-        if (exitCode === undefined) await run
-        else await expect(run).rejects.toThrow(`exit:${exitCode}`)
+        await runRecord({ ...prefillFor(slug), force })
 
-        if (force) expect(confirm).not.toHaveBeenCalledWith(overwritePrompt)
-        else expect(confirm).toHaveBeenCalledWith(overwritePrompt)
-        const saved = readFileSync(outputPath, 'utf-8')
-        if (kept) {
-          expect(saved).toBe(EXISTING_SPEC)
-        } else {
-          expect(saved).toContain("comfyPage.page.getByText('Queue').click()")
-          expect(exit).not.toHaveBeenCalled()
-        }
+        expect(overwriteQuestions()).toHaveLength(expectedOverwriteQuestions)
+        expect(readFileSync(outputPath, 'utf-8')).toContain(
+          "comfyPage.page.getByText('Queue').click()"
+        )
       } finally {
         rmSync(root, { recursive: true, force: true })
       }
     }
   )
 
+  it('saves a recording to a destination that does not exist yet', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    const { root, outputPath } = seedMissingSpec('fresh-destination')
+    try {
+      runRecording.mockResolvedValue({
+        success: true,
+        recordedCode: RECORDED_CODE
+      })
+      answerOverwriteWith(false)
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`exit:${code}`)
+      })
+
+      await runRecord(prefillFor('fresh-destination'))
+
+      expect(overwriteQuestions()).toHaveLength(0)
+      expect(readFileSync(outputPath, 'utf-8')).toContain(
+        "comfyPage.page.getByText('Queue').click()"
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses a dangling symlink destination instead of writing through it', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    const { root, outputPath } = seedMissingSpec('dangling-destination')
+    const linkTarget = join(root, 'outside-the-tests-dir.spec.ts')
+    try {
+      symlinkSync(linkTarget, outputPath)
+      runRecording.mockResolvedValue({
+        success: true,
+        recordedCode: RECORDED_CODE
+      })
+      answerOverwriteWith(true)
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`exit:${code}`)
+      })
+
+      await expect(
+        runRecord(prefillFor('dangling-destination'))
+      ).rejects.toThrow('exit:1')
+
+      expect(existsSync(linkTarget)).toBe(false)
+      expect(fail).toHaveBeenCalledWith(
+        'Refusing to overwrite existing test',
+        expect.stringContaining(outputPath)
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('refuses without prompting when stdin closed at EOF during the paste', async () => {
-    vi.clearAllMocks()
     const { root, outputPath } = seedExistingSpec('eof-overwrite')
-    const realStdin = process.stdin
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
     try {
       runRecording.mockResolvedValue({ success: true, recordedCode: '' })
       confirm.mockImplementation(async () => true)
@@ -279,18 +376,14 @@ describe('runRecord overwrite guard', () => {
         expect.stringContaining('stdin is closed')
       )
     } finally {
-      Object.defineProperty(process, 'stdin', {
-        configurable: true,
-        value: realStdin
-      })
+      Object.defineProperty(process, 'stdin', stdinDescriptor)
       rmSync(root, { recursive: true, force: true })
     }
   })
 
   it('replaces with --force after EOF without prompting for anything', async () => {
-    vi.clearAllMocks()
     const { root, outputPath } = seedExistingSpec('eof-force')
-    const realStdin = process.stdin
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
     try {
       runRecording.mockResolvedValue({ success: true, recordedCode: '' })
       detectAgentClis.mockReturnValueOnce([
@@ -324,10 +417,7 @@ describe('runRecord overwrite guard', () => {
       expect(runAgentRefactor).not.toHaveBeenCalled()
       expect(exit).not.toHaveBeenCalled()
     } finally {
-      Object.defineProperty(process, 'stdin', {
-        configurable: true,
-        value: realStdin
-      })
+      Object.defineProperty(process, 'stdin', stdinDescriptor)
       rmSync(root, { recursive: true, force: true })
     }
   })
