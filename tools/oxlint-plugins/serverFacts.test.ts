@@ -167,9 +167,48 @@ const a = capabilities.value ? capabilities.value.can_top_up : false
 const b = !capabilities.value ? false : capabilities.value.can_top_up
 const c = capabilities.value?.can_top_up ?? false
 `
+    },
+    {
+      name: 'capability members of a facts parameter combined inside pendingServerFact',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return pendingServerFact('BE-1', facts.canManageAutoTopUp && facts.canTopUp)
+}
+`
+    },
+    {
+      name: 'one capability member of a facts parameter narrowed by local and non-capability fields',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  const a = facts.canTopUp && !facts.isLoading
+  const b = facts.autoTopUpEnabled && facts.hasSeats
+  const c = facts.canTopUp && options.canTopUp
+}
+`
+    },
+    {
+      name: 'capability-named members of a local options object combined',
+      code: `
+function close(options: DialogOptions) {
+  return options.canTopUp && options.canClose
+}
+`
     }
   ],
   invalid: [
+    {
+      name: 'two capability members of a facts parameter combined',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  if (facts.canManageAutoTopUp && facts.canTopUp) return 'card'
+  return !facts.value.canTopUp || !facts.value.canManageAutoTopUp
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } }
+      ]
+    },
     {
       name: '#15675 capability chosen by isCloud with a role fallback',
       code: `

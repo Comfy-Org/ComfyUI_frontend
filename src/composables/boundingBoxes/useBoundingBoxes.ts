@@ -64,6 +64,7 @@ interface UseBoundingBoxesOptions {
   modelValue: Ref<BoundingBox[]>
   widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
   alwaysShowActive?: boolean
+  maxBoxes?: number
 }
 
 export function useBoundingBoxes(
@@ -73,7 +74,8 @@ export function useBoundingBoxes(
     inlineEditorEl,
     modelValue,
     widget,
-    alwaysShowActive = false
+    alwaysShowActive = false,
+    maxBoxes
   }: UseBoundingBoxesOptions
 ) {
   const focused = ref(false)
@@ -83,6 +85,7 @@ export function useBoundingBoxes(
   const boxAtStart = ref<Region | null>(null)
   const hoverIndex = ref<number | null>(null)
   const hoverTagIndex = ref<number | null>(null)
+  const pointerOverBox = ref(false)
   const bgImage = ref<HTMLImageElement | null>(null)
   const inlineEditor = ref<InlineEditorState | null>(null)
   const grid = ref(true)
@@ -104,13 +107,14 @@ export function useBoundingBoxes(
   const widthValue = computed(() => dimWidget('width') ?? 1024)
   const heightValue = computed(() => dimWidget('height') ?? 1024)
 
-  const state = ref({
-    regions: fromBoundingBoxes(
-      modelValue.value,
-      widthValue.value,
-      heightValue.value
+  function regionsWithinLimit(boxes: readonly unknown[]) {
+    return fromBoundingBoxes(boxes, widthValue.value, heightValue.value).slice(
+      0,
+      maxBoxes
     )
-  })
+  }
+
+  const state = ref({ regions: regionsWithinLimit(modelValue.value) })
   const activeIndex = ref(state.value.regions.length ? 0 : -1)
 
   const aspectRatio = computed(
@@ -446,6 +450,7 @@ export function useBoundingBoxes(
     hoverIndex.value = null
     const mN = pointerNorm(e)
     const hit = pickForSelection(mN, e.altKey)
+    if (!hit && atBoxLimit.value) return
     if (hit) {
       activeIndex.value = hit.index
       dragMode.value = hit.mode
@@ -511,6 +516,7 @@ export function useBoundingBoxes(
     const ti = titleAt(mN)
     const hit = hitTestPoint(mN)
     const hb = ti !== null ? ti : hit ? hit.index : null
+    pointerOverBox.value = pickForSelection(mN, false) !== null
     if (ti !== hoverTagIndex.value || hb !== hoverIndex.value) {
       hoverTagIndex.value = ti
       hoverIndex.value = hb
@@ -526,9 +532,15 @@ export function useBoundingBoxes(
     }
   }
 
-  const canvasCursor = computed(() =>
-    hoverTagIndex.value !== null ? 'pointer' : 'crosshair'
+  const atBoxLimit = computed(
+    () => maxBoxes !== undefined && state.value.regions.length >= maxBoxes
   )
+
+  const canvasCursor = computed(() => {
+    if (hoverTagIndex.value !== null) return 'pointer'
+    if (atBoxLimit.value && !pointerOverBox.value) return 'not-allowed'
+    return 'crosshair'
+  })
 
   function onDoubleClick(e: MouseEvent) {
     e.preventDefault()
@@ -681,9 +693,9 @@ export function useBoundingBoxes(
       heightValue.value
     )
     if (isEqual(boxes, current)) return
-    replaceRegions(
-      fromBoundingBoxes(boxes, widthValue.value, heightValue.value)
-    )
+    const regions = regionsWithinLimit(boxes)
+    replaceRegions(regions)
+    if (regions.length < boxes.length) syncState()
     syncBaseline()
     requestDraw()
   }
@@ -826,16 +838,13 @@ export function useBoundingBoxes(
         setLastIncoming(incoming)
       return
     }
-    state.value.regions = fromBoundingBoxes(
-      incoming,
-      widthValue.value,
-      heightValue.value
-    )
+    state.value.regions = regionsWithinLimit(incoming)
     activeIndex.value = state.value.regions.length ? 0 : -1
     setLastIncoming(incoming)
     commitEdit()
   }
 
+  if (state.value.regions.length < modelValue.value.length) syncState()
   applyIncomingBoxes(incomingBoxes.value, false)
   watch(incomingBoxes, (incoming) => {
     if (backgroundLoading.value) incomingPending.value = true

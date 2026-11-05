@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { EssentialTile } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'

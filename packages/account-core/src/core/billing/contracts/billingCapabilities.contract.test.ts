@@ -25,6 +25,8 @@ function capabilities(): Capabilities {
     can_edit_workspace: true,
     can_invite_members: true,
     can_manage_auto_top_up: true,
+    can_view_auto_top_up: true,
+    can_view_auto_top_up_member_notice: false,
     can_manage_members: true,
     can_manage_subscription: true,
     can_open_plans: true,
@@ -64,9 +66,11 @@ function capabilitiesBody(
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
+  | 'billing_notice_audience'
   | 'capabilities'
   | 'denied_reason_params'
   | 'denied_reasons'
+  | 'ending_notice_starts_at'
   | 'expires_at'
   | 'has_parked_billing_operation'
   | 'payment_recovery_available'
@@ -97,12 +101,14 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_subscribe_self_serve: boolean
   can_top_up: boolean
   can_upgrade: boolean
+  can_view_auto_top_up: boolean
+  can_view_auto_top_up_member_notice: boolean
   can_view_own_usage?: boolean | undefined
   can_view_pending_invites: boolean
   can_view_team_usage: boolean
 }>()
 expectTypeOf<ServerDenialReason>().toEqualTypeOf<
-  Exclude<CapabilityDenialReason, 'unspecified'> | 'topup_purchases_paused'
+  Exclude<CapabilityDenialReason, 'unspecified'>
 >()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string

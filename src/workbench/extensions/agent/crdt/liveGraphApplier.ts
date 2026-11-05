@@ -22,21 +22,33 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
+  ISerialisedGroup,
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { ComfyInputsSpec } from '@comfyorg/object-info-parser'
+import {
+  zDynamicComboOption,
+  zDynamicComboSpecV2
+} from '@comfyorg/object-info-parser'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
@@ -78,8 +90,8 @@ export interface FrameChanges {
 
   interiorDefinitions?: ReadonlySet<string>
 
-  /** Root group ids the document's `meta.groups` held and no longer does. */
-  removedGroups?: ReadonlySet<string>
+  /** Root group ids that `meta.groups` gained or lost. */
+  groups?: ReadonlySet<string>
 }
 
 export interface RemoteApplyContext {
@@ -219,6 +231,19 @@ const zDocNodeFields = zComfyNode
     properties: z.record(z.string(), zNodeProperty.optional()).optional(),
     [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
+
+const zDocGroup = zGroup.extend({ id: z.number() })
+
+/** The `meta.groups` records that configure a canvas group, keyed by id. */
+export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
+  const parsed = new Map<string, ISerialisedGroup>()
+  if (!Array.isArray(groups)) return parsed
+  for (const record of groups) {
+    const group = zDocGroup.safeParse(structuredClone(record))
+    if (group.success) parsed.set(String(group.data.id), group.data)
+  }
+  return parsed
+}
 
 /**
  * Only the actor's kind is reported: the segments after it in
@@ -604,11 +629,198 @@ function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
   )
 }
 
+const MAX_OPTION_NESTING = 8
+
+const VARIABLE_LENGTH_CONTROL_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+interface OptionGate {
+  readonly selector: string
+  readonly optionKey: string
+}
+
+interface OptionOwnedBranch {
+  readonly prefix: string
+  readonly gates: readonly OptionGate[]
+}
+
+interface OptionSelector {
+  readonly name: string
+  readonly widestOptionWidgetCount: number
+}
+
+interface OptionLayout {
+  readonly branches: readonly OptionOwnedBranch[]
+  readonly selectors: readonly OptionSelector[]
+}
+
+const NO_OPTION_LAYOUT: OptionLayout = { branches: [], selectors: [] }
+
+const optionLayouts = new WeakMap<object, OptionLayout>()
+
+function optionLayout(node: LGraphNode): OptionLayout {
+  const { nodeData } = node.constructor
+  if (!nodeData) return NO_OPTION_LAYOUT
+  const cached = optionLayouts.get(nodeData)
+  if (cached) return cached
+
+  const branches: OptionOwnedBranch[] = []
+  const selectors: OptionSelector[] = []
+  for (const [name, spec] of Object.entries(nodeData.inputs)) {
+    const combo = zDynamicComboSpecV2.safeParse(spec)
+    if (!combo.success) continue
+    selectors.push({
+      name,
+      widestOptionWidgetCount: widestOptionWidgetCount(combo.data, 0)
+    })
+    collectOptionOwnedBranches(name, combo.data, [], branches, 0)
+  }
+  const layout: OptionLayout = { branches, selectors }
+  optionLayouts.set(nodeData, layout)
+  return layout
+}
+
+function comboOptions(combo: {
+  options: readonly unknown[]
+}): { key: string; inputs: ComfyInputsSpec }[] {
+  return combo.options.flatMap((candidate) => {
+    const option = zDynamicComboOption.safeParse(candidate)
+    return option.success ? [option.data] : []
+  })
+}
+
+function optionChildSpecs(option: {
+  inputs: ComfyInputsSpec
+}): [string, InputSpecV2][] {
+  const { required, optional } = option.inputs
+  return Object.entries({ ...required, ...optional }).map(([key, child]) => [
+    key,
+    transformInputSpecV1ToV2(child, { name: key })
+  ])
+}
+
+function collectOptionOwnedBranches(
+  selector: string,
+  combo: { options: readonly unknown[] },
+  gates: readonly OptionGate[],
+  branches: OptionOwnedBranch[],
+  depth: number
+): void {
+  if (depth >= MAX_OPTION_NESTING) return
+  for (const option of comboOptions(combo)) {
+    const optionGates = [...gates, { selector, optionKey: option.key }]
+    for (const [key, spec] of optionChildSpecs(option)) {
+      const prefix = `${selector}.${key}`
+      branches.push({ prefix, gates: optionGates })
+      const nested = zDynamicComboSpecV2.safeParse(spec)
+      if (nested.success)
+        collectOptionOwnedBranches(
+          prefix,
+          nested.data,
+          optionGates,
+          branches,
+          depth + 1
+        )
+    }
+  }
+}
+
+function widestOptionWidgetCount(
+  combo: { options: readonly unknown[] },
+  depth: number
+): number {
+  if (depth >= MAX_OPTION_NESTING) return Number.POSITIVE_INFINITY
+  let widest = 0
+  for (const option of comboOptions(combo)) {
+    let width = 0
+    for (const [, spec] of optionChildSpecs(option)) {
+      const nested = zDynamicComboSpecV2.safeParse(spec)
+      if (nested.success)
+        width += 1 + widestOptionWidgetCount(nested.data, depth + 1)
+      else if (VARIABLE_LENGTH_CONTROL_TYPES.has(spec.type))
+        return Number.POSITIVE_INFINITY
+      else width += 1
+    }
+    widest = Math.max(widest, width)
+  }
+  return widest
+}
+
 const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
 
 function overflowWidgetIndex(name: string): number | null {
   const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
   return match ? Number(match[1]) : null
+}
+
+type OptionOwnership = 'selectedOption' | 'unselectedOption' | 'noOption'
+
+const OWNERSHIP_PRECEDENCE: Record<OptionOwnership, number> = {
+  noOption: 0,
+  unselectedOption: 1,
+  selectedOption: 2
+}
+
+function liveSelectedOptionKey(
+  node: LGraphNode,
+  selector: string
+): string | undefined {
+  const value = node.widgets?.find(({ name }) => name === selector)?.value
+  return typeof value === 'string' ? value : undefined
+}
+
+function branchOwnership(
+  node: LGraphNode,
+  branch: OptionOwnedBranch
+): OptionOwnership {
+  for (const { selector, optionKey } of branch.gates) {
+    const selected = liveSelectedOptionKey(node, selector)
+    if (selected === undefined) return 'noOption'
+    if (selected !== optionKey) return 'unselectedOption'
+  }
+  return 'selectedOption'
+}
+
+function optionOwnership(node: LGraphNode, name: string): OptionOwnership {
+  let longestPrefix = -1
+  let ownership: OptionOwnership = 'noOption'
+  for (const branch of optionLayout(node).branches) {
+    if (name !== branch.prefix && !name.startsWith(`${branch.prefix}.`))
+      continue
+    const { length } = branch.prefix
+    if (length < longestPrefix) continue
+    const verdict = branchOwnership(node, branch)
+    if (length > longestPrefix) {
+      longestPrefix = length
+      ownership = verdict
+    } else if (OWNERSHIP_PRECEDENCE[verdict] > OWNERSHIP_PRECEDENCE[ownership])
+      ownership = verdict
+  }
+  return ownership
+}
+
+function widestSelectionWidgetCount(node: LGraphNode): number {
+  const widgets = serializableWidgets(node)
+  return optionLayout(node).selectors.reduce(
+    (total, { name, widestOptionWidgetCount: widest }) =>
+      total +
+      Math.max(
+        0,
+        widest -
+          widgets.filter(({ name: widget }) => widget.startsWith(`${name}.`))
+            .length
+      ),
+    widgets.length
+  )
+}
+
+function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
+  const index = overflowWidgetIndex(name)
+  return index === null
+    ? optionOwnership(node, name) === 'unselectedOption'
+    : index < widestSelectionWidgetCount(node)
 }
 
 function documentWidget(
@@ -745,8 +957,8 @@ function positionalWidgetValues(
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
-    return widgets.map(
-      (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
+    return widgets.map((value): WidgetValue =>
+      isWidgetValue(value) ? value : undefined
     )
   }
   return serializableWidgets(node).map((widget, index) => {
@@ -762,6 +974,13 @@ function positionalWidgetValues(
       ? value
       : widget.value
   })
+}
+
+function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
+  const group = new LGraphGroup()
+  group.configure(serialised)
+  graph.add(group)
+  return group
 }
 
 function missingNode(docNode: DocNode): LGraphNode {
@@ -846,8 +1065,6 @@ export class LiveGraphApplier {
           })
         }
 
-        this.deleteGroups(graph, changes.removedGroups, context)
-
         for (const [id, keys] of changes.resyncNodes) {
           if (touchedNodes.has(id)) continue
           this.try(context, () => this.syncFields(graph, doc, id, keys))
@@ -861,8 +1078,14 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
+        const createdGroups = this.applyGroups(
+          graph,
+          doc,
+          changes.groups,
+          context
+        )
         if (mode === 'merge')
-          this.placeBatch(graph, created, {
+          this.placeBatch(graph, created, createdGroups, {
             moveCollisions: context.liveAgentTurn === true
           })
         return {
@@ -891,6 +1114,13 @@ export class LiveGraphApplier {
     for (const id of graph.links.keys()) {
       if (docLinks.has(String(id))) continue
       this.try(context, () => graph.removeLink(id))
+    }
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
+    const absentGroups = graph.groups.filter(
+      (group) => !docGroups.has(String(group.id))
+    )
+    for (const group of absentGroups) {
+      this.try(context, () => graph.remove(group))
     }
   }
 
@@ -1011,17 +1241,24 @@ export class LiveGraphApplier {
     if (node) graph.remove(node)
   }
 
-  private deleteGroups(
+  private applyGroups(
     graph: LGraph,
+    doc: Y.Doc,
     ids: ReadonlySet<string> | undefined,
     context: RemoteApplyContext
-  ): void {
-    for (const id of ids ?? []) {
+  ): LGraphGroup[] {
+    if (!ids?.size) return []
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
+    const created: LGraphGroup[] = []
+    for (const id of ids) {
       this.try(context, () => {
-        const group = graph.groups.find((group) => String(group.id) === id)
-        if (group) graph.remove(group)
+        const live = graph.groups.find((group) => String(group.id) === id)
+        const docGroup = docGroups.get(id)
+        if (live && !docGroup) graph.remove(live)
+        else if (!live && docGroup) created.push(addGroup(graph, docGroup))
       })
     }
+    return created
   }
 
   private upsertNode(
@@ -1402,7 +1639,37 @@ export class LiveGraphApplier {
       }
       pending = unresolved
     }
+    if (!Array.isArray(documentWidgets))
+      this.checkNestedRowCounts(node, widgets, documentWidgets)
     this.unappliedRegrownRows.delete(node)
+  }
+
+  private checkNestedRowCounts(
+    node: LGraphNode,
+    widgets: Record<string, unknown>,
+    documentWidgets: Record<string, unknown>
+  ): void {
+    const applied = Object.entries(widgets)
+      .filter(([name, value]) =>
+        Object.is(documentWidget(node, name)?.value, value)
+      )
+      .map(([name]) => name)
+    for (const controller of nestedGroupControllers(
+      node,
+      Object.keys(widgets),
+      applied
+    )) {
+      const count = documentWidgets[controller.name]
+      if (count === undefined || reachesDynamicGroupRowCount(controller, count))
+        continue
+      reportRemoteDynamicGroupRowMismatch(
+        node,
+        count,
+        Number(controller.value),
+        { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        'remote_remount'
+      )
+    }
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
@@ -1457,6 +1724,7 @@ export class LiveGraphApplier {
   ): void {
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
+      if (selectionDependentAbsence(node, name)) continue
       if (reportMissing || overflowWidgetIndex(name) !== null)
         this.reportMissingWidget(node, name)
     }
@@ -1769,28 +2037,32 @@ export class LiveGraphApplier {
   private placeBatch(
     graph: LGraph,
     created: readonly NodeId[],
+    createdGroups: readonly LGraphGroup[],
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
-    if (created.length === 0) return
     const createdSet = new Set(created)
-    const rect = (node: LGraphNode): PlacementRect => ({
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
+    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
+      x: item.pos[0],
+      y: item.pos[1],
+      width: item.size[0],
+      height: item.size[1]
     })
-    const incoming = graph._nodes.filter((node) => createdSet.has(node.id))
+    const incoming = [
+      ...graph._nodes.filter((node) => createdSet.has(node.id)),
+      ...createdGroups
+    ]
     const offset = placementOffset({
-      existing: graph._nodes
-        .filter((node) => !createdSet.has(node.id))
-        .map(rect),
+      existing: [
+        ...graph._nodes.filter((node) => !createdSet.has(node.id)),
+        ...graph.groups.filter((group) => !createdGroups.includes(group))
+      ].map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect),
       moveCollisions
     })
     if (!offset) return
-    for (const node of incoming) {
-      node.pos = [node.pos[0] + offset.dx, node.pos[1] + offset.dy]
+    for (const item of incoming) {
+      item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
 }
@@ -1827,6 +2099,23 @@ function widgetEntryRank(node: LGraphNode, name: string): number {
   if (liveIndex !== -1) return liveIndex
   const index = overflowWidgetIndex(name)
   return index === null ? MOUNTED_LAST : live.length + index
+}
+
+function nestedGroupControllers(
+  node: LGraphNode,
+  written: readonly string[],
+  applied: readonly string[]
+): IBaseWidget[] {
+  const under = (name: string, parent: string) => name.startsWith(`${parent}.`)
+  return (node.widgets ?? []).filter(
+    (widget) =>
+      isDynamicGroupController(widget) &&
+      !written.includes(widget.name) &&
+      applied.some((name) => under(widget.name, name)) &&
+      !written.some(
+        (name) => !applied.includes(name) && under(widget.name, name)
+      )
+  )
 }
 
 function isWidgetEntry(

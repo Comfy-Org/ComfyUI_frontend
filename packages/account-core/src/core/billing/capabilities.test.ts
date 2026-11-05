@@ -54,6 +54,8 @@ const CAPABILITIES = {
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
@@ -543,9 +545,13 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it.for(['something_new', 'topup_purchases_paused'])(
-      'keeps the capability set usable for unrecognized reason %s',
-      async (reason) => {
+    it.for([
+      { reason: 'something_new', decoded: 'unspecified' },
+      { reason: 'reason_from_a_newer_server', decoded: 'unspecified' },
+      { reason: 'topup_purchases_paused', decoded: 'topup_purchases_paused' }
+    ])(
+      'keeps the capability set usable and decodes can_top_up reason $reason as $decoded',
+      async ({ reason, decoded }) => {
         const { scopeSource } = fakeSession()
         const { transport } = fakeTransport([
           httpOk(
@@ -560,12 +566,10 @@ describe('createCapabilitiesReader', () => {
           scopeSource
         }).read()
 
-        // The point of the lenient decode: a reason this client predates must
-        // not cost the caller the capability set that gates its UI.
         expect(result.status).toBe('ok')
         if (result.status !== 'ok') return
         expect(result.value.capabilities.can_top_up).toBe(true)
-        expect(result.value.denials.can_top_up).toBe('unspecified')
+        expect(result.value.denials.can_top_up).toBe(decoded)
       }
     )
 

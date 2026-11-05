@@ -57,6 +57,7 @@ function arrange(scenario: Scenario) {
     isPaused: computed(() => scenario.paused ?? false)
   })
   vi.mocked(useBillingAutoTopUpCard).mockReturnValue({
+    scope: computed(() => 'actor-a:workspace-a'),
     state: computed(() =>
       scenario.settings
         ? { kind: 'loaded', settings: fromPartial(scenario.settings) }

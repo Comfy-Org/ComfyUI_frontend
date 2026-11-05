@@ -47,9 +47,6 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -102,6 +99,7 @@ import {
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -151,14 +149,13 @@ import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
+} from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import {
-  agentSocketAuthParams,
-  ensureSignedIn,
-  hasAgentCredential
-} from './services/agent/agentAuth'
+import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -171,8 +168,11 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -195,7 +195,6 @@ import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -256,13 +255,17 @@ onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
-  getAuthParams: agentSocketAuthParams
-})
-
-const docTransport = createAgentDocFrameTransport(events)
-onBeforeUnmount(() => docTransport.destroy())
+const authStore = useAuthStore()
+const apiKeyAuthStore = useApiKeyAuthStore()
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
+  toSocketIdentity(
+    authStore.userId,
+    apiKeyAuthStore.currentUser?.id,
+    teamWorkspaceStore.activeWorkspaceId,
+    desktopHostUser.value?.workspaceId
+  )
+)
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
@@ -277,37 +280,7 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const authStore = useAuthStore()
-const apiKeyAuthStore = useApiKeyAuthStore()
-const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -1026,10 +999,21 @@ async function onWorkflowRestoredAndBound(
     isCurrent
   )
   if (committedWorkflowId === null || !isCurrent()) return ready
-  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
-  if (boundWorkflowId.value !== committedWorkflowId)
-    bindWorkflow(committedWorkflowId)
+  bindRestoredWorkflow(committedWorkflowId)
   return ready
+}
+
+function bindRestoredWorkflow(workflowId: string): void {
+  if (hasUnsyncedHumanOps(workflowId)) return
+  if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
+}
+
+function adoptFollowedWorkflow(
+  workflow: ComfyWorkflow,
+  workflowId: string
+): void {
+  adoptWorkflowTarget(workflow, workflowId)
+  bindRestoredWorkflow(workflowId)
 }
 
 function warnWorkflowUnavailable(): void {
@@ -1183,6 +1167,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  noteUnboundLocalIntent,
   retrySubscription,
   docInputNames,
   docWidgetValue,
@@ -1255,9 +1240,18 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
+function noteUnboundVisibleIntent(): void {
+  const visible = workflowStore.activeWorkflow
+  const workflowId = visible
+    ? bindingStore.workflowIdFor(visible.path)
+    : undefined
+  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  onUnboundLocalIntent: noteUnboundLocalIntent,
+  onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -1830,7 +1824,12 @@ function warnIncompleteHistory(reason: string, announce: boolean): void {
   )
 }
 
-const { refreshHistory } = useAgentChatHistoryRefresh({
+const hostFenceMessage = ref<string>()
+const hostFenced = computed(() => hostFenceMessage.value !== undefined)
+let startedRefreshes = 0
+let fencedAtRefresh = 0
+
+const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
@@ -1850,17 +1849,39 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         diagnostics
       )
     })
-    if (uiTreatment === 'error_overlay')
+    const loopbackOnly = isLoopbackOnlyRefusal(error)
+    if (loopbackOnly) {
+      hostFenceMessage.value = error.message
+      fencedAtRefresh = startedRefreshes
+    } else if (uiTreatment === 'error_overlay')
       surfaceAgentError(
         'agent_api_failed',
         error instanceof Error ? error.message : String(error)
       )
-    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable: isRetryableRequestFailure(error, false),
-      diagnostics
-    })
+    trackAgentError(
+      'thread_list_load_failed',
+      'pre_acceptance',
+      loopbackOnly ? 'inline_notice' : uiTreatment,
+      {
+        retryable: isRetryableRequestFailure(error, false),
+        diagnostics
+      }
+    )
   }
 })
+
+async function refreshHistory(
+  ...args: Parameters<typeof runHistoryRefresh>
+): ReturnType<typeof runHistoryRefresh> {
+  const refresh = ++startedRefreshes
+  const outcome = await runHistoryRefresh(...args)
+  if (
+    (outcome === 'complete' || outcome === 'incomplete') &&
+    refresh >= fencedAtRefresh
+  )
+    hostFenceMessage.value = undefined
+  return outcome
+}
 
 const provisionalTitle = ref<string>()
 
@@ -1899,7 +1920,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
-  adoptWorkflowTarget,
+  adoptWorkflowTarget: adoptFollowedWorkflow,
   adoptRestoredWorkflowTab
 })
 
@@ -2178,17 +2199,25 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
-function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' | 'history_delete'
+): void {
   retireFollow()
+  if (source === 'history_back') {
+    newChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
   provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  composerStore.setWorkflowReferences([])
-  composerStore.resetPromptHistory()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
+  composerStore.clearDraft()
   newChat(source)
-  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
-  else agentPanelStore.startFollowingVisibleWorkflow()
+  agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const fileInput = ref<HTMLInputElement>()
@@ -2221,6 +2250,10 @@ start({
     agentPanelStore.view.screen === 'chat' ||
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
+})
+watch(threadId, composerStore.trackDraftThread, {
+  immediate: true,
+  flush: 'sync'
 })
 
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
@@ -2386,6 +2419,7 @@ function clearAssetDrag(): void {
 }
 
 function onPanelDragEnter(event: DragEvent): void {
+  if (hostFenced.value) return
   if (!isAttachableDrag(event)) return
   assetDragDepth += 1
   assetDragActive.value = true
@@ -2466,6 +2500,11 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
+  if (hostFenced.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
@@ -2544,6 +2583,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :blocked="hostFenced"
       :sync-retry-available="
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
@@ -2570,7 +2610,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
       @retry-sync="retrySubscription"
-      @new-chat="onNewChat('new_chat_button')"
+      @new-chat="onNewChat"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
@@ -2580,6 +2620,13 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
+      <template #panelNotice>
+        <AgentHostFenceNotice
+          v-if="hostFenceMessage"
+          :message="hostFenceMessage"
+          class="mx-4 mt-3"
+        />
+      </template>
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>

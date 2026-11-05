@@ -373,7 +373,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/litegraph/src/subgraph/Subgraph.ts": {
@@ -569,11 +569,6 @@
   "src/platform/billing/subscription/components/CreditsTile.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
     }
   },
   "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
@@ -1094,7 +1089,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 37
+      "count": 35
     }
   },
   "src/types/slotId.test.ts": {
