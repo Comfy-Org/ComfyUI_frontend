@@ -3029,6 +3029,7 @@
     "time": "Time",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
+    "lessThanOne": "<1",
     "model": "Model",
     "api": "API",
     "added": "Added",

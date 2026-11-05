@@ -5,6 +5,7 @@ import { UsageLogsTable } from '@e2e/fixtures/components/UsageLogsTable'
 import {
   AGENT_USAGE_CUSTOMER_EVENTS,
   AGENT_USAGE_EVENT_TYPE,
+  API_USAGE_EVENT_TYPE,
   PARTNER_NODE_USAGE_EVENT_TYPE
 } from '@e2e/fixtures/data/customerEvents'
 import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
@@ -32,6 +33,18 @@ test.describe(
       await expect(tooltip.open).toContainText('Output Tokens: 1,536')
       await expect(tooltip.surface(tooltip.open)).toHaveScreenshot(
         'activity-charge-tooltip-credits.png'
+      )
+    })
+
+    test('shows a charge under one credit as <1', async ({ comfyPage }) => {
+      const table = new UsageLogsTable(comfyPage.settingDialog)
+      const tooltip = new Tooltip(comfyPage.page)
+
+      await table.additionalInfoButton(API_USAGE_EVENT_TYPE).hover()
+
+      await expect(tooltip.open).toContainText('Charge: <1 Credits')
+      await expect(tooltip.surface(tooltip.open)).toHaveScreenshot(
+        'activity-charge-tooltip-sub-credit.png'
       )
     })
 
