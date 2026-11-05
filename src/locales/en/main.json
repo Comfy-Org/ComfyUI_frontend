@@ -3674,6 +3674,16 @@
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
         "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
+        "memberStatus": {
+          "on": "Tops up to {target} credits when below {threshold} credits. Contact a workspace owner to manage this.",
+          "limitReached": "Monthly limit reached. Resets {date}. Contact a workspace owner to manage this.",
+          "limitReachedNoDate": "Monthly limit reached. Contact a workspace owner to manage this.",
+          "maximumReached": "Monthly maximum reached. Resets {date}. Contact a workspace owner to manage this.",
+          "maximumReachedNoDate": "Monthly maximum reached. Contact a workspace owner to manage this.",
+          "failed": "The last top-up didn't go through. Contact a workspace owner to manage this.",
+          "turnedOff": "Turned off after 3 declined charges. Contact a workspace owner to manage this.",
+          "onHold": "Needs a default payment method. Contact a workspace owner to manage this."
+        },
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
