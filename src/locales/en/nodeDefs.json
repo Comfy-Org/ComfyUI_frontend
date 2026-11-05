@@ -18754,7 +18754,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-6 Sol/Luna and GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
+        "tooltip": "Supported levels vary by model. An unsupported level stops the run and lists the valid ones. 'default' lets the model choose."
       }
     },
     "outputs": {
@@ -19608,6 +19608,43 @@
       }
     }
   },
+  "PH3ImageConditioning": {
+    "display_name": "p-h3-image Conditioning",
+    "description": "Text-to-image, or with images an edit of image_1 with the others as references. The prompt refers to them as <Picture 1>, <Picture 2>, ... The model needs ModelSamplingMiniMaxH3 at 1.0/1.0.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "With images a short instruction gets \"Edit <Picture 1>. \" in front; an instruction that starts with \"Edit <Picture\" and an edit brief from the prompt upsampler are used as they are."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "0 uses the width of image_1 after scaling, or 2912 without images."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "0 uses the height of image_1 after scaling, or 2912 without images."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "The p-h3-image VAE, needed when images are connected."
+      },
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PhotoMakerEncode": {
     "display_name": "PhotoMaker Encode",
     "inputs": {
@@ -19661,6 +19698,183 @@
       "degrade_sigma": {
         "name": "degrade_sigma",
         "tooltip": "0 = clean latent. Increase to denoise corrupted latent outputs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "display_name": "Pika H3 Flex Reference to Video",
+    "description": "Pika H3 Flex, Pika's post-trained MiniMax H3. Generate or edit video with synchronized audio guided by reference images, videos and audio.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Refer to references as @Image1, @Video1, @Audio1, or as <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "The sound of connected videos is copied to the output. Turn this off for new ambience or motion transfer with new music. A talking head with no dialogue in the prompt then gets invented speech."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p and above render at 768p and upscale once. The same seed at 480p gives a different video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto follows a reference video, otherwise the prompt. Reference images do not affect it."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The output length follows a frame grid: 5 seconds gives 124 frames, about 5.17 seconds."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Let Pika expand the prompt first. The same seed then gives a different video on each run."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "With rewrite_prompt off, the same seed repeats the video exactly. A local run with the same seed gives a different result."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 9 images, referred to in the prompt as @Image1..@Image9 in connection order. At least one image or video is required."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Up to 3 videos, referred to in the prompt as @Video1..@Video3 in connection order. 2-15 seconds each, 15 seconds in total. Billed per second."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Up to 3 clips, referred to in the prompt as @Audio1..@Audio3. 2-15 seconds each, 15 seconds in total. When copied to the output, clips play in connection order, ahead of the sound of connected videos, whichever number the prompt names."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "display_name": "Pika H3 Flex Video",
+    "description": "Pika H3 Flex, Pika's post-trained MiniMax H3. Generate video with synchronized audio from text and optional first and last frames.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p and above render at 768p and upscale once. The same seed at 480p gives a different video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto follows the first connected frame, otherwise the prompt."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The output length follows a frame grid: 5 seconds gives 124 frames, about 5.17 seconds."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Let Pika expand the prompt first. The same seed then gives a different video on each run."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "With rewrite_prompt off, the same seed repeats the video exactly. A local run with the same seed gives a different result."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "display_name": "Pika Music",
+    "description": "Generate music from a text description and optional lyrics, or cover a song, with Pika.",
+    "inputs": {
+      "mode": {
+        "name": "mode"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_duration": {
+        "name": "duration"
+      },
+      "mode_lyrics": {
+        "name": "lyrics"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "display_name": "Pika SFX",
+    "description": "Generate a sound effect from a text description with Pika.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "display_name": "Pika Soundtrack",
+    "description": "Generate a synchronized soundtrack for a video with Pika. The picture and length are kept; only the audio is replaced.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Up to 10 minutes."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "What the audio should be: sound effects, ambience, music or style. Leave empty to derive it from the picture."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -24852,6 +25066,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "display_name": "Sonilo Music 1.5",
+    "description": "Generate a song with sung vocals from a text prompt using Sonilo Music 1.5.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe the song: genre, mood, instruments and vocals. To set the words, add a 'Lyrics:' block with [Verse] / [Chorus] tags; without one, the model writes its own lyrics. Maximum: 2000 characters."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "'auto' fits the song length to the lyrics. A custom length cuts lyrics that do not fit and repeats short ones."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "display_name": "Sonilo Text to Music",
     "description": "Generate music from a text prompt using Sonilo's AI model.",
@@ -25813,6 +26053,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "display_name": "Tencent HY",
+    "description": "Generate text responses with Tencent's Hy4 model. Provide a text prompt and optionally one or more images for context.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "reasoning"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
@@ -26421,7 +26696,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "Generate Text",
+    "display_name": "Generate Text (DEPRECATED)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -26518,6 +26793,79 @@
       },
       "audio": {
         "name": "audio"
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use the built in system prompt/template if the model has one."
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Speculative decoding with the checkpoint's multi-token-prediction head. No effect without MTP weights. auto adapts the draft depth and breadth to observed token matches and execution cost; 2-5 pins a constant draft depth; tree modes pin both breadth and depth. Sampled output stays correctly distributed but differs from non-MTP output for the same seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Replaces the system prompt in the model's chat template. Ignored when the default template is not used."
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Generate Text",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "images": {
+        "name": "images"
+      },
+      "videos": {
+        "name": "videos"
+      },
+      "audios": {
+        "name": "audios"
       },
       "thinking": {
         "name": "thinking",
@@ -26729,7 +27077,7 @@
   },
   "TopazImageEnhanceV2": {
     "display_name": "Topaz Image Enhance",
-    "description": "Industry-standard upscaling and image enhancement.",
+    "description": "Industry-standard upscaling and image enhancement. Maximum output: 179 megapixels.",
     "inputs": {
       "image": {
         "name": "image"
@@ -26739,11 +27087,11 @@
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 and Wonder 4 support upscale factors from 1x to 6x, Bloom 2 from 1x to 12x. Bloom 2, Wonder 3.5 and Wonder 4 always keep the input aspect ratio: if both sizes are set and their ratio differs, the larger scale wins and the output (and price) is bigger than the requested size."
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 and Wonder 4 support upscale factors from 1x to 6x, Bloom 2 from 1x to 12x. Bloom 2, Wonder 3.5 and Wonder 4 always keep the input aspect ratio: if both sizes are set and their ratio differs, the larger scale wins and the output (and price) is bigger than the requested size."
       },
       "model_color_preservation": {
         "name": "color_preservation"

@@ -18750,7 +18750,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前进行多少推理。'default' 将选择权交给模型。各模型支持的级别不同：GPT-6 Astra 为 low-max，GPT-6 Sol/Luna 和 GPT-5.6 为 none-max（不含 minimal），GPT-5.5 为 none-xhigh，GPT-5.5 Pro 为 medium-xhigh，GPT-5 为 minimal-high，o 系列为 low-high；GPT-4.1 不支持推理。请求发送前会拒绝不受支持的级别。"
+        "tooltip": "支持的级别因模型而异。不受支持的级别会停止运行并列出有效级别。“default”让模型自行选择。"
       },
       "truncation": {
         "name": "截断",
@@ -19010,6 +19010,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "文生图；使用图像时，则以 image_1 为基础、其他图像为参考进行编辑。提示词中将它们称为 <Picture 1>、<Picture 2>、……。模型需要将 ModelSamplingMiniMaxH3 设为 1.0/1.0。",
+    "display_name": "p-h3-image 条件化",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "0 表示使用缩放后 image_1 的高度；未使用图像时为 2912。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "使用图像时，简短指令前会添加“Edit <Picture 1>. ”；以“Edit <Picture”开头的指令，以及由提示词扩展器生成的编辑简介，均按原样使用。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "p-h3-image VAE，连接图像时需要使用。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "0 表示使用缩放后 image_1 的宽度；未使用图像时为 2912。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19698,183 @@
       },
       "positive": {
         "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex，Pika 后训练的 MiniMax H3。根据参考图像、视频和音频引导，生成或编辑具有同步音频的视频。",
+    "display_name": "Pika H3 Flex 参考转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "auto 会遵循参考视频，否则遵循提示词。参考图像不会影响它。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "输出时长遵循帧数网格：5 秒会生成 124 帧，约为 5.17 秒。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "在提示词中将参考内容称为 @Image1、@Video1、@Audio1，或 <Picture 1>、<Video 1>、<Audio 1>。"
+      },
+      "reference_audios": {
+        "name": "参考音频",
+        "tooltip": "最多 3 个音频片段，在提示词中称为 @Audio1..@Audio3。每个 2 至 15 秒，总计 15 秒。复制到输出时，无论提示词指定的是哪个编号，片段都会按连接顺序播放，并优先于已连接视频的声音。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 9 张图像，在提示词中按连接顺序称为 @Image1..@Image9。至少需要一张图像或一个视频。"
+      },
+      "reference_video_audio": {
+        "name": "参考视频音频",
+        "tooltip": "已连接视频的声音会复制到输出中。若要使用新的环境音，或使用新音乐进行动作迁移，请关闭此选项。此时，提示词中没有对白的说话头像会生成虚构语音。"
+      },
+      "reference_videos": {
+        "name": "参考视频",
+        "tooltip": "最多 3 个视频，在提示词中按连接顺序称为 @Video1..@Video3。每个 2 至 15 秒，总计 15 秒。按秒计费。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "1080p 及以上将以 768p 渲染后再放大一次。相同种子在 480p 下会生成不同的视频。"
+      },
+      "rewrite_prompt": {
+        "name": "重写提示词",
+        "tooltip": "先让 Pika 扩展提示词。此后每次运行使用相同种子都会生成不同的视频。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "关闭 rewrite_prompt 时，相同种子会完全复现视频。使用相同种子进行本地运行会得到不同结果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex，Pika 后训练的 MiniMax H3。根据文本以及可选的首帧和尾帧生成具有同步音频的视频。",
+    "display_name": "Pika H3 Flex 视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "自动会遵循第一个连接的帧，否则遵循提示词。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "输出长度遵循帧网格：5 秒会生成 124 帧，约为 5.17 秒。"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "last_frame": {
+        "name": "末帧"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "1080p 及以上将以 768p 渲染，然后放大一次。相同的 seed 在 480p 下会生成不同的视频。"
+      },
+      "rewrite_prompt": {
+        "name": "重写提示词",
+        "tooltip": "先让 Pika 扩展提示词。之后，相同的 seed 每次运行都会生成不同的视频。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "关闭 rewrite_prompt 时，相同的 seed 会完全复现视频。使用相同 seed 的本地运行会得到不同结果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "使用 Pika 根据文本描述和可选歌词生成音乐，或翻唱歌曲。",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "mode_duration": {
+        "name": "时长"
+      },
+      "mode_lyrics": {
+        "name": "歌词"
+      },
+      "mode_prompt": {
+        "name": "提示词"
+      },
+      "mode_rewrite_prompt": {
+        "name": "重写提示词"
+      },
+      "mode_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "使用 Pika 根据文本描述生成音效。",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "使用 Pika 为视频生成同步配乐。画面和时长将保持不变；仅替换音频。",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "instruction": {
+        "name": "说明",
+        "tooltip": "音频应包含的内容：音效、环境声、音乐或风格。留空则根据画面生成。"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "最长 10 分钟。"
       }
     },
     "outputs": {
@@ -24973,6 +25187,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "使用 Sonilo Music 1.5 根据文本提示词生成带演唱人声的歌曲。",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "“auto”会使歌曲长度适配歌词。自定义长度会截断不适合的歌词，并重复较短的歌词。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述歌曲：流派、氛围、乐器和人声。若要设置歌词，请添加一个带有 [Verse] / [Chorus] 标签的 'Lyrics:' 区块；否则，模型会自行编写歌词。最大值：2000 个字符。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "使用 Sonilo 的AI模型根据文本提示生成音乐。将时长设置为0可让模型根据提示自动推断时长。",
     "display_name": "Sonilo 文本生成音乐",
@@ -25813,6 +26053,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "使用腾讯的 Hy4 模型生成文本回复。提供文本提示词，并可选择提供一张或多张图像作为上下文。",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_max_tokens": {
+        "name": "最大令牌数"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning": {
+        "name": "推理"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_system_prompt": {
+        "name": "系统提示词"
+      },
+      "model_temperature": {
+        "name": "温度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {
@@ -26421,7 +26696,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "生成文本（已弃用）",
     "inputs": {
       "audio": {
         "name": "音频"
@@ -26560,6 +26835,79 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "生成文本",
+    "inputs": {
+      "audios": {
+        "name": "音频"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用检查点的多令牌预测头进行推测解码。没有 MTP 权重时无效。auto 会根据观察到的令牌匹配和执行成本调整草稿的深度与宽度；2-5 会固定草稿深度；树形模式会同时固定宽度和深度。采样输出仍保持正确的分布，但对于相同的种子，与非 MTP 输出不同。"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
+      "thinking": {
+        "name": "思考",
+        "tooltip": "如果模型支持，则以思考模式运行。"
+      },
+      "use_default_template": {
+        "name": "使用默认模板",
+        "tooltip": "如果模型提供内置系统提示词/模板，则使用它。"
+      },
+      "videos": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成的文本",
         "tooltip": null
       },
       "1": {
@@ -26728,7 +27076,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "业界标准的放大与图像增强。",
+    "description": "行业标准的图像放大与增强。最大输出：1.79亿像素。",
     "display_name": "Topaz 图像增强",
     "inputs": {
       "image": {
@@ -26766,11 +27114,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "为 0 时输出与原始高度相同，或按 output_width 比例缩放。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+        "tooltip": "值为零表示输出高度与原图相同，或者在指定 output_width 时按比例缩放。Wonder 3.5 和 Wonder 4 支持 1x 至 6x 的放大倍率，Bloom 2 支持 1x 至 12x。Bloom 2、Wonder 3.5 和 Wonder 4 始终保持输入宽高比：如果同时设置两个尺寸且其比例不同，则以较大的缩放倍率为准，输出尺寸（及价格）将大于请求的尺寸。"
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "为 0 时自动计算（通常为原始尺寸，或按 output_height 比例缩放）。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+        "tooltip": "值为零表示自动计算（通常将使用原始尺寸，或者在指定 output_height 时按比例缩放）。Wonder 3.5 和 Wonder 4 支持 1x 至 6x 的放大倍率，Bloom 2 支持 1x 至 12x。Bloom 2、Wonder 3.5 和 Wonder 4 始终保持输入宽高比：如果同时设置两个尺寸且其比例不同，则以较大的缩放倍率为准，输出尺寸（及价格）将大于请求的尺寸。"
       }
     },
     "outputs": {
