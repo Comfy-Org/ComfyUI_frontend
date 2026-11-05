@@ -89,7 +89,7 @@ describe('useSubscriptionPaymentRecovery', () => {
   })
 
   it('keeps the return refresh armed after the pricing dialog closes', async () => {
-    serveRecovery(true)
+    const context = serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
     const stopRefresh = vi.fn()
     vi.mocked(registerRefreshOnReturn).mockReturnValue(stopRefresh)
@@ -97,9 +97,13 @@ describe('useSubscriptionPaymentRecovery', () => {
 
     await scope.run(() => useSubscriptionPaymentRecovery())?.finishPayment()
     scope.stop()
+    const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
+    await refresh()
 
-    expect(registerRefreshOnReturn).toHaveBeenCalledOnce()
     expect(stopRefresh).not.toHaveBeenCalled()
+    expect(context.fetchPlans).toHaveBeenCalledOnce()
+    expect(context.fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('closes the tab and re-reads billing when the operation no longer has a payment page', async () => {
