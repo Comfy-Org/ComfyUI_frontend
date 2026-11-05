@@ -1,4 +1,5 @@
 import type { AutocompleteOptions } from '@clack/prompts'
+import { confirm } from '@clack/prompts'
 import type { SpawnSyncReturns } from 'node:child_process'
 import {
   existsSync,
@@ -14,27 +15,17 @@ import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { AgentCliAdapter } from '../checks/agentCli'
+import { runAgentRefactor } from '../agent/refactor'
+import { detectAgentClis } from '../checks/agentCli'
 import { resolveDistribution } from '../devserver/distributions'
 import type { EnvInfoResult } from '../devserver/envInfo'
+import { findProjectRoot, runRecording } from '../recorder/runner'
+import { fail } from '../ui/logger'
 import { USE_CASES } from '../useCases'
 import { WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import { runRecord } from './record'
 
-const {
-  autocomplete,
-  info,
-  path,
-  runChecks,
-  runCommand,
-  confirm,
-  fail,
-  findProjectRoot,
-  runRecording,
-  ensureDevServer,
-  detectAgentClis,
-  runAgentRefactor
-} = vi.hoisted(() => ({
+const { autocomplete, info, path, runChecks, runCommand } = vi.hoisted(() => ({
   autocomplete: async <Value>({ options }: AutocompleteOptions<Value>) => {
     const addWorkflow = Array.isArray(options)
       ? options.find((option) => option.value === '__add-workflow__')
@@ -54,25 +45,13 @@ const {
     stderr: Buffer.alloc(0),
     status: 0,
     signal: null
-  })),
-  confirm: vi.fn(),
-  fail: vi.fn(),
-  findProjectRoot: vi.fn(() => '/project'),
-  runRecording: vi.fn(),
-  detectAgentClis: vi.fn((): AgentCliAdapter[] => []),
-  runAgentRefactor: vi.fn(),
-  ensureDevServer: vi.fn(async () => ({
-    url: 'http://localhost:5173',
-    ownedByUs: true,
-    reused: false,
-    stop: vi.fn()
   }))
 }))
 
 vi.mock(import('@clack/prompts'), () => ({
   autocomplete,
   cancel: vi.fn(),
-  confirm,
+  confirm: vi.fn(),
   isCancel: (value: unknown): value is symbol => typeof value === 'symbol',
   multiselect: vi.fn(),
   path,
@@ -94,18 +73,29 @@ vi.mock(import('../devserver/envInfo'), () => ({
   fetchEnvInfo: vi.fn(async (): Promise<EnvInfoResult> => ({ ok: false }))
 }))
 vi.mock(import('../recorder/runner'), () => ({
-  findProjectRoot,
+  findProjectRoot: vi.fn(() => '/project'),
   listWorkflows: vi.fn(() => ['default']),
-  runRecording
+  runRecording: vi.fn()
 }))
-vi.mock(import('../devserver/manager'), () => ({ ensureDevServer }))
-vi.mock(import('../checks/agentCli'), () => ({ detectAgentClis }))
-vi.mock(import('../agent/refactor'), () => ({ runAgentRefactor }))
+vi.mock(import('../devserver/manager'), () => ({
+  ensureDevServer: vi.fn(async () => ({
+    url: 'http://localhost:5173',
+    ownedByUs: true,
+    reused: false,
+    stop: vi.fn()
+  }))
+}))
+vi.mock(import('../checks/agentCli'), () => ({
+  detectAgentClis: vi.fn(() => [])
+}))
+vi.mock(import('../agent/refactor'), () => ({
+  runAgentRefactor: vi.fn()
+}))
 vi.mock(import('../ui/logger'), () => ({
   alert: vi.fn(),
   blank: vi.fn(),
   box: vi.fn(),
-  fail,
+  fail: vi.fn(),
   info,
   pass: vi.fn(),
   warn: vi.fn()
@@ -160,7 +150,7 @@ function seedMissingSpec(slug: string) {
   const root = mkdtempSync(join(tmpdir(), 'comfy-record-'))
   const testsDir = join(root, 'browser_tests', 'tests')
   mkdirSync(testsDir, { recursive: true })
-  findProjectRoot.mockReturnValue(root)
+  vi.mocked(findProjectRoot).mockReturnValue(root)
   return { root, outputPath: join(testsDir, `${slug}.spec.ts`) }
 }
 
@@ -192,14 +182,14 @@ const refactorOrPrPrompt = expect.objectContaining({
 })
 
 const overwriteQuestions = () =>
-  confirm.mock.calls.filter(([options]) =>
-    String(options?.message).includes('Overwrite it?')
-  )
+  vi
+    .mocked(confirm)
+    .mock.calls.filter(([options]) => options.message.includes('Overwrite it?'))
 
 function answerOverwriteWith(answer: boolean | symbol) {
-  confirm.mockResolvedValue(true)
-  vi.when(confirm).calledWith(overwritePrompt).thenResolve(answer)
-  vi.when(confirm).calledWith(refactorOrPrPrompt).thenResolve(false)
+  vi.mocked(confirm).mockResolvedValue(true)
+  vi.when(vi.mocked(confirm)).calledWith(overwritePrompt).thenResolve(answer)
+  vi.when(vi.mocked(confirm)).calledWith(refactorOrPrPrompt).thenResolve(false)
 }
 
 describe('runRecord overwrite guard', () => {
@@ -220,7 +210,7 @@ describe('runRecord overwrite guard', () => {
       const slug = `${outcome}-overwrite`
       const { root, outputPath } = seedExistingSpec(slug)
       try {
-        runRecording.mockResolvedValue({
+        vi.mocked(runRecording).mockResolvedValue({
           success: true,
           recordedCode: RECORDED_CODE
         })
@@ -264,7 +254,7 @@ describe('runRecord overwrite guard', () => {
       const slug = `${outcome.replaceAll(' ', '-')}-overwrite`
       const { root, outputPath } = seedExistingSpec(slug)
       try {
-        runRecording.mockResolvedValue({
+        vi.mocked(runRecording).mockResolvedValue({
           success: true,
           recordedCode: RECORDED_CODE
         })
@@ -292,7 +282,7 @@ describe('runRecord overwrite guard', () => {
     })
     const { root, outputPath } = seedMissingSpec('fresh-destination')
     try {
-      runRecording.mockResolvedValue({
+      vi.mocked(runRecording).mockResolvedValue({
         success: true,
         recordedCode: RECORDED_CODE
       })
@@ -321,7 +311,7 @@ describe('runRecord overwrite guard', () => {
     const linkTarget = join(root, 'outside-the-tests-dir.spec.ts')
     try {
       symlinkSync(linkTarget, outputPath)
-      runRecording.mockResolvedValue({
+      vi.mocked(runRecording).mockResolvedValue({
         success: true,
         recordedCode: RECORDED_CODE
       })
@@ -348,8 +338,11 @@ describe('runRecord overwrite guard', () => {
     const { root, outputPath } = seedExistingSpec('eof-overwrite')
     const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
     try {
-      runRecording.mockResolvedValue({ success: true, recordedCode: '' })
-      confirm.mockImplementation(async () => true)
+      vi.mocked(runRecording).mockResolvedValue({
+        success: true,
+        recordedCode: ''
+      })
+      vi.mocked(confirm).mockImplementation(async () => true)
       const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
@@ -385,11 +378,14 @@ describe('runRecord overwrite guard', () => {
     const { root, outputPath } = seedExistingSpec('eof-force')
     const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
     try {
-      runRecording.mockResolvedValue({ success: true, recordedCode: '' })
-      detectAgentClis.mockReturnValueOnce([
+      vi.mocked(runRecording).mockResolvedValue({
+        success: true,
+        recordedCode: ''
+      })
+      vi.mocked(detectAgentClis).mockReturnValueOnce([
         { label: 'Claude Code', command: 'claude', buildArgs: () => [] }
       ])
-      confirm.mockImplementation(async () => true)
+      vi.mocked(confirm).mockImplementation(async () => true)
       const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
