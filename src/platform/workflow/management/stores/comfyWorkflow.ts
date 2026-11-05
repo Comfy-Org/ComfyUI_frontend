@@ -235,6 +235,25 @@ function draftMatchesSavedFile(
 }
 
 /**
+ * Stored workflow content is empty or not a JSON object, so it can never open.
+ * The message is static; the path is on `workflowPath`.
+ */
+export class UnreadableWorkflowError extends Error {
+  override readonly name = 'UnreadableWorkflowError'
+
+  constructor(
+    readonly reason: 'empty' | 'not-object',
+    readonly workflowPath: string
+  ) {
+    super(
+      reason === 'empty'
+        ? 'Workflow content is missing or empty'
+        : 'Workflow content is not a JSON object'
+    )
+  }
+}
+
+/**
  * The workflow object parsed from the stored text. Anything else (nothing
  * stored, empty text, JSON `null`, a number, an array) cannot back a change
  * tracker: a tracker around `null` is what later reads as a missing state.
@@ -247,16 +266,23 @@ function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   }
   // `undefined` means there was nothing to parse; anything else parsed to
   // something that is not a workflow.
-  if (parsed !== undefined) {
-    reportWorkflowStateAnomaly(
-      'Workflow content is not a JSON object',
-      'ComfyWorkflow.load',
-      workflow
-    )
-  }
-  throw new Error(
-    `Workflow content is ${parsed === undefined ? 'missing or empty' : 'not a JSON object'} for '${workflow.path}'`
+  const error = new UnreadableWorkflowError(
+    parsed === undefined ? 'empty' : 'not-object',
+    workflow.path
   )
+  reportUnreadableContent(error, workflow)
+  throw error
+}
+
+function reportUnreadableContent(
+  error: UnreadableWorkflowError,
+  workflow: ComfyWorkflow
+): void {
+  try {
+    reportWorkflowStateAnomaly(error.message, 'ComfyWorkflow.load', workflow)
+  } catch (devAssertion) {
+    console.warn('Unreadable stored workflow', devAssertion)
+  }
 }
 
 /** i18n keys for the dialog shown when a workflow is saved without a name. */
