@@ -61,10 +61,8 @@ describe('Greeting prefill focus and animation', () => {
 
     await view.rerender({ greeting: { variant: 'C', canvas: 'workflow' } })
     const editor = screen.getByRole('textbox')
-    await waitFor(() => {
-      expect(editor).toHaveTextContent('Help me improve this workflow')
-    })
-    expect(editor).toHaveFocus()
+    await waitFor(() => expect(editor).toHaveFocus())
+    expect(editor).toHaveTextContent('Help me improve this workflow')
   })
 
   it('preserves canvas focus when the first workflow triggers a prefill', async () => {
