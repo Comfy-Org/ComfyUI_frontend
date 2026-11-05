@@ -737,6 +737,50 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       group.pos[1] - inserted.pos[1]
     ]).toEqual([-20, -50])
   })
+  it('moves a new node whose title bar alone would cover an existing node', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    // The existing nodes' bodies end at y=120. This one starts 10px below that,
+    // so the bodies clear each other, but its title bar is drawn from y=100 and
+    // covers their bottom 20px. Placement has to see the rendered box.
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a66'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [10, 130],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    assert(inserted, 'the insertion reached the canvas')
+    // Cleared to the right of the existing pair and top-aligned to their
+    // rendered top, rather than left where only the bodies looked clear.
+    expect([...inserted.pos]).toEqual([680, 20])
+  })
   it('keeps a group clear of a new collapsed node it only overlaps unrendered', () => {
     LiteGraph.vueNodesMode = true
     onTestFinished(() => {
@@ -945,7 +989,10 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     const group = graph.groups.find(({ title }) => title === 'Inserted group')
     assert(group, 'the inserted group reached the canvas')
-    expect([...group.pos]).toEqual([680, 20])
+    // Cleared to the right of the two nodes (x), and top-aligned to what they
+    // actually occupy (y): their rendered top is `pos[1] - NODE_TITLE_HEIGHT`,
+    // i.e. 20 - 30, not their body top of 20.
+    expect([...group.pos]).toEqual([680, -10])
   })
   it('places a group-only insertion clear of the groups already on the canvas', () => {
     const graph = new LGraph()
