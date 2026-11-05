@@ -31,7 +31,7 @@ function rememberResolvedPacks(
 ) {
   for (const pack of nodes) {
     if (!pack.id) continue
-    if (!cache.has(pack.id)) resolvedPacks.push(pack)
+    if (pendingIds.has(pack.id)) resolvedPacks.push(pack)
     cache.set(pack.id, pack)
     pendingIds.delete(pack.id)
   }
