@@ -1765,6 +1765,54 @@ describe('useWorkflowStore', () => {
         expect(workflow.isLoaded).toBe(true)
         expect(failedAssertions()).toHaveLength(0)
       })
+
+      it.for([
+        '[object Object]',
+        'undefined',
+        '{"nodes":[],',
+        'Workflow content is not a JSON object'
+      ])('rejects stored content %j as unparseable', async (content) => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(content)
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('unparseable')
+        expect(workflow.isLoaded).toBe(false)
+        expect(workflow.changeTracker).toBeNull()
+      })
+
+      it('reports unparseable content with a static message and no content', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toThrow('not valid JSON')
+
+        expectReported('Workflow content is not valid JSON', {
+          method: 'ComfyWorkflow.load',
+          isPersisted: true,
+          originalContentKind: 'unparseable'
+        })
+        const reported = JSON.stringify(mockAssert.mock.calls)
+        expect(reported).not.toContain('secret-name')
+        expect(reported).not.toContain('[object Object]')
+      })
+
+      it('keeps the typed error when the anomaly assertion throws on unparseable content', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+      })
     })
 
     describe.for(['save', 'saveAs'] as const)('%s', (method) => {
