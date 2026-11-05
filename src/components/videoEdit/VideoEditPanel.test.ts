@@ -60,21 +60,28 @@ function stub(testId: string) {
   })
 }
 
-const SliderStub = defineComponent({
-  emits: ['update:modelValue'],
-  setup(_, { emit }) {
-    return () =>
-      h('button', {
-        'data-testid': 'stub-slider-seek',
-        onClick: () => emit('update:modelValue', [90])
-      })
-  }
-})
+function emitter(testId: string, event: string, payload?: unknown) {
+  return defineComponent({
+    emits: [event],
+    setup:
+      (_, { emit }) =>
+      () =>
+        h('button', {
+          'data-testid': testId,
+          onClick: () => emit(event, payload)
+        })
+  })
+}
 
 type PanelProps = ComponentProps<typeof VideoEditPanel>
 
-function renderPanel(props: Partial<PanelProps> = {}) {
+function renderPanel(
+  props: Partial<PanelProps> = {},
+  stubs: Record<string, ReturnType<typeof defineComponent>> = {},
+  slots: Record<string, () => ReturnType<typeof h>> = {}
+) {
   return render(VideoEditPanel, {
+    slots,
     props: {
       features: ['trim', 'crop'],
       videoUrl: '/api/view?filename=clip.mp4',
@@ -91,25 +98,69 @@ function renderPanel(props: Partial<PanelProps> = {}) {
     } as PanelProps,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         VideoFilmstripTrim: stub('stub-filmstrip'),
         VideoCropOverlay: stub('stub-crop-overlay'),
         WidgetInputNumberInput: stub('stub-number-input'),
         WidgetBoundingBox: stub('stub-bounding-box'),
         Loader: stub('stub-loader'),
-        Slider: SliderStub,
-        Select: stub('stub-select'),
-        SelectTrigger: stub('stub-select-trigger'),
-        SelectValue: stub('stub-select-value'),
-        SelectContent: stub('stub-select-content'),
-        SelectItem: stub('stub-select-item')
+        ...stubs
       }
     }
   })
 }
 
 describe('VideoEditPanel', () => {
+  it.for([
+    {
+      stub: 'VideoCropOverlay',
+      component: emitter('edit', 'editEnd'),
+      expected: []
+    },
+    {
+      stub: 'VideoFilmstripTrim',
+      component: emitter('edit', 'editEnd'),
+      expected: []
+    },
+    {
+      stub: 'WidgetBoundingBox',
+      component: emitter('edit', 'editEnd', 'width'),
+      expected: ['crop:width']
+    }
+  ])(
+    'forwards the end of a $stub edit as editEnd $expected',
+    async ({ stub, component, expected }) => {
+      const { emitted } = renderPanel({}, { [stub]: component })
+
+      await userEvent.click(screen.getByTestId('edit'))
+
+      expect(emitted('editEnd')).toEqual([expected])
+    }
+  )
+
+  it('reports trim frame inputs with a merge key per frame', async () => {
+    const { emitted } = renderPanel(
+      { features: ['trim'] },
+      { WidgetInputNumberInput: emitter('frame-input', 'update:modelValue', 5) }
+    )
+    const [start, end] = screen.getAllByTestId('frame-input')
+
+    await userEvent.click(start)
+    await userEvent.click(end)
+
+    expect(emitted('editEnd')).toEqual([['trim:start'], ['trim:end']])
+  })
+
+  it('renders the history slot in the playback controls', () => {
+    renderPanel(
+      {},
+      {},
+      { history: () => h('div', { 'data-testid': 'history' }) }
+    )
+
+    expect(screen.getByTestId('history')).toBeTruthy()
+  })
+
   it('shows an empty state without a video source', () => {
     renderPanel({ videoUrl: undefined, hasSource: false })
 
@@ -222,10 +273,13 @@ describe('VideoEditPanel', () => {
       features: ['trim'],
       startFrame: 30,
       endFrame: 60,
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(60)
     expect(updates).not.toContain(90)
@@ -235,10 +289,13 @@ describe('VideoEditPanel', () => {
     const updates: number[] = []
     renderPanel({
       features: ['crop'],
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(90)
   })

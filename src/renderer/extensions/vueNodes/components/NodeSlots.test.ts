@@ -4,12 +4,12 @@ import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,7 +23,7 @@ import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
   createMockNodeInputSlot,
@@ -194,7 +194,7 @@ function querySlotElements(
   container: Element,
   selector: string
 ): HTMLElement[] {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const nodes = container.querySelectorAll(selector)
   return Array.from(nodes).filter(
     (el): el is HTMLElement => el instanceof HTMLElement
@@ -206,7 +206,7 @@ function getRenderedSlotIndex(container: Element, slotName: string) {
 }
 
 function getRenderedSlotElement(container: Element, slotName: string) {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const el = container.querySelector(`[data-name="${slotName}"]`)
   if (!(el instanceof HTMLElement)) {
     throw new Error(`Slot element "${slotName}" not found`)
@@ -243,6 +243,36 @@ describe('NodeSlots.vue', () => {
     })
 
     renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
+  })
+
+  it('measures slot offsets again after the layout store clears the graph', async () => {
+    const pinia = getActivePinia()!
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+    renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    layoutStore.clearGraph(graph.rootGraph.id)
     await nextTick()
 
     expect(
@@ -354,7 +384,7 @@ describe('NodeSlots.vue', () => {
       }
     ])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 

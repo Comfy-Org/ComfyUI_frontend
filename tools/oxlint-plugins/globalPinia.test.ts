@@ -28,6 +28,10 @@ writeFileSync(
   `export { useExampleStore } from './store'`
 )
 writeFileSync(
+  path.join(directory, 'src/namespaceBarrel.ts'),
+  `export * as stores from './store'`
+)
+writeFileSync(
   path.join(directory, 'src/layoutStore.ts'),
   `export const layoutStore = new Map()`
 )
@@ -47,6 +51,28 @@ export function formatName() { return 'name' }`
 writeFileSync(
   path.join(directory, 'src/mixedExports.ts'),
   `export { type Store, defineStore } from 'pinia'`
+)
+const cachedStore = path.join(directory, 'src/cachedStore.ts')
+writeFileSync(
+  cachedStore,
+  `import { defineStore } from 'pinia'
+export const useCachedStore = defineStore('cached', () => ({}))`
+)
+writeFileSync(
+  path.join(directory, 'src/cachedBarrel.ts'),
+  `export * from './cachedStore'`
+)
+const deletedStore = path.join(directory, 'src/deletedStore.ts')
+writeFileSync(
+  deletedStore,
+  `import { defineStore } from 'pinia'
+export const useDeletedStore = defineStore('deleted', () => ({}))`
+)
+const createdStore = path.join(directory, 'src/createdStore.ts')
+const restoredStore = path.join(directory, 'src/restoredStore.ts')
+writeFileSync(
+  path.join(directory, 'src/restoredBarrel.ts'),
+  `export * from './restoredStore'`
 )
 afterAll(() => rmSync(directory, { recursive: true, force: true }))
 
@@ -120,6 +146,7 @@ vi.spyOn(stores, 'helper')`
     ),
     invalid(`vi.doMock('./namespaceStore', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./barrel', () => ({}))`, /Do not mock Pinia/),
+    invalid(`vi.mock('./namespaceBarrel', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./mixedExports', () => ({}))`, /Do not mock Pinia/),
     invalid(
       `import { vi as testDouble } from 'vitest'
@@ -155,44 +182,111 @@ vi.spyOn(pinia, 'defineStore')`,
   ]
 })
 
-it('enforces the rule through both repository lint configurations', () => {
+describe('failed module resolution freshness', { concurrent: false }, () => {
+  ruleTester.run('caches a failed module resolution', useGlobalPinia, {
+    valid: [{ filename, code: `vi.mock('./createdStore')` }],
+    invalid: []
+  })
+
+  it('creates the unresolved module', () => {
+    writeFileSync(
+      createdStore,
+      `import { defineStore } from 'pinia'
+export const useCreatedStore = defineStore('created', () => ({}))`
+    )
+  })
+
+  ruleTester.run('refreshes a failed module resolution', useGlobalPinia, {
+    valid: [],
+    invalid: [invalid(`vi.mock('./createdStore')`, /Do not mock Pinia/)]
+  })
+})
+
+describe(
+  'failed barrel dependency resolution freshness',
+  { concurrent: false },
+  () => {
+    ruleTester.run(
+      'caches a barrel with a missing dependency',
+      useGlobalPinia,
+      {
+        valid: [{ filename, code: `vi.mock('./restoredBarrel')` }],
+        invalid: []
+      }
+    )
+
+    it('restores the missing dependency', () => {
+      writeFileSync(
+        restoredStore,
+        `import { defineStore } from 'pinia'
+export const useRestoredStore = defineStore('restored', () => ({}))`
+      )
+    })
+
+    ruleTester.run('refreshes the unchanged barrel', useGlobalPinia, {
+      valid: [],
+      invalid: [invalid(`vi.mock('./restoredBarrel')`, /Do not mock Pinia/)]
+    })
+  }
+)
+
+describe('module cache freshness', { concurrent: false }, () => {
+  ruleTester.run('warms module caches', useGlobalPinia, {
+    valid: [],
+    invalid: [
+      invalid(`vi.mock('./cachedBarrel')`, /Do not mock Pinia/),
+      invalid(`vi.mock('./deletedStore')`, /Do not mock Pinia/)
+    ]
+  })
+
+  it('changes resolved modules', () => {
+    writeFileSync(cachedStore, `export function helper() {}`)
+    rmSync(deletedStore)
+  })
+
+  ruleTester.run('refreshes module caches', useGlobalPinia, {
+    valid: [
+      { filename, code: `vi.mock('./cachedBarrel')` },
+      { filename, code: `vi.mock('./deletedStore')` }
+    ],
+    invalid: []
+  })
+})
+
+it('enforces the rule through the repository lint configuration', () => {
   const code = `import { createPinia } from 'pinia'
 createPinia()
 vi.mock('pinia')`
-  const testPath = path.join(directory, 'src/example.test.ts')
+  const testPaths = [
+    path.join(directory, 'src/example.test.ts'),
+    path.join(directory, 'src/scripts/nested.test.ts')
+  ]
   const appPath = path.join(directory, 'src/example.ts')
-  const ignoredTestPath = path.join(directory, 'src/scripts/ignored.test.ts')
   const helperPaths = [
     path.join(directory, 'src/__test__/testUtils.ts'),
     path.join(directory, 'src/__tests__/helpers.ts'),
     path.join(directory, 'src/__fixtures__/fixture.ts')
   ]
-  for (const file of [testPath, appPath, ignoredTestPath, ...helperPaths]) {
+  for (const file of [...testPaths, appPath, ...helperPaths]) {
     mkdirSync(path.dirname(file), { recursive: true })
     writeFileSync(file, code)
   }
 
-  for (const [config, files] of [
-    ['.oxlintrc.json', [testPath, appPath, ...helperPaths]],
+  const result = spawnSync(
+    process.execPath,
     [
-      'tools/oxlint-plugins/vitestCleanup.config.json',
-      [ignoredTestPath, appPath, ...helperPaths]
-    ]
-  ] as const) {
-    const result = spawnSync(
-      process.execPath,
-      [
-        path.resolve('node_modules/oxlint/bin/oxlint'),
-        '--format=json',
-        '--config',
-        path.resolve(config),
-        ...files
-      ],
-      { encoding: 'utf8', windowsHide: true }
-    )
-    expect(result.error).toBeUndefined()
-    expect(result.status).toBe(1)
-    expect(result.stdout.match(/comfy\(use-global-pinia\)/g)).toHaveLength(8)
-    expect(result.stdout).not.toContain('"filename": "src/example.ts"')
-  }
+      path.resolve('node_modules/oxlint/bin/oxlint'),
+      '--format=json',
+      '--config',
+      path.resolve('.oxlintrc.json'),
+      ...testPaths,
+      appPath,
+      ...helperPaths
+    ],
+    { encoding: 'utf8', windowsHide: true }
+  )
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(1)
+  expect(result.stdout.match(/comfy\(use-global-pinia\)/g)).toHaveLength(10)
+  expect(result.stdout).not.toContain('"filename": "src/example.ts"')
 })

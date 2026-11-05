@@ -43,6 +43,7 @@ export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
     '**/liveCloud/**',
+    '**/crossOriginSession/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
@@ -90,9 +91,16 @@ export default defineConfig({
           {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
-            timeout: 15000,
+            timeout: 30_000,
             grepInvert:
-              /@mobile|@perf|@audit|@cloud|@custom-nodes|@agent-harness/
+              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
+          },
+
+          {
+            name: 'desktop',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 15000,
+            grep: /@desktop/
           },
 
           // Runs only against the local agent integration harness

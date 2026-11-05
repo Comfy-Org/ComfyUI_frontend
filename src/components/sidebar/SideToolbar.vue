@@ -6,14 +6,18 @@
     :aria-hidden="isHidden"
     :class="
       cn(
-        'side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2',
+        'side-tool-bar-container flex h-full flex-col items-center bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out',
         {
           'small-sidebar': isSmall,
           'connected-sidebar pointer-events-auto': isConnected,
-          'floating-sidebar': !isConnected,
+          'floating-sidebar py-(--comfy-canvas-gutter)': !isConnected,
+          'ml-(--comfy-canvas-gutter)':
+            !isConnected && !isHidden && sidebarLocation === 'left',
+          'mr-(--comfy-canvas-gutter)':
+            !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'border-r border-(--interface-stroke) shadow-interface': isConnected,
-          'pointer-events-none opacity-0': isHidden,
+          'overflow-hidden border-r border-border/50 shadow-md': isConnected,
+          'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
         }
@@ -28,19 +32,19 @@
           : 'flex h-full flex-col'
       "
     >
-      <div ref="topToolbarRef" :class="groupClasses">
+      <div
+        ref="topToolbarRef"
+        data-testid="sidebar-top-group"
+        :class="groupClasses"
+      >
         <ComfyMenuButton />
-        <SidebarIcon
+        <SidebarExtensionTabButton
           v-for="tab in tabs"
           :key="tab.id"
-          :icon="tab.icon"
-          :icon-badge="tab.iconBadge"
-          :tooltip="tab.tooltip"
+          :tab
           :tooltip-suffix="getTabTooltipSuffix(tab)"
-          :label="tab.label || tab.title"
           :is-small
           :selected="tab.id === selectedTab?.id"
-          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
@@ -85,18 +89,17 @@ import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vu
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
-import SidebarIcon from './SidebarIcon.vue'
+import SidebarExtensionTabButton from './SidebarExtensionTabButton.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
@@ -123,7 +126,6 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -150,7 +152,7 @@ const tabs = computed(() => {
     : all
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
+const isHidden = computed(() => canvasStore.isPickingNodes)
 
 /**
  * Handle sidebar tab icon click.
@@ -203,7 +205,9 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
-    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
+    isConnected.value
+      ? 'border border-transparent'
+      : 'pointer-events-auto floating-panel p-0'
   )
 )
 
@@ -325,28 +329,8 @@ onMounted(() => {
 </style>
 
 <style scoped>
-.floating-sidebar {
-  padding: var(--sidebar-padding);
-}
-
-.floating-sidebar .sidebar-item-group {
-  border-color: var(--interface-stroke);
-}
-
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
-}
-
-.sidebar-item-group {
-  background-color: var(--comfy-menu-bg);
-  border: 1px solid transparent;
-}
-
-.overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--background);
 }
 </style>

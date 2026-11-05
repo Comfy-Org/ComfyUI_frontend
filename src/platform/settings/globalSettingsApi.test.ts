@@ -1,5 +1,10 @@
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
+import { api } from '@/scripts/api'
 
 import {
   GlobalSettingsApiError,
@@ -12,12 +17,11 @@ vi.mock(import('@/config/comfyApi'), () => ({
 }))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi, apiURL: (path: string) => `/api${path}` }
-}))
+vi.mock(import('@/scripts/api'))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
+  attachUnifiedRemintInterceptor: vi.fn(),
+  provideUnifiedRemint: vi.fn(),
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
@@ -31,17 +35,18 @@ const authHeader = { Authorization: 'Bearer workspace-a-token' } as const
 
 function respondWith(body: unknown, status = 200): void {
   const response = new Response(JSON.stringify(body), { status })
-  fetchApi.mockResolvedValueOnce(response.clone())
+  vi.mocked(api.fetchApi).mockResolvedValueOnce(response.clone())
   fetchWithUnifiedRemint.mockResolvedValueOnce(response)
 }
 
 describe('Global Settings transport', () => {
   beforeEach(() => {
     distribution.isCloud = true
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   })
 
   it.for([true, false])(
-    'reads with captured workspace credentials (Cloud=%s)',
+    'reads with the credential it is handed (Cloud=%s)',
     async (cloud) => {
       distribution.isCloud = cloud
       respondWith(stored)
@@ -52,7 +57,7 @@ describe('Global Settings transport', () => {
         expect.objectContaining({ cache: 'no-store', headers: authHeader }),
         false
       )
-      expect(fetchApi).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 
@@ -74,7 +79,7 @@ describe('Global Settings transport', () => {
         }),
         false
       )
-      expect(fetchApi).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 
@@ -116,7 +121,7 @@ describe('Global Settings transport', () => {
   })
 
   it('wraps invalid JSON responses', async () => {
-    fetchApi.mockResolvedValueOnce(new Response('{not-json'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(new Response('{not-json'))
     fetchWithUnifiedRemint.mockResolvedValueOnce(new Response('{not-json'))
     await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
       GlobalSettingsApiError
@@ -131,5 +136,30 @@ describe('Global Settings transport', () => {
     await expect(
       setGlobalSetting({ key, value: true }, authHeader)
     ).rejects.toMatchObject({ status: 500 })
+  })
+
+  describe('on the web session', () => {
+    const unavailable = () => new Response(null, { status: 503 })
+
+    it('reads again after a 503 with exactly two sends', async () => {
+      vi.useFakeTimers()
+      const answers = [unavailable(), Response.json(stored)]
+      const send = vi.fn<WebSessionSend>(async () => answers.shift()!)
+
+      const pending = getGlobalSetting(key, send)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual(stored)
+      expect(send).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not send a write twice after a 503', async () => {
+      const send = vi.fn<WebSessionSend>(async () => unavailable())
+
+      await expect(
+        setGlobalSetting({ key, value: true }, send)
+      ).rejects.toMatchObject({ status: 503 })
+      expect(send).toHaveBeenCalledOnce()
+    })
   })
 })

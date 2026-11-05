@@ -190,6 +190,16 @@ elif [ "$STATUS" = "completed" ]; then
         header="$header — $deployment_url"
     fi
 
+    if [ "$deployment_url" = "Deployment failed" ]; then
+        header="$header
+
+> ❌ Storybook deployment failed. [Open the workflow run]($WORKFLOW_URL), fix the deployment error and re-run the job."
+    elif [ "$WORKFLOW_CONCLUSION" = "failure" ]; then
+        header="$header
+
+> ❌ Storybook failed. [Open the workflow run]($WORKFLOW_URL) and fix the build before merging."
+    fi
+
     # Build details section
     details="<details>
 <summary>Details</summary>

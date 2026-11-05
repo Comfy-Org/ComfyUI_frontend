@@ -1,0 +1,34 @@
+{
+  "id": "zombie",
+  "name": "Zombie",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/zombie-brains.png",
+      "CLEAR_BACKGROUND_COLOR": "#0c110c",
+      "LINK_COLOR": "#a6d65a",
+      "CONNECTING_LINK_COLOR": "#e39aa8"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#0c110c",
+      "foreground": "#e3ecd6",
+      "card": "#151d15",
+      "primary": "#5e8a2c",
+      "secondary": "#1b241a",
+      "muted": "#2e3d2a",
+      "muted-foreground": "#93a387",
+      "accent": "#222d20",
+      "destructive": "#b3342e",
+      "border": "#364632",
+      "input": "#0f160f",
+      "ring": "#a6d65a",
+      "node": "#121a12",
+      "node-foreground": "#c1cfb3",
+      "node-header": "#2d2027",
+      "node-border": "#4a5a3e",
+      "warning": "#d6b23a",
+      "shadow-color": "rgb(0 10 0 / 0.55)"
+    }
+  }
+}

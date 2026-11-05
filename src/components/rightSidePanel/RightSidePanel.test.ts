@@ -11,19 +11,23 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
-  rootGraph: null as LGraph | null
+  rootGraph: null as LGraph | null,
+  get rootGraphOrUndefined() {
+    return this.rootGraph ?? undefined
+  }
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
@@ -32,7 +36,14 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: () => ({
+    focusNode: vi.fn(),
+    focusNodeInstance: vi.fn()
+  })
+}))
+
+vi.mock(import('@comfyorg/telemetry'))
 
 function createPanelI18n() {
   return createI18n({
@@ -81,7 +92,7 @@ function renderPanel(
 
   const canvasStore = useCanvasStore()
   canvasStore.currentGraph = currentGraph
-  canvasStore.selectedItems = [markRaw(node)]
+  setCanvasSelection([markRaw(node)])
 
   const rightSidePanelStore = useRightSidePanelStore()
   rightSidePanelStore.activeTab = activeTab
@@ -226,7 +237,7 @@ describe('RightSidePanel global parameters tab', () => {
 
     const canvasStore = useCanvasStore()
     canvasStore.currentGraph = rootGraph
-    canvasStore.selectedItems = []
+    setCanvasSelection([])
 
     const rightSidePanelStore = useRightSidePanelStore()
     rightSidePanelStore.activeTab = 'parameters'

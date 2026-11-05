@@ -46,7 +46,7 @@ regenerated.
 | E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
 | E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                                       |
 | Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
-| Gating      | `codecov.yml`                                                                                    | Default project status disabled; website project and all patch statuses informational; unit and E2E flags carry forward |
+| Gating      | `codecov.yml`                                                                                    | Default project status disabled; billing-web project and patch statuses informational; unit and E2E flags carry forward |
 
 ### Current numbers (main, 2026-09-01)
 
@@ -77,7 +77,7 @@ regenerated.
    | `platform/workspace/composables`             | 3,206     | 11    |
    | `platform/cloud/onboarding`                  | 3,039     | 32    |
    | `platform/telemetry/providers`               | 2,712     | 10    |
-   | `platform/cloud/subscription`                | 2,141     | 16    |
+   | `platform/billing/subscription`              | 2,141     | 16    |
    | `composables/video` + `components/videoEdit` | 2,296     | 12    |
    | `composables/boundingBoxes`                  | 1,037     | 2     |
    | `renderer/extensions/compositor`             | 788       | 8     |
@@ -204,14 +204,14 @@ directory from the vitest report.
 | `extensions/core` (built-ins)               | 50.4% (5,487)                                                                  | 54%                            | Group nodes, reroutes, uploads, 3D  | Mixed; see per-extension table                |
 | `extensions/core/cameraInfo`                | 6.8% (855)                                                                     | ~87%                           | 3D camera overlay                   | Unit-covered; low E2E priority                |
 | `composables/maskeditor`                    | 52.1% (1,869)                                                                  | ~94%                           | Mask editor tools                   | Three specs exist; tool coverage thin         |
-| `workbench/extensions/manager`              | 54.5% (1,858) + 2k absent                                                      | ~44% (components)              | Custom-node install/update          | Install, update, conflict dialogs untested    |
+| `platform/customNodes/manager`              | 54.5% (1,858) + 2k absent                                                      | ~44% (components)              | Custom-node install/update          | Install, update, conflict dialogs untested    |
 | `platform/assets` (browser)                 | 48.7% (2,234)                                                                  | mid                            | Media/model browsing                | Browse well covered by 37 specs               |
 | `platform/assets/components/UploadModel*`   | 14.1% (64) + dialogs absent                                                    | wizard and components tested   | Model upload                        | Browser integration gap                       |
 | `components/videoEdit`, `composables/video` | absent (2,296 raw)                                                             | ~78%                           | Video trim widget                   | Gap                                           |
 | `renderer/extensions/layerEditor`           | absent (8,904 raw)                                                             | ~99% (GPU compositor excluded) | Image layer editing                 | No browser-level proof at all; unit is strong |
 | `renderer/extensions/compositor`            | 7.0% (43) + 788 absent                                                         | ?                              | Image compositor overlay            | Gap                                           |
 | `platform/workspace`                        | 33.9% (2,262) + 11.7k absent                                                   | store ~59%                     | Team membership, credits, billing   | Cloud-only; unmeasured, likely under-tested   |
-| `platform/cloud/subscription`, checkout     | 43.3% (563) + 2.1k absent; `useSubscriptionCheckout.ts` 1,569 raw lines absent | high                           | Revenue                             | Cloud-only; unmeasured                        |
+| `platform/billing/subscription`, checkout   | 43.3% (563) + 2.1k absent; `useSubscriptionCheckout.ts` 1,569 raw lines absent | high                           | Revenue                             | Cloud-only; unmeasured                        |
 | `platform/cloud/onboarding`                 | absent (3,039 raw)                                                             | ~58%                           | First-run cloud flow                | Cloud-only; unmeasured                        |
 | `workbench/extensions/agent`                | absent (9,567 raw)                                                             | ~93%                           | Cloud agent panel                   | 2 `@cloud` specs, unmeasured                  |
 | `platform/auth`, `dialog/content/signin`    | 26.6% / 39.6%                                                                  | mixed                          | Sign-in                             | Cloud-only; unmeasured                        |

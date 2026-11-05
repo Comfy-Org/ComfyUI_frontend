@@ -14,8 +14,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   createTestRootGraph,
@@ -24,9 +24,7 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const PROMOTED_INPUT = 'value'
 const EXTERNAL_INPUT = 'signal'

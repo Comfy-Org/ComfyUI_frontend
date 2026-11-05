@@ -1,8 +1,10 @@
 import { effectScope, watch } from 'vue'
 
-import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type {
   CameraConfig,
   CameraState,
@@ -12,15 +14,13 @@ import type {
   ModelConfig,
   SceneConfig,
   StoredModelConfig
-} from '@/extensions/core/load3d/interfaces'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 type Load3DConfigurationSettings = {
   loadFolder: string
@@ -38,20 +38,6 @@ type Load3DConfigurationSettings = {
    * re-renders at the new state.
    */
   onSceneInvalidated?: () => void
-}
-
-const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
-
-export function parseAnnotatedFilename(
-  rawValue: string,
-  fallbackFolder: string
-): { filename: string; folder: string } {
-  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
-  if (!match) return { filename: rawValue, folder: fallbackFolder }
-  return {
-    filename: rawValue.slice(0, match.index),
-    folder: match[1]
-  }
 }
 
 const DEFAULT_GIZMO: GizmoConfig = {
@@ -131,7 +117,7 @@ class Load3DConfiguration {
 
   private setupModelHandlingForSaveMesh(
     filePath: string,
-    loadFolder: string,
+    loadFolder: 'input' | 'output' | 'temp',
     silentOnNotFound: boolean
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
@@ -141,7 +127,7 @@ class Load3DConfiguration {
     )
 
     if (filePath) {
-      void onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath, isKeepingLoadedModel(this.load3d))
     }
   }
 
@@ -157,7 +143,10 @@ class Load3DConfiguration {
       silentOnNotFound
     )
     if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
-      void onModelWidgetUpdate(modelWidget.value)
+      void onModelWidgetUpdate(
+        modelWidget.value,
+        isKeepingLoadedModel(this.load3d)
+      )
     }
 
     return onModelWidgetUpdate
@@ -213,7 +202,7 @@ class Load3DConfiguration {
         intensity:
           saved.intensity ??
           useSettingStore().get('Comfy.Load3D.LightIntensity'),
-        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+        hdri: { ...hdriDefaults, ...saved.hdri }
       }
     }
 
@@ -287,13 +276,13 @@ class Load3DConfiguration {
     silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: IBaseWidget['value']) => {
+    return async (value: IBaseWidget['value'], keepLoadedModel = false) => {
       if (!value || value === LOAD3D_NONE_MODEL) {
         this.load3d.clearModel()
         return
       }
 
-      const { filename, folder } = parseAnnotatedFilename(
+      const { filepath: filename, rootFolder: folder } = parseAnnotatedPath(
         value as string,
         loadFolder
       )
@@ -307,10 +296,14 @@ class Load3DConfiguration {
         )
       )
 
-      const accepted = await this.load3d.loadModel(modelUrl, filename, {
-        silentOnNotFound
-      })
-      if (!accepted) return
+      if (keepLoadedModel && this.isShowingModel(modelUrl)) {
+        isFirstLoad = false
+        return
+      }
+
+      const outcome = await this.load3d.loadModel(modelUrl, filename)
+      reportLoadModelOutcome(outcome, { silentOnNotFound })
+      if (outcome !== 'loaded') return
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
@@ -326,6 +319,14 @@ class Load3DConfiguration {
 
       this.load3d.emitModelReady()
     }
+  }
+
+  private isShowingModel(modelUrl: string): boolean {
+    const { currentModel, originalURL } = this.load3d.modelManager
+    return (
+      currentModel !== null &&
+      Load3dUtils.isSameResourceURL(originalURL, modelUrl)
+    )
   }
 
   private setResourceFolder(filename: string): void {

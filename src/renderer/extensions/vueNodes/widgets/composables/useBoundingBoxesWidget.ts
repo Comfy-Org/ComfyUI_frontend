@@ -1,11 +1,14 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetBoundingBoxesOptions
+} from '@comfyorg/graph-model/widgets'
 import type {
   BoundingBoxesInputSpec,
   InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import type { BoundingBox } from '@/types/boundingBoxes'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 
 export const useBoundingBoxesWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IBaseWidget => {
@@ -15,9 +18,17 @@ export const useBoundingBoxesWidget = (): ComfyWidgetConstructorV2 => {
         ...box,
         metadata: { ...box.metadata, palette: [...box.metadata.palette] }
       })) ?? []
-    return node.addWidget('boundingboxes', spec.name, defaultValue, null, {
+    const options: IWidgetBoundingBoxesOptions = {
       serialize: true,
-      hideInPanel: true
-    })
+      hideInPanel: true,
+      max_boxes: spec.max_boxes
+    }
+    return node.addWidget(
+      'boundingboxes',
+      spec.name,
+      defaultValue,
+      null,
+      options
+    )
   }
 }

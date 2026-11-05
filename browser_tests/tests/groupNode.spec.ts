@@ -31,10 +31,11 @@ test.describe('Group node migration', { tag: '@node' }, () => {
   })
 
   // QA found this broken on 2026-09-10 while running the 1.54 test plan:
-  // converting a v1.3.3 group node misaligns widget values by two positions, so
-  // denoise receives 'euler' and filename_prefix receives 'normal'. Saving then
-  // writes the wrong values back, silently corrupting the workflow. Pinned with
-  // test.fail() so the fix flips this to passing.
+  // converting a v1.3.3 group node misaligned widget values by two positions, so
+  // denoise received 'euler' and filename_prefix received 'normal'. Saving then
+  // wrote the wrong values back, silently corrupting the workflow. Fixed by
+  // pairing each widget to its originating inner node instead of matching by
+  // name alone (see findUnconsumedWidgetIndex in groupNode.ts).
   test('Preserves group node widget values through subgraph conversion', async ({
     comfyPage
   }) => {
@@ -51,10 +52,6 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       )
     )
 
-    // Structure first, while a failure here is still unexpected. test.fail()
-    // below makes everything after it expected to fail, so a conversion that
-    // stopped producing these nodes at all would otherwise be swallowed by
-    // the known widget defect.
     const ksampler = interiorNodes.find((node) => node.type === 'KSampler')
     expect(
       ksampler,
@@ -66,11 +63,9 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       'converted subgraph should contain a SaveImage'
     ).toBeDefined()
 
-    // Below is the known defect. groupNode.ts maps widgets by name through
-    // findIndex, and this fixture has two CLIPTextEncode nodes both exposing
-    // `text`, so values land two slots back. filename_prefix is on the wrong
-    // side of that same shift, which is why it stays below the marker.
-    test.fail()
+    // This fixture has two CLIPTextEncode nodes both exposing `text`, which
+    // used to make groupNode.ts's name-only widget lookup land two slots
+    // back (see PR #17464 for the pinned defect this now proves is fixed).
     expect(ksampler!.widgets).toMatchObject({
       seed: 156680208700286,
       steps: 20,

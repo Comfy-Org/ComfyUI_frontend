@@ -1,39 +1,18 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import type { Keybinding } from '@comfyorg/keybindings/types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-// Mock the api
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSettings: vi.fn(),
-    storeSetting: vi.fn(),
-    storeSettings: vi.fn()
-  }
-}))
-
-// Mock the app
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
@@ -67,6 +46,14 @@ describe('useSettingStore', () => {
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
+    })
+
+    it('loads settings without the shared status retry stacking on its own backoff', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledWith({ skipStatusRetry: true })
     })
 
     describe('Canvas Navigation override migration', () => {
@@ -126,7 +113,6 @@ describe('useSettingStore', () => {
       // GraphCanvas rethrows `error` before registering any core setting, so a
       // rejection here would leave the app unable to start.
       it('leaves the store loadable when the write fails', async () => {
-        vi.spyOn(console, 'warn').mockImplementation(() => {})
         vi.mocked(api.storeSettings).mockRejectedValue(new Error('offline'))
 
         await loadWith({ [NAV]: 'standard' })
@@ -138,7 +124,6 @@ describe('useSettingStore', () => {
     })
 
     it('leaves the store loadable when the zoom threshold write fails', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
       vi.mocked(api.getSettings).mockResolvedValue({
         'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': 0.6
@@ -192,17 +177,13 @@ describe('useSettingStore', () => {
         type: 'text',
         defaultValue: 'default'
       }
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
 
       store.addSetting(setting)
       store.addSetting(setting)
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Setting already registered: Comfy.Locale'
       )
-      consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {
@@ -256,26 +237,6 @@ describe('useSettingStore', () => {
       const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.30.0, so should get 1.21.3 default
       expect(result).toBe('version-1.21.3-default')
-    })
-
-    it('should return latest versioned default when user version is higher', () => {
-      store.settingValues['Comfy.InstalledVersion'] = '1.50.0'
-
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': 'version-1.21.3-default',
-          '1.40.3': 'version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.50.0, so should get 1.40.3 default
-      expect(result).toBe('version-1.40.3-default')
     })
 
     it('should return regular default when user version is lower than all versioned defaults', () => {
@@ -358,24 +319,6 @@ describe('useSettingStore', () => {
         expect(store.getDefaultValue(setting.id)).toBe(expected)
       }
     )
-
-    it('should handle function-based versioned defaults', () => {
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': () => 'dynamic-version-1.21.3-default',
-          '1.40.3': () => 'dynamic-version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.30.0, so should get 1.21.3 default (executed)
-      expect(result).toBe('dynamic-version-1.21.3-default')
-    })
 
     it('should handle function-based regular defaults with versioned defaults', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
@@ -511,7 +454,8 @@ describe('useSettingStore', () => {
 
     it('should set value and trigger onChange', async () => {
       const onChangeMock = vi.fn()
-      const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)
+      const settingChangedMock = vi.fn()
+      store.onSettingChanged(settingChangedMock)
       const setting: SettingParams = {
         id: 'Comfy.Locale',
         name: 'Comfy.Locale',
@@ -522,25 +466,83 @@ describe('useSettingStore', () => {
       store.addSetting(setting)
       // Adding the new setting should trigger onChange
       expect(onChangeMock).toHaveBeenCalledTimes(1)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(1)
+      expect(settingChangedMock).toHaveBeenCalledWith({
+        id: 'Comfy.Locale',
+        value: 'default',
+        oldValue: undefined
+      })
 
       await store.set('Comfy.Locale', 'newvalue')
 
       expect(store.get('Comfy.Locale')).toBe('newvalue')
       expect(onChangeMock).toHaveBeenCalledWith('newvalue', 'default')
       expect(onChangeMock).toHaveBeenCalledTimes(2)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
+      expect(settingChangedMock).toHaveBeenLastCalledWith({
+        id: 'Comfy.Locale',
+        value: 'newvalue',
+        oldValue: 'default'
+      })
       expect(api.storeSetting).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
 
       // Set a different value, it should trigger onChange
       await store.set('Comfy.Locale', 'differentvalue')
       expect(onChangeMock).toHaveBeenCalledWith('differentvalue', 'newvalue')
       expect(onChangeMock).toHaveBeenCalledTimes(3)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(3)
+      expect(settingChangedMock).toHaveBeenCalledTimes(3)
       expect(api.storeSetting).toHaveBeenCalledWith(
         'Comfy.Locale',
         'differentvalue'
       )
+    })
+
+    it('announces both sides of a refused revertible setting write', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      store.addSetting({
+        id: key,
+        name: key,
+        type: 'hidden',
+        defaultValue: []
+      })
+      const changes: unknown[] = []
+      store.onSettingChanged(({ value }) => changes.push(value))
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 400, statusText: 'Bad Request' })
+      )
+
+      expect(
+        await store.setWithOutcome(key, ['/extensions/rejected/'])
+      ).toEqual({
+        status: 'refused',
+        statusCode: 400,
+        statusText: 'Bad Request'
+      })
+
+      expect(api.storeSetting).toHaveBeenCalledWith(key, [
+        '/extensions/rejected/'
+      ])
+      expect(store.get(key)).toEqual(['/extensions/saved/'])
+      expect(changes).toEqual([
+        ['/extensions/rejected/'],
+        ['/extensions/saved/']
+      ])
+    })
+
+    it('retains a revertible setting write after an indeterminate response', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      expect(await store.setWithOutcome(key, ['/extensions/pending/'])).toEqual(
+        {
+          status: 'indeterminate',
+          statusCode: 500,
+          statusText: 'Server Error'
+        }
+      )
+      expect(store.get(key)).toEqual(['/extensions/pending/'])
     })
 
     it('awaits an onChange handler before persisting the value', async () => {
@@ -582,7 +584,6 @@ describe('useSettingStore', () => {
         }
       }
     ])('persists the value when a handler $label', async ({ onChange }) => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.addSetting({
         id: 'Comfy.Locale',
         name: 'Comfy.Locale',

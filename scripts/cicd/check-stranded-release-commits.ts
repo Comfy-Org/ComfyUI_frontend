@@ -14,7 +14,7 @@
  */
 import { execFileSync } from 'child_process'
 import { appendFileSync } from 'fs'
-import { pathToFileURL } from 'url'
+import { isMainModule } from '../isMainModule'
 
 export interface Commit {
   sha: string
@@ -214,7 +214,7 @@ function branchPackageVersion(branch: string): string | null {
       git('show', `origin/${branch}:package.json`)
     )
     if (typeof pkg === 'object' && pkg !== null && 'version' in pkg) {
-      const { version } = pkg as { version: unknown }
+      const { version } = pkg
       return typeof version === 'string' ? version : null
     }
     return null
@@ -339,10 +339,7 @@ async function main(): Promise<void> {
   }
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (isMainModule(import.meta.url)) {
   main().catch((error: unknown) => {
     console.error(error)
     process.exitCode = 1

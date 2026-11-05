@@ -1,7 +1,7 @@
 <template>
-  <div
+  <Card
     data-testid="cloud-notification-dialog"
-    class="relative grid h-full grid-cols-5"
+    class="relative grid h-full w-170 max-w-full grid-cols-5 shadow-lg"
   >
     <Button
       size="unset"
@@ -10,7 +10,7 @@
       :aria-label="t('g.close')"
       @click="onDismiss"
     >
-      <i class="pi pi-times" />
+      <i class="icon-[lucide--x]" />
     </Button>
 
     <div
@@ -21,7 +21,7 @@
         loop
         muted
         playsinline
-        class="ml-[-20%] h-full min-w-5/4 object-cover p-0"
+        class="ml-[-20%] h-full min-w-5/4 object-cover"
       >
         <source
           src="/assets/images/cloud-subscription.webm"
@@ -32,11 +32,11 @@
 
     <div class="col-span-3 flex flex-col justify-between p-8">
       <div>
-        <div class="flex flex-col gap-4">
-          <div class="text-sm font-semibold text-text-primary">
+        <div class="flex flex-col gap-4 text-sm">
+          <DialogTitle class="m-0 text-sm">
             {{ t('cloudNotification.title') }}
-          </div>
-          <p class="m-0 text-sm text-text-secondary">
+          </DialogTitle>
+          <p class="m-0 text-muted-foreground">
             {{ t('cloudNotification.message') }}
           </p>
         </div>
@@ -47,8 +47,8 @@
             :key="n"
             class="flex items-center gap-2 py-2"
           >
-            <i class="pi pi-check text-xs text-text-primary" />
-            <span class="text-sm text-text-primary">
+            <i class="icon-[lucide--check] size-3" />
+            <span class="text-sm">
               {{ t(`cloudNotification.feature${n}Title`) }}
             </span>
           </div>
@@ -67,20 +67,22 @@
         <Button variant="textonly" size="sm" class="w-full" @click="onDismiss">
           {{ t('cloudNotification.continueLocally') }}
         </Button>
-        <p class="m-0 text-center text-xs text-text-secondary">
+        <p class="m-0 text-center text-xs text-muted-foreground">
           {{ t('cloudNotification.footer') }}
         </p>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useTelemetry } from '@/platform/telemetry'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()

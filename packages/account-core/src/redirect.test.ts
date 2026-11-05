@@ -31,4 +31,10 @@ describe('safeInternalPath', () => {
       '/login/'
     )
   })
+
+  it('carries the workspace deep-link parameter through a sign-in redirect', () => {
+    expect(
+      safeInternalPath('/v1/pricing?workspace=w-abc&x=1', ORIGIN, HOME)
+    ).toBe('/v1/pricing?workspace=w-abc&x=1')
+  })
 })

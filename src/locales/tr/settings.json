@@ -339,10 +339,6 @@
     "name": "Sürüm güncellemelerini göster",
     "tooltip": "Yeni modeller ve önemli yeni özellikler için güncellemeleri göster."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "İşaretçi tıklama kayma gecikmesi",
-    "tooltip": "Bir işaretçi düğmesine bastıktan sonra, bu, işaretçi hareketinin göz ardı edilebileceği maksimum süredir (milisaniye cinsinden).\n\nTıklarken işaretçi hareket ettirilirse nesnelerin istemeden dürtülmesini önlemeye yardımcı olur."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "İşaretçi tıklama kayması (maksimum mesafe)",
     "tooltip": "İşaretçi bir düğmeyi basılı tutarken bu mesafeden daha fazla hareket ederse, bu sürükleme olarak kabul edilir (tıklama yerine).\n\nTıklarken işaretçi hareket ettirilirse nesnelerin istemeden dürtülmesini önlemeye yardımcı olur."

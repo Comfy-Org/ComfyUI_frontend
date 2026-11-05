@@ -8,6 +8,7 @@ import type { InjectionKey } from 'vue'
 
 import type {
   BillingCommands,
+  BillingEventsReader,
   BillingOperationLifecycle,
   BillingStatusReader,
   CapabilitiesReader,
@@ -33,6 +34,7 @@ export interface BillingClient {
   readonly status: BillingStatusReader
   readonly plans: PlansReader
   readonly paymentMethods: PaymentMethodsReader
+  readonly events: BillingEventsReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
 }
@@ -57,6 +59,7 @@ export function disposeBillingClient(client: BillingClient): void {
   client.status.dispose()
   client.plans.dispose()
   client.paymentMethods.dispose()
+  client.events.dispose()
 }
 
 export function useBillingClient<K extends keyof BillingClient>(

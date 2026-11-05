@@ -24,6 +24,7 @@ runs:
         node-version-file: '.nvmrc'
         cache: ${{ inputs.node_cache == 'true' && 'pnpm' || '' }}
         cache-dependency-path: './pnpm-lock.yaml'
+        package-manager-cache: ${{ inputs.node_cache == 'true' }}
 
     - name: Install dependencies
       shell: bash
@@ -32,6 +33,6 @@ runs:
     - name: Build ComfyUI_frontend
       if: ${{ inputs.include_build_step == 'true' }}
       shell: bash
-      run: pnpm build
+      run: pnpm build:dist
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
