@@ -8,6 +8,7 @@ import type {
   BillingStatus,
   GlobalSetting,
   PaginationInfo,
+  SubscriptionState,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
@@ -262,6 +263,7 @@ const paywallBilling = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
   isActive: true,
+  subscriptionState: 'active' as SubscriptionState | null,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
@@ -401,6 +403,8 @@ beforeEach(() => {
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
       canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
+      isInitialized: computed(() => true),
+      subscriptionState: computed(() => paywallBilling.subscriptionState),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -517,6 +521,7 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.subscriptionState = 'active'
   paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
@@ -1291,6 +1296,39 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('says Add credits does not start a Cloud plan for an owner without one', async () => {
+    paywallBilling.tier = 'FREE'
+    paywallBilling.isActive = false
+    paywallBilling.subscriptionState = 'never_subscribed'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    expect(
+      await screen.findByTestId('agent-paywall-plan-note')
+    ).toHaveTextContent("Buying credits doesn't start a Cloud plan.")
+  })
+
+  it('keeps the plan note out for an owner with an active plan', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    expect(screen.queryByTestId('agent-paywall-plan-note')).toBeNull()
+  })
+
   it('shows Subscribe only when the server allows self-serve subscription but not top-up', async () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1415,6 +1453,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
         tier,
         type: computed(() => 'workspace'),
         billingStatus: computed(() => 'paid'),
+        isInitialized: computed(() => true),
+        subscriptionState: computed(() => 'active' as const),
         fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
