@@ -44,4 +44,25 @@ describe('useSidebarTabStore', () => {
       }
     )
   })
+
+  it('keeps runtime registration attribution outside the public tab shape', () => {
+    const store = useSidebarTabStore()
+    store.registerSidebarTab(
+      {
+        id: 'agent-tab',
+        title: 'Agent tab',
+        type: 'vue',
+        component: {}
+      },
+      undefined,
+      'agent.tools.sidebar'
+    )
+
+    expect(store.getSourceExtensionName('agent-tab')).toBe(
+      'agent.tools.sidebar'
+    )
+
+    store.unregisterSidebarTab('agent-tab')
+    expect(store.getSourceExtensionName('agent-tab')).toBeUndefined()
+  })
 })

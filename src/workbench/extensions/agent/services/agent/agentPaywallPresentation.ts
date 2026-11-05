@@ -4,12 +4,17 @@ import type {
   AgentPaywallCta,
   AgentPaywallReason
 } from '@comfyorg/telemetry/types'
+import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
 
 export type AgentPaywallPresentation =
-  | { kind: 'subscribed'; showUpgrade: boolean }
+  | {
+      kind: 'subscribed'
+      showUpgrade: boolean
+      planCreditLine?: TopUpPlanCreditLine
+    }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
   | { kind: 'salesManaged' }
@@ -22,6 +27,7 @@ interface AgentPaywallPresentationInput {
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+  planCreditLine?: TopUpPlanCreditLine | null
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -53,12 +59,37 @@ export function toAgentPaywallCta(action: AgentPaywallAction): AgentPaywallCta {
   return AGENT_PAYWALL_CTAS[action]
 }
 
+export type AgentPaywallRemediation = Extract<
+  AgentPaywallAction,
+  'addCredits' | 'subscribe'
+>
+
+const AGENT_PAYWALL_REMEDIATIONS = {
+  subscribed: 'addCredits',
+  local: 'addCredits',
+  subscriptionRequired: 'subscribe',
+  member: undefined,
+  salesManaged: undefined,
+  unavailable: undefined
+} satisfies Record<
+  AgentPaywallPresentation['kind'],
+  AgentPaywallRemediation | undefined
+>
+
+/** The one purchase route a viewer in this presentation can actually take. */
+export function toAgentPaywallRemediation(
+  presentation: AgentPaywallPresentation
+): AgentPaywallRemediation | undefined {
+  return AGENT_PAYWALL_REMEDIATIONS[presentation.kind]
+}
+
 export function resolveAgentPaywallPresentation({
   distribution,
   role,
   tier,
   canTopUp,
-  canSubscribeSelfServe
+  canSubscribeSelfServe,
+  planCreditLine
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (distribution === 'local') return { kind: 'local' }
   if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -67,6 +98,9 @@ export function resolveAgentPaywallPresentation({
     return canSubscribeSelfServe
       ? { kind: 'subscriptionRequired' }
       : { kind: 'salesManaged' }
+  }
+  if (planCreditLine && canSubscribeSelfServe) {
+    return { kind: 'subscribed', showUpgrade: false, planCreditLine }
   }
   return {
     kind: 'subscribed',

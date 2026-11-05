@@ -33,7 +33,6 @@ import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
 import type {
   AgentRunMode,
-  GetFeaturesResponses,
   SubscriptionTier,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
@@ -106,13 +105,22 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
@@ -161,6 +169,8 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
+  /** Wall-clock ms the tab was hidden during startup. */
+  hidden_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -659,7 +669,12 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'error_context'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -763,6 +778,95 @@ export interface AgentConsentOfferExitedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
+export type AgentSendGate = 'composer' | 'consent' | 'coach'
+export type AgentComposerDropReason =
+  | 'cannot_submit'
+  | 'submission_pending'
+  | 'no_target'
+  | 'empty'
+  | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
+/** `not_completed`: the consent flow ended without accept, decline or dismiss. */
+export type AgentConsentDropReason =
+  | 'declined'
+  | 'dismissed'
+  | 'not_completed'
+  | 'panel_closed'
+export type AgentCoachReleaseReason =
+  | 'finished'
+  | 'skipped'
+  | 'elsewhere'
+  | 'stalled'
+  | 'deferred_app_mode'
+  | 'deferred_tour_active'
+  | 'deferred_dialog_open'
+export type AgentCoachDropReason =
+  | 'panel_closed'
+  | 'consent_cleared'
+  | 'identity_changed'
+type AgentSendGateOutcome =
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentComposerDropReason
+      client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
+      held_ms: null
+    }
+  | {
+      gate: 'consent' | 'coach'
+      outcome: 'held'
+      reason: null
+      client_message_id: string
+      held_ms: null
+    }
+  | {
+      gate: 'consent'
+      outcome: 'released'
+      reason: 'accepted'
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'consent'
+      outcome: 'dropped'
+      reason: AgentConsentDropReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'released'
+      reason: AgentCoachReleaseReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'dropped'
+      reason: AgentCoachDropReason
+      client_message_id: string
+      held_ms: number
+    }
+/**
+ * A first-send gate outcome, joinable to `app:agent_message_sent` by
+ * `client_message_id`.
+ */
+export type AgentSendGatedMetadata = AgentSendGateOutcome & {
+  thread_id: string | null
+  /** Page load id, also sent on the agent feedback form. */
+  client_session_id: string
+}
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -849,13 +953,17 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 /**
  * `step` is 1-based and matches the "Step N of M" indicator on the card.
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
- * onboarding time.
+ * onboarding time. `card` is the stable identity to funnel on, since `step`
+ * shifts when cards change. `total` is the tour length at the time of the event.
  */
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**
@@ -865,7 +973,11 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * the user wrote themselves. Each send falls into exactly one — a chip the user
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
-export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentInputMethod =
+  | 'typed'
+  | 'suggestion'
+  | 'edited'
+  | 'error_context'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
@@ -880,17 +992,6 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
-export type AgentStarterPromptAssignment = NonNullable<
-  GetFeaturesResponses[200]['agent-starter-prompt-set']
->
-interface AgentStarterPromptExperimentMetadata {
-  /**
-   * Assignment of the prompt set that rendered. Optional consumers omit it
-   * for QA overrides, unsupported locales, and surfaces rendered before
-   * authenticated config.
-   */
-  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
-}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -910,6 +1011,14 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
+export type AgentCreditUsageVariant = 'control' | 'treatment'
+export interface AgentCreditUsageExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  variant: AgentCreditUsageVariant
+  '$feature/agent-credit-usage-summary': AgentCreditUsageVariant
+}
 /**
  * Interactions with the notice itself. This event adds what the existing
  * outcome events cannot say: whether the notice was actually on screen in its
@@ -925,10 +1034,10 @@ export interface AgentCreditTransitionNoticeMetadata extends Record<
 > {
   action: 'shown' | 'dismissed'
 }
-export interface AgentStarterPromptClickedMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -938,9 +1047,8 @@ export interface AgentStarterPromptClickedMetadata
    * How many of that set the viewer could actually see. A panel narrower than
    * 460px hides everything past the third chip with a container query, so this
    * is 3 there and `prompt_count` elsewhere. Deliberately not folded into
-   * `prompt_count`: that field has to keep meaning "set size" for the
-   * starter-prompt set experiment to read it, and a reader cannot otherwise
-   * tell a shrunken set from a narrow panel.
+   * `prompt_count`: that field has to keep meaning "set size", and a reader
+   * cannot otherwise tell a shrunken set from a narrow panel.
    */
   visible_prompt_count: number
   /**
@@ -967,12 +1075,7 @@ export interface AgentStarterPromptClickedMetadata
    */
   draft_was_empty: boolean
 }
-export interface AgentStarterPromptExposureMetadata
-  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
-export interface AgentMessageSentMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -1294,6 +1397,8 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
+  /** Server `error.type` when a refused run opened the paywall. */
+  refusal_type?: string
 }
 
 export interface AddCreditsClickMetadata {
@@ -1428,6 +1533,28 @@ export interface FetchTimeoutMetadata {
   route: string
   method: string
   timeout_ms: number
+}
+
+/** How a request that got a retryable status (429/502/503/504) ended. */
+export type FetchStatusRetryOutcome =
+  | 'recovered'
+  | 'exhausted'
+  | 'retry_after_too_long'
+  | 'timeout_budget'
+  | 'failed'
+
+/** One request that hit a retryable status in the shared status retry. */
+export interface FetchStatusRetryMetadata {
+  transport: 'fetch' | 'axios'
+  method: string
+  host: string
+  /** Route group only, as in `app:fetch_timeout`, e.g. `/billing/:resource`. */
+  route: string
+  /** Requests sent, including the first. */
+  attempts: number
+  /** The last status the request got, if any. */
+  final_status?: number
+  outcome: FetchStatusRetryOutcome
 }
 
 /**
@@ -1574,11 +1701,11 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
-  trackAgentStarterPromptExposure?(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentCreditUsageExposure?(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1597,6 +1724,7 @@ export interface TelemetryProvider {
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
+  trackAgentSendGated?(metadata: AgentSendGatedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1617,6 +1745,7 @@ export interface TelemetryProvider {
 
   // Network error events
   trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
+  trackFetchStatusRetry?(metadata: FetchStatusRetryMetadata): void
 }
 
 /**
@@ -1765,9 +1894,9 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
-  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
@@ -1783,6 +1912,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+  AGENT_SEND_GATED: 'app:agent_send_gated',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
@@ -1799,6 +1929,7 @@ export const TelemetryEvents = {
 
   // Network
   FETCH_TIMEOUT: 'app:fetch_timeout',
+  FETCH_STATUS_RETRY: 'app:fetch_status_retry',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -1905,4 +2036,5 @@ export type TelemetryEventProperties =
   | AgentPaywallCtaMetadata
   | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | FetchStatusRetryMetadata
   | WorkspaceScopeMismatchMetadata

@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -556,6 +556,35 @@ describe('ImagePreview', () => {
         name: /^View image/
       })
       expect(gridThumbnails).toHaveLength(3)
+    })
+  })
+
+  describe('legacy node image sync', () => {
+    it('syncs the loaded image onto its node', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      renderImagePreview({
+        imageUrls: ['/api/view?filename=test1.png&type=input'],
+        nodeId: '1'
+      })
+
+      const img = screen.getByRole('img')
+      await fireEvent.load(img)
+
+      expect(sync).toHaveBeenCalledWith('1', img, 0)
+    })
+
+    it('ignores an image that finishes loading after unmount', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      const { unmount } = renderImagePreview({
+        imageUrls: ['/api/view?filename=test1.png&type=input'],
+        nodeId: '1'
+      })
+      const img = screen.getByRole('img')
+
+      unmount()
+      await fireEvent.load(img)
+
+      expect(sync).not.toHaveBeenCalled()
     })
   })
 

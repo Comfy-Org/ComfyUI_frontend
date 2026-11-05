@@ -120,6 +120,7 @@ function makeGroup(
 function mountCard(
   props: Partial<{
     missingModelGroups: MissingModelGroup[]
+    onDeployment: boolean
   }> = {},
   onLocateModel?: (nodeId: string) => void,
   initialGatedRepoUrls: Record<string, string> = {}
@@ -257,6 +258,32 @@ describe('MissingModelCard', () => {
           /Nodes that reference the models below do not support imported models/
         )
       ).toBeInTheDocument()
+    })
+
+    it('on a deployment, lists every row in one list', () => {
+      mountCard({
+        onDeployment: true,
+        missingModelGroups: [
+          makeGroup({
+            directory: 'checkpoints',
+            modelNames: ['importable.safetensors']
+          }),
+          makeGroup({
+            directory: 'loras',
+            isAssetSupported: false,
+            modelNames: ['custom-node-model.safetensors']
+          })
+        ]
+      })
+
+      const rows = getRowsIn('missing-model-importable-rows')
+      expect(rows.map((row) => row.getAttribute('data-model-name'))).toEqual([
+        'importable.safetensors',
+        'custom-node-model.safetensors'
+      ])
+      expect(
+        screen.queryByTestId('missing-model-import-not-supported-section')
+      ).not.toBeInTheDocument()
     })
 
     it('renders zero rows when missingModelGroups is empty', () => {

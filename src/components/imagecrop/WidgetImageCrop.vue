@@ -214,6 +214,7 @@ const {
   handleResizeMove,
   handleResizeEnd
 } = useImageCrop(nodeId, {
+  widget,
   imageEl,
   containerEl,
   modelValue: effectiveBounds,

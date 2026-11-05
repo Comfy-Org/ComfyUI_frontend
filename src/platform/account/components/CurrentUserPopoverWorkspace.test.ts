@@ -3,6 +3,7 @@ import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
@@ -15,6 +16,7 @@ import { setImmediate } from 'node:timers/promises'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import type {
   BalanceInfo,
@@ -30,7 +32,7 @@ import enMessages from '@/locales/en/main.json'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
-import type { BillingStatus } from '@comfyorg/billing-core'
+import type { BillingStatus, BillingTopUpDenial } from '@comfyorg/billing-core'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
@@ -86,6 +88,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@comfyorg/telemetry'))
@@ -160,6 +163,14 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
 
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -266,6 +277,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps account actions available without workspace context', () => {
@@ -497,19 +524,59 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
   })
 
-  it('keeps Add credits for a past-due owner so it can open Update payment', async () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
+    {
+      denial: 'topup_purchases_paused',
+      reason: "Buying credits isn't available right now. Try again later."
+    },
+    {
+      denial: 'payment_past_due',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      denial: 'tier_not_self_serve',
+      reason: "Adding credits isn't available for this workspace right now."
+    },
+    {
+      denial: undefined,
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for a $denial refusal',
+    ({ denial, reason }) => {
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      renderComponent('team')
+
+      const addCredits = screen.getByTestId('add-credits-button')
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+    }
+  )
+
+  it.for(['not_workspace_owner', 'not_a_member'] as const)(
+    'hides Add credits for a %s refusal',
+    (denial) => {
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      renderComponent('team')
+
+      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    }
+  )
+
+  it('keeps a past-due owner a way to update payment', async () => {
     const user = userEvent.setup()
-    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
     useBillingCapabilities().paymentRecoveryAvailable =
       paymentRecoveryAvailableFact(true)
 
     renderComponent('team')
 
-    await user.click(screen.getByTestId('add-credits-button'))
+    await user.click(screen.getByRole('button', { name: 'Update payment' }))
 
-    expect(
-      useBillingDialogs().showTopUpCreditsDialog
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
+    expect(usePaymentRecoveryDialog().updatePayment).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
