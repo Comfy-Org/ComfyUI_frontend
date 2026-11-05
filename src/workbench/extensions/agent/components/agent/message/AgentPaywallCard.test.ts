@@ -65,7 +65,7 @@ describe('AgentPaywallCard visual contract', () => {
       )
       expect(
         screen.getByText(
-          'Your account has no credits available for the agent. Add credits to use it.'
+          "You've spent your credit balance. Add credits to keep the agent running."
         )
       ).toBeInTheDocument()
       expect(
