@@ -3199,6 +3199,27 @@ export type BillingPlansResponse = {
   current_plan_slug?: string
   plans: Array<Plan>
   team_credit_stops?: TeamCreditStops
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
+}
+
+/**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export type SubscriptionPaymentRecovery = {
+  /**
+   * Exact workspace-bound initial-subscription operation; never a newer top-up.
+   */
+  billing_op_id: string
+  /**
+   * The customer must finish or retry the existing initial invoice payment.
+   */
+  reason: 'payment_required'
 }
 
 /**

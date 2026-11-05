@@ -5,6 +5,7 @@ import type {
   Plan,
   TeamCreditStops
 } from '@comfyorg/billing-core'
+import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
@@ -16,6 +17,9 @@ import { t } from '@/i18n'
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
 const teamCreditStops = ref<TeamCreditStops | null>(null)
+const subscriptionPaymentRecovery = ref<SubscriptionPaymentRecovery | null>(
+  null
+)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
@@ -35,6 +39,7 @@ function clearCatalog(): void {
   plans.value = []
   currentPlanSlug.value = null
   teamCreditStops.value = null
+  subscriptionPaymentRecovery.value = null
   adoptedScopeKey = null
   error.value = null
   errorScopeKey = null
@@ -97,6 +102,8 @@ export function useBillingPlans() {
     plans.value = response.plans
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
+    subscriptionPaymentRecovery.value =
+      response.subscription_payment_recovery ?? null
     adoptedScopeKey = scopeKey
   }
 
@@ -196,6 +203,7 @@ export function useBillingPlans() {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     isLoading,
     error,
     monthlyPlans,

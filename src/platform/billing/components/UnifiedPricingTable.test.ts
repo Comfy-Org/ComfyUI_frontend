@@ -11,6 +11,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import type { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
+import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
 import type { BillingSubscriptionStatus, Plan } from '@comfyorg/billing-core'
 import UnifiedPricingTable from '@/platform/billing/components/UnifiedPricingTable.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
@@ -74,8 +76,25 @@ const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 const mockUpdatePayment = vi.hoisted(() => vi.fn())
 const mockRefreshCapabilities = vi.hoisted(() => vi.fn())
 const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
+const mockSignupPaymentRecovery = ref<SubscriptionPaymentRecovery | null>(null)
+const mockPayInvoice = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+
+vi.mock(
+  import('@/platform/billing/composables/useSubscriptionPaymentRecovery'),
+  () => ({
+    useSubscriptionPaymentRecovery: (): ReturnType<
+      typeof useSubscriptionPaymentRecovery
+    > => ({
+      subscriptionPaymentRecovery: computed(
+        () => mockSignupPaymentRecovery.value
+      ),
+      isOpeningPayment: ref(false),
+      payInvoice: mockPayInvoice
+    })
+  })
+)
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
@@ -127,6 +146,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   mockApiPlans.value = []
   mockPaymentRecoveryLock.value = null
+  mockSignupPaymentRecovery.value = null
   const billingContext = useBillingContext()
   billingContext.plans = computed(() => mockApiPlans.value)
   billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
@@ -1256,5 +1276,92 @@ describe('UnifiedPricingTable past-due notice', () => {
     renderComponent()
 
     expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable unpaid signup invoice notice', () => {
+  const NOTICE_COPY = enMessages.subscription.signupPaymentRecovery.notice
+  const HELD_COPY = enMessages.subscription.signupPaymentRecovery.planHeld
+  const IN_PROGRESS_COPY =
+    enMessages.subscription.planUnavailable.billingOperationInProgress
+
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = standardYearlyCatalog({
+      action: 'none',
+      denied_reason: 'billing_operation_in_progress'
+    }).map((plan) => ({
+      ...plan,
+      action: 'none',
+      denied_reason: 'billing_operation_in_progress'
+    }))
+  })
+
+  it('explains the unpaid plan invoice and offers to pay it', async () => {
+    const user = userEvent.setup()
+    mockSignupPaymentRecovery.value = {
+      billing_op_id: 'op-signup',
+      reason: 'payment_required'
+    }
+
+    renderComponent()
+
+    expect(
+      screen.getByTestId('pricing-signup-payment-notice').textContent
+    ).toContain(NOTICE_COPY)
+    await user.click(screen.getByRole('button', { name: 'Pay invoice' }))
+    expect(mockPayInvoice).toHaveBeenCalledOnce()
+  })
+
+  it('replaces the will-be-available-shortly copy on held plans', () => {
+    mockSignupPaymentRecovery.value = {
+      billing_op_id: 'op-signup',
+      reason: 'payment_required'
+    }
+
+    renderComponent()
+
+    expect(screen.getAllByText(HELD_COPY)).toHaveLength(3)
+    expect(screen.queryByText(IN_PROGRESS_COPY)).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Creator Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('keeps the in-progress copy when the server serves no recovery', () => {
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-signup-payment-notice')).toBeNull()
+    expect(screen.getAllByText(IN_PROGRESS_COPY)).toHaveLength(3)
+  })
+
+  it('shows instead of the past-due notice when both apply', () => {
+    mockPaymentRecoveryLock.value = 'owner'
+    mockSignupPaymentRecovery.value = {
+      billing_op_id: 'op-signup',
+      reason: 'payment_required'
+    }
+
+    renderComponent()
+
+    expect(screen.getByTestId('pricing-signup-payment-notice')).toBeTruthy()
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+  })
+
+  it('stays hidden off Cloud', () => {
+    mockDistributionTypes.isCloud = false
+    mockSignupPaymentRecovery.value = {
+      billing_op_id: 'op-signup',
+      reason: 'payment_required'
+    }
+
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-signup-payment-notice')).toBeNull()
   })
 })

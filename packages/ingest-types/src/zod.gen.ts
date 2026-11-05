@@ -4618,12 +4618,27 @@ export const zTeamCreditStops = z.object({
 })
 
 /**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export const zSubscriptionPaymentRecovery = z.object({
+  billing_op_id: z.string(),
+  reason: z.enum(['payment_required'])
+})
+
+/**
  * List of available billing plans for subscription.
  */
 export const zBillingPlansResponse = z.object({
   current_plan_slug: z.string().optional(),
   plans: z.array(zPlan),
-  team_credit_stops: zTeamCreditStops.optional()
+  team_credit_stops: zTeamCreditStops.optional(),
+  subscription_payment_recovery: zSubscriptionPaymentRecovery.optional()
 })
 
 /**

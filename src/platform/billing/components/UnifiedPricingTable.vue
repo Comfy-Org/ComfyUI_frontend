@@ -350,7 +350,24 @@
       class="mt-auto flex min-h-14 flex-col items-center justify-center gap-2 pt-4 text-sm"
     >
       <div
-        v-if="showPastDueNotice"
+        v-if="showSignupPaymentNotice"
+        role="status"
+        data-testid="pricing-signup-payment-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
+        <span>{{ t('subscription.signupPaymentRecovery.notice') }}</span>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isOpeningPayment"
+          @click="payInvoice"
+        >
+          {{ t('subscription.signupPaymentRecovery.cta') }}
+        </button>
+      </div>
+      <div
+        v-else-if="showPastDueNotice"
         role="status"
         data-testid="pricing-past-due-notice"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
@@ -392,7 +409,11 @@
         </span>
       </div>
       <I18nT
-        v-if="!showPastDueNotice && !showScheduledPlanChange"
+        v-if="
+          !showSignupPaymentNotice &&
+          !showPastDueNotice &&
+          !showScheduledPlanChange
+        "
         keypath="subscription.pricingBlurb"
         tag="p"
         class="m-0 text-center text-muted-foreground"
@@ -460,6 +481,7 @@ import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlid
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
@@ -675,6 +697,11 @@ const showPastDueNotice = computed(
   () => isCloud && paymentRecoveryLock.value !== null
 )
 const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
+const { subscriptionPaymentRecovery, isOpeningPayment, payInvoice } =
+  useSubscriptionPaymentRecovery()
+const showSignupPaymentNotice = computed(
+  () => isCloud && subscriptionPaymentRecovery.value !== null
+)
 watch(
   () => outstandingPaymentRefusals,
   async () => {
@@ -918,6 +945,12 @@ const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
     return date
       ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
       : t('subscription.planUnavailable.subscriptionChangeInProgress')
+  }
+  if (
+    plan.denied_reason === 'billing_operation_in_progress' &&
+    showSignupPaymentNotice.value
+  ) {
+    return t('subscription.signupPaymentRecovery.planHeld')
   }
   const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
   return t(key || 'subscription.planUnavailable.generic')
