@@ -4386,6 +4386,7 @@ export const zPreviewSubscribeResponse = z.object({
     })
     .optional(),
   renewal_at: z.iso.datetime().optional(),
+  requires_reactivation_charge_confirmation: z.boolean().optional(),
   requires_reactivation_confirmation: z.boolean().optional(),
   subtotal_cents: z.coerce
     .bigint()
