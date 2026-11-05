@@ -181,10 +181,11 @@ const refactorOrPrPrompt = expect.objectContaining({
   message: expect.stringMatching(/refactor|Pull Request/)
 })
 
-const overwriteQuestions = () =>
-  vi
+function overwriteQuestions() {
+  return vi
     .mocked(confirm)
     .mock.calls.filter(([options]) => overwritePrompt.asymmetricMatch(options))
+}
 
 function answerOverwriteWith(answer: boolean | symbol) {
   vi.mocked(confirm).mockResolvedValue(true)
