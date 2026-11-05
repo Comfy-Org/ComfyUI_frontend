@@ -43,16 +43,33 @@ const PATH_A = 'workflows/alpha.json'
 const PATH_B = 'workflows/beta.json'
 const PATH_C = 'workflows/gamma.json'
 const SLOT_A = hashPath(PATH_A)
+/** The slot `resolveDraftKey` falls back to for A once `SLOT_A` is taken. */
+const SLOT_A_FALLBACK = `${SLOT_A}:${PATH_A}`
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
 const GRAPH_A = '{"nodes":["a"]}'
 const GRAPH_A_EDITED = '{"nodes":["a","a2"]}'
+const GRAPH_C = '{"nodes":["c"]}'
 const META_A = { name: 'alpha', isTemporary: false }
 
 /** The index another tab persists when it renames A to B. */
 function indexAfterOtherTabRenames(): DraftIndexV2 {
   const moved = moveEntry(readIndex(WORKSPACE)!, PATH_A, PATH_B, 'beta')
   return moved!.index
+}
+
+/**
+ * The index another tab persists when it renames A to B, saves a second A —
+ * which lands on the fallback slot, A's own being taken — and renames that one
+ * to C. Both of the slots this tab would choose for A are now owned by a
+ * different path.
+ */
+function indexAfterOtherTabRenameChain(): DraftIndexV2 {
+  const resaved = upsertEntry(indexAfterOtherTabRenames(), PATH_A, {
+    ...META_A,
+    updatedAt: Date.now()
+  }).index
+  return moveEntry(resaved, PATH_A, PATH_C, 'gamma')!.index
 }
 
 /** The index another tab persists when it autosaves A from `stale`. */
@@ -104,6 +121,38 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     expect(store.getDraft(PATH_B)).toMatchObject({
       data: GRAPH_A,
       name: 'beta'
+    })
+    expect(store.getDraft(PATH_A)).toMatchObject({ data: GRAPH_A_EDITED })
+  })
+
+  /**
+   * Adopting a contended slot has to settle, not take one step. Here the other
+   * tab's rename chain owns *both* slots this tab would pick for A: importing
+   * only the first owner leaves the fallback looking free, so A's autosave
+   * lands on the draft parked there and drops it from the index.
+   */
+  it('does not overwrite a draft parked on the fallback slot', () => {
+    const store = useWorkflowDraftStoreV2()
+    expect(store.saveDraft(PATH_A, GRAPH_A, META_A)).toBe(true)
+
+    writeIndex(WORKSPACE, indexAfterOtherTabRenameChain())
+    writePayload(WORKSPACE, SLOT_A_FALLBACK, {
+      data: GRAPH_C,
+      updatedAt: Date.now()
+    })
+
+    expect(store.saveDraft(PATH_A, GRAPH_A_EDITED, META_A)).toBe(true)
+
+    expect(readPayload(WORKSPACE, SLOT_A)?.data).toBe(GRAPH_A)
+    expect(readPayload(WORKSPACE, SLOT_A_FALLBACK)?.data).toBe(GRAPH_C)
+    store.reset()
+    expect(store.getDraft(PATH_B)).toMatchObject({
+      data: GRAPH_A,
+      name: 'beta'
+    })
+    expect(store.getDraft(PATH_C)).toMatchObject({
+      data: GRAPH_C,
+      name: 'gamma'
     })
     expect(store.getDraft(PATH_A)).toMatchObject({ data: GRAPH_A_EDITED })
   })

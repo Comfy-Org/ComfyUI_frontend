@@ -43,6 +43,11 @@ export function resolveDraftKey(index: DraftIndexV2, path: string): string {
  * stored owner makes {@link resolveDraftKey} allocate a fresh slot for `path`
  * instead — a cost paid by the write that raced, not by the rename.
  *
+ * The fallback slot can be taken too, by a repeated rename that parked a third
+ * path there, so this settles instead of adopting once: each round imports one
+ * stored owner and so rules out the candidate it just checked, leaving the loop
+ * bounded by `stored`'s entry count.
+ *
  * @returns `cached` itself when nothing else owns the slot.
  */
 export function adoptContendedSlot(
@@ -53,17 +58,21 @@ export function adoptContendedSlot(
   if (!stored) return cached
 
   const storedByKey: Partial<Record<string, DraftEntryMeta>> = stored.entries
-  const draftKey = resolveDraftKey(cached, path)
-  const owner = storedByKey[draftKey]
-  if (!owner || owner.path === path) return cached
+  let index = cached
 
-  return {
-    v: 2,
-    updatedAt: Date.now(),
-    order: cached.order.includes(draftKey)
-      ? cached.order
-      : [...cached.order, draftKey],
-    entries: { ...cached.entries, [draftKey]: owner }
+  for (;;) {
+    const draftKey = resolveDraftKey(index, path)
+    const owner = storedByKey[draftKey]
+    if (!owner || owner.path === path) return index
+
+    index = {
+      v: 2,
+      updatedAt: Date.now(),
+      order: index.order.includes(draftKey)
+        ? index.order
+        : [...index.order, draftKey],
+      entries: { ...index.entries, [draftKey]: owner }
+    }
   }
 }
 
