@@ -47,6 +47,7 @@ import {
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
@@ -2056,10 +2057,7 @@ export class LiveGraphApplier {
       (node) => !createdSet.has(node.id)
     )
     const existingBounds = existingNodes.map((node) => node.boundingRect)
-    const createdBounds = createdNodes.map((node): ReadOnlyRect => {
-      const { x, y, width, height } = rect(node)
-      return [x, y, width, height]
-    })
+    const createdBounds = createdNodes.map(unrenderedBounds)
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2082,6 +2080,18 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+function unrenderedBounds(node: LGraphNode): ReadOnlyRect {
+  const titleHeight =
+    node.title_mode === TitleMode.TRANSPARENT_TITLE ||
+    node.title_mode === TitleMode.NO_TITLE
+      ? 0
+      : LiteGraph.NODE_TITLE_HEIGHT
+  const top = node.pos[1] - titleHeight
+  if (node.collapsed && !LiteGraph.vueNodesMode)
+    return [node.pos[0], top, LiteGraph.NODE_COLLAPSED_WIDTH, titleHeight]
+  return [node.pos[0], top, node.size[0], node.size[1] + titleHeight]
 }
 
 function framesAny(

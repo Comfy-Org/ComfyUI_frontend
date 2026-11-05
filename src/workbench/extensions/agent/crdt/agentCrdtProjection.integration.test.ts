@@ -611,6 +611,53 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       'Next stage': [250, 0]
     })
   })
+  it('places a group with the new node it frames by its rendered title', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a65'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [20, 30],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ],
+            groups: [
+              { id: 1, title: 'Around both', bounding: [0, -20, 300, 95] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    const group = graph.groups.find(({ title }) => title === 'Around both')
+    assert(inserted && group, 'the insertion reached the canvas')
+    expect([...inserted.pos]).not.toEqual([20, 30])
+    expect([
+      group.pos[0] - inserted.pos[0],
+      group.pos[1] - inserted.pos[1]
+    ]).toEqual([-20, -50])
+  })
   it('keeps a group on a collapsed node it frames as rendered', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([600, 100])
