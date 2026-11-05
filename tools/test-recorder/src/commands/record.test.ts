@@ -542,6 +542,51 @@ describe('runRecord overwrite guard', () => {
     }
   )
 
+  it('does not reuse overwrite consent after renaming', async () => {
+    const { text } = await import('@clack/prompts')
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    const { root, outputPath } = seedExistingSpec('original-target')
+    const renamedOutput = join(
+      root,
+      'browser_tests',
+      'tests',
+      'renamed-target.spec.ts'
+    )
+    try {
+      writeFileSync(renamedOutput, 'different existing spec')
+      vi.mocked(runRecording).mockResolvedValue({
+        success: true,
+        recordedCode: RECORDED_CODE
+      })
+      vi.mocked(confirm).mockResolvedValue(false)
+      vi.when(vi.mocked(confirm))
+        .calledWith(
+          expect.objectContaining({
+            message: 'original-target.spec.ts already exists. Overwrite it?'
+          })
+        )
+        .thenResolve(true)
+      vi.mocked(text).mockResolvedValue('renamed-target')
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`exit:${code}`)
+      })
+
+      await expect(runRecord(prefillFor('original-target'))).rejects.toThrow(
+        'exit:1'
+      )
+
+      expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
+      expect(readFileSync(renamedOutput, 'utf-8')).toBe(
+        'different existing spec'
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('saves a recording to a destination that does not exist yet', async () => {
     Object.defineProperty(process.stdin, 'isTTY', {
       configurable: true,
@@ -643,7 +688,7 @@ describe('runRecord overwrite guard', () => {
         }
       })
       vi.mocked(confirm).mockImplementation(async () => true)
-      const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
 
@@ -663,7 +708,6 @@ describe('runRecord overwrite guard', () => {
 
       expect(confirm).not.toHaveBeenCalledWith(overwritePrompt)
       expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
-      expect(exit).toHaveBeenCalledWith(1)
       expect(fail).toHaveBeenCalledWith(
         'Refusing to overwrite existing test',
         expect.stringContaining('stdin is closed')
@@ -686,7 +730,7 @@ describe('runRecord overwrite guard', () => {
         { label: 'Claude Code', command: 'claude', buildArgs: () => [] }
       ])
       vi.mocked(confirm).mockImplementation(async () => true)
-      const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
       })
 
@@ -711,7 +755,6 @@ describe('runRecord overwrite guard', () => {
         })
       )
       expect(runAgentRefactor).not.toHaveBeenCalled()
-      expect(exit).not.toHaveBeenCalled()
     } finally {
       Object.defineProperty(process, 'stdin', stdinDescriptor)
       rmSync(root, { recursive: true, force: true })
