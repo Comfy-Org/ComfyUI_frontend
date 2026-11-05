@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "Ajouter des crédits",
       "body": {
-        "local": "Vous avez dépensé votre solde de crédits. Ajoutez des crédits pour maintenir l’agent en fonctionnement.",
+        "local": "Votre compte ne dispose d’aucun crédit pour l’agent. Ajoutez des crédits pour l’utiliser.",
         "member": "Cet espace de travail a utilisé tous ses crédits. Demandez au propriétaire de votre espace de travail d’en ajouter.",
         "salesManaged": "Cet espace de travail est facturé via l’équipe responsable de votre compte Comfy. Contactez-la pour ajouter des crédits.",
         "subscribed": "Cet espace de travail a dépensé ses crédits mensuels et son solde de recharges. Ajoutez des crédits pour maintenir l’agent en fonctionnement.",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "Tarification de l’API",
     "charge": "Débiter",
+    "creditUnit": "Crédit | Crédits",
     "credits": "Crédits",
-    "creditUnit": "Crédits",
     "creditsAvailable": "Crédits disponibles",
     "details": "Détails",
     "eventType": "Type d'événement",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail",
     "savedAsApp": "Converti en workflow d'application",
-    "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement"
+    "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement",
+    "unsavedChangesLost": "Les modifications non enregistrées apportées à {name} n’étaient plus disponibles, le fichier enregistré a donc été laissé tel quel.",
+    "unsavedChangesLostTitle": "Les modifications non enregistrées n’ont pas été sauvegardées"
   },
   "workspace": {
     "addedToNamedWorkspace": "Vous avez été ajouté à {workspaceName}",

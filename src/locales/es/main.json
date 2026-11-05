@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "Añadir créditos",
       "body": {
-        "local": "Ha agotado su saldo de créditos. Añada créditos para mantener el agente en funcionamiento.",
+        "local": "Tu cuenta no tiene créditos disponibles para el agente. Añade créditos para usarlo.",
         "member": "Este espacio de trabajo ha usado todos sus créditos. Pida al propietario del espacio de trabajo que añada más.",
         "salesManaged": "Este espacio de trabajo se factura a través de su equipo de cuentas de Comfy. Contáctelos para añadir créditos.",
         "subscribed": "Este espacio de trabajo ha gastado sus créditos mensuales y su saldo de recarga. Añada créditos para mantener el agente en funcionamiento.",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "Precios de la API",
     "charge": "Cobro",
+    "creditUnit": "Crédito | Créditos",
     "credits": "Créditos",
-    "creditUnit": "Créditos",
     "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
-    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
+    "unsavedChangesLost": "Los cambios sin guardar de {name} ya no estaban disponibles, por lo que el archivo guardado se dejó tal como estaba.",
+    "unsavedChangesLostTitle": "Los cambios sin guardar no se guardaron"
   },
   "workspace": {
     "addedToNamedWorkspace": "Se te ha añadido a {workspaceName}",

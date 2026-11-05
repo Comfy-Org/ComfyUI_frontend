@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "添加额度",
       "body": {
-        "local": "您的额度余额已用完。添加额度以继续运行代理。",
+        "local": "你的账户没有可供代理使用的积分。请添加积分以使用它。",
         "member": "此工作区已用完所有额度。请让工作区所有者添加更多额度。",
         "salesManaged": "此工作区通过您的 Comfy 客户团队计费。请联系他们添加额度。",
         "subscribed": "此工作区已用完每月额度和充值余额。添加额度以继续运行代理。",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API 价格",
     "charge": "扣费",
+    "creditUnit": "积分 | 积分",
     "credits": "积分",
-    "creditUnit": "积分",
     "creditsAvailable": "积分可用",
     "details": "详情",
     "eventType": "事件类型",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "导出工作流",
     "saveWorkflow": "保存工作流",
     "savedAsApp": "已转换为应用工作流",
-    "savedAsWorkflow": "已转换为节点图工作流"
+    "savedAsWorkflow": "已转换为节点图工作流",
+    "unsavedChangesLost": "对 {name} 所做的未保存更改已不可用，因此已保存的文件保持不变。",
+    "unsavedChangesLostTitle": "未保存的更改未被保存"
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被添加到 {workspaceName}",

@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "Kredi ekle",
       "body": {
-        "local": "Kredi bakiyenizi harcadınız. Aracının çalışmaya devam etmesi için kredi ekleyin.",
+        "local": "Hesabınızda ajan için kullanılabilir kredi yok. Kullanmak için kredi ekleyin.",
         "member": "Bu çalışma alanı tüm kredilerini kullandı. Daha fazla kredi eklemesi için çalışma alanı sahibinize başvurun.",
         "salesManaged": "Bu çalışma alanı Comfy hesap ekibiniz aracılığıyla faturalandırılır. Kredi eklemek için onlarla iletişime geçin.",
         "subscribed": "Bu çalışma alanı aylık kredilerini ve ek kredi bakiyesini harcadı. Aracının çalışmaya devam etmesi için kredi ekleyin.",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API Fiyatlandırması",
     "charge": "Ücretlendirme",
+    "creditUnit": "Kredi | Krediler",
     "credits": "Krediler",
-    "creditUnit": "Krediler",
     "creditsAvailable": "Mevcut kredi",
     "details": "Detaylar",
     "eventType": "Etkinlik Türü",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "İş Akışını Dışa Aktar",
     "saveWorkflow": "İş akışını kaydet",
     "savedAsApp": "Uygulama iş akışına dönüştürüldü",
-    "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü"
+    "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü",
+    "unsavedChangesLost": "{name} için kaydedilmemiş değişiklikler artık mevcut değildi, bu nedenle kaydedilmiş dosya olduğu gibi bırakıldı.",
+    "unsavedChangesLostTitle": "Kaydedilmemiş değişiklikler kaydedilmedi"
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName} çalışma alanına eklendiniz",

@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "クレジットを追加",
       "body": {
-        "local": "クレジット残高を使い切りました。エージェントを継続して実行するにはクレジットを追加してください。",
+        "local": "アカウントにはエージェントに使用できるクレジットがありません。使用するにはクレジットを追加してください。",
         "member": "このワークスペースではすべてのクレジットを使い切りました。ワークスペースの所有者に追加を依頼してください。",
         "salesManaged": "このワークスペースの請求はComfyアカウントチームを通じて行われます。クレジットを追加するには、チームにお問い合わせください。",
         "subscribed": "このワークスペースでは月間クレジットと追加クレジット残高を使い切りました。エージェントを継続して実行するにはクレジットを追加してください。",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API料金",
     "charge": "請求",
+    "creditUnit": "クレジット | クレジット",
     "credits": "クレジット",
-    "creditUnit": "クレジット",
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
-    "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました"
+    "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",
+    "unsavedChangesLost": "{name} の未保存の変更は利用できなくなったため、保存済みのファイルはそのままとなりました。",
+    "unsavedChangesLostTitle": "未保存の変更は保存されませんでした"
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}に追加されました",
