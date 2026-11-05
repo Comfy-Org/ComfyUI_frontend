@@ -363,7 +363,8 @@ export function findAgentSurfaceFiles(repositoryRoot: string): string[] {
     .sort()
 }
 
-const SCRIPT_BLOCK = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
+const SCRIPT_BLOCK =
+  /(<script\b(?:[^>"']|"[^"]*"|'[^']*')*>)([\s\S]*?)<\/script\s*>/gi
 
 function scriptOf(file: string, source: string): string {
   if (!file.endsWith('.vue')) return source
@@ -371,9 +372,10 @@ function scriptOf(file: string, source: string): string {
   let result = ''
   let cursor = 0
   for (const match of source.matchAll(SCRIPT_BLOCK)) {
-    const start = match.index + match[0].indexOf(match[1], 1)
-    result += blank(source.slice(cursor, start)) + match[1]
-    cursor = start + match[1].length
+    const [, openingTag, script] = match
+    const start = match.index + openingTag.length
+    result += blank(source.slice(cursor, start)) + script
+    cursor = start + script.length
   }
   return result + blank(source.slice(cursor))
 }

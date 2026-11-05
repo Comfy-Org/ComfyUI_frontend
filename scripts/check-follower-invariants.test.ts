@@ -237,6 +237,28 @@ onBeforeUnmount(() => docTransport.destroy())
     for (const violation of checkPageSessionOwnsTransport(PANEL_FILE, fixture))
       expect(violation.file).toBe(PANEL_FILE)
   })
+
+  test.for([
+    'generic="T extends Array<string>"',
+    "generic='T extends Array<string>'",
+    'generic="T extends Record<string, () => void>"'
+  ])('catches the forbidden call in an SFC opened with %s', (attribute) => {
+    const fixture = `<script setup lang="ts" ${attribute}>\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({
+        file: PANEL_FILE,
+        line: 2,
+        rule: 'page-session-owns-transport'
+      })
+    ])
+  })
+
+  test('keeps real-line anchors when a generic opening tag spans lines', () => {
+    const fixture = `<template>\n  <div />\n</template>\n\n<script\n  setup\n  lang="ts"\n  generic="T extends Array<string>"\n>\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({ line: 10 })
+    ])
+  })
 })
 
 describe('checkPageSessionOwnsTransport allowed shapes', () => {
