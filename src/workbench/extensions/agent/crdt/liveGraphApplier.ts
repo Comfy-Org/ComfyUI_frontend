@@ -1173,15 +1173,17 @@ export class LiveGraphApplier {
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      this.deps.getCanvas?.()?.emitBeforeChange()
+      const canvas = this.deps.getCanvas?.()
+      canvas?.emitBeforeChange()
       try {
         return withLiveAgentTurnWrites(
           { isLiveAgentTurn: context.liveAgentTurn === true },
           () => withGraphIntentSource('agent-remote', fn)
         )
       } finally {
-        graph.setDirtyCanvas(true, true)
-        this.deps.getCanvas?.()?.emitAfterChange()
+        if (canvas) canvas.setDirty(true, true)
+        else graph.setDirtyCanvas(true, true)
+        canvas?.emitAfterChange()
       }
     })
   }

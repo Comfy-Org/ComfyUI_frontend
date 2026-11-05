@@ -803,7 +803,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
           fromPartial<LGraphCanvas>({
             ctx,
             emitBeforeChange: () => {},
-            emitAfterChange: () => {}
+            emitAfterChange: () => {},
+            setDirty: () => {}
           })
       }
     )
