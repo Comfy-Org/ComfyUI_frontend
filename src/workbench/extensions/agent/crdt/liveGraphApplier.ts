@@ -237,16 +237,11 @@ const zDocNodeFields = zComfyNode
     [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
 
-/**
- * `insert_workflow` keeps a group's `id` only when the inserted workflow gave
- * it one, so `meta.groups` also holds groups without a numeric id.
- */
 const zDocGroup = zGroup.extend({ id: z.unknown().optional() })
 
 /**
- * The `meta.groups` records that configure a canvas group, keyed by id. A
- * record without a numeric id gets one derived from its content, so every
- * read of the same record names the same canvas group.
+ * The `meta.groups` records that configure a canvas group, keyed by id; a
+ * record without a usable id is keyed by a hash of its content.
  */
 export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
   const parsed = new Map<string, ISerialisedGroup>()
@@ -254,34 +249,44 @@ export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
   for (const record of groups) {
     const group = zDocGroup.safeParse(structuredClone(record))
     if (!group.success) continue
-    const id =
-      typeof group.data.id === 'number'
-        ? group.data.id
-        : contentGroupId(group.data)
+    const id = isGroupId(group.data.id)
+      ? group.data.id
+      : contentGroupId(group.data)
     parsed.set(String(id), { ...group.data, id })
   }
   return parsed
 }
 
-/** A positive id from FNV-1a over the record's key-sorted JSON. */
+function isGroupId(id: unknown): id is number {
+  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0
+}
+
 function contentGroupId(record: Record<string, unknown>): number {
-  let hash = 0x811c9dc5
-  for (const char of canonicalJson(record)) {
-    hash ^= char.charCodeAt(0)
-    hash = Math.imul(hash, 0x01000193)
+  const json = canonicalJson(record)
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < json.length; i++) {
+    const code = json.charCodeAt(i)
+    h1 = Math.imul(h1 ^ code, 2654435761)
+    h2 = Math.imul(h2 ^ code, 1597334677)
   }
-  return (hash >>> 0) + 1
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0) + 1
 }
 
 function canonicalJson(value: unknown): string {
+  if (typeof value === 'bigint') return `${value}n`
+  if (value === undefined) return 'null'
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
   if (value !== null && typeof value === 'object') {
-    const entries = Object.entries(value).sort(([a], [b]) =>
-      a < b ? -1 : a > b ? 1 : 0
-    )
-    return `{${entries
+    const entries = Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
-      .join(',')}}`
+    return `{${entries.join(',')}}`
   }
   return JSON.stringify(value)
 }
