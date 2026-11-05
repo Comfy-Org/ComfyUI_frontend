@@ -4297,16 +4297,15 @@ describe('useWorkflowService', () => {
     }
 
     function draftOf(extra: Record<string, unknown>, updatedAt: number) {
-      vi.mocked(useWorkflowDraftStoreV2().getDraft).mockImplementation(
-        (path) =>
-          path === 'workflows/background.json'
-            ? {
-                data: JSON.stringify({ ...defaultGraph, extra }),
-                name: 'background.json',
-                isTemporary: false,
-                updatedAt
-              }
-            : null
+      vi.mocked(useWorkflowDraftStoreV2().getDraft).mockImplementation((path) =>
+        path === 'workflows/background.json'
+          ? {
+              data: JSON.stringify({ ...defaultGraph, extra }),
+              name: 'background.json',
+              isTemporary: false,
+              updatedAt
+            }
+          : null
       )
     }
 
