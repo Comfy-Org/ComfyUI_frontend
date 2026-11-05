@@ -31,7 +31,6 @@ function codeForResponse(status: number): SessionErrorCode {
 
 const MAX_REPORTED_ISSUE_PATHS = 5
 
-/** A 2xx that yielded no credential: still TOKEN_EXCHANGE_FAILED, with why. */
 function unusableBody(
   httpStatus: number,
   reason: ExchangeFailureReason,
@@ -46,7 +45,6 @@ function unusableBody(
   }
 }
 
-/** Field paths only, never values: the body carries the token. */
 function schemaIssuePaths(
   issues: readonly { readonly path: readonly PropertyKey[] }[]
 ): string {
@@ -200,8 +198,6 @@ export async function exchangeToken(
     }
     const expiresInMs = expiresAt - now()
     if (expiresInMs <= 0) {
-      // A fresh token that is already past its expiry on the local clock
-      // points at a skewed device clock; the margin says by how much.
       return unusableBody(
         response.status,
         'expired_on_arrival',
