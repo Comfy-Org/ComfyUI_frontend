@@ -7,8 +7,9 @@ type CustomerEventsResponse =
 export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
 export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
 export const API_USAGE_EVENT_TYPE = 'API Usage'
+export const GPU_USAGE_EVENT_TYPE = 'GPU Usage'
 
-/** `/customers/events` page with whole, sub-credit and non-numeric `charge_micro_usd`. */
+/** `/customers/events` page with whole, one-credit, sub-credit and non-numeric `charge_micro_usd`. */
 export const AGENT_USAGE_CUSTOMER_EVENTS = {
   events: [
     {
@@ -32,6 +33,15 @@ export const AGENT_USAGE_CUSTOMER_EVENTS = {
       }
     },
     {
+      event_id: 'evt-gpu-usage-one-credit',
+      event_type: 'gpu_usage',
+      createdAt: '2026-09-20T11:15:00Z',
+      params: {
+        charge_micro_usd: 4_740,
+        gpu_seconds: 3
+      }
+    },
+    {
       event_id: 'evt-partner-node-usage',
       event_type: 'api_node_usage',
       createdAt: '2026-09-20T11:00:00Z',
@@ -43,6 +53,6 @@ export const AGENT_USAGE_CUSTOMER_EVENTS = {
   ],
   page: 1,
   limit: 7,
-  total: 3,
+  total: 4,
   totalPages: 1
 } satisfies CustomerEventsResponse

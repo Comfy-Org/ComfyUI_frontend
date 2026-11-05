@@ -1193,6 +1193,7 @@
     "apiPricing": "أسعار API",
     "charge": "خصم",
     "credits": "الرصيد",
+    "creditUnit": "الرصيد",
     "creditsAvailable": "الرصيد المتاح",
     "details": "التفاصيل",
     "eventType": "نوع الحدث",
