@@ -18750,7 +18750,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي يجريه النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: يدعم GPT-6 Astra النطاق low-max، وGPT-6 Sol/Luna وGPT-5.6 النطاق none-max (دون minimal)، وGPT-5.5 النطاق none-xhigh، وGPT-5.5 Pro النطاق medium-xhigh، وGPT-5 النطاق minimal-high، وسلسلة o النطاق low-high؛ لا يحتوي GPT-4.1 على استدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "تختلف المستويات المدعومة حسب النموذج. يؤدي المستوى غير المدعوم إلى إيقاف التشغيل وعرض المستويات الصالحة. يتيح 'default' للنموذج الاختيار."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -19010,6 +19010,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تحويل النص إلى صورة، أو تعديل image_1 باستخدام الصور الأخرى كمراجع عند وجود صور. يشير الموجّه إليها بصفتها <Picture 1>، <Picture 2>، ... يحتاج النموذج إلى ModelSamplingMiniMaxH3 عند 1.0/1.0.",
+    "display_name": "تكييف p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "تستخدم القيمة 0 ارتفاع image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "مع الصور، تُسبق التعليمة القصيرة بـ \"Edit <Picture 1>. \"; وتُستخدم كما هي التعليمة التي تبدأ بـ \"Edit <Picture\" وموجز التعديل من مُحسّن الموجّه."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "‏VAE الخاص بـ p-h3-image، وهو مطلوب عند توصيل الصور."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "تستخدم القيمة 0 عرض image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19698,183 @@
       },
       "positive": {
         "name": "موجب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، وهو MiniMax H3 الخاص بـ Pika بعد تدريبه لاحقًا. أنشئ الفيديو أو عدّله بصوت متزامن موجّه بصور وفيديوهات وصوت مرجعية.",
+    "display_name": "مرجع Pika H3 Flex إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto فيديو مرجعيًا، وإلا فيتبع الموجّه. لا تؤثر الصور المرجعية فيه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يتبع طول الناتج شبكة إطارات: تمنح 5 ثوانٍ 124 إطارًا، أي نحو 5.17 ثانية."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "أشر إلى المراجع بصفتها @Image1 أو @Video1 أو @Audio1، أو بصفتها <Picture 1> أو <Video 1> أو <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حتى 3 مقاطع، يُشار إليها في الموجّه بصفتها @Audio1..@Audio3. مدة كل منها من 2 إلى 15 ثانية، وبإجمالي 15 ثانية. عند نسخها إلى الناتج، تُشغَّل المقاطع وفق ترتيب التوصيل، قبل صوت الفيديوهات المتصلة، مهما كان الرقم الذي يسميه الموجّه."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 9 صور، يُشار إليها في الموجّه بصفتها @Image1..@Image9 وفق ترتيب التوصيل. يلزم وجود صورة واحدة أو فيديو واحد على الأقل."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "يُنسخ صوت الفيديوهات المتصلة إلى الناتج. عطّل هذا للحصول على أجواء جديدة أو نقل الحركة مع موسيقى جديدة. عندئذٍ، يحصل الرأس المتحدث الذي لا يحتوي موجّهه على حوار على كلام مُبتكر."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حتى 3 فيديوهات، يُشار إليها في الموجّه بصفتها @Video1..@Video3 وفق ترتيب التوصيل. مدة كل منها من 2 إلى 15 ثانية، وبإجمالي 15 ثانية. تُحتسب التكلفة لكل ثانية."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "تُصيَّر دقة 1080p وما فوق بدقة 768p ثم تُرفع مرة واحدة. تعطي البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "دع Pika يوسّع الموجّه أولًا. عندئذٍ تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "عند إيقاف rewrite_prompt، تكرر البذرة نفسها الفيديو بالضبط. يعطي التشغيل المحلي بالبذرة نفسها نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، وهو MiniMax H3 الخاص بـ Pika بعد تدريبه لاحقًا. أنشئ فيديو بصوت متزامن من النص ومن الإطارين الأول والأخير الاختياريين.",
+    "display_name": "فيديو Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto أول إطار متصل، وإلا فيتبع الموجّه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يتبع طول الإخراج شبكة إطارات: 5 ثوانٍ تعطي 124 إطارًا، أي نحو 5.17 ثوانٍ."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "عند 1080p وما فوق، يُصيَّر الفيديو بدقة 768p ثم يُرقّى مرة واحدة. تمنح البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "دع Pika يوسّع الموجّه أولًا. عندها تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "عند إيقاف rewrite_prompt، تكرّر البذرة نفسها الفيديو تمامًا. يمنح التشغيل المحلي بالبذرة نفسها نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "أنشئ موسيقى من وصف نصي وكلمات اختيارية، أو أنشئ نسخة غلاف لأغنية، باستخدام Pika.",
+    "display_name": "موسيقى Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "mode_duration": {
+        "name": "المدة"
+      },
+      "mode_lyrics": {
+        "name": "الكلمات"
+      },
+      "mode_prompt": {
+        "name": "الموجّه"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "أنشئ مؤثرًا صوتيًا من وصف نصي باستخدام Pika.",
+    "display_name": "مؤثرات Pika الصوتية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "أنشئ مسارًا صوتيًا متزامنًا لفيديو باستخدام Pika. تُحفَظ الصورة والمدة؛ ويُستبدل الصوت فقط.",
+    "display_name": "مسار Pika الصوتي",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "instruction": {
+        "name": "تعليمات",
+        "tooltip": "ما ينبغي أن يكون عليه الصوت: مؤثرات صوتية أو أجواء أو موسيقى أو أسلوب. اتركه فارغًا لاشتقاقه من الصورة."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "حتى 10 دقائق."
       }
     },
     "outputs": {
@@ -24973,6 +25187,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "أنشئ أغنية بغناء صوتي من موجّه نصي باستخدام Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "تضبط 'auto' طول الأغنية ليلائم كلمات الأغنية. يؤدي تحديد طول مخصص إلى قطع الكلمات التي لا تلائم المدة وتكرار الكلمات القصيرة."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "صِف الأغنية: النوع، والمزاج، والآلات الموسيقية، والغناء. لتعيين الكلمات، أضف كتلة 'Lyrics:' بوسمي [Verse] / [Chorus]؛ ومن دونها، يكتب النموذج كلماته الخاصة. الحد الأقصى: 2000 حرف."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان ينبغي للعقدة إعادة التشغيل؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
     "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
@@ -25813,6 +26053,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "أنشئ استجابات نصية باستخدام نموذج Hy4 من Tencent. وفّر موجّهًا نصيًا، ويمكنك اختياريًا توفير صورة واحدة أو أكثر للسياق.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_reasoning": {
+        "name": "الاستدلال"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {
@@ -26421,7 +26696,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "توليد نص",
+    "display_name": "توليد نص (مهجور)",
     "inputs": {
       "audio": {
         "name": "صوت"
@@ -26560,6 +26835,79 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "توليد نص",
+    "inputs": {
+      "audios": {
+        "name": "المقاطع الصوتية"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز لنقطة التحقق. لا تأثير له دون أوزان MTP. يكيّف auto عمق المسودة واتساعها مع مطابقات الرموز الملحوظة وتكلفة التنفيذ؛ تثبّت 2-5 عمقًا ثابتًا للمسودة؛ وتثبّت أوضاع الشجرة كلاً من الاتساع والعمق. يظل الناتج المأخوذ بعينات موزعًا توزيعًا صحيحًا، لكنه يختلف عن ناتج غير MTP للبذرة نفسها."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "البذرة"
+      },
+      "sampling_mode_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل الموجّه النظامي في قالب الدردشة الخاص بالنموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "شغّل في وضع التفكير إذا كان النموذج يدعمه."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "استخدم الموجّه/القالب النظامي المضمّن إذا كان للنموذج واحد."
+      },
+      "videos": {
+        "name": "مقاطع الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -26728,7 +27076,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "تكبير وتحسين الصور بمعايير الصناعة.",
+    "description": "تكبير وتحسين للصور بمستوى معايير الصناعة. الحد الأقصى للإخراج: 179 ميغابكسل.",
     "display_name": "تحسين الصورة Topaz",
     "inputs": {
       "image": {
@@ -26766,11 +27114,11 @@
       },
       "output_height": {
         "name": "ارتفاع الإخراج",
-        "tooltip": "القيمة صفر تعني الإخراج بنفس ارتفاع الأصل أو التحجيم بشكل متناسب مع عرض الإخراج إذا تم تحديده. يدعم Wonder 3.5 عوامل تكبير من 1x إلى 6x فقط. Bloom 2 وWonder 3.5 يحافظان على نسبة العرض إلى الارتفاع الأصلية ويعاملان الحجم المطلوب كهدف."
+        "tooltip": "تعني القيمة صفر الإخراج بالارتفاع نفسه للصورة الأصلية أو تحجيمه تناسبياً بحسب output_width إذا حُدد. يدعم Wonder 3.5 وWonder 4 معاملات تكبير من 1x إلى 6x، ويدعم Bloom 2 معاملات من 1x إلى 12x. يحافظ Bloom 2 وWonder 3.5 وWonder 4 دائماً على نسبة أبعاد الإدخال: إذا تم تعيين البعدين وكانت النسبة بينهما مختلفة، يُعتمد عامل التكبير الأكبر ويكون الإخراج (والسعر) أكبر من الحجم المطلوب."
       },
       "output_width": {
         "name": "عرض الإخراج",
-        "tooltip": "القيمة صفر تعني الحساب تلقائيًا (عادةً سيكون الحجم الأصلي أو يتم التحجيم بشكل متناسب مع ارتفاع الإخراج إذا تم تحديده). يدعم Wonder 3.5 عوامل تكبير من 1x إلى 6x فقط. Bloom 2 وWonder 3.5 يحافظان على نسبة العرض إلى الارتفاع الأصلية ويعاملان الحجم المطلوب كهدف."
+        "tooltip": "تعني القيمة صفر إجراء الحساب تلقائياً (وعادةً سيكون الحجم الأصلي أو سيتم تحجيمه تناسبياً بحسب output_height إذا حُدد). يدعم Wonder 3.5 وWonder 4 معاملات تكبير من 1x إلى 6x، ويدعم Bloom 2 معاملات من 1x إلى 12x. يحافظ Bloom 2 وWonder 3.5 وWonder 4 دائماً على نسبة أبعاد الإدخال: إذا تم تعيين البعدين وكانت النسبة بينهما مختلفة، يُعتمد عامل التكبير الأكبر ويكون الإخراج (والسعر) أكبر من الحجم المطلوب."
       }
     },
     "outputs": {

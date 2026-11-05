@@ -18750,7 +18750,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati differiscono in base al modello: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, serie o low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
+        "tooltip": "I livelli supportati variano in base al modello. Un livello non supportato interrompe l'esecuzione ed elenca quelli validi. 'default' lascia scegliere al modello."
       },
       "truncation": {
         "name": "troncamento",
@@ -19010,6 +19010,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Da testo a immagine oppure, con immagini, una modifica di image_1 con le altre come riferimenti. Il prompt vi fa riferimento come <Picture 1>, <Picture 2>, ... Il modello richiede ModelSamplingMiniMaxH3 a 1.0/1.0.",
+    "display_name": "Condizionamento p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "0 usa l'altezza di image_1 dopo il ridimensionamento, oppure 2912 senza immagini."
+      },
+      "images": {
+        "name": "images"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Con le immagini, a una breve istruzione viene anteposto \"Edit <Picture 1>. \"; un'istruzione che inizia con \"Edit <Picture\" e una richiesta di modifica dall'upsampler del prompt vengono usate così come sono."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Il VAE p-h3-image, necessario quando sono collegate immagini."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "0 usa la larghezza di image_1 dopo il ridimensionamento, oppure 2912 senza immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19698,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, il MiniMax H3 post-addestrato di Pika. Genera o modifica video con audio sincronizzato, guidato da immagini, video e audio di riferimento.",
+    "display_name": "Pika H3 Flex Riferimento a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto segue un video di riferimento, altrimenti il prompt. Le immagini di riferimento non lo influenzano."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "La durata dell'output segue una griglia di frame: 5 secondi producono 124 frame, circa 5,17 secondi."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Fai riferimento ai contenuti di riferimento come @Image1, @Video1, @Audio1 oppure come <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Fino a 3 clip, indicate nel prompt come @Audio1..@Audio3. Da 2 a 15 secondi ciascuna, 15 secondi in totale. Quando vengono copiati nell'output, le clip vengono riprodotte nell'ordine di collegamento, prima dell'audio dei video collegati, indipendentemente dal numero indicato dal prompt."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Fino a 9 immagini, indicate nel prompt come @Image1..@Image9 nell'ordine di collegamento. È richiesta almeno un'immagine o un video."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "L'audio dei video collegati viene copiato nell'output. Disattiva questa opzione per un nuovo ambiente sonoro o per il trasferimento del movimento con nuova musica. Una testa parlante senza dialogo nel prompt riceverà quindi un parlato inventato."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Fino a 3 video, indicati nel prompt come @Video1..@Video3 nell'ordine di collegamento. Da 2 a 15 secondi ciascuno, 15 secondi in totale. Fatturati al secondo."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p e versioni superiori eseguono il rendering a 768p e ingrandiscono una volta. Lo stesso seed a 480p produce un video diverso."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Lascia prima che Pika espanda il prompt. Lo stesso seed produce quindi un video diverso a ogni esecuzione."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Con rewrite_prompt disattivato, lo stesso seed ripete esattamente il video. Un'esecuzione locale con lo stesso seed produce un risultato diverso."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, il MiniMax H3 post-addestrato di Pika. Genera video con audio sincronizzato da testo e fotogrammi iniziale e finale facoltativi.",
+    "display_name": "Video Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto_aspetto",
+        "tooltip": "auto segue il primo fotogramma connesso, altrimenti il prompt."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata",
+        "tooltip": "La lunghezza dell'output segue una griglia di fotogrammi: 5 secondi producono 124 fotogrammi, circa 5,17 secondi."
+      },
+      "first_frame": {
+        "name": "primo_fotogramma"
+      },
+      "last_frame": {
+        "name": "ultimo_fotogramma"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "1080p e superiori vengono renderizzati a 768p e ingranditi una volta. Lo stesso seed a 480p produce un video diverso."
+      },
+      "rewrite_prompt": {
+        "name": "riscrivi_prompt",
+        "tooltip": "Consenti a Pika di espandere prima il prompt. Lo stesso seed produce quindi un video diverso a ogni esecuzione."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Con rewrite_prompt disattivato, lo stesso seed ripete esattamente il video. Un'esecuzione locale con lo stesso seed produce un risultato diverso."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Genera musica da una descrizione testuale e da un testo facoltativo, oppure crea una cover di una canzone, con Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "mode": {
+        "name": "modalità"
+      },
+      "mode_duration": {
+        "name": "durata"
+      },
+      "mode_lyrics": {
+        "name": "testo"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "riscrivi_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Genera un effetto sonoro da una descrizione testuale con Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Genera una colonna sonora sincronizzata per un video con Pika. L'immagine e la durata vengono mantenute; viene sostituito solo l'audio.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "instruction": {
+        "name": "istruzione",
+        "tooltip": "Come dovrebbe essere l'audio: effetti sonori, ambiente, musica o stile. Lascia vuoto per ricavarlo dall'immagine."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fino a 10 minuti."
       }
     },
     "outputs": {
@@ -24973,6 +25187,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Genera una canzone con voce cantata da un prompt di testo usando Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata",
+        "tooltip": "'auto' adatta la durata del brano al testo. Una durata personalizzata taglia le parti del testo che non rientrano e ripete quelle brevi."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrivi la canzone: genere, atmosfera, strumenti e voce. Per impostare le parole, aggiungi un blocco 'Lyrics:' con tag [Verse] / [Chorus]; senza, il modello scrive il proprio testo. Massimo: 2000 caratteri."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Il seed controlla se il nodo deve essere eseguito di nuovo; i risultati non sono deterministici indipendentemente dal seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Genera musica da un prompt testuale utilizzando il modello AI di Sonilo.",
     "display_name": "Sonilo Testo in Musica",
@@ -25813,6 +26053,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Genera risposte testuali con il modello Hy4 di Tencent. Fornisci un prompt di testo e, facoltativamente, una o più immagini come contesto.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "ragionamento"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Da Immagine/i a Modello",
     "inputs": {
@@ -26421,7 +26696,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "Genera Testo",
+    "display_name": "Genera testo (OBSOLETO)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -26560,6 +26835,79 @@
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Genera testo",
+    "inputs": {
+      "audios": {
+        "name": "audio"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "immagini"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodifica speculativa con la testa di predizione multi-token del checkpoint. Non ha effetto senza pesi MTP. auto adatta la profondità e l'ampiezza della bozza alle corrispondenze dei token osservate e al costo di esecuzione; 2-5 imposta una profondità della bozza costante; le modalità ad albero impostano sia l'ampiezza sia la profondità. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output non MTP per lo stesso seed."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel modello di chat del modello. Ignorato quando non viene utilizzato il modello predefinito."
+      },
+      "thinking": {
+        "name": "ragionamento",
+        "tooltip": "Opera in modalità di ragionamento se il modello la supporta."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Usa il prompt di sistema/modello integrato se il modello ne dispone."
+      },
+      "videos": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -26728,7 +27076,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Upscaling e miglioramento delle immagini di livello industriale.",
+    "description": "Upscaling e miglioramento delle immagini di livello professionale. Output massimo: 179 megapixel.",
     "display_name": "Topaz Image Enhance",
     "inputs": {
       "image": {
@@ -26766,11 +27114,11 @@
       },
       "output_height": {
         "name": "altezza_output",
-        "tooltip": "Un valore pari a zero significa mantenere la stessa altezza dell'originale o scalare proporzionalmente a output_width se specificato. Wonder 3.5 supporta solo fattori di upscaling da 1x a 6x. Bloom 2 e Wonder 3.5 preservano il rapporto d'aspetto dell'input e trattano la dimensione richiesta come obiettivo."
+        "tooltip": "Il valore zero indica di generare un output con la stessa altezza dell'originale o scalato proporzionalmente a output_width, se specificato. Wonder 3.5 e Wonder 4 supportano fattori di upscale da 1x a 6x, Bloom 2 da 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 mantengono sempre il rapporto d'aspetto dell'input: se vengono impostate entrambe le dimensioni e il loro rapporto è diverso, prevale il fattore di scala maggiore e l'output (e il prezzo) è più grande della dimensione richiesta."
       },
       "output_width": {
         "name": "larghezza_output",
-        "tooltip": "Un valore pari a zero significa calcolo automatico (di solito sarà la dimensione originale o scalata proporzionalmente a output_height se specificato). Wonder 3.5 supporta solo fattori di upscaling da 1x a 6x. Bloom 2 e Wonder 3.5 preservano il rapporto d'aspetto dell'input e trattano la dimensione richiesta come obiettivo."
+        "tooltip": "Il valore zero indica di calcolare automaticamente (in genere corrisponderà alla dimensione originale o verrà scalato proporzionalmente a output_height, se specificato). Wonder 3.5 e Wonder 4 supportano fattori di upscale da 1x a 6x, Bloom 2 da 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 mantengono sempre il rapporto d'aspetto dell'input: se vengono impostate entrambe le dimensioni e il loro rapporto è diverso, prevale il fattore di scala maggiore e l'output (e il prezzo) è più grande della dimensione richiesta."
       }
     },
     "outputs": {

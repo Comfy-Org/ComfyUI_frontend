@@ -18750,7 +18750,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin yanıtlamadan önce ne kadar akıl yürüttüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre değişir: GPT-6 Astra low-max, GPT-6 Sol/Luna ve GPT-5.6 none-max (minimal yok), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1’de akıl yürütme yoktur. Desteklenmeyen düzeyler istek gönderilmeden önce reddedilir."
+        "tooltip": "Desteklenen düzeyler modele göre değişir. Desteklenmeyen bir düzey çalıştırmayı durdurur ve geçerli olanları listeler. 'default', modelin seçim yapmasına izin verir."
       },
       "truncation": {
         "name": "kırpma",
@@ -19010,6 +19010,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Metinden görüntü oluşturma veya görüntülerle diğerlerini referans alarak image_1'i düzenleme. İstem bunlara <Picture 1>, <Picture 2>, ... olarak başvurur. Modelin 1.0/1.0'da ModelSamplingMiniMaxH3'e ihtiyacı vardır.",
+    "display_name": "p-h3-image Koşullandırma",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "0, ölçeklendirmeden sonra image_1'in yüksekliğini, görüntü yoksa 2912'yi kullanır."
+      },
+      "images": {
+        "name": "görüntüler"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntülerle, kısa bir yönergenin başına \"Edit <Picture 1>. \" eklenir; \"Edit <Picture\" ile başlayan bir yönerge ve istem büyütücüden gelen düzenleme özeti olduğu gibi kullanılır."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Görüntüler bağlandığında gereken p-h3-image VAE."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "0, ölçeklendirmeden sonra image_1'in genişliğini, görüntü yoksa 2912'yi kullanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19698,183 @@
       },
       "positive": {
         "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika'nın sonradan eğitilmiş MiniMax H3'ü olan Pika H3 Flex. Referans görüntüler, videolar ve seslerin yönlendirmesiyle senkronize sesli video oluşturun veya düzenleyin.",
+    "display_name": "Pika H3 Flex Referanstan Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto bir referans videoyu, aksi hâlde istemi izler. Referans görüntüler bunu etkilemez."
+      },
+      "control_after_generate": {
+        "name": "Oluşturmadan sonra denetle"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "Çıktı süresi bir kare ızgarasını izler: 5 saniye 124 kare, yaklaşık 5.17 saniye verir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Referanslara @Image1, @Video1, @Audio1 veya <Picture 1>, <Video 1>, <Audio 1> olarak başvurun."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "En fazla 3 klip, istemde @Audio1..@Audio3 olarak anılır. Her biri 2-15 saniye, toplamda 15 saniye. Çıktıya kopyalandığında, istemde hangi numara belirtilmiş olursa olsun klipler bağlantı sırasına göre bağlı videoların sesinden önce oynatılır."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Bağlantı sırasına göre istemde @Image1..@Image9 olarak anılan en fazla 9 görüntü. En az bir görüntü veya video gereklidir."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "Bağlı videoların sesi çıktıya kopyalanır. Yeni ortam sesi veya yeni müzikle hareket aktarımı için bunu kapatın. İstemde diyalog olmayan konuşan bir yüze bu durumda uydurma konuşma verilir."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Bağlantı sırasına göre istemde @Video1..@Video3 olarak anılan en fazla 3 video. Her biri 2-15 saniye, toplamda 15 saniye. Saniye başına ücretlendirilir."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p ve üzeri 768p'de işlenir ve bir kez yükseltilir. 480p'de aynı seed farklı bir video verir."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Önce Pika'nın istemi genişletmesine izin verin. Aynı seed, her çalıştırmada farklı bir video verir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "rewrite_prompt kapalıyken aynı seed videoyu tam olarak tekrarlar. Aynı seed ile yerel çalıştırma farklı bir sonuç verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika'nın sonradan eğitilmiş MiniMax H3'ü olan Pika H3 Flex. Metinden ve isteğe bağlı ilk ve son karelerden senkronize sesli video oluşturun.",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_oranı",
+        "tooltip": "auto, bağlı olan ilk kareyi; aksi hâlde prompt'u takip eder."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "Çıktı uzunluğu bir kare ızgarasını takip eder: 5 saniye 124 kare, yani yaklaşık 5,17 saniye verir."
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "last_frame": {
+        "name": "son_kare"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p ve üzeri, 768p'de işlenir ve bir kez büyütülür. 480p'de aynı seed farklı bir video verir."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Önce Pika'nın prompt'u genişletmesine izin verin. Aynı seed, her çalıştırmada farklı bir video verir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "rewrite_prompt kapalıyken, aynı seed videoyu tam olarak tekrarlar. Aynı seed ile yapılan yerel bir çalıştırma farklı bir sonuç verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Pika ile metin açıklamasından ve isteğe bağlı şarkı sözlerinden müzik oluşturun veya bir şarkıya cover yapın.",
+    "display_name": "Pika Müzik",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "mode": {
+        "name": "mod"
+      },
+      "mode_duration": {
+        "name": "süre"
+      },
+      "mode_lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Pika ile metin açıklamasından bir ses efekti oluşturun.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Pika ile bir video için senkronize bir film müziği oluşturun. Görüntü ve uzunluk korunur; yalnızca ses değiştirilir.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "instruction": {
+        "name": "talimat",
+        "tooltip": "Sesin ne olması gerektiği: ses efektleri, ortam sesi, müzik veya stil. Görüntüden türetmek için boş bırakın."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "En fazla 10 dakika."
       }
     },
     "outputs": {
@@ -24973,6 +25187,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Sonilo Müzik 1.5 kullanarak bir metin prompt'undan söylenen vokallere sahip bir şarkı oluşturun.",
+    "display_name": "Sonilo Müzik 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "'auto', şarkı süresini şarkı sözlerine uyarlar. Özel bir süre, sığmayan şarkı sözlerini keser ve kısa olanları tekrarlar."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Şarkıyı açıklayın: tür, ruh hâli, enstrümanlar ve vokaller. Sözleri ayarlamak için [Verse] / [Chorus] etiketleriyle bir 'Lyrics:' bloğu ekleyin; aksi hâlde model kendi şarkı sözlerini yazar. Maksimum: 2000 karakter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar seed'den bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Sonilo'nun yapay zeka modeliyle bir metin isteminden müzik oluşturun. Süreyi 0 olarak bırakın, model süreyi istemden çıkarsın.",
     "display_name": "Sonilo Metinden Müzik Üret",
@@ -25813,6 +26053,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Tencent'ın Hy4 modeliyle metin yanıtları oluşturun. Bir metin istemi ve isteğe bağlı olarak bağlam için bir veya daha fazla görüntü sağlayın.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reasoning": {
+        "name": "akıl yürütme"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -26421,7 +26696,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Metin Oluştur (KULLANIMDAN KALDIRILDI)",
     "inputs": {
       "audio": {
         "name": "ses"
@@ -26560,6 +26835,79 @@
     "outputs": {
       "0": {
         "name": "üretilen_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Metin Oluştur",
+    "inputs": {
+      "audios": {
+        "name": "sesler"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "görüntüler"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu token tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini ve genişliğini gözlemlenen token eşleşmelerine ve yürütme maliyetine göre uyarlar; 2-5 sabit bir taslak derinliğine kilitler; ağaç modları hem genişliği hem de derinliği kilitler. Örneklenen çıktı doğru şekilde dağılımını korur, ancak aynı seed için MTP olmayan çıktıdan farklıdır."
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "sıcaklık"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem isteminin yerine geçer. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalışır."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde varsa yerleşik sistem istemini/şablonunu kullanın."
+      },
+      "videos": {
+        "name": "videolar"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -26728,7 +27076,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Endüstri standardı büyütme ve görüntü iyileştirme.",
+    "description": "Sektör standardında çözünürlük yükseltme ve görüntü iyileştirme. Maksimum çıktı: 179 megapiksel.",
     "display_name": "Topaz Görüntü İyileştirme",
     "inputs": {
       "image": {
@@ -26766,11 +27114,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Sıfır değeri, orijinal yükseklikle aynı veya output_width belirtilmişse orantılı olarak ölçeklenmiş çıktı anlamına gelir. Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+        "tooltip": "Sıfır değeri, orijinalle aynı yükseklikte çıktı alınacağı veya belirtilmişse output_width ile orantılı olarak ölçeklendirileceği anlamına gelir. Wonder 3.5 ve Wonder 4, 1x ile 6x arasındaki büyütme katsayılarını; Bloom 2 ise 1x ile 12x arasındakileri destekler. Bloom 2, Wonder 3.5 ve Wonder 4 her zaman girdi en-boy oranını korur: her iki boyut da ayarlanmışsa ve oranları farklıysa, daha büyük ölçek seçilir ve çıktı (ve fiyat) istenen boyuttan daha büyük olur."
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Sıfır değeri otomatik hesaplama anlamına gelir (genellikle orijinal boyut veya output_height belirtilmişse orantılı olarak ölçeklenir). Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+        "tooltip": "Sıfır değeri, otomatik olarak hesaplama yapılacağı anlamına gelir (genellikle orijinal boyut olur veya belirtilmişse output_height ile orantılı olarak ölçeklendirilir). Wonder 3.5 ve Wonder 4, 1x ile 6x arasındaki büyütme katsayılarını; Bloom 2 ise 1x ile 12x arasındakileri destekler. Bloom 2, Wonder 3.5 ve Wonder 4 her zaman girdi en-boy oranını korur: her iki boyut da ayarlanmışsa ve oranları farklıysa, daha büyük ölçek seçilir ve çıktı (ve fiyat) istenen boyuttan daha büyük olur."
       }
     },
     "outputs": {
