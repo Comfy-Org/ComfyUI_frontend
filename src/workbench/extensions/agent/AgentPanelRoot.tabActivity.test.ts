@@ -1029,33 +1029,41 @@ describe('AgentPanelRoot tab activity across chats', () => {
     }
   )
 
-  it('times the held prefix from the newest pending ask, not the first one', async () => {
-    const start = Date.now()
-    let now = start
-    vi.spyOn(Date, 'now').mockImplementation(() => now)
-    const { unmount } = renderPanel()
-    await send('add an upscaler')
-    emitRunApproval()
-    await nextTick()
+  it.for([
+    { case: 'the first is answered', answerFirst: true },
+    { case: 'both still wait', answerFirst: false }
+  ])(
+    'times the held prefix from the newest pending ask when $case',
+    async ({ answerFirst }) => {
+      const start = Date.now()
+      let now = start
+      vi.spyOn(Date, 'now').mockImplementation(() => now)
+      const { unmount } = renderPanel()
+      await send('add an upscaler')
+      emitRunApproval()
+      await nextTick()
 
-    now = start + 14 * 60_000
-    emitAskUser()
-    await nextTick()
-    agentSocket.receive('agent_ask_resolved', {
-      thread_id: 'th-1',
-      message_id: 'm-1',
-      ask_id: 'm-1:call-1',
-      status: 'answered',
-      selected: ['run']
-    })
-    await nextTick()
+      now = start + 14 * 60_000
+      emitAskUser()
+      await nextTick()
+      if (answerFirst) {
+        agentSocket.receive('agent_ask_resolved', {
+          thread_id: 'th-1',
+          message_id: 'm-1',
+          ask_id: 'm-1:call-1',
+          status: 'answered',
+          selected: ['run']
+        })
+        await nextTick()
+      }
 
-    now = start + 16 * 60_000
-    unmount()
-    await nextTick()
+      now = start + 16 * 60_000
+      unmount()
+      await nextTick()
 
-    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
-  })
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+    }
+  )
 
   it('clears the page-wide prefix on close when nothing waits for an answer', async () => {
     const { unmount } = renderPanel()

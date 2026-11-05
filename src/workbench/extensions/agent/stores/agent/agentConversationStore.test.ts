@@ -3519,20 +3519,20 @@ describe('useAgentConversationStore', () => {
     )
 
     it.for([false, true])(
-      'lists the asks still waiting for an answer (stashed: %s)',
+      'lists pending asks, including one being answered, until retired (stashed: %s)',
       (stashed) => {
         openTab('workflows/a.json')
         const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
 
         store.ingest(runApproval('t1', 'ask-1'))
-        expect(store.awaitedAskIds).toEqual(['ask-1'])
+        expect(store.pendingAskIds).toEqual(['ask-1'])
 
         store.setAskAnswering('ask-1', true)
-        expect(store.awaitedAskIds).toEqual([])
+        expect(store.pendingAskIds).toEqual(['ask-1'])
 
         store.setAskAnswering('ask-1', false)
         store.retireAsk('ask-1', { status: 'retired' }, 'th')
-        expect(store.awaitedAskIds).toEqual([])
+        expect(store.pendingAskIds).toEqual([])
       }
     )
 

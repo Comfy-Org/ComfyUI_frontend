@@ -37,7 +37,7 @@ export function useAgentTabSignals({
     { immediate: true, flush: 'sync' }
   )
   watch(
-    () => conversationStore.awaitedAskIds,
+    () => conversationStore.pendingAskIds,
     (askIds) => {
       const now = Date.now()
       for (const askId of askSeenAt.keys())
