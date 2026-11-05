@@ -47,7 +47,6 @@ import {
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
@@ -66,7 +65,8 @@ import {
 } from './agentSubgraphDefinitions'
 import type {
   Bounds as PlacementRect,
-  ReadOnlyRect
+  ReadOnlyRect,
+  Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
@@ -2056,8 +2056,11 @@ export class LiveGraphApplier {
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
-    const existingBounds = existingNodes.map((node) => node.boundingRect)
-    const createdBounds = createdNodes.map(unrenderedBounds)
+    const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const existingBounds = existingNodes.map((node) =>
+      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+    )
+    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2082,22 +2085,28 @@ export class LiveGraphApplier {
   }
 }
 
-function unrenderedBounds(node: LGraphNode): ReadOnlyRect {
-  const titleHeight =
-    node.title_mode === TitleMode.TRANSPARENT_TITLE ||
-    node.title_mode === TitleMode.NO_TITLE
-      ? 0
-      : LiteGraph.NODE_TITLE_HEIGHT
-  const top = node.pos[1] - titleHeight
-  if (node.collapsed && !LiteGraph.vueNodesMode)
-    return [
-      node.pos[0],
-      top,
-      LiteGraph.NODE_COLLAPSED_WIDTH,
-      LiteGraph.NODE_TITLE_HEIGHT
-    ]
-  const size = node.renderingSize
-  return [node.pos[0], top, size[0], size[1] + titleHeight]
+/** True once a frame has measured the node; until then its bounds are zero. */
+function isRendered(node: LGraphNode): boolean {
+  const [, , width, height] = node.boundingRect
+  return width > 0 || height > 0
+}
+
+/**
+ * The bounds the next frame will give a node that has not been drawn yet,
+ * measured the way LiteGraph does it, including a collapsed node's title width.
+ * `measure()` caches the collapsed width the node renders at; that cache is
+ * left for the next frame to write, because without a canvas context it would
+ * be written as zero.
+ */
+function pendingBounds(
+  node: LGraphNode,
+  ctx: CanvasRenderingContext2D | undefined
+): ReadOnlyRect {
+  const out: Rect = [0, 0, 0, 0]
+  const collapsedWidth = node._collapsed_width
+  node.measure(out, ctx)
+  node._collapsed_width = collapsedWidth
+  return out
 }
 
 function framesAny(

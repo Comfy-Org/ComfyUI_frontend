@@ -1,4 +1,5 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   Op,
   WidgetCatalog,
@@ -9,6 +10,7 @@ import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -100,6 +102,14 @@ function buildLiveGraph() {
   return { graph, source, note }
 }
 
+/** A canvas context whose text measures {@link width} px wide. */
+function measuringContext(width: number) {
+  return fromPartial<CanvasRenderingContext2D>({
+    font: '',
+    measureText: () => fromPartial<TextMetrics>({ width })
+  })
+}
+
 function snapshot(graph: LGraph) {
   const scope = graphScopeOf(graph)
   const widgetStore = useWidgetValueStore()
@@ -135,10 +145,14 @@ function snapshot(graph: LGraph) {
   }
 }
 
-function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
+function bindAndCatchUp(
+  graph: LGraph,
+  saved: ISerialisedGraph,
+  deps: ConstructorParameters<typeof AgentCrdtProjection>[1] = {}
+) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(() => graph)
+  const projection = new AgentCrdtProjection(() => graph, deps)
   projection.bind(WORKFLOW_ID, follower)
   let seq = 0
   const deliver = (update: Uint8Array, classification: FrameClassification) => {
@@ -708,15 +722,101 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect([...inserted.pos]).not.toEqual([20, 30])
     expect([...group.pos]).toEqual([100, -20])
   })
+  it('places a group with a new collapsed node it frames by its rendered title width', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.pos = [1000, 20]
+    note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
+    const ctx = measuringContext(400)
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize()),
+      {
+        getCanvas: () =>
+          fromPartial<LGraphCanvas>({
+            ctx,
+            emitBeforeChange: () => {},
+            emitAfterChange: () => {}
+          })
+      }
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a67'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [20, 30],
+                size: [200, 100],
+                flags: { collapsed: true },
+                widgets_values: [20, 7]
+              }
+            ],
+            groups: [
+              { id: 1, title: 'Around both', bounding: [100, -20, 300, 200] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    const group = graph.groups.find(({ title }) => title === 'Around both')
+    assert(inserted && group, 'the insertion reached the canvas')
+    expect([...inserted.pos]).not.toEqual([20, 30])
+    expect([
+      group.pos[0] - inserted.pos[0],
+      group.pos[1] - inserted.pos[1]
+    ]).toEqual([80, -50])
+  })
+  it('keeps a group-only insertion on existing nodes that have not been drawn yet', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.pos = [1000, 500]
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a68'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [],
+            groups: [
+              { id: 1, title: 'Around source', bounding: [990, 460, 240, 160] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const group = graph.groups.find(({ title }) => title === 'Around source')
+    assert(group, 'the inserted group reached the canvas')
+    expect([...group.pos]).toEqual([990, 460])
+  })
   it('keeps a group on a collapsed node it frames as rendered', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([600, 100])
     note.pos = [1000, 20]
     source.collapse(true)
-    const context = {
-      font: '',
-      measureText: () => ({ width: 400 })
-    } as unknown as CanvasRenderingContext2D
+    const context = measuringContext(400)
     source.updateArea(context)
     note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
