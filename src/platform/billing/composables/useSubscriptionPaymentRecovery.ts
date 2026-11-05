@@ -25,7 +25,11 @@ export function useSubscriptionPaymentRecovery() {
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
       recoveryPlanTier.value = null
-      if (!opId) return
+      if (!opId) {
+        stopReturnRefresh?.()
+        stopReturnRefresh = null
+        return
+      }
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
         if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
@@ -33,7 +37,7 @@ export function useSubscriptionPaymentRecovery() {
       } catch (error) {
         reportError(error, {
           surface: 'billing',
-          errorType: 'signup_payment_recovery_plan_read_failed'
+          errorType: 'error_reading_signup_payment_recovery_plan'
         })
       }
     },
@@ -84,7 +88,7 @@ export function useSubscriptionPaymentRecovery() {
       tab.close()
       reportError(error, {
         surface: 'billing',
-        errorType: 'signup_payment_recovery_read_failed'
+        errorType: 'error_reading_signup_payment_recovery_action'
       })
       reportPaymentUnavailable()
     } finally {

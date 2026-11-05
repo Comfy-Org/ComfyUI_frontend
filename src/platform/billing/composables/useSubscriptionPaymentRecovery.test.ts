@@ -1,6 +1,7 @@
+import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -88,6 +89,25 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
+  it('disarms the return refresh once the server stops serving the recovery', async () => {
+    const recovery = shallowRef<SubscriptionPaymentRecovery | null>({
+      billing_op_id: SIGNUP_OP,
+      reason: 'payment_required'
+    })
+    const context = useBillingContext()
+    context.subscriptionPaymentRecovery = computed(() => recovery.value)
+    vi.mocked(useBillingContext).mockReturnValue(context)
+    vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
+    const stopRefresh = vi.fn()
+    vi.mocked(registerRefreshOnReturn).mockReturnValue(stopRefresh)
+
+    await useSubscriptionPaymentRecovery().finishPayment()
+    recovery.value = null
+    await nextTick()
+
+    expect(stopRefresh).toHaveBeenCalledOnce()
+  })
+
   it('keeps the return refresh armed after the pricing dialog closes', async () => {
     const context = serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
@@ -137,7 +157,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(reportError).toHaveBeenCalledWith(
       failure,
       expect.objectContaining({
-        errorType: 'signup_payment_recovery_read_failed'
+        errorType: 'error_reading_signup_payment_recovery_action'
       })
     )
     expect(toastKinds()).toEqual(['error'])
@@ -179,7 +199,7 @@ describe('useSubscriptionPaymentRecovery', () => {
       expect(reportError).toHaveBeenCalledWith(
         failure,
         expect.objectContaining({
-          errorType: 'signup_payment_recovery_plan_read_failed'
+          errorType: 'error_reading_signup_payment_recovery_plan'
         })
       )
     )
