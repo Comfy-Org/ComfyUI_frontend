@@ -65,6 +65,55 @@ const mockListResult: operations['listAllNodes']['responses'][200]['content']['a
     limit: 10
   }
 
+const packsPastDefaultPage = Array.from(
+  { length: 25 },
+  (_, index) => `installed-pack-${index + 1}`
+)
+
+const packsPastRegistryPageMax = Array.from(
+  { length: 101 },
+  (_, index) => `clamped-pack-${index + 1}`
+)
+
+type ListPacksQuery = operations['listAllNodes']['parameters']['query']
+type ListPacksPage =
+  operations['listAllNodes']['responses'][200]['content']['application/json']
+
+const REGISTRY_PAGE_MAX = 100
+
+function nodePacks(ids: string[]): components['schemas']['Node'][] {
+  return ids.map((id) => ({ id, name: id }))
+}
+
+function firstPageOfRequestedPacks(
+  params: ListPacksQuery | undefined
+): ListPacksPage {
+  const requestedIds = params?.node_id ?? []
+  const pageSize = params?.limit ?? 10
+  return {
+    nodes: nodePacks(requestedIds.slice(0, pageSize)),
+    total: requestedIds.length,
+    page: 1,
+    limit: pageSize
+  }
+}
+
+function clampedPagesOfRequestedPacks(
+  params: ListPacksQuery | undefined
+): ListPacksPage {
+  const requestedIds = params?.node_id ?? []
+  const pageSize = Math.min(params?.limit ?? 10, REGISTRY_PAGE_MAX)
+  const page = params?.page ?? 1
+  const start = (page - 1) * pageSize
+  return {
+    nodes: nodePacks(requestedIds.slice(start, start + pageSize)),
+    total: requestedIds.length,
+    page,
+    limit: pageSize,
+    totalPages: Math.ceil(requestedIds.length / pageSize)
+  }
+}
+
 describe('useComfyRegistryStore', () => {
   let mockRegistryService: {
     isLoading: ReturnType<typeof ref<boolean>>
@@ -200,6 +249,34 @@ describe('useComfyRegistryStore', () => {
       { node_id: packIds },
       expect.any(Object) // abort signal
     )
+  })
+
+  it('returns every pack requested past the default page', async () => {
+    mockRegistryService.listAllPacks.mockImplementation(
+      (params?: ListPacksQuery) =>
+        Promise.resolve(firstPageOfRequestedPacks(params))
+    )
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(packsPastDefaultPage)
+    const ids = result.map((pack) => pack.id)
+
+    expect(ids).toEqual(expect.arrayContaining(packsPastDefaultPage))
+    expect(ids).toHaveLength(packsPastDefaultPage.length)
+  })
+
+  it('returns every pack when the registry clamps the page', async () => {
+    mockRegistryService.listAllPacks.mockImplementation(
+      (params?: ListPacksQuery) =>
+        Promise.resolve(clampedPagesOfRequestedPacks(params))
+    )
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(packsPastRegistryPageMax)
+    const ids = result.map((pack) => pack.id)
+
+    expect(ids).toEqual(expect.arrayContaining(packsPastRegistryPageMax))
+    expect(ids).toHaveLength(packsPastRegistryPageMax.length)
   })
 
   describe('inferPackFromNodeName', () => {
