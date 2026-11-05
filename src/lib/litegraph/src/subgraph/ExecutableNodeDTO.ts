@@ -16,6 +16,7 @@ import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexErro
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 export type ExecutionId = string
 
@@ -412,11 +413,30 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     const innerResolved = node.resolveSubgraphOutputLink(slot)
     if (!innerResolved) return
 
-    const innerNode = innerResolved.outputNode
-    if (!innerNode)
-      throw new Error(
-        `No output node found for id [${this.id}] slot [${slot}] ${output.name}`
+    // Pass-through: the output is wired straight to a subgraph input.
+    if (innerResolved.link.originIsIoNode) {
+      const passThroughSlot = innerResolved.link.origin_slot
+      if (this.inputs.at(passThroughSlot)) {
+        return this.resolveInput(passThroughSlot, visited, type)
+      }
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output passes through a missing input; skipping output [${slot}] ${output.name}`,
+        { id: this.id, inputSlot: passThroughSlot }
       )
+      return
+    }
+
+    const innerNode = innerResolved.outputNode
+    if (!innerNode) {
+      // A saved link to a node that no longer exists: skip this output, as the
+      // no-inner-link case does, rather than failing the whole prompt.
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output link has no origin node; skipping output [${slot}] ${output.name}`,
+        { id: this.id, originId: innerResolved.link.origin_id }
+      )
+      reportDanglingSubgraphOutput(node.subgraph)
+      return
+    }
 
     // Recurse into the subgraph
     const innerNodeExecutionId: ExecutionId = [
@@ -436,6 +456,20 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       visited
     )
   }
+}
+
+const reportedDanglingSubgraphs = new WeakSet<object>()
+
+function reportDanglingSubgraphOutput(subgraph: object): void {
+  if (reportedDanglingSubgraphs.has(subgraph)) return
+  reportedDanglingSubgraphs.add(subgraph)
+  reportError(new Error('Subgraph output link has no origin node'), {
+    surface: 'graph',
+    errorType: 'subgraph_output_origin_missing',
+    level: 'warning',
+    fingerprint: ['subgraph_output_origin_missing'],
+    logToConsole: false
+  })
 }
 
 type RegisteredExecutableLGraphNode = ExecutableLGraphNode
