@@ -12424,9 +12424,49 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(400)
 
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
+      expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+        workflow_id: 'wf-new',
+        target: 'active_tab_open'
+      })
     )
     expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+  })
+
+  it('agent_active_tab leaves a target the user picks during the move', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await user.click(screen.getByRole('menuitemradio', { name: 'other' }))
+    await vi.advanceTimersByTimeAsync(400)
+
+    await vi.waitFor(() =>
+      expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+        workflow_id: 'wf-new',
+        target: 'active_tab_open'
+      })
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
   })
 
   it('agent_active_tab reports when a bound tab cannot be opened', async () => {

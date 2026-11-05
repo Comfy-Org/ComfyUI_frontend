@@ -1397,7 +1397,6 @@ watch(
 
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
-let agentSetTracking: unknown = null
 
 function enqueueActiveTab(
   data: AgentActiveTabData,
@@ -1410,18 +1409,13 @@ function enqueueActiveTab(
       : toTurnId(data.message_id)
   const thread = threadId.value
   const tracking = toRaw(agentPanelStore.targetTracking)
-  // Only the agent's own move takes the message target, and only while the
-  // user hasn't changed chat or target since it was sent.
   const takeTarget = (tab: ComfyWorkflow) => {
-    const current = toRaw(agentPanelStore.targetTracking)
     if (
-      initiator !== 'agent' ||
-      threadId.value !== thread ||
-      (current !== tracking && current !== agentSetTracking)
+      initiator === 'agent' &&
+      threadId.value === thread &&
+      toRaw(agentPanelStore.targetTracking) === tracking
     )
-      return
-    agentPanelStore.setWorkflowTarget(tab)
-    agentSetTracking = toRaw(agentPanelStore.targetTracking)
+      agentPanelStore.setWorkflowTarget(tab)
   }
   const result = activeTabChain.then(() =>
     onAgentActiveTab(data, generation, turnId, takeTarget)
