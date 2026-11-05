@@ -13,6 +13,7 @@ export const AGENT_SUBGRAPH_HOST_ID = 11
 const AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID = 10
 export const AGENT_SUBGRAPH_REUSED_HOST_ID = 5_123_456_789_012
 export const AGENT_SUBGRAPH_LINK_ID = 21
+export const AGENT_SUBGRAPH_CLIP_SOURCE_ID = 20
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
 export const AGENT_SUBGRAPH_EDITED_SEED = 42
@@ -108,11 +109,11 @@ const initialOps = [
     base_version: 1,
     stamp: [1, 'agent:e2e'],
     op: 'add_node',
-    node_id: 20,
+    node_id: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
     class_type: 'AgentClipSource',
     pos: [40, 300],
     node: {
-      id: 20,
+      id: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
       type: 'AgentClipSource',
       pos: [40, 300],
       size: [180, 80],
@@ -127,7 +128,7 @@ const initialOps = [
     stamp: [2, 'agent:e2e'],
     op: 'connect',
     link_id: AGENT_SUBGRAPH_LINK_ID,
-    from_node: 20,
+    from_node: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
     from_slot: 0,
     to_node: AGENT_SUBGRAPH_HOST_ID,
     to_slot: 0,
@@ -248,8 +249,19 @@ export function agentOutOfOrderSubgraphFrames(): HostFrame[] {
 
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT = 'a lighthouse at dawn'
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS = 33
-/** The interior `KSampler`'s `steps` before the agent edits it. */
-export const AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS = 20
+/** The interior `KSampler`'s `steps`, read from the asset so the two cannot drift. */
+export const AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS = (() => {
+  const sampler = subgraphWorkflow.definitions.subgraphs
+    .flatMap((definition) => definition.nodes)
+    .find((node) => node.type === 'KSampler')
+  const value =
+    sampler?.widgets_values[
+      catalog.types.KSampler.widget_order.indexOf('steps')
+    ]
+  if (typeof value !== 'number')
+    throw new Error('Subgraph fixture has no interior KSampler steps value')
+  return value
+})()
 
 export function agentSubgraphInteriorFrames(): {
   initial: HostFrame[]

@@ -15,6 +15,7 @@ import {
   AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID,
+  AGENT_SUBGRAPH_CLIP_SOURCE_ID,
   AGENT_SUBGRAPH_EDITED_SEED,
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
@@ -541,7 +542,13 @@ test.describe(
           await agentPanel.sendMessage('Edit inside the subgraph')
           await expect
             .poll(() => outboundFrames, { timeout: 15_000 })
-            .toContainEqual(expect.stringContaining('doc_subscribe'))
+            .toContainEqual(
+              expect.stringMatching(
+                new RegExp(
+                  `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+                )
+              )
+            )
         })
 
         const frames = agentSubgraphInteriorFrames()
@@ -549,8 +556,19 @@ test.describe(
         await test.step('materialize the host and its subgraph', async () => {
           for (const frame of frames.initial) socket.send(JSON.stringify(frame))
           await expect(
-            nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+            nodes.getNodeLocator(String(AGENT_SUBGRAPH_CLIP_SOURCE_ID))
           ).toBeVisible()
+          await expect
+            .poll(() =>
+              page.evaluate(
+                (linkId) =>
+                  [...window.app!.graph.links.keys()]
+                    .map(Number)
+                    .includes(linkId),
+                AGENT_SUBGRAPH_LINK_ID
+              )
+            )
+            .toBe(true)
         })
 
         await test.step('the user opens the subgraph', async () => {
@@ -561,18 +579,29 @@ test.describe(
           )
         })
 
-        await test.step('the agent edit lands on the open subgraph view', async () => {
-          socket.send(JSON.stringify(frames.stepsEdit))
+        const outboundBeforeEdit =
+          await test.step('the agent edit lands on the open subgraph view', async () => {
+            const sentBeforeEdit = outboundFrames.length
+            socket.send(JSON.stringify(frames.stepsEdit))
 
-          await expect(interiorSteps).toHaveValue(
-            String(AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS)
-          )
-        })
+            await expect(interiorSteps).toHaveValue(
+              String(AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS)
+            )
+            return sentBeforeEdit
+          })
 
         await test.step('the follower stayed read-only', async () => {
-          expect(
-            outboundFrames.some((frame) => frame.includes('doc_ops'))
-          ).toBe(false)
+          const quietWindowStartedAt = Date.now()
+          await expect(() => {
+            expect(
+              outboundFrames
+                .slice(outboundBeforeEdit)
+                .some((frame) => frame.includes('doc_ops'))
+            ).toBe(false)
+            expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(
+              500
+            )
+          }).toPass({ timeout: 1_000, intervals: [50, 100, 150, 200] })
         })
       }
     )
