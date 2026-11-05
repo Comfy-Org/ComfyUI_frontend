@@ -129,6 +129,7 @@
     "feedbackCaption": "フィードバックを共有",
     "focusNode": "キャンバスに表示",
     "focusNodeLabel": "キャンバスに {node} を表示",
+    "followedChatOpenFailed": "{workflowName} のチャットを開けませんでした。",
     "freeUseNotice": "最初のチャットは無料でお試しいただけます！",
     "freeUseNoticeLabel": "無料利用のお知らせ",
     "friend": "あなた",
@@ -166,6 +167,8 @@
     "nodesAdded": "エージェントがグラフに1個のノードを追加しました | エージェントがグラフに{count}個のノードを追加しました",
     "notHelpful": "役に立たなかった",
     "openWorkflowTab": "{name} を開く",
+    "openingChat": "チャットを開いています…",
+    "openingWorkflowChat": "{workflowName} のチャットを開いています…",
     "otherOpenWorkflows": "他の開いているワークフロー",
     "paywall": {
       "addCredits": "クレジットを追加",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "{node} の参照を削除",
     "removeWorkflowReference": "{name}の参照を削除",
     "retryAfterSeconds": "{seconds}秒後に再試行できます。",
+    "retryFollowedChat": "{workflowName} のチャットを開き直す",
     "runApproval": {
       "answerFailed": "回答を送信できませんでした。ページを再読み込みして、もう一度お試しください。",
       "answerSuperseded": "これはすでに別の場所で回答されているため、あなたの回答ではなくその回答が使用されました。",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "クレジットを追加",
       "addMoreCreditsToRun": "実行するためにクレジットを追加",
       "amountToPayLabel": "支払う金額（ドル）",
+      "autoTopUp": {
+        "prompt": "クレジットが不足しそうですか？自動チャージをオンにしましょう。",
+        "setUp": "設定"
+      },
       "awaitingBankApprovalBody": "クレジットが追加される前に、この支払いを銀行が承認する必要があります。銀行のアプリまたはこの購入の支払いリンクから完了できます。この支払いが完了または期限切れになるまで、新しいチャージは開始できません。",
       "buy": "購入",
       "buyCredits": "支払いに進む",
@@ -2015,6 +2023,7 @@
     "addNode": "ノードを追加...",
     "addNodeFilterCondition": "ノードフィルター条件を追加",
     "agentModified": "エージェントがこのワークフローを更新しました",
+    "agentNeedsApproval": "エージェントはあなたの承認を必要としています",
     "agentWorking": "エージェントがこのワークフローを処理中です",
     "all": "すべて",
     "allKeybindingsReset": "すべてのキーバインドがデフォルトにリセットされました",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

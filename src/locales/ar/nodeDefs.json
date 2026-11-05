@@ -18736,7 +18736,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي يجريه النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: يدعم GPT-6 Astra النطاق low-max، وGPT-6 Sol/Luna وGPT-5.6 النطاق none-max (دون minimal)، وGPT-5.5 النطاق none-xhigh، وGPT-5.5 Pro النطاق medium-xhigh، وGPT-5 النطاق minimal-high، وسلسلة o النطاق low-high؛ لا يحتوي GPT-4.1 على استدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "تختلف المستويات المدعومة حسب النموذج. يؤدي مستوى غير مدعوم إلى إيقاف التشغيل وعرض المستويات الصالحة. يتيح \"default\" للنموذج الاختيار."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -18996,6 +18996,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تحويل النص إلى صورة، أو عند استخدام الصور: تعديل image_1 مع استخدام الصور الأخرى كمراجع. يشير الـprompt إليها بصيغة <Picture 1>، <Picture 2>، ... يحتاج النموذج إلى ModelSamplingMiniMaxH3 بالقيم 1.0/1.0.",
+    "display_name": "تهيئة p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "تستخدم القيمة 0 ارتفاع image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      },
+      "images": {
+        "name": "images"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "مع الصور، تُضاف \"Edit <Picture 1>. \" قبل تعليمة قصيرة؛ أما التعليمة التي تبدأ بـ \"Edit <Picture\" وموجز التعديل من مُحسِّن الـprompt فتُستخدم كما هي."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "‏vae‏ الخاص بـ p-h3-image، وهو مطلوب عند توصيل الصور."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "تستخدم القيمة 0 عرض image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19647,6 +19684,183 @@
       },
       "positive": {
         "name": "موجب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، وهو MiniMax H3 من Pika بعد التدريب. أنشئ الفيديو أو عدّله بصوت متزامن موجّه بصور ومقاطع فيديو وصوت مرجعية.",
+    "display_name": "مرجع Pika H3 Flex إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto فيديو مرجعيًا، وإلا فيتبع الـprompt. لا تؤثر الصور المرجعية فيه."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "يتبع طول المخرجات شبكة إطارات: تمنح 5 ثوانٍ 124 إطارًا، أي نحو 5.17 ثانية."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "أشر إلى المراجع بصيغة @Image1 أو @Video1 أو @Audio1، أو بصيغة <Picture 1> أو <Video 1> أو <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حتى 3 مقاطع صوتية، يُشار إليها في الـprompt بصيغة @Audio1..@Audio3. مدة كل منها 2-15 ثانية، وبإجمالي 15 ثانية. عند نسخها إلى المخرجات، تُشغَّل المقاطع بحسب ترتيب الاتصال، قبل صوت مقاطع الفيديو المتصلة، بغض النظر عن الرقم المذكور في الـprompt."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 9 صور، يُشار إليها في الـprompt بصيغة @Image1..@Image9 بحسب ترتيب الاتصال. يلزم وجود صورة واحدة أو فيديو واحد على الأقل."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "يُنسخ صوت مقاطع الفيديو المتصلة إلى المخرجات. عطّل هذا للحصول على أجواء صوتية جديدة أو نقل الحركة مع موسيقى جديدة. عندئذٍ، يمنح رأس متحدث بلا حوار في الـprompt كلامًا مُبتكرًا."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حتى 3 مقاطع فيديو، يُشار إليها في الـprompt بصيغة @Video1..@Video3 بحسب ترتيب الاتصال. مدة كل منها 2-15 ثانية، وبإجمالي 15 ثانية. تُحتسب الرسوم لكل ثانية."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "يُصيَّر 1080p وما فوق بدقة 768p ثم يُحسَّن مرة واحدة. تعطي البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "اسمح لـPika بتوسيع الـprompt أولًا. عندئذٍ تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "مع إيقاف rewrite_prompt، تكرر البذرة نفسها الفيديو بدقة. يعطي تشغيل محلي بالبذرة نفسها نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، وهو MiniMax H3 من Pika بعد التدريب. أنشئ فيديو بصوت متزامن من النص ومن الإطارين الأول والأخير الاختياريين.",
+    "display_name": "فيديو Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto الإطار الأول المتصل، وإلا فيتبع الموجّه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يتبع طول الإخراج شبكة إطارات: 5 ثوانٍ تعطي 124 إطارًا، أي نحو 5.17 ثانية."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "يتم التصيير بدقة 768p ثم الترقية مرة واحدة عند 1080p وما فوق. تعطي البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "دع Pika يوسّع الموجّه أولًا. بعد ذلك، تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "عند إيقاف rewrite_prompt، تكرر البذرة نفسها الفيديو تمامًا. يعطي التشغيل المحلي باستخدام البذرة نفسها نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "أنشئ موسيقى من وصف نصي وكلمات أغنية اختيارية، أو أنشئ غلافًا لأغنية، باستخدام Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "mode_duration": {
+        "name": "المدة"
+      },
+      "mode_lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "mode_prompt": {
+        "name": "الموجّه"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "أنشئ مؤثرًا صوتيًا من وصف نصي باستخدام Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "أنشئ مسارًا صوتيًا متزامنًا لفيديو باستخدام Pika. تُحفظ الصورة والطول؛ ويُستبدل الصوت فقط.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "instruction": {
+        "name": "تعليمات",
+        "tooltip": "ما ينبغي أن يكون عليه الصوت: مؤثرات صوتية أو أجواء محيطة أو موسيقى أو أسلوب. اتركه فارغًا لاشتقاقه من الصورة."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "حتى 10 دقائق."
       }
     },
     "outputs": {
@@ -24959,6 +25173,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "أنشئ أغنية بغناء من موجّه نصي باستخدام Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يضبط 'auto' طول الأغنية ليتناسب مع كلماتها. يؤدي تحديد طول مخصص إلى قص الكلمات التي لا تتسع وتكرار الكلمات القصيرة."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "صِف الأغنية: النوع والمزاج والآلات والغناء. لتحديد الكلمات، أضف كتلة 'Lyrics:' مع وسوم [Verse] / [Chorus]؛ ومن دونها، يكتب النموذج كلمات أغنيته الخاصة. الحد الأقصى: 2000 حرف."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كان ينبغي للعقدة إعادة التشغيل؛ فالنتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
     "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
@@ -25799,6 +26039,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "أنشئ استجابات نصية باستخدام نموذج Hy4 من Tencent. وفّر موجّهًا نصيًا، واختياريًا صورة واحدة أو أكثر كسياق.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكّم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_reasoning": {
+        "name": "الاستدلال"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {
@@ -26407,7 +26682,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "توليد نص",
+    "display_name": "توليد النص (مهمل)",
     "inputs": {
       "audio": {
         "name": "صوت"
@@ -26546,6 +26821,79 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "توليد النص",
+    "inputs": {
+      "audios": {
+        "name": "المقاطع الصوتية"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك الترميز التخميني باستخدام رأس التنبؤ متعدد الرموز المميزة لنقطة التحقق. لا تأثير من دون أوزان MTP. يكيّف auto عمق المسودة وعرضها مع تطابقات الرموز المميزة الملحوظة وتكلفة التنفيذ؛ يثبّت 2-5 عمق مسودة ثابتًا؛ وتثبّت أوضاع tree كلاً من العرض والعمق. يظل الناتج المُعيَّن موزعًا بصورة صحيحة، لكنه يختلف عن ناتج non-MTP للبذرة نفسها."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "البذرة"
+      },
+      "sampling_mode_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب دردشة النموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "شغّل وضع التفكير إذا كان النموذج يدعمه."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "استخدم موجّه/قالب النظام المضمّن إذا كان النموذج يتضمن واحدًا."
+      },
+      "videos": {
+        "name": "مقاطع الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {

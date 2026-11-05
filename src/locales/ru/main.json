@@ -129,6 +129,7 @@
     "feedbackCaption": "Отправить отзыв",
     "focusNode": "Показать на холсте",
     "focusNodeLabel": "Показать {node} на холсте",
+    "followedChatOpenFailed": "Не удалось открыть чат для {workflowName}.",
     "freeUseNotice": "Попробуйте первый чат бесплатно!",
     "freeUseNoticeLabel": "Уведомление о бесплатном использовании",
     "friend": "друг",
@@ -166,6 +167,8 @@
     "nodesAdded": "Агент добавил в граф 1 ноду | Агент добавил в граф {count} нод",
     "notHelpful": "Не полезно",
     "openWorkflowTab": "Открыть {name}",
+    "openingChat": "Открытие чата…",
+    "openingWorkflowChat": "Открытие чата для {workflowName}…",
     "otherOpenWorkflows": "Другие открытые рабочие процессы",
     "paywall": {
       "addCredits": "Добавить кредиты",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Удалить ссылку на {node}",
     "removeWorkflowReference": "Удалить ссылку на {name}",
     "retryAfterSeconds": "Вы сможете повторить попытку через {seconds} с.",
+    "retryFollowedChat": "Повторить попытку открыть чат для {workflowName}",
     "runApproval": {
       "answerFailed": "Не удалось отправить ваш ответ. Перезагрузите страницу и повторите попытку.",
       "answerSuperseded": "На этот вопрос уже ответили в другом месте, поэтому был использован тот ответ вместо вашего.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "Добавить больше кредитов",
       "addMoreCreditsToRun": "Добавить больше кредитов для запуска",
       "amountToPayLabel": "Сумма к оплате в долларах",
+      "autoTopUp": {
+        "prompt": "Заканчиваются кредиты? Включите автопополнение.",
+        "setUp": "Настроить"
+      },
       "awaitingBankApprovalBody": "Ваш банк должен подтвердить этот платёж, прежде чем кредиты будут зачислены. Вы можете завершить его в приложении банка или по ссылке на оплату для этой покупки. Новый запрос на пополнение нельзя начать, пока этот не будет завершён или не истечёт срок его действия.",
       "buy": "Купить",
       "buyCredits": "Перейти к оплате",
@@ -2015,6 +2023,7 @@
     "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
     "agentModified": "Агент обновил этот рабочий процесс",
+    "agentNeedsApproval": "Агенту нужно ваше подтверждение",
     "agentWorking": "Агент работает над этим рабочим процессом",
     "all": "Все",
     "allKeybindingsReset": "Все сочетания клавиш сброшены по умолчанию",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

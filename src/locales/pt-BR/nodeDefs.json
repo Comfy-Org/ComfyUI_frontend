@@ -18736,7 +18736,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam por modelo: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes de a solicitação ser enviada."
+        "tooltip": "Os níveis compatíveis variam conforme o modelo. Um nível não compatível interrompe a execução e lista os níveis válidos. 'default' permite que o modelo escolha."
       },
       "truncation": {
         "name": "truncation",
@@ -18996,6 +18996,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Texto para imagem ou, com imagens, uma edição de image_1 usando as demais como referências. O prompt faz referência a elas como <Picture 1>, <Picture 2>, ... O modelo requer ModelSamplingMiniMaxH3 em 1.0/1.0.",
+    "display_name": "Condicionamento p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "0 usa a altura de image_1 após o redimensionamento, ou 2912 sem imagens."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Com imagens, uma instrução curta recebe \"Edit <Picture 1>. \" no início; uma instrução que começa com \"Edit <Picture\" e uma descrição de edição do ampliador de prompt são usadas como estão."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "O VAE p-h3-image, necessário quando há imagens conectadas."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "0 usa a largura de image_1 após o redimensionamento, ou 2912 sem imagens."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19647,6 +19684,183 @@
       },
       "positive": {
         "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, o MiniMax H3 pós-treinado da Pika. Gere ou edite vídeos com áudio sincronizado, guiado por imagens, vídeos e áudios de referência.",
+    "display_name": "Pika H3 Flex Referência para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto segue um vídeo de referência; caso contrário, segue o prompt. Imagens de referência não o afetam."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração",
+        "tooltip": "A duração da saída segue uma grade de quadros: 5 segundos produzem 124 quadros, cerca de 5,17 segundos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Mencione as referências como @Image1, @Video1, @Audio1 ou como <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Até 3 clipes, mencionados no prompt como @Audio1..@Audio3. De 2 a 15 segundos cada, 15 segundos no total. Quando copiados para a saída, os clipes são reproduzidos na ordem de conexão, antes do áudio dos vídeos conectados, independentemente de qual número o prompt mencione."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Até 9 imagens, mencionadas no prompt como @Image1..@Image9 na ordem de conexão. É necessária pelo menos uma imagem ou vídeo."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "O áudio dos vídeos conectados é copiado para a saída. Desative isto para criar uma nova ambientação ou transferir movimento com música nova. Uma pessoa falando sem diálogo no prompt receberá fala inventada."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Até 3 vídeos, mencionados no prompt como @Video1..@Video3 na ordem de conexão. De 2 a 15 segundos cada, 15 segundos no total. Cobrado por segundo."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "1080p e acima são renderizados em 768p e ampliados uma vez. A mesma seed em 480p produz um vídeo diferente."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Deixe o Pika expandir o prompt primeiro. Com a mesma seed, cada execução produzirá um vídeo diferente."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Com rewrite_prompt desativado, a mesma seed repete o vídeo exatamente. Uma execução local com a mesma seed produz um resultado diferente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, o MiniMax H3 pós-treinado da Pika. Gere vídeo com áudio sincronizado a partir de texto e de quadros inicial e final opcionais.",
+    "display_name": "Vídeo Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "auto segue o primeiro quadro conectado; caso contrário, o prompt."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração",
+        "tooltip": "A duração da saída segue uma grade de quadros: 5 segundos geram 124 quadros, cerca de 5,17 segundos."
+      },
+      "first_frame": {
+        "name": "primeiro_quadro"
+      },
+      "last_frame": {
+        "name": "último_quadro"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "1080p e acima renderizam em 768p e ampliam uma vez. A mesma seed em 480p gera um vídeo diferente."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Deixe o Pika expandir o prompt primeiro. A mesma seed então gera um vídeo diferente a cada execução."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Com rewrite_prompt desativado, a mesma seed repete o vídeo exatamente. Uma execução local com a mesma seed gera um resultado diferente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Gere música a partir de uma descrição de texto e letras opcionais, ou faça uma versão de uma música, com o Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "mode_duration": {
+        "name": "duração"
+      },
+      "mode_lyrics": {
+        "name": "letras"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Gere um efeito sonoro a partir de uma descrição de texto com o Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Gere uma trilha sonora sincronizada para um vídeo com o Pika. A imagem e a duração são mantidas; apenas o áudio é substituído.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "instruction": {
+        "name": "instrução",
+        "tooltip": "Como o áudio deve ser: efeitos sonoros, ambiente, música ou estilo. Deixe em branco para derivá-lo da imagem."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Até 10 minutos."
       }
     },
     "outputs": {
@@ -24959,6 +25173,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Gere uma música com vocais cantados a partir de um prompt de texto usando o Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração",
+        "tooltip": "'auto' ajusta a duração da música à letra. Uma duração personalizada corta trechos da letra que não cabem e repete os curtos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreva a música: gênero, clima, instrumentos e vocais. Para definir as palavras, adicione um bloco 'Lyrics:' com as tags [Verse] / [Chorus]; sem um bloco, o modelo escreve suas próprias letras. Máximo: 2000 caracteres."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Gere música a partir de um prompt de texto usando o modelo de IA do Sonilo. Deixe a duração em 0 para que o modelo infira a duração a partir do prompt.",
     "display_name": "Sonilo Texto para Música",
@@ -25799,6 +26039,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Gere respostas de texto com o modelo Hy4 da Tencent. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens para contexto.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "raciocínio"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -26407,7 +26682,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Gerar texto (OBSOLETO)",
     "inputs": {
       "audio": {
         "name": "áudio"
@@ -26546,6 +26821,79 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Gerar texto",
+    "inputs": {
+      "audios": {
+        "name": "áudios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificação especulativa com a cabeça de previsão de múltiplos tokens do checkpoint. Não tem efeito sem pesos de MTP. auto adapta a profundidade e a largura do rascunho às correspondências de tokens observadas e ao custo de execução; 2-5 fixa uma profundidade de rascunho constante; os modos de árvore fixam tanto a largura quanto a profundidade. A saída amostrada mantém a distribuição correta, mas difere da saída sem MTP para a mesma semente."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "semente"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no modelo de chat do modelo. Ignorado quando o template padrão não é usado."
+      },
+      "thinking": {
+        "name": "raciocínio",
+        "tooltip": "Opere no modo de raciocínio se o modelo for compatível."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/template de sistema integrado se o modelo tiver um."
+      },
+      "videos": {
+        "name": "vídeos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {

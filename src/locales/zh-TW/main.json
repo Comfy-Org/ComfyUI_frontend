@@ -129,6 +129,7 @@
     "feedbackCaption": "分享意見回饋",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
+    "followedChatOpenFailed": "無法開啟 {workflowName} 的聊天。",
     "freeUseNotice": "免費體驗您的首次對話！",
     "freeUseNoticeLabel": "免費使用通知",
     "friend": "你",
@@ -166,6 +167,8 @@
     "nodesAdded": "代理已將 1 個節點加入圖表 | 代理已將 {count} 個節點加入圖表",
     "notHelpful": "沒有幫助",
     "openWorkflowTab": "開啟 {name}",
+    "openingChat": "正在開啟聊天…",
+    "openingWorkflowChat": "正在開啟 {workflowName} 的聊天…",
     "otherOpenWorkflows": "其他已開啟的工作流程",
     "paywall": {
       "addCredits": "新增點數",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "移除 {node} 參照",
     "removeWorkflowReference": "移除 {name} 參照",
     "retryAfterSeconds": "您可以在 {seconds}s 後再試一次。",
+    "retryFollowedChat": "重試開啟 {workflowName} 的聊天",
     "runApproval": {
       "answerFailed": "無法傳送您的回答。請重新載入頁面後再試一次。",
       "answerSuperseded": "此問題已在其他地方回答，因此改用該回答，而非您的回答。",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "儲值點數",
       "addMoreCreditsToRun": "儲值點數以執行",
       "amountToPayLabel": "需支付的美元金額",
+      "autoTopUp": {
+        "prompt": "點數快用完了嗎？開啟自動儲值。",
+        "setUp": "設定"
+      },
       "awaitingBankApprovalBody": "您的銀行需要核准這筆付款，之後才會將點數加入您的帳戶。您可以透過銀行的應用程式或此次購買的付款連結完成核准。在此筆付款完成或到期前，無法開始新的儲值。",
       "buy": "購買",
       "buyCredits": "繼續付款",
@@ -2015,6 +2023,7 @@
     "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
     "agentModified": "代理程式已更新此工作流程",
+    "agentNeedsApproval": "Agent 需要您的核准",
     "agentWorking": "代理程式正在處理此工作流程",
     "all": "全部",
     "allKeybindingsReset": "所有快捷鍵已重設為預設值",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

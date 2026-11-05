@@ -129,6 +129,7 @@
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
     "focusNodeLabel": "Mostra {node} sul canvas",
+    "followedChatOpenFailed": "Impossibile aprire la chat per {workflowName}.",
     "freeUseNotice": "Prova gratuitamente la tua prima chat!",
     "freeUseNoticeLabel": "Avviso di utilizzo gratuito",
     "friend": "amico",
@@ -166,6 +167,8 @@
     "nodesAdded": "L'agente ha aggiunto 1 nodo al grafo | L'agente ha aggiunto {count} nodi al grafo",
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
+    "openingChat": "Apertura della chat…",
+    "openingWorkflowChat": "Apertura della chat per {workflowName}…",
     "otherOpenWorkflows": "Altri workflow aperti",
     "paywall": {
       "addCredits": "Aggiungi crediti",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Rimuovi il riferimento a {node}",
     "removeWorkflowReference": "Rimuovi il riferimento a {name}",
     "retryAfterSeconds": "Puoi riprovare tra {seconds}s.",
+    "retryFollowedChat": "Riprova ad aprire la chat per {workflowName}",
     "runApproval": {
       "answerFailed": "Impossibile inviare la tua risposta. Ricarica la pagina e riprova.",
       "answerSuperseded": "Questa richiesta ha già ricevuto una risposta altrove, quindi è stata usata quella risposta anziché la tua.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "Aggiungi altri crediti",
       "addMoreCreditsToRun": "Aggiungi altri crediti per eseguire",
       "amountToPayLabel": "Importo da pagare in dollari",
+      "autoTopUp": {
+        "prompt": "Hai pochi crediti? Attiva la ricarica automatica.",
+        "setUp": "Configura"
+      },
       "awaitingBankApprovalBody": "La tua banca deve approvare questo pagamento prima che i crediti vengano aggiunti. Puoi completarlo dall'app della tua banca o dal link di pagamento per questo acquisto. Non puoi avviare una nuova ricarica finché questa non viene completata o scade.",
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
@@ -2015,6 +2023,7 @@
     "addNode": "Aggiungi un nodo...",
     "addNodeFilterCondition": "Aggiungi condizione filtro nodo",
     "agentModified": "L'agente ha aggiornato questo workflow",
+    "agentNeedsApproval": "L’agente richiede la tua approvazione",
     "agentWorking": "L'agente sta lavorando su questo workflow",
     "all": "Tutti",
     "allKeybindingsReset": "Tutte le scorciatoie reimpostate ai valori predefiniti",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

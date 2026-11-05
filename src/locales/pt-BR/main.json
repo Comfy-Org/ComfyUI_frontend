@@ -129,6 +129,7 @@
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
+    "followedChatOpenFailed": "Não foi possível abrir o chat de {workflowName}.",
     "freeUseNotice": "Experimente seu primeiro chat gratuitamente!",
     "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "aí",
@@ -166,6 +167,8 @@
     "nodesAdded": "O agente adicionou 1 nó ao grafo | O agente adicionou {count} nós ao grafo",
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
+    "openingChat": "Abrindo o chat…",
+    "openingWorkflowChat": "Abrindo o chat de {workflowName}…",
     "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
     "paywall": {
       "addCredits": "Adicionar créditos",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Remover referência a {node}",
     "removeWorkflowReference": "Remover referência a {name}",
     "retryAfterSeconds": "Você pode tentar novamente em {seconds}s.",
+    "retryFollowedChat": "Tentar novamente abrir o chat de {workflowName}",
     "runApproval": {
       "answerFailed": "Não foi possível enviar sua resposta. Recarregue a página e tente novamente.",
       "answerSuperseded": "Isso já foi respondido em outro lugar, então essa resposta foi usada em vez da sua.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "Adicionar mais créditos",
       "addMoreCreditsToRun": "Adicione mais créditos para executar",
       "amountToPayLabel": "Valor a pagar em dólares",
+      "autoTopUp": {
+        "prompt": "Está com poucos créditos? Ative a recarga automática.",
+        "setUp": "Configurar"
+      },
       "awaitingBankApprovalBody": "Seu banco precisa aprovar este pagamento antes que seus créditos sejam adicionados. Você pode concluí-lo pelo aplicativo do seu banco ou pelo link de pagamento desta compra. Não é possível iniciar uma nova recarga até que esta seja concluída ou expire.",
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
@@ -2015,6 +2023,7 @@
     "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "agentModified": "O agente atualizou este fluxo de trabalho",
+    "agentNeedsApproval": "O agente precisa da sua aprovação",
     "agentWorking": "O agente está trabalhando neste fluxo de trabalho",
     "all": "Todos",
     "allKeybindingsReset": "Todos os atalhos redefinidos para o padrão",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

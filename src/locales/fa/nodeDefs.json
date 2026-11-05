@@ -18736,7 +18736,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra low-max، GPT-6 Sol/Luna و GPT-5.6 none-max (بدون minimal)، GPT-5.5 none-xhigh، GPT-5.5 Pro medium-xhigh، GPT-5 minimal-high، و o-series low-high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "سطوح پشتیبانی‌شده بسته به مدل متفاوت‌اند. سطح پشتیبانی‌نشده اجرا را متوقف می‌کند و موارد معتبر را فهرست می‌کند. «default» به مدل اجازه می‌دهد انتخاب کند."
       },
       "truncation": {
         "name": "truncation",
@@ -18996,6 +18996,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تبدیل متن به تصویر، یا همراه با تصاویر، ویرایش image_1 با استفاده از سایر تصاویر به‌عنوان مرجع. prompt به آن‌ها با نام‌های <Picture 1>، <Picture 2>، ... اشاره می‌کند. مدل به ModelSamplingMiniMaxH3 با مقدار 1.0/1.0 نیاز دارد.",
+    "display_name": "شرط‌گذاری p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "۰ از ارتفاع image_1 پس از مقیاس‌دهی استفاده می‌کند، یا در نبود تصویر از ۲۹۱۲."
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "با وجود تصاویر، پیش از یک دستور کوتاه «Edit <Picture 1>. » افزوده می‌شود؛ دستوری که با «Edit <Picture» آغاز شود و نیز شرح ویرایش از upsamplerِ prompt، بدون تغییر استفاده می‌شوند."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE مربوط به p-h3-image که هنگام اتصال تصاویر لازم است."
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "۰ از عرض image_1 پس از مقیاس‌دهی استفاده می‌کند، یا در نبود تصویر از ۲۹۱۲."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19647,6 +19684,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، MiniMax H3 پس‌آموزش‌دیدهٔ Pika. با راهنمایی تصاویر، ویدئوها و صدای مرجع، ویدئو با صدای همگام تولید یا ویرایش کنید.",
+    "display_name": "مرجع Pika H3 Flex به ویدئو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد",
+        "tooltip": "auto از یک ویدئوی مرجع پیروی می‌کند؛ در غیر این صورت از prompt. تصاویر مرجع تأثیری بر آن ندارند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "طول خروجی از شبکهٔ فریم‌ها پیروی می‌کند: ۵ ثانیه ۱۲۴ فریم می‌دهد، یعنی حدود ۵٫۱۷ ثانیه."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "به مراجع با @Image1، @Video1، @Audio1، یا با <Picture 1>، <Video 1>، <Audio 1> اشاره کنید."
+      },
+      "reference_audios": {
+        "name": "صداهای_مرجع",
+        "tooltip": "حداکثر ۳ کلیپ که در prompt با @Audio1..@Audio3 به آن‌ها اشاره می‌شود. هرکدام ۲ تا ۱۵ ثانیه، و در مجموع ۱۵ ثانیه. هنگام کپی به خروجی، کلیپ‌ها به‌ترتیب اتصال و پیش از صدای ویدئوهای متصل پخش می‌شوند، فارغ از اینکه prompt به کدام شماره اشاره کند."
+      },
+      "reference_images": {
+        "name": "تصاویر_مرجع",
+        "tooltip": "حداکثر ۹ تصویر که در prompt به‌ترتیب اتصال با @Image1..@Image9 به آن‌ها اشاره می‌شود. دست‌کم یک تصویر یا ویدئو لازم است."
+      },
+      "reference_video_audio": {
+        "name": "صدای_ویدئوی_مرجع",
+        "tooltip": "صدای ویدئوهای متصل به خروجی کپی می‌شود. برای صدای محیط جدید یا انتقال حرکت با موسیقی جدید، این گزینه را خاموش کنید. در این صورت، برای چهره‌ای در حال صحبت که در prompt دیالوگی ندارد، گفتار ساخته می‌شود."
+      },
+      "reference_videos": {
+        "name": "ویدئوهای_مرجع",
+        "tooltip": "حداکثر ۳ ویدئو که در prompt به‌ترتیب اتصال با @Video1..@Video3 به آن‌ها اشاره می‌شود. هرکدام ۲ تا ۱۵ ثانیه، و در مجموع ۱۵ ثانیه. هزینه‌گذاری به‌ازای هر ثانیه است."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "۱۰۸۰p و بالاتر ابتدا با ۷۶۸p رندر می‌شوند و یک‌بار بزرگ‌نمایی می‌شوند. یک seed یکسان در ۴۸۰p ویدئوی متفاوتی تولید می‌کند."
+      },
+      "rewrite_prompt": {
+        "name": "بازنویسی_prompt",
+        "tooltip": "اجازه دهید Pika ابتدا prompt را بسط دهد. در این صورت، یک seed یکسان در هر اجرا ویدئوی متفاوتی می‌دهد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با خاموش بودن rewrite_prompt، یک seed یکسان دقیقاً همان ویدئو را تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، MiniMax H3 پس‌آموزش‌دیدهٔ Pika. ویدئو را با صدای همگام از متن و فریم‌های اختیاری نخست و آخر تولید کنید.",
+    "display_name": "ویدئوی Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "auto از نخستین فریم متصل پیروی می‌کند؛ در غیر این صورت، از prompt پیروی می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "طول خروجی از یک شبکهٔ فریم پیروی می‌کند: ۵ ثانیه ۱۲۴ فریم، یعنی حدود ۵٫۱۷ ثانیه، می‌دهد."
+      },
+      "first_frame": {
+        "name": "فریم اول"
+      },
+      "last_frame": {
+        "name": "فریم آخر"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "۱۰۸۰p و بالاتر با وضوح ۷۶۸p رندر می‌شوند و یک‌بار ارتقا می‌یابند. seed یکسان در ۴۸۰p ویدیوی متفاوتی تولید می‌کند."
+      },
+      "rewrite_prompt": {
+        "name": "بازنویسی prompt",
+        "tooltip": "اجازه دهید Pika ابتدا prompt را بسط دهد. در این صورت، seed یکسان در هر اجرا ویدیوی متفاوتی تولید می‌کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با غیرفعال بودن rewrite_prompt، seed یکسان ویدیو را دقیقاً تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "با Pika از توضیح متنی و متن ترانهٔ اختیاری موسیقی تولید کنید، یا یک ترانه را کاور کنید.",
+    "display_name": "موسیقی Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "mode_duration": {
+        "name": "مدت‌زمان"
+      },
+      "mode_lyrics": {
+        "name": "متن ترانه"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "بازنویسی prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "با Pika از یک توضیح متنی افکت صوتی تولید کنید.",
+    "display_name": "افکت صوتی Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "با Pika برای یک ویدیو موسیقی متنِ همگام تولید کنید. تصویر و مدت‌زمان حفظ می‌شوند؛ فقط صدا جایگزین می‌شود.",
+    "display_name": "موسیقی متن Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "صدا باید چگونه باشد: افکت‌های صوتی، صدای محیط، موسیقی یا سبک. برای استخراج آن از تصویر، خالی بگذارید."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "تا ۱۰ دقیقه."
       }
     },
     "outputs": {
@@ -24959,6 +25173,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "با استفاده از Sonilo Music ۱٫۵، از یک prompt متنی ترانه‌ای با آواز خوانده‌شده تولید کنید.",
+    "display_name": "Sonilo Music ۱٫۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "«auto» طول آهنگ را با متن ترانه هماهنگ می‌کند. طول سفارشی، بخش‌هایی از متن ترانه را که جا نمی‌شوند حذف می‌کند و بخش‌های کوتاه را تکرار می‌کند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ترانه را توصیف کنید: ژانر، حال‌وهوا، سازها و آواز. برای تعیین واژه‌ها، یک بلوک 'Lyrics:' با برچسب‌های [Verse] / [Chorus] اضافه کنید؛ بدون آن، مدل متن ترانهٔ خود را می‌نویسد. حداکثر: ۲۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "تولید موسیقی از یک پرامپت متنی با استفاده از مدل هوش مصنوعی Sonilo. مدت زمان را روی ۰ قرار دهید تا مدل آن را از پرامپت تشخیص دهد.",
     "display_name": "تبدیل متن به موسیقی با Sonilo",
@@ -25799,6 +26039,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "پاسخ‌های متنی را با مدل Hy4 شرکت Tencent تولید کنید. یک پرامپت متنی و، در صورت تمایل، یک یا چند تصویر برای زمینه فراهم کنید.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_reasoning": {
+        "name": "استدلال"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "دما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -26407,7 +26682,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "تولید متن",
+    "display_name": "تولید متن (منسوخ‌شده)",
     "inputs": {
       "audio": {
         "name": "صدا"
@@ -26546,6 +26821,79 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "تولید متن",
+    "inputs": {
+      "audios": {
+        "name": "صداها"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی حدسی با استفاده از سرِ پیش‌بینی چندتوکنیِ checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق و پهنای پیش‌نویس را با تطبیق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا سازگار می‌کند؛ ۲-۵ یک عمق پیش‌نویس ثابت را تعیین می‌کند؛ حالت‌های tree هم پهنا و هم عمق را ثابت می‌کنند. خروجی نمونه‌برداری‌شده همچنان توزیع صحیحی دارد، اما برای بذر یکسان با خروجی غیر-MTP تفاوت خواهد داشت."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "پرامپت سیستمی را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نمی‌شود، نادیده گرفته می‌شود."
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "اگر مدل از آن پشتیبانی می‌کند، در حالت تفکر عمل کنید."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "اگر مدل پرامپت/قالب سیستمی داخلی دارد، از آن استفاده کنید."
+      },
+      "videos": {
+        "name": "ویدئوها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {

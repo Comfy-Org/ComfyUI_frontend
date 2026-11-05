@@ -129,6 +129,7 @@
     "feedbackCaption": "Partager vos commentaires",
     "focusNode": "Afficher sur le canevas",
     "focusNodeLabel": "Afficher {node} sur le canevas",
+    "followedChatOpenFailed": "Impossible d’ouvrir le chat pour {workflowName}.",
     "freeUseNotice": "Essayez votre première discussion gratuitement !",
     "freeUseNoticeLabel": "Avis d'utilisation gratuite",
     "friend": "là",
@@ -166,6 +167,8 @@
     "nodesAdded": "L’agent a ajouté 1 nœud au graphe | L’agent a ajouté {count} nœuds au graphe",
     "notHelpful": "Pas utile",
     "openWorkflowTab": "Ouvrir {name}",
+    "openingChat": "Ouverture du chat…",
+    "openingWorkflowChat": "Ouverture du chat pour {workflowName}…",
     "otherOpenWorkflows": "Autres workflows ouverts",
     "paywall": {
       "addCredits": "Ajouter des crédits",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Supprimer la référence à {node}",
     "removeWorkflowReference": "Supprimer la référence à {name}",
     "retryAfterSeconds": "Vous pourrez réessayer dans {seconds}s.",
+    "retryFollowedChat": "Réessayer d’ouvrir le chat pour {workflowName}",
     "runApproval": {
       "answerFailed": "Impossible d’envoyer votre réponse. Rechargez la page et réessayez.",
       "answerSuperseded": "Une réponse a déjà été donnée ailleurs ; cette réponse a donc été utilisée à la place de la vôtre.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "Ajouter des crédits",
       "addMoreCreditsToRun": "Ajouter des crédits pour exécuter",
       "amountToPayLabel": "Montant à payer en dollars",
+      "autoTopUp": {
+        "prompt": "Vous manquez de crédits ? Activez le rechargement automatique.",
+        "setUp": "Configurer"
+      },
       "awaitingBankApprovalBody": "Votre banque doit approuver ce paiement avant que vos crédits soient ajoutés. Vous pouvez finaliser l’opération depuis l’application de votre banque ou via le lien de paiement de cet achat. Vous ne pourrez pas commencer un nouveau rechargement tant que celui-ci n’est pas terminé ou expiré.",
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",
@@ -2015,6 +2023,7 @@
     "addNode": "Ajouter un nœud...",
     "addNodeFilterCondition": "Ajouter une condition de filtre de nœud",
     "agentModified": "L’agent a mis à jour ce workflow",
+    "agentNeedsApproval": "L’agent a besoin de votre approbation",
     "agentWorking": "L’agent travaille sur ce workflow",
     "all": "Tout",
     "allKeybindingsReset": "Tous les raccourcis clavier ont été réinitialisés par défaut",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

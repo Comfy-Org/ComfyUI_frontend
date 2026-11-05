@@ -129,6 +129,7 @@
     "feedbackCaption": "بازخورد خود را به اشتراک بگذارید",
     "focusNode": "نمایش روی بوم",
     "focusNodeLabel": "نمایش {node} روی بوم",
+    "followedChatOpenFailed": "امکان باز کردن گفت‌وگو برای {workflowName} فراهم نشد.",
     "freeUseNotice": "اولین گفت‌وگوی خود را رایگان امتحان کنید!",
     "freeUseNoticeLabel": "اعلان استفادهٔ رایگان",
     "friend": "دوست عزیز",
@@ -166,6 +167,8 @@
     "nodesAdded": "عامل ۱ node به گراف افزود | عامل {count} node به گراف افزود",
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
+    "openingChat": "در حال باز کردن گفت‌وگو…",
+    "openingWorkflowChat": "در حال باز کردن گفت‌وگو برای {workflowName}…",
     "otherOpenWorkflows": "workflowهای باز دیگر",
     "paywall": {
       "addCredits": "افزودن اعتبار",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "حذف ارجاع {node}",
     "removeWorkflowReference": "حذف مرجع {name}",
     "retryAfterSeconds": "می‌توانید تا {seconds} ثانیهٔ دیگر دوباره تلاش کنید.",
+    "retryFollowedChat": "باز کردن گفت‌وگو برای {workflowName} را دوباره امتحان کنید",
     "runApproval": {
       "answerFailed": "ارسال پاسخ شما ممکن نشد. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
       "answerSuperseded": "پیش‌تر در جای دیگری به این مورد پاسخ داده شده است، بنابراین به‌جای پاسخ شما از آن پاسخ استفاده شد.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "افزودن اعتبار بیشتر",
       "addMoreCreditsToRun": "برای اجرا اعتبار بیشتری اضافه کنید",
       "amountToPayLabel": "مبلغ پرداختی به دلار",
+      "autoTopUp": {
+        "prompt": "اعتبارتان رو به اتمام است؟ شارژ خودکار را فعال کنید.",
+        "setUp": "تنظیم کنید"
+      },
       "awaitingBankApprovalBody": "بانک شما باید این پرداخت را تأیید کند تا اعتبارهای شما افزوده شوند. می‌توانید آن را از برنامهٔ بانک خود یا پیوند پرداخت این خرید تکمیل کنید. تا زمانی که این مورد تکمیل یا منقضی نشود، نمی‌توان افزایش اعتبار جدیدی را آغاز کرد.",
       "buy": "خرید",
       "buyCredits": "ادامه به پرداخت",
@@ -2015,6 +2023,7 @@
     "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
     "agentModified": "عامل این workflow را به‌روزرسانی کرد",
+    "agentNeedsApproval": "عامل به تأیید شما نیاز دارد",
     "agentWorking": "عامل در حال کار روی این workflow است",
     "all": "همه",
     "allKeybindingsReset": "همه کلیدهای میانبر به پیش‌فرض بازنشانی شدند",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",

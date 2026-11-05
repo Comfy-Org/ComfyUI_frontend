@@ -129,6 +129,7 @@
     "feedbackCaption": "Geri bildirim paylaşın",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
+    "followedChatOpenFailed": "{workflowName} için sohbet açılamadı.",
     "freeUseNotice": "İlk sohbetinizi ücretsiz deneyin!",
     "freeUseNoticeLabel": "Ücretsiz kullanım bildirimi",
     "friend": "orada",
@@ -166,6 +167,8 @@
     "nodesAdded": "Aracı grafiğe 1 düğüm ekledi | Aracı grafiğe {count} düğüm ekledi",
     "notHelpful": "Yararlı değil",
     "openWorkflowTab": "{name} öğesini aç",
+    "openingChat": "Sohbet açılıyor…",
+    "openingWorkflowChat": "{workflowName} için sohbet açılıyor…",
     "otherOpenWorkflows": "Diğer açık iş akışları",
     "paywall": {
       "addCredits": "Kredi ekle",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "{node} referansını kaldır",
     "removeWorkflowReference": "{name} referansını kaldır",
     "retryAfterSeconds": "{seconds} saniye sonra yeniden deneyebilirsiniz.",
+    "retryFollowedChat": "{workflowName} için sohbeti açmayı yeniden deneyin",
     "runApproval": {
       "answerFailed": "Yanıtınız gönderilemedi. Sayfayı yeniden yükleyip tekrar deneyin.",
       "answerSuperseded": "Bu zaten başka bir yerde yanıtlandı; bu nedenle sizin yanıtınız yerine o yanıt kullanıldı.",
@@ -1219,6 +1223,10 @@
       "addMoreCredits": "Daha fazla kredi ekle",
       "addMoreCreditsToRun": "Çalıştırmak için daha fazla kredi ekle",
       "amountToPayLabel": "Ödenecek tutar (dolar)",
+      "autoTopUp": {
+        "prompt": "Krediniz mi azalıyor? Otomatik bakiye yüklemeyi açın.",
+        "setUp": "Ayarla"
+      },
       "awaitingBankApprovalBody": "Kredileriniz eklenmeden önce bankanızın bu ödemeyi onaylaması gerekiyor. İşlemi bankanızın uygulamasından veya bu satın alma için ödeme bağlantısından tamamlayabilirsiniz. Bu işlem tamamlanana ya da süresi dolana kadar yeni bir kredi yüklemesi başlatılamaz.",
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
@@ -2015,6 +2023,7 @@
     "addNode": "Bir düğüm ekle...",
     "addNodeFilterCondition": "Düğüm filtresi koşulu ekle",
     "agentModified": "Aracı bu iş akışını güncelledi",
+    "agentNeedsApproval": "Aracı onaylamanız gerekiyor",
     "agentWorking": "Aracı bu iş akışı üzerinde çalışıyor",
     "all": "Tümü",
     "allKeybindingsReset": "Tüm kısayol tuşları varsayılana sıfırlandı",
@@ -3562,6 +3571,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
