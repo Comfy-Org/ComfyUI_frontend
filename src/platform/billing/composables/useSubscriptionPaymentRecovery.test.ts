@@ -1,6 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -86,6 +86,20 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(context.fetchPlans).toHaveBeenCalledOnce()
     expect(context.fetchStatus).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the return refresh armed after the pricing dialog closes', async () => {
+    serveRecovery(true)
+    vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
+    const stopRefresh = vi.fn()
+    vi.mocked(registerRefreshOnReturn).mockReturnValue(stopRefresh)
+    const scope = effectScope()
+
+    await scope.run(() => useSubscriptionPaymentRecovery())?.finishPayment()
+    scope.stop()
+
+    expect(registerRefreshOnReturn).toHaveBeenCalledOnce()
+    expect(stopRefresh).not.toHaveBeenCalled()
   })
 
   it('closes the tab and re-reads billing when the operation no longer has a payment page', async () => {

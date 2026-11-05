@@ -1,5 +1,5 @@
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
-import { getCurrentScope, onScopeDispose, shallowRef, watch } from 'vue'
+import { shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -10,6 +10,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+let stopReturnRefresh: (() => void) | null = null
+
 /** Opens the served payment action for an unpaid initial-signup invoice that holds plan changes. */
 export function useSubscriptionPaymentRecovery() {
   const { subscriptionPaymentRecovery, fetchPlans, fetchStatus } =
@@ -18,7 +20,6 @@ export function useSubscriptionPaymentRecovery() {
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
   const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
-  let stopReturnRefresh: (() => void) | null = null
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
@@ -51,8 +52,6 @@ export function useSubscriptionPaymentRecovery() {
     stopReturnRefresh?.()
     stopReturnRefresh = registerRefreshOnReturn(refreshBillingState)
   }
-
-  if (getCurrentScope()) onScopeDispose(() => stopReturnRefresh?.())
 
   function reportPaymentUnavailable() {
     toast.error(t('subscription.signupPaymentRecovery.unavailable'))
