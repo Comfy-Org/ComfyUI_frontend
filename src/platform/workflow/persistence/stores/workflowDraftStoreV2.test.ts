@@ -254,6 +254,32 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft(COLLIDING_PATH_B)?.lineage).toBeUndefined()
     })
 
+    it('leaves a renamed draft lineage off a new workflow at the old path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 4 })
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.moveDraft(COLLIDING_PATH_A, 'workflows/renamed.json', 'renamed')
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["new"]}', {
+        name: 'new',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["new"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
+      expect(store.getDraft('workflows/renamed.json')?.lineage).toEqual({
+        workflowId: 'wf-a',
+        lineageSeq: 4
+      })
+    })
+
     it('renames onto a free same-hash path without a second payload write', () => {
       const store = useWorkflowDraftStoreV2()
 

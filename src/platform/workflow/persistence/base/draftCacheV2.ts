@@ -33,6 +33,41 @@ export function resolveDraftKey(index: DraftIndexV2, path: string): string {
 }
 
 /**
+ * Takes over the slot `path` would use from the index as stored, when stored
+ * shows a different path holding it.
+ *
+ * A rename keeps its slot (see {@link moveEntry}), so a slot no longer implies
+ * `hashPath(path)`. A tab caches its index for the whole session, so one whose
+ * cache predates another tab's rename still believes it owns that slot and
+ * would read, overwrite or delete the renamed draft's payload. Adopting the
+ * stored owner makes {@link resolveDraftKey} allocate a fresh slot for `path`
+ * instead — a cost paid by the write that raced, not by the rename.
+ *
+ * @returns `cached` itself when nothing else owns the slot.
+ */
+export function adoptContendedSlot(
+  cached: DraftIndexV2,
+  stored: DraftIndexV2 | null,
+  path: string
+): DraftIndexV2 {
+  if (!stored) return cached
+
+  const storedByKey: Partial<Record<string, DraftEntryMeta>> = stored.entries
+  const draftKey = resolveDraftKey(cached, path)
+  const owner = storedByKey[draftKey]
+  if (!owner || owner.path === path) return cached
+
+  return {
+    v: 2,
+    updatedAt: Date.now(),
+    order: cached.order.includes(draftKey)
+      ? cached.order
+      : [...cached.order, draftKey],
+    entries: { ...cached.entries, [draftKey]: owner }
+  }
+}
+
+/**
  * Creates an empty draft index.
  */
 export function createEmptyIndex(): DraftIndexV2 {

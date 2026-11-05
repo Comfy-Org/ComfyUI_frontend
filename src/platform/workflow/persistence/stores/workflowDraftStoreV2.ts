@@ -18,6 +18,7 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
+  adoptContendedSlot,
   createEmptyIndex,
   getEntryByPath,
   getMostRecentKey,
@@ -132,6 +133,32 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
+   * The index to resolve `path`'s slot from. {@link loadIndex} answers from an
+   * in-memory cache that is never re-read, so it cannot see a rename another
+   * tab made — and a renamed draft keeps its slot. Re-reading storage here is
+   * what stops this tab attributing that slot to `path`.
+   */
+  function ownedIndex(workspaceId: string, path: string): DraftIndexV2 {
+    return adoptContendedSlot(loadIndex(), readIndex(workspaceId), path)
+  }
+
+  /**
+   * Follows a draft to a new slot. The lineage was recorded for this path's
+   * draft, so it belongs wherever that draft is now written.
+   */
+  function rekeyLineage(
+    workspaceId: string,
+    fromKey: string,
+    toKey: string
+  ): void {
+    if (fromKey === toKey) return
+    const lineage = lineageByDraft.get(lineageKey(workspaceId, fromKey))
+    if (!lineage) return
+    lineageByDraft.delete(lineageKey(workspaceId, fromKey))
+    lineageByDraft.set(lineageKey(workspaceId, toKey), lineage)
+  }
+
+  /**
    * Persists the current index to localStorage.
    */
   function persistIndex(index: DraftIndexV2): boolean {
@@ -150,8 +177,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const workspaceId = currentWorkspaceId()
     const now = Date.now()
 
-    const index = loadIndex()
+    const cached = loadIndex()
+    const index = adoptContendedSlot(cached, readIndex(workspaceId), path)
     const draftKey = resolveDraftKey(index, path)
+    if (index !== cached)
+      rekeyLineage(workspaceId, resolveDraftKey(cached, path), draftKey)
 
     const payloadWritten = writePayload(
       workspaceId,
@@ -160,7 +190,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      return handleQuotaExceeded(path, data, meta, index, draftKey)
     }
     const { index: newIndex, evicted } = upsertEntry(
       index,
@@ -189,6 +219,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * entry in `entries` are stripped in-place and the loop continues, rather
    * than bailing out and leaving evictable drafts behind.
    *
+   * `index` and `draftKey` are the slot the caller already resolved, so the
+   * retries here cannot land on a different one.
+   *
    * Recovery writes (`persistIndex(currentIndex)` after a failed write) are
    * best-effort; their return value is intentionally ignored because there
    * is no useful action to take when the recovery itself also fails — the
@@ -198,11 +231,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function handleQuotaExceeded(
     path: string,
     data: string,
-    meta: DraftMeta
+    meta: DraftMeta,
+    index: DraftIndexV2,
+    draftKey: string
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    let currentIndex = loadIndex()
-    const draftKey = resolveDraftKey(currentIndex, path)
+    let currentIndex = index
     let evictedCount = 0
 
     while (currentIndex.order.length > 0) {
@@ -306,7 +340,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function removeDraft(path: string): void {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, path)
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
     if (removedKey) {
@@ -320,8 +354,32 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another (rename).
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
-    const result = moveEntry(loadIndex(), oldPath, newPath, name)
+    const workspaceId = currentWorkspaceId()
+    const index = ownedIndex(workspaceId, oldPath)
+    movePendingLineage(workspaceId, index, oldPath, newPath)
+    const result = moveEntry(index, oldPath, newPath, name)
     if (result) persistIndex(result.index)
+  }
+
+  /**
+   * A lineage parked under `oldPath` belongs to the workflow being renamed, not
+   * to whatever is created at `oldPath` next, so it follows the rename. It is
+   * dropped rather than moved when the destination has a draft of its own,
+   * because that draft's own lineage is the one that applies there.
+   */
+  function movePendingLineage(
+    workspaceId: string,
+    index: DraftIndexV2,
+    oldPath: string,
+    newPath: string
+  ): void {
+    const parkedKey = lineageKey(workspaceId, oldPath)
+    const parked = pendingLineageByPath.get(parkedKey)
+    if (!parked) return
+
+    pendingLineageByPath.delete(parkedKey)
+    if (!getEntryByPath(index, newPath))
+      pendingLineageByPath.set(lineageKey(workspaceId, newPath), parked)
   }
 
   /**
@@ -335,7 +393,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     lineage?: DraftLineage
   } | null {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, path)
     const entry = getEntryByPath(index, path)
     if (!entry) return null
 
@@ -359,7 +417,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function setLineage(path: string, lineage: DraftLineage): void {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, path)
     if (!getEntryByPath(index, path)) {
       pendingLineageByPath.set(lineageKey(workspaceId, path), lineage)
       return
