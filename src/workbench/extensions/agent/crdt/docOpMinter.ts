@@ -981,7 +981,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
     if (address.kind === 'slot')
       return [{ ...entry.operation, to_slot: address.slot }]
-    if (address.kind === 'grow' && entry.kind === 'connect' && docNames)
+    if (address.kind === 'grow' && entry.kind === 'connect')
       return [{ ...entry.operation, to_slot: null, grow: address.grow }]
     if (target.input) reportSlotNotInDoc(entry, target.input)
     return []
