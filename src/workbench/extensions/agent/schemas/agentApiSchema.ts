@@ -157,6 +157,7 @@ export const zPersistedThinkingEntry = zAgentThinkingEntry
     tool_call_id: z.string().nullish(),
     truncated: z.boolean().nullish()
   })
+export type PersistedThinkingEntry = z.infer<typeof zPersistedThinkingEntry>
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
