@@ -47,9 +47,6 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -88,6 +85,7 @@ import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanCreditLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -158,11 +156,7 @@ import {
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import {
-  agentSocketAuthParams,
-  ensureSignedIn,
-  hasAgentCredential
-} from './services/agent/agentAuth'
+import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -175,8 +169,11 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -199,7 +196,6 @@ import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -236,6 +232,7 @@ const {
   isReady: capabilityReadSettled,
   snapshotAuthoritative
 } = useBillingCapabilities()
+const planCreditLine = usePlanCreditLine()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -245,7 +242,8 @@ const paywallPresentation = computed(() => {
     role: workspaceRole.value,
     tier: subscriptionTier.value,
     canTopUp: canTopUp.value,
-    canSubscribeSelfServe: canSubscribeSelfServe.value
+    canSubscribeSelfServe: canSubscribeSelfServe.value,
+    planCreditLine: planCreditLine.value
   })
 })
 const sidebarTabStore = useSidebarTabStore()
@@ -260,13 +258,17 @@ onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
-  getAuthParams: agentSocketAuthParams
-})
-
-const docTransport = createAgentDocFrameTransport(events)
-onBeforeUnmount(() => docTransport.destroy())
+const authStore = useAuthStore()
+const apiKeyAuthStore = useApiKeyAuthStore()
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
+  toSocketIdentity(
+    authStore.userId,
+    apiKeyAuthStore.currentUser?.id,
+    teamWorkspaceStore.activeWorkspaceId,
+    desktopHostUser.value?.workspaceId
+  )
+)
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
@@ -281,37 +283,7 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const authStore = useAuthStore()
-const apiKeyAuthStore = useApiKeyAuthStore()
-const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 
 function onPaywallAction(
   action: AgentPaywallAction,

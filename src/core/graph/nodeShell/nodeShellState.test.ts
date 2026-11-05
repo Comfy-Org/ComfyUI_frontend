@@ -11,7 +11,8 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { createNodeShellState, unregisterNodeState } from './nodeShellState'
 

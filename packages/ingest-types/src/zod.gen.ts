@@ -1064,8 +1064,9 @@ export const zAutoReloadSettingsRequest = z.object({
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
  * These states do not determine surface visibility. Unified billing settings
- * hide the auto top-up card when can_top_up is false, including paused or
- * payment-failed billing.
+ * show the auto top-up card only when capabilities.can_view_auto_top_up is
+ * true; it is false when can_top_up is, including paused or payment-failed
+ * billing.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -1126,8 +1127,9 @@ export const zBillingAddress = z.object({
  *
  * When the deployment has billing disabled, this endpoint answers without
  * consulting billing-api: can_top_up is true; can_manage_members,
- * can_invite_members, can_manage_subscription and can_manage_auto_top_up
- * follow the owner role. Other billing-action fields are false. These role
+ * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
+ * can_view_auto_top_up follow the owner role, and
+ * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
  * facts do not promise that billing endpoints are available.
  *
  */
@@ -1151,6 +1153,8 @@ export const zBillingCapabilities = z.object({
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean(),
   can_upgrade: z.boolean(),
+  can_view_auto_top_up: z.boolean(),
+  can_view_auto_top_up_member_notice: z.boolean(),
   can_view_own_usage: z.boolean().optional(),
   can_view_pending_invites: z.boolean(),
   can_view_team_usage: z.boolean()
@@ -1375,6 +1379,27 @@ export const zBillingCapabilityDenials = z.object({
       'billing_operation_in_progress',
       'sales_managed',
       'no_upgrade_available'
+    ])
+    .optional(),
+  can_view_auto_top_up: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'payment_past_due',
+      'tier_not_self_serve',
+      'subscription_status_unrecognized',
+      'topup_purchases_paused'
+    ])
+    .optional(),
+  can_view_auto_top_up_member_notice: z
+    .enum([
+      'not_a_member',
+      'workspace_owner',
+      'payment_past_due',
+      'tier_not_self_serve',
+      'subscription_status_unrecognized',
+      'topup_purchases_paused'
     ])
     .optional(),
   can_view_own_usage: z
@@ -5172,9 +5197,11 @@ export const zBillingCapabilityDenialParams = z.object({
 export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_enabled: z.boolean(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),
+  billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),
+  ending_notice_starts_at: z.iso.datetime().optional(),
   expires_at: z.iso.datetime(),
   has_parked_billing_operation: z.boolean().optional(),
   payment_recovery_available: z.boolean().optional(),

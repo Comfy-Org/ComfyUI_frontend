@@ -198,10 +198,16 @@ function useBillingCapabilitiesInternal() {
       capabilities.value?.can_manage_auto_top_up ?? false
     )
   )
-  const manageAutoTopUpDenial = computed(() =>
+  const canViewAutoTopUpCard = computed(() =>
     receiveServerFact(
-      'denied_reasons.can_manage_auto_top_up',
-      resolvedResponse.value?.denied_reasons?.can_manage_auto_top_up
+      'can_view_auto_top_up',
+      capabilities.value?.can_view_auto_top_up ?? false
+    )
+  )
+  const canViewAutoTopUpMemberNotice = computed(() =>
+    receiveServerFact(
+      'can_view_auto_top_up_member_notice',
+      capabilities.value?.can_view_auto_top_up_member_notice ?? false
     )
   )
   const autoTopUpEnabled = computed(() =>
@@ -229,6 +235,18 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'has_parked_billing_operation',
       resolvedResponse.value?.has_parked_billing_operation === true
+    )
+  )
+  const billingNoticeAudience = computed(() =>
+    receiveServerFact(
+      'billing_notice_audience',
+      resolvedResponse.value?.billing_notice_audience ?? null
+    )
+  )
+  const endingNoticeStartsAt = computed(() =>
+    receiveServerFact(
+      'ending_notice_starts_at',
+      resolvedResponse.value?.ending_notice_starts_at ?? null
     )
   )
   const runWorkflowsDenial = computed(() =>
@@ -583,7 +601,8 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
-    manageAutoTopUpDenial,
+    canViewAutoTopUpCard,
+    canViewAutoTopUpMemberNotice,
     autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
@@ -591,6 +610,8 @@ function useBillingCapabilitiesInternal() {
     paymentRecoveryAvailable,
     runWorkflowsDenial,
     hasParkedBillingOperation,
+    billingNoticeAudience,
+    endingNoticeStartsAt,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,
