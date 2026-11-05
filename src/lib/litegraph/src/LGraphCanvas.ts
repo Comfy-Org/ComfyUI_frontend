@@ -4484,12 +4484,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * Copies canvas items to an internal, app-specific clipboard backed by local storage.
    * When called without parameters, it copies {@link selectedItems}.
-   *
-   * The storage entry is a best-effort cache. The system clipboard write happens
-   * in the `copy` event handler, so a failure here never loses a Ctrl+C. It does
-   * decide what the paste paths that read storage directly get - duplicate, the
-   * canvas context menu and the Paste commands - so a failed write must not
-   * leave the *previous* copy behind for them to paste.
    * @param items The items to copy.  If nullish, all selected items are copied.
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
@@ -4497,22 +4491,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     try {
       localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
       localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
-    } catch {
-      // Evict our own entry before retrying. It is the largest thing this cache
-      // stores, so freeing it is what usually makes room for the new selection,
-      // and it guarantees no stale selection survives if the retry fails too.
+    } catch (error) {
+      // Leave the cache empty rather than holding the previous copy, which the
+      // paste paths that read storage directly would paste instead of this one.
       discardClipboardStorage()
-      try {
-        localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
-        localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
-      } catch (retryError) {
-        discardClipboardStorage()
-        if (!isQuotaExceededError(retryError)) {
-          reportError(retryError, {
-            errorType: 'error_writing_clipboard_storage',
-            surface: 'graph'
-          })
-        }
+      if (!isQuotaExceededError(error)) {
+        reportError(error, {
+          errorType: 'error_writing_clipboard_storage',
+          surface: 'graph'
+        })
       }
     }
     return serializedData

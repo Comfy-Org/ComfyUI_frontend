@@ -880,11 +880,10 @@ describe('copyToClipboard when storage is full', () => {
   }
 
   /**
-   * Caps the two clipboard entries at `maxBytes`, so a copy can be refused for
-   * space without needing a real multi-megabyte quota. The key being written is
-   * counted at its *existing* size, which is what makes an overwrite fail for
-   * want of room the old value is still holding - the production behaviour this
-   * guards. Removals stay real, so eviction frees room as it does in a browser.
+   * Caps the clipboard entries at `maxBytes` so a copy can be refused for space
+   * without a real multi-megabyte quota. Usage excludes the key being written,
+   * matching a browser that accounts an overwrite as a delta. Removals stay
+   * real, so a discard frees room as it does in a browser.
    */
   function capClipboardStorageAt(maxBytes: number) {
     return vi
@@ -893,6 +892,7 @@ describe('copyToClipboard when storage is full', () => {
         if (CLIPBOARD_KEYS.includes(key)) {
           let used = 0
           for (const owned of CLIPBOARD_KEYS) {
+            if (owned === key) continue
             const stored = localStorage.getItem(owned)
             if (stored !== null) used += owned.length + stored.length
           }
@@ -913,30 +913,7 @@ describe('copyToClipboard when storage is full', () => {
   })
   afterEach(clearClipboardStorage)
 
-  it('evicts its own previous entry and retries, so a copy that only fits alone still lands', () => {
-    const rootGraph = createTestRootGraph()
-    const previous = createTestNode(rootGraph)
-    const current = createTestNode(rootGraph)
-    const canvas = createCanvas(rootGraph)
-
-    canvas.copyToClipboard([previous])
-    const payload = JSON.stringify(canvas._serializeItems([current]))
-    // Room for exactly one payload plus its id stamp, so the retry can only
-    // succeed if the earlier entry was evicted first.
-    const setItem = capClipboardStorageAt(
-      CLIPBOARD_KEYS[0].length + payload.length + CLIPBOARD_KEYS[1].length + 36
-    )
-    onTestFinished(() => setItem.mockRestore())
-
-    const copied = canvas.copyToClipboard([current])
-
-    expect(copied).toBe(payload)
-    expect(localStorage.getItem(CLIPBOARD_KEYS[0])).toBe(payload)
-    expect(localStorage.getItem(CLIPBOARD_KEYS[1])).toMatch(/^[0-9a-f-]{36}$/)
-    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
-  })
-
-  it('leaves no stale entry behind when the retry also fails', () => {
+  it('leaves no stale entry behind when the write fails', () => {
     const rootGraph = createTestRootGraph()
     const previous = createTestNode(rootGraph)
     const current = createTestNode(rootGraph)
@@ -972,7 +949,7 @@ describe('copyToClipboard when storage is full', () => {
     ).toHaveLength(1)
   })
 
-  it('does not throw when storage rejects both the write and the eviction', () => {
+  it('does not throw when storage rejects both the write and the discard', () => {
     const rootGraph = createTestRootGraph()
     const node = createTestNode(rootGraph)
     const canvas = createCanvas(rootGraph)
@@ -990,8 +967,7 @@ describe('copyToClipboard when storage is full', () => {
     const copy = () => {
       copied = canvas.copyToClipboard([node])
     }
-    // Restored here rather than in teardown: the suite's own cleanup calls
-    // removeItem, and a blocked spy would fail the test after it had passed.
+    // Restored here, not in teardown: the suite's cleanup calls removeItem.
     try {
       expect(copy).not.toThrow()
     } finally {
