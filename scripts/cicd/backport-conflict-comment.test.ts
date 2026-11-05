@@ -330,7 +330,8 @@ describe('backport conflict comment', () => {
       expected: 1
     },
     {
-      scenario: 'a later labeled event while the job token is out of REST quota',
+      scenario:
+        'a later labeled event while the job token is out of REST quota',
       second: { spentRestTokens: [jobToken] },
       expected: 1
     },
