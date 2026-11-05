@@ -123,9 +123,11 @@ still tracks the same document occupant it always did.
   edit reaches the document input with the live input's name, not the one at
   its live index (#18332).
 - A local edit whose target the minter cannot place by name, or whose held
-  grow never lands, is reported once (`agent_crdt_link_slot_not_in_doc`) and
-  not minted. The edit is lost from the document rather than applied to
-  another input.
+  grow never lands or belongs to a document that is no longer bound, is
+  reported once (`agent_crdt_link_slot_not_in_doc` or
+  `agent_crdt_link_slot_workflow_changed`) and not minted. The edit is lost
+  from the document rather than applied to another input. A hold discarded
+  because the session unbound is dropped without a report.
 - Live-only inputs (autogrow spares, extension-added slots, widget-promoted
   inputs) are never pruned by a document change, because the follower does not
   write the input set at all. A document that drops an input leaves the live
