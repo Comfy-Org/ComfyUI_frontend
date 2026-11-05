@@ -63,7 +63,10 @@ import {
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
-import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  Bounds as PlacementRect,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
 export type NodeChange = 'add' | 'update' | 'delete'
@@ -2052,8 +2055,13 @@ export class LiveGraphApplier {
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
+    const existingBounds = existingNodes.map((node) => node.boundingRect)
+    const createdBounds = createdNodes.map((node): ReadOnlyRect => {
+      const { x, y, width, height } = rect(node)
+      return [x, y, width, height]
+    })
     const framesOnlyExisting = (group: LGraphGroup) =>
-      framesAny(group, existingNodes) && !framesAny(group, createdNodes)
+      framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
     const placedGroups =
       kept.length > 0 && createdNodes.length === 0
@@ -2076,12 +2084,11 @@ export class LiveGraphApplier {
   }
 }
 
-function framesAny(group: LGraphGroup, nodes: readonly LGraphNode[]): boolean {
-  const bounds: [number, number, number, number] = [0, 0, 0, 0]
-  return nodes.some((node) => {
-    node.measure(bounds)
-    return containsCentre(group._bounding, bounds)
-  })
+function framesAny(
+  group: LGraphGroup,
+  bounds: readonly ReadOnlyRect[]
+): boolean {
+  return bounds.some((rect) => containsCentre(group._bounding, rect))
 }
 
 function isLinkPresent(

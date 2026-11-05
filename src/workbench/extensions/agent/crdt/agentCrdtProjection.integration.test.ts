@@ -451,6 +451,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
       structuredClone(graph.serialize())
@@ -497,6 +499,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
       structuredClone(graph.serialize())
@@ -529,6 +533,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
       structuredClone(graph.serialize())
@@ -572,6 +578,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
       structuredClone(graph.serialize())
@@ -603,10 +611,53 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       'Next stage': [250, 0]
     })
   })
+  it('keeps a group on a collapsed node it frames as rendered', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([600, 100])
+    note.pos = [1000, 20]
+    source.collapse(true)
+    const context = {
+      font: '',
+      measureText: () => ({ width: 400 })
+    } as unknown as CanvasRenderingContext2D
+    source.updateArea(context)
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a64'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [],
+            groups: [
+              {
+                id: 1,
+                title: 'Around collapsed',
+                bounding: [150, -20, 200, 60]
+              }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const group = graph.groups.find(({ title }) => title === 'Around collapsed')
+    assert(group, 'the inserted group reached the canvas')
+    expect([...group.pos]).toEqual([150, -20])
+  })
   it('places a group-only insertion that frames no node clear of the canvas content', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
       structuredClone(graph.serialize())
