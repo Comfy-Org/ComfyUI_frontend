@@ -44,7 +44,12 @@ function isServedStatus(status: string): status is ServedStatus {
 
 function statusOf(view: AutoTopUpMemberView): AutoTopUpStatusLabel | null {
   if (!isServedStatus(view.status)) return null
-  if (view.disabled_reason === 'consecutive_declines') return 'turnedOff'
+  if (
+    view.status === 'failed' &&
+    view.disabled_reason === 'consecutive_declines'
+  ) {
+    return 'turnedOff'
+  }
   if (view.status === 'paused_by_budget' && view.monthly_budget_is_default) {
     return 'maximumReached'
   }
