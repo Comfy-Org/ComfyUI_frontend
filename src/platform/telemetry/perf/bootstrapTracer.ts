@@ -72,6 +72,13 @@ import type { PerfSpan } from './perfMark'
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
 
+const SAFE_ERROR_NAME = /^[A-Z][A-Za-z0-9_]{0,63}$/
+
+function safeErrorName(error: unknown): string {
+  if (!(error instanceof Error)) return typeof error
+  return SAFE_ERROR_NAME.test(error.name) ? error.name : 'Error'
+}
+
 function toRumTimingName(name: string): string {
   return name.replace(/\//g, '.')
 }
@@ -190,7 +197,6 @@ export class BootstrapTracer {
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
   private _hidden = new HiddenTimeMeter()
-  /** The latest phase whose work rejected, kept to say where a failed startup broke. */
   private _failure: { phase: BootstrapPhase; error: unknown } | undefined
 
   /**
@@ -234,8 +240,9 @@ export class BootstrapTracer {
     try {
       return await work()
     } catch (error) {
-      // An error rethrown through enclosing phases keeps the innermost phase.
-      if (this._failure?.error !== error) this._failure = { phase, error }
+      if (!this._failure || this._failure.error !== error) {
+        this._failure = { phase, error }
+      }
       throw error
     } finally {
       span.stop()
@@ -305,10 +312,6 @@ export class BootstrapTracer {
     this._hidden.stop()
   }
 
-  /**
-   * Where a failed startup broke: the phase whose work last rejected, else
-   * the newest phase still open. Error names only, never messages.
-   */
   private _failureCause(): Pick<
     BootstrapCompleteMetadata,
     'failure_phase' | 'failure_error'
@@ -317,7 +320,7 @@ export class BootstrapTracer {
       const { phase, error } = this._failure
       return {
         failure_phase: phase,
-        failure_error: error instanceof Error ? error.name : typeof error
+        failure_error: safeErrorName(error)
       }
     }
     const open = Array.from(this._spans.keys())

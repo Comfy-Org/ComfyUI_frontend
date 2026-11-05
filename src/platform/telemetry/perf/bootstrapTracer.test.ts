@@ -278,6 +278,38 @@ describe('bootstrapTracer', () => {
     ).not.toContain('secret detail')
   })
 
+  it('reports an error name that is not identifier-shaped as Error', async () => {
+    const tracer = new BootstrapTracer()
+    const error = new Error('boom')
+    error.name = 'Failed for user someone@example.com'
+
+    await expect(
+      tracer.settle('bootstrap/settings', () => Promise.reject(error))
+    ).rejects.toThrow('boom')
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/settings',
+      failure_error: 'Error'
+    })
+  })
+
+  it('records a phase that rejected with undefined', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/workflows', () => Promise.reject(undefined))
+    ).rejects.toBeUndefined()
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/workflows',
+      failure_error: 'undefined'
+    })
+  })
+
   it('reports a failure outside every phase as untraced', () => {
     const tracer = new BootstrapTracer()
 
