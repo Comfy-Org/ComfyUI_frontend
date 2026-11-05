@@ -57,12 +57,12 @@ import type {
 
 const DOT: Record<AutoTopUpStatusLabel, string> = {
   failed: 'bg-destructive',
-  turnedOff: 'bg-destructive-background',
+  turnedOff: 'bg-destructive',
   off: 'bg-muted-foreground',
-  onHold: 'bg-warning-background',
-  limitReached: 'bg-warning-background',
-  maximumReached: 'bg-warning-background',
-  on: 'bg-success-background'
+  onHold: 'bg-warning',
+  limitReached: 'bg-warning',
+  maximumReached: 'bg-warning',
+  on: 'bg-success'
 }
 
 const DANGER: ReadonlySet<AutoTopUpStatusLabel> = new Set([
