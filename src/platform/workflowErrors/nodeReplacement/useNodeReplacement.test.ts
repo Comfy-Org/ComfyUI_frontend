@@ -769,10 +769,9 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([
-        'multiplier',
-        1.5
-      ])
+      expect(
+        graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+      ).toEqual(['multiplier', 1.5])
     })
 
     it('carries a widget value from an installed deprecated node, which has no last_serialization', () => {
@@ -832,7 +831,7 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets![0].value).toBe('forced')
+      expect(graph.getNodeById(toNodeId(1))!.widgets![0].value).toBe('forced')
     })
 
     it('keeps a restored value that an earlier widget callback resets', () => {
@@ -869,10 +868,9 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([
-        'portrait',
-        7
-      ])
+      expect(
+        graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+      ).toEqual(['portrait', 7])
     })
 
     it('replaces a node reached through two instances of one subgraph once', () => {
@@ -2070,7 +2068,9 @@ describe('useNodeReplacement', () => {
           })
         ])
 
-        expect(newNode.widgets!.map((widget) => widget.value)).toEqual(expected)
+        expect(
+          graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+        ).toEqual(expected)
       }
     )
 

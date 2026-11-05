@@ -204,7 +204,7 @@ function assignMappedInputs(
   savedValues: Record<string, TWidgetValue>
 ): WidgetAssignment[] {
   const assigned: WidgetAssignment[] = []
-  const assign = (name: string, value: unknown) => {
+  function assign(name: string, value: unknown) {
     const widget = newNode.widgets?.find((w) => w.name === name)
     if (!widget) return
     try {
