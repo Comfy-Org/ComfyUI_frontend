@@ -13,7 +13,7 @@ try {
     case 'record':
     case 'recorder': {
       const { parseFlags } = await import('./cli/flags')
-      const { flags } = parseFlags(
+      const { positional, flags } = parseFlags(
         args.slice(1),
         [
           'distribution',
@@ -28,6 +28,13 @@ try {
         ],
         ['force']
       )
+      if (positional.length > 0) {
+        console.log(
+          pc.red(`  Unexpected record argument: ${positional.join(' ')}`)
+        )
+        process.exitCode = 1
+        break
+      }
       const { resolveRecordPrefill } = await import('./commands/recordPrefill')
       const { runRecord } = await import('./commands/record')
       await runRecord(resolveRecordPrefill(flags))
@@ -62,6 +69,15 @@ try {
           )
         )
         process.exit(1)
+      }
+      if (positional.length > 1) {
+        console.log(
+          pc.red(
+            `  Unexpected transform argument: ${positional.slice(1).join(' ')}`
+          )
+        )
+        process.exitCode = 1
+        break
       }
       const { parseFeatureFlagSpecs } = await import('./featureFlags')
       const { runTransform } = await import('./commands/transform')
