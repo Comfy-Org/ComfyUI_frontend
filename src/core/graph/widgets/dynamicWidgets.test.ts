@@ -17,6 +17,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -954,5 +955,119 @@ describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
       ),
       maskConnected: inputNames(reloadedNode).includes('model.mask*')
     }).toEqual({ images: before, maskConnected: true })
+  })
+})
+
+const MULTI_AUTOGROW_NODE_TYPE = 'test/MiniMaxH3ReferenceShape'
+
+const multiAutogrowNodeDef: ComfyNodeDefV1 = {
+  name: MULTI_AUTOGROW_NODE_TYPE,
+  display_name: 'Multiple Autogrow Groups',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      clip: ['CLIP', {}],
+      prompt: ['STRING', {}],
+      width: ['INT', { default: 1344 }]
+    },
+    optional: {
+      ref_images: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { ref_image: ['IMAGE', {}] } },
+            prefix: 'ref_image_',
+            min: 0,
+            max: 9
+          }
+        }
+      ],
+      ref_audios: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { ref_audio: ['AUDIO', {}] } },
+            prefix: 'ref_audio_',
+            min: 0,
+            max: 3
+          }
+        }
+      ]
+    }
+  },
+  input_order: {
+    required: ['clip', 'prompt', 'width'],
+    optional: ['ref_images', 'ref_audios']
+  },
+  output: ['CONDITIONING'],
+  output_name: ['positive'],
+  output_node: false
+}
+
+class ImageSourceNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'ImageSource')
+    this.addOutput('image', 'IMAGE')
+  }
+}
+
+describe('Sibling autogrow groups across a save and restore', () => {
+  beforeEach(async () => {
+    LiteGraph.registerNodeType('test/ImageSource', ImageSourceNode)
+    await useLitegraphService().registerNodeDef(
+      MULTI_AUTOGROW_NODE_TYPE,
+      multiAutogrowNodeDef
+    )
+  })
+
+  function inputNames(target: LGraphNode) {
+    return target.inputs.map(
+      (input, slot) => `${input.name}${target.getInputLink(slot) ? '*' : ''}`
+    )
+  }
+
+  function saveAndRestoreWithImagesConnected(imageCount: number) {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(MULTI_AUTOGROW_NODE_TYPE)
+    assert.ok(node, 'multi autogrow node')
+    graph.add(node)
+    for (let ordinal = 0; ordinal < imageCount; ordinal++) {
+      const source = new ImageSourceNode()
+      graph.add(source)
+      source.connect(
+        0,
+        node,
+        node.inputs.findIndex(
+          (input) => input.name === `ref_images.ref_image_${ordinal}`
+        )
+      )
+    }
+    const before = inputNames(node)
+
+    const reloaded = new LGraph()
+    const configuring = vi
+      .spyOn(app, 'configuringGraph', 'get')
+      .mockReturnValue(true)
+    reloaded.configure(structuredClone(graph.serialize()))
+    configuring.mockRestore()
+    const reloadedNode = reloaded.getNodeById(node.id)
+    assert.ok(reloadedNode, 'reloaded node')
+    return { before, after: inputNames(reloadedNode) }
+  }
+
+  test('restores each group contiguous with its links on the same slots', () => {
+    const { before, after } = saveAndRestoreWithImagesConnected(5)
+
+    expect(after).toEqual(before)
+  })
+
+  test('adds no slots to a group that has no connections', () => {
+    const { after } = saveAndRestoreWithImagesConnected(5)
+
+    expect(after.filter((name) => name.startsWith('ref_audios.'))).toEqual([
+      'ref_audios.ref_audio_0'
+    ])
   })
 })

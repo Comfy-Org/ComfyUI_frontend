@@ -35,6 +35,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -494,6 +496,9 @@ function addAutogrowGroup(
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
+  const existingIndex = node.inputs.findIndex(
+    (inp) => inp.name === namedSpecs[0].name
+  )
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
     const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
@@ -521,7 +526,12 @@ function addAutogrowGroup(
   const lastIndex = node.inputs.findLastIndex((inp) =>
     inp.name.startsWith(targetName)
   )
-  const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
+  const insertionIndex =
+    lastIndex !== -1
+      ? lastIndex + 1
+      : existingIndex !== -1
+        ? existingIndex
+        : node.inputs.length
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
@@ -555,8 +565,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   if (
     !lastInput ||
     ordinal == undefined ||
-    (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
-      !useApp().configuringGraph)
+    ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node)
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
@@ -744,6 +753,15 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   //tab); the frame-boundary reset below is only a defensive fallback.
   let swappingSlot: number | undefined
 
+  node.onConfigure = useChainCallback(
+    node.onConfigure,
+    function (this: AutogrowNode, info: ISerialisedNode) {
+      if (this.graph) realignInputLinkSlots(this.graph, [[this.id, info]])
+      for (const groupName of Object.keys(this.comfyDynamic.autogrow))
+        restoreAutogrowGroup(groupName, this)
+    }
+  )
+
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
@@ -772,8 +790,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
-      if (useApp().configuringGraph && input.widget)
-        ensureWidgetForInput(node, input)
+      if (useApp().configuringGraph) return
       if (iscon) {
         if (pendingConnection === slot) pendingConnectionSeen = true
         if (swappingSlot === slot) {
@@ -795,6 +812,34 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 }
+function restoreAutogrowGroup(groupName: string, node: AutogrowNode) {
+  const { min } = node.comfyDynamic.autogrow[groupName]
+  const isMember = (input: INodeInputSlot) =>
+    input.name.startsWith(`${groupName}.`) &&
+    resolveAutogrowOrdinal(input.name, groupName, node) !== undefined
+  const highestLinked = Math.max(
+    -1,
+    ...node.inputs.flatMap((input, slot) =>
+      isMember(input) && node.getInputLink(slot)
+        ? [resolveAutogrowOrdinal(input.name, groupName, node)!]
+        : []
+    )
+  )
+  const last = Math.max(min, highestLinked + 1)
+  for (let ordinal = 0; ordinal <= last; ordinal++)
+    addAutogrowGroup(ordinal, groupName, node)
+  const previous = captureInputLayout(node)
+  replaceNodeInputs(
+    node,
+    previous,
+    node.inputs.filter(
+      (input) =>
+        !isMember(input) ||
+        resolveAutogrowOrdinal(input.name, groupName, node)! <= last
+    )
+  )
+}
+
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   withComfyAutogrow(node)
 
