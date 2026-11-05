@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
@@ -53,7 +54,12 @@ export function useJobMenu(
     const target = resolveItem(item)
     if (!target) return
     const data = await getJobWorkflow(target.id)
-    if (!data) return
+    if (!data) {
+      useToast().warning(t('g.warning'), {
+        description: t('queue.jobMenu.noWorkflowData')
+      })
+      return
+    }
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
     try {
