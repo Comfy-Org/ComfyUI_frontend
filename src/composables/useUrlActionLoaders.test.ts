@@ -9,6 +9,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
+import type { useSavedFileUrlLoader } from '@/platform/workflow/management/composables/useSavedFileUrlLoader'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -18,7 +19,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 const savedFileUrlLoader = vi.hoisted(() => ({
-  openSavedFileFromUrl: vi.fn(async () => 'absent' as const)
+  openSavedFileFromUrl: vi.fn<
+    ReturnType<typeof useSavedFileUrlLoader>['openSavedFileFromUrl']
+  >(async () => 'absent')
 }))
 vi.mock(
   import('@/platform/workflow/management/composables/useSavedFileUrlLoader'),
@@ -385,6 +388,25 @@ describe('useUrlActionLoaders', () => {
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.SAVED_FILE, 'savedFile')
     ).toBeUndefined()
+  })
+
+  it('retains a deferred saved-file URL and stash after identity changes', async () => {
+    await router.replace({
+      query: { savedFile: 'file-id', workflows: 'ignored' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.SAVED_FILE,
+      { savedFile: 'file-id' },
+      ['savedFile']
+    )
+    savedFileUrlLoader.openSavedFileFromUrl.mockResolvedValue('pending')
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query.savedFile).toBe('file-id')
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.SAVED_FILE, 'savedFile')
+    ).toBe('file-id')
   })
 
   it('clears a deployment param no loader acted on', async () => {

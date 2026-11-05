@@ -1,6 +1,7 @@
 import { zUserDataResponseFull } from '@comfyorg/ingest-types/zod'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { createSharedComposable } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { z } from 'zod'
 
@@ -71,8 +72,8 @@ async function lookupSavedFile(id: string): Promise<LookupResult> {
   try {
     const response = await api.fetchApi(`/userdata-files/${id}`)
     return await readLookupResponse(response, id)
-  } catch {
-    reportError(new Error('Could not read saved workflow link'), {
+  } catch (cause) {
+    reportError(new Error('Could not read saved workflow link', { cause }), {
       surface: 'graph',
       errorType: 'error_loading_saved_file_link'
     })
@@ -93,12 +94,19 @@ function navigationPending(query: Record<string, unknown>): boolean {
 
 type OpenOutcome = 'opened' | 'not_found' | 'error' | 'pending'
 
-export function useSavedFileUrlLoader() {
+function useSavedFileUrlLoaderInternal() {
   const route = useRoute()
   const router = useRouter()
   const workflowStore = useWorkflowStore()
   const workspaceStore = useTeamWorkspaceStore()
   const toast = useToast()
+  let completed:
+    | {
+        value: unknown
+        workspaceId: string | null
+        status: 'opened' | 'failed'
+      }
+    | undefined
 
   async function clearIntent() {
     hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
@@ -107,8 +115,8 @@ export function useSavedFileUrlLoader() {
     delete query.workflows
     try {
       await router.replace({ query })
-    } catch {
-      reportError(new Error('Could not clear saved workflow link'), {
+    } catch (cause) {
+      reportError(new Error('Could not clear saved workflow link', { cause }), {
         surface: 'graph',
         errorType: 'error_clearing_saved_file_link'
       })
@@ -124,14 +132,19 @@ export function useSavedFileUrlLoader() {
     try {
       await workflowStore.loadWorkflows()
       if (!isCurrent()) return 'pending'
-      const workflow = workflowStore.getWorkflowByPath(path)
+      let workflow = workflowStore.getWorkflowByPath(path)
+      if (!workflow) {
+        await workflowStore.syncWorkflows()
+        if (!isCurrent()) return 'pending'
+        workflow = workflowStore.getWorkflowByPath(path)
+      }
       if (!workflow) return 'error'
       const opened = await useWorkflowService().openWorkflow(workflow, {
         isCurrent
       })
       return opened ? 'opened' : 'error'
-    } catch {
-      reportError(new Error('Could not open saved workflow link'), {
+    } catch (cause) {
+      reportError(new Error('Could not open saved workflow link', { cause }), {
         surface: 'graph',
         errorType: 'error_opening_saved_file_link'
       })
@@ -177,6 +190,16 @@ export function useSavedFileUrlLoader() {
       : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)
   }
 
+  function completedStatus(value: unknown, workspaceId: string | null) {
+    if (
+      !completed ||
+      completed.value !== value ||
+      completed.workspaceId !== workspaceId
+    )
+      return undefined
+    return completed.status
+  }
+
   async function openSavedFileFromUrl(
     afterNavigation = false
   ): Promise<SavedFileLoadStatus> {
@@ -186,13 +209,24 @@ export function useSavedFileUrlLoader() {
     if (!afterNavigation && navigationPending(query)) return 'pending'
 
     const workspaceId = workspaceStore.activeWorkspaceId
+    const priorStatus = completedStatus(query.savedFile, workspaceId)
+    if (priorStatus) {
+      await clearIntent()
+      return priorStatus
+    }
     const isCurrent = () => workspaceStore.activeWorkspaceId === workspaceId
     const outcome = await resolveLink(query.savedFile, isCurrent)
     if (outcome === 'pending' || !isCurrent()) return 'pending'
+    const status = outcome === 'opened' ? 'opened' : 'failed'
+    completed = { value: query.savedFile, workspaceId, status }
     await clearIntent()
     reportOutcome(outcome, workspaceId)
-    return outcome === 'opened' ? 'opened' : 'failed'
+    return status
   }
 
   return { openSavedFileFromUrl }
 }
+
+export const useSavedFileUrlLoader = createSharedComposable(
+  useSavedFileUrlLoaderInternal
+)

@@ -22,9 +22,6 @@ import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorks
 interface UrlActionStep {
   /** What the loader does, for the failure log — not shown to the customer. */
   readonly failureMessage: string
-  /** `true` means a reload is already in flight: the loop must stop, since
-   * `location.reload()` doesn't halt the current script and a later step's
-   * own URL cleanup could otherwise land on the still-live page. */
   readonly run: () => Promise<boolean | void> | boolean | void
 }
 
@@ -106,9 +103,7 @@ function buildUrlActionSteps(
     const loader = loaders.savedFileUrlLoader
     steps.push({
       failureMessage: 'Failed to open saved workflow from URL:',
-      run: async () => {
-        await loader.openSavedFileFromUrl(true)
-      }
+      run: async () => (await loader.openSavedFileFromUrl(true)) === 'pending'
     })
   }
   if (loaders.inviteUrlLoader) {
@@ -169,13 +164,6 @@ function buildUrlActionSteps(
   return steps
 }
 
-/**
- * Runs each step in order; one loader's failure never blocks the rest. Stops
- * immediately when a step reports a reload already in flight — no further
- * step's URL cleanup should run on a page that's about to be torn down.
- * Returns whether a reload is in flight, so the caller can skip work that
- * would otherwise run against the workspace the app is switching away from.
- */
 async function runUrlActionSteps(steps: UrlActionStep[]): Promise<boolean> {
   for (const step of steps) {
     try {
@@ -249,12 +237,8 @@ export function useUrlActionLoaders() {
     : []
 
   async function runUrlActionLoaders() {
-    const reloading = await runUrlActionSteps(steps)
-    // A switch reload is already in flight: activeWorkspaceId and its auth
-    // context are already stale, so starting recovery here could adopt or
-    // poll the old workspace's pending checkout. The next boot, once the
-    // reload lands, gets a clean pass at it.
-    if (reloading) return
+    const interrupted = await runUrlActionSteps(steps)
+    if (interrupted) return
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }
 

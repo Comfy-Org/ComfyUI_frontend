@@ -24,6 +24,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useSavedFileUrlLoader } from '@/platform/workflow/management/composables/useSavedFileUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -63,9 +64,7 @@ vi.mock(
 
 const savedFileUrlLoader = vi.hoisted(() => ({
   openSavedFileFromUrl: vi.fn<
-    ReturnType<
-      typeof import('@/platform/workflow/management/composables/useSavedFileUrlLoader').useSavedFileUrlLoader
-    >['openSavedFileFromUrl']
+    ReturnType<typeof useSavedFileUrlLoader>['openSavedFileFromUrl']
   >(async () => 'absent')
 }))
 
@@ -853,6 +852,15 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('a link that names one saved workflow', () => {
+    it('defers Getting Started while a saved-file link waits for navigation', async () => {
+      savedFileUrlLoader.openSavedFileFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
     it.for(['opened', 'failed', 'pending'] as const)(
       'does not fall back to a folder when the saved-file result is %s',
       async (status) => {

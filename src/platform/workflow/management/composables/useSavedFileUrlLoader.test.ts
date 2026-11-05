@@ -1,6 +1,15 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -20,6 +29,7 @@ import '@/scripts/changeTracker'
 import { useSavedFileUrlLoader } from './useSavedFileUrlLoader'
 
 vi.mock(import('vue-router'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -51,7 +61,13 @@ function serveFile(path = 'workflows/Car swap/renamed.json') {
 }
 
 describe('saved workflow links', () => {
+  let loader: ReturnType<typeof useSavedFileUrlLoader>
   beforeEach(() => {
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const scopedLoader = scope.run(useSavedFileUrlLoader)
+    assert.exists(scopedLoader)
+    loader = scopedLoader
     distribution.isCloud = true
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
@@ -85,7 +101,7 @@ describe('saved workflow links', () => {
       }
     )
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('opened')
+    expect(await loader.openSavedFileFromUrl()).toBe('opened')
 
     expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
       `/userdata-files/${ID}`
@@ -102,7 +118,7 @@ describe('saved workflow links', () => {
       outcome: 'opened',
       workspace_id: 'workspace-1'
     })
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('absent')
+    expect(await loader.openSavedFileFromUrl()).toBe('absent')
     expect(useTelemetry()?.trackSavedFileLinkOpened).toHaveBeenCalledTimes(1)
   })
 
@@ -118,13 +134,57 @@ describe('saved workflow links', () => {
       ['workflows']
     )
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('opened')
+    expect(await loader.openSavedFileFromUrl()).toBe('opened')
 
     expect(getPreservedQueryParam(NAMESPACE, 'savedFile')).toBeUndefined()
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
     ).toBeUndefined()
     expect(sessionStorage.getItem('Comfy.PreservedQuery.savedFile')).toBeNull()
+  })
+
+  it('opens a file renamed after the bootstrap listing was cached', async () => {
+    serveFile()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValueOnce([
+      { path: 'old.json', size: 12, modified: 1 }
+    ])
+    const store = useWorkflowStore()
+    await store.loadWorkflows()
+    Object.assign(useRoute().query, { savedFile: ID })
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+      async (workflow) => {
+        await store.openWorkflow(workflow)
+        return true
+      }
+    )
+
+    expect(await loader.openSavedFileFromUrl()).toBe('opened')
+    expect(store.activeWorkflow?.path).toBe('workflows/Car swap/renamed.json')
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('reports one result across boot consumers when URL cleanup fails', async () => {
+    serveFile()
+    Object.assign(useRoute().query, { savedFile: ID })
+    vi.mocked(useRouter().replace).mockRejectedValueOnce(new Error('cancelled'))
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    const scope = effectScope()
+    try {
+      const consumers = scope.run(() => [
+        useSavedFileUrlLoader(),
+        useSavedFileUrlLoader()
+      ])
+      assert.exists(consumers)
+
+      expect(await consumers[0].openSavedFileFromUrl()).toBe('opened')
+      await consumers[1].openSavedFileFromUrl(true)
+
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSavedFileLinkOpened).toHaveBeenCalledTimes(1)
+      expect(useRoute().query).toEqual({})
+    } finally {
+      scope.stop()
+    }
   })
 
   it('leaves restored tabs and their active workflow unchanged on 404', async () => {
@@ -135,10 +195,11 @@ describe('saved workflow links', () => {
     const store = useWorkflowStore()
     const existing = store.createTemporary('Existing.json')
     await store.openWorkflow(existing)
+    const active = store.activeWorkflow
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('failed')
+    expect(await loader.openSavedFileFromUrl()).toBe('failed')
 
-    expect(store.activeWorkflow).toBe(existing)
+    expect(store.activeWorkflow).toBe(active)
     expect(store.openWorkflows).toEqual([existing])
     expect(useToast().toasts.map(({ title }) => title)).toEqual([
       "Couldn't find this workflow"
@@ -158,9 +219,7 @@ describe('saved workflow links', () => {
       const request = vi.spyOn(api, 'fetchApi')
       Object.assign(useRoute().query, { savedFile })
 
-      expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe(
-        'failed'
-      )
+      expect(await loader.openSavedFileFromUrl()).toBe('failed')
 
       expect(request).not.toHaveBeenCalled()
       expect(useToast().toasts[0]?.title).toBe("Couldn't find this workflow")
@@ -176,7 +235,6 @@ describe('saved workflow links', () => {
       capturePreservedQuery(namespace, { [namespace]: 'destination' }, [
         namespace
       ])
-      const loader = useSavedFileUrlLoader()
 
       expect(await loader.openSavedFileFromUrl()).toBe('pending')
 
@@ -197,7 +255,7 @@ describe('saved workflow links', () => {
     const request = vi.spyOn(api, 'fetchApi')
     Object.assign(useRoute().query, { savedFile: ID })
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('absent')
+    expect(await loader.openSavedFileFromUrl()).toBe('absent')
 
     expect(request).not.toHaveBeenCalled()
     expect(useRoute().query).toEqual({ savedFile: ID })
@@ -226,9 +284,7 @@ describe('saved workflow links', () => {
       vi.spyOn(api, 'fetchApi').mockResolvedValue(response())
       Object.assign(useRoute().query, { savedFile: ID })
 
-      expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe(
-        'failed'
-      )
+      expect(await loader.openSavedFileFromUrl()).toBe('failed')
 
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(
@@ -255,7 +311,7 @@ describe('saved workflow links', () => {
     })
     Object.assign(useRoute().query, { savedFile: ID })
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('pending')
+    expect(await loader.openSavedFileFromUrl()).toBe('pending')
 
     expect(useRoute().query.savedFile).toBe(ID)
     expect(useToast().toasts).toEqual([])
@@ -268,11 +324,12 @@ describe('saved workflow links', () => {
     const store = useWorkflowStore()
     const existing = store.createTemporary('Existing.json')
     await store.openWorkflow(existing)
+    const active = store.activeWorkflow
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(false)
 
-    expect(await useSavedFileUrlLoader().openSavedFileFromUrl()).toBe('failed')
+    expect(await loader.openSavedFileFromUrl()).toBe('failed')
 
-    expect(store.activeWorkflow).toBe(existing)
+    expect(store.activeWorkflow).toBe(active)
     expect(store.openWorkflows).toEqual([existing])
     const toast = useToast().toasts[0]
     assert.exists(toast)

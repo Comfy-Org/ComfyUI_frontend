@@ -294,7 +294,9 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
+  const resolveStartupOutcome = async (
+    savedFilePending = false
+  ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
       return 'restored'
@@ -303,7 +305,9 @@ export function useWorkflowPersistenceV2() {
     await useWorkflowService().loadBlankWorkflow()
     await nextTick()
     discardStartupBlankDraft()
-    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+    return savedFilePending ||
+      hasSharedWorkflowIntent() ||
+      hasTemplateUrlIntent()
       ? 'url-intent'
       : 'fresh'
   }
@@ -320,18 +324,17 @@ export function useWorkflowPersistenceV2() {
     return { paths, activeIndex }
   }
 
-  async function openLinkedWorkflowFromUrl(): Promise<boolean> {
-    const savedFileStatus = await savedFileUrlLoader.openSavedFileFromUrl()
-    if (savedFileStatus !== 'absent') return savedFileStatus === 'opened'
-    return folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
-  }
-
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
-    openedLinkedWorkflow = await openLinkedWorkflowFromUrl()
+    const savedFileStatus = await savedFileUrlLoader.openSavedFileFromUrl()
+    const savedFilePending = savedFileStatus === 'pending'
+    openedLinkedWorkflow =
+      savedFileStatus === 'absent'
+        ? await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+        : savedFileStatus === 'opened'
     if (openedLinkedWorkflow) return 'restored'
 
     if (!workflowPersistenceEnabled.value) {
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(savedFilePending)
     }
 
     const isRestoreCurrent = await waitForRestoreIdentity()
@@ -345,10 +348,12 @@ export function useWorkflowPersistenceV2() {
       if (!isRestoreCurrent()) return 'restored'
       const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
       if (!isRestoreCurrent()) return 'restored'
-      return restored ? 'restored' : await resolveStartupOutcome()
+      return restored
+        ? 'restored'
+        : await resolveStartupOutcome(savedFilePending)
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(savedFilePending)
     }
   }
 
