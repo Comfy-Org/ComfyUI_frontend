@@ -237,17 +237,53 @@ const zDocNodeFields = zComfyNode
     [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
 
-const zDocGroup = zGroup.extend({ id: z.number() })
+/**
+ * `insert_workflow` keeps a group's `id` only when the inserted workflow gave
+ * it one, so `meta.groups` also holds groups without a numeric id.
+ */
+const zDocGroup = zGroup.extend({ id: z.unknown().optional() })
 
-/** The `meta.groups` records that configure a canvas group, keyed by id. */
+/**
+ * The `meta.groups` records that configure a canvas group, keyed by id. A
+ * record without a numeric id gets one derived from its content, so every
+ * read of the same record names the same canvas group.
+ */
 export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
   const parsed = new Map<string, ISerialisedGroup>()
   if (!Array.isArray(groups)) return parsed
   for (const record of groups) {
     const group = zDocGroup.safeParse(structuredClone(record))
-    if (group.success) parsed.set(String(group.data.id), group.data)
+    if (!group.success) continue
+    const id =
+      typeof group.data.id === 'number'
+        ? group.data.id
+        : contentGroupId(group.data)
+    parsed.set(String(id), { ...group.data, id })
   }
   return parsed
+}
+
+/** A positive id from FNV-1a over the record's key-sorted JSON. */
+function contentGroupId(record: Record<string, unknown>): number {
+  let hash = 0x811c9dc5
+  for (const char of canonicalJson(record)) {
+    hash ^= char.charCodeAt(0)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0) + 1
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0
+    )
+    return `{${entries
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value)
 }
 
 /**

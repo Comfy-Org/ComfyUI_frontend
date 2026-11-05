@@ -87,3 +87,20 @@ export const EXISTING_FRAME_INSERT_OPS: RecordedGraphOperation[] = [
     }
   }
 ]
+
+/**
+ * The same insertion with groups that carry no `id`, the shape an agent
+ * writes when it only names a frame and its bounds (FE 1.60 QA REG04).
+ */
+export const STAGE_FRAMES_INSERT_OPS_WITHOUT_GROUP_IDS: RecordedGraphOperation[] =
+  [
+    {
+      op: 'insert_workflow',
+      workflow: {
+        ...STAGE_FRAMES_TEMPLATE,
+        groups: STAGE_FRAMES_TEMPLATE.groups.map(
+          ({ id: _id, ...group }) => group
+        )
+      }
+    }
+  ]
