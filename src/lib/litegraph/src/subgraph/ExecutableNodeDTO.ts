@@ -409,11 +409,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (!node.isSubgraphNode())
       throw new TypeError(`Node is not a subgraph node: ${node.id}`)
 
-    // Link inside the subgraph
     const innerResolved = node.resolveSubgraphOutputLink(slot)
     if (!innerResolved) return
 
-    // Pass-through: the output is wired straight to a subgraph input.
     if (innerResolved.link.originIsIoNode) {
       const passThroughSlot = innerResolved.link.origin_slot
       if (this.inputs.at(passThroughSlot)) {
@@ -428,8 +426,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     const innerNode = innerResolved.outputNode
     if (!innerNode) {
-      // A saved link to a node that no longer exists: skip this output, as the
-      // no-inner-link case does, rather than failing the whole prompt.
       console.warn(
         `[ExecutableNodeDTO] Subgraph output link has no origin node; skipping output [${slot}] ${output.name}`,
         { id: this.id, originId: innerResolved.link.origin_id }
@@ -438,7 +434,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return
     }
 
-    // Recurse into the subgraph
     const innerNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       node.id,
@@ -465,9 +460,9 @@ function reportDanglingSubgraphOutput(subgraph: object): void {
   reportedDanglingSubgraphs.add(subgraph)
   reportError(new Error('Subgraph output link has no origin node'), {
     surface: 'graph',
-    errorType: 'subgraph_output_origin_missing',
+    errorType: 'error_resolving_subgraph_output_origin',
     level: 'warning',
-    fingerprint: ['subgraph_output_origin_missing'],
+    fingerprint: ['error_resolving_subgraph_output_origin'],
     logToConsole: false
   })
 }

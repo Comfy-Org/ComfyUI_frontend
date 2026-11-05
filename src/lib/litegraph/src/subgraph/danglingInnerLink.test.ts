@@ -61,7 +61,6 @@ class ShrunkHostNode extends LGraphNode {
   }
 }
 
-/** Serialized with two inputs of the same name, restores only the first. */
 class DuplicateNameHostNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'DuplicateNameHost')
@@ -74,7 +73,6 @@ class DuplicateNameHostNode extends LGraphNode {
   }
 }
 
-/** Drops the input on configure, as a node that re-adds it in a graph hook would. */
 class HookedShrunkHostNode extends ShrunkHostNode {
   override onAfterGraphConfigured(): void {}
 }
@@ -104,6 +102,13 @@ class BothSidesShrunkNode extends LGraphNode {
   }
 }
 
+class RenamingSinkNode extends LGraphNode {
+  override configure(data: ISerialisedNode): void {
+    data.inputs = (data.inputs ?? []).map((input) => ({ ...input, name: 'in' }))
+    super.configure(data)
+  }
+}
+
 class SinkNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'Sink')
@@ -118,7 +123,8 @@ const TEST_NODE_TYPES = {
   'test/HookedShrunkHost': HookedShrunkHostNode,
   'test/EmptyHost': EmptyHostNode,
   'test/BothSidesShrunk': BothSidesShrunkNode,
-  'test/Sink': SinkNode
+  'test/Sink': SinkNode,
+  'test/RenamingSink': RenamingSinkNode
 }
 
 beforeEach(() => {
@@ -161,15 +167,10 @@ function link(
 interface HostOptions {
   hostType: string
   hostInputs?: ISerialisedNode['inputs']
-  /** Present: anchor the orphan on this subgraph input slot instead of node 1. */
   boundaryOriginSlot?: number
   boundaryLinkIds?: number[]
 }
 
-/**
- * Link 2 targets `group.dropped`, which the host does not restore. `group.kept`
- * already sits at its slot, so realignment has nothing to move.
- */
 function shrunkHostDefinition({
   hostType,
   hostInputs = [
@@ -229,8 +230,9 @@ function loadDefinition(definition: ExportedSubgraph): {
   }
 }
 
-const loadHost = (options: HostOptions) =>
-  loadDefinition(shrunkHostDefinition(options))
+function loadHost(options: HostOptions) {
+  return loadDefinition(shrunkHostDefinition(options))
+}
 
 describe('a node that drops a serialized input on load', () => {
   it('prunes the orphaned link but keeps the one that still resolves', () => {
@@ -354,6 +356,30 @@ describe('links the prune deliberately leaves alone', () => {
     expect([...subgraph.links.keys()]).toEqual([SURVIVOR, ORPHAN])
   })
 
+  it('keeps a link whose target input still exists under a new name', () => {
+    const { subgraph } = loadDefinition(
+      createTestSubgraphData({
+        nodes: [
+          serialisedNode(
+            1,
+            'test/DanglingSource',
+            [],
+            [{ name: 'out', type: 'number', links: [] }]
+          ),
+          serialisedNode(
+            2,
+            'test/RenamingSink',
+            [{ name: 'renamed', type: 'number', link: 5 }],
+            []
+          )
+        ],
+        links: [link(5, 1, 3, 2, 0)]
+      })
+    )
+
+    expect([...subgraph.links.keys()]).toEqual([toLinkId(5)])
+  })
+
   it('keeps the links of an uninstalled node described with no inputs', () => {
     const { subgraph } = loadDefinition(
       createTestSubgraphData({
@@ -435,11 +461,13 @@ describe('a link whose endpoint node does not exist', () => {
 
   it('prunes a link from an out-of-range subgraph input slot', () => {
     const { subgraph } = loadDefinition(
-      definitionWithOutputLink(link(5, SUBGRAPH_INPUT_ID, 3, 2, 0))
+      definitionWithOutputLink(
+        link(5, SUBGRAPH_INPUT_ID, 3, SUBGRAPH_OUTPUT_ID, 0)
+      )
     )
 
-    expect(subgraph.links.has(toLinkId(5))).toBe(false)
-    expect(subgraph.links.has(toLinkId(1))).toBe(true)
+    expect([...subgraph.links.keys()]).toEqual([toLinkId(1)])
+    expect([...subgraph.outputs[0].linkIds]).toEqual([])
   })
 
   it('prunes a link whose target node is missing', () => {

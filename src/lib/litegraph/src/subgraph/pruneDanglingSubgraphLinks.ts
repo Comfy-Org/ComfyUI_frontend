@@ -22,11 +22,11 @@ type DanglingLinkKind =
   | 'boundary_slot_out_of_range'
   | 'dropped_input'
 
-/** Load-time reports per session; each one already aggregates a whole definition. */
-const MAX_REPORTS = 5
-let reportsSent = 0
+const MAX_REPORTS_PER_SESSION = 5
+let prunedLinkReports = 0
+let notifyFailureReports = 0
 
-/** Serialized input names on each link's target that named that link. */
+/** Maps each link id to the serialized input names that referenced it. */
 export function captureSerialisedInputLinks(
   nodesData: readonly ISerialisedNode[] | undefined
 ): ReadonlyMap<LinkId, readonly string[]> {
@@ -43,49 +43,13 @@ export function captureSerialisedInputLinks(
   return namesByLinkId
 }
 
-const isNodeEndpoint = (id: NodeId, ioId: NodeId) =>
-  id !== UNASSIGNED_NODE_ID && id !== ioId
-
-/**
- * True when no live input of the link's target node could still hold it: none
- * carries a name the workflow saved for this link while being free, holding this
- * link, or holding a link the workflow never named. Realignment has already moved
- * every link it could; one left out of range with a free same-named input is a
- * failed move, not a drop, and stays for the unpack guard to refuse loudly.
- *
- * A node with graph-level configure hooks may lay out its inputs only there,
- * after this runs, so its links are never judged here. In the app every
- * registered node type gets an `onGraphConfigured` from the widget-inputs
- * extension, so in practice this judges subgraph nodes, whose inputs come from
- * their definition's boundary slots and are final at this point.
- */
-function lostItsInput(
-  subgraph: Subgraph,
-  link: LLink,
-  serialisedInputLinks: ReadonlyMap<LinkId, readonly string[]>
-): boolean {
-  const names = serialisedInputLinks.get(link.id)
-  const node = subgraph.getNodeById(link.target_id)
-  if (!names?.length || !node) return false
-  if (
-    !node.isSubgraphNode() &&
-    (node.onGraphConfigured || node.onAfterGraphConfigured)
-  )
-    return false
-
-  return !node.inputs.some((input, slot) => {
-    if (!names.includes(input.name)) return false
-    const occupant = inputLinkId(subgraph, node.id, slot)
-    return (
-      occupant === undefined ||
-      occupant === link.id ||
-      !serialisedInputLinks.has(occupant)
-    )
-  })
+function isNodeEndpoint(id: NodeId, ioId: NodeId): boolean {
+  return id !== UNASSIGNED_NODE_ID && id !== ioId
 }
 
-const isMissingNode = (subgraph: Subgraph, id: NodeId, ioId: NodeId) =>
-  isNodeEndpoint(id, ioId) && !subgraph.getNodeById(id)
+function isMissingNode(subgraph: Subgraph, id: NodeId, ioId: NodeId): boolean {
+  return isNodeEndpoint(id, ioId) && !subgraph.getNodeById(id)
+}
 
 function isBoundarySlotOutOfRange(subgraph: Subgraph, link: LLink): boolean {
   const originOut =
@@ -95,6 +59,36 @@ function isBoundarySlotOutOfRange(subgraph: Subgraph, link: LLink): boolean {
     link.target_id === SUBGRAPH_OUTPUT_ID &&
     !isSlotInRange(link.target_slot, subgraph.outputs.length)
   return originOut || targetOut
+}
+
+function mayLayOutInputsInGraphHooks(
+  node: NonNullable<ReturnType<Subgraph['getNodeById']>>
+): boolean {
+  if (node.isSubgraphNode()) return false
+  return Boolean(node.onGraphConfigured ?? node.onAfterGraphConfigured)
+}
+
+function hasLostTargetInput(
+  subgraph: Subgraph,
+  link: LLink,
+  serialisedInputLinks: ReadonlyMap<LinkId, readonly string[]>
+): boolean {
+  const names = serialisedInputLinks.get(link.id)
+  const node = subgraph.getNodeById(link.target_id)
+  if (!names?.length || !node) return false
+  if (isSlotInRange(link.target_slot, node.inputs.length)) return false
+  if (mayLayOutInputsInGraphHooks(node)) return false
+
+  const canStillHoldLink = node.inputs.some((input, slot) => {
+    if (!names.includes(input.name)) return false
+    const occupant = inputLinkId(subgraph, node.id, slot)
+    return (
+      occupant === undefined ||
+      occupant === link.id ||
+      !serialisedInputLinks.has(occupant)
+    )
+  })
+  return !canStillHoldLink
 }
 
 function classify(
@@ -109,17 +103,29 @@ function classify(
     return 'target_node_missing'
   if (isBoundarySlotOutOfRange(subgraph, link))
     return 'boundary_slot_out_of_range'
-  if (lostItsInput(subgraph, link, serialisedInputLinks)) return 'dropped_input'
+  if (hasLostTargetInput(subgraph, link, serialisedInputLinks))
+    return 'dropped_input'
 }
 
-/**
- * `LLink.disconnect` does not maintain boundary `linkIds`, which are serialized:
- * a stale id would leave the slot reporting a wire that does not exist.
- */
-function reconcileBoundarySlots(subgraph: Subgraph): void {
+function dropStaleBoundaryLinkIds(subgraph: Subgraph): void {
   for (const slot of [...subgraph.inputs, ...subgraph.outputs]) {
     const live = slot.linkIds.filter((id) => subgraph.links.has(id))
     slot.linkIds.splice(0, slot.linkIds.length, ...live)
+  }
+}
+
+function notifySafely(link: LLink, notify: () => void): void {
+  try {
+    notify()
+  } catch (error) {
+    if (notifyFailureReports >= MAX_REPORTS_PER_SESSION) return
+    notifyFailureReports++
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_notifying_pruned_subgraph_link',
+      level: 'warning',
+      context: { linkId: link.id }
+    })
   }
 }
 
@@ -127,44 +133,32 @@ function notifyEndpoints(
   connection: ReturnType<LLink['resolve']>,
   link: LLink
 ): void {
-  try {
-    if (connection.outputNode && connection.output) {
-      connection.outputNode.onConnectionsChange?.(
+  const { outputNode, output, inputNode, input } = connection
+  if (outputNode && output) {
+    notifySafely(link, () =>
+      outputNode.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
         link.origin_slot,
         false,
         link,
-        connection.output
+        output
       )
-    }
-    if (connection.inputNode && connection.input) {
-      connection.inputNode.onConnectionsChange?.(
+    )
+  }
+  if (inputNode && input) {
+    notifySafely(link, () =>
+      inputNode.onConnectionsChange?.(
         NodeSlotType.INPUT,
         link.target_slot,
         false,
         link,
-        connection.input
+        input
       )
-    }
-  } catch (error) {
-    console.error(`Failed to notify pruned link ${link.id}`, error)
+    )
   }
 }
 
-/**
- * Deletes inner links that cannot resolve and never will: an endpoint node that
- * does not exist, a boundary slot index that does not exist, or a target input
- * the node no longer lays out (matched per link by its saved name). Each pruned
- * link is one the unpack guard already refuses, and one that makes prompt
- * building fail for the whole workflow.
- *
- * Output-side slot drift on an existing node is left alone: outputs are never
- * realigned by name, so a stale `origin_slot` cannot be told from a misroute.
- *
- * Runs after the definition's own configure, before graph-level
- * `onGraphConfigured`/`onAfterGraphConfigured` hooks, which is why nodes that
- * define those hooks are exempt from the dropped-input check.
- */
+/** Deletes inner links of a configured subgraph that can never resolve. */
 export function pruneDanglingSubgraphLinks(
   subgraph: Subgraph,
   serialisedInputLinks: ReadonlyMap<LinkId, readonly string[]>
@@ -192,19 +186,17 @@ export function pruneDanglingSubgraphLinks(
     return { connection, link }
   })
   subgraph.incrementVersion()
-  // Only once every pruned link is gone, so a callback that reshapes its node's
-  // slots cannot change a link this pass has yet to remove.
   for (const { connection, link } of disconnected)
     notifyEndpoints(connection, link)
-  reconcileBoundarySlots(subgraph)
+  dropStaleBoundaryLinkIds(subgraph)
 
-  if (reportsSent >= MAX_REPORTS) return
-  reportsSent++
+  if (prunedLinkReports >= MAX_REPORTS_PER_SESSION) return
+  prunedLinkReports++
   reportError(new Error('Pruned unresolvable subgraph links on load'), {
     surface: 'graph',
-    errorType: 'subgraph_unresolvable_link',
+    errorType: 'error_pruning_subgraph_link',
     level: 'warning',
-    fingerprint: ['subgraph_unresolvable_link'],
+    fingerprint: ['error_pruning_subgraph_link'],
     tags: counts,
     logToConsole: false
   })
