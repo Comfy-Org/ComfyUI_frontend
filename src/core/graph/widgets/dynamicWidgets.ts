@@ -756,9 +756,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   node.onConfigure = useChainCallback(
     node.onConfigure,
     function (this: AutogrowNode, info: ISerialisedNode) {
-      if (this.graph) realignInputLinkSlots(this.graph, [[this.id, info]])
       for (const groupName of Object.keys(this.comfyDynamic.autogrow))
-        restoreAutogrowGroup(groupName, this)
+        restoreAutogrowGroup(groupName, this, info)
+      if (this.graph) realignInputLinkSlots(this.graph, [[this.id, info]])
     }
   )
 
@@ -812,15 +812,19 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 }
-function restoreAutogrowGroup(groupName: string, node: AutogrowNode) {
+function restoreAutogrowGroup(
+  groupName: string,
+  node: AutogrowNode,
+  info: ISerialisedNode
+) {
   const { min } = node.comfyDynamic.autogrow[groupName]
-  const isMember = (input: INodeInputSlot) =>
+  const isMember = (input: { name: string }) =>
     input.name.startsWith(`${groupName}.`) &&
     resolveAutogrowOrdinal(input.name, groupName, node) !== undefined
   const highestLinked = Math.max(
     -1,
-    ...node.inputs.flatMap((input, slot) =>
-      isMember(input) && node.getInputLink(slot)
+    ...(info.inputs ?? []).flatMap((input) =>
+      isMember(input) && input.link != null
         ? [resolveAutogrowOrdinal(input.name, groupName, node)!]
         : []
     )
