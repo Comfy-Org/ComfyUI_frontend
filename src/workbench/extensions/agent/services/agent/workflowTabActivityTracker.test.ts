@@ -33,7 +33,7 @@ describe('registerWorkflowTabActivityTracker', () => {
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
   })
 
-  it('prunes activity state when a tab closes, with no panel mounted', async () => {
+  it('prunes the unseen dot when a tab closes, with no panel mounted', async () => {
     const activity = useWorkflowTabActivityStore()
     const first = createMockLoadedWorkflow({ path: 'workflows/a.json' })
     const second = createMockLoadedWorkflow({
@@ -44,13 +44,11 @@ describe('registerWorkflowTabActivityTracker', () => {
     workflowStore.attachWorkflow(first, 0)
     workflowStore.attachWorkflow(second, 1)
     await nextTick()
-    activity.setEditing('workflows/b.json')
     activity.markModified('workflows/b.json')
 
     await workflowStore.closeWorkflow(second)
     await nextTick()
 
-    expect(activity.editingTabPath).toBeNull()
     expect(activity.unseenModifiedPaths.has('workflows/b.json')).toBe(false)
   })
 
@@ -116,11 +114,13 @@ describe('registerWorkflowTabActivityTracker', () => {
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
 
     activity.markModified('workflows/b.json')
-    activity.setEditing('workflows/b.json')
+    activity.setAgentTurnTabs([
+      { path: 'workflows/b.json', awaitingApproval: false }
+    ])
     enabled.value = false
     await nextTick()
 
     expect(activity.unseenModifiedPaths).toHaveLength(0)
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
   })
 })

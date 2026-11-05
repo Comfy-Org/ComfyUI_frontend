@@ -14,7 +14,10 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
@@ -53,6 +56,7 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -62,7 +66,7 @@ import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowP
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
+export const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
@@ -671,9 +675,7 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {
@@ -699,7 +701,6 @@ export class AgentConversationHarness {
         target === null || target[1] !== THREAD_ID
           ? undefined
           : this.cancelWaiters.get(target[2])
-      // A real server knows nothing about any other message.
       if (release === undefined) return route.fulfill({ status: 404 })
       release()
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
@@ -731,6 +732,67 @@ export class AgentConversationHarness {
   /** Every `doc_*` frame the page has sent so far, oldest first. */
   clientDocFrames(): ClientDocFrame[] {
     return this.hostSocket.clientDocFrames()
+  }
+
+  async activateEmptyWorkflow(workflowId: string, name: string): Promise<void> {
+    const seed = structuredClone(this.conversation.workflow.seed)
+    seed.nodes = []
+    seed.links = []
+    seed.groups = []
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
+    const subscribes = this.subscribeCount(workflowId)
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: workflowId, name }
+    })
+    await expect(this.topbar.getActiveTab()).toContainText(name)
+    await expect
+      .poll(() => this.subscribeCount(workflowId))
+      .toBeGreaterThanOrEqual(subscribes + 1)
+  }
+
+  resumeWorkflowSubscribe(workflowId: string): void {
+    this.hostSocket.resumeSubscribe(workflowId)
+  }
+
+  sendDocumentReset(workflowId: string): void {
+    this.hostSocket.send({
+      type: 'doc_reset',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        seq: 1,
+        lineage_seq: 1,
+        actor: 'system:test-reset'
+      }
+    })
+  }
+
+  /** Returns to the recorded workflow's tab (the first) and holds its subscribe ack. */
+  async activateRecordedWorkflowBeforeSubscribeAck(): Promise<void> {
+    const { id, name } = this.conversation.workflow
+    this.hostSocket.pauseSubscribes(id)
+    const sent = this.clientDocFrames().filter(
+      (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
+    ).length
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: id, name }
+    })
+    await expect
+      .poll(
+        () =>
+          this.clientDocFrames().filter(
+            (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
+          ).length
+      )
+      .toBeGreaterThanOrEqual(sent + 1)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
   }
 
   /** The applier's verdict on every human op the host has judged so far. */
@@ -800,10 +862,74 @@ export class AgentConversationHarness {
     ])
   }
 
+  applyOpsOnHostUnsent(operations: RecordedGraphOperation[]): void {
+    this.host.apply(operations)
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  /** Holds `threadId`'s transcript reads until `release` is called. */
+  async holdTranscript(
+    threadId: string
+  ): Promise<{ requested: Promise<void>; release: () => void }> {
+    let release!: () => void
+    let reached!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const requested = new Promise<void>((resolve) => (reached = resolve))
+    await this.page.route(
+      `**/api/agent/threads/${threadId}/messages`,
+      async (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        reached()
+        await held
+        return route.fallback()
+      }
+    )
+    return { requested, release }
+  }
+
+  /** Serves a second workflow's document beside the recorded one. */
+  serveWorkflow(workflowId: string, seed: WorkflowJSON): void {
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
+  }
+
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
-  subscribeCount(): number {
-    return this.hostSocket.subscribeCount()
+  subscribeCount(workflowId?: string): number {
+    return this.hostSocket.subscribeCount(workflowId)
+  }
+
+  humanOpFrames(): ClientDocFrame[] {
+    return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
+  }
+
+  async humanAddNodeBaseVersion(
+    workflowId: string,
+    nodeId: string
+  ): Promise<number> {
+    const find = () => {
+      for (const frame of this.humanOpFrames()) {
+        if (frame.workflowId !== workflowId) continue
+        const index = frame.ops.indexOf(`add_node:${nodeId}`)
+        if (index !== -1) return frame.baseVersions[index]
+      }
+      return undefined
+    }
+    await expect.poll(find).toEqual(expect.any(Number))
+    const baseVersion = find()
+    if (typeof baseVersion !== 'number')
+      throw new Error(`no numeric base_version for add_node:${nodeId}`)
+    return baseVersion
+  }
+
+  leaveNextHumanBatchUnanswered(): void {
+    this.hostSocket.leaveHumanBatchesUnanswered(1)
+  }
+
+  async disconnectComfySocket(): Promise<void> {
+    await this.hostSocket.disconnectComfySocket()
   }
 
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
@@ -898,7 +1024,12 @@ export class AgentConversationHarness {
       return Boolean(ghostNode?.flags.ghost)
     })
 
-    await this.page.mouse.click(position.x, position.y)
+    const canvasBounds = await this.comfyPage.canvas.boundingBox()
+    if (!canvasBounds) throw new Error('the graph canvas is not visible')
+    await this.comfyPage.canvasOps.click({
+      x: position.x - canvasBounds.x,
+      y: position.y - canvasBounds.y
+    })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')

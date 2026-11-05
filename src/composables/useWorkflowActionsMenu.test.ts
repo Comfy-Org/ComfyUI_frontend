@@ -441,7 +441,8 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'g.rename').command?.()
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      customWorkflow.value
+      customWorkflow.value,
+      { initiator: 'user' }
     )
     expect(startRename).toHaveBeenCalled()
   })
@@ -468,7 +469,8 @@ describe('useWorkflowActionsMenu', () => {
     ).command?.()
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      customWorkflow.value
+      customWorkflow.value,
+      { initiator: 'user' }
     )
     expect(
       lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
