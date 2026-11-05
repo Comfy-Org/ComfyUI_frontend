@@ -4167,24 +4167,9 @@
       "count": 2
     }
   },
-  "src/platform/billing/components/TopUpAmountFields.vue": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
   "src/platform/billing/components/TopUpAutoTopUpCard.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 5
-    }
-  },
-  "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue": {
-    "typescript/no-restricted-types": {
-      "count": 10
     }
   },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
