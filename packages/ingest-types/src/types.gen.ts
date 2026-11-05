@@ -1530,6 +1530,27 @@ export type AutoReloadSettingsRequest = {
 }
 
 /**
+ * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
+ */
+export type AutoTopUpMemberView = {
+  cycle_resets_at: string | null
+  /**
+   * Present only when repeated declined charges automatically disabled auto top-up.
+   */
+  disabled_reason?: 'consecutive_declines'
+  /**
+   * Distinguishes the default maximum from an owner-selected limit, without exposing either amount.
+   */
+  monthly_budget_is_default: boolean
+  /**
+   * Server-resolved display state; card expiry does not change it.
+   */
+  status: 'off' | 'on' | 'on_hold' | 'paused_by_budget' | 'failed'
+  target_credits: number | null
+  threshold_credits: number | null
+}
+
+/**
  * Recorded account setup guidance, separate from owner authority in
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
@@ -2066,6 +2087,7 @@ export type BillingCapabilitiesResponse = {
    *
    */
   auto_top_up_enabled: boolean
+  auto_top_up_member_view?: AutoTopUpMemberView
   auto_top_up_setup?: AutoTopUpSetup
   /**
    * Which set of billing notices speaks to the plan. Rendered as received;

@@ -184,6 +184,7 @@ export type {
   AutoReloadPreview,
   AutoReloadSettings,
   AutoReloadSettingsRequest,
+  AutoTopUpMemberView,
   AutoTopUpSetup,
   BatchCccItemsData,
   BatchCccItemsError,

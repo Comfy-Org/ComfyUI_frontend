@@ -1060,6 +1060,34 @@ export const zAutoReloadSettingsRequest = z.object({
 })
 
 /**
+ * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
+ */
+export const zAutoTopUpMemberView = z.object({
+  cycle_resets_at: z.iso.datetime().nullable(),
+  disabled_reason: z.enum(['consecutive_declines']).optional(),
+  monthly_budget_is_default: z.boolean(),
+  status: z.enum(['off', 'on', 'on_hold', 'paused_by_budget', 'failed']),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable()
+})
+
+/**
  * Recorded account setup guidance, separate from owner authority in
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
@@ -5196,6 +5224,7 @@ export const zBillingCapabilityDenialParams = z.object({
  */
 export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_enabled: z.boolean(),
+  auto_top_up_member_view: zAutoTopUpMemberView.optional(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),
   billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
   capabilities: zBillingCapabilities,
