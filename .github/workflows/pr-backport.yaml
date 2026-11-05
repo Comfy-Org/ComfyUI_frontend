@@ -368,8 +368,8 @@ jobs:
         env:
           FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
           ALREADY_APPLIED_TARGETS: ${{ steps.backport.outputs.already-applied }}
-          # Duplicate-report checks read with the job token: it has its own
-          # REST quota, so a spent shared token cannot turn the check off.
+          # Duplicate-report checks read with the job token first. It has its
+          # own REST quota, so the check survives one spent token, not both.
           JOB_TOKEN: ${{ github.token }}
           FORCE_RERUN: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
