@@ -721,6 +721,39 @@ describe('normalizeAgentTranscript', () => {
       })
     })
 
+    it("places a card by the row's tool calls when one repeats an earlier row's", () => {
+      const history = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', 'First', 'row-1'),
+          content: { text: 'First', tool_calls: [toolCall('call-a')] }
+        },
+        {
+          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+          content: {
+            text: 'Done',
+            tool_calls: [toolCall('call-a'), toolCall('call-b')]
+          },
+          resolved_asks: [
+            {
+              ...askUser,
+              message_id: 'row-2',
+              status: 'answered',
+              selected: ['keep'],
+              after_tool_calls: 1
+            }
+          ]
+        }
+      ])
+
+      expect(shape(history)).toEqual([
+        'call-a',
+        'text',
+        'askUser',
+        'call-b',
+        'text'
+      ])
+    })
+
     it("places a later row's card among that row's own tool calls", () => {
       const history = zAgentMessages.parse([
         {

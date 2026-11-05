@@ -445,9 +445,33 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
+function resolvedAskIndex(
+  parts: AssistantMessage['parts'],
+  rowCallIds: string[],
+  afterToolCalls: number | undefined,
+  rowStart: number
+): number {
+  const after = Math.min(afterToolCalls ?? rowCallIds.length, rowCallIds.length)
+  const toolIndex = (callId: string) =>
+    parts.findIndex((part) => part.type === 'tool' && part.callId === callId)
+  if (after < rowCallIds.length) {
+    const next = toolIndex(rowCallIds[after])
+    if (next !== -1) return next
+  }
+  const start = Math.max(
+    after > 0 ? toolIndex(rowCallIds[after - 1]) + 1 : rowStart,
+    rowStart
+  )
+  const text = parts.findIndex(
+    (part, index) => index >= start && part.type === 'text'
+  )
+  return text === -1 ? parts.length : text
+}
+
 function insertResolvedAsks(
   message: AssistantMessage,
   raw: unknown,
+  rowCallIds: string[],
   rowStart: number
 ): void {
   if (!Array.isArray(raw)) return
@@ -456,17 +480,11 @@ function insertResolvedAsks(
     const part = ask && toResolvedAskPart(ask)
     if (!part) continue
     const parts = [...message.parts]
-    const rowParts = parts.slice(rowStart)
-    const tools = rowParts.filter(({ type }) => type === 'tool').length
-    const after = Math.min(ask.after_tool_calls ?? tools, tools)
-    let seen = 0
-    const index = rowParts.findIndex((candidate) => {
-      if (candidate.type === 'text') return seen === after
-      if (candidate.type !== 'tool') return false
-      seen += 1
-      return seen === after + 1
-    })
-    parts.splice(index === -1 ? parts.length : rowStart + index, 0, part)
+    parts.splice(
+      resolvedAskIndex(parts, rowCallIds, ask.after_tool_calls, rowStart),
+      0,
+      part
+    )
     message.parts = parts
   }
 }
@@ -480,7 +498,10 @@ function applyAssistantRow(
   message.streaming = isLive
   const rowStart = message.parts.length
   appendAssistantContent(message, row, text, isLive)
-  insertResolvedAsks(message, row.resolved_asks, rowStart)
+  const rowCallIds = (parseToolCalls(row.content, isLive) ?? []).map(
+    ({ part }) => part.callId
+  )
+  insertResolvedAsks(message, row.resolved_asks, rowCallIds, rowStart)
 
   if (!isLive) return undefined
 
