@@ -23,6 +23,40 @@ const isNodePack = (pack: NodePack | undefined): pack is NodePack => {
   return pack !== undefined && 'id' in pack
 }
 
+function rememberResolvedPacks(
+  nodes: readonly NodePack[],
+  cache: QuickLRU<NodePack['id'], NodePack>,
+  pendingIds: Set<string>,
+  resolvedPacks: NodePack[]
+) {
+  for (const pack of nodes) {
+    if (!pack.id) continue
+    if (!cache.has(pack.id)) resolvedPacks.push(pack)
+    cache.set(pack.id, pack)
+    pendingIds.delete(pack.id)
+  }
+}
+
+function packPageCapacity(
+  servedLimit: number | undefined,
+  requestedCount: number
+): number {
+  if (servedLimit === undefined || servedLimit <= 0) return requestedCount
+  return servedLimit
+}
+
+function packPageContinues(
+  page: ListPacksResult | null,
+  requestedCount: number,
+  unresolvedBefore: number,
+  unresolvedAfter: number
+): boolean {
+  if (!page) return false
+  if (unresolvedAfter >= unresolvedBefore) return false
+  const nodeCount = page.nodes?.length ?? 0
+  return nodeCount >= packPageCapacity(page.limit, requestedCount)
+}
+
 /**
  * Store for managing remote custom nodes
  */
@@ -80,23 +114,23 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
         { node_id: nodeIds, limit: nodeIds.length, page },
         signal
       )
-      if (!pageResult) break
-
-      const nodes = pageResult.nodes ?? []
       const unresolvedBefore = pendingIds.size
-      for (const pack of nodes) {
-        if (!pack.id) continue
-        if (!getPacksByIdCache.has(pack.id)) resolvedPacks.push(pack)
-        getPacksByIdCache.set(pack.id, pack)
-        pendingIds.delete(pack.id)
+      if (pageResult) {
+        rememberResolvedPacks(
+          pageResult.nodes ?? [],
+          getPacksByIdCache,
+          pendingIds,
+          resolvedPacks
+        )
       }
-
-      const servedLimit = pageResult.limit
-      const pageCapacity =
-        servedLimit !== undefined && servedLimit > 0
-          ? servedLimit
-          : nodeIds.length
-      if (nodes.length < pageCapacity || pendingIds.size === unresolvedBefore) {
+      if (
+        !packPageContinues(
+          pageResult,
+          nodeIds.length,
+          unresolvedBefore,
+          pendingIds.size
+        )
+      ) {
         break
       }
       page += 1
