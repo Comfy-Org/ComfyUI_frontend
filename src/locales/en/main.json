@@ -6250,6 +6250,7 @@
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "thinkingShortened": "Reasoning shortened: the rest was too long to save.",
     "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",

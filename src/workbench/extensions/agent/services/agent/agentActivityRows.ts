@@ -14,6 +14,7 @@ interface ThinkingRow {
   kind: 'thinking'
   text: string
   state: PartState
+  truncated?: boolean
 }
 
 export type ActivityRow = ToolRow | ThinkingRow
@@ -43,11 +44,13 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
     if (part.type === 'thinking') {
-      rows.push({
+      const row: ThinkingRow = {
         kind: 'thinking',
         text: part.text,
         state: part.state
-      })
+      }
+      if (part.truncated) row.truncated = true
+      rows.push(row)
       continue
     }
     const previous = matchingToolStep(rows.at(-1), part)
