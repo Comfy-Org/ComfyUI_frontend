@@ -5481,6 +5481,13 @@
         "toastTitle": "Generation failed",
         "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
       },
+      "server_out_of_memory": {
+        "title": "Ran out of memory",
+        "message": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Ran out of memory",
+        "toastMessage": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again."
+      },
       "content_blocked": {
         "title": "Content blocked",
         "message": "This request was blocked by the content moderation system. Try changing the prompt or inputs.",
