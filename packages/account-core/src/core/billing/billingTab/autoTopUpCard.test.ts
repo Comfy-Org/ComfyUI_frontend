@@ -58,40 +58,44 @@ describe('deriveAutoTopUpSection', () => {
   const owner: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
     canViewAutoTopUpCard: true,
-    manageAutoTopUpDenial: undefined
+    canViewAutoTopUpMemberNotice: false
   }
   const member: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
     canViewAutoTopUpCard: false,
-    manageAutoTopUpDenial: 'not_workspace_owner'
+    canViewAutoTopUpMemberNotice: true
   }
 
   it.for<{ case: string; facts: AutoTopUpSectionFacts; kind: string }>([
     { case: 'a granted card', facts: owner, kind: 'card' },
     {
-      case: 'a withheld card with no denial',
+      case: 'a withheld card',
       facts: { ...owner, canViewAutoTopUpCard: false },
       kind: 'hidden'
     },
     {
-      case: 'a granted card beside a stale denial',
-      facts: { ...owner, manageAutoTopUpDenial: 'not_workspace_owner' },
+      case: 'a granted card beside a granted member notice',
+      facts: { ...owner, canViewAutoTopUpMemberNotice: true },
       kind: 'card'
     },
-    { case: 'a member', facts: member, kind: 'memberBlock' },
+    {
+      case: 'a member on a healthy workspace',
+      facts: member,
+      kind: 'memberBlock'
+    },
+    {
+      case: 'a member on a paused workspace',
+      facts: { ...member, canViewAutoTopUpMemberNotice: false },
+      kind: 'hidden'
+    },
     {
       case: 'a member with the flag off',
       facts: { ...member, autoTopUpEnabled: false },
       kind: 'hidden'
     },
     {
-      case: 'a not_a_member denial',
-      facts: { ...member, manageAutoTopUpDenial: 'not_a_member' },
-      kind: 'hidden'
-    },
-    {
-      case: 'no served denial',
-      facts: { ...member, manageAutoTopUpDenial: undefined },
+      case: 'an owner with the flag off',
+      facts: { ...owner, autoTopUpEnabled: false },
       kind: 'hidden'
     }
   ])('shows $kind for $case', ({ facts, kind }) => {

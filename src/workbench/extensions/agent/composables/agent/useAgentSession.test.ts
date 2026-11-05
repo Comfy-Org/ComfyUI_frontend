@@ -7797,6 +7797,33 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(disowned).toHaveBeenCalledWith('wf-dead')
   })
 
+  it('(k5) reports a discarded accepted turn when the send generation moved on before the ack', async () => {
+    let abandon: () => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => {
+      abandon()
+      return { thread_id: 'th-1', message_id: 'msg-1' }
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'failure_tracking_agent_accepted_turn_generation_change',
+      context: {
+        threadAtSend: 'new',
+        ackThreadId: 'th-1',
+        turnId: toTurnId('msg-1')
+      }
+    })
+    expect(session.entries.value).toEqual([])
+  })
+
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {
     const postMessage = vi
       .fn<

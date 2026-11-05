@@ -637,7 +637,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           level: 'warning',
           tags: {
             failure_code: result.code,
-            http_status: result.httpStatus ?? 'none'
+            http_status: result.httpStatus ?? 'none',
+            failure_reason: result.reason ?? 'none',
+            failure_detail: result.detail ?? 'none'
           }
         })
       }

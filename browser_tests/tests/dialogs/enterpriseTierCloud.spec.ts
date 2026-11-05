@@ -14,7 +14,9 @@ import {
   TEAM_BILLING_STATUS,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -52,6 +54,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const FAR_OUT_CANCEL_AT = new Date(Date.now() + 240 * DAY_MS).toISOString()
 const ENDING_SOON_CANCEL_AT = new Date(Date.now() + 10 * DAY_MS).toISOString()
 
+const ENDING_SOON_NOTICE_STARTS_AT = new Date(
+  Date.parse(ENDING_SOON_CANCEL_AT) - 14 * DAY_MS
+).toISOString()
+
 const CANCELLED_ACTIVE_ENTERPRISE_STATUS = {
   ...ACTIVE_ENTERPRISE_STATUS,
   cancel_at: FAR_OUT_CANCEL_AT,
@@ -83,6 +89,22 @@ async function setupSalesManagedWorkspace(
     capabilities
   )
   return workspace
+}
+
+async function serveEnterpriseEndingNotice(page: Page, startsAt: string) {
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute({
+        ...createWorkspaceBillingCapabilities(
+          TEAM_WORKSPACE,
+          SALES_MANAGED_CAPABILITIES
+        ),
+        billing_notice_audience: 'none',
+        ending_notice_starts_at: startsAt
+      })
+    )
+  })
 }
 
 // The ending banner sits behind the billing_control_enabled remote-config
@@ -219,6 +241,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       ENDING_SOON_ENTERPRISE_STATUS
     )
     await enableBillingControl(page)
+    await serveEnterpriseEndingNotice(page, ENDING_SOON_NOTICE_STARTS_AT)
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(

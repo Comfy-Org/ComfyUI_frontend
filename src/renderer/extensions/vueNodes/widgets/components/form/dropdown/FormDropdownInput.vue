@@ -79,7 +79,7 @@ defineExpose({ focus, showPicker })
       :class="
         cn(
           theButtonStyle,
-          'flex h-8 min-w-0 flex-1 items-center justify-between',
+          'flex h-8 min-w-0 flex-1 items-center justify-between gap-1 px-2',
           {
             'rounded-l-lg': uploadable,
             'rounded-lg': !uploadable
@@ -88,7 +88,7 @@ defineExpose({ focus, showPicker })
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
+      <span class="min-w-0 flex-1 truncate py-2 text-left">
         <span v-if="!selectedItems.length">
           {{ placeholder }}
         </span>
@@ -100,7 +100,7 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 text-muted-foreground transition-transform duration-200',
+            'text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "

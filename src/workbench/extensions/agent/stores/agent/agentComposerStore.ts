@@ -8,6 +8,7 @@ import {
   shallowRef,
   watch
 } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
 import {
@@ -19,6 +20,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -112,6 +114,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
+  const errorContext = computed<AgentErrorContext | null>(() => {
+    const reference = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
+    return reference?.kind === 'error' ? reference.context : null
+  })
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
@@ -123,6 +131,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
+  const pendingCaret = shallowRef<ComposerInsertionPoint | null>(null)
   const retiredAssets = new Set<string>()
   const thumbnailJobs = new Map<
     string,
@@ -273,6 +282,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
+    if (
+      promptOrigin.value === 'error_context' &&
+      !references.some((item) => item.kind === 'error')
+    )
+      promptOrigin.value = 'typed'
     if (metadataOnly) draftState.value = { text: next.text, references }
     else updateDraft({ text: next.text, references })
   }
@@ -299,6 +313,45 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // Cleared, not left stale, when the affordance did not identify itself: an
     // unattributed insert is not the previous chip's click.
     starterPrompt.value = source ?? null
+  }
+
+  function setErrorContext(context: AgentErrorContext): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    const inserted = insertComposerReference(
+      { text: draft.value, references },
+      { kind: 'error', id: uuidv4(), context, textOffset: 0 },
+      {
+        textOffset: insertionPoint.value.textOffset,
+        referenceIndex: prompt.value.references
+          .slice(0, insertionPoint.value.referenceIndex)
+          .filter((item) => item.kind !== 'error').length
+      }
+    )
+    insertionPoint.value = inserted.insertion
+    promptOrigin.value = 'error_context'
+    starterPrompt.value = null
+    resetPromptHistory()
+    pendingCaret.value = inserted.insertion
+    updateDraft(inserted.prompt)
+  }
+
+  function clearPendingCaret(): void {
+    pendingCaret.value = null
+  }
+
+  function clearErrorContext(): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    if (references.length === prompt.value.references.length) return
+    if (promptOrigin.value === 'error_context') promptOrigin.value = 'typed'
+    resetPromptHistory()
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
+    })
   }
 
   function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
@@ -689,12 +742,17 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     promptEpoch,
     promptOrigin,
     starterPrompt,
+    errorContext,
     insertionPoint,
     submission,
+    pendingCaret,
+    clearPendingCaret,
     rejectedDraftUnchanged,
     markRejectedDraft,
     setText,
     prefillGreeting,
+    setErrorContext,
+    clearErrorContext,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
