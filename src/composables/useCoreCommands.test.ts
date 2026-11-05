@@ -154,6 +154,7 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   subscriptionTier: null as string | null,
+  hasFunds: false,
   initialized: true,
   routing: 'workspace' as 'workspace' | 'unknown',
   onInitialize: null as (() => void) | null
@@ -182,8 +183,11 @@ vi.mock<unknown>(
       },
       subscription: {
         get value() {
-          return mockBillingState.subscriptionTier
-            ? { tier: mockBillingState.subscriptionTier }
+          return mockBillingState.subscriptionTier || mockBillingState.hasFunds
+            ? {
+                tier: mockBillingState.subscriptionTier,
+                hasFunds: mockBillingState.hasFunds
+              }
             : null
         }
       }
@@ -253,6 +257,7 @@ describe('useCoreCommands', () => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
+    mockBillingState.hasFunds = false
     mockBillingState.initialized = true
     mockBillingState.routing = 'workspace'
     mockBillingState.onInitialize = null
@@ -901,6 +906,22 @@ describe('useCoreCommands', () => {
         })
       }
     )
+
+    it('explains locked credits when an inactive Cloud account holds funds', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.hasFunds = true
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).toHaveBeenCalledWith({
+        reason: 'subscribe_to_run',
+        creditsLocked: true
+      })
+    })
 
     it.for(['ENTERPRISE', 'GALACTIC'] as const)(
       'explains the block instead of a subscribe dialog on a sales-managed %s plan',

@@ -26,7 +26,9 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 
 const { t } = useI18n()
 
@@ -36,6 +38,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useBillingUI()
+const { subscription } = useBillingContext()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 
@@ -59,6 +62,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog({ reason: 'subscribe_to_run' })
+  showSubscriptionDialog(subscribeToRunDialogOptions(subscription.value))
 }
 </script>

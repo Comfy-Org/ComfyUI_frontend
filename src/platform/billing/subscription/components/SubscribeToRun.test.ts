@@ -6,8 +6,11 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import SubscribeToRun from './SubscribeToRun.vue'
 
@@ -17,6 +20,8 @@ const mockIsMdOrLarger = ref(true)
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
+
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -102,6 +107,26 @@ describe('SubscribeToRun', () => {
     expect(
       useSubscriptionPaywall().showSubscriptionDialog
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscribe_to_run' })
+  })
+
+  it('says why credits did not help when the inactive account holds funds', async () => {
+    const context = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...context,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({ isActive: false, hasFunds: true })
+      )
+    })
+    const { user } = renderButton()
+
+    await user.click(screen.getByTestId('subscribe-to-run-button'))
+
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscribe_to_run',
+      creditsLocked: true
+    })
   })
 
   it('routes members to the same role-aware dialog on click', async () => {
