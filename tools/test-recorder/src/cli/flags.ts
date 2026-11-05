@@ -4,14 +4,16 @@ export interface ParsedArgs {
 }
 
 /**
- * Named flags take a following value, as does any flag followed by a bare
- * `true` or `false`; other flags never swallow the next argument.
+ * Named flags take a following value. Selected boolean flags may also take a
+ * separated `true` or `false`; other flags never swallow the next argument.
  */
 export function parseFlags(
   args: string[],
-  flagsTakingValue: readonly string[] = []
+  flagsTakingValue: readonly string[] = [],
+  booleanFlagsTakingValue: readonly string[] = []
 ): ParsedArgs {
   const takesValue = new Set(flagsTakingValue)
+  const takesBooleanValue = new Set(booleanFlagsTakingValue)
   const positional: string[] = []
   const flags: Record<string, string | undefined> = {}
 
@@ -32,8 +34,7 @@ export function parseFlags(
     const next = args.at(i + 1)
     if (
       (takesValue.has(body) && next !== undefined && !next.startsWith('--')) ||
-      next === 'true' ||
-      next === 'false'
+      (takesBooleanValue.has(body) && (next === 'true' || next === 'false'))
     ) {
       flags[body] = next
       i++

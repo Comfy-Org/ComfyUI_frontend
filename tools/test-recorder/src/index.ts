@@ -13,17 +13,21 @@ try {
     case 'record':
     case 'recorder': {
       const { parseFlags } = await import('./cli/flags')
-      const { flags } = parseFlags(args.slice(1), [
-        'distribution',
-        'backend',
-        'workflow',
-        'tags',
-        'feature-flags',
-        'use-case',
-        'description',
-        'name',
-        'pr'
-      ])
+      const { flags } = parseFlags(
+        args.slice(1),
+        [
+          'distribution',
+          'backend',
+          'workflow',
+          'tags',
+          'feature-flags',
+          'use-case',
+          'description',
+          'name',
+          'pr'
+        ],
+        ['force']
+      )
       const { resolveRecordPrefill } = await import('./commands/recordPrefill')
       const { runRecord } = await import('./commands/record')
       await runRecord(resolveRecordPrefill(flags))
@@ -45,13 +49,11 @@ try {
     }
     case 'transform': {
       const { isFlagOn, parseFlags, parseTags } = await import('./cli/flags')
-      const { positional, flags } = parseFlags(args.slice(1), [
-        'name',
-        'tags',
-        'workflow',
-        'output',
-        'feature-flags'
-      ])
+      const { positional, flags } = parseFlags(
+        args.slice(1),
+        ['name', 'tags', 'workflow', 'output', 'feature-flags'],
+        ['force']
+      )
       const filePath = positional[0]
       if (!filePath) {
         console.log(
