@@ -759,6 +759,14 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       for (const groupName of Object.keys(this.comfyDynamic.autogrow))
         restoreAutogrowGroup(groupName, this, info)
       if (this.graph) realignInputLinkSlots(this.graph, [[this.id, info]])
+      else trimAutogrowGroups(this)
+    }
+  )
+
+  node.onGraphConfigured = useChainCallback(
+    node.onGraphConfigured,
+    function (this: AutogrowNode) {
+      trimAutogrowGroups(this)
     }
   )
 
@@ -817,31 +825,43 @@ function restoreAutogrowGroup(
   node: AutogrowNode,
   info: ISerialisedNode
 ) {
-  const { min } = node.comfyDynamic.autogrow[groupName]
-  const isMember = (input: { name: string }) =>
-    input.name.startsWith(`${groupName}.`) &&
-    resolveAutogrowOrdinal(input.name, groupName, node) !== undefined
-  const highestLinked = Math.max(
-    -1,
-    ...(info.inputs ?? []).flatMap((input) =>
-      isMember(input) && input.link != null
-        ? [resolveAutogrowOrdinal(input.name, groupName, node)!]
-        : []
-    )
-  )
-  const last = Math.max(min, highestLinked + 1)
+  const { min, max } = node.comfyDynamic.autogrow[groupName]
+  const requiredOrdinals = (info.inputs ?? []).flatMap((input) => {
+    if (!input.name.startsWith(`${groupName}.`)) return []
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal === undefined) return []
+    return [input.link == null ? ordinal : ordinal + 1]
+  })
+  const last = Math.min(Math.max(min, ...requiredOrdinals), max - 1)
   for (let ordinal = 0; ordinal <= last; ordinal++)
     addAutogrowGroup(ordinal, groupName, node)
-  const previous = captureInputLayout(node)
+}
+
+function trimAutogrowGroup(groupName: string, node: AutogrowNode) {
+  const { min } = node.comfyDynamic.autogrow[groupName]
+  const ordinalOf = (input: INodeInputSlot) =>
+    input.name.startsWith(`${groupName}.`)
+      ? resolveAutogrowOrdinal(input.name, groupName, node)
+      : undefined
+  const highestLinked = Math.max(
+    -1,
+    ...node.inputs.flatMap((input, slot) => {
+      const ordinal = ordinalOf(input)
+      const linked = node.graph && node.getInputLink(slot)
+      return ordinal !== undefined && linked ? [ordinal] : []
+    })
+  )
+  const last = Math.max(min, highestLinked + 1)
   replaceNodeInputs(
     node,
-    previous,
-    node.inputs.filter(
-      (input) =>
-        !isMember(input) ||
-        resolveAutogrowOrdinal(input.name, groupName, node)! <= last
-    )
+    captureInputLayout(node),
+    node.inputs.filter((input) => (ordinalOf(input) ?? -1) <= last)
   )
+}
+
+function trimAutogrowGroups(node: AutogrowNode) {
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow))
+    trimAutogrowGroup(groupName, node)
 }
 
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
