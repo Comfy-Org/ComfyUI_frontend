@@ -22,7 +22,7 @@ const ES2023_ARRAY_METHODS = new Set([
   'with'
 ])
 const ES2023_ARRAY_MESSAGE =
-  'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe equivalent (findLast/findLastIndex live in @/utils/arrayUtil).'
+  'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe equivalent (frontend src can import findLast/findLastIndex from @/utils/arrayUtil; packages need a package-local equivalent).'
 const VITEST_MOCK_METHOD_NAMES = new Set([
   'mockClear',
   'mockReset',

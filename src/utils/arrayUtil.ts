@@ -14,6 +14,9 @@ export function findLast<T>(
   array: readonly T[],
   predicate: (value: T, index: number, array: readonly T[]) => unknown
 ): T | undefined {
-  const index = findLastIndex(array, predicate)
-  return index === -1 ? undefined : array[index]
+  for (let index = array.length - 1; index >= 0; index--) {
+    const value = array[index]
+    if (predicate(value, index, array)) return value
+  }
+  return undefined
 }

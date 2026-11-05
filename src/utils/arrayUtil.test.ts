@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { findLast, findLastIndex } from './arrayUtil'
 
@@ -33,20 +33,31 @@ describe('findLastIndex', () => {
 })
 
 describe('findLast', () => {
-  it('returns the last matching element', () => {
-    expect(findLast([1, 2, 3, 4], (value) => value % 2 === 0)).toBe(4)
+  beforeEach(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Array.prototype,
+      'findLast'
+    )
+    Reflect.deleteProperty(Array.prototype, 'findLast')
+
+    return () => {
+      if (descriptor) {
+        Object.defineProperty(Array.prototype, 'findLast', descriptor)
+      }
+    }
   })
 
-  it('returns undefined with no match', () => {
-    expect(findLast([1, 3], (value) => value % 2 === 0)).toBeUndefined()
-  })
-
-  it('returns undefined when empty', () => {
-    expect(findLast([], () => true)).toBeUndefined()
-  })
-
-  it('distinguishes a matched falsy element from no match', () => {
-    expect(findLast([0], (value) => value === 0)).toBe(0)
+  it.for([
+    { name: 'returns the last match', array: [1, 2, 3, 4], expected: 4 },
+    {
+      name: 'returns undefined with no match',
+      array: [1, 3],
+      expected: undefined
+    },
+    { name: 'returns undefined when empty', array: [], expected: undefined },
+    { name: 'returns a matched falsy element', array: [0], expected: 0 }
+  ])('$name', ({ array, expected }) => {
+    expect(findLast(array, (value) => value % 2 === 0)).toBe(expected)
   })
 
   it('returns the matched value before the predicate changes the array', () => {

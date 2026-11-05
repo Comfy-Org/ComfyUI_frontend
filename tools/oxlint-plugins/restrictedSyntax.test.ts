@@ -15,6 +15,7 @@ const privateSigil = '#'
 
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
+  package: path.resolve('packages/__restricted_syntax_probes__'),
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
   selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
@@ -204,6 +205,12 @@ items.findLast((item) => item > 1)
 items.findLastIndex((item) => item > 1)
 `
   },
+  ...['arrayPackage.ts', 'arrayPackage.test.ts'].map((name) => ({
+    file: path.join(probeDirs.package, 'src', name),
+    source: `const items = [1, 2]
+items.findLastIndex((item) => item > 1)
+`
+  })),
   {
     file: path.join(probeDirs.source, 'arrayCopy.vue'),
     source: `<script setup lang="ts">
@@ -522,7 +529,8 @@ describe('restricted syntax rules', () => {
       ['arrayCopy.ts', 9],
       ['arrayCopy.ts', 15],
       ['arrayCopy.ts', 16],
-      ['arrayCopy.vue', 2]
+      ['arrayCopy.vue', 2],
+      ['arrayPackage.ts', 2]
     ])
     expect(arrayFindings.every(({ severity }) => severity === 'error')).toBe(
       true

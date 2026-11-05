@@ -83,8 +83,7 @@ describe('toggleSwitch', () => {
     })
 
     it('still honours the last selected item', () => {
-      delete (Array.prototype as { findLastIndex?: unknown }).findLastIndex
-      expect('findLastIndex' in Array.prototype).toBe(false)
+      Reflect.deleteProperty(Array.prototype, 'findLastIndex')
 
       const container = toggleSwitch('mode', [
         { text: 'a', selected: true },
