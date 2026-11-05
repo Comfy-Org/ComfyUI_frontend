@@ -33,6 +33,43 @@ describe('promptBuildErrorFingerprint', () => {
     ).toEqual(['error_building_prompt', 'Error', 'Node N has no graph'])
   })
 
+  it.for([
+    { direction: 'input', path: '' },
+    { direction: 'output', path: ' at path sub-a:sub-b' }
+  ])(
+    'groups recursion errors across string node ids, titles and paths ($direction)',
+    ({ direction, path }) => {
+      function recursionError(nodeInfo: string, uniqueId: string) {
+        const error = new Error(
+          `Circular reference detected while resolving ${direction} 0 of node ${nodeInfo}${path}. ` +
+            `This creates an infinite loop in link resolution. UniqueID: [${uniqueId}]`
+        )
+        error.name = 'RecursionError'
+        return error
+      }
+
+      expect(
+        promptBuildErrorFingerprint(
+          recursionError('alpha (Load. Image)', 'x:alpha[I]0')
+        )
+      ).toEqual(
+        promptBuildErrorFingerprint(recursionError('beta', 'y:beta[I]0'))
+      )
+    }
+  )
+
+  it('groups errors that end with a string node id', () => {
+    expect(
+      promptBuildErrorFingerprint(
+        new TypeError('Node is not a subgraph node: alpha')
+      )
+    ).toEqual(
+      promptBuildErrorFingerprint(
+        new TypeError('Node is not a subgraph node: beta')
+      )
+    )
+  })
+
   it('uses the error name for values that are not errors', () => {
     expect(promptBuildErrorFingerprint('boom 12')).toEqual([
       'error_building_prompt',
