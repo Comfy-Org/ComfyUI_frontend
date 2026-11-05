@@ -111,7 +111,9 @@ vi.mock<unknown>(
   () => ({
     useWorkflowThumbnail: () => ({
       storeThumbnail: storeThumbnailMock,
-      getThumbnail: vi.fn()
+      getThumbnail: vi.fn(),
+      clearThumbnail: vi.fn(),
+      moveWorkflowThumbnail: vi.fn()
     })
   })
 )
