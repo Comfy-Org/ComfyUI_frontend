@@ -1766,11 +1766,6 @@ describe('useWorkflowStore', () => {
         expect(failedAssertions()).toHaveLength(0)
       })
 
-      // Stored text that is not JSON at all used to escape as the native
-      // `SyntaxError`, which no caller recognises: the user got no toast and
-      // Sentry grouped on the quoted content, so one defect split into a group
-      // per corrupted file (CLOUD-FRONTEND-PROD-3FG on 1.59.5, -373 on 1.58.0)
-      // and carried the user's own content in the title.
       it.for([
         '[object Object]',
         'undefined',

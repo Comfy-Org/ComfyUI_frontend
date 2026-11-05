@@ -237,11 +237,6 @@ function draftMatchesSavedFile(
 /**
  * Stored workflow content is empty, not valid JSON, or not a JSON object, so it
  * can never open. The message is static; the path is on `workflowPath`.
- *
- * `unparseable` carries no detail from the content on purpose. The native
- * `SyntaxError` quotes the text it choked on, which both splits one defect into
- * a Sentry group per corrupted file and puts the user's own content in the
- * issue title.
  */
 export class UnreadableWorkflowError extends Error {
   override readonly name = 'UnreadableWorkflowError'
@@ -263,28 +258,15 @@ const UNREADABLE_WORKFLOW_MESSAGES: Record<
   'not-object': 'Workflow content is not a JSON object'
 }
 
-/**
- * The workflow object parsed from the stored text. Anything else (nothing
- * stored, empty text, text that is not JSON at all, JSON `null`, a number, an
- * array) cannot back a change tracker: a tracker around `null` is what later
- * reads as a missing state.
- */
 function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   const content = workflow.originalContent
   const parsed = content?.trim() ? parseContent(content, workflow) : undefined
   if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     return parsed as ComfyWorkflowJSON
   }
-  // `undefined` means there was nothing to parse; anything else parsed to
-  // something that is not a workflow.
   throw unreadable(parsed === undefined ? 'empty' : 'not-object', workflow)
 }
 
-/**
- * Stored text that is not JSON at all is as unopenable as JSON that is not an
- * object, so it fails the same way rather than escaping as a `SyntaxError` that
- * no caller recognises.
- */
 function parseContent(content: string, workflow: ComfyWorkflow): unknown {
   try {
     return JSON.parse(content)

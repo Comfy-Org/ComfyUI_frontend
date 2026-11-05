@@ -2523,8 +2523,6 @@ describe('useWorkflowService', () => {
       )
     })
 
-    // Every reason reaches the same recovery. `unparseable` is the arm that
-    // used to escape as a native `SyntaxError` and bypass this catch entirely.
     it.for(['empty', 'unparseable', 'not-object'] as const)(
       'tells the user when the stored file is %s',
       async (reason) => {
