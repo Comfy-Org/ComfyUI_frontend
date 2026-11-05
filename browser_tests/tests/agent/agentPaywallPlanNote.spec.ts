@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 import type { Page } from '@playwright/test'
 import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
@@ -94,8 +95,12 @@ agentTest.describe(
             name: enMessages.agent.paywall.addCredits
           })
         ).toBeVisible()
-        await expect(card.getByTestId('agent-paywall-plan-note')).toContainText(
-          "Buying credits doesn't start a Cloud plan."
+        const { planRequiredFreeRuns, planRequiredSubscribe } =
+          enMessages.credits.topUp
+        await expect(card.getByTestId('agent-paywall-plan-note')).toHaveText(
+          new RegExp(
+            `^(${escapeRegExp(planRequiredFreeRuns)}|${escapeRegExp(planRequiredSubscribe)})$`
+          )
         )
         await expectElementScreenshot(card, 'agent-paywall-plan-note.png')
       }
