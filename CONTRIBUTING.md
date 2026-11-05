@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (see `.nvmrc` for the required version) and pnpm
+  - Node.js (see `.nvmrc` for the required version), pnpm, and jq (used by `scripts/cicd/check-json.sh` and its unit test)
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
   - Docker, if you want to use the containerized test backend

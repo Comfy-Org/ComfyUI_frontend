@@ -5,16 +5,14 @@ import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
   billingControlEnabled: true,
-  isTeamPlan: true,
-  isEnterprise: false,
-  isKnownPersonalTier: false,
+  audience: 'team',
+  enterpriseEndingNotice: null,
   isLoaded: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   hasFunds: true,
   isCancelled: false,
   endDate: null,
-  withinEnterpriseEndingNotice: false,
   canManage: true,
   isPlanEnded: false,
   isPlanTerminal: false,
@@ -53,10 +51,13 @@ describe('deriveBillingBanner', () => {
       },
       { name: 'a scheduled change', inputs: { hasScheduledChange: true } },
       {
-        name: 'a known personal tier',
-        inputs: { isTeamPlan: false, isKnownPersonalTier: true }
+        name: 'the personal audience',
+        inputs: { audience: 'personal' }
       },
-      { name: 'an Enterprise plan', inputs: { isEnterprise: true } },
+      {
+        name: 'a started Enterprise ending notice',
+        inputs: { audience: null, enterpriseEndingNotice: 'started' }
+      },
       { name: 'a member', inputs: { canManage: false } },
       {
         name: 'billing control rolled back',
@@ -86,14 +87,12 @@ describe('deriveBillingBanner', () => {
 
   describe('personal plan', () => {
     const personal: Partial<BillingBannerInputs> = {
-      isTeamPlan: false,
-      isKnownPersonalTier: true
+      audience: 'personal'
     }
     const endingSoon: Partial<BillingBannerInputs> = {
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
-    // usePlanEnded leaves personal plans out; only the terminal test applies.
     const terminal: Partial<BillingBannerInputs> = {
       isPlanTerminal: true,
       canAccessSubscriptionFeatures: false
@@ -107,7 +106,7 @@ describe('deriveBillingBanner', () => {
       },
       { name: 'an ending plan', inputs: endingSoon, kind: 'ending' },
       { name: 'an ended plan', inputs: terminal, kind: 'planEnded' }
-    ] as const)('shows $name to a known personal tier', ({ inputs, kind }) => {
+    ] as const)('shows $name to the personal audience', ({ inputs, kind }) => {
       expect(derive({ ...personal, ...inputs })).toBe(kind)
     })
 
@@ -115,10 +114,8 @@ describe('deriveBillingBanner', () => {
       { name: 'out of credits', inputs: { hasFunds: false } },
       { name: 'an ending plan', inputs: endingSoon },
       { name: 'an ended plan', inputs: terminal }
-    ])('fails closed on $name for an unrecognized tier', ({ inputs }) => {
-      expect(
-        derive({ ...inputs, isTeamPlan: false, isKnownPersonalTier: false })
-      ).toBeNull()
+    ])('fails closed on $name with no served audience', ({ inputs }) => {
+      expect(derive({ ...inputs, audience: null })).toBeNull()
     })
 
     it('keeps out of credits and ending behind billing control', () => {
@@ -237,9 +234,13 @@ describe('deriveBillingBanner', () => {
     it('shows for team and Enterprise, owners and members alike', () => {
       expect(derive(ended)).toBe('planEnded')
       expect(derive({ ...ended, canManage: false })).toBe('planEnded')
-      expect(derive({ ...ended, isTeamPlan: false, isEnterprise: true })).toBe(
-        'planEnded'
-      )
+      expect(
+        derive({
+          ...ended,
+          audience: null,
+          enterpriseEndingNotice: 'started'
+        })
+      ).toBe('planEnded')
     })
 
     it('ships without the billing control flag', () => {
@@ -360,68 +361,54 @@ describe('deriveBillingBanner', () => {
 
   describe('enterprise ending notice', () => {
     const enterprise: Partial<BillingBannerInputs> = {
-      isTeamPlan: false,
-      isEnterprise: true,
+      audience: null,
       isCancelled: true,
       endDate: '2026-09-13T12:00:00Z'
     }
 
     it.for([
       {
-        case: 'outside the notice window',
-        inputs: { withinEnterpriseEndingNotice: false },
+        case: 'before the served start',
+        inputs: { enterpriseEndingNotice: 'scheduled' },
         kind: null
       },
       {
-        case: 'inside the notice window',
-        inputs: { withinEnterpriseEndingNotice: true },
+        case: 'once the served start passes',
+        inputs: { enterpriseEndingNotice: 'started' },
         kind: 'ending'
       },
       {
-        case: 'inside the window for a member',
-        inputs: { withinEnterpriseEndingNotice: true, canManage: false },
+        case: 'once started for a member',
+        inputs: { enterpriseEndingNotice: 'started', canManage: false },
         kind: 'ending'
       },
       {
-        case: 'inside the window without a cancellation',
-        inputs: { withinEnterpriseEndingNotice: true, isCancelled: false },
-        kind: null
-      },
-      {
-        case: 'inside the window once access is gone',
+        case: 'once started after access is gone',
         inputs: {
-          withinEnterpriseEndingNotice: true,
+          enterpriseEndingNotice: 'started',
           canAccessSubscriptionFeatures: false
         },
         kind: null
       },
       {
-        case: 'out of credits',
-        inputs: { hasFunds: false },
+        case: 'out of credits before the start',
+        inputs: { enterpriseEndingNotice: 'scheduled', hasFunds: false },
         kind: null
       },
       {
-        case: 'a plan that also reads as team',
-        inputs: { withinEnterpriseEndingNotice: false, isTeamPlan: true },
+        case: 'when a team audience is also served',
+        inputs: { enterpriseEndingNotice: 'scheduled', audience: 'team' },
         kind: null
       }
     ] as const)('shows $kind $case', ({ inputs, kind }) => {
       expect(derive({ ...enterprise, ...inputs })).toBe(kind)
     })
 
-    it('gives an unrecognized tier no banner at all', () => {
-      expect(
-        derive({
-          isTeamPlan: false,
-          isEnterprise: false,
-          isCancelled: true,
-          endDate: '2026-09-13T12:00:00Z',
-          withinEnterpriseEndingNotice: true
-        })
-      ).toBeNull()
+    it('gives no banner when no audience and no ending notice are served', () => {
+      expect(derive(enterprise)).toBeNull()
     })
 
-    it('never applies the window to a self-serve team cancellation', () => {
+    it('shows a self-serve team cancellation without a served start', () => {
       expect(
         derive({ isCancelled: true, endDate: '2026-11-02T12:00:00Z' })
       ).toBe('ending')

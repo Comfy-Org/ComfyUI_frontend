@@ -261,7 +261,8 @@ const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
     autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
     canViewAutoTopUpCard: capabilities.canViewAutoTopUpCard.value,
-    manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
+    canViewAutoTopUpMemberNotice:
+      capabilities.canViewAutoTopUpMemberNotice.value
   })
 )
 const addCreditsVariant = computed(() =>

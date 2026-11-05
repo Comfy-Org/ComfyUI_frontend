@@ -5,7 +5,16 @@
 @import './_deprecated-aliases.css';
 @import './_legacy-palette.css';
 @import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/preflight' layer(base);
 @import 'tailwindcss/utilities' layer(utilities);
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+}
 
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
@@ -54,7 +63,6 @@
 body {
   width: 100vw;
   height: 100vh;
-  margin: 0;
   overflow: hidden;
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
@@ -73,7 +81,6 @@ body {
   padding: 2px;
   resize: none;
   border: none;
-  box-sizing: border-box;
   font-family: var(--font-mono);
   font-size: var(--comfy-textarea-font-size);
 }
