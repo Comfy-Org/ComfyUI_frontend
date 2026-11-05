@@ -22,7 +22,7 @@ export type DocumentInputSlot =
 
 /**
  * The document index of a live input, by name; the live index stands in while
- * the document holds no such node.
+ * the document holds no such node or the input is unknown.
  */
 export function documentInputIndex(
   documentNames: DocumentSlotNames | null,
