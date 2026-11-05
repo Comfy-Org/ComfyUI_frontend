@@ -178,10 +178,9 @@ describe('useWorkflowStore', () => {
         { path: 'active.json', modified: 100, size: 1 }
       ])
       const edited = store.getWorkflowByPath('workflows/edited.json')!
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
       await store.openWorkflow(edited)
       edited.changeTracker!.activeState = {
         ...edited.changeTracker!.activeState,
@@ -209,10 +208,9 @@ describe('useWorkflowStore', () => {
         { path: 'active.json', modified: 100, size: 1 }
       ])
       const clean = store.getWorkflowByPath('workflows/clean.json')!
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
       await store.openWorkflow(clean)
       await store.openWorkflow(
         store.getWorkflowByPath('workflows/active.json')!
