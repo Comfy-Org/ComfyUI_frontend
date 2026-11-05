@@ -975,6 +975,44 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('tells a Cloud server memory kill apart from GPU out of memory', () => {
+    // Sent verbatim by Cloud inference when the ComfyUI container is OOM
+    // killed (services/inference/gateways/comfy/container_exit.go). It is host
+    // memory, not VRAM, so the GPU copy would send users the wrong way.
+    const serverOomMessage =
+      'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'Motion Transfer',
+        error: executionError('OOMError', serverOomMessage)
+      })
+    ).toMatchObject({
+      catalogId: 'server_out_of_memory',
+      displayTitle: 'Ran out of memory',
+      displayMessage:
+        'This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.',
+      displayItemLabel: 'Motion Transfer'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'Motion Transfer',
+        error: executionError('OOMError', `  ${serverOomMessage}\n`)
+      })
+    ).toMatchObject({ catalogId: 'server_out_of_memory' })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'KSampler',
+        error: executionError('OOMError', 'OOMError: Workflow execution failed')
+      })
+    ).toMatchObject({ catalogId: 'out_of_memory' })
+  })
+
   it.for([
     {
       type: 'InsufficientFundsError',
