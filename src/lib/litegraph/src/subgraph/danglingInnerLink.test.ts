@@ -488,6 +488,81 @@ describe('a link whose endpoint node does not exist', () => {
   })
 })
 
+describe('load-time notifications for pruned links', () => {
+  function spyOnDisconnectNotifications(
+    onDisconnect: (node: LGraphNode) => void = () => {}
+  ) {
+    const disconnects: unknown[] = []
+    vi.spyOn(
+      DanglingSourceNode.prototype,
+      'onConnectionsChange'
+    ).mockImplementation(function (this: LGraphNode, ...args: unknown[]) {
+      if (args[2] !== false) return
+      disconnects.push(args[3])
+      onDisconnect(this)
+    })
+    return disconnects
+  }
+
+  it('fires only after every pruned link is removed', () => {
+    const linksSeen: number[][] = []
+    const disconnects = spyOnDisconnectNotifications((node) => {
+      linksSeen.push([...(node.graph?.links.keys() ?? [])])
+    })
+
+    const { subgraph } = loadHost({
+      hostType: 'test/EmptyHost',
+      hostInputs: [
+        { name: KEPT, type: 'number', link: 1 },
+        { name: DROPPED, type: 'number', link: 2 }
+      ]
+    })
+
+    expect(subgraph.links.size).toBe(0)
+    expect(disconnects).toHaveLength(2)
+    expect(linksSeen).toEqual([[], []])
+  })
+
+  it('fires after stale boundary link ids are cleared', () => {
+    const boundaryLinkIdsSeen: number[][] = []
+    spyOnDisconnectNotifications((node) => {
+      const subgraph = node.graph as Subgraph
+      boundaryLinkIdsSeen.push([...subgraph.outputs[0].linkIds])
+    })
+
+    loadDefinition(
+      createTestSubgraphData({
+        nodes: [
+          serialisedNode(
+            1,
+            'test/DanglingSource',
+            [],
+            [{ name: 'out', type: 'number', links: [5] }]
+          ),
+          serialisedNode(2, 'test/EmptyHost', [], [])
+        ],
+        links: [link(5, 1, 0, 404, 0)],
+        outputs: [
+          { id: 'images', name: 'images', type: 'number', linkIds: [5] }
+        ]
+      })
+    )
+
+    expect(boundaryLinkIdsSeen).toEqual([[]])
+  })
+
+  it('still notifies the remaining endpoints when one callback throws', () => {
+    const disconnects = spyOnDisconnectNotifications(() => {
+      throw new Error('extension callback failed')
+    })
+
+    const { subgraph } = loadHost({ hostType: 'test/EmptyHost' })
+
+    expect(subgraph.links.size).toBe(0)
+    expect(disconnects).toHaveLength(2)
+  })
+})
+
 describe('a nested subgraph node that lost a boundary input', () => {
   function nestedDefinitions(): [ExportedSubgraph, ExportedSubgraph] {
     const inner = createTestSubgraphData({

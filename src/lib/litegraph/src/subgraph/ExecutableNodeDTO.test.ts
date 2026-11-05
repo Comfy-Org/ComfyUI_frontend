@@ -15,6 +15,8 @@ import type { ExecutableLGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createNestedSubgraphs,
@@ -415,6 +417,43 @@ describe('Subgraph output whose inner link has no origin node', () => {
       node: sourceDto,
       origin_slot: 0
     })
+  })
+  it('returns the promoted widget value for an unlinked pass-through input', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, 'in')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    subgraphNode.inputs[0].widgetId = id
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toMatchObject({
+      origin_slot: -1,
+      widgetInfo: { value: 7 }
+    })
+  })
+
+  it('resolves to nothing for an unlinked pass-through input with no widget', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
   })
 })
 

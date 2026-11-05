@@ -185,10 +185,10 @@ export function pruneDanglingSubgraphLinks(
     link.disconnect(subgraph)
     return { connection, link }
   })
+  dropStaleBoundaryLinkIds(subgraph)
   subgraph.incrementVersion()
   for (const { connection, link } of disconnected)
     notifyEndpoints(connection, link)
-  dropStaleBoundaryLinkIds(subgraph)
 
   if (prunedLinkReports >= MAX_REPORTS_PER_SESSION) return
   prunedLinkReports++

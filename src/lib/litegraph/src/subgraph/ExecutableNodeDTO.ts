@@ -413,15 +413,12 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (!innerResolved) return
 
     if (innerResolved.link.originIsIoNode) {
-      const passThroughSlot = innerResolved.link.origin_slot
-      if (this.inputs.at(passThroughSlot)) {
-        return this.resolveInput(passThroughSlot, visited, type)
-      }
-      console.warn(
-        `[ExecutableNodeDTO] Subgraph output passes through a missing input; skipping output [${slot}] ${output.name}`,
-        { id: this.id, inputSlot: passThroughSlot }
+      return this.resolvePassThroughOutput(
+        node,
+        innerResolved.link.origin_slot,
+        visited,
+        type
       )
-      return
     }
 
     const innerNode = innerResolved.outputNode
@@ -450,6 +447,32 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type,
       visited
     )
+  }
+
+  private resolvePassThroughOutput(
+    node: SubgraphNode,
+    inputSlot: number,
+    visited: Set<string>,
+    type: ISlotType
+  ): ResolvedInput | undefined {
+    const input = this.inputs.at(inputSlot)
+    if (!input) {
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output passes through a missing input; skipping it`,
+        { id: this.id, inputSlot }
+      )
+      return
+    }
+    if (input.linkId != null) return this.resolveInput(inputSlot, visited, type)
+
+    const id = node.inputs.at(inputSlot)?.widgetId
+    if (!id) return
+    return {
+      node: this,
+      origin_id: this.id,
+      origin_slot: -1,
+      widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
+    }
   }
 }
 
