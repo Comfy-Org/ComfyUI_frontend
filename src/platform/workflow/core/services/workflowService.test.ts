@@ -3992,8 +3992,6 @@ describe('useWorkflowService', () => {
       mockAssert.mockClear()
     })
 
-    // The shape Sentry reports: a saved tab whose content was dropped while it
-    // still carries its modified mark (isPersisted, !isLoaded).
     function unloadedModifiedTab(path: string): ComfyWorkflow {
       const tab = new ComfyWorkflowClass({ path, modified: 100, size: 1 })
       workflowStore.attachWorkflow(tab)
@@ -4010,41 +4008,83 @@ describe('useWorkflowService', () => {
       return JSON.parse(call[1] as string) as ComfyWorkflowJSON
     }
 
-    it('loads and saves it when Save is chosen in the close dialog', async () => {
-      const tab = unloadedModifiedTab('workflows/background.json')
-
-      expect(await service.closeWorkflow(tab)).toBe(true)
-
-      expect(storedContent('workflows/background.json').nodes).toHaveLength(
-        defaultGraph.nodes.length
-      )
-      expect(workflowStore.openWorkflows).not.toContain(tab)
-      expect(mockAssert).toHaveBeenCalledWith(
-        false,
-        'Modified saved workflow was not loaded when saved',
-        expect.objectContaining({
-          method: 'workflowService.loadForSave',
-          isPersisted: true,
-          isLoaded: false,
-          isActive: false
-        })
-      )
-    })
-
-    it('saves the draft the user edited, not the stored file', async () => {
+    function enableDrafts() {
       useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
         id: 'Comfy.Workflow.Persist',
         name: 'Persist workflow state',
         type: 'boolean',
         defaultValue: true
       }
-      const draft = { ...defaultGraph, extra: { editedInDraft: true } }
+    }
+
+    function draftOf(extra: Record<string, unknown>, updatedAt: number) {
       vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue({
-        data: JSON.stringify(draft),
+        data: JSON.stringify({ ...defaultGraph, extra }),
         name: 'background.json',
         isTemporary: false,
-        updatedAt: 200
+        updatedAt
       })
+    }
+
+    it('loads its draft and saves it when Save is chosen in the close dialog', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.closeWorkflow(tab)).toBe(true)
+
+      expect(storedContent('workflows/background.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(workflowStore.openWorkflows).not.toContain(tab)
+      expect(mockAssert).not.toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow lost its edits before saving',
+        expect.anything()
+      )
+    })
+
+    it('writes nothing and says so when the edits are no longer available', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 50)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.closeWorkflow(tab)).toBe(true)
+
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(tab.isModified).toBe(false)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Unsaved changes were not saved'
+        })
+      ])
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow lost its edits before saving',
+        expect.objectContaining({
+          method: 'workflowService.loadForSave',
+          isPersisted: true
+        })
+      )
+    })
+
+    it('keeps refusing to save an active tab that has no loaded content', async () => {
+      const tab = unloadedModifiedTab('workflows/active.json')
+      workflowStore.activeWorkflow = fromAny(tab)
+      const load = vi.spyOn(tab, 'load')
+
+      await expect(service.saveWorkflow(tab)).rejects.toThrow(
+        'Cannot save a workflow before it is loaded'
+      )
+
+      expect(load).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
+    })
+
+    it('saves the draft the user edited when saved directly', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
       const tab = unloadedModifiedTab('workflows/background.json')
 
       expect(await service.saveWorkflow(tab)).toBe(true)
@@ -4072,7 +4112,7 @@ describe('useWorkflowService', () => {
       )
       expect(mockAssert).not.toHaveBeenCalledWith(
         false,
-        'Modified saved workflow was not loaded when saved',
+        'Modified saved workflow lost its edits before saving',
         expect.anything()
       )
     })

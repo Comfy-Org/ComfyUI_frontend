@@ -332,24 +332,31 @@ export const useWorkflowService = () => {
     if (!file) return
     downloadBlob(file, blob)
   }
+  const lostUnsavedEdits = (workflow: ComfyWorkflow): boolean =>
+    workflow.isPersisted &&
+    workflow.isModified &&
+    workflow.content === workflow.originalContent
+
   /**
-   * A tab can lose its loaded content and keep its modified mark: a reload
-   * restores unsaved tabs without opening them, and a superseded open drops
-   * what it fetched. Saving needs the content back first; loading picks up
-   * the tab's draft when one is still usable.
+   * Loads a tab that is not loaded so it can be saved, applying its draft.
+   * Returns false when its unsaved edits are gone and nothing is left to save.
    */
-  const loadForSave = async (workflow: ComfyWorkflow): Promise<void> => {
-    if (workflow.isLoaded) return
-    // A restored unsaved tab is expected here. A saved file that is modified
-    // but unloaded means something dropped in-memory edits: keep it visible.
-    if (workflow.isPersisted && workflow.isModified)
-      reportWorkflowStateAnomaly(
-        'Modified saved workflow was not loaded when saved',
-        'workflowService.loadForSave',
-        workflow,
-        { isActive: workflowStore.isActive(workflow) }
-      )
+  const loadForSave = async (workflow: ComfyWorkflow): Promise<boolean> => {
+    if (workflow.isLoaded || workflowStore.isActive(workflow)) return true
     await loadWorkflowInBackground(workflow)
+    if (!lostUnsavedEdits(workflow)) return true
+    reportWorkflowStateAnomaly(
+      'Modified saved workflow lost its edits before saving',
+      'workflowService.loadForSave',
+      workflow
+    )
+    workflow.isModified = false
+    toast.warning(t('workflowService.unsavedChangesLostTitle'), {
+      description: t('workflowService.unsavedChangesLost', {
+        name: workflow.filename
+      })
+    })
+    return false
   }
 
   /**
@@ -361,9 +368,9 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { filename?: string; isApp?: boolean } = {}
   ): Promise<boolean> => {
-    await loadForSave(workflow)
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
+    if (!(await loadForSave(workflow))) return false
 
     const isApp = options.isApp ?? workflow.initialMode === 'app'
     const newPath =
@@ -384,7 +391,6 @@ export const useWorkflowService = () => {
 
     if (isSelfOverwrite) {
       workflow.changeTracker?.prepareForSave()
-      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
       await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
@@ -417,7 +423,7 @@ export const useWorkflowService = () => {
       return await saveWorkflowAs(workflow)
     }
 
-    await loadForSave(workflow)
+    if (!(await loadForSave(workflow))) return true
     workflow.changeTracker?.prepareForSave()
     const isApp = workflow.initialMode === 'app'
     const expectedPath =

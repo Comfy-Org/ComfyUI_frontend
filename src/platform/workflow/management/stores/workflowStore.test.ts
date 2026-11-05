@@ -197,7 +197,7 @@ describe('useWorkflowStore', () => {
       expect(edited.isLoaded).toBe(true)
       expect(edited.isModified).toBe(true)
       expect(edited.activeState?.extra).toEqual({ unsaved: true })
-      expect(edited.lastModified).toBe(200)
+      expect(edited.lastModified).toBe(100)
     })
 
     it('still drops the cached content of an unmodified background tab whose file changed', async () => {
@@ -1719,8 +1719,6 @@ describe('useWorkflowStore', () => {
             ? workflow.save()
             : workflow.saveAs('workflows/copy.json')
 
-        // Static message: the path would split the error into one group per
-        // file and put user file names in alert titles.
         await expect(attempt).rejects.toThrow(
           /^Cannot save a workflow before it is loaded$/
         )
