@@ -7,11 +7,6 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
 
-/**
- * The fingerprint has to normalize the message shapes the prompt build throwers
- * actually emit, so these cases take their messages from the throwers instead of
- * restating them. Node ids are branded strings, so the ids here are nonnumeric.
- */
 describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
   beforeEach(() => {
     resetSubgraphFixtureState()

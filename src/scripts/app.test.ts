@@ -2519,7 +2519,7 @@ describe('ComfyApp', () => {
         fingerprint: [
           'error_building_prompt',
           'Error',
-          'No output node found for id [] slot [] images'
+          'No output node found for id [] slot []'
         ],
         logToConsole: false
       })

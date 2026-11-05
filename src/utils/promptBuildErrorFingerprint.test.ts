@@ -3,11 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
 
 describe('promptBuildErrorFingerprint', () => {
-  it('groups the same failure across different node ids', () => {
+  it('groups missing output nodes across ids, slots and output names', () => {
     const first = new Error('No output node found for id [632] slot [0] images')
-    const second = new Error(
-      'No output node found for id [12:7] slot [3] images'
-    )
+    const second = new Error('No output node found for id [12:7] slot [3] mask')
 
     expect(promptBuildErrorFingerprint(first)).toEqual(
       promptBuildErrorFingerprint(second)
