@@ -1202,6 +1202,7 @@
     "apiPricing": "Цены на API",
     "charge": "Списать средства",
     "credits": "Кредиты",
+    "creditUnit": "Кредиты",
     "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
