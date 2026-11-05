@@ -246,8 +246,8 @@ describe('useComfyRegistryStore', () => {
 
     expect(result).toEqual([mockNodePack, mockNodePack2, mockNodePack3])
     expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
-      { node_id: packIds },
-      expect.any(Object) // abort signal
+      { node_id: packIds, limit: packIds.length, page: 1 },
+      expect.any(Object)
     )
   })
 

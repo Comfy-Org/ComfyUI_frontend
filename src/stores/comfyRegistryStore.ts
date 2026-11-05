@@ -65,24 +65,41 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
       .map((id) => getPacksByIdCache.get(id))
       .filter(isNodePack)
 
-    if (uncachedPacksIds.length) {
-      getPacksByIdController = new AbortController()
-      const uncachedPacks = await registryService.listAllPacks(
-        {
-          node_id: uncachedPacksIds.filter(
-            (id): id is string => id !== undefined
-          )
-        },
-        getPacksByIdController.signal
-      )
+    const nodeIds = uncachedPacksIds.filter(
+      (id): id is string => id !== undefined
+    )
+    if (!nodeIds.length) return resolvedPacks
 
-      const { nodes = [] } = uncachedPacks ?? {}
-      nodes.forEach((pack) => {
-        if (pack.id) {
-          getPacksByIdCache.set(pack.id, pack)
-          resolvedPacks.push(pack)
-        }
-      })
+    getPacksByIdController = new AbortController()
+    const { signal } = getPacksByIdController
+    const pendingIds = new Set(nodeIds)
+    let page = 1
+
+    while (pendingIds.size > 0) {
+      const pageResult = await registryService.listAllPacks(
+        { node_id: nodeIds, limit: nodeIds.length, page },
+        signal
+      )
+      if (!pageResult) break
+
+      const nodes = pageResult.nodes ?? []
+      const unresolvedBefore = pendingIds.size
+      for (const pack of nodes) {
+        if (!pack.id) continue
+        if (!getPacksByIdCache.has(pack.id)) resolvedPacks.push(pack)
+        getPacksByIdCache.set(pack.id, pack)
+        pendingIds.delete(pack.id)
+      }
+
+      const servedLimit = pageResult.limit
+      const pageCapacity =
+        servedLimit !== undefined && servedLimit > 0
+          ? servedLimit
+          : nodeIds.length
+      if (nodes.length < pageCapacity || pendingIds.size === unresolvedBefore) {
+        break
+      }
+      page += 1
     }
 
     return resolvedPacks
