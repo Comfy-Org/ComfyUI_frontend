@@ -26039,6 +26039,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Générez des réponses textuelles avec le modèle Hy4 de Tencent. Fournissez un prompt textuel et, éventuellement, une ou plusieurs images comme contexte.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "raisonnement"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "température"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D : Image(s) vers Modèle (Pro)",
     "inputs": {
