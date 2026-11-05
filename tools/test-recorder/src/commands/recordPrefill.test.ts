@@ -55,7 +55,6 @@ describe('resolveRecordPrefill', () => {
   })
 
   it.for([
-    { flags: { force: '' }, force: true },
     { flags: { force: 'true' }, force: true },
     { flags: { force: 'false' }, force: false },
     { flags: {}, force: false }

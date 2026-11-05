@@ -61,4 +61,28 @@ describe('comfy-test transform --force', () => {
       }
     }
   )
+
+  it.for(['--force=', '--force=1', '--force=yes', '--force=TRUE'])(
+    'rejects malformed boolean flag %s',
+    async (flag) => {
+      const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
+      try {
+        const input = join(dir, 'demo.raw.spec.ts')
+        const output = join(dir, 'demo.spec.ts')
+        writeFileSync(input, "await page.getByText('Queue').click();\n")
+        writeFileSync(output, EXISTING_SPEC)
+        const logSpy = vi.mocked(console.log).mockImplementation(() => {})
+
+        await runCli('transform', input, '--output', output, flag)
+
+        expect(process.exitCode).toBe(1)
+        expect(readFileSync(output, 'utf-8')).toBe(EXISTING_SPEC)
+        expect(logSpy.mock.calls.flat().join('\n')).toMatch(
+          /Invalid --force value/
+        )
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    }
+  )
 })

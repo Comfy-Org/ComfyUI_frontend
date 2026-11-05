@@ -85,6 +85,6 @@ export function resolveRecordPrefill(
     name: toSlug(name ?? '') ? toSlug(name ?? '') : undefined,
     warnings,
     pr: pr && /^\d+$/.test(pr) ? pr : undefined,
-    force: isFlagOn(flags.force)
+    force: isFlagOn(flags.force, 'force')
   }
 }

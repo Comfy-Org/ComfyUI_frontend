@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseFlags, parseTags } from './flags'
+import { isFlagOn, parseFlags, parseTags } from './flags'
 
 describe('parseFlags', () => {
   it('separates positional arguments from flags', () => {
@@ -72,4 +72,21 @@ describe('parseTags', () => {
   it('returns undefined when nothing survives filtering', () => {
     expect(parseTags(' , , ')).toBeUndefined()
   })
+})
+
+describe('isFlagOn', () => {
+  it.for([
+    { value: undefined, expected: false },
+    { value: 'false', expected: false },
+    { value: 'true', expected: true }
+  ])('reads $value as $expected', ({ value, expected }) => {
+    expect(isFlagOn(value, 'force')).toBe(expected)
+  })
+
+  it.for(['', '1', 'yes', 'TRUE'])(
+    'rejects the malformed value %s',
+    (value) => {
+      expect(() => isFlagOn(value, 'force')).toThrow(/Invalid --force value/)
+    }
+  )
 })

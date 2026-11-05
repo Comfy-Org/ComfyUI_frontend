@@ -39,7 +39,7 @@ export function parseFlags(
       flags[body] = next
       i++
     } else {
-      flags[body] = ''
+      flags[body] = takesBooleanValue.has(body) ? 'true' : ''
     }
   }
 
@@ -55,7 +55,14 @@ export function parseTags(value: string | undefined): string[] | undefined {
   return tags && tags.length > 0 ? tags : undefined
 }
 
-/** A bare `--flag` or `--flag=true` is on; anything else, or absent, is off. */
-export function isFlagOn(value: string | undefined): boolean {
-  return value === '' || value === 'true'
+/** Reads a strict boolean flag value and rejects malformed explicit values. */
+export function isFlagOn(
+  value: string | undefined,
+  flagName = 'flag'
+): boolean {
+  if (value === undefined || value === 'false') return false
+  if (value === 'true') return true
+  throw new Error(
+    `Invalid --${flagName} value "${value}". Use --${flagName}, --${flagName}=true, or --${flagName}=false.`
+  )
 }
