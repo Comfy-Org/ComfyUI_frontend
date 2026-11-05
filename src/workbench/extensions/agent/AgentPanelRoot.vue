@@ -1835,16 +1835,24 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
-function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' | 'history_delete'
+): void {
+  if (source === 'history_back') {
+    newChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
   provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  composerStore.setWorkflowReferences([])
-  composerStore.resetPromptHistory()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
+  composerStore.clearDraft()
   newChat(source)
-  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
-  else agentPanelStore.startFollowingVisibleWorkflow()
+  agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const fileInput = ref<HTMLInputElement>()
@@ -1877,6 +1885,10 @@ start({
     agentPanelStore.view.screen === 'chat' ||
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
+})
+watch(threadId, composerStore.trackDraftThread, {
+  immediate: true,
+  flush: 'sync'
 })
 
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
@@ -2208,7 +2220,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
-      @new-chat="onNewChat('new_chat_button')"
+      @new-chat="onNewChat"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
