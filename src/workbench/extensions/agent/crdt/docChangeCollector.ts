@@ -27,17 +27,21 @@ export class DocChangeCollector {
     Map<string, Set<string> | 'all'>
   >()
   private readonly interiorDefinitions = new Set<string>()
+  private readonly removedGroups = new Set<string>()
   private readonly nodesMap: Y.Map<Y.Map<unknown>>
   private readonly linksMap: Y.Map<unknown>
   private readonly definitionsMap: Y.Map<unknown>
+  private readonly metaMap: Y.Map<unknown>
 
   constructor(doc: Y.Doc) {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
     this.definitionsMap = definitionsObserverRoot(doc)
+    this.metaMap = doc.getMap('meta')
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
     this.definitionsMap.observeDeep(this.onDefinitionsChanged)
+    this.metaMap.observe(this.onMetaChanged)
   }
 
   /** Returns everything collected so far without clearing it. */
@@ -53,7 +57,8 @@ export class DocChangeCollector {
           new Map(nodes)
         ])
       ),
-      interiorDefinitions: new Set(this.interiorDefinitions)
+      interiorDefinitions: new Set(this.interiorDefinitions),
+      removedGroups: new Set(this.removedGroups)
     }
   }
 
@@ -71,12 +76,14 @@ export class DocChangeCollector {
     this.links.clear()
     this.interiors.clear()
     this.interiorDefinitions.clear()
+    this.removedGroups.clear()
   }
 
   destroy(): void {
     this.nodesMap.unobserveDeep(this.onNodesChanged)
     this.linksMap.unobserve(this.onLinksChanged)
     this.definitionsMap.unobserveDeep(this.onDefinitionsChanged)
+    this.metaMap.unobserve(this.onMetaChanged)
     this.discard()
   }
 
@@ -198,4 +205,26 @@ export class DocChangeCollector {
   private readonly onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
     for (const id of event.keysChanged) this.links.add(id)
   }
+
+  private readonly onMetaChanged = (event: Y.YMapEvent<unknown>): void => {
+    const change = event.changes.keys.get('groups')
+    if (!change) return
+    const current = groupIds(this.metaMap.get('groups'))
+    for (const id of groupIds(change.oldValue))
+      if (!current.has(id)) this.removedGroups.add(id)
+    for (const id of current) this.removedGroups.delete(id)
+  }
+}
+
+export function groupIds(groups: unknown): Set<string> {
+  const ids = new Set<string>()
+  if (!Array.isArray(groups)) return ids
+  for (const group of groups) {
+    const id: unknown =
+      typeof group === 'object' && group !== null
+        ? (group as { id?: unknown }).id
+        : undefined
+    if (typeof id === 'number' || typeof id === 'string') ids.add(String(id))
+  }
+  return ids
 }
