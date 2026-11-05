@@ -1,22 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { renameSync, unlinkSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
-
-function isFileNotFoundError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'ENOENT'
-  )
-}
+import { renameSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 
 function removeIfPresent(filePath: string): unknown {
   try {
-    unlinkSync(filePath)
+    rmSync(filePath, { force: true })
     return undefined
   } catch (error) {
-    return isFileNotFoundError(error) ? undefined : error
+    return error
   }
 }
 
@@ -32,7 +23,7 @@ export function writeFileExclusive(
 
   const temporaryPath = join(
     dirname(filePath),
-    `.${basename(filePath)}.${process.pid}.${randomUUID()}.tmp`
+    `.comfy-test.${process.pid}.${randomUUID()}.tmp`
   )
   try {
     writeFileSync(temporaryPath, contents, { flag: 'wx' })
