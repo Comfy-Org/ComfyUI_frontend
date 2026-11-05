@@ -900,9 +900,7 @@ describe('picking a target tab', () => {
     vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
       async (tab) => {
         if (!tab.isLoaded)
-          throw new Error(
-            `Cannot save workflow '${tab.path}' before it is loaded`
-          )
+          throw new Error('Cannot save a workflow before it is loaded')
         saved = true
         return true
       }
@@ -966,9 +964,7 @@ describe('picking a target tab', () => {
     vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
       async (tab) => {
         if (!tab.isLoaded)
-          throw new Error(
-            `Cannot save workflow '${tab.path}' before it is loaded`
-          )
+          throw new Error('Cannot save a workflow before it is loaded')
         saved = true
         return true
       }
