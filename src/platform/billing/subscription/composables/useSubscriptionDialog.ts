@@ -139,7 +139,7 @@ export const useSubscriptionDialog = () => {
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
-      if (openPlatformPlans()) {
+      if (!options?.resumingCheckout && openPlatformPlans()) {
         trackPaywallShown(paymentIntentSource)
         return true
       }
@@ -284,6 +284,7 @@ export const useSubscriptionDialog = () => {
     const initialCheckout = await restoreCheckoutSelection(pending)
     await showPricingTable({
       planMode: pending.selection.planMode,
+      resumingCheckout: true,
       ...(initialCheckout && { initialCheckout })
     })
   }

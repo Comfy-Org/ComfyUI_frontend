@@ -955,6 +955,31 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
+    it.for([{ popupsAllowed: false }, { popupsAllowed: true }])(
+      'reopens the attempted checkout in the table, not the Plans page (popups allowed: $popupsAllowed)',
+      async ({ popupsAllowed }) => {
+        vi.mocked(openBillingUrl).mockReturnValue(popupsAllowed)
+        useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+        mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+        savePendingSubscriptionCheckout({
+          operationId: 'op-alipay',
+          workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          },
+          attemptedAt: Date.now()
+        })
+
+        await useSubscriptionDialog().resumePendingPricingFlow()
+
+        expect(openBillingUrl).not.toHaveBeenCalled()
+        expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+      }
+    )
+
     it('reconciles a failed redirect and reopens the attempted checkout', async () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
