@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import { escapeRegExp } from 'es-toolkit'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -12,8 +11,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-
-const { planRequiredFreeRuns, planRequiredSubscribe } = enMessages.credits.topUp
 
 agentTest.describe(
   'Agent paywall for an account without a plan',
@@ -65,9 +62,7 @@ agentTest.describe(
           })
         ).toBeVisible()
         await expect(card.getByTestId('agent-paywall-plan-note')).toHaveText(
-          new RegExp(
-            `^(${escapeRegExp(planRequiredFreeRuns)}|${escapeRegExp(planRequiredSubscribe)})$`
-          )
+          enMessages.credits.topUp.planRequiredSubscribe
         )
         await expectElementScreenshot(card, 'agent-paywall-plan-note.png')
       }
