@@ -81,7 +81,6 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       const { subgraph } = subgraphWithNode
       const input = subgraph.inputs[0]
 
-      // One subgraph input fanned out to several internal nodes
       const internalNodes = Array.from({ length: 4 }, (_, i) => {
         const node = new LGraphNode(`Internal ${i}`)
         node.addInput('in', '*')
@@ -93,9 +92,12 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
 
       subgraph.removeInput(input)
 
-      for (const node of internalNodes) {
-        expect(node.inputs[0].link).toBeNull()
-      }
+      expect(internalNodes.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null,
+        null,
+        null
+      ])
       const ioLinks = [...subgraph.links.values()].filter(
         (link) => link.originIsIoNode
       )
@@ -125,9 +127,10 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       subgraph.removeInput(first)
 
       expect(subgraph.inputs).toEqual([second])
-      for (const node of firstTargets) {
-        expect(node.inputs[0].link).toBeNull()
-      }
+      expect(firstTargets.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null
+      ])
       const link = subgraph.getLink(secondTarget.inputs[0].link)
       expect(link?.origin_slot).toBe(0)
       expect(second.linkIds).toEqual([link?.id])
