@@ -4273,6 +4273,7 @@
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
+      "useLocalAgent": "Use local agent",
       "openInClaude": "Open in Claude desktop",
       "openInChatGpt": "Open in ChatGPT desktop",
       "copyPrompt": "Copy prompt"

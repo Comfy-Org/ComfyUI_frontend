@@ -50,6 +50,7 @@ describe('core extensions', () => {
       'Comfy.ImageCrop',
       'Comfy.LayerEditor',
       'Comfy.Load3DLazy',
+      'Comfy.LocalDeploymentAgent',
       'Comfy.MaskEditor',
       'Comfy.NoteNode',
       'Comfy.Painter',

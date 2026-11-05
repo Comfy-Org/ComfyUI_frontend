@@ -46,4 +46,14 @@ The login fixture permits the hosted application's analytics, diagnostics, and I
 
 ## Remaining acceptance work
 
-Authenticated local-to-Cloud import and Cloud execution require an authenticated Cloud browser context and an enabled receiver flag. These are separate from the three compatibility cases and the signed-out login test. The actual model-upload flow remains incomplete in the implementation and requires its own live upload acceptance once available.
+Authenticated local-to-Cloud import and Cloud execution require an authenticated Cloud browser context and an enabled receiver flag. These are separate from the three compatibility cases and the signed-out login test.
+
+The deployment menu offers **Use local agent** when the backend reports `agent.state: ready`. Start ComfyUI with `--enable-agent` and the supported agent package installed to exercise it. After the existing consent and sign-in flow, the deployment dialog closes and the agent composer contains the setup brief. The user reviews and sends it. Actual agent execution and release creation still need live acceptance; opening the composer does not prove deployment succeeded.
+
+The Issues panel offers deployment for an out-of-memory error when `open_on_cloud_enabled` is enabled. Its error-catalog routing and dialog action are covered together by the focused integration suite. The live suite does not exhaust GPU memory to produce this condition.
+
+A missing local opener, or a sender that no longer answers after sign-in, shows **Your workflow didn't arrive** with instructions to reopen from local ComfyUI. The sender waits ten minutes; the Cloud receiver waits up to one minute for a response after it loads.
+
+Local model upload, background progress, cancellation, and sign-in-to-upload remain incomplete. The local asset-content API requires ComfyUI's assets system (`--enable-assets`); the live backend used here has it disabled and returns HTTP 503. The Cloud loopback CORS route allowlist permits compatibility checks but does not permit `/api/assets/uploads` or its completion route; the preview's upload preflight returns HTTP 404 without `Access-Control-Allow-Origin`. A supported local model-content capability and Cloud upload transport are required before these user stories can be accepted. The unavailable notice remains visible instead of a nonfunctional Upload button.
+
+Desktop still opens Cloud and downloads workflow JSON for manual import. Automatic Desktop handoff is not covered by the browser suite.
