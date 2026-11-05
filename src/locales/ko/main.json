@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "이 워크플로우가 최대 실행 시간을 초과했습니다. 이미지 해상도, 배치 크기 또는 워크플로우 길이를 줄이고 다시 시도하세요.",
+        "message": "이 워크플로가 요금제의 최대 실행 시간에 도달했습니다(Free에서는 @:subscription.maxDuration.free, Pro에서는 @:subscription.maxDuration.pro, 그 외 모든 요금제에서는 @:subscription.maxDuration.standard). 이미지 해상도, 배치 크기 또는 워크플로 길이를 줄인 후 다시 실행해 보세요.",
         "title": "생성 시간 초과",
-        "toastMessage": "이 워크플로우가 최대 실행 시간을 초과했습니다. 이미지 해상도, 배치 크기 또는 워크플로우 길이를 줄이고 다시 시도하세요.",
+        "toastMessage": "이 워크플로가 요금제의 최대 실행 시간에 도달했습니다(Free에서는 @:subscription.maxDuration.free, Pro에서는 @:subscription.maxDuration.pro, 그 외 모든 요금제에서는 @:subscription.maxDuration.standard). 이미지 해상도, 배치 크기 또는 워크플로 길이를 줄인 후 다시 실행해 보세요.",
         "toastTitle": "생성 시간 초과"
       },
       "unexpected_service_error": {

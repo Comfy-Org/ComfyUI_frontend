@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "message": "このワークフローは、ご利用のプランで許可されている最大実行時間に達しました（Free では @:subscription.maxDuration.free、Pro では @:subscription.maxDuration.pro、その他すべてのプランでは @:subscription.maxDuration.standard）。画像の解像度、バッチサイズ、またはワークフローの長さを減らして、もう一度実行してください。",
         "title": "生成がタイムアウトしました",
-        "toastMessage": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "toastMessage": "このワークフローは、ご利用のプランで許可されている最大実行時間に達しました（Free では @:subscription.maxDuration.free、Pro では @:subscription.maxDuration.pro、その他すべてのプランでは @:subscription.maxDuration.standard）。画像の解像度、バッチサイズ、またはワークフローの長さを減らして、もう一度実行してください。",
         "toastTitle": "生成がタイムアウトしました"
       },
       "unexpected_service_error": {

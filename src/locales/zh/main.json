@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "message": "此工作流已达到您的套餐最长运行时间（免费版为 @:subscription.maxDuration.free，专业版为 @:subscription.maxDuration.pro，其他所有套餐为 @:subscription.maxDuration.standard）。请尝试降低图像分辨率、批次大小或工作流长度，然后再次运行。",
         "title": "生成超时",
-        "toastMessage": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "toastMessage": "此工作流已达到您的套餐最长运行时间（免费版为 @:subscription.maxDuration.free，专业版为 @:subscription.maxDuration.pro，其他所有套餐为 @:subscription.maxDuration.standard）。请尝试降低图像分辨率、批次大小或工作流长度，然后再次运行。",
         "toastTitle": "生成超时"
       },
       "unexpected_service_error": {

@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Questo workflow ha raggiunto il tempo massimo di esecuzione. Prova a ridurre la risoluzione dell'immagine, la dimensione del batch o la lunghezza del workflow e riprova.",
+        "message": "Questo workflow ha raggiunto il tempo massimo di esecuzione previsto dal tuo piano (@:subscription.maxDuration.free per Free, @:subscription.maxDuration.pro per Pro, @:subscription.maxDuration.standard per tutti gli altri piani). Prova a ridurre la risoluzione dell'immagine, la dimensione del batch o la lunghezza del workflow, quindi eseguilo di nuovo.",
         "title": "Tempo di generazione scaduto",
-        "toastMessage": "Questo workflow ha raggiunto il tempo massimo di esecuzione. Prova a ridurre la risoluzione dell'immagine, la dimensione del batch o la lunghezza del workflow e riprova.",
+        "toastMessage": "Questo workflow ha raggiunto il tempo massimo di esecuzione previsto dal tuo piano (@:subscription.maxDuration.free per Free, @:subscription.maxDuration.pro per Pro, @:subscription.maxDuration.standard per tutti gli altri piani). Prova a ridurre la risoluzione dell'immagine, la dimensione del batch o la lunghezza del workflow, quindi eseguilo di nuovo.",
         "toastTitle": "Tempo di generazione scaduto"
       },
       "unexpected_service_error": {

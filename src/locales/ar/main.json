@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "وصل سير العمل إلى الحد الأقصى لمدة التشغيل. حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل وأعد المحاولة.",
+        "message": "بلغت سير العمل هذه الحد الأقصى لمدة التشغيل في خطتك (@:subscription.maxDuration.free في الخطة المجانية، و@:subscription.maxDuration.pro في Pro، و@:subscription.maxDuration.standard في جميع الخطط الأخرى). حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل، ثم شغّلها مرة أخرى.",
         "title": "انتهت مهلة التوليد",
-        "toastMessage": "وصل سير العمل إلى الحد الأقصى لمدة التشغيل. حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل وأعد المحاولة.",
+        "toastMessage": "بلغت سير العمل هذه الحد الأقصى لمدة التشغيل في خطتك (@:subscription.maxDuration.free في الخطة المجانية، و@:subscription.maxDuration.pro في Pro، و@:subscription.maxDuration.standard في جميع الخطط الأخرى). حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل، ثم شغّلها مرة أخرى.",
         "toastTitle": "انتهت مهلة التوليد"
       },
       "unexpected_service_error": {

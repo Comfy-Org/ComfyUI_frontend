@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "message": "Этот workflow достиг максимального времени выполнения, предусмотренного вашим тарифом (@:subscription.maxDuration.free на Free, @:subscription.maxDuration.pro на Pro, @:subscription.maxDuration.standard на всех остальных тарифах). Попробуйте уменьшить разрешение изображения, размер batch или длину workflow и запустите его снова.",
         "title": "Время генерации истекло",
-        "toastMessage": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "toastMessage": "Этот workflow достиг максимального времени выполнения, предусмотренного вашим тарифом (@:subscription.maxDuration.free на Free, @:subscription.maxDuration.pro на Pro, @:subscription.maxDuration.standard на всех остальных тарифах). Попробуйте уменьшить разрешение изображения, размер batch или длину workflow и запустите его снова.",
         "toastTitle": "Время генерации истекло"
       },
       "unexpected_service_error": {

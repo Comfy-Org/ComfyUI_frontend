@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución. Intenta reducir la resolución de la imagen, el tamaño del lote o la longitud del flujo de trabajo y vuelve a ejecutar.",
+        "message": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución de tu plan (@:subscription.maxDuration.free en Free, @:subscription.maxDuration.pro en Pro, @:subscription.maxDuration.standard en todos los demás planes). Intenta reducir la resolución de la imagen, el tamaño del lote o la duración del flujo de trabajo y ejecútalo de nuevo.",
         "title": "Tiempo de generación agotado",
-        "toastMessage": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución. Intenta reducir la resolución de la imagen, el tamaño del lote o la longitud del flujo de trabajo y vuelve a ejecutar.",
+        "toastMessage": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución de tu plan (@:subscription.maxDuration.free en Free, @:subscription.maxDuration.pro en Pro, @:subscription.maxDuration.standard en todos los demás planes). Intenta reducir la resolución de la imagen, el tamaño del lote o la duración del flujo de trabajo y ejecútalo de nuevo.",
         "toastTitle": "Tiempo de generación agotado"
       },
       "unexpected_service_error": {

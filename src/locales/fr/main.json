@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Ce workflow a atteint la durée maximale d'exécution. Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis relancez.",
+        "message": "Ce workflow a atteint la durée d'exécution maximale de votre forfait (@:subscription.maxDuration.free sur Free, @:subscription.maxDuration.pro sur Pro, @:subscription.maxDuration.standard sur tous les autres forfaits). Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis réexécutez-le.",
         "title": "Délai de génération dépassé",
-        "toastMessage": "Ce workflow a atteint la durée maximale d'exécution. Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis relancez.",
+        "toastMessage": "Ce workflow a atteint la durée d'exécution maximale de votre forfait (@:subscription.maxDuration.free sur Free, @:subscription.maxDuration.pro sur Pro, @:subscription.maxDuration.standard sur tous les autres forfaits). Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis réexécutez-le.",
         "toastTitle": "Délai de génération dépassé"
       },
       "unexpected_service_error": {
