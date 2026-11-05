@@ -748,6 +748,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers Resubscribe instead of a disabled Add credits on an ending plan', () => {
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivatePlan = true
+    useBillingCapabilities().topUpDenial = computed(
+      () => 'topup_purchases_paused'
+    )
+
+    renderComponent('team')
+
+    expect(
+      screen.getByRole('button', { name: 'Resubscribe' })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
   it('opens the pricing table from Resubscribe when the ending plan has no Add credits', async () => {
     const user = userEvent.setup()
     state.isCancelled = true

@@ -426,7 +426,7 @@ function pickCreditsRowAction(): CreditsRowAction | null {
     return addCredits.value.kind === 'hidden' ? null : 'addCredits'
   }
   if (!canAccessSubscriptionFeatures.value) return 'planAction'
-  return addCredits.value.kind === 'hidden' ? 'planAction' : 'addCredits'
+  return addCredits.value.kind === 'enabled' ? 'addCredits' : 'planAction'
 }
 
 const isBillingLoading = computed(
