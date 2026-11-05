@@ -240,6 +240,38 @@ describe('createCapabilitiesReader', () => {
   )
 
   it.for([
+    {
+      case: 'an unknown status',
+      served: { status: 'snoozed', monthly_budget_is_default: false }
+    },
+    {
+      case: 'fractional credits',
+      served: {
+        status: 'on',
+        threshold_credits: 1.5,
+        target_credits: 6000,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false
+      }
+    }
+  ])(
+    'drops a malformed auto_top_up_member_view for $case and keeps the read',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ auto_top_up_member_view: served }))
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpMemberView).toBeUndefined()
+    }
+  )
+
+  it.for([
     { served: true, expected: true },
     { served: false, expected: false },
     { served: undefined, expected: undefined }

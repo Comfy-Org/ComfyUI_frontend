@@ -67,7 +67,8 @@ const CapabilitiesBodySchema = z.object({
       target_credits: wireCents.nullable(),
       threshold_credits: wireCents.nullable()
     })
-    .optional(),
+    .optional()
+    .catch(undefined),
   auto_top_up_setup: zBillingCapabilitiesResponse.shape.auto_top_up_setup,
   capabilities: zBillingCapabilities,
   expires_at: z.string(),

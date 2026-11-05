@@ -51,53 +51,51 @@ function statusOf(view: AutoTopUpMemberView): AutoTopUpStatusLabel | null {
   return STATUS[view.status]
 }
 
+interface LineContext {
+  view: AutoTopUpMemberView
+  copy: AutoTopUpMemberBlockCopy
+  locale: string
+}
+
 function budgetLine(
-  { cycle_resets_at: resetsAt }: AutoTopUpMemberView,
-  locale: string,
+  { view, locale }: LineContext,
   dated: (date: string) => string,
   undated: string
 ): string {
+  const resetsAt = view.cycle_resets_at
   return resetsAt === null
     ? undated
     : dated(formatPlanDate(resetsAt, locale, 'monthly'))
 }
 
-function lineOf(
-  status: AutoTopUpStatusLabel,
-  view: AutoTopUpMemberView,
-  copy: AutoTopUpMemberBlockCopy,
-  locale: string
-): string | null {
-  switch (status) {
-    case 'on': {
-      const { target_credits: target, threshold_credits: threshold } = view
-      if (target === null || threshold === null) return null
-      const credits = new Intl.NumberFormat(locale, {
-        maximumFractionDigits: 0
-      })
-      return copy.on(credits.format(target), credits.format(threshold))
-    }
-    case 'off':
-      return copy.body
-    case 'limitReached':
-      return budgetLine(
-        view,
-        locale,
-        copy.limitReached,
-        copy.limitReachedNoDate
-      )
-    case 'maximumReached':
-      return budgetLine(
-        view,
-        locale,
-        copy.maximumReached,
-        copy.maximumReachedNoDate
-      )
-    case 'failed':
-    case 'turnedOff':
-    case 'onHold':
-      return copy[status]
-  }
+function ruleLine({ view, copy, locale }: LineContext): string | null {
+  const { target_credits: target, threshold_credits: threshold } = view
+  if (target === null || threshold === null) return null
+  const credits = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
+  return copy.on(credits.format(target), credits.format(threshold))
+}
+
+const LINES: Record<
+  AutoTopUpStatusLabel,
+  (context: LineContext) => string | null
+> = {
+  on: ruleLine,
+  off: ({ copy }) => copy.body,
+  limitReached: (context) =>
+    budgetLine(
+      context,
+      context.copy.limitReached,
+      context.copy.limitReachedNoDate
+    ),
+  maximumReached: (context) =>
+    budgetLine(
+      context,
+      context.copy.maximumReached,
+      context.copy.maximumReachedNoDate
+    ),
+  failed: ({ copy }) => copy.failed,
+  turnedOff: ({ copy }) => copy.turnedOff,
+  onHold: ({ copy }) => copy.onHold
 }
 
 /** The status and line for a served member view; null keeps the status-less block. */
@@ -109,6 +107,6 @@ export function autoTopUpMemberView(
   if (!view) return null
   const status = statusOf(view)
   if (status === null) return null
-  const line = lineOf(status, view, copy, locale)
+  const line = LINES[status]({ view, copy, locale })
   return line === null ? null : { status, line }
 }
