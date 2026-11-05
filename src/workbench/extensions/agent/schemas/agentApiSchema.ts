@@ -75,7 +75,6 @@ const zTolerantPendingAsk = zAgentPendingAskBase.extend({
   context: z.unknown().optional()
 })
 
-/** A finished ask on a persisted assistant row. */
 export const zAgentResolvedAsk = zTolerantPendingAsk.extend({
   status: zAgentAskStatus,
   selected: z.array(z.string()).nullish(),

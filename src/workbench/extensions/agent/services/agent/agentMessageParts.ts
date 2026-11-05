@@ -383,7 +383,6 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
     : undefined
 }
 
-/** The read-only card of a finished ask; `undefined` for a kind that keeps none. */
 export function toResolvedAskPart(
   ask: AgentResolvedAsk
 ): AskUserPart | DeleteApprovalPart | undefined {
