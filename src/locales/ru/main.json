@@ -1242,7 +1242,7 @@
     "apiPricing": "Цены на API",
     "charge": "Списать средства",
     "credits": "Кредиты",
-    "creditUnit": "Кредиты",
+    "creditUnit": "Кредит | Кредиты",
     "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
