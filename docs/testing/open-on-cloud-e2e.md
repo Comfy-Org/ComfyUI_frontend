@@ -42,7 +42,7 @@ Each case asserts HTTP 200, a real server address, the parsed compatibility payl
 
 `browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts` separately checks that Open on Comfy Cloud opens the selected deployment's actual login page in a new tab. Run it with the same environment variables, replacing the spec path in the command above.
 
-The login fixture aborts the exact Impact marketing bootstrap script before download, preventing its downstream attribution requests. It records the blocked script requests in the report. It does not replace responses or change application APIs, authentication, or popup assertions. Marketing attribution is outside this suite's acceptance scope. The fixture permits the hosted application's other analytics and diagnostic services; follow the execution environment's authorization requirements before running it.
+The login fixture permits the hosted application's analytics, diagnostics, and Impact marketing attribution requests, including `www.ojrq.net`. It does not replace responses or suppress the marketing script. Marketing attribution is outside this suite's acceptance assertions. Follow the execution environment's authorization requirements before running it.
 
 ## Remaining acceptance work
 
