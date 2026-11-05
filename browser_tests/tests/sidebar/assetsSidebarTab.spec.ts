@@ -278,6 +278,31 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.downloadSelectedButton).toBeVisible()
   })
 
+  test('keeps selection actions inside the selection bar when translated', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const deleteButtonOverhang = async () => {
+      const bar = await tab.selectionFooter.boundingBox()
+      const button = await tab.deleteSelectedButton.boundingBox()
+      if (!bar || !button) return Number.POSITIVE_INFINITY
+      return button.x + button.width - (bar.x + bar.width)
+    }
+    await tab.open()
+
+    await tab.getAssetCardByName('alpha').click()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+    await expect.poll(deleteButtonOverhang).toBeLessThanOrEqual(0)
+
+    await comfyPage.settings.setSetting('Comfy.Locale', 'es')
+    await expect(tab.selectionFooter).toContainText('Recursos seleccionados: 1')
+
+    // The count label does not wrap or shrink, so a translation longer than
+    // the English label pushes the actions past the bar's right edge.
+    test.fail()
+    await expect.poll(deleteButtonOverhang).toBeLessThanOrEqual(0)
+  })
+
   test('loads full generated job outputs from job detail', async ({
     comfyPage,
     jobsRoutes
