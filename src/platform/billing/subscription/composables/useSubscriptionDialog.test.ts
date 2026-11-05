@@ -30,6 +30,8 @@ import {
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 import { openBillingUrl } from '@/platform/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
@@ -71,6 +73,8 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 vi.mock(import('@/platform/billing/billingTab'), { spy: true })
+vi.mock(import('@/platform/billing/refreshOnReturn'), { spy: true })
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction: mockRumAddAction }
@@ -212,6 +216,27 @@ describe('useSubscriptionDialog', () => {
           correlation_id: openedUrl().searchParams.get('correlation_id')
         })
       )
+    })
+
+    it('reports the paywall without a modal_opened for a modal that never opened', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'entry', stage: 'paywall_shown' })
+      )
+    })
+
+    it('re-reads capabilities when the customer returns from the Plans page', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+      const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
+      await refresh()
+
+      expect(useBillingCapabilities().refresh).toHaveBeenCalled()
     })
 
     it('still shows the read-only member dialog to a member who cannot manage the plan', async () => {

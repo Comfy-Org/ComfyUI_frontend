@@ -19,6 +19,9 @@ export async function expectPlatformPlansOpened(
   await expect
     .poll(() => new URL(plans.url()).pathname)
     .toBe(PLATFORM_PLANS_PATH)
+  expect(new URL(plans.url()).origin, 'opens on the platform host').not.toBe(
+    new URL(page.url()).origin
+  )
   await expect(
     page.locator('[data-dialog-key="subscription-required"]')
   ).toHaveCount(0)

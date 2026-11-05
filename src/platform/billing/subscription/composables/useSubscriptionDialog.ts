@@ -140,7 +140,7 @@ export const useSubscriptionDialog = () => {
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
       if (openPlatformPlans()) {
-        trackEntry()
+        trackPaywallShown(paymentIntentSource)
         return true
       }
 

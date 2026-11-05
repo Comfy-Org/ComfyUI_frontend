@@ -161,13 +161,12 @@ unsubscribedTest.describe(
         const plans = await expectPlatformPlansOpened(comfyPage.page, () =>
           subscriptionHelper.clickPopoverSubscribe()
         )
-        await plans.close()
-
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
+        await plans.close()
         await comfyPage.page.evaluate(() => {
           window.dispatchEvent(new Event('focus'))
         })
