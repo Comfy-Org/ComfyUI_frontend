@@ -165,16 +165,48 @@ describe(useLocalHandoffUrlLoader, () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
+  it('explains how to retry when the local sender no longer answers', async () => {
+    linkWithNonce()
+    await loadWithOpener()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: "Your workflow didn't arrive",
+        description:
+          'ComfyUI stops waiting after 10 minutes. Click Open on Comfy Cloud in ComfyUI again.'
+      })
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('explains how to retry when the local tab is no longer available', async () => {
+    linkWithNonce()
+    await loadWithOpener(null)
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: "Your workflow didn't arrive"
+      })
+    )
+  })
+
   it.for([
     { name: 'the flag is off', flag: false, opener: window },
     { name: 'no tab opened this one', flag: true, opener: null }
-  ])('only strips the param when $name', async ({ flag, opener }) => {
-    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = flag
-    linkWithNonce()
+  ])(
+    'cleans the query without messaging when $name',
+    async ({ flag, opener }) => {
+      vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = flag
+      linkWithNonce()
 
-    await loadWithOpener(opener)
+      await loadWithOpener(opener)
 
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
-    expect(window.postMessage).not.toHaveBeenCalled()
-  })
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+      expect(window.postMessage).not.toHaveBeenCalled()
+    }
+  )
 })

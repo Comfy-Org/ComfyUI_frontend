@@ -23,6 +23,13 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
 const HANDOFF_WAIT_MS = 60_000
 const NOTICE_MS = 8000
 
+function showMissingWorkflow() {
+  useToast().error(t('openOnCloud.handoffMissing'), {
+    description: t('openOnCloud.handoffMissingDetail'),
+    duration: NOTICE_MS
+  })
+}
+
 async function openHandedOffWorkflow(
   filename: string,
   data: unknown
@@ -61,7 +68,10 @@ function requestWorkflow(opener: Window, nonce: string): void {
     window.removeEventListener('message', onMessage)
     clearTimeout(deadline)
   }
-  const deadline = setTimeout(stop, HANDOFF_WAIT_MS)
+  const deadline = setTimeout(() => {
+    stop()
+    showMissingWorkflow()
+  }, HANDOFF_WAIT_MS)
   window.addEventListener('message', onMessage)
   opener.postMessage(localHandoffReady(nonce), '*')
 }
@@ -91,8 +101,9 @@ export function useLocalHandoffUrlLoader(
     clearPreservedQuery(NAMESPACE)
 
     const opener = getOpener()
-    if (typeof nonce === 'string' && opener && flags.openOnCloudEnabled) {
-      requestWorkflow(opener, nonce)
+    if (typeof nonce === 'string' && flags.openOnCloudEnabled) {
+      if (opener) requestWorkflow(opener, nonce)
+      else showMissingWorkflow()
     }
     await stripped
   }
