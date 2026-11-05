@@ -24,7 +24,6 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type {
   CreditTransitionNoticeEvent,
@@ -88,9 +87,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   /** The server's `agent` feature; undefined unless its state is known. */
-  const comfyAgent = computed<AgentServerFeature | undefined>(
-    readComfyAgentFeature
-  )
+  const comfyAgent = computed(readComfyAgentFeature)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)

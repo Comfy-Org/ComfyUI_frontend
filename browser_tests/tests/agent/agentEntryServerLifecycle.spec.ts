@@ -3,7 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ComfyAgentFeature } from '@/platform/remoteConfig/comfyAgentFeature'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -34,7 +34,7 @@ test.describe(
         ws.send(JSON.stringify({ type, data }))
 
       await test.step('a starting agent shows on the button, inert', async () => {
-        const agent: AgentServerFeature = { state: 'starting', reason: null }
+        const agent: ComfyAgentFeature = { state: 'starting', reason: null }
         publish('feature_flags', { agent })
         const starting = page.getByRole('button', {
           name: enMessages.agent.entryStarting,
@@ -47,7 +47,7 @@ test.describe(
       })
 
       await test.step('a failed agent names its reason, inert', async () => {
-        const status: AgentServerFeature = {
+        const status: ComfyAgentFeature = {
           state: 'failed',
           reason: 'not_found'
         }
@@ -66,7 +66,7 @@ test.describe(
       })
 
       await test.step('a ready agent offers itself to a signed-out user', async () => {
-        const status: AgentServerFeature = { state: 'ready', reason: null }
+        const status: ComfyAgentFeature = { state: 'ready', reason: null }
         publish('agent_status', status)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
