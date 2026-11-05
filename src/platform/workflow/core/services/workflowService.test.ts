@@ -4374,6 +4374,25 @@ describe('useWorkflowService', () => {
       expect(tab.isModified).toBe(false)
     })
 
+    it('saves the draft of an unloaded saved tab under a new name', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(
+        await service.saveWorkflowAs(tab, { filename: 'background copy' })
+      ).toBe(true)
+
+      expect(storedContent('workflows/background copy.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(
+        vi
+          .mocked(api.storeUserData)
+          .mock.calls.some(([path]) => path === 'workflows/background.json')
+      ).toBe(false)
+    })
+
     it('saves an unsaved tab that a reload restored without opening it', async () => {
       const restored = workflowStore.createTemporary('Restored.json', {
         ...blankGraph,

@@ -345,16 +345,16 @@ export const useWorkflowService = () => {
     if (!file) return
     downloadBlob(file, blob)
   }
-  const lostUnsavedEdits = (workflow: ComfyWorkflow): boolean =>
-    workflow.isPersisted &&
-    workflow.isModified &&
-    workflow.content === workflow.originalContent
 
-  /**
-   * Loads a tab that is not loaded so it can be saved, applying its draft.
-   * Returns false when its unsaved edits are gone and nothing is left to save.
-   */
-  const loadForSave = async (workflow: ComfyWorkflow): Promise<boolean> => {
+  function lostUnsavedEdits(workflow: ComfyWorkflow): boolean {
+    return (
+      workflow.isPersisted &&
+      workflow.isModified &&
+      workflow.content === workflow.originalContent
+    )
+  }
+
+  async function loadForSave(workflow: ComfyWorkflow): Promise<boolean> {
     if (workflow.isLoaded || workflowStore.isActive(workflow)) return true
     await loadWorkflowInBackground(workflow)
     if (!lostUnsavedEdits(workflow)) return true
