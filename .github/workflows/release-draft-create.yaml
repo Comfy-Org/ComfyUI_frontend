@@ -8,6 +8,9 @@ on:
     paths:
       - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
