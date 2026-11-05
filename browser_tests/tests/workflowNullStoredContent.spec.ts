@@ -158,8 +158,12 @@ test.describe(
   'Opening a workflow whose stored content is null',
   { tag: '@workflow' },
   () => {
-    const BROKEN_NAME = 'broken-null'
-    const BROKEN_PATH = `workflows/${BROKEN_NAME}.json`
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'broken-null.json': 'null-content.json'
+      })
+      await comfyPage.workflow.reloadAndWaitForApp()
+    })
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
@@ -169,33 +173,27 @@ test.describe(
       comfyPage
     }) => {
       const { page } = comfyPage
-      await comfyPage.workflow.setupWorkflowsDirectory({})
-      await page.evaluate(async (path) => {
-        await window.app!.api.storeUserData(path, 'null', {
-          overwrite: true,
-          stringify: false,
-          throwOnError: true
-        })
-      }, BROKEN_PATH)
-      await comfyPage.workflow.reloadAndWaitForApp()
-
       const pageErrors: string[] = []
       page.on('pageerror', (error) => pageErrors.push(error.message))
 
       const { workflowsTab } = comfyPage.menu
       await workflowsTab.open()
-      await workflowsTab.getPersistedItem(BROKEN_NAME).click()
+      await workflowsTab.getPersistedItem('broken-null').click()
 
       const toast = comfyPage.toast.withText("Can't open this workflow")
       await expect(toast).toBeVisible()
-      await expect(toast).toContainText(`${BROKEN_NAME}.json`)
+      await expect(toast).toContainText('broken-null.json')
       expect(pageErrors).toEqual([])
+      await test.info().attach('unreadable-workflow-toast', {
+        body: await toast.screenshot(),
+        contentType: 'image/png'
+      })
 
       await toast.getByRole('button', { name: 'Delete' }).click()
       await comfyPage.confirmDialog.delete.click()
       await expect
         .poll(() => workflowsTab.getTopLevelSavedWorkflowNames())
-        .not.toContain(BROKEN_NAME)
+        .not.toContain('broken-null')
     })
   }
 )
