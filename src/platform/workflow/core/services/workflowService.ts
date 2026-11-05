@@ -346,7 +346,8 @@ export const useWorkflowService = () => {
       reportWorkflowStateAnomaly(
         'Modified saved workflow was not loaded when saved',
         'workflowService.loadForSave',
-        workflow
+        workflow,
+        { isActive: workflowStore.isActive(workflow) }
       )
     await loadWorkflowInBackground(workflow)
   }

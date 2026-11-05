@@ -4025,7 +4025,8 @@ describe('useWorkflowService', () => {
         expect.objectContaining({
           method: 'workflowService.loadForSave',
           isPersisted: true,
-          isLoaded: false
+          isLoaded: false,
+          isActive: false
         })
       )
     })
