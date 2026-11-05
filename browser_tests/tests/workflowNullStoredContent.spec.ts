@@ -160,7 +160,7 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({
-        'broken-null.json': 'null-content.json'
+        'broken-null.json': 'null-content.txt'
       })
       await comfyPage.workflow.reloadAndWaitForApp()
     })
