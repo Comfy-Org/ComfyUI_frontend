@@ -270,8 +270,19 @@ function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
     parsed === undefined ? 'empty' : 'not-object',
     workflow.path
   )
-  reportWorkflowStateAnomaly(error.message, 'ComfyWorkflow.load', workflow)
+  reportUnreadableContent(error, workflow)
   throw error
+}
+
+function reportUnreadableContent(
+  error: UnreadableWorkflowError,
+  workflow: ComfyWorkflow
+): void {
+  try {
+    reportWorkflowStateAnomaly(error.message, 'ComfyWorkflow.load', workflow)
+  } catch (devAssertion) {
+    console.warn('Unreadable stored workflow', devAssertion)
+  }
 }
 
 /** i18n keys for the dialog shown when a workflow is saved without a name. */

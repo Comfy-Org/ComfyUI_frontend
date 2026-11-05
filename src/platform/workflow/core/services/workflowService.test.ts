@@ -2528,6 +2528,7 @@ describe('useWorkflowService', () => {
         .spyOn(workflowStore, 'deleteWorkflow')
         .mockResolvedValue()
       const workflow = unreadableWorkflow()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
 
       await useWorkflowService().openWorkflow(workflow)
       const { options } = shownToast()
@@ -2537,6 +2538,40 @@ describe('useWorkflowService', () => {
 
       expect(deleteSpy).toHaveBeenCalledWith(workflow)
       expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('does not delete a different file that now has the same path', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/reused.json')
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/reused.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+
+      await options.action!.onClick()
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('forgets the unreadable mark once the file opens', async () => {
+      const workflow = unreadableWorkflow('workflows/fixed.json')
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      expect(isUnreadableWorkflow(workflow)).toBe(true)
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(isUnreadableWorkflow(workflow)).toBe(false)
     })
 
     it('shows one toast per file however often it is clicked', async () => {

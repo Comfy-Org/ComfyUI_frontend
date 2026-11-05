@@ -470,10 +470,8 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error dialog was
-   * shown and the workflow never painted), when the stored file is unreadable
-   * (a toast was shown; see `isUnreadableWorkflow`) or when the open was
-   * skipped because the workflow is mid-close; true otherwise
+   * @returns false when the graph load failed, the stored file is unreadable
+   * or the open was skipped mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -549,6 +547,7 @@ export const useWorkflowService = () => {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
+        unreadableWorkflows.delete(workflow)
         const loadFromRemote = !workflow.isLoaded
         const wasModified = workflow.isModified
         if (loadFromRemote) {
@@ -617,7 +616,9 @@ export const useWorkflowService = () => {
         action: {
           label: t('g.delete'),
           onClick: async () => {
-            if (!(await deleteWorkflow(workflow))) return
+            const stillStored =
+              workflowStore.getWorkflowByPath(workflow.path) === workflow
+            if (stillStored && !(await deleteWorkflow(workflow))) return
             toast.dismiss(id)
             unreadableWorkflowToastIds.delete(workflow.path)
           }

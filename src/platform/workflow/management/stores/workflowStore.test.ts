@@ -1677,6 +1677,19 @@ describe('useWorkflowStore', () => {
         }
       )
 
+      it('keeps the typed error when the anomaly assertion throws in development', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+      })
+
       it('does not leave a tab behind when opening unreadable content', async () => {
         await syncRemoteWorkflows(['a.json'])
         const workflow = store.getWorkflowByPath('workflows/a.json')!
