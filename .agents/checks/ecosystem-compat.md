@@ -23,7 +23,7 @@ Check whether this PR introduces breaking changes to exported symbols that downs
 Custom node extensions consume these, so treat a rename, removal, or signature change as breaking:
 
 - **Window globals** assigned in `src/composables/useGlobalLitegraph.ts` (`window.LiteGraph`, `window.LGraphNode`, `window.LGraphCanvas`, and the other LiteGraph classes), plus `window.app` and `window.graph`.
-- **`window.comfyAPI`**: `build/plugins/comfyAPIPlugin.ts` exposes every export of `src/scripts/**` and `src/extensions/core/**` as `window.comfyAPI.<module>.<name>`.
+- **`window.comfyAPI`**: `build/plugins/comfyAPIPlugin.ts` exposes each named `const`, `let`, `var`, `function`, `class`, or `async function` export in `.ts` files under `src/scripts/` and `src/extensions/core/` as `window.comfyAPI.<module>.<name>`.
 - **Extension hooks**: `app.registerExtension`, the `ComfyExtension` lifecycle, and `ComfyApp` / `ComfyApi` members.
 - **Entity callbacks and fields** listed under "Extension ecosystem impact" in the root `AGENTS.md`.
 
