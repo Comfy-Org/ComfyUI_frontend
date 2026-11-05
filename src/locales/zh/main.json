@@ -129,6 +129,7 @@
     "feedbackCaption": "分享反馈",
     "focusNode": "在画布上显示",
     "focusNodeLabel": "在画布上显示 {node}",
+    "followedChatOpenFailed": "无法打开 {workflowName} 的聊天。",
     "freeUseNotice": "免费试用您的首次聊天！",
     "freeUseNoticeLabel": "免费使用提示",
     "friend": "您好",
@@ -166,6 +167,8 @@
     "nodesAdded": "智能体已向工作流添加 1 个节点 | 智能体已向工作流添加 {count} 个节点",
     "notHelpful": "没有帮助",
     "openWorkflowTab": "打开 {name}",
+    "openingChat": "正在打开聊天…",
+    "openingWorkflowChat": "正在打开 {workflowName} 的聊天…",
     "otherOpenWorkflows": "其他已打开的工作流",
     "paywall": {
       "addCredits": "添加额度",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "移除 {node} 引用",
     "removeWorkflowReference": "移除对 {name} 的引用",
     "retryAfterSeconds": "您可以在 {seconds}s 后重试。",
+    "retryFollowedChat": "重试打开 {workflowName} 的聊天",
     "runApproval": {
       "answerFailed": "无法发送你的回答。请重新加载页面后重试。",
       "answerSuperseded": "此问题已在其他地方得到回答，因此使用了该回答而非你的回答。",
@@ -2019,6 +2023,7 @@
     "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
     "agentModified": "智能体已更新此工作流",
+    "agentNeedsApproval": "智能体需要你的批准",
     "agentWorking": "智能体正在处理此工作流",
     "all": "全部",
     "allKeybindingsReset": "所有快捷键已重置为默认值",

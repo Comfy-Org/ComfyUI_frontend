@@ -129,6 +129,7 @@
     "feedbackCaption": "피드백 공유",
     "focusNode": "캔버스에 표시",
     "focusNodeLabel": "캔버스에 {node} 표시",
+    "followedChatOpenFailed": "{workflowName}의 채팅을 열 수 없습니다.",
     "freeUseNotice": "첫 채팅을 무료로 이용해 보세요!",
     "freeUseNoticeLabel": "무료 사용 안내",
     "friend": "안녕하세요",
@@ -166,6 +167,8 @@
     "nodesAdded": "에이전트가 그래프에 노드 1개를 추가했습니다 | 에이전트가 그래프에 노드 {count}개를 추가했습니다",
     "notHelpful": "도움되지 않음",
     "openWorkflowTab": "{name} 열기",
+    "openingChat": "채팅을 여는 중…",
+    "openingWorkflowChat": "{workflowName}의 채팅을 여는 중…",
     "otherOpenWorkflows": "기타 열려 있는 워크플로",
     "paywall": {
       "addCredits": "크레딧 추가",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "{node} 참조 제거",
     "removeWorkflowReference": "{name} 참조 제거",
     "retryAfterSeconds": "{seconds}초 후에 다시 시도할 수 있습니다.",
+    "retryFollowedChat": "{workflowName}의 채팅 열기 재시도",
     "runApproval": {
       "answerFailed": "답변을 전송할 수 없습니다. 페이지를 새로고침한 후 다시 시도하세요.",
       "answerSuperseded": "이미 다른 곳에서 응답되어, 귀하의 응답 대신 해당 응답이 사용되었습니다.",
@@ -2019,6 +2023,7 @@
     "addNode": "노드 추가...",
     "addNodeFilterCondition": "노드 필터 조건 추가",
     "agentModified": "에이전트가 이 워크플로를 업데이트했습니다",
+    "agentNeedsApproval": "에이전트에 대한 승인이 필요합니다",
     "agentWorking": "에이전트가 이 워크플로를 작업 중입니다",
     "all": "모두",
     "allKeybindingsReset": "모든 키 바인딩이 기본값으로 재설정되었습니다",

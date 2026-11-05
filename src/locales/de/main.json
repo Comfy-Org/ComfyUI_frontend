@@ -129,6 +129,7 @@
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
+    "followedChatOpenFailed": "Der Chat für {workflowName} konnte nicht geöffnet werden.",
     "freeUseNotice": "Testen Sie Ihren ersten Chat kostenlos!",
     "freeUseNoticeLabel": "Hinweis zur kostenlosen Nutzung",
     "friend": "da",
@@ -166,6 +167,8 @@
     "nodesAdded": "Der Agent hat 1 Node zum Graphen hinzugefügt | Der Agent hat {count} Nodes zum Graphen hinzugefügt",
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
+    "openingChat": "Chat wird geöffnet …",
+    "openingWorkflowChat": "Chat für {workflowName} wird geöffnet …",
     "otherOpenWorkflows": "Andere offene Workflows",
     "paywall": {
       "addCredits": "Credits hinzufügen",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "removeWorkflowReference": "Referenz von {name} entfernen",
     "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
+    "retryFollowedChat": "Öffnen des Chats für {workflowName} erneut versuchen",
     "runApproval": {
       "answerFailed": "Ihre Antwort konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
       "answerSuperseded": "Dies wurde bereits an anderer Stelle beantwortet, daher wurde diese Antwort statt Ihrer verwendet.",
@@ -2019,6 +2023,7 @@
     "addNode": "Node hinzufügen...",
     "addNodeFilterCondition": "Node-Filterbedingung hinzufügen",
     "agentModified": "Agent hat diesen Workflow aktualisiert",
+    "agentNeedsApproval": "Agent benötigt Ihre Genehmigung",
     "agentWorking": "Agent arbeitet an diesem Workflow",
     "all": "Alle",
     "allKeybindingsReset": "Alle Tastenkombinationen auf Standard zurückgesetzt",

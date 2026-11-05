@@ -129,6 +129,7 @@
     "feedbackCaption": "مشاركة الملاحظات",
     "focusNode": "إظهار على اللوحة",
     "focusNodeLabel": "إظهار {node} على اللوحة",
+    "followedChatOpenFailed": "تعذّر فتح الدردشة لـ {workflowName}.",
     "freeUseNotice": "جرّب محادثتك الأولى مجانًا!",
     "freeUseNoticeLabel": "إشعار الاستخدام المجاني",
     "friend": "مرحبًا",
@@ -166,6 +167,8 @@
     "nodesAdded": "أضاف الوكيل عقدة واحدة إلى الرسم البياني | أضاف الوكيل {count} عُقد إلى الرسم البياني",
     "notHelpful": "غير مفيد",
     "openWorkflowTab": "فتح {name}",
+    "openingChat": "جارٍ فتح الدردشة…",
+    "openingWorkflowChat": "جارٍ فتح الدردشة لـ {workflowName}…",
     "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
     "paywall": {
       "addCredits": "إضافة أرصدة",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "إزالة مرجع {node}",
     "removeWorkflowReference": "إزالة مرجع {name}",
     "retryAfterSeconds": "يمكنك المحاولة مرة أخرى خلال {seconds}ث.",
+    "retryFollowedChat": "أعِد محاولة فتح الدردشة لـ {workflowName}",
     "runApproval": {
       "answerFailed": "تعذر إرسال إجابتك. أعد تحميل الصفحة وحاول مرة أخرى.",
       "answerSuperseded": "تمت الإجابة عن هذا بالفعل في مكان آخر، لذا استُخدمت تلك الإجابة بدلًا من إجابتك.",
@@ -2019,6 +2023,7 @@
     "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
     "agentModified": "حدّث الوكيل سير العمل هذا",
+    "agentNeedsApproval": "يحتاج الوكيل إلى موافقتك",
     "agentWorking": "يعمل الوكيل على سير العمل هذا",
     "all": "الكل",
     "allKeybindingsReset": "تمت إعادة تعيين جميع اختصارات المفاتيح إلى الوضع الافتراضي",

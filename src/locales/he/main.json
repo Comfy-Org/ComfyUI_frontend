@@ -129,6 +129,7 @@
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
+    "followedChatOpenFailed": "לא ניתן היה לפתוח את הצ'אט עבור {workflowName}.",
     "freeUseNotice": "נסה את הצ'אט הראשון שלך בחינם!",
     "freeUseNoticeLabel": "הודעת שימוש חינם",
     "friend": "שם",
@@ -166,6 +167,8 @@
     "nodesAdded": "הסוכן הוסיף צומת אחד לגרף | הסוכן הוסיף {count} צמתים לגרף",
     "notHelpful": "לא מועיל",
     "openWorkflowTab": "פתיחת {name}",
+    "openingChat": "פתיחת צ'אט…",
+    "openingWorkflowChat": "פתיחת צ'אט עבור {workflowName}…",
     "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
     "paywall": {
       "addCredits": "הוספת קרדיטים",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "הסר את ההפניה ל־{node}",
     "removeWorkflowReference": "הסר הפניה אל {name}",
     "retryAfterSeconds": "ניתן לנסות שוב בעוד {seconds} שניות.",
+    "retryFollowedChat": "נסה שוב לפתוח את הצ'אט עבור {workflowName}",
     "runApproval": {
       "answerFailed": "לא ניתן היה לשלוח את תשובתכם. טענו מחדש את הדף ונסו שוב.",
       "answerSuperseded": "שאלה זו כבר נענתה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתך.",
@@ -2019,6 +2023,7 @@
     "addNode": "הוספת צומת...",
     "addNodeFilterCondition": "הוספת תנאי סינון לצמתים",
     "agentModified": "הסוכן עדכן תהליך עבודה זה",
+    "agentNeedsApproval": "הסוכן זקוק לאישורך",
     "agentWorking": "הסוכן עובד על תהליך עבודה זה",
     "all": "הכול",
     "allKeybindingsReset": "כל מקשי הקיצור אופסו לברירת המחדל",

@@ -129,6 +129,7 @@
     "feedbackCaption": "分享意見回饋",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
+    "followedChatOpenFailed": "無法開啟 {workflowName} 的聊天。",
     "freeUseNotice": "免費體驗您的首次對話！",
     "freeUseNoticeLabel": "免費使用通知",
     "friend": "你",
@@ -166,6 +167,8 @@
     "nodesAdded": "代理已將 1 個節點加入圖表 | 代理已將 {count} 個節點加入圖表",
     "notHelpful": "沒有幫助",
     "openWorkflowTab": "開啟 {name}",
+    "openingChat": "正在開啟聊天…",
+    "openingWorkflowChat": "正在開啟 {workflowName} 的聊天…",
     "otherOpenWorkflows": "其他已開啟的工作流程",
     "paywall": {
       "addCredits": "新增點數",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "移除 {node} 參照",
     "removeWorkflowReference": "移除 {name} 參照",
     "retryAfterSeconds": "您可以在 {seconds}s 後再試一次。",
+    "retryFollowedChat": "重試開啟 {workflowName} 的聊天",
     "runApproval": {
       "answerFailed": "無法傳送您的回答。請重新載入頁面後再試一次。",
       "answerSuperseded": "此問題已在其他地方回答，因此改用該回答，而非您的回答。",
@@ -2019,6 +2023,7 @@
     "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
     "agentModified": "代理程式已更新此工作流程",
+    "agentNeedsApproval": "Agent 需要您的核准",
     "agentWorking": "代理程式正在處理此工作流程",
     "all": "全部",
     "allKeybindingsReset": "所有快捷鍵已重設為預設值",

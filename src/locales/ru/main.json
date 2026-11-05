@@ -129,6 +129,7 @@
     "feedbackCaption": "Отправить отзыв",
     "focusNode": "Показать на холсте",
     "focusNodeLabel": "Показать {node} на холсте",
+    "followedChatOpenFailed": "Не удалось открыть чат для {workflowName}.",
     "freeUseNotice": "Попробуйте первый чат бесплатно!",
     "freeUseNoticeLabel": "Уведомление о бесплатном использовании",
     "friend": "друг",
@@ -166,6 +167,8 @@
     "nodesAdded": "Агент добавил в граф 1 ноду | Агент добавил в граф {count} нод",
     "notHelpful": "Не полезно",
     "openWorkflowTab": "Открыть {name}",
+    "openingChat": "Открытие чата…",
+    "openingWorkflowChat": "Открытие чата для {workflowName}…",
     "otherOpenWorkflows": "Другие открытые рабочие процессы",
     "paywall": {
       "addCredits": "Добавить кредиты",
@@ -191,6 +194,7 @@
     "removeNodeLabel": "Удалить ссылку на {node}",
     "removeWorkflowReference": "Удалить ссылку на {name}",
     "retryAfterSeconds": "Вы сможете повторить попытку через {seconds} с.",
+    "retryFollowedChat": "Повторить попытку открыть чат для {workflowName}",
     "runApproval": {
       "answerFailed": "Не удалось отправить ваш ответ. Перезагрузите страницу и повторите попытку.",
       "answerSuperseded": "На этот вопрос уже ответили в другом месте, поэтому был использован тот ответ вместо вашего.",
@@ -2019,6 +2023,7 @@
     "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
     "agentModified": "Агент обновил этот рабочий процесс",
+    "agentNeedsApproval": "Агенту нужно ваше подтверждение",
     "agentWorking": "Агент работает над этим рабочим процессом",
     "all": "Все",
     "allKeybindingsReset": "Все сочетания клавиш сброшены по умолчанию",
