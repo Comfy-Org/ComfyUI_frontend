@@ -68,7 +68,10 @@ type FrameClassification = Pick<ClassifiedDocUpdate, 'actor'> &
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   return {
     ...rest,
-    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+    nodes: nodes.map(({ flags, ...node }) => ({
+      ...node,
+      flags: { ...flags }
+    }))
   }
 }
 
@@ -490,7 +493,9 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     ]).toEqual([-20, -20])
     expect([...group.size]).toEqual([300, 200])
   })
-  it('places an inserted workflow that carries only groups', () => {
+  it('keeps a group-only insertion on the existing nodes it frames', () => {
+    // FE 1.60 QA REG04: "put both KSamplers in one group" inserts a workflow
+    // that carries only a group drawn around nodes already on the canvas.
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
@@ -510,6 +515,38 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
             nodes: [],
             groups: [
               { id: 1, title: 'Inserted group', bounding: [0, 10, 300, 200] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const group = graph.groups.find(({ title }) => title === 'Inserted group')
+    assert(group, 'the inserted group reached the canvas')
+    expect([...group.pos]).toEqual([0, 10])
+    expect([...group.size]).toEqual([300, 200])
+    expect([...source.pos]).toEqual([10, 20])
+  })
+  it('places a group-only insertion that frames no node clear of the canvas content', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a60'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [],
+            groups: [
+              { id: 1, title: 'Inserted group', bounding: [150, 0, 100, 300] }
             ]
           }
         }),

@@ -2047,14 +2047,26 @@ export class LiveGraphApplier {
       width: item.size[0],
       height: item.size[1]
     })
+    const existingNodes = graph._nodes.filter(
+      (node) => !createdSet.has(node.id)
+    )
+    // A batch that adds no nodes but a group drawn around nodes already on the
+    // canvas is the agent grouping those nodes: moving it would leave an empty
+    // frame beside them and a canvas that disagrees with the document.
+    const placedGroups =
+      created.length === 0
+        ? createdGroups.filter(
+            (group) => !framesAnyNode(rect(group), existingNodes.map(rect))
+          )
+        : createdGroups
     const incoming = [
       ...graph._nodes.filter((node) => createdSet.has(node.id)),
-      ...createdGroups
+      ...placedGroups
     ]
     const offset = placementOffset({
       existing: [
-        ...graph._nodes.filter((node) => !createdSet.has(node.id)),
-        ...graph.groups.filter((group) => !createdGroups.includes(group))
+        ...existingNodes,
+        ...graph.groups.filter((group) => !placedGroups.includes(group))
       ].map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect),
@@ -2065,6 +2077,23 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+/** Whether the centre of any of `nodes` lies inside `frame`. */
+function framesAnyNode(
+  frame: PlacementRect,
+  nodes: readonly PlacementRect[]
+): boolean {
+  return nodes.some((node) => {
+    const x = node.x + node.width / 2
+    const y = node.y + node.height / 2
+    return (
+      x >= frame.x &&
+      x <= frame.x + frame.width &&
+      y >= frame.y &&
+      y <= frame.y + frame.height
+    )
+  })
 }
 
 function isLinkPresent(
