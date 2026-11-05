@@ -103,7 +103,7 @@ async function arrangeEndedPlan(page: Page, hasFunds: boolean) {
     DEFAULT_TEAM_MEMBERS,
     workspace('personal', 'owner'),
     {
-      ...PERSONAL_BILLING_STATUS,
+      ...LEGACY_PERSONAL_BILLING_STATUS,
       subscription_state: 'ended',
       has_funds: hasFunds
     }
