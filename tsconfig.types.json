@@ -47,6 +47,10 @@
     "dist",
     "**/*.vue",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.stories.ts",
+    "**/__mocks__/**",
+    "**/__fixtures__/**",
+    "src/storybook/**"
   ]
 }
