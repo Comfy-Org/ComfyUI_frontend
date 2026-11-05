@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -10,9 +10,9 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 
 function makeLink(id = 1): LLink {
   return new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)
@@ -113,7 +113,6 @@ describe('graph link presentation serialization', () => {
   })
 
   it('a duplicate serialized link cannot overwrite the first link presentation', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const link = makeLink()
     const serialized = {
@@ -271,7 +270,6 @@ describe('link presentation ownership', () => {
   })
 
   it('rejects a same-id replacement and keeps the incumbent presentation', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const incumbent = makeLink()
     graph._addLink(incumbent)
@@ -285,6 +283,6 @@ describe('link presentation ownership', () => {
       hidden: true,
       label: 'Kept'
     })
-    expect(error).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 })

@@ -1,4 +1,4 @@
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 type RequiredInputs = NonNullable<
   NonNullable<ComfyNodeDef['input']>['required']
@@ -72,7 +72,7 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
   LoadImage: node(
     'LoadImage',
     'Load Image',
-    { image: combo([]), upload: ['IMAGEUPLOAD', {}] },
+    { image: [[], { image_upload: true }], upload: ['IMAGEUPLOAD', {}] },
     ['IMAGE', 'MASK']
   ),
   PreviewImage: {

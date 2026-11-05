@@ -1,4 +1,4 @@
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const MAX_REPORTS_PER_SESSION = 20
 const REPORTABLE_OCCURRENCE_COUNTS = new Set([1, 10, 100, 1000])
@@ -28,6 +28,7 @@ export function reportAssertFailure(
   if (!REPORTABLE_OCCURRENCE_COUNTS.has(occurrenceCount)) return
 
   reportError(new Error(message), {
+    surface: 'platform',
     errorType: 'invariant_assert',
     context: { ...context, occurrenceCount },
     logToConsole: false

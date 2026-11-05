@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type {
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -11,12 +11,12 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { GroupId } from '@/types/groupId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import { widgetId } from '@/types/widgetId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
 /**
@@ -294,7 +294,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(configuredEvents).toBe(1)
   })
 
-  it('LEAK: a nested definition that fails stays registered on an otherwise empty graph', () => {
+  it('releases a nested definition that fails on an otherwise empty graph', () => {
     const graph = new LGraph()
     const created: string[] = []
     graph.events.addEventListener('subgraph-created', (event) => {
@@ -304,7 +304,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
     expect(created).toEqual([NESTED_DEFINITION_ID])
-    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
+    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
     expect(graph.empty).toBe(true)
   })
 })
@@ -370,29 +370,38 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
   })
 
   it('clears nested-owner state before loading the next workflow', () => {
-    const nested = graphAfterFailedConfigure(failingNestedWorkflow())
-    const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
-    if (!definition) throw new Error('Expected failed subgraph definition')
+    const nested = new LGraph()
+    let failedDefinition: LGraph | undefined
+    nested.events.addEventListener('subgraph-created', (event) => {
+      failedDefinition = event.detail.subgraph
+    })
+    expect(() => nested.configure(failingNestedWorkflow())).toThrow(
+      'onConfigure exploded'
+    )
+    if (!failedDefinition)
+      throw new Error('Expected failed subgraph definition')
 
-    const scope = graphScopeOf(definition)
-    const nodeIds = definition.nodes.map((node) => node.id)
+    const scope = graphScopeOf(failedDefinition)
+    const nodeIds = failedDefinition.nodes.map((node) => node.id)
     const linkIds = [...useLinkStore().graphTopologies(scope)].map(
       (link) => link.id
     )
-    const rerouteIds = [...definition.reroutes.keys()]
+    const rerouteIds = [...failedDefinition.reroutes.keys()]
     const widgetIds = nodeIds.flatMap((id) =>
       useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
     )
 
     expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
-      nodes: nodeIds,
-      links: linkIds,
-      reroutes: rerouteIds,
-      nodeLayouts: nodeIds,
-      rerouteLayouts: rerouteIds,
+      nodes: [],
+      links: [],
+      reroutes: [],
+      nodeLayouts: [],
+      rerouteLayouts: [],
       groupLayouts: [],
-      widgets: widgetIds
+      widgets: []
     })
+    expect(linkIds).toEqual([])
+    expect(widgetIds).toEqual([])
 
     nested.configure(unrelatedWorkflow())
 

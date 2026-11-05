@@ -6,6 +6,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -207,6 +208,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       const response = {
         token: `workspace-jwt-${account.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: TEAM_WORKSPACE.id,
           name: TEAM_WORKSPACE.name,
@@ -330,17 +332,18 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
       await page.getByRole('button', { name: 'Use email instead' }).click()
       await page.getByLabel('Email').fill(ACCOUNT_B.email)
-      await page.getByLabel('Password').fill('password')
+      await page
+        .getByRole('textbox', { name: 'Password', exact: true })
+        .fill('password')
       await page.getByRole('button', { name: 'Sign in' }).click()
 
+      const popover = new CurrentUserPopover(page)
+      await expect(popover.trigger).toBeVisible()
+      await popover.open()
       await expect(
-        page.getByRole('button', { name: 'Current user' })
+        popover.root.getByText(ACCOUNT_B.email, { exact: true })
       ).toBeVisible()
-      await page.getByRole('button', { name: 'Current user' }).click()
-      await expect(
-        page.getByText(ACCOUNT_B.email, { exact: true })
-      ).toBeVisible()
-      await page.keyboard.press('Escape')
+      await popover.close()
       await expect
         .poll(() => workspaceMintOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)

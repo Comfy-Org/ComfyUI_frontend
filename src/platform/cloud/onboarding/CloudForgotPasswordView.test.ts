@@ -33,18 +33,7 @@ async function renderView(): Promise<{ router: Router; unmount: () => void }> {
       plugins: [
         router,
         createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
-      ],
-      // The view is exercised through its own logic; the PrimeVue widgets
-      // are stubbed because new PrimeVue usage is banned.
-      stubs: {
-        InputText: {
-          props: ['modelValue'],
-          emits: ['update:modelValue'],
-          template:
-            '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
-        },
-        Message: { template: '<div role="alert"><slot /></div>' }
-      }
+      ]
     }
   })
   return { router, unmount }
@@ -92,6 +81,9 @@ describe('CloudForgotPasswordView', () => {
     expect(
       screen.getByText('cloudForgotPassword_passwordResetError')
     ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('cloudForgotPassword_emailLabel')
+    ).toHaveAttribute('aria-invalid', 'true')
     expect(
       screen.queryByText('cloudForgotPassword_passwordResetSent')
     ).not.toBeInTheDocument()

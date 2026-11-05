@@ -1,4 +1,4 @@
-import type { SpawnSyncOptions } from 'node:child_process'
+import type { SpawnSyncOptionsWithBufferEncoding } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 
@@ -117,7 +117,7 @@ export async function promptAgentReplayOptions(
 type Runner = (
   command: string,
   args: string[],
-  options: SpawnSyncOptions
+  options: SpawnSyncOptionsWithBufferEncoding
 ) => { status: number | null }
 
 export function runAgentReplay(

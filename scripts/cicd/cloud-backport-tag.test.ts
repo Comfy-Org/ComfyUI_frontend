@@ -1,0 +1,391 @@
+import { spawnSync } from 'node:child_process'
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
+
+interface WorkflowJob {
+  concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
+  if?: string
+  steps?: Array<{
+    env?: Record<string, string>
+    id?: string
+    uses?: string
+    with?: Record<string, string | boolean>
+  }>
+  'timeout-minutes'?: number
+}
+
+interface Workflow {
+  concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
+  jobs?: Record<string, WorkflowJob>
+  on?: {
+    push?: { branches?: string[]; 'tags-ignore'?: string[] }
+  }
+}
+
+const workflow = parse(
+  readFileSync('.github/workflows/cloud-backport-tag.yaml', 'utf8')
+) as Workflow
+const dispatchWorkflowSource = readFileSync(
+  '.github/workflows/cloud-dispatch-build.yaml',
+  'utf8'
+)
+const dispatchWorkflow = parse(dispatchWorkflowSource) as Workflow
+const targetSha = 'a'.repeat(40)
+const otherSha = 'b'.repeat(40)
+const tagObjectSha = 'c'.repeat(40)
+const primaryRateLimitMessage =
+  'gh: API rate limit exceeded for user ID 1. (HTTP 403)'
+
+const fakeGh = `#!/usr/bin/env bash
+set -euo pipefail
+args="$*"
+count_file="\${FAKE_GH_COUNT_FILE:?}"
+count=$(cat "$count_file" 2>/dev/null || echo 0)
+limited_file="\${FAKE_GH_LIMITED_FILE:?}"
+limited=$(cat "$limited_file" 2>/dev/null || echo 0)
+
+if [[ "$args" == "api rate_limit"* ]]; then
+  if [[ -n "\${FAKE_RESET_IN:-}" ]]; then
+    printf '0\t%s\n' "$(( $(date +%s) + FAKE_RESET_IN ))"
+  else
+    printf '4999\t0\n'
+  fi
+elif limited=$((limited + 1)) && printf '%s' "$limited" > "$limited_file" &&
+  [[ ",\${FAKE_RATE_LIMITED_CALLS:-}," == *",$limited,"* || "\${FAKE_RATE_LIMITED_CALLS:-}" == all ]]; then
+  echo "\${FAKE_RATE_LIMIT_MESSAGE:-${primaryRateLimitMessage}}" >&2
+  exit 1
+elif [[ "$args" == *"compare/"* ]]; then
+  printf '%s\\n' "\${FAKE_CONTAINMENT:-behind}"
+elif [[ "$args" == *"contents/package.json"* ]]; then
+  printf '{"version":"1.54.16"}\\n'
+elif [[ "$args" == *"git/ref/heads/"* ]]; then
+  printf '%s\\n' "\${TARGET_SHA}"
+elif [[ "$args" == *"git/tags/"* ]]; then
+  printf 'commit\\t%s\\n' "\${TARGET_SHA}"
+elif [[ "$args" == *"git/ref/tags/"* ]]; then
+  count=$((count + 1)); printf '%s' "$count" > "$count_file"
+  case "\${FAKE_SCENARIO:?}" in
+    missing) echo 'gh: Not Found (HTTP 404)' >&2; exit 1 ;;
+    same) printf 'commit\\t%s\\n' "\${TARGET_SHA}" ;;
+    different) printf 'commit\\t%s\\n' "\${OTHER_SHA}" ;;
+    annotated) printf 'tag\\t%s\\n' "\${TAG_OBJECT_SHA}" ;;
+    api-error) echo 'gh: service unavailable (HTTP 503)' >&2; exit 1 ;;
+    race)
+      if [[ "$count" == 1 ]]; then echo 'gh: Not Found (HTTP 404)' >&2; exit 1; fi
+      printf 'commit\\t%s\\n' "\${TARGET_SHA}"
+      ;;
+  esac
+elif [[ "$args" == *"--method POST"* ]]; then
+  if [[ "\${FAKE_SCENARIO:?}" == race ]]; then
+    echo 'gh: Reference already exists (HTTP 422)' >&2
+    exit 1
+  fi
+  printf 'refs/tags/cloud/v1.54.16\\n'
+else
+  echo "unexpected gh invocation: $args" >&2
+  exit 64
+fi
+`
+
+const fakeSleep = `#!/usr/bin/env bash
+printf '%s\\n' "$1" >> "\${FAKE_SLEEP_LOG:?}"
+`
+
+const fakeNow = 1_700_000_000
+const fakeDate = `#!/usr/bin/env bash
+calls_file="\${FAKE_DATE_CALLS_FILE:?}"
+calls=$(cat "$calls_file" 2>/dev/null || echo 0)
+printf '%s' $((calls + 1)) > "$calls_file"
+if [[ "$calls" == 0 ]]; then
+  printf '%s\\n' "\${FAKE_NOW:?}"
+else
+  printf '%s\\n' $((FAKE_NOW + FAKE_ELAPSED))
+fi
+`
+
+function installFakeClock(directory: string, elapsed = 0) {
+  writeFileSync(join(directory, 'date'), fakeDate)
+  chmodSync(join(directory, 'date'), 0o755)
+  return {
+    FAKE_DATE_CALLS_FILE: join(directory, 'date-calls'),
+    FAKE_ELAPSED: String(elapsed),
+    FAKE_NOW: String(fakeNow)
+  }
+}
+
+function runTagScript(
+  scenario: string,
+  options: {
+    containment?: string
+    elapsed?: number
+    event?: string
+    rateLimitMessage?: string
+    rateLimitedCalls?: number[] | 'all'
+    resetIn?: number
+    retryBudget?: number
+    sha?: string
+    token?: string
+  } = {}
+) {
+  const directory = mkdtempSync(join(tmpdir(), 'cloud-backport-tag-'))
+  const binary = join(directory, 'gh')
+  const output = join(directory, 'output')
+  const summary = join(directory, 'summary')
+  const count = join(directory, 'count')
+  const sleepLog = join(directory, 'sleeps')
+  writeFileSync(binary, fakeGh)
+  chmodSync(binary, 0o755)
+  writeFileSync(join(directory, 'sleep'), fakeSleep)
+  chmodSync(join(directory, 'sleep'), 0o755)
+
+  const result = spawnSync('bash', ['scripts/cicd/cloud-backport-tag.sh'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      ...installFakeClock(directory, options.elapsed),
+      BRANCH: 'cloud/1.54',
+      EVENT_NAME: options.event ?? 'workflow_dispatch',
+      GH_TOKEN: options.token ?? 'test-token',
+      FAKE_CONTAINMENT: options.containment ?? 'behind',
+      FAKE_GH_COUNT_FILE: count,
+      FAKE_GH_LIMITED_FILE: join(directory, 'limited'),
+      FAKE_RATE_LIMIT_MESSAGE: options.rateLimitMessage,
+      FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? ''),
+      FAKE_RESET_IN:
+        options.resetIn === undefined ? '' : String(options.resetIn),
+      FAKE_SLEEP_LOG: sleepLog,
+      FAKE_SCENARIO: scenario,
+      GH_API_RETRY_BUDGET_SECONDS: String(options.retryBudget ?? 300),
+      GITHUB_OUTPUT: output,
+      GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
+      GITHUB_STEP_SUMMARY: summary,
+      PATH: `${directory}:${process.env.PATH}`,
+      SHA: options.sha ?? targetSha,
+      TAG_OBJECT_SHA: tagObjectSha,
+      TARGET_SHA: targetSha,
+      OTHER_SHA: otherSha
+    }
+  })
+  const sleeps = existsSync(sleepLog)
+    ? readFileSync(sleepLog, 'utf8').trim().split('\n').map(Number)
+    : []
+  return { ...result, sleeps }
+}
+
+describe('cloud backport tag workflow', () => {
+  it('dispatches branch pushes without dispatching tags or deleted branches', () => {
+    expect(dispatchWorkflow.on?.push?.branches).toEqual(['**'])
+    expect(dispatchWorkflow.on?.push?.['tags-ignore']).toEqual(['**'])
+    const dispatchJob = dispatchWorkflow.jobs?.dispatch
+    if (!dispatchJob) throw new Error('dispatch job is required')
+    expect(dispatchJob.if).toContain(
+      "github.event_name != 'push' || github.event.deleted == false"
+    )
+    expect(dispatchJob.if).toContain(
+      'github.event.pull_request.head.repo.full_name == github.repository'
+    )
+    expect(dispatchJob.concurrency?.group).toBe(
+      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
+    )
+    expect(dispatchJob.concurrency?.['cancel-in-progress']).toBe(false)
+    expect(dispatchJob['timeout-minutes']).toBe(10)
+    expect(dispatchWorkflow.concurrency).toBeUndefined()
+    expect(dispatchWorkflowSource).toContain(
+      '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      'elif [[ "${BRANCH}" =~ ^cloud/[0-9] ]]'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      `Unrecognized cloud release branch '\${BRANCH}'; expected cloud/x.y`
+    )
+  })
+
+  it('keeps every event distinct and bounds the API-only job', () => {
+    expect(workflow.concurrency?.group).toContain(
+      'github.event.pull_request.number'
+    )
+    expect(workflow.concurrency?.group).toContain('github.run_id')
+    expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
+    expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
+    expect(workflow.jobs?.['create-tag']?.if).toBe(
+      "(github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) || (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'backport'))\n"
+    )
+    const steps = workflow.jobs?.['create-tag']?.steps
+    const checkout = steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout')
+    )
+    const tagStep = steps?.find((step) => step.id === 'tag')
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.repository.default_branch }}'
+    )
+    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
+  })
+
+  it('fails closed when the release token is absent', () => {
+    const result = runTagScript('same', { token: '' })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(
+      'PR_GH_TOKEN is required for cloud tag reconciliation'
+    )
+  })
+
+  it('accepts existing same, different, and annotated tags without moving them', () => {
+    for (const scenario of ['same', 'annotated']) {
+      const result = runTagScript(scenario)
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain('already exists at')
+      expect(result.stdout).toContain('skipping')
+    }
+
+    const different = runTagScript('different')
+    expect(different.status).toBe(0)
+    expect(different.stdout).toContain('first release marker is preserved')
+    expect(different.stdout).not.toContain('refs/tags/cloud/v1.54.16')
+  })
+
+  it('creates a missing lightweight tag through the refs API', () => {
+    const result = runTagScript('missing')
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
+    expect(result.sleeps).toEqual([])
+  })
+
+  it('waits for the rate limit reset and then creates the tag', () => {
+    const result = runTagScript('missing', {
+      rateLimitedCalls: [1],
+      resetIn: 30
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
+    expect(result.sleeps).toHaveLength(1)
+    expect(result.sleeps[0]).toBeGreaterThanOrEqual(30)
+    expect(result.sleeps[0]).toBeLessThanOrEqual(31)
+  })
+
+  it.for([
+    { name: 'a primary rate limit', message: primaryRateLimitMessage },
+    { name: 'an HTTP 429', message: 'gh: Too Many Requests (HTTP 429)' }
+  ])('keeps an existing tag after $name on the lookup', ({ message }) => {
+    const result = runTagScript('same', {
+      rateLimitMessage: message,
+      rateLimitedCalls: [1, 2]
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('already exists at')
+    expect(result.sleeps).toEqual([60, 60])
+  })
+
+  it('logs a recovered retry when the tag lookup then finds no tag', () => {
+    const result = runTagScript('missing', { rateLimitedCalls: [3] })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
+    expect(result.stderr).toContain(
+      '::warning::GitHub API request repos/Comfy-Org/ComfyUI_frontend/git/ref/tags/cloud/v1.54.16 failed'
+    )
+    expect(result.stderr).not.toContain('HTTP 404')
+  })
+
+  it.for([
+    { name: 'a reset beyond the retry budget', resetIn: 3600, sleeps: [] },
+    { name: 'a secondary rate limit', resetIn: undefined, sleeps: [60, 60, 60] }
+  ])(
+    'reports a persistent rate limit within the job timeout for $name',
+    ({ resetIn, sleeps }) => {
+      const result = runTagScript('same', { rateLimitedCalls: 'all', resetIn })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('::error::GitHub API rate limited on')
+      expect(result.stderr.includes('next reset in')).toBe(
+        resetIn !== undefined
+      )
+      expect(result.sleeps).toEqual(sleeps)
+      expect(
+        result.sleeps.reduce((total, wait) => total + wait, 0)
+      ).toBeLessThan(300)
+    }
+  )
+
+  it('accepts the winner of a concurrent create race', () => {
+    const result = runTagScript('race')
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('already exists')
+  })
+
+  it('shares one retry budget across every API call in the run', () => {
+    const result = runTagScript('same', {
+      rateLimitedCalls: [1, 3, 5],
+      retryBudget: 150
+    })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('::error::GitHub API rate limited on')
+    expect(result.sleeps).toEqual([60, 60])
+  })
+
+  it.for([
+    {
+      name: 'within the retry budget',
+      retryBudget: 300,
+      sleeps: [5, 10, 20],
+      attempts: 4
+    },
+    {
+      name: 'at the retry budget boundary',
+      retryBudget: 5,
+      sleeps: [5],
+      attempts: 2
+    },
+    {
+      name: 'once elapsed time leaves no room for a retry',
+      retryBudget: 5,
+      elapsed: 1,
+      sleeps: [],
+      attempts: 1
+    }
+  ])(
+    'fails closed when the tag lookup has a real API error $name',
+    ({ retryBudget, elapsed, sleeps, attempts }) => {
+      const result = runTagScript('api-error', { elapsed, retryBudget })
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('HTTP 503')
+      expect(result.stderr).toContain(`failed after ${attempts} attempt(s)`)
+      expect(result.sleeps).toEqual(sleeps)
+    }
+  )
+
+  it('rejects a commit outside the selected release branch', () => {
+    const result = runTagScript('missing', { containment: 'diverged' })
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toContain('is not contained')
+  })
+
+  it('normalizes a pasted manual SHA and rejects a missing PR merge SHA', () => {
+    const manual = runTagScript('same', {
+      sha: `  ${targetSha.toUpperCase()}\n`
+    })
+    expect(manual.status).toBe(0)
+
+    const pullRequest = runTagScript('missing', {
+      event: 'pull_request',
+      sha: ''
+    })
+    expect(pullRequest.status).not.toBe(0)
+    expect(pullRequest.stdout).toContain('did not include merge_commit_sha')
+  })
+})

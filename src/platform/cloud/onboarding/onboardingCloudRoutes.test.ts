@@ -1,8 +1,12 @@
 import { computed } from 'vue'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
-import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
+import { START_LOCATION, createMemoryHistory, createRouter } from 'vue-router'
+import type {
+  RouteLocationNormalized,
+  RouteLocationRaw,
+  RouteRecordRaw
+} from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -50,7 +54,7 @@ const resolvedComponents = await Promise.all(
  * before guards run, so the guard observes the final destination and its
  * `redirectedFrom` says where the navigation started.
  */
-async function attemptNavigation(target: string) {
+async function attemptNavigation(target: RouteLocationRaw) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: cloudOnboardingRoutes
@@ -196,7 +200,6 @@ describe('cloudOnboardingRoutes', () => {
  */
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
-    vi.mocked(useCurrentUser).mockClear()
     clearOAuthRequestId()
   })
 
@@ -261,7 +264,6 @@ describe('oauthConsentRedirect', () => {
   it('still lands on consent when session minting fails so the view can surface the error', async () => {
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
     createSessionOrThrow.mockRejectedValue(new Error('Unauthorized'))
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
       const target = await oauthConsentRedirect()
@@ -270,12 +272,12 @@ describe('oauthConsentRedirect', () => {
         name: 'cloud-oauth-consent',
         query: { oauth_request_id: VALID_REQUEST_ID }
       })
-      expect(warn).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Failed to establish Cloud session cookie before OAuth consent:',
         expect.any(Error)
       )
     } finally {
-      warn.mockRestore()
+      vi.mocked(console.warn).mockRestore()
     }
   })
 })
@@ -292,25 +294,17 @@ const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
   if (typeof route?.beforeEnter !== 'function') {
     throw new Error(`${name} has no beforeEnter guard`)
   }
-  return [name, route.beforeEnter, `/cloud/${route.path}`] as const
+  return [name, route.beforeEnter] as const
 })
 
 type GuardedRoute = (typeof guardedRoutes)[number]
 
 async function runGuard(
-  [name, guard, path]: GuardedRoute,
+  [name, guard]: GuardedRoute,
   query: Record<string, string>
 ) {
-  const next = vi.fn()
-  const to = { query, name, path }
-  await (
-    guard as unknown as (
-      to: unknown,
-      from: unknown,
-      next: unknown
-    ) => Promise<void>
-  )(to, undefined, next)
-  return next.mock.calls[0]?.[0]
+  const to = await attemptNavigation({ name, query })
+  return guard.call(undefined, to, START_LOCATION, () => {})
 }
 
 describe.for(guardedRoutes)('%s beforeEnter', (route) => {

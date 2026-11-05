@@ -29,6 +29,14 @@ const dependentDefinition = {
   requiredKey: 'primary'
 }
 
+const REJECT_REPEATED_NAMESPACE = 'test_reject_repeated'
+
+const rejectRepeatedDefinition = {
+  namespace: REJECT_REPEATED_NAMESPACE,
+  keys: ['workspace'],
+  rejectRepeated: true as const
+}
+
 function createTestRouter(
   history: RouterHistory = createMemoryHistory()
 ): Router {
@@ -43,6 +51,7 @@ describe('installPreservedQueryTracker', () => {
     clearPreservedQuery(STRIPPED_NAMESPACE)
     clearPreservedQuery(SECOND_STRIPPED_NAMESPACE)
     clearPreservedQuery(PLAIN_NAMESPACE)
+    clearPreservedQuery(REJECT_REPEATED_NAMESPACE)
   })
 
   it('strips marked keys from the URL while preserving other query and hash', async () => {
@@ -55,6 +64,22 @@ describe('installPreservedQueryTracker', () => {
     expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
       'otc_abc123'
     )
+  })
+
+  it('completes navigation and keeps the stash in memory when sessionStorage is blocked', async () => {
+    vi.spyOn(globalThis, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [strippedDefinition, plainDefinition])
+
+    await router.push('/?one_time_code=otc_abc123&plain_code=alpha')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?plain_code=alpha')
+    expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
+      'otc_abc123'
+    )
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('alpha')
   })
 
   it('keeps params of non-strip namespaces in the URL and still captures them', async () => {
@@ -167,9 +192,8 @@ describe('installPreservedQueryTracker', () => {
   it('strips keys of multiple marked namespaces in a single redirect', async () => {
     const router = createTestRouter()
     let navigationAttempts = 0
-    router.beforeEach((_to, _from, next) => {
+    router.beforeEach(() => {
       navigationAttempts++
-      next()
     })
     installPreservedQueryTracker(router, [
       strippedDefinition,
@@ -218,5 +242,73 @@ describe('installPreservedQueryTracker', () => {
     router.go(-1)
 
     expect(history.location).toBe('/')
+  })
+
+  it('stashes a repeated rejectRepeated value joined with a comma', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace=ws-team&workspace=ws-personal')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      'ws-team,ws-personal'
+    )
+  })
+
+  it('stashes a single rejectRepeated value unchanged', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace=ws-team')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      'ws-team'
+    )
+  })
+
+  it('leaves a repeated value of a non-rejectRepeated namespace as the first entry', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [strippedDefinition])
+
+    await router.push('/?one_time_code=otc_A&one_time_code=otc_B')
+
+    expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
+      'otc_A'
+    )
+  })
+
+  it('stashes a bare rejectRepeated param (no value) as a bare comma', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ','
+    )
+  })
+
+  it('stashes a repeated rejectRepeated value with a bare entry joined with a comma', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace&workspace=ws-team')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ',ws-team'
+    )
+  })
+
+  it('drops a bare param of a non-rejectRepeated namespace like any empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [
+      { namespace: PLAIN_NAMESPACE, keys: ['plain_code'] }
+    ])
+
+    await router.push('/?plain_code')
+
+    expect(
+      getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')
+    ).toBeUndefined()
   })
 })

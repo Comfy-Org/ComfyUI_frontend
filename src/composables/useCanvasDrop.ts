@@ -2,7 +2,8 @@ import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -12,18 +13,21 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyModelDef } from '@/stores/modelStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { isSelectOnly } from '@/utils/litegraphUtil'
+import { matchesWidgetName } from '@/utils/widgetBinding'
 
-export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
+export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
   const workflowService = useWorkflowService()
 
-  usePragmaticDroppable(() => canvasRef.value, {
+  usePragmaticDroppable(() => dropTargetRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {
+      if (isSelectOnly(comfyApp.canvas)) return
       const loc = event.location.current.input
       const dndData = event.source.data
 
@@ -67,9 +71,10 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
               targetProvider = provider
             }
           }
-          if (targetGraphNode) {
-            const widget = targetGraphNode.widgets?.find(
-              (widget) => widget.name === targetProvider?.key
+          if (targetGraphNode && targetProvider) {
+            const { key } = targetProvider
+            const widget = targetGraphNode.widgets?.find((widget) =>
+              matchesWidgetName(widget.name, key)
             )
             if (widget) {
               widget.value = model.file_name

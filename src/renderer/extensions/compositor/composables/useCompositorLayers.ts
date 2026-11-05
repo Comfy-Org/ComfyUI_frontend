@@ -1,10 +1,11 @@
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
 import { reactive } from 'vue'
 
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 type CompositorNodeRef = Pick<LGraphNode, 'id' | 'graph'>
@@ -13,7 +14,7 @@ interface CompositorNodeCache {
   layers: ImageFileRef[]
   inputsFingerprint?: string[]
   bboxes?: (CompositorBBox | null)[]
-  canvas?: { w: number; h: number }
+  canvas?: CompactSize
 }
 
 const cacheByNode = reactive(new Map<NodeLocatorId, CompositorNodeCache>())
@@ -31,7 +32,7 @@ export function setCompositorLayers(
   refs: ImageFileRef[],
   inputsFingerprint?: string[],
   bboxes?: (CompositorBBox | null)[],
-  canvas?: { w: number; h: number }
+  canvas?: CompactSize
 ): void {
   cacheByNode.set(cacheKey(node), {
     layers: refs,
@@ -61,7 +62,7 @@ export function getCompositorBBoxes(
 
 export function getCompositorCanvas(
   node: CompositorNodeRef
-): { w: number; h: number } | undefined {
+): CompactSize | undefined {
   return cacheByNode.get(cacheKey(node))?.canvas
 }
 

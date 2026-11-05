@@ -6,14 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import WaveAudioPlayer from './WaveAudioPlayer.vue'
 
-const mockFetchApi = vi.fn()
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const SRC = 'https://example.com/a.wav'
 const RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000]
@@ -41,7 +34,7 @@ function renderPlayer(variant: 'compact' | 'expanded' = 'compact') {
     props: { src: SRC, variant },
     global: globalConfig
   })
-  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
+  // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
   const audio = utils.container.querySelector('audio')
   if (!audio) throw new Error('audio element missing')
   return { ...utils, audio }
@@ -53,8 +46,16 @@ async function stubPlayback(audio: HTMLAudioElement) {
     value: DURATION_SECONDS,
     configurable: true
   })
-  audio.play = vi.fn(() => Promise.resolve())
-  audio.pause = vi.fn(() => {})
+  let paused = true
+  Object.defineProperty(audio, 'paused', { get: () => paused })
+  audio.play = vi.fn(async () => {
+    paused = false
+    audio.dispatchEvent(new Event('play'))
+  })
+  audio.pause = vi.fn(() => {
+    paused = true
+    audio.dispatchEvent(new Event('pause'))
+  })
   await fireEvent(audio, new Event('durationchange'))
   await settle()
 }
@@ -83,13 +84,24 @@ async function exhaustRetries(audio: HTMLAudioElement) {
 describe('WaveAudioPlayer', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    mockFetchApi.mockRejectedValue(new Error('network down'))
   })
 
   it('binds the source to the hidden audio element', () => {
     const { audio } = renderPlayer()
 
     expect(audio).toHaveAttribute('src', SRC)
+  })
+
+  it('pauses from the pause button', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { audio } = renderPlayer()
+    await stubPlayback(audio)
+
+    await user.click(screen.getByRole('button', { name: 'g.play' }))
+    await user.click(screen.getByRole('button', { name: 'g.pause' }))
+
+    expect(audio.pause).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'g.play' })).toBeEnabled()
   })
 
   it('reloads the audio after a load error', async () => {
@@ -141,7 +153,7 @@ describe('WaveAudioPlayer', () => {
     expect(screen.getByRole('button', { name: 'g.skipToEnd' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'g.volume' })).toBeDisabled()
     expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
       container.querySelector('[data-slot="slider"]')
     ).toHaveAttribute('data-disabled')
 

@@ -1,11 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 
 import { useLinkStore } from './linkStore'
 
@@ -43,7 +46,6 @@ function link(
 describe('useLinkStore', () => {
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     const rejected = { ...link(2, 5, 0, 9, 2), graphId: graphB.owningGraphId }
 
@@ -51,14 +53,13 @@ describe('useLinkStore', () => {
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(rejected.graphId).toBe(graphB.owningGraphId)
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   it('queries and protects a subgraph-output target slot', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(2, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(store.registerLink(graphA, first)).toBeDefined()
     expect(store.registerLink(graphA, second)).toBeUndefined()
@@ -97,7 +98,6 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
     const registered = store.registerLink(graphA, topology)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(store.registerLink(graphASibling, topology)).toBeUndefined()
     expect(topology.graphId).toBe(graphA.owningGraphId)
@@ -142,6 +142,28 @@ describe('useLinkStore', () => {
     ])
   })
 
+  it('atomically replaces the same-id link and its target occupant', () => {
+    const store = useLinkStore()
+    const sameId = store.registerLink(graphA, link(1, 5, 0, 8, 1))
+    const targetOccupant = store.registerLink(graphA, link(2, 6, 0, 9, 2))
+    assert(sameId)
+    assert(targetOccupant)
+
+    const replacement = link(1, 7, 0, 9, 2)
+    const registered = store.replaceLink(
+      graphA,
+      targetOccupant,
+      replacement,
+      sameId
+    )
+
+    expect(registered).toBeDefined()
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(1))).toBe(registered)
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(2))).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(8), 1)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+  })
+
   it('does not replace a target through a stale incumbent', () => {
     const store = useLinkStore()
     const incumbent = link(1, 5, 0, 9, 2)
@@ -163,7 +185,6 @@ describe('useLinkStore', () => {
     const idIncumbent = link(2, 7, 0, 8, 1)
     store.registerLink(graphA, idIncumbent)
     const replacement = link(2, 7, 1, 9, 2)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
       store.replaceLink(graphA, registeredIncumbent, replacement)
@@ -197,7 +218,6 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(store.registerLink(graphA, first)).toBeDefined()
     expect(store.registerLink(graphASibling, second)).toBeUndefined()

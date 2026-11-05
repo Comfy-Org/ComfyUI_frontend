@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
   WORKFLOW_A: 'workflows/a.json',
@@ -22,15 +22,7 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => ''),
-    rootGraph: { getNodeById: vi.fn() },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })

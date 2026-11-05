@@ -5,8 +5,9 @@ import type {
 } from '@storybook/vue3-vite'
 import { ref, toRefs } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 import ScrubableNumberInput from './ScrubableNumberInput.vue'
 
@@ -135,25 +136,33 @@ export const HiddenButtons: Story = {
 
 export const WithControlButton: Story = {
   render: () => ({
-    components: { ScrubableNumberInput, Button, Popover },
+    components: {
+      ScrubableNumberInput,
+      Button,
+      PopoverContent,
+      PopoverRoot,
+      PopoverTrigger
+    },
     setup() {
       const value = ref(1809000312992)
       return { value }
     },
     template: `
       <ScrubableNumberInput v-model="value" :min="0" :max="Number.MAX_SAFE_INTEGER" :step="1">
-        <Popover>
-          <template #button>
+        <PopoverRoot>
+          <PopoverTrigger as-child>
             <Button
               variant="textonly"
               size="sm"
-              class="h-4 w-7 self-center rounded-xl bg-primary-background/30 p-0 hover:bg-primary-background-hover/30"
+              class="h-4 w-7 self-center rounded-xl bg-primary/30 p-0 hover:bg-primary/27"
             >
-              <i class="icon-[lucide--shuffle] w-full text-xs text-primary-background" />
+              <i class="icon-[lucide--shuffle] w-full text-xs text-primary" />
             </Button>
-          </template>
-          <div class="p-4 text-sm">Control popover content</div>
-        </Popover>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-2">
+            <div class="p-4 text-sm">Control popover content</div>
+          </PopoverContent>
+        </PopoverRoot>
       </ScrubableNumberInput>
     `
   })

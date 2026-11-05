@@ -24,7 +24,7 @@ describe('output helpers', () => {
 
   beforeEach(() => {
     lines = []
-    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.mocked(console.log).mockImplementation((value?: unknown) => {
       lines.push(String(value ?? ''))
     })
   })
@@ -75,7 +75,7 @@ describe('alert', () => {
 
   beforeEach(() => {
     lines = []
-    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.mocked(console.log).mockImplementation((value?: unknown) => {
       lines.push(String(value ?? ''))
     })
   })

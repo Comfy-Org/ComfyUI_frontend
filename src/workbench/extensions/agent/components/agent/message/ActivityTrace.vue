@@ -4,14 +4,18 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ActivityRow } from '../../../services/agent/agentActivityRows'
-import { foldActivity } from '../../../services/agent/agentActivityRows'
+import type { ActivityRow } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
+import { foldActivity } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
 import type {
   ActivityPart,
   PartState
-} from '../../../services/agent/agentMessageParts'
-import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
-import { formatDurationCompact } from '../../../utils/formatDuration'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { isUnconfirmedCanvasWrite } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  toolGlyph,
+  toolLabel,
+  toolUsesOutcomeCopy
+} from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 
 const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
@@ -33,20 +37,56 @@ function labelClass(state: PartState): string {
 function glyphOf(row: ActivityRow): string {
   return row.kind === 'thinking'
     ? 'icon-[lucide--brain]'
-    : toolGlyph(row.name, row.state, row.ok)
+    : toolGlyph(row.name, row.state, row)
 }
 
-// Every part object is rebuilt on each token, so a settled row is only
-// recognisable as unchanged by its contents.
+function skillLabel(
+  row: Extract<ActivityRow, { kind: 'tool' }>,
+  skill: string
+): string {
+  const activeLabel = t('agent.toolLoadingSkill', { skill })
+  if (row.state === 'streaming') return activeLabel
+  if (row.ok === true) return t('agent.toolLoadedSkill', { skill })
+  if (row.ok === false) return t('agent.toolFailedSkill', { skill })
+  return t('agent.toolOutcomeUnknown', { tool: activeLabel })
+}
+
+function settledToolLabel(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (!toolUsesOutcomeCopy(row.name)) return toolLabel(row.name, row.state, t)
+  const activeLabel = toolLabel(row.name, 'streaming', t)
+  return t(row.ok === false ? 'agent.toolFailed' : 'agent.toolOutcomeUnknown', {
+    tool: activeLabel
+  })
+}
+
+function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (isUnconfirmedCanvasWrite(row))
+    return t('agent.toolNotConfirmedOnCanvas', {
+      tool: toolLabel(row.name, row.state, t)
+    })
+  if (row.name === 'load_skill' && row.skill) return skillLabel(row, row.skill)
+  if (row.state === 'streaming' || row.ok === true)
+    return toolLabel(row.name, row.state, t)
+  return settledToolLabel(row)
+}
+
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
-    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}:${row.durationMs}`
-    : `think:${row.state}:${row.durationMs}:${row.text}`
+    ? JSON.stringify([
+        'tool',
+        row.name,
+        row.skill,
+        row.state,
+        row.ok,
+        row.canvasConfirmed,
+        row.count
+      ])
+    : `think:${row.state}:${row.text}`
 }
 </script>
 
 <template>
-  <div role="list" class="flex flex-col">
+  <div role="list" data-testid="agent-activity-trace" class="flex flex-col">
     <div
       v-for="(row, index) in rows"
       :key="index"
@@ -55,14 +95,13 @@ function rowSignature(row: ActivityRow): string {
       :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
-        <span
-          :class="
-            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
-          "
+        <i
+          aria-hidden="true"
+          :class="cn('mt-0.5 text-muted-foreground', glyphOf(row))"
         />
         <span
           v-if="index < rows.length - 1"
-          class="mt-1 w-px flex-1 bg-component-node-border"
+          class="mt-1 w-px flex-1 bg-border"
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">
@@ -74,8 +113,8 @@ function rowSignature(row: ActivityRow): string {
           >{{ row.text || t('agent.thinking') }}</span
         >
         <template v-else>
-          <span :class="labelClass(row.state)">{{
-            toolLabel(row.name, row.state, t)
+          <span :class="cn(labelClass(row.state), 'truncate')">{{
+            labelOf(row)
           }}</span>
           <span
             v-if="row.count > 1"
@@ -83,11 +122,6 @@ function rowSignature(row: ActivityRow): string {
             >×{{ row.count }}</span
           >
         </template>
-        <span
-          v-if="row.durationMs !== undefined"
-          class="mt-0.5 ml-auto shrink-0 font-mono text-xs/4 text-muted-foreground"
-          >{{ formatDurationCompact(row.durationMs) }}</span
-        >
       </div>
     </div>
   </div>

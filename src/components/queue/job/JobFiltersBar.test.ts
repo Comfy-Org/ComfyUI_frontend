@@ -2,25 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import { defineComponent } from 'vue'
-
-vi.mock<unknown>(
-  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
-
-  () => {
-    const PopoverStub = defineComponent({
-      name: 'Popover',
-      setup(_, { slots, expose }) {
-        expose({
-          hide: () => undefined,
-          toggle: (_event: Event) => undefined
-        })
-        return () => slots.default?.()
-      }
-    })
-    return { default: PopoverStub }
-  }
-)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -73,8 +54,7 @@ describe('JobFiltersBar', () => {
         onShowAssets: showAssetsSpy
       },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        plugins: [i18n]
       }
     })
 
@@ -93,8 +73,7 @@ describe('JobFiltersBar', () => {
         hideShowAssetsAction: true
       },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        plugins: [i18n]
       }
     })
 

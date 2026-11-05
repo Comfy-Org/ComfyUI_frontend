@@ -10,8 +10,8 @@ import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composab
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the
@@ -48,9 +48,7 @@ vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root', _nodes: [] }, nodePreviewImages: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
 function seedShaderThroughWidget(nodeId: number, value: string): void {
   const node = createMockDOMWidgetNode({

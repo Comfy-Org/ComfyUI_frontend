@@ -4,8 +4,9 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+// The suppressions-file summary diagnostic has no rule code.
 const reportSchema = z.object({
-  diagnostics: z.array(z.object({ code: z.string() }))
+  diagnostics: z.array(z.object({ code: z.string().optional() }))
 })
 
 function isolationRules(filename: string) {
@@ -24,7 +25,7 @@ function isolationRules(filename: string) {
   const { diagnostics } = reportSchema.parse(JSON.parse(result.stdout))
   return diagnostics
     .map(({ code }) => code)
-    .filter((code) => /no-restricted-(imports|properties)/.test(code))
+    .filter((code) => code && /no-restricted-(imports|properties)/.test(code))
 }
 
 describe('browser network isolation lint rules', () => {

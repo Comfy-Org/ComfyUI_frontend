@@ -5,8 +5,8 @@ import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
+} from './billingContracts'
+import { readValidatedBillingResponse } from './sharedRead'
 
 const REQUEST = { method: 'GET', route: '/billing/topup' } as const
 const Body = z.object({ ok: z.literal(true) })
@@ -27,11 +27,44 @@ function answering(
 }
 
 describe('readValidatedBillingResponse', () => {
-  it('carries the coded server error and never its message', async () => {
+  it.for([
+    { retryAfter: '2400', expected: { retryAfterSeconds: 2400 } },
+    { retryAfter: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: {} },
+    { retryAfter: null, expected: {} }
+  ])(
+    'carries Retry-After $retryAfter only as whole seconds',
+    async ({ retryAfter, expected }) => {
+      const transport: BillingTransport = async () => ({
+        status: 'ok',
+        value: {
+          httpStatus: 429,
+          body: { code: 'TOPUP_RATE_LIMITED', message: 'limit' },
+          header: (name) => (name === 'Retry-After' ? retryAfter : null)
+        }
+      })
+
+      const result = await readValidatedBillingResponse(
+        transport,
+        REQUEST,
+        (body) => Body.safeParse(body)
+      )
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 429,
+        serverCode: 'TOPUP_RATE_LIMITED',
+        serverMessage: 'limit',
+        ...expected
+      })
+    }
+  )
+
+  it('carries the coded server error and its message', async () => {
     const result = await readValidatedBillingResponse(
       answering(400, {
-        code: 'NO_PAYMENT_METHOD',
-        message: 'Stripe: no default payment method on customer cus_123'
+        code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+        message: 'a subscription change is already in progress'
       }),
       REQUEST,
       (body) => Body.safeParse(body)
@@ -41,10 +74,31 @@ describe('readValidatedBillingResponse', () => {
       status: 'error',
       code: 'REQUEST_FAILED',
       httpStatus: 400,
-      serverCode: 'NO_PAYMENT_METHOD'
+      serverCode: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      serverMessage: 'a subscription change is already in progress'
     })
-    expect(JSON.stringify(result)).not.toContain('Stripe')
   })
+
+  it.for([
+    { name: 'empty', message: '' },
+    { name: 'whitespace', message: '  \n' }
+  ])(
+    'omits the server message when the error body carries a $name one',
+    async ({ message }) => {
+      const result = await readValidatedBillingResponse(
+        answering(400, { code: 'NO_PAYMENT_METHOD', message }),
+        REQUEST,
+        (body) => Body.safeParse(body)
+      )
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: 'NO_PAYMENT_METHOD'
+      })
+    }
+  )
 
   it.for([
     {

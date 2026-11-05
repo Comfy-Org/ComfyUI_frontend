@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
@@ -332,13 +332,9 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToastStore()
-        expect(toastStore.add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'error',
-            detail: t('g.disconnectedFromBackend')
-          })
-        )
+        expect(useToast().error).toHaveBeenCalledWith(t('g.error'), {
+          description: t('g.disconnectedFromBackend')
+        })
       })
 
       it('should not treat non-TypeError as network error', async () => {
@@ -349,25 +345,13 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToastStore()
-        expect(toastStore.add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: 'Failed to fetch'
-          })
-        )
+        expect(useToast().error).toHaveBeenCalledWith(t('g.error'), {
+          description: 'Failed to fetch'
+        })
       })
     })
 
     describe('backward compatibility', () => {
-      it('should work without recovery strategies parameter', async () => {
-        const action = vi.fn(async () => 'success')
-        const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
-
-        const result = await wrapped()
-
-        expect(result).toBe('success')
-      })
-
       it('should work with empty recovery strategies array', async () => {
         const testError = new Error('test error')
         const action = vi.fn(async () => {

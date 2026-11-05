@@ -4,6 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
 
 import { publishFixture as test } from '@e2e/fixtures/helpers/PublishApiHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const PUBLISH_FEATURE_FLAGS = {
   comfyhub_upload_enabled: true,
@@ -15,19 +16,8 @@ async function saveAndOpenPublishDialog(
   dialog: PublishDialog,
   workflowName: string
 ): Promise<void> {
+  await comfyPage.workflow.setupWorkflowsDirectory({})
   await comfyPage.menu.topbar.saveWorkflow(workflowName)
-  const overwriteDialog = comfyPage.page
-    .getByRole('dialog')
-    .filter({ hasText: 'Overwrite' })
-  // Bounded wait: point-in-time isVisible() can miss dialogs that open
-  // slightly after saveWorkflow() resolves.
-  try {
-    await overwriteDialog.waitFor({ state: 'visible', timeout: 500 })
-    await comfyPage.confirmDialog.click('overwrite')
-  } catch {
-    // No overwrite dialog — workflow name was unique.
-  }
-
   await dialog.open()
 }
 
@@ -119,11 +109,8 @@ test.describe('Publish dialog - Describe step', () => {
     await expect(publishDialog.root.getByText('upscale')).toBeVisible()
   })
 
-  // TODO(#11548): Tag click emits update:tags but the tag does not appear in
-  // the active list during E2E. Needs investigation of the parent state
-  // binding.
-  test.fixme('clicking a tag suggestion adds it', async ({ publishDialog }) => {
-    await publishDialog.root.getByText('anime').click()
+  test('clicking a tag suggestion adds it', async ({ publishDialog }) => {
+    await publishDialog.tagSuggestion('anime').click()
 
     await expect(publishDialog.tagsInput.getByText('anime')).toBeVisible()
   })
@@ -401,12 +388,18 @@ test.describe('Publish dialog - layout', () => {
         await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
         await expect(publishDialog.describeStep).toBeVisible()
         await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
+        await comfyPage.page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur()
+        })
         await comfyPage.toast.closeToasts()
         await comfyPage.canvas.evaluate((el) => {
           el.style.visibility = 'hidden'
         })
+        await comfyPage.page.mouse.move(0, 0)
 
-        await expect(comfyPage.page).toHaveScreenshot(
+        await expectElementScreenshot(
+          publishDialog.root,
           `publish-dialog-${name}.png`
         )
       }

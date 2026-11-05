@@ -10,7 +10,7 @@ const { findProjectRoot } = vi.hoisted(() => ({
   findProjectRoot: vi.fn()
 }))
 
-vi.mock('../recorder/runner', () => ({ findProjectRoot }))
+vi.mock(import('../recorder/runner'), () => ({ findProjectRoot }))
 
 const tempDirs: string[] = []
 
@@ -29,13 +29,11 @@ describe('runAddWorkflow', () => {
     const sourcePath = join(projectRoot, 'example.json')
     writeFileSync(sourcePath, '{"nodes":[]}')
     findProjectRoot.mockReturnValue(projectRoot)
-    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     runAddWorkflow(sourcePath)
 
-    expect(log).toHaveBeenCalledOnce()
-    expect(log).toHaveBeenCalledWith('example')
-    expect(error).toHaveBeenCalledWith(WORKFLOW_ASSET_EXPLANATION)
+    expect(console.log).toHaveBeenCalledOnce()
+    expect(console.log).toHaveBeenCalledWith('example')
+    expect(console.error).toHaveBeenCalledWith(WORKFLOW_ASSET_EXPLANATION)
   })
 })
