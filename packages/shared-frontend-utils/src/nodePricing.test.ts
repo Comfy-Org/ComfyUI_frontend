@@ -172,9 +172,6 @@ describe('classifyPricingResult', () => {
     }
   )
 
-  // Core publishes this one on a per-image node whose label multiplies the
-  // figure by a widget in prose. Matching the suffix's tail would read it as
-  // one per-run charge and understate every such node.
   it('does not accept a suffix that merely ends in /Run', () => {
     expect(
       classifyPricingResult({
@@ -214,6 +211,47 @@ describe('classifyPricingResult', () => {
     })
   })
 
+  it.for(['(base)', '(input + output)', '(by source length)'])(
+    'withholds a per-run total from a figure the note %o qualifies',
+    (note) => {
+      expect(
+        classifyPricingResult({ type: 'usd', usd: 0.05, format: { note } })
+      ).toEqual({ basis: 'unpriced', reason: 'ambiguous' })
+    }
+  )
+
+  it.for([{ suffix: '' }, { suffix: '  ' }, { suffix: '/' }])(
+    'reports the blank suffix in %o as ambiguous rather than an empty unit',
+    (format) => {
+      expect(classifyPricingResult({ type: 'usd', usd: 0.05, format })).toEqual(
+        { basis: 'unpriced', reason: 'ambiguous' }
+      )
+    }
+  )
+
+  it('rejects a non-string suffix instead of throwing', () => {
+    expect(
+      classifyPricingResult({
+        type: 'usd',
+        usd: 0.05,
+        format: { suffix: 1 as unknown as string }
+      })
+    ).toEqual({ basis: 'unpriced', reason: 'invalid' })
+  })
+
+  it.for([1, 'true', {}])(
+    'treats the truthy approximate flag %o as approximate, matching the label',
+    (approximate) => {
+      expect(
+        classifyPricingResult({
+          type: 'usd',
+          usd: 0.05,
+          format: { approximate: approximate as unknown as boolean }
+        })
+      ).toMatchObject({ basis: 'per-run', approximate: true })
+    }
+  )
+
   it('carries a per-run range through as its two bounds', () => {
     expect(
       classifyPricingResult({ type: 'range_usd', min_usd: 0.05, max_usd: 0.2 })
@@ -246,8 +284,6 @@ describe('classifyPricingResult', () => {
     })
   })
 
-  // Every list_usd core publishes today is a per-1K-token input/output pair,
-  // so the unit excludes it before the ambiguity above has to.
   it('excludes a token-priced list by its unit, not as ambiguous', () => {
     expect(
       classifyPricingResult({
@@ -261,6 +297,26 @@ describe('classifyPricingResult', () => {
       minUsd: 0.00125,
       maxUsd: 0.01,
       approximate: true
+    })
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, -0.05])(
+    'rejects a whole list when one entry is %o, rather than pricing the rest',
+    (bad) => {
+      expect(
+        classifyPricingResult({ type: 'list_usd', usd: [0.05, bad] })
+      ).toEqual({ basis: 'unpriced', reason: 'invalid' })
+    }
+  )
+
+  it.for([
+    { type: 'usd', usd: -0.05 },
+    { type: 'range_usd', min_usd: -0.05, max_usd: 0.2 },
+    { usd: -0.05 }
+  ])('rejects the negative figure in %o', (result) => {
+    expect(classifyPricingResult(result)).toEqual({
+      basis: 'unpriced',
+      reason: 'invalid'
     })
   })
 
@@ -319,15 +375,14 @@ describe('estimateApiNodeRunCost', () => {
   })
 
   it('converts the summed dollars once, without rounding per node', () => {
+    const sumOfRenderedLabels = 31.8
     const estimate = estimateApiNodeRunCost([
       perRun('A', 0.05),
       perRun('A', 0.05),
       perRun('A', 0.05)
     ])
-    // The rendered per-node label is "10.6 credits/Run", so summing the three
-    // labels gives 31.8. The true figure is 0.15 * 211.
     expect(estimate.minCredits).toBeCloseTo(0.15 * CREDITS_PER_USD, 10)
-    expect(estimate.minCredits).not.toBeCloseTo(31.8, 2)
+    expect(estimate.minCredits).not.toBeCloseTo(sumOfRenderedLabels, 2)
   })
 
   it('declares a lower bound and names what it left out', () => {
@@ -358,8 +413,6 @@ describe('estimateApiNodeRunCost', () => {
       perUnit: [tokenPriced],
       unpriced: [prose]
     })
-    // The excluded nodes contribute nothing to the figure, which is the point:
-    // the caller has to present it as a floor.
     expect(estimate.minUsd).toBeCloseTo(0.05, 10)
     expect(estimate.maxUsd).toBeCloseTo(0.05, 10)
   })
@@ -403,6 +456,48 @@ describe('estimateApiNodeRunCost', () => {
       ])
     ).toMatchObject({ approximate: true, coverage: 'complete' })
   })
+
+  it.for([
+    [Number.NaN, Number.NaN],
+    [-0.05, 0.05],
+    [0.3, 0.1]
+  ])('excludes a hand-built entry whose bounds are %o..%o', ([min, max]) => {
+    const estimate = estimateApiNodeRunCost([
+      perRun('A', 0.05),
+      {
+        nodeType: 'B',
+        price: {
+          basis: 'per-run',
+          minUsd: min,
+          maxUsd: max,
+          approximate: false
+        }
+      }
+    ])
+    expect(estimate.minUsd).toBeCloseTo(0.05, 10)
+    expect(estimate).toMatchObject({
+      pricedCount: 1,
+      coverage: 'partial',
+      isLowerBound: true
+    })
+  })
+
+  it('degrades to none when the sum does not stay finite', () => {
+    const estimate = estimateApiNodeRunCost([
+      perRun('A', Number.MAX_VALUE),
+      perRun('B', Number.MAX_VALUE)
+    ])
+    expect(estimate).toMatchObject({
+      coverage: 'none',
+      isLowerBound: true,
+      pricedCount: 0,
+      minUsd: 0,
+      maxUsd: 0,
+      minCredits: 0,
+      maxCredits: 0
+    })
+    expect(estimate.unpriced).toHaveLength(2)
+  })
 })
 
 describe('evaluatePricingBasis', () => {
@@ -421,15 +516,22 @@ describe('evaluatePricingBasis', () => {
     expect(price).toHaveProperty('maxUsd', expect.closeTo(0.15, 10))
   })
 
-  it.for([
-    ['an absent badge', undefined],
-    ['an uncompilable expression', '{"type":"usd","usd":'],
-    ['an expression that throws', '$notAFunction()']
-  ])('reports %s as unpriced rather than free', async ([, expr]) => {
-    const badge =
-      expr === undefined ? undefined : zPriceBadge.parse({ expr: expr })
+  it('reports an absent badge as unpriced rather than free', async () => {
     expect(
-      await evaluatePricingBasis('UnreadableNode', badge, context)
+      await evaluatePricingBasis('UnreadableNode', undefined, context)
     ).toEqual({ basis: 'unpriced', reason: 'invalid' })
   })
+
+  it.for(['{"type":"usd","usd":', '$notAFunction()'])(
+    'reports the unusable expression %o as unpriced rather than free',
+    async (expr) => {
+      expect(
+        await evaluatePricingBasis(
+          `Unreadable:${expr}`,
+          zPriceBadge.parse({ expr }),
+          context
+        )
+      ).toEqual({ basis: 'unpriced', reason: 'invalid' })
+    }
+  )
 })
