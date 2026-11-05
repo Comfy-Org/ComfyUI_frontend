@@ -31,8 +31,6 @@ test.describe(
 
         // When the flag is off, telemetry should fire but without feature signal
         // The panel should render the exact same prompts as the control baseline
-        const promptTexts = await suggestedPrompts.allTextContents()
-        expect(promptTexts.length).toBeGreaterThan(0)
       })
 
       await test.step('user can select and send a starter prompt', async () => {
@@ -83,9 +81,6 @@ test.describe(
         // Should degrade to static baseline without error
         const suggestedPrompts = agentPanel.root.getByTestId('suggested-prompt')
         await expect(suggestedPrompts).toHaveCount(1)
-
-        const promptTexts = await suggestedPrompts.allTextContents()
-        expect(promptTexts.length).toBeGreaterThan(0)
       })
 
       await test.step('attaching a workflow does not change prompt set when flag is off', async () => {
