@@ -1009,19 +1009,25 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
   })
 
-  it('keeps the page-wide prefix after the panel closes while an answer is pending, until it reopens', async () => {
-    const { unmount } = renderPanel()
-    await send('add an upscaler')
-    emitRunApproval()
-    await nextTick()
+  it.for([
+    { kind: 'run approval', emitAsk: emitRunApproval },
+    { kind: 'question', emitAsk: emitAskUser }
+  ])(
+    'keeps the page-wide prefix after the panel closes while a $kind is pending, until it reopens',
+    async ({ emitAsk }) => {
+      const { unmount } = renderPanel()
+      await send('add an upscaler')
+      emitAsk()
+      await nextTick()
 
-    unmount()
-    await nextTick()
-    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+      unmount()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
-    renderPanel()
-    await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
-  })
+      renderPanel()
+      await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
+    }
+  )
 
   it('times the held prefix from the newest pending ask, not the first one', async () => {
     const start = Date.now()
