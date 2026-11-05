@@ -1,10 +1,8 @@
 <template>
-  <UploadModelsCard
-    v-if="state.kind === 'uploadModels' || state.kind === 'uploading'"
+  <MissingModelsCard
+    v-if="state.kind === 'missingModels'"
     :title-id
     :models="state.models"
-    :sign-in-to-upload="state.kind === 'uploadModels' && state.signInToUpload"
-    @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
   <DeploySetupCard
@@ -28,13 +26,13 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
-import UploadModelsCard from '@/platform/openOnCloud/components/UploadModelsCard.vue'
+import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
-import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
@@ -50,11 +48,10 @@ const emit = defineEmits<{
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
-const { state: upload } = storeToRefs(useModelUploadStore())
-const { signedIn } = storeToRefs(useLocalSignInStore())
+const { isLoggedIn } = useCurrentUser()
 const state = computed(() =>
-  runOnCloudModalState(check.value, upload.value, {
-    signedIn: signedIn.value
+  runOnCloudModalState(check.value, {
+    signedIn: isLoggedIn.value
   })
 )
 </script>

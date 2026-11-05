@@ -4260,21 +4260,9 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "downloaded": "Workflow downloaded",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
-    "prototype": {
-      "label": "Open on Cloud preview (simulated scenarios)",
-      "compatible": "Compatible",
-      "nodePacksMissing": "Node packs missing",
-      "modelsMissing": "Models missing",
-      "nodePacksAndModelsMissing": "Node packs and models missing",
-      "signedIn": "Signed in",
-      "resetUpload": "Reset upload",
-      "live": "Live Cloud check"
-    },
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
-      "checking": "Checking Comfy Cloud…",
-      "uploading": "Uploading {models} · {percent}%",
-      "models": "{count} model | {count} models"
+      "checking": "Checking Comfy Cloud…"
     },
     "runDialog": {
       "title": "Run on Comfy Cloud",
@@ -4287,21 +4275,9 @@
       "openInChatGpt": "Open in ChatGPT desktop",
       "copyPrompt": "Copy prompt"
     },
-    "uploadDialog": {
-      "title": "Upload {count} model | Upload {count} models",
-      "body": "Upload these models to run this workflow on Comfy Cloud.",
-      "total": "{size} in total. They go to your models on Comfy Cloud.",
-      "upload": "Upload",
-      "signInToUpload": "Sign in to upload",
-      "uploadingTitle": "Uploading {count} model | Uploading {count} models",
-      "uploadingBody": "Hide this and keep working. The upload carries on, and the Comfy Cloud button shows how far it has got.",
-      "uploaded": "Uploaded",
-      "progress": "{done} of {total}",
-      "percent": "{percent}%",
-      "cancelUpload": "Cancel upload",
-      "hide": "Hide",
-      "previewNotice": "Preview only. This upload is simulated.",
-      "unavailable": "Model uploads from this ComfyUI are not available yet."
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
   },

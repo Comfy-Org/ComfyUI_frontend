@@ -12,19 +12,9 @@
     @keydown.space="checkWorkflow"
     @click="openModal"
   >
-    <ProgressRing
-      v-if="modal.kind === 'uploading'"
-      :percent="modal.percent"
-      class="size-4"
-    />
-    <ProgressRing
-      v-else-if="isChecking"
-      :percent="25"
-      class="size-4 animate-spin"
-    />
+    <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
   </Button>
-  <CloudCheckPrototypeSwitch v-if="isDevBuild" />
 </template>
 
 <script setup lang="ts">
@@ -35,53 +25,30 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import CloudCheckPrototypeSwitch from '@/platform/openOnCloud/components/CloudCheckPrototypeSwitch.vue'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
-import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
-import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
-import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
-
-const isDevBuild = import.meta.env.DEV
 
 const { t } = useI18n()
 const toast = useToast()
 const { toastErrorHandler } = useErrorHandling()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
-const { state: upload } = storeToRefs(useModelUploadStore())
-const { signedIn } = storeToRefs(useLocalSignInStore())
 
-const modal = computed(() =>
-  runOnCloudModalState(check.value, upload.value, {
-    signedIn: signedIn.value
-  })
-)
-const isChecking = computed(
-  () => modal.value.kind === 'checking' && check.value.phase === 'checking'
-)
+const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
 
-const tooltip = computed(() => {
-  if (modal.value.kind === 'uploading')
-    return t('openOnCloud.cloudButton.uploading', {
-      models: t('openOnCloud.cloudButton.models', modal.value.models.length),
-      percent: modal.value.percent
-    })
-  return isChecking.value
+const tooltip = computed(() =>
+  isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
-})
+)
 
 function checkWorkflow() {
-  if (check.value.phase === 'checking') return
-  const workflow = serializeRootGraph()
-  if (workflow) void checkStore.check(workflow)
+  if (!isChecking.value) void checkStore.check()
 }
 
 function showModal() {
@@ -93,10 +60,8 @@ function showModal() {
 }
 
 function openModal() {
-  if (check.value.phase === 'idle' || check.value.phase === 'failed')
-    checkWorkflow()
-  if (modal.value.kind === 'checking') opensWhenAnswered.value = true
-  else showModal()
+  opensWhenAnswered.value = true
+  checkWorkflow()
 }
 
 watch(

@@ -5,19 +5,16 @@ import type {
   CloudWorkflowCheckState,
   CloudWorkflowGaps
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import type { ModelUploadState } from '@/platform/openOnCloud/modelUpload'
 import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 
 const lora: CloudMissingModel = {
   name: 'add-detail-xl.safetensors',
-  folder: 'loras',
-  bytes: 200
+  folder: 'loras'
 }
 const checkpoint: CloudMissingModel = {
   name: 'juggernautXL_v9.safetensors',
-  folder: 'checkpoints',
-  bytes: 800
+  folder: 'checkpoints'
 }
 
 const packsOnly: CloudWorkflowGaps = {
@@ -32,8 +29,6 @@ const modelsOnly: CloudWorkflowGaps = {
   nodePacks: [],
   models: [lora, checkpoint]
 }
-
-const idleUpload: ModelUploadState = { phase: 'idle' }
 
 function answered(
   verdict: Extract<CloudWorkflowCheckState, { phase: 'answered' }>['verdict']
@@ -79,41 +74,19 @@ describe(runOnCloudModalState, () => {
       signedOut: { kind: 'deploySetup' }
     },
     {
-      name: 'only models missing: Upload models, which signs a signed-out person in first',
+      name: 'only models missing: show the missing models',
       check: answered({ kind: 'missing', gaps: modelsOnly }),
       signedIn: {
-        kind: 'uploadModels',
-        models: [lora, checkpoint],
-        signInToUpload: false
+        kind: 'missingModels',
+        models: [lora, checkpoint]
       },
       signedOut: {
-        kind: 'uploadModels',
-        models: [lora, checkpoint],
-        signInToUpload: true
+        kind: 'missingModels',
+        models: [lora, checkpoint]
       }
     }
   ])('$name', ({ check, signedIn, signedOut }) => {
-    expect(runOnCloudModalState(check, idleUpload, { signedIn: true })).toEqual(
-      signedIn
-    )
-    expect(
-      runOnCloudModalState(check, idleUpload, { signedIn: false })
-    ).toEqual(signedOut)
-  })
-
-  it('shows a running upload and how far it has got over the answer', () => {
-    const upload: ModelUploadState = {
-      phase: 'uploading',
-      models: [lora, checkpoint],
-      uploadedBytes: 380
-    }
-
-    expect(
-      runOnCloudModalState(
-        answered({ kind: 'missing', gaps: modelsOnly }),
-        upload,
-        { signedIn: true }
-      )
-    ).toEqual({ kind: 'uploading', models: [lora, checkpoint], percent: 38 })
+    expect(runOnCloudModalState(check, { signedIn: true })).toEqual(signedIn)
+    expect(runOnCloudModalState(check, { signedIn: false })).toEqual(signedOut)
   })
 })
