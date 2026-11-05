@@ -43,7 +43,7 @@ const defaultFlags: FeatureFlags = {
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,
   unifiedBillingSettingsEnabled: false,
-  autoTopUpEnabled: false,
+  oauthConsentSwitchAccountEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',

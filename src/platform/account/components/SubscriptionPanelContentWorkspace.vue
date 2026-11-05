@@ -404,12 +404,13 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
-  isSalesManagedTier,
-  isWithinEnterpriseEndingNotice
+  hasEndingNoticeStarted,
+  isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/billing/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/billing/subscription/utils/tierBenefits'
@@ -445,8 +446,12 @@ const {
   canReactivatePlan,
   canOpenPricingSurface
 } = useBillingUI()
-const { canChangeSeats, canSubscribeSelfServe, runDeniedPaymentPastDue } =
-  useBillingCapabilities()
+const {
+  canChangeSeats,
+  canSubscribeSelfServe,
+  runDeniedPaymentPastDue,
+  endingNoticeStartsAt
+} = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -594,10 +599,8 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
-// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
+const isEnterprisePlan = computed(() =>
+  pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
 )
 
 const isEndedEnterprise = computed(
@@ -617,13 +620,12 @@ const hasScheduledEnterpriseEnd = computed(() => {
   return !Number.isNaN(Date.parse(endDate))
 })
 
-// Coarse shared clock so the notice window opens mid-session too.
 const now = useTimestamp({ interval: 60_000 })
 
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
 )
 
 const { kind: billingBannerKind } = useBillingBanner()

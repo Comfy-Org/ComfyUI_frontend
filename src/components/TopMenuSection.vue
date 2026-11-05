@@ -182,7 +182,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -193,6 +193,8 @@ import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBan
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -206,6 +208,7 @@ import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
@@ -314,6 +317,7 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -377,18 +381,8 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
-function waitForDeploymentListing(): Promise<void> {
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  return Promise.race([
-    deploymentPickStore.loadOnce(),
-    new Promise<void>((resolve) => {
-      timeout = setTimeout(resolve, DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
-    })
-  ]).finally(() => clearTimeout(timeout))
-}
-
 async function pitchDeployingCustomNodes(): Promise<boolean> {
-  await waitForDeploymentListing()
+  await waitForDeploymentListing(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
   if (!deploymentPickStore.isVisible) return false
   return openDeployCustomNodesDialog()
 }

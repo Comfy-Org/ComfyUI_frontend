@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DeviceStats } from '@/platform/remote/comfyui/types'
+import type { DeviceStats } from '@comfyorg/api-client/types'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{

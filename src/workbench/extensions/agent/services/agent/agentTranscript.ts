@@ -24,7 +24,6 @@ import {
   toAskOrNoticePart,
   toResolvedAskPart
 } from './agentMessageParts'
-import { toolCanMutateCanvas } from './agentToolClassification'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -314,10 +313,7 @@ function parseToolCallEntry(
       callId: toolCallId || id,
       name: toolName,
       state,
-      ...toolPartOptionalFields(ok, skill, durationMs),
-      ...(ok === true && toolCanMutateCanvas(toolName)
-        ? { canvasConfirmed: false }
-        : {})
+      ...toolPartOptionalFields(ok, skill, durationMs)
     }
   }
 }

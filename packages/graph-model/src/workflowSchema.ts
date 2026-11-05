@@ -291,7 +291,7 @@ function normalizeClipboardNodeWidgets<
   if (values && !Array.isArray(values) && typeof values.length !== 'number') {
     return {
       ...node,
-      widgets_values: undefined,
+      widgets_values: values as unknown as TWidgetValue[],
       widgets_values_named: { ...values }
     }
   }
@@ -342,7 +342,7 @@ const zSubgraphInstance = z
   })
   .passthrough()
 
-const zGroup = z
+export const zGroup = z
   .object({
     id: z.number().optional(),
     title: z.string(),

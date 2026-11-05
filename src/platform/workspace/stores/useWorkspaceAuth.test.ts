@@ -15,8 +15,8 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -2038,23 +2038,40 @@ describe('useWorkspaceAuthStore', () => {
       {
         name: 'a 5xx response',
         respond: async () => new Response('upstream down', { status: 503 }),
-        httpStatus: 503
+        httpStatus: 503,
+        reason: 'none',
+        detail: 'none'
       },
       {
         name: 'a 2xx response with an unusable body',
         respond: async () => Response.json({ token: 'missing-fields' }),
-        httpStatus: 200
+        httpStatus: 200,
+        reason: 'schema_mismatch',
+        detail: 'expires_at,permissions,role,user_id,workspace'
+      },
+      {
+        name: 'a 2xx response whose token expired before it arrived',
+        respond: async () =>
+          Response.json({
+            ...mockTokenResponse,
+            expires_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+          }),
+        httpStatus: 200,
+        reason: 'expired_on_arrival',
+        detail: expect.stringMatching(/^expires_in_ms=-72\d{5}$/)
       },
       {
         name: 'a network failure',
         respond: async (): Promise<Response> => {
           throw new TypeError('Failed to fetch')
         },
-        httpStatus: 'none'
+        httpStatus: 'none',
+        reason: 'none',
+        detail: 'none'
       }
     ])(
-      'reports a transient login mint failure from $name with its HTTP status',
-      async ({ respond, httpStatus }) => {
+      'reports a transient login mint failure from $name with its HTTP status and reason',
+      async ({ respond, httpStatus, reason, detail }) => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
@@ -2070,7 +2087,9 @@ describe('useWorkspaceAuthStore', () => {
             errorType: 'unified_login_mint_failure',
             tags: {
               failure_code: 'TOKEN_EXCHANGE_FAILED',
-              http_status: httpStatus
+              http_status: httpStatus,
+              failure_reason: reason,
+              failure_detail: detail
             }
           })
         )

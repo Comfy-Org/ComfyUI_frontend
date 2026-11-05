@@ -7,7 +7,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   TaskNotFoundError,
   taskService

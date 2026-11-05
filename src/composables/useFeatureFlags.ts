@@ -348,12 +348,11 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_billing_settings
       )
     },
-    get autoTopUpEnabled() {
-      if (!isCloud) return false
-
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
-        remoteConfig.value.auto_top_up_enabled
+    get oauthConsentSwitchAccountEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
+        remoteConfig.value.oauth_consent_switch_account_enabled,
+        false
       )
     },
     get v1PaymentRecovery() {
@@ -438,7 +437,8 @@ export function startFeatureFlagTelemetry() {
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
-      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
+      [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
+        flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,

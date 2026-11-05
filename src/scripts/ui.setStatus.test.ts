@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 
 import { app } from './app'
 import { ComfyUI } from './ui'

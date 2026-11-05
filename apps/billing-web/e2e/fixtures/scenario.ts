@@ -43,6 +43,8 @@ export function capabilitiesWith(
       can_edit_workspace: false,
       can_invite_members: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_members: false,
       can_manage_subscription: true,
       can_open_plans: true,
@@ -155,6 +157,7 @@ export function defaultScenario(): CloudScenario {
       subscription_status: 'active',
       renewal_date: inAnHour(),
       scheduled_change: null,
+      next_charge: null,
       team_credit_stop: null
     },
     balance: { amount_micros: 12_500_000, currency: 'usd' },
