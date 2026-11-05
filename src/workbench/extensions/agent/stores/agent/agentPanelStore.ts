@@ -11,7 +11,7 @@ import {
   watch
 } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { readComfyAgentFeature } from '@/platform/remoteConfig/comfyAgentFeature'
 import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
@@ -86,18 +86,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
-  const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   /** The server's `agent` feature; undefined unless its state is known. */
-  const comfyAgent = computed(() => {
-    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
-    const agent = featureFlags.agent
-    return agent?.state === 'starting' ||
-      agent?.state === 'ready' ||
-      agent?.state === 'failed'
-      ? (agent as AgentServerFeature)
-      : undefined
-  })
+  const comfyAgent = computed<AgentServerFeature | undefined>(
+    readComfyAgentFeature
+  )
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)

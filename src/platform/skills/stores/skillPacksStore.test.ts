@@ -368,6 +368,35 @@ describe('skillPacksStore', () => {
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
+  it('lists once when the cohort flags turn on while the hosted agent is ready', async () => {
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+    await vi.waitFor(() => expect(store.hasLoaded).toBe(true))
+
+    mocks.isFeatureEnabled.mockReturnValue(true)
+    const [onFlags] = mocks.onFeatureFlags.mock.calls[0]
+    onFlags([], {}, {})
+    await nextTick()
+
+    expect(store.flagsEnabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+
+  it("ignores ComfyUI's agent in the standalone harness, as the agent panel does", async () => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+
+    expect(store.enabled).toBe(false)
+    expect(listSkillPacks).not.toHaveBeenCalled()
+  })
+
   it('hides the hosted-agent surface when its routes answer 404', async () => {
     mocks.isFeatureEnabled.mockReturnValue(undefined)
     vi.mocked(listSkillPacks).mockRejectedValue(

@@ -11,7 +11,6 @@ const defaultFlags: FeatureFlags = {
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
-  agent: undefined,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
