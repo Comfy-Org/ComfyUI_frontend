@@ -68,11 +68,25 @@ export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
     await use([
       ...liveNetworkOrigins,
       'https://browser-intake-us5-datadoghq.com',
-      'https://utt.impactcdn.com',
       'https://cdn.sy-d.io',
       'https://t.comfy.org',
       'https://o4507954455314432.ingest.us.sentry.io',
       'https://cdp.customer.io'
     ])
+  },
+  context: async ({ context }, use, testInfo) => {
+    const blockedMarketingRequests: string[] = []
+    await context.route(
+      'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js',
+      async (route) => {
+        blockedMarketingRequests.push(route.request().url())
+        await route.abort('blockedbyclient')
+      }
+    )
+    await use(context)
+    await testInfo.attach('blocked-marketing-requests.json', {
+      body: JSON.stringify(blockedMarketingRequests),
+      contentType: 'application/json'
+    })
   }
 })

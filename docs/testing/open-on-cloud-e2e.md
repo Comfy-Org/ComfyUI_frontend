@@ -40,7 +40,9 @@ Each case asserts HTTP 200, a real server address, the parsed compatibility payl
 
 ## Hosted sign-in handoff
 
-`browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts` separately checks that Open on Comfy Cloud opens the selected deployment's actual login page in a new tab. Run it with the same environment variables, replacing the spec path in the command above. Its fixture permits the hosted application's analytics and diagnostic services as well as its application requests. Follow the execution environment's authorization requirements before running it.
+`browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts` separately checks that Open on Comfy Cloud opens the selected deployment's actual login page in a new tab. Run it with the same environment variables, replacing the spec path in the command above.
+
+The login fixture aborts the exact Impact marketing bootstrap script before download, preventing its downstream attribution requests. It records the blocked script requests in the report. It does not replace responses or change application APIs, authentication, or popup assertions. Marketing attribution is outside this suite's acceptance scope. The fixture permits the hosted application's other analytics and diagnostic services; follow the execution environment's authorization requirements before running it.
 
 ## Remaining acceptance work
 
