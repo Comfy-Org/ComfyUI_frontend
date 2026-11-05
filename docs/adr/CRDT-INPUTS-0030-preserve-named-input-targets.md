@@ -83,7 +83,9 @@ other. A hold is dropped when its node is removed or cleared, when the session
 unbinds or another document binds, or when the grow misses its catch-up
 deadline, which reports the held edits instead of minting them. The deadline
 restarts while the bound workflow's tab is suspended, as held ops do under
-`CRDT-WRITE-0035`.
+`CRDT-WRITE-0035`. The apply side grows only an autogrow member; a
+widget-backed row field exists on a follower only because the row-count widget
+write, minted ahead of the grow in the same batch, grows the row first.
 
 Outputs resolve the same way, by document slot name first and index second.
 In practice outputs are never autogrown or reordered by growth, so a live index
