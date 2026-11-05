@@ -33,8 +33,6 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  // Shares the agent panel's gate. Cloud does not report the feature, so its
-  // PostHog flags stay the only gate there today.
   const agentHosted = computed(isComfyAgentReady)
   const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
   const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)

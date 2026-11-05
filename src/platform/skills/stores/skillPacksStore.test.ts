@@ -385,7 +385,7 @@ describe('skillPacksStore', () => {
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
-  it("ignores ComfyUI's agent in the standalone harness, as the agent panel does", async () => {
+  it("ignores ComfyUI's agent in the standalone harness but still follows the cohort flags", async () => {
     vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
     mocks.isFeatureEnabled.mockReturnValue(undefined)
     hostAgent('ready')
@@ -395,6 +395,14 @@ describe('skillPacksStore', () => {
 
     expect(store.enabled).toBe(false)
     expect(listSkillPacks).not.toHaveBeenCalled()
+
+    mocks.isFeatureEnabled.mockReturnValue(true)
+    const [onFlags] = mocks.onFeatureFlags.mock.calls[0]
+    onFlags([], {}, {})
+    await nextTick()
+
+    expect(store.enabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
   it('hides the hosted-agent surface when its routes answer 404', async () => {
