@@ -582,6 +582,7 @@ export const useWorkflowService = () => {
           await restoreRetainedWorkflow(workflow)
           return false
         }
+        dismissUnreadableWorkflowToast(workflow)
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
@@ -617,18 +618,25 @@ export const useWorkflowService = () => {
           label: t('g.delete'),
           onClick: async () => {
             const stillTarget = () =>
+              isUnreadableWorkflow(workflow) &&
               workflowStore.getWorkflowByPath(workflow.path) === workflow
             const kept =
               stillTarget() &&
               !(await deleteWorkflow(workflow, false, { stillTarget })) &&
               stillTarget()
             if (kept) return
-            toast.dismiss(id)
-            unreadableWorkflowToastIds.delete(workflow.path)
+            dismissUnreadableWorkflowToast(workflow)
           }
         }
       })
     })
+  }
+
+  const dismissUnreadableWorkflowToast = (workflow: ComfyWorkflow) => {
+    const id = unreadableWorkflowToastIds.get(workflow.path)
+    if (id === undefined) return
+    toast.dismiss(id)
+    unreadableWorkflowToastIds.delete(workflow.path)
   }
 
   /**

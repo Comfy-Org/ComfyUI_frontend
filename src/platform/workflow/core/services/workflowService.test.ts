@@ -2599,6 +2599,30 @@ describe('useWorkflowService', () => {
       expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
     })
 
+    it('dismisses the toast and disarms Delete once the same file opens', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key !== 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/repaired.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockResolvedValue(
+        workflow as ComfyWorkflow & LoadedComfyWorkflow
+      )
+
+      expect(await service.openWorkflow(workflow, { force: true })).toBe(true)
+      await options.action!.onClick()
+
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+      expect(deleteSpy).not.toHaveBeenCalled()
+    })
+
     it('forgets the unreadable mark once the file opens', async () => {
       const workflow = unreadableWorkflow('workflows/fixed.json')
       const service = useWorkflowService()
