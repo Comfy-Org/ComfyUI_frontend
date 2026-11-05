@@ -6,6 +6,7 @@ import type {
   TeamCreditStops
 } from '@comfyorg/billing-core'
 import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
+import { zSubscriptionPaymentRecovery } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
@@ -102,8 +103,10 @@ export function useBillingPlans() {
     plans.value = response.plans
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
-    subscriptionPaymentRecovery.value =
-      response.subscription_payment_recovery ?? null
+    const recovery = zSubscriptionPaymentRecovery.safeParse(
+      response.subscription_payment_recovery
+    )
+    subscriptionPaymentRecovery.value = recovery.success ? recovery.data : null
     adoptedScopeKey = scopeKey
   }
 
