@@ -92,6 +92,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const {
     canAccessSubscriptionFeatures,
     subscription,
+    subscriptionState,
     isInitialized,
     initialize,
     type: billingType
@@ -109,7 +110,12 @@ export function useCoreCommands(): ComfyCommand[] {
         duration: 5000
       })
     } else {
-      showSubscriptionDialog(subscribeToRunDialogOptions(subscription.value))
+      showSubscriptionDialog(
+        subscribeToRunDialogOptions({
+          subscriptionState: subscriptionState.value,
+          hasFunds: subscription.value?.hasFunds
+        })
+      )
     }
     return true
   }

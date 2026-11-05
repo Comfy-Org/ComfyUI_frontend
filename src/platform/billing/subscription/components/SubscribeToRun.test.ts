@@ -115,7 +115,8 @@ describe('SubscribeToRun', () => {
       ...context,
       subscription: computed(() =>
         fromPartial<SubscriptionInfo>({ isActive: false, hasFunds: true })
-      )
+      ),
+      subscriptionState: computed(() => 'never_subscribed' as const)
     })
     const { user } = renderButton()
 

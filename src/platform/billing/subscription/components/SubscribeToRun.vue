@@ -38,7 +38,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useBillingUI()
-const { subscription } = useBillingContext()
+const { subscription, subscriptionState } = useBillingContext()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 
@@ -62,6 +62,11 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog(subscribeToRunDialogOptions(subscription.value))
+  showSubscriptionDialog(
+    subscribeToRunDialogOptions({
+      subscriptionState: subscriptionState.value,
+      hasFunds: subscription.value?.hasFunds
+    })
+  )
 }
 </script>

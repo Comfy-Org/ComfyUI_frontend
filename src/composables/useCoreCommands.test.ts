@@ -155,6 +155,7 @@ const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   subscriptionTier: null as string | null,
   hasFunds: false,
+  subscriptionState: null as string | null,
   initialized: true,
   routing: 'workspace' as 'workspace' | 'unknown',
   onInitialize: null as (() => void) | null
@@ -179,6 +180,11 @@ vi.mock<unknown>(
       canAccessSubscriptionFeatures: {
         get value() {
           return mockBillingState.canAccessSubscriptionFeatures
+        }
+      },
+      subscriptionState: {
+        get value() {
+          return mockBillingState.subscriptionState
         }
       },
       subscription: {
@@ -259,6 +265,7 @@ describe('useCoreCommands', () => {
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     mockBillingState.hasFunds = false
+    mockBillingState.subscriptionState = null
     mockBillingState.initialized = true
     mockBillingState.routing = 'workspace'
     mockBillingState.onInitialize = null
@@ -912,6 +919,7 @@ describe('useCoreCommands', () => {
       mockDistributionState.isCloud = true
       mockBillingState.canAccessSubscriptionFeatures = false
       mockBillingState.hasFunds = true
+      mockBillingState.subscriptionState = 'ended'
 
       await findCmd('Comfy.QueuePrompt').function()
 
