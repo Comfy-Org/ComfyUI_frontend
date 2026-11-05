@@ -153,3 +153,54 @@ test.describe(
     })
   }
 )
+
+/**
+ * CLOUD-FRONTEND-PROD-397: opening a workflow whose stored file is `null`
+ * (written by frontends before the save guard) rejected into an unhandled
+ * error. The user saw nothing and the file stayed in the sidebar for good.
+ */
+test.describe(
+  'Opening a workflow whose stored content is null',
+  { tag: '@workflow' },
+  () => {
+    const BROKEN_NAME = 'broken-null'
+    const BROKEN_PATH = `workflows/${BROKEN_NAME}.json`
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test('tells the user it cannot be opened and offers to delete it', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+      await page.evaluate(async (path) => {
+        await window.app!.api.storeUserData(path, 'null', {
+          overwrite: true,
+          stringify: false,
+          throwOnError: true
+        })
+      }, BROKEN_PATH)
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      const pageErrors: string[] = []
+      page.on('pageerror', (error) => pageErrors.push(error.message))
+
+      const { workflowsTab } = comfyPage.menu
+      await workflowsTab.open()
+      await workflowsTab.getPersistedItem(BROKEN_NAME).click()
+
+      const toast = comfyPage.toast.withText("Can't open this workflow")
+      await expect(toast).toBeVisible()
+      await expect(toast).toContainText(`${BROKEN_NAME}.json`)
+      expect(pageErrors).toEqual([])
+
+      await toast.getByRole('button', { name: 'Delete' }).click()
+      await comfyPage.confirmDialog.delete.click()
+      await expect
+        .poll(() => workflowsTab.getTopLevelSavedWorkflowNames())
+        .not.toContain(BROKEN_NAME)
+    })
+  }
+)

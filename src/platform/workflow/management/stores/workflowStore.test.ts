@@ -15,7 +15,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  resetReportedWorkflowStateAnomaliesForTests,
+  UnreadableWorkflowError
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
   useWorkflowBookmarkStore,
@@ -1640,6 +1643,41 @@ describe('useWorkflowStore', () => {
           'secret-name'
         )
       })
+
+      // Sentry groups thrown errors by message: a path in it splits one
+      // defect into a group per file name and leaks the user's file name.
+      it('rejects with a typed error whose message does not include the path', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('null')
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('not-object')
+        expect((error as UnreadableWorkflowError).workflowPath).toBe(
+          'workflows/secret-name.json'
+        )
+        expect((error as Error).message).not.toContain('secret-name')
+      })
+
+      it.for(['', '   '])(
+        'rejects empty stored content %j with a typed error and reports it',
+        async (content) => {
+          await syncRemoteWorkflows(['a.json'])
+          const workflow = store.getWorkflowByPath('workflows/a.json')!
+          storedAs(content)
+
+          const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+          expect(error).toBeInstanceOf(UnreadableWorkflowError)
+          expect((error as UnreadableWorkflowError).reason).toBe('empty')
+          expectReported('Workflow content is missing or empty', {
+            method: 'ComfyWorkflow.load',
+            isPersisted: true
+          })
+        }
+      )
 
       it('does not report content that is a JSON object', async () => {
         await syncRemoteWorkflows(['a.json'])

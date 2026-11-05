@@ -6,6 +6,8 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 import {
   normalizePendingWarnings,
   updatePendingWarnings
@@ -21,7 +23,10 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  reportWorkflowStateAnomaly,
+  UnreadableWorkflowError
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -227,6 +232,9 @@ function queueWorkflowLoad<T>(
   }
   return result
 }
+
+/** One toast per unreadable file, so repeated clicks do not stack them. */
+const unreadableWorkflowToastIds = new Map<string, ToastId>()
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -577,9 +585,39 @@ export const useWorkflowService = () => {
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+        if (error instanceof UnreadableWorkflowError) {
+          showUnreadableWorkflowToast(workflow)
+          return false
+        }
         throw error
       }
     }, workflow.path)
+  }
+
+  /**
+   * The stored file can never open (see `UnreadableWorkflowError`). Load
+   * already reported it, so tell the user and offer to delete it rather than
+   * rejecting into an unhandled error they never see.
+   */
+  const showUnreadableWorkflowToast = (workflow: ComfyWorkflow) => {
+    const id = unreadableWorkflowToastIds.get(workflow.path) ?? createToastId()
+    unreadableWorkflowToastIds.set(workflow.path, id)
+    toast.error(t('workflowService.unreadableWorkflowTitle'), {
+      id,
+      description: t('workflowService.unreadableWorkflowMessage', {
+        name: workflow.key
+      }),
+      ...(!workflow.isTemporary && {
+        action: {
+          label: t('g.delete'),
+          onClick: async () => {
+            if (!(await deleteWorkflow(workflow))) return
+            toast.dismiss(id)
+            unreadableWorkflowToastIds.delete(workflow.path)
+          }
+        }
+      })
+    })
   }
 
   /**
