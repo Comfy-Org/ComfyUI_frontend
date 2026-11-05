@@ -60,6 +60,9 @@ test.describe(
       await workflowsTab.open()
       await workflowsTab.getPersistedItem('healthy').click()
 
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe('workflows/healthy.json')
       await comfyPage.expectNodeCount(7)
       await expect(comfyPage.toast.withText(UNREADABLE_TOAST)).toBeHidden()
     })
