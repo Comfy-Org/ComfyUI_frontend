@@ -40,7 +40,7 @@ function renderStep(
         createI18n({
           legacy: false,
           locale: 'en',
-          messages: { en: { g: { removeTag: 'Remove tag' } } }
+          messages: { en: { g: { removeTagNamed: 'Remove {tag}' } } }
         })
       ],
       mocks: {

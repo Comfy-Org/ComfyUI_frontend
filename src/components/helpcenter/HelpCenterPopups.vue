@@ -1,20 +1,31 @@
 <template>
   <Teleport v-if="isHelpCenterVisible" to="body">
     <div
-      class="help-center-backdrop z-overlay"
-      data-testid="help-center-backdrop"
-      @click="closeHelpCenter"
-    />
-    <div
-      class="help-center-popup z-overlay"
-      data-testid="help-center-popup"
-      :class="{
-        'sidebar-left': sidebarLocation === 'left',
-        'sidebar-right': sidebarLocation === 'right',
-        'small-sidebar': isSmall
-      }"
+      ref="portalTarget"
+      class="pointer-events-none fixed inset-0 z-overlay *:pointer-events-auto"
     >
-      <HelpCenterMenuContent @close="closeHelpCenter" />
+      <ConfigProvider
+        v-if="portalTarget"
+        v-bind="config"
+        :teleport-to="portalTarget"
+      >
+        <div
+          class="help-center-backdrop"
+          data-testid="help-center-backdrop"
+          @click="closeHelpCenter"
+        />
+        <div
+          class="help-center-popup"
+          data-testid="help-center-popup"
+          :class="{
+            'sidebar-left': sidebarLocation === 'left',
+            'sidebar-right': sidebarLocation === 'right',
+            'small-sidebar': isSmall
+          }"
+        >
+          <HelpCenterMenuContent @close="closeHelpCenter" />
+        </div>
+      </ConfigProvider>
     </div>
   </Teleport>
 
@@ -40,6 +51,9 @@
 </template>
 
 <script setup lang="ts">
+import { ConfigProvider, injectConfigProviderContext } from 'reka-ui'
+import { reactive, useTemplateRef } from 'vue'
+
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
@@ -47,6 +61,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
+const config = reactive(injectConfigProviderContext(null) ?? {})
+const portalTarget = useTemplateRef<HTMLDivElement>('portalTarget')
 const canvasStore = useCanvasStore()
 const { isSmall = false } = defineProps<{
   isSmall?: boolean

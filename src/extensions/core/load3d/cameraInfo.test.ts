@@ -8,18 +8,12 @@ import {
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { cameraInfoExtension as extension } from './cameraInfo'
+import { load3dWidgets } from './load3dWidgets'
 
 describe('Comfy.CreateCameraInfo extension', () => {
   it('keeps the viewport out of the right side panel', async () => {
     const node = new LGraphNode('CreateCameraInfo')
-    const widgets = await extension.getCustomWidgets?.(
-      fromPartial<ComfyApp>({})
-    )
-    const build = widgets?.CAMERA_INFO_STATE
-    if (!build) throw new Error('CAMERA_INFO_STATE widget not registered')
-
-    build(
+    load3dWidgets.CAMERA_INFO_STATE(
       node,
       'camera_info_state',
       ['CAMERA_INFO_STATE', {}],

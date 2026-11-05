@@ -10,11 +10,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
 import {
-  EXTENSION_FAILURES_TRUNCATED_FIELD,
-  EXTENSION_LOAD_ERROR_TYPE
-} from '@/platform/telemetry/extensionLoadTelemetry'
+  CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
+  CUSTOM_NODE_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/customNodeLoadTelemetry'
 
-import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
+import { rumBeforeSend } from './datadogRumBeforeSend'
+import { classifyTelemetryErrorOrigin } from './errorOrigin'
 
 function createErrorEvent(
   message: string,
@@ -330,9 +331,9 @@ describe('rumBeforeSend', () => {
   ])('attributes a batched load failure to $name', ({ failures, expected }) => {
     const event = createErrorEvent(
       'Error loading extensions',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+      'at reportCustomNodeLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
     )
-    event.context = { error_type: EXTENSION_LOAD_ERROR_TYPE, failures }
+    event.context = { error_type: CUSTOM_NODE_LOAD_ERROR_TYPE, failures }
 
     rumBeforeSend(event, fromPartial({}))
 
@@ -342,14 +343,14 @@ describe('rumBeforeSend', () => {
   it('keeps a truncated batch unattributed when its reported prefix shares a folder', () => {
     const event = createErrorEvent(
       'Error loading extensions',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+      'at reportCustomNodeLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
     )
     event.context = {
-      error_type: EXTENSION_LOAD_ERROR_TYPE,
+      error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
       failures: Array.from({ length: 10 }, () => ({
         ext: '/extensions/comfyui-foo/main.js'
       })),
-      [EXTENSION_FAILURES_TRUNCATED_FIELD]: true
+      [CUSTOM_NODE_FAILURES_TRUNCATED_FIELD]: true
     }
 
     rumBeforeSend(event, fromPartial({}))
@@ -365,21 +366,21 @@ describe('rumBeforeSend', () => {
     {
       name: 'non-array failures',
       context: {
-        error_type: EXTENSION_LOAD_ERROR_TYPE,
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
         failures: { ext: '/extensions/comfyui-foo/main.js' }
       }
     },
     {
       name: 'null failure',
       context: {
-        error_type: EXTENSION_LOAD_ERROR_TYPE,
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
         failures: [null, { ext: '/extensions/comfyui-foo/main.js' }]
       }
     },
     {
       name: 'non-string details',
       context: {
-        error_type: EXTENSION_LOAD_ERROR_TYPE,
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
         failures: [{ ext: ['/extensions/comfyui-foo/main.js'] }]
       }
     }
@@ -421,7 +422,7 @@ describe('rumBeforeSend', () => {
   })
 })
 
-describe('classifyRumErrorOrigin', () => {
+describe('classifyTelemetryErrorOrigin', () => {
   it('uses the first recognizable in-app stack frame', () => {
     const stack = [
       'at external (https://cdn.example.com/library.js:1:2)',
@@ -429,12 +430,16 @@ describe('classifyRumErrorOrigin', () => {
       'at custom (https://cloud.comfy.org/extensions/comfyui-foo/main.js:1:2)'
     ].join('\n')
 
-    expect(classifyRumErrorOrigin(stack)).toEqual({ origin: 'first_party' })
+    expect(classifyTelemetryErrorOrigin(stack)).toEqual({
+      origin: 'first_party'
+    })
   })
 
   it('classifies stacks without in-app frames as third party', () => {
     expect(
-      classifyRumErrorOrigin('at external (https://cdn.example.com/app.js:1:2)')
+      classifyTelemetryErrorOrigin(
+        'at external (https://cdn.example.com/app.js:1:2)'
+      )
     ).toEqual({ origin: 'third_party' })
   })
 })

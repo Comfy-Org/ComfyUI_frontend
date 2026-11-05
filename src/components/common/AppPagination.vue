@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import Pagination from '@comfyorg/design-system/pagination/Pagination'
 
 defineProps<{
   total: number

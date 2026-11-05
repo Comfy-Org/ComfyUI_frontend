@@ -4,9 +4,9 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 /**
  * Reactivates a cancelled-but-still-active subscription and surfaces success or
@@ -17,7 +17,7 @@ export function useResubscribe() {
   const toast = useToast()
   const { resubscribe } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivatePlan } = useWorkspaceUI()
+  const { canReactivatePlan } = useBillingUI()
 
   const isResubscribing = ref(false)
 

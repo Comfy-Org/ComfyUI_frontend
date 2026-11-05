@@ -12,11 +12,12 @@
         @click="togglePlay"
       >
         <i
-          :class="[
-            'pi',
-            playing ? 'pi-pause' : 'pi-play',
-            'text-lg text-foreground'
-          ]"
+          :class="
+            cn(
+              'size-4.5 text-foreground',
+              playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
+            )
+          "
         />
       </Button>
 
@@ -77,16 +78,17 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { formatAnimationTime } from '@/extensions/core/load3d/components/formatAnimationTime'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 type Animation = { name: string; index: number }
 

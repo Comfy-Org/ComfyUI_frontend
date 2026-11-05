@@ -1,6 +1,8 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
+    <h3
+      class="mt-2.5 text-center font-sans text-[15px] font-bold text-muted-foreground"
+    >
       {{ t('maskEditor.brushSettings') }}
     </h3>
 
@@ -171,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

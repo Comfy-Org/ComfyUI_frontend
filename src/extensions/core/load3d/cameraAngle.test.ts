@@ -10,6 +10,7 @@ import {
 } from '@/types/widgetVisibility'
 
 import { cameraAngleExtension as extension } from './cameraAngle'
+import { load3dWidgets } from './load3dWidgets'
 
 class CameraAngleNode extends LGraphNode {
   static comfyClass = 'CameraAngle'
@@ -26,10 +27,12 @@ async function addCameraAngleNode(graph: LGraph) {
   node.addWidget('number', 'horizontal', 45, () => undefined, {})
   graph.add(node)
 
-  const widgets = await extension.getCustomWidgets?.(fromPartial<ComfyApp>({}))
-  const build = widgets?.CAMERA_ANGLE_VIEW
-  if (!build) throw new Error('CAMERA_ANGLE_VIEW widget not registered')
-  build(node, 'view', ['CAMERA_ANGLE_VIEW', {}], fromPartial<ComfyApp>({}))
+  load3dWidgets.CAMERA_ANGLE_VIEW(
+    node,
+    'view',
+    ['CAMERA_ANGLE_VIEW', {}],
+    fromPartial({})
+  )
 
   const view = node.widgets?.find((widget) => widget.name === 'view')
   if (!view) throw new Error('view widget was not added to the node')

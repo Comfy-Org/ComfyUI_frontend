@@ -4,10 +4,18 @@
     class="flex flex-col"
     data-testid="billing-auto-top-up-card"
   >
-    <Skeleton v-if="state.kind === 'loading'" class="h-16 w-full" />
+    <div
+      v-if="state.kind === 'loading'"
+      class="rounded-xl border border-border px-5 py-4"
+    >
+      <div class="flex flex-col gap-3">
+        <Skeleton class="h-4 w-1/5" />
+        <Skeleton class="h-4 w-1/2" />
+      </div>
+    </div>
     <p
       v-else-if="state.kind === 'unavailable'"
-      class="m-0 flex items-center gap-1 rounded-lg border border-border p-4 text-sm text-muted-foreground"
+      class="m-0 flex items-center gap-1 rounded-xl border border-border px-5 py-4 text-sm text-muted-foreground"
       role="alert"
     >
       {{ $t('workspacePanel.billingTab.autoTopUp.unavailable') }}
@@ -19,14 +27,14 @@
       v-else-if="view"
       :class="
         cn(
-          'flex items-start justify-between gap-4 rounded-lg border p-4',
+          'flex items-center justify-between gap-4 rounded-xl border px-5 py-4',
           view.status.border
         )
       "
     >
       <div class="flex min-w-0 flex-col gap-1">
         <h3
-          class="m-0 flex items-center gap-2 text-sm font-semibold text-foreground"
+          class="m-0 flex items-center gap-2 text-sm font-medium text-foreground"
         >
           {{ $t('workspacePanel.billingTab.autoTopUp.title') }}
           <span
@@ -39,7 +47,7 @@
             data-testid="billing-auto-top-up-status"
           >
             <span
-              :class="cn('size-1.5 rounded-full', view.status.dot)"
+              :class="cn('size-1.75 rounded-full', view.status.dot)"
               aria-hidden="true"
             />
             {{ $t(view.status.label) }}
@@ -52,15 +60,7 @@
           data-testid="billing-auto-top-up-line"
         >
           {{ line.text }}
-          <Button
-            v-if="line.tooltip"
-            :tooltip="line.tooltip"
-            :aria-label="line.tooltip"
-            variant="muted-textonly"
-            size="icon-sm"
-          >
-            <i class="icon-[lucide--info] size-4" aria-hidden="true" />
-          </Button>
+          <BillingInfoTip v-if="line.tooltip" :text="line.tooltip" />
         </p>
       </div>
       <Button
@@ -69,34 +69,48 @@
         target="_blank"
         rel="noopener"
         :variant="view.status.action.variant"
-        class="shrink-0"
+        size="md"
+        class="shrink-0 no-underline"
         @click="track"
       >
         {{ $t(view.status.action.label) }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i :class="view.status.action.icon" aria-hidden="true" />
       </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import {
+  autoTopUpOffView,
+  formatPlanDate
+} from '@comfyorg/account-core/billing'
 import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computedAsync } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
+import Button from '@comfyorg/design-system/button/Button'
+import BillingInfoTip from '@/platform/billing/components/billingTab/BillingInfoTip.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type Status = AutoReloadSettings['status']
-type ViewKey = Status | 'turnedOff'
+type ViewKey =
+  | Status
+  | 'turnedOff'
+  | 'maximumReached'
+  | 'noPaymentMethod'
+  | 'noDefaultPaymentMethod'
 
 interface Line {
   text: string
@@ -108,34 +122,38 @@ const NEUTRAL = {
   text: 'text-muted-foreground'
 } as const
 
+const OPEN = 'icon-[lucide--arrow-up-right]'
+
 const DANGER = {
-  border: 'border-destructive-background',
-  text: 'text-destructive-background'
+  border: 'border-destructive',
+  text: 'text-destructive'
 } as const
 
 const MANAGE = {
   id: 'manage',
   label: 'workspacePanel.billingTab.autoTopUp.actions.manage',
-  variant: 'secondary'
+  variant: 'secondary',
+  icon: OPEN
 } as const
 
 const UPDATE_PAYMENT = {
   id: 'update_payment',
   label: 'workspacePanel.billingTab.autoTopUp.actions.updatePayment',
-  variant: 'inverted'
+  variant: 'inverted',
+  icon: OPEN
 } as const
 
 const STATUS = {
   failed: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.failed',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   turnedOff: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   off: {
@@ -145,25 +163,49 @@ const STATUS = {
     action: {
       id: 'turn_on',
       label: 'workspacePanel.billingTab.autoTopUp.actions.turnOn',
-      variant: 'secondary'
+      variant: 'secondary',
+      icon: OPEN
     }
   },
   on_hold: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.onHold',
-    dot: 'bg-warning-background',
+    dot: 'bg-warning',
     action: UPDATE_PAYMENT
   },
   paused_by_budget: {
     ...NEUTRAL,
-    label: 'workspacePanel.billingTab.autoTopUp.status.paused',
+    label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
+    dot: 'bg-warning',
+    action: MANAGE
+  },
+  maximumReached: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.maximumReached',
     dot: 'bg-warning-background',
     action: MANAGE
+  },
+  noPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: {
+      ...UPDATE_PAYMENT,
+      label: 'workspacePanel.billingTab.autoTopUp.actions.addPaymentMethod',
+      variant: 'secondary',
+      icon: OPEN
+    }
+  },
+  noDefaultPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: { ...UPDATE_PAYMENT, variant: 'secondary', icon: OPEN }
   },
   on: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.on',
-    dot: 'bg-success-background',
+    dot: 'bg-success',
     action: MANAGE
   }
 } as const satisfies Record<
@@ -173,13 +215,18 @@ const STATUS = {
     dot: string
     border: string
     text: string
-    action: { id: AutoTopUpCardAction; label: string; variant: string }
+    action: {
+      id: AutoTopUpCardAction
+      label: string
+      variant: string
+      icon: string
+    }
   }
 >
 
 const { t, locale } = useI18n()
 const { autoTopUpSetup } = useBillingCapabilities()
-const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+const { scope, state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
 ensureRead()
 
 useAutoTopUpCardViewed(() => {
@@ -224,18 +271,15 @@ function limitTooltip(resetsAt: string | null) {
 }
 
 function ruleLines({
-  reload_amount_cents: amountCents,
-  reload_credits: reloadCredits,
+  target_credits: targetCredits,
   threshold_credits: thresholdCredits
 }: AutoReloadSettings): Line[] {
-  if (amountCents === null) return []
-  if (reloadCredits === null) return []
+  if (targetCredits === null) return []
   if (thresholdCredits === null) return []
   return [
     {
       text: t('workspacePanel.billingTab.autoTopUp.rule', {
-        amount: usd(amountCents),
-        credits: credits(reloadCredits),
+        target: credits(targetCredits),
         threshold: credits(thresholdCredits)
       })
     }
@@ -255,15 +299,29 @@ function limitLines(settings: AutoReloadSettings): Line[] {
   ]
 }
 
-function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
+const BUDGET_COPY = {
+  paused: {
+    dated: 'workspacePanel.billingTab.autoTopUp.paused',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedNoDate'
+  },
+  pausedByRemainder: {
+    dated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainder',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainderNoDate'
+  },
+  maximumReached: {
+    dated: 'workspacePanel.billingTab.autoTopUp.maximumReached',
+    undated: 'workspacePanel.billingTab.autoTopUp.maximumReachedNoDate'
+  }
+} as const
+
+function budgetLine(
+  copy: keyof typeof BUDGET_COPY,
+  { cycle_resets_at: resetsAt }: AutoReloadSettings
+): Line {
+  const { dated, undated } = BUDGET_COPY[copy]
   return {
-    text:
-      resumesAt === null
-        ? t('workspacePanel.billingTab.autoTopUp.pausedNoDate')
-        : t('workspacePanel.billingTab.autoTopUp.paused', {
-            date: day(resumesAt)
-          }),
-    tooltip: limitTooltip(resumesAt)
+    text: resetsAt === null ? t(undated) : t(dated, { date: day(resetsAt) }),
+    tooltip: limitTooltip(resetsAt)
   }
 }
 
@@ -273,28 +331,88 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
     { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
   ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
+  noPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noPaymentMethod') }
+  ],
+  noDefaultPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noDefaultPaymentMethod') }
+  ],
   on_hold: (settings) => [
     ...ruleLines(settings),
     { text: t('workspacePanel.billingTab.autoTopUp.onHold') }
   ],
   paused_by_budget: (settings) => [
     ...ruleLines(settings),
-    pausedLine(settings)
+    budgetLine(
+      settings.paused_by_budget_remainder ? 'pausedByRemainder' : 'paused',
+      settings
+    )
+  ],
+  maximumReached: (settings) => [
+    ...ruleLines(settings),
+    budgetLine('maximumReached', settings)
   ],
   on: (settings) => [...ruleLines(settings), ...limitLines(settings)]
 }
 
 function isStatus(status: string): status is Status {
-  return Object.hasOwn(STATUS, status)
+  return zAutoReloadSettings.shape.status.safeParse(status).success
+}
+
+const offSettings = computed(() =>
+  state.value.kind === 'loaded' && state.value.settings.status === 'off'
+    ? state.value.settings
+    : null
+)
+
+const savedPaymentMethodsRead = computedAsync(async () => {
+  const requestScope = scope.value
+  if (
+    !offSettings.value ||
+    autoTopUpOffView({
+      setup: autoTopUpSetup.value,
+      savedPaymentMethodCount: null
+    }) === 'off'
+  ) {
+    return null
+  }
+  const result = await useBillingSdkStore().readPaymentMethods()
+  if (result.status === 'ok') {
+    return { scope: requestScope, methods: result.value }
+  }
+  reportError(new Error(`Saved payment methods read failed: ${result.code}`), {
+    errorType: 'auto_top_up_payment_methods_read_failed',
+    surface: 'billing'
+  })
+  return null
+}, null)
+
+const savedPaymentMethods = computed(() => {
+  const read = savedPaymentMethodsRead.value
+  return read?.scope === scope.value ? read.methods : null
+})
+
+function offViewKey(): ViewKey {
+  return autoTopUpOffView({
+    setup: autoTopUpSetup.value,
+    savedPaymentMethodCount: savedPaymentMethods.value?.length ?? null
+  })
 }
 
 function viewKey(settings: AutoReloadSettings): ViewKey {
   if (!isStatus(settings.status)) return 'off'
+  if (settings.status === 'off') return offViewKey()
   if (
     settings.status === 'failed' &&
     settings.disabled_reason === 'consecutive_declines'
   ) {
     return 'turnedOff'
+  }
+  if (
+    settings.status === 'paused_by_budget' &&
+    settings.monthly_budget_is_default
+  ) {
+    return 'maximumReached'
   }
   return settings.status
 }

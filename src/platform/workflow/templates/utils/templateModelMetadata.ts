@@ -3,7 +3,7 @@ import type {
   ModelMetadata,
   ModelMetadataFetchOutcome
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 
 const MAX_CONCURRENT_METADATA_REQUESTS = 6
 const METADATA_REQUEST_TIMEOUT_MS = 10_000

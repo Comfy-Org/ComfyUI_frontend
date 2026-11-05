@@ -1,7 +1,7 @@
 import type {
   LGraphConfig,
   LGraphExtra
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 

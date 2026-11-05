@@ -16,6 +16,9 @@ export interface CreditStop {
    * tiers are stored here.
    */
   discountPercentYearly: number
+  /** The served discounted price per month of each cycle, in USD. Absent only
+   *  for the hardcoded OSS / pre-deploy fallback. */
+  priceUsd?: { monthly: number; yearly: number }
   /** What the server bills for one period of each cycle, in USD. Absent only
    *  for the hardcoded OSS / pre-deploy fallback. */
   periodChargeUsd?: { monthly: number; yearly: number }

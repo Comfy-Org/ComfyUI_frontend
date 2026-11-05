@@ -21,8 +21,8 @@ async function selectionTargets(comfyPage: ComfyPage, nodeTitles: string[]) {
   return [...nodes.flat(), comfyPage.selectionToolbox]
 }
 
-const getColorPickerButton = (comfyPage: { page: Page }) =>
-  comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
+const getColorPickerButton = (comfyPage: ComfyPage) =>
+  comfyPage.selectionToolbox.getByRole('button', { name: 'Color', exact: true })
 
 const getColorPickerCurrentColor = (comfyPage: { page: Page }) =>
   comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerCurrentColor)
@@ -130,17 +130,17 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test('displays bypass button in toolbox when nodes are selected', async ({
     comfyPage
   }) => {
-    // A group + a KSampler node
     await comfyPage.workflow.loadWorkflow('groups/single_group')
-    const bypass = comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass)
+    const bypass = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Bypass/Unbypass Selected Nodes',
+      exact: true
+    })
 
-    // Select group + node should show bypass button
     await comfyPage.canvas.focus()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await expect(bypass).toBeVisible()
     await comfyPage.keyboard.delete()
 
-    // (Only empty group is selected) should hide bypass button
     await comfyPage.keyboard.selectAll()
     await expect(comfyPage.selectionToolbox).toBeVisible()
     await expect(bypass).toBeHidden()
@@ -184,7 +184,6 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     test('color picker shows current color of selected nodes', async ({
       comfyPage
     }) => {
-      // Select multiple nodes
       await comfyPage.nodeOps.selectNodes([
         'KSampler',
         'CLIP Text Encode (Prompt)'
@@ -193,17 +192,16 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const colorPickerButton = getColorPickerButton(comfyPage)
       const colorPickerCurrentColor = getColorPickerCurrentColor(comfyPage)
 
-      // Initially should show default color
       await expect(colorPickerButton).not.toHaveAttribute('color')
+      await expect(colorPickerCurrentColor).toHaveCSS('width', '16px')
+      await expect(colorPickerCurrentColor).toHaveCSS('height', '16px')
 
-      // Click color picker and select a color
       await colorPickerButton.click()
       const redColorOption = getColorPickerGroup(comfyPage).getByTestId(
         TestIds.selectionToolbox.colorRed
       )
       await redColorOption.click()
 
-      // Button should now show the selected color
       await expect(colorPickerCurrentColor).toHaveCSS('color', RED_COLOR)
     })
 

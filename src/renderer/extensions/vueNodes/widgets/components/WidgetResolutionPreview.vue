@@ -26,11 +26,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -45,7 +46,7 @@ const { widget, nodeId } = defineProps<{
 const { t } = useI18n()
 const widgetValueStore = useWidgetValueStore()
 
-const hostNode = computed(() =>
+const hostNode = useLiveGraphNode(() =>
   nodeId === undefined ? undefined : resolveNode(nodeId)
 )
 

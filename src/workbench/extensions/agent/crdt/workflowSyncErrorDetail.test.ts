@@ -9,6 +9,8 @@ const translate = (key: string): string => {
     return 'Your node catalog is incompatible.'
   if (key === 'agent.workflowSyncFailedDetailStaleClient')
     return 'Reload the page to see the latest changes.'
+  if (key === 'agent.workflowSyncFailedDetailStaleHost')
+    return 'This page is ahead of the agent service.'
   return key
 }
 
@@ -45,6 +47,12 @@ describe('formatWorkflowSyncErrorDetail', () => {
     expect(
       formatWorkflowSyncErrorDetail(translate, undefined, 'stale_client_schema')
     ).toBe('Reload the page to see the latest changes.')
+  })
+
+  it('uses the ahead-of-service copy when the document is older than this page', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'stale_host_schema')
+    ).toBe('This page is ahead of the agent service.')
   })
 
   it('falls back to the schema-mismatch copy for an undifferentiated code', () => {

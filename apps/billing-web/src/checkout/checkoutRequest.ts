@@ -32,6 +32,7 @@ export function teamCheckoutPlan(
       id: candidate.id,
       credits: Number(candidate.credits),
       monthly: {
+        price_cents: Number(candidate.monthly.price_cents),
         period_charge_cents: Number(candidate.monthly.period_charge_cents)
       },
       yearly: {

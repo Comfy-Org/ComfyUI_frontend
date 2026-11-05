@@ -83,8 +83,8 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 

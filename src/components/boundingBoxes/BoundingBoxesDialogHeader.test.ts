@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import BoundingBoxesDialogHeader from './BoundingBoxesDialogHeader.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
 
 const i18n = createI18n({
   legacy: false,

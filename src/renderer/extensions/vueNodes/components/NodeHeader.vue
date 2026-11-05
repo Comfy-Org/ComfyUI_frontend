@@ -4,7 +4,12 @@
   </div>
   <div
     v-else
-    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
+    :class="
+      cn(
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-xs',
+        headerShapeClass
+      )
+    "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -23,7 +28,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-4 transition-transform',
+                  'icon-[lucide--chevron-down] transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
@@ -51,17 +56,19 @@
         </Tooltip>
       </div>
 
-      <CreditBadge
-        v-for="badge in priceBadges ?? []"
-        :key="badge.required"
-        :text="badge.required"
-        :rest="badge.rest"
-      />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="icon-[comfy--pin] size-4"
+        class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
+      />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
       />
     </div>
   </div>
@@ -70,13 +77,12 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import EditableText from '@/components/common/EditableText.vue'
-import CreditBadge from '@/components/node/CreditBadge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import type { NodeState } from '@/types/nodeState'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
@@ -90,10 +96,11 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
-  priceBadges?: { required: string; rest?: string }[]
+  showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

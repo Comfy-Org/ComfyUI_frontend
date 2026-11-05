@@ -1,8 +1,7 @@
-export interface ContentEntry {
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+export interface ContentEntry extends Size2D {
   id: string
   canvas: HTMLCanvasElement
-  width: number
-  height: number
   uploadedUrl: string | null
 }
 

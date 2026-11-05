@@ -11,7 +11,7 @@ import {
 import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -255,50 +255,55 @@ describe('layout follower bridge: stale-schema reseed', () => {
     }
   )
 
-  it.for<[string, Record<string, unknown>]>([
-    ['a won reseed', { ok: true, seq: 8, outcome: 'reseeded' }],
-    ['a lost race', { ok: false, code: 'conflict' }]
-  ])('drops the old lineage before resubscribing after %s', ([, answer]) => {
-    const transport = new TestTransport()
-    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
-    bridge.subscribe('wf-1')
-    transport.receive('doc_subscribed', {
-      v: 1,
-      workflow_id: 'wf-1',
-      ok: true,
-      seq: 1
-    })
-    transport.receive('doc_update', {
-      v: 1,
-      workflow_id: 'wf-1',
-      seq: 1,
-      update_b64: encodeBase64(
-        Y.encodeStateAsUpdate(mint({ nodes: [], links: [] }, { types: {} }))
-      )
-    })
-    bridge.resubscribe()
-    transport.receive('doc_subscribed', staleRefusal(7))
-    const resets = collect(bridge, 'doc_reset')
-    bridge.reseed('wf-1', canvas)
-    const docBefore = bridge.follower
-
-    answerReseed(transport, answer)
-
-    expect(resets).toEqual([
-      expect.objectContaining({
-        workflowId: 'wf-1',
-        actor: 'system:client-seed'
+  it.for<[string, Record<string, unknown>, number]>([
+    ['a won reseed', { ok: true, seq: 8, outcome: 'reseeded' }, 8],
+    ['a lost race', { ok: false, code: 'conflict' }, 0]
+  ])(
+    'drops the old lineage before resubscribing after %s',
+    ([, answer, expectedLineage]) => {
+      const transport = new TestTransport()
+      const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+      bridge.subscribe('wf-1')
+      transport.receive('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: true,
+        seq: 1
       })
-    ])
-    expect(bridge.follower).not.toBe(docBefore)
-    expect(transport.frames('doc_subscribe').at(-1)).toEqual({
-      v: 1,
-      workflow_id: 'wf-1',
-      state_vector_b64: 'AA==',
-      supports_reseed: true,
-      schema_version: SCHEMA_VERSION
-    })
-  })
+      transport.receive('doc_update', {
+        v: 1,
+        workflow_id: 'wf-1',
+        seq: 1,
+        lineage_seq: 1,
+        update_b64: encodeBase64(
+          Y.encodeStateAsUpdate(mint({ nodes: [], links: [] }, { types: {} }))
+        )
+      })
+      bridge.resubscribe()
+      transport.receive('doc_subscribed', staleRefusal(7))
+      const resets = collect(bridge, 'doc_reset')
+      bridge.reseed('wf-1', canvas)
+      const docBefore = bridge.follower
+
+      answerReseed(transport, answer)
+
+      expect(resets).toEqual([
+        expect.objectContaining({
+          workflowId: 'wf-1',
+          actor: 'system:client-seed'
+        })
+      ])
+      expect(bridge.follower).not.toBe(docBefore)
+      expect(transport.frames('doc_subscribe').at(-1)).toEqual({
+        v: 1,
+        workflow_id: 'wf-1',
+        state_vector_b64: 'AA==',
+        known_lineage_seq: expectedLineage,
+        supports_reseed: true,
+        schema_version: SCHEMA_VERSION
+      })
+    }
+  )
 
   it('ignores a late result for a workflow the bridge no longer follows', () => {
     const { transport, bridge } = refusedBridge()

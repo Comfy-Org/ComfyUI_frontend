@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Seçili Düğümleri Daralt/Genişlet"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Seçili Düğümlerde Bağlantıları Gizle/Göster"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Seçili Düğümleri Sessize Al/Sesi Aç"
   },

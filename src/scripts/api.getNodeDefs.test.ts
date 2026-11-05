@@ -21,4 +21,15 @@ describe('api.getNodeDefs', () => {
     })
     expect(api.fetchApi).toHaveBeenCalledTimes(2)
   })
+  it('fetches fresh definitions when the prefetch failed', async () => {
+    vi.spyOn(api, 'fetchApi')
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(Response.json({ KSampler: { name: 'KSampler' } }))
+
+    api.prefetchNodeDefs()
+
+    await expect(api.getNodeDefs()).resolves.toEqual({
+      KSampler: { name: 'KSampler' }
+    })
+  })
 })

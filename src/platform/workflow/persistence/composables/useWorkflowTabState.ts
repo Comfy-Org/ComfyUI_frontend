@@ -38,9 +38,8 @@ export function useWorkflowTabState() {
   function getActivePath(): string | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
-    if (!clientId) return null
 
-    const pointer = readActivePath(clientId, workspaceId)
+    const pointer = readActivePath(clientId, workspaceId, api.initialClientId)
     return pointer?.path ?? null
   }
 
@@ -74,9 +73,8 @@ export function useWorkflowTabState() {
   function getOpenPaths(): { paths: string[]; activeIndex: number } | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
-    if (!clientId) return null
 
-    const pointer = readOpenPaths(clientId, workspaceId)
+    const pointer = readOpenPaths(clientId, workspaceId, api.initialClientId)
     if (!pointer) return null
 
     return { paths: pointer.paths, activeIndex: pointer.activeIndex }

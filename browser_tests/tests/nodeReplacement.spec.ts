@@ -12,7 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },

@@ -25,8 +25,8 @@ import { t } from '@/i18n'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+} from '@comfyorg/billing-core'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { declineDetail } from './topupOperationView'
 

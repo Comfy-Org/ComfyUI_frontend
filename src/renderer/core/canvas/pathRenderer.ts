@@ -1,16 +1,4 @@
-/**
- * Path Renderer
- *
- * Pure canvas2D rendering utility with no framework dependencies.
- * Renders bezier curves, straight lines, and linear connections between points.
- * Supports arrows, flow animations, and returns Path2D objects for hit detection.
- * Can be reused in any canvas-based project without modification.
- */
-
-export interface Point {
-  x: number
-  y: number
-}
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 export type Direction = 'left' | 'right' | 'up' | 'down' | 'none'
 export type RenderMode = 'spline' | 'straight' | 'linear'

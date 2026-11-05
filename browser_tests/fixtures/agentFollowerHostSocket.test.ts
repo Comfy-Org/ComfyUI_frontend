@@ -127,6 +127,30 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     })
   })
 
+  it('records each op base_version, null when it is not a number', async () => {
+    const { hostSocket, emitClientFrame } = await installHost()
+
+    const numbered = validOp('b'.repeat(32), 2)
+    const missing = validOp('c'.repeat(32), 3)
+    const malformed = validOp('d'.repeat(32), 4)
+    delete missing.base_version
+    malformed.base_version = 'not-a-number'
+    emitClientFrame({
+      type: 'doc_ops',
+      data: {
+        workflow_id: WORKFLOW_ID,
+        tab: 'tab-1',
+        ops: [numbered, missing, malformed]
+      }
+    })
+
+    expect(hostSocket.clientDocFrames().at(-1)?.baseVersions).toEqual([
+      1,
+      null,
+      null
+    ])
+  })
+
   it('still applies a well-formed doc_ops batch through the real applier', async () => {
     const { hostSocket, emitClientFrame, sentFrames } = await installHost()
 
@@ -173,6 +197,34 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     class_type: 'TestNode',
     pos: [10, 20],
     node: { id: nodeId, type: 'TestNode', pos: [10, 20] }
+  })
+
+  it('releases a held batch against the workflow that sent it', async () => {
+    const {
+      host: primaryHost,
+      hostSocket,
+      emitClientFrame
+    } = await installHost('hold')
+    const secondaryWorkflowId = 'wf-2'
+    const secondaryHost = new HostDoc(
+      secondaryWorkflowId,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    hostSocket.addWorkflow(secondaryWorkflowId, secondaryHost)
+
+    emitClientFrame({
+      type: 'doc_ops',
+      data: {
+        workflow_id: secondaryWorkflowId,
+        tab: 'tab-1',
+        ops: [validOp('c'.repeat(32), 3)]
+      }
+    })
+    hostSocket.releaseHeldClientOps()
+
+    expect(primaryHost.graph().nodes).toEqual({})
+    expect(secondaryHost.graph().nodes).toHaveProperty('3')
   })
 
   it.for([

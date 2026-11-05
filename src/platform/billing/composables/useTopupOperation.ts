@@ -1,16 +1,9 @@
 import { delay } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { BillingClient } from '@comfyorg/account-core/billing'
-
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
@@ -32,7 +25,7 @@ function isRetryableCheckoutRefusal(error: unknown): boolean {
 }
 
 /**
- * The top-up purchase and the operation the dialog reads, from one rail.
+ * The top-up quote, checkout session and operation the dialog reads, from one rail.
  * The rail is fixed when the dialog opens: a flag flip mid-operation must not
  * issue on one rail and observe on the other, or move a live operation
  * between two observers.
@@ -43,22 +36,11 @@ export function useTopupOperation() {
     ? useBillingSdkStore()
     : null
   const operationStore = useBillingOperationStore()
-  const billingContext = useBillingContext()
-  const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
-
-  const isAddingCredits = computed(() =>
-    sdkStore ? sdkStore.isAddingCredits : operationStore.isAddingCredits
-  )
   const topupOperation = computed(() =>
     sdkStore
       ? sdkStore.topupActionOperation
       : operationStore.topupActionOperation
   )
-
-  function topup(amountCents: number): Promise<CreateTopupResponse | void> {
-    if (sdkStore) return sdkStore.createTopup(amountCents)
-    return billingContext.topup(amountCents)
-  }
 
   async function createHostedCheckout(
     amountCents: number,
@@ -84,7 +66,7 @@ export function useTopupOperation() {
     if (sdkStore) {
       return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
     }
-    const { checkout_url } = await workspaceApi.createTopupCheckout(
+    const { checkout_url } = await billingApi.createTopupCheckout(
       amountCents,
       returnUrl,
       signal
@@ -92,35 +74,21 @@ export function useTopupOperation() {
     return checkout_url
   }
 
-  function dismissOperation(operationId: string): void {
-    if (sdkStore) sdkStore.dismissOperation(operationId)
-    else operationStore.dismissOperation(operationId)
-  }
-
-  /**
-   * Adopt a top-up the purchase left pending, so the caller is told when it
-   * settles. On the SDK rail the lifecycle adopted it when the command was
-   * issued, so there is nothing to register and a second registration would be
-   * a second poller on one operation.
-   */
-  async function adoptPendingOperation(
-    operationId: string,
-    metadata: {
-      attemptStartedAt: number
-      paymentIntentSource?: PaymentIntentSource
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<number | null> {
+    if (sdkStore) return sdkStore.quoteTopup(amountCents, signal)
+    try {
+      return (await billingApi.quoteTopup(amountCents, signal)).credits
+    } catch {
+      return null
     }
-  ): Promise<void> {
-    if (sdkStore) return
-    await operationStore.startOperation(operationId, 'topup', metadata)
   }
 
   return {
-    billingClient,
-    isAddingCredits,
     topupOperation,
-    topup,
     createHostedCheckout,
-    dismissOperation,
-    adoptPendingOperation
+    quoteTopup
   }
 }

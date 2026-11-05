@@ -23,9 +23,7 @@
       >
         <i
           v-if="option.icon"
-          :class="
-            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
-          "
+          :class="cn('shrink-0 text-primary-comfy-canvas/60', option.icon)"
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>
@@ -48,9 +46,7 @@
       >
         <i
           v-if="option.icon"
-          :class="
-            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
-          "
+          :class="cn('shrink-0 text-primary-comfy-canvas/60', option.icon)"
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>
@@ -100,8 +96,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Input from '@/components/ui/input/Input.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Input from '@comfyorg/design-system/input/Input'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type {
   LocalizedString,
   OnboardingSurveyField,
@@ -134,7 +131,7 @@ const optionCardClass =
   'group h-auto w-full items-center justify-start gap-3 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 px-4 py-3 text-left text-sm text-primary-comfy-canvas shadow-inset-highlight transition-colors hover:bg-sand-300/20 data-[state=on]:bg-sand-300/15 data-[state=on]:ring-1 data-[state=on]:ring-inset data-[state=on]:ring-brand-yellow'
 
 const checkMarkClass =
-  'icon-[lucide--check] size-4 shrink-0 text-brand-yellow opacity-0 group-data-[state=on]:opacity-100'
+  'icon-[lucide--check] text-brand-yellow opacity-0 group-data-[state=on]:opacity-100'
 
 const inputClass =
   'border-smoke-800/10 bg-smoke-800/10 text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/50 focus-visible:ring-inset'

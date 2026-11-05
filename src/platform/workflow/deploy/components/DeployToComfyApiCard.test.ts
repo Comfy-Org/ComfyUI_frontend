@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
@@ -22,7 +22,7 @@ type InstallationDeployState = ReturnType<
 const BUILDER_URL =
   'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),

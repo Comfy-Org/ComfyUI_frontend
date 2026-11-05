@@ -76,13 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
 import TagEditor from '@/components/common/TagEditor.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
+import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { computed, onMounted, ref } from 'vue'

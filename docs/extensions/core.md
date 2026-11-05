@@ -165,6 +165,24 @@ afterConfigureGraph
 setup
 ```
 
+#### Late Extension (deployments with late custom nodes on)
+
+When a custom node script takes longer than 2 s, the editor opens without it.
+Once every script has arrived, the extensions registered late run, after
+every other extension's `setup`:
+
+```
+getCustomWidgets         [late extensions only]
+init                     [late extensions only]
+addCustomNodeDefs        [every extension]
+registerCustomNodes      [late extensions only]
+beforeRegisterNodeDef    [repeated multiple times, every extension]
+setup                    [late extensions only]
+```
+
+The open workflow is then loaded again (see Loading Workflow below), so every
+extension's per-node hooks run on its nodes.
+
 #### Loading Workflow
 
 ```

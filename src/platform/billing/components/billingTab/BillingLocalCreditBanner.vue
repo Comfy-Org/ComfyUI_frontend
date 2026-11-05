@@ -6,7 +6,7 @@
       target="_blank"
       rel="noopener"
       variant="inverted"
-      size="lg"
+      size="md"
       class="shrink-0"
       @click="track"
     >
@@ -20,13 +20,11 @@
   >
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
-          <i
-            class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
-          />
+          <i class="icon-[lucide--triangle-alert] text-warning" />
           <span class="text-sm text-foreground">{{ banner.title }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
@@ -38,15 +36,15 @@
         <Button
           v-if="banner.dismissible"
           variant="textonly"
-          size="lg"
+          size="md"
           @click="dismiss"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.dismiss') }}
         </Button>
         <Button
           v-if="banner.action === 'addCredits'"
-          variant="secondary"
-          size="lg"
+          :variant="addCreditsVariant"
+          size="md"
           @click="handleAddCredits"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
@@ -54,7 +52,7 @@
         <Button
           v-else-if="banner.action === 'updatePayment'"
           variant="inverted"
-          size="lg"
+          size="md"
           :loading="isUpdatingPayment"
           @click="updatePayment"
         >
@@ -66,11 +64,15 @@
 </template>
 
 <script setup lang="ts">
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -78,13 +80,14 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
 
@@ -97,17 +100,20 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const { suppressed = false } = defineProps<{
+const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
   suppressed?: boolean
+  addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useWorkspaceUI()
-const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const { workspaceType } = useBillingUI()
+const { canTopUp, topUpDenial, hasResolvedCapabilities, canManageBilling } =
+  useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { t, d, locale } = useI18n()
+const { t, locale } = useI18n()
+const { longDate } = useLongDate()
 
 const outOfCreditsDismissed = ref(false)
 const lowCreditsDismissed = ref(false)
@@ -169,20 +175,12 @@ watch(availableCents, (cents, previous) => {
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
 
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
-const cycleResetDate = computed(() =>
-  longDate(billing.renewalDate?.value ?? null)
+const refillDate = computed(() =>
+  longDate(billing.nextCreditRefillAt?.value ?? null)
 )
 
 function datedBody(key: string, noDateKey: string): string {
-  return cycleResetDate.value
-    ? t(key, { date: cycleResetDate.value })
-    : t(noDateKey)
+  return refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 }
 
 function pastDueBodyKey(): string {
@@ -203,32 +201,55 @@ function outOfCreditsView(): BannerView | null {
       dismissible: true
     }
   }
-  if (!permissions.value.canManageSubscription) {
+  if (canTopUp.value) {
+    const bodyKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBody`
+        : `${bs}.outOfCredits.body`
+    const noDateKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBodyNoDate`
+        : `${bs}.outOfCredits.bodyNoDate`
     return {
       title: t(`${bs}.outOfCredits.title`),
-      body: datedBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
-      ),
-      action: null,
+      body: datedBody(bodyKey, noDateKey),
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
-  const bodyKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBody`
-      : `${bs}.outOfCredits.body`
-  const noDateKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBodyNoDate`
-      : `${bs}.outOfCredits.bodyNoDate`
+  if (!hasResolvedCapabilities.value) return null
   return {
     title: t(`${bs}.outOfCredits.title`),
-    body: datedBody(bodyKey, noDateKey),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
+}
+
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return datedBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return audience.value === 'personal'
+      ? datedBody(
+          `${bs}.outOfCredits.pausedPersonalBody`,
+          `${bs}.outOfCredits.pausedPersonalBodyNoDate`
+        )
+      : datedBody(
+          `${bs}.outOfCredits.pausedBody`,
+          `${bs}.outOfCredits.pausedBodyNoDate`
+        )
+  }
+  return t(
+    audience.value === 'personal'
+      ? `${bs}.outOfCredits.refusedPersonalBody`
+      : `${bs}.outOfCredits.refusedBody`
+  )
 }
 
 function creditsLeft(): string {
@@ -241,10 +262,24 @@ function creditsLeft(): string {
   })
 }
 
+function lowCreditsBodyKey(): string {
+  if (topUpDenial.value === 'topup_purchases_paused')
+    return `${bs}.lowCredits.pausedBody`
+  if (!isCloud) return `${bs}.lowCredits.localBody`
+  if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
+  return canManageBilling.value
+    ? `${bs}.lowCredits.ownerBody`
+    : `${bs}.lowCredits.memberBody`
+}
+
 function lowCreditsView(): BannerView {
   return {
     title: t(`${bs}.lowCredits.title`),
-    body: t(`${bs}.lowCredits.localBody`, { credits: creditsLeft() }),
+    body: t(
+      lowCreditsBodyKey(),
+      { credits: creditsLeft() },
+      centsToCredits(availableCents.value ?? 0)
+    ),
     action: canTopUp.value ? 'addCredits' : null,
     dismissible: true
   }

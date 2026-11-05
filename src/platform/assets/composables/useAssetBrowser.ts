@@ -27,7 +27,10 @@ import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 
 type NavId = 'all' | 'imported' | (string & {})
 

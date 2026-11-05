@@ -17,7 +17,10 @@ import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_TIMEOUT_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import type {
+  WorkspaceDeployment,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -37,10 +40,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-const deployment = {
+const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-2',
   release_id: 'r-2',
   status: 'ready',
+  can_start: false,
   created_at: '2026-10-01T00:00:00Z'
 }
 

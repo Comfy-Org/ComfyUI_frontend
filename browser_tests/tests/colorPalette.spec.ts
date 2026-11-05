@@ -284,6 +284,8 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           })
         )
         .toBe(true)
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+      await comfyPage.contextMenu.ariaMenu.evaluate(() => document.fonts.ready)
       await expectRegionScreenshot(
         comfyPage.page,
         [menuButton, comfyPage.contextMenu.ariaMenu],

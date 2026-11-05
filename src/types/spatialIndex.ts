@@ -1,12 +1,4 @@
-/**
- * Type definitions for spatial indexing system
- */
-export interface Bounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Debug information for a single QuadTree node

@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
 
@@ -34,17 +34,6 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
-)
-
-const legacyCheckoutMocks = vi.hoisted(() => ({
-  performSubscriptionCheckout: vi.fn()
-}))
-
-vi.mock(
-  import('@/platform/billing/subscription/utils/subscriptionCheckoutUtil'),
-  () => ({
-    performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
-  })
 )
 
 const TEAM_CREDIT_STOPS = {
@@ -157,9 +146,6 @@ describe('CloudSubscriptionRedirectView', () => {
         billingCycle: 'monthly'
       }
     })
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
 
     // Shows loading affordances
     expect(
@@ -174,7 +160,6 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
-    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
@@ -253,10 +238,6 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'creator', cycle: 'yearly' })
 
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
-    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
@@ -277,8 +258,5 @@ describe('CloudSubscriptionRedirectView', () => {
       reason: 'deep_link',
       planMode: 'personal'
     })
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 })

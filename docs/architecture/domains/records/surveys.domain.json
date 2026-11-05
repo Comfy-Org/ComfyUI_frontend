@@ -4,65 +4,10 @@
   "description": "Feature-usage-triggered and error-panel Typeform surveys: the survey registry, eligibility and usage tracking persisted to localStorage, the nightly survey popover and controller, the error-panel survey call to action, and the Typeform embed and dialog. User-initiated feedback is the support-feedback record; the cloud onboarding survey is the cloud record.",
   "modules": [
     {
-      "path": "src/platform/surveys/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/ErrorPanelSurveyCta.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/NightlySurveyController.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/NightlySurveyPopover.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/NightlySurveyPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/TypeformDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/TypeformEmbed.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/TypeformEmbed.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/appModeFeedback.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/surveyRegistry.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/surveyRegistry.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/useTypeformEmbed.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/useTypeformEmbed.ts",
-      "role": "presentation"
+      "path": "src/platform/surveys/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Survey eligibility follows feature usage, distribution, and dismissal state",
@@ -95,7 +40,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Survey state and feature-usage localStorage keys keep their persisted names.",
-    "openTypeformDialog importing its dialog component and surveyRegistry typing against useSurveyEligibility remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "openTypeformDialog importing its dialog component and surveyRegistry typing against useSurveyEligibility remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }
