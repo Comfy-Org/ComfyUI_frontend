@@ -38,7 +38,6 @@ function resolveOnPath(name: string): string {
   if (!found) throw new Error(`${name} not found on PATH`)
   return found
 }
-const bash = resolveOnPath('bash')
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 const bin = join(import.meta.dirname, '../../node_modules/.bin')
 
@@ -325,6 +324,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
         { mode: 0o755 }
       )
       const specs = files.map((file, i) => ({ file, key: `key${i}` }))
+      const bash = resolveOnPath('bash')
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
@@ -406,6 +406,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
       spawnSync('touch', recorded, { cwd: join(root, 'video-blobs') })
 
+      const bash = resolveOnPath('bash')
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
