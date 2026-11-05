@@ -89,6 +89,73 @@ describe('VideoPreview', () => {
     })
   })
 
+  describe('stalled load', () => {
+    // A load that reaches neither `loadeddata` nor `error` used to sit on the
+    // Skeleton forever: a full-size blank panel captioned "Loading...", over a
+    // video element held `invisible`, reported to nobody. That is what a user
+    // describes as a blank or white video, and the canvas preview has bounded it
+    // with `MEDIA_LOAD_TIMEOUT` all along. PM-2202.
+    it('brings the loader down and reports a stall when neither loadeddata nor error arrives', async () => {
+      resetImageFailureProbesForTest()
+      // 200, not 404: the asset is served fine and the element still never
+      // reached `loadeddata`. That pairing is the point of the report.
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      const { container } = renderVideoPreview({
+        imageUrls: ['/api/view?filename=stalled.mp4&type=output']
+      })
+
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+
+      expect(
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
+      // Revealed, not condemned: a stall is not evidence the video is broken, so
+      // the element stays mounted with its native controls.
+      expect(screen.getByTestId('main-video')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('error-loading-video')
+      ).not.toBeInTheDocument()
+
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            source: 'node_video_preview',
+            timed_out: true,
+            attempts: 1,
+            resource_kind: 'output',
+            status: 200
+          })
+        )
+      )
+    })
+
+    it('does not report a load that completes before the timeout', async () => {
+      resetImageFailureProbesForTest()
+      const { container } = renderVideoPreview({
+        imageUrls: ['/api/view?filename=fine.mp4&type=output']
+      })
+
+      await fireEvent.loadedData(screen.getByTestId('main-video'))
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(8192 * 2)
+
+      expect(
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
+      expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+    })
+  })
+
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {
       const sameUrl = '/api/view?filename=test.mp4&type=output'
