@@ -12,7 +12,6 @@ import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/a
 const answerWaitLimitMs = pendingServerFact('BE-25470', 15 * 60_000)
 
 interface AgentTabSignalsOptions {
-  /** Page-lifetime signal that the signed-in account or workspace changed. */
   onIdentityChange(listener: () => void): () => void
 }
 
@@ -41,7 +40,6 @@ export function useAgentTabSignals({
     { immediate: true, flush: 'sync' }
   )
 
-  /** Clears the tab dots on panel close; a pending answer keeps the page-wide prefix. */
   function clearTurnSignals(): void {
     tabActivity.setAgentTurnTabs([])
     if (awaitingSince === null) setAgentTabTitlePrefix(null)
