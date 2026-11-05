@@ -27,7 +27,7 @@ const { hasNodes } = storeToRefs(appModeStore)
       class="h-10 gap-1.5 rounded-lg px-3 font-normal"
       @click="enterBuilder"
     >
-      <i class="icon-[lucide--hammer] size-4" />
+      <i class="icon-[lucide--hammer]" />
       <span>{{ t('linearMode.appModeToolbar.buildAnApp') }}</span>
     </Button>
   </div>

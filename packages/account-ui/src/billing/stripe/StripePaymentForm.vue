@@ -44,7 +44,7 @@
         class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
-          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
+          class="mt-0.5 icon-[lucide--shield-check] text-(--success-foreground)"
         />
         <p class="m-0">
           {{ copy.alipayRenewalNote }}
@@ -106,8 +106,8 @@ const {
   amountCents: number
   currency: string
   copy: StripePaymentCopy
-  /** Stripe payment method configuration governing which methods Elements
-   *  offers (served per-environment by the preview). */
+  /** Stripe payment method configuration governing which methods a subscription
+   *  offers (served per-environment by the preview); paying once is card only. */
   paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: the host's own verification action is
@@ -197,6 +197,7 @@ function mountPaymentElement(
     // inputs, and a customer who filled the two differently would send the
     // issuer an address that contradicts the one we collected for AVS.
     fields: { billingDetails: { address: 'never' } },
+    ...(payOnce ? { wallets: { link: 'never' as const } } : {}),
     // The host's terms note carries the recurring-charge authorization;
     // Stripe's card mandate text would say it twice.
     terms: { card: 'never' }
@@ -247,8 +248,12 @@ function mountAddressElement(
 
 function intentOptions() {
   return payOnce
-    ? ({ mode: 'payment' } as const)
-    : ({ mode: 'subscription', setupFutureUsage: 'off_session' } as const)
+    ? { mode: 'payment' as const, paymentMethodTypes: ['card'] }
+    : {
+        mode: 'subscription' as const,
+        setupFutureUsage: 'off_session' as const,
+        paymentMethodConfiguration: paymentMethodConfigurationId
+      }
 }
 
 onMounted(async () => {
@@ -256,8 +261,6 @@ onMounted(async () => {
     failElementInit()
     return
   }
-  if (amountCents <= 0) return
-
   try {
     stripe = await loadStripe(publishableKey)
   } catch {
@@ -268,13 +271,17 @@ onMounted(async () => {
     failElementInit()
     return
   }
-  stripeElements.value = stripe.elements({
-    ...intentOptions(),
-    amount: amountCents,
-    currency: currency.toLowerCase(),
-    paymentMethodConfiguration: paymentMethodConfigurationId,
-    appearance: resolveAppearance(paymentElementTarget.value)
-  })
+  try {
+    stripeElements.value = stripe.elements({
+      ...intentOptions(),
+      amount: amountCents,
+      currency: currency.toLowerCase(),
+      appearance: resolveAppearance(paymentElementTarget.value)
+    })
+  } catch {
+    failElementInit()
+    return
+  }
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
   if (addressElementTarget.value) {
     mountAddressElement(stripeElements.value, addressElementTarget.value)
@@ -282,7 +289,7 @@ onMounted(async () => {
 })
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
-  if (!stripeElements.value || amount <= 0) return
+  if (!stripeElements.value) return
 
   stripeElements.value
     .update({ amount, currency: nextCurrency.toLowerCase() })

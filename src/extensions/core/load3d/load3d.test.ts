@@ -10,8 +10,8 @@ import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import * as graphTraversal from '@/utils/graphTraversalUtil'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   load3dExtension,
   preview3DAdvancedExtension,
@@ -84,10 +84,6 @@ vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
       configureForSaveMesh = configureForSaveMeshMock
     }
   )
-}))
-
-vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
-  createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
 vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
@@ -492,7 +488,8 @@ describe('getNodeMenuItems', () => {
     } as unknown as LGraphNode
 
     expect(preview3DExtension.getNodeMenuItems!(node)).toEqual([
-      { content: 'Export' }
+      null,
+      expect.objectContaining({ content: 'Save' })
     ])
   })
 })
@@ -964,7 +961,8 @@ describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
     } as unknown as LGraphNode
 
     expect(preview3DAdvancedExtension.getNodeMenuItems!(node)).toEqual([
-      { content: 'Export' }
+      null,
+      expect.objectContaining({ content: 'Save' })
     ])
   })
 })

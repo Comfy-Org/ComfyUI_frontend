@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import type { BillingPortalOutcome } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   canManageBillingFact,
   paymentRecoveryAvailableFact,
@@ -19,7 +19,6 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('usePaymentRecoveryDialog', () => {
   beforeEach(() => {

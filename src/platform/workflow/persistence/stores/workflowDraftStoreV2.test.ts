@@ -1,7 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { reportError } from '@/platform/telemetry/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
@@ -24,7 +24,7 @@ beforeEach(() => {
 vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
@@ -475,6 +475,22 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft).not.toBeNull()
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')
+    })
+
+    it('keeps the draft when moved onto its own path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'same',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'same')
+
+      const draft = store.getDraft('workflows/same.json')
+      expect(draft).not.toBeNull()
+      expect(draft!.data).toBe('{"data":"test"}')
+      expect(draft!.name).toBe('same')
     })
 
     it('preserves payload updatedAt when moving a draft', () => {

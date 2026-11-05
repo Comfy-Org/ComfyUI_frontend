@@ -23,7 +23,7 @@
     <div class="absolute top-4 right-4">
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
+        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
       />
       <div
         v-else
@@ -42,7 +42,7 @@
           :disabled="disabled"
           @click="emit('edit')"
         >
-          <i class="icon-[lucide--square-pen] size-4" />
+          <i class="icon-[lucide--square-pen]" />
         </Button>
         <Button
           variant="muted-textonly"
@@ -51,7 +51,7 @@
           :disabled="disabled"
           @click="emit('delete')"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </div>
     </div>

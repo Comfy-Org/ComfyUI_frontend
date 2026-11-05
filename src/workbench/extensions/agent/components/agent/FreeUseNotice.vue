@@ -8,7 +8,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
@@ -82,7 +82,7 @@ function onDismiss(): void {
       class="shrink-0"
       @click="onDismiss"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

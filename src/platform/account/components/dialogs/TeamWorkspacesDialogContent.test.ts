@@ -4,7 +4,7 @@ import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/no-node-access */
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -119,6 +119,8 @@ describe('TeamWorkspacesDialogContent', () => {
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []
+    workspaceStore.serverRefusesCreation = false
+    workspaceStore.creationDeniedReason = undefined
   })
 
   describe('workspace listing', () => {
@@ -188,6 +190,56 @@ describe('TeamWorkspacesDialogContent', () => {
         'workspaceSwitcher.failedToSwitch',
         { description: 'Network error' }
       )
+    })
+  })
+
+  describe('when creation is refused', () => {
+    function expectNoCreateControls() {
+      expect(
+        screen.queryByLabelText(
+          'workspacePanel.createWorkspaceDialog.nameLabel'
+        )
+      ).toBeNull()
+      expect(
+        screen.queryByRole('button', {
+          name: 'teamWorkspacesDialog.createWorkspace'
+        })
+      ).toBeNull()
+    }
+
+    it.for([
+      {
+        reason: 'organization_managed',
+        notice: 'workspaceSwitcher.managedByOrganization'
+      },
+      {
+        reason: 'owned_workspace_limit',
+        notice: 'workspaceSwitcher.maxWorkspacesReached'
+      },
+      { reason: undefined, notice: 'workspaceSwitcher.cannotCreateWorkspace' }
+    ] as const)(
+      'replaces the create form with the served $reason notice',
+      ({ reason, notice }) => {
+        setOwnedWorkspaces()
+        workspaceStore.serverRefusesCreation = true
+        workspaceStore.creationDeniedReason = reason
+        mountComponent()
+        expectNoCreateControls()
+        expect(screen.getByText(notice)).toBeInTheDocument()
+        expect(screen.getByText('Team Alpha')).toBeInTheDocument()
+      }
+    )
+
+    it('keeps the create form when the server allows creation at any owned count', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      mountComponent()
+      expect(
+        screen.getByRole('button', {
+          name: 'teamWorkspacesDialog.createWorkspace'
+        })
+      ).toBeInTheDocument()
     })
   })
 

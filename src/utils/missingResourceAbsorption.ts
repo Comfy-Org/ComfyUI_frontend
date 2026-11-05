@@ -1,6 +1,6 @@
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
@@ -10,7 +10,7 @@ import {
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
-import type { PromptError } from '@/platform/remote/comfyui/types'
+import type { PromptError } from '@comfyorg/api-client/types'
 
 export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
 

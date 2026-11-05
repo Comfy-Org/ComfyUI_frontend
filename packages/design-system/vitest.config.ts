@@ -7,7 +7,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      include: ['src/**']
+      include: ['src/**'],
+      exclude: ['src/**/*.stories.ts']
     },
     mockReset: true,
     restoreMocks: true,

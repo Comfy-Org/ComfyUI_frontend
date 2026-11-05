@@ -15,7 +15,7 @@
       data-testid="queue-button"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+      <i :class="iconClass" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 
@@ -58,8 +58,8 @@ import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,

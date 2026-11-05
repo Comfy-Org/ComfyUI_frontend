@@ -41,9 +41,7 @@ test.describe(
         await selectedTemplate.click()
         await expect(comfyPage.templates.content).toBeHidden()
 
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBeGreaterThan(1)
+        await comfyPage.expectNodeCountMinimum(2)
         const loadedState = await comfyPage.page.evaluate(() => ({
           ids: window.app!.graph.nodes.map(({ id }) => String(id)),
           types: window.app!.graph.nodes.map(({ type }) => type),

@@ -44,6 +44,8 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -249,10 +251,11 @@ export function useWorkflowPersistenceV2() {
     if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved, { isCurrent })
+      if (
+        saved &&
+        (await useWorkflowService().openWorkflow(saved, { isCurrent }))
+      )
         return true
-      }
     }
 
     return await draftStore.loadPersistedWorkflow({
@@ -419,6 +422,25 @@ export function useWorkflowPersistenceV2() {
    * GraphCanvas must call this during startup when workflow persistence is enabled.
    */
   const restoreWorkflowTabsState = async () => {
+    try {
+      await restoreSavedTabs()
+    } finally {
+      workflowStore.markTabsRestored()
+    }
+  }
+
+  const stampWithDraftTime = (
+    restored: ComfyWorkflow,
+    draftPath: string,
+    draftData: ComfyWorkflowJSON,
+    draftUpdatedAt: number
+  ) => {
+    const builtFromThisDraft =
+      restored.path === draftPath && isValidUuid(draftData.id)
+    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+  }
+
+  const restoreSavedTabs = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
@@ -451,7 +473,8 @@ export function useWorkflowPersistenceV2() {
       if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        workflowStore.createTemporary(draft.name, workflowData)
+        const restored = workflowStore.createTemporary(draft.name, workflowData)
+        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',

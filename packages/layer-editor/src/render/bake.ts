@@ -1,4 +1,5 @@
-import type { Rect, Transform } from '#/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Transform } from '#/node'
 import type { Bitmap } from './place'
 
 export function placedBounds(t: Transform): Rect {

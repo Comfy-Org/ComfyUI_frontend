@@ -6,10 +6,7 @@
     <div class="flex items-center gap-2 border-b px-3 py-2">
       <i
         :class="
-          cn(
-            'size-4 shrink-0',
-            isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
-          )
+          isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
         "
       />
       <span class="truncate text-xs font-semibold text-foreground">
@@ -67,7 +64,7 @@
             :aria-label="item.label"
             @click="onAlign(item.op)"
           >
-            <i :class="cn('size-4', item.icon)" />
+            <i :class="item.icon" />
           </Button>
         </div>
       </div>
@@ -95,7 +92,7 @@
                 :aria-label="t('layerEditor.flipHorizontal')"
                 @click="onFlip('h')"
               >
-                <i class="icon-[lucide--flip-horizontal-2] size-4" />
+                <i class="icon-[lucide--flip-horizontal-2]" />
               </Button>
               <Button
                 variant="textonly"
@@ -105,7 +102,7 @@
                 :aria-label="t('layerEditor.flipVertical')"
                 @click="onFlip('v')"
               >
-                <i class="icon-[lucide--flip-vertical-2] size-4" />
+                <i class="icon-[lucide--flip-vertical-2]" />
               </Button>
             </div>
           </div>
@@ -214,7 +211,6 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

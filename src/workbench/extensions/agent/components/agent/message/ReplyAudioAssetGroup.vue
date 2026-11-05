@@ -36,7 +36,8 @@ const { t } = useI18n()
       @click="$emit('toggle')"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
-      <span
+      <i
+        aria-hidden="true"
         :class="
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "

@@ -19,7 +19,9 @@
     <!-- Loading state while subscription is being set up -->
     <div v-if="isSettingUp" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
-        <i class="pi pi-spin pi-spinner" />
+        <i
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+        />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
       <Button
@@ -36,7 +38,9 @@
     <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
     <div v-else-if="isLoading && !subscription" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
-        <i class="pi pi-spin pi-spinner" />
+        <i
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+        />
         <span>{{ $t('g.loading') }}</span>
       </div>
     </div>
@@ -47,7 +51,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border p-6"
     >
       <div class="flex items-center gap-2 text-muted-foreground">
-        <i class="pi pi-exclamation-circle text-destructive" />
+        <i class="icon-[lucide--circle-alert] text-destructive" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -71,7 +75,7 @@
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning"
         >
-          <i class="pi pi-info-circle" />
+          <i class="icon-[lucide--info]" />
         </div>
         <div class="flex flex-col gap-2 text-sm">
           <h2 class="m-0 pt-1.5 font-bold text-foreground">
@@ -350,7 +354,7 @@
                   v-if="benefit.type === 'feature'"
                   :class="
                     cn(
-                      'pi pi-check text-xs',
+                      'icon-[lucide--check] size-3',
                       showInactiveTeamSubscription
                         ? 'text-muted-foreground'
                         : 'text-foreground'
@@ -400,12 +404,13 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
-  isSalesManagedTier,
-  isWithinEnterpriseEndingNotice
+  hasEndingNoticeStarted,
+  isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/billing/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/billing/subscription/utils/tierBenefits'
@@ -441,8 +446,12 @@ const {
   canReactivatePlan,
   canOpenPricingSurface
 } = useBillingUI()
-const { canChangeSeats, canSubscribeSelfServe, runDeniedPaymentPastDue } =
-  useBillingCapabilities()
+const {
+  canChangeSeats,
+  canSubscribeSelfServe,
+  runDeniedPaymentPastDue,
+  endingNoticeStartsAt
+} = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -590,10 +599,8 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
-// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
+const isEnterprisePlan = computed(() =>
+  pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
 )
 
 const isEndedEnterprise = computed(
@@ -613,13 +620,12 @@ const hasScheduledEnterpriseEnd = computed(() => {
   return !Number.isNaN(Date.parse(endDate))
 })
 
-// Coarse shared clock so the notice window opens mid-session too.
 const now = useTimestamp({ interval: 60_000 })
 
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
 )
 
 const { kind: billingBannerKind } = useBillingBanner()

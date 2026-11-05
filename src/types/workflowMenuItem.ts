@@ -14,5 +14,4 @@ export interface WorkflowMenuAction extends Omit<
   visible?: boolean
   id: string
   command?: () => void
-  isNew?: boolean
 }

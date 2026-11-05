@@ -1,184 +1,82 @@
 {
   "id": "design-system",
   "capability": "Shared UI component library",
-  "description": "App-side remainder of the design system: the Reka-based primitives, media, and generic common/ widgets now live in packages/design-system and are imported from @comfyorg/design-system. This domain keeps the app-owned pieces that still depend on app stores, i18n, or services: the charts and color picker under ui/, the toast queue store, the chip and loader kits and card stories, the App-prefixed wrappers and lightbox, lazy image, video player, and avatar widgets in common/, and the value editors for curves, ranges, gradients, and palette swatches with their pure interpolation and gradient math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
+  "description": "The @comfyorg/design-system package (the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets) with its color math from @comfyorg/shared-frontend-utils, and the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
   "modules": [
     {
-      "path": "src/components/button/**",
-      "role": "presentation"
+      "path": "src/components/common/**"
     },
     {
-      "path": "src/components/card/**",
-      "role": "presentation"
+      "path": "src/components/curve/**"
     },
     {
-      "path": "src/components/chip/**",
-      "role": "presentation"
+      "path": "src/components/loader/**"
     },
     {
-      "path": "src/components/common/**",
-      "role": "presentation"
+      "path": "src/components/palette/**"
     },
     {
-      "path": "src/components/curve/**",
-      "role": "domain"
+      "path": "src/components/range/**"
     },
     {
-      "path": "src/components/curve/CurveEditor.test.ts",
-      "role": "presentation"
+      "path": "src/components/ui/toast/toastStore.ts"
     },
     {
-      "path": "src/components/curve/CurveEditor.vue",
-      "role": "presentation"
+      "path": "src/composables/element/useOverflowObserver.ts"
     },
     {
-      "path": "src/components/gradientslider/**",
-      "role": "presentation"
+      "path": "src/composables/palette/**"
     },
     {
-      "path": "src/components/gradientslider/gradients.ts",
-      "role": "domain"
+      "path": "src/composables/tree/**"
     },
     {
-      "path": "src/components/loader/**",
-      "role": "presentation"
+      "path": "src/composables/useCurveEditor.ts"
     },
     {
-      "path": "src/components/palette/**",
-      "role": "presentation"
+      "path": "src/composables/useImageQuiet.ts"
     },
     {
-      "path": "src/components/range/**",
-      "role": "domain"
+      "path": "src/composables/useIntersectionObserver.ts"
     },
     {
-      "path": "src/components/range/RangeEditor.test.ts",
-      "role": "presentation"
+      "path": "src/composables/useRangeEditor.ts"
     },
     {
-      "path": "src/components/range/RangeEditor.vue",
-      "role": "presentation"
+      "path": "src/composables/useTreeExpansion.ts"
     },
     {
-      "path": "src/components/rightSidePanel/layout/**",
-      "role": "presentation"
+      "path": "src/services/mediaCacheService.ts"
     },
     {
-      "path": "src/components/ui/chart/**",
-      "role": "presentation"
+      "path": "src/types/toastId.ts"
     },
     {
-      "path": "src/components/ui/color-picker/**",
-      "role": "presentation"
+      "path": "src/types/toastOptions.ts"
     },
     {
-      "path": "src/components/ui/toast/toastStore.test.ts",
-      "role": "application"
+      "path": "src/utils/gridUtil.ts"
     },
     {
-      "path": "src/components/ui/toast/toastStore.ts",
-      "role": "application"
+      "path": "src/utils/histogramUtil.ts"
     },
     {
-      "path": "src/components/widget/**",
-      "role": "presentation"
+      "path": "src/utils/treeUtil.ts"
     },
     {
-      "path": "src/composables/element/useOverflowObserver.ts",
-      "role": "infrastructure"
+      "path": "src/utils/validationUtil.ts"
     },
     {
-      "path": "src/composables/palette/**",
-      "role": "application"
+      "path": "src/utils/zodTypedSchema.ts"
     },
     {
-      "path": "src/composables/tree/**",
-      "role": "application"
+      "path": "packages/design-system/src/**"
     },
     {
-      "path": "src/composables/useCurveEditor.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useCurveEditor.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useImageQuiet.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useIntersectionObserver.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useRangeEditor.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useRangeEditor.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useTreeExpansion.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/mediaCacheService.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/services/mediaCacheService.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/types/navTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/toastId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/toastOptions.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/gridUtil.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/utils/histogramUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/histogramUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/treeUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/treeUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/validationUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/zodTypedSchema.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/zodTypedSchema.ts",
-      "role": "infrastructure"
+      "path": "packages/shared-frontend-utils/src/colorUtil.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["agent", "billing", "bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",
@@ -190,7 +88,7 @@
         "packages/design-system/src/components/switch/Switch.test.ts",
         "packages/design-system/src/components/textarea/Textarea.test.ts",
         "src/components/common/UrlInput.test.ts",
-        "src/components/common/EditableText.test.ts"
+        "packages/design-system/src/components/common/EditableText.test.ts"
       ]
     },
     {
@@ -237,13 +135,13 @@
         "packages/design-system/src/components/table/tableUtils.test.ts",
         "packages/design-system/src/components/pagination/Pagination.test.ts",
         "packages/design-system/src/components/tree/Tree.test.ts",
-        "src/components/ui/chart/Chart.test.ts",
-        "src/components/common/VirtualGrid.test.ts",
-        "src/components/common/Video.test.ts",
-        "src/components/common/VideoCompareSlider.test.ts",
-        "src/components/common/ImageLightbox.test.ts",
-        "src/components/common/SanitizedHtml.test.ts",
-        "src/components/common/UserAvatar.test.ts"
+        "packages/design-system/src/components/chart/Chart.test.ts",
+        "packages/design-system/src/components/common/VirtualGrid.test.ts",
+        "packages/design-system/src/components/media/Video.test.ts",
+        "packages/design-system/src/components/common/VideoCompareSlider.test.ts",
+        "packages/design-system/src/components/media/ImageLightbox.test.ts",
+        "packages/design-system/src/components/common/SanitizedHtml.test.ts",
+        "packages/design-system/src/components/common/UserAvatar.test.ts"
       ]
     },
     {
@@ -253,19 +151,20 @@
         "src/components/curve/CurveEditor.test.ts",
         "src/components/range/rangeUtils.test.ts",
         "src/components/range/RangeEditor.test.ts",
-        "src/components/gradientslider/GradientSlider.test.ts",
+        "packages/design-system/src/components/slider/GradientSlider.test.ts",
         "src/components/palette/PaletteSwatchRow.test.ts",
-        "src/components/ui/color-picker/useColorPicker.test.ts",
-        "src/components/ui/color-picker/ColorPickerPanel.test.ts",
-        "packages/design-system/src/components/slider/Slider.test.ts"
+        "packages/design-system/src/components/color-picker/useColorPicker.test.ts",
+        "packages/design-system/src/components/color-picker/ColorPickerPanel.test.ts",
+        "packages/design-system/src/components/slider/Slider.test.ts",
+        "packages/shared-frontend-utils/src/colorUtil.test.ts"
       ]
     },
     {
       "name": "Modal layout, navigation items, and accordion items render feature-agnostic structure",
       "checks": [
-        "src/components/widget/layout/BaseModalLayout.test.ts",
-        "src/components/widget/nav/NavItem.test.ts",
-        "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts"
+        "packages/design-system/src/components/layout/BaseModalLayout.test.ts",
+        "packages/design-system/src/components/navigation/NavItem.test.ts",
+        "packages/design-system/src/components/accordion/PropertiesAccordionItem.test.ts"
       ]
     },
     {
@@ -294,7 +193,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules until a tested public entry point and dependency approval exist.",
+    "Callers may import these internals during inventory, until a tested public entry point exists.",
     "Component file paths, props, emits, and slots stay stable because extensions, renderer widgets, platform features, and stories import them directly.",
     "The toast store keeps its Pinia id and the add, update, and remove contract used by api, app, and service callers.",
     "Curve and range value shapes stay compatible with the litegraph widget types and GLSL uniform consumers that read them.",

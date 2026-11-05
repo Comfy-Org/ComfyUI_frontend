@@ -16,7 +16,7 @@
           :value="option.value"
           class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
-          <i :class="cn('size-4', option.icon)" />
+          <i :class="option.icon" />
           <span class="text-center text-sm font-bold">
             {{ option.label }}
           </span>

@@ -13,7 +13,7 @@
         :title="t('layerEditor.selectTool')"
         :aria-label="t('layerEditor.selectTool')"
       >
-        <i class="icon-[lucide--mouse-pointer-2] size-4" />
+        <i class="icon-[lucide--mouse-pointer-2]" />
       </ToggleGroupItem>
       <ToggleGroupItem
         value="hand"
@@ -21,25 +21,21 @@
         :title="t('layerEditor.handTool')"
         :aria-label="t('layerEditor.handTool')"
       >
-        <i class="icon-[lucide--hand] size-4" />
+        <i class="icon-[lucide--hand]" />
       </ToggleGroupItem>
     </ToggleGroup>
 
     <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
-        <button
-          :class="
-            cn(
-              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-foreground transition-colors',
-              'hover:bg-accent'
-            )
-          "
+        <Button
+          variant="textonly"
+          class="gap-1 rounded-full"
           :title="t('layerEditor.zoom')"
           :aria-label="t('layerEditor.zoom')"
         >
           <span class="min-w-8 text-center">{{ zoomPercent }}</span>
           <i class="icon-[lucide--chevron-down] size-3" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
@@ -66,7 +62,7 @@
       :aria-label="t('layerEditor.undo')"
       @click="session.undo()"
     >
-      <i class="icon-[lucide--undo-2] size-4" />
+      <i class="icon-[lucide--undo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -75,7 +71,7 @@
       :aria-label="t('layerEditor.redo')"
       @click="session.redo()"
     >
-      <i class="icon-[lucide--redo-2] size-4" />
+      <i class="icon-[lucide--redo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -84,7 +80,7 @@
       :aria-label="t('layerEditor.exportPsd')"
       @click="onExportPsd"
     >
-      <i class="icon-[lucide--file-down] size-4" />
+      <i class="icon-[lucide--file-down]" />
     </button>
   </div>
 </template>
@@ -95,6 +91,7 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,

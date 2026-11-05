@@ -11,11 +11,11 @@ import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import SsoRequiredDialogContent from '@/platform/auth/sso/SsoRequiredDialogContent.vue'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 async function renderDialog(
   props: {

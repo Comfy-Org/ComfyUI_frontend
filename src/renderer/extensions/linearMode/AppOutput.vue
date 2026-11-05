@@ -3,8 +3,8 @@ import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
 import { useAppModeStore } from '@/stores/appModeStore'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { id } = defineProps<{ id: SerializedNodeId }>()

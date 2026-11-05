@@ -25,7 +25,7 @@ const forwarded = useForwardProps(restProps)
     "
   >
     <slot>
-      <i class="icon-[lucide--minus] size-4" />
+      <i class="icon-[lucide--minus]" />
     </slot>
   </NumberFieldDecrement>
 </template>

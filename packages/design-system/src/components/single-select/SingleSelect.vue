@@ -48,7 +48,7 @@
       >
         <i
           v-if="loading"
-          class="icon-[lucide--loader-circle] shrink-0 animate-spin text-muted-foreground"
+          class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
         />
         <slot v-else name="icon" />
         <SelectValue :placeholder="label" class="truncate" />

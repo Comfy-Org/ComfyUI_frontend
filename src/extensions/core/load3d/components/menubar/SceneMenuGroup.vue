@@ -10,7 +10,7 @@
     :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
     @click="toggleGrid"
   >
-    <i class="icon-[lucide--grid-3x3] size-4" />
+    <i class="icon-[lucide--grid-3x3]" />
     <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
   </Button>
 
@@ -25,7 +25,7 @@
       :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
       @click="colorRef?.click()"
     >
-      <i class="icon-[lucide--palette] size-4" />
+      <i class="icon-[lucide--palette]" />
       <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
     </Button>
     <input
@@ -46,7 +46,7 @@
         :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
         @click="bgImageRef?.click()"
       >
-        <i class="icon-[lucide--image] size-4" />
+        <i class="icon-[lucide--image]" />
         <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
       </Button>
       <input
@@ -72,7 +72,7 @@
       :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
       @click="togglePanorama"
     >
-      <i class="icon-[lucide--globe] size-4" />
+      <i class="icon-[lucide--globe]" />
       <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
     </Button>
     <PopoverRoot v-if="isPanorama" v-model:open="fovOpen">
@@ -86,7 +86,7 @@
           type="button"
           :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
         >
-          <i class="icon-[lucide--focus] size-4" />
+          <i class="icon-[lucide--focus]" />
           <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
         </Button>
       </PopoverTrigger>
@@ -117,7 +117,7 @@
       :aria-label="compact ? t('load3d.menuBar.removeBackground') : undefined"
       @click="removeBackgroundImage"
     >
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
       <span v-if="!compact">{{ t('load3d.menuBar.removeBackground') }}</span>
     </Button>
   </template>

@@ -92,7 +92,7 @@
           data-testid="coach-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
+              'absolute icon-[lucide--mouse-pointer-2] text-foreground drop-shadow-md',
               cursorClass
             )
           "
@@ -242,7 +242,7 @@ async function focusPrimary() {
 }
 
 useEventListener(
-  document,
+  window,
   'keydown',
   (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return

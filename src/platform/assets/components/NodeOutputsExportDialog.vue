@@ -26,7 +26,7 @@
           >
             <i
               aria-hidden="true"
-              class="icon-[lucide--image] size-4 text-muted-foreground"
+              class="icon-[lucide--image] text-muted-foreground"
             />
           </div>
           <span class="min-w-0 flex-1 truncate text-sm">{{ item.name }}</span>

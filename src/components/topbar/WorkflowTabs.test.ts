@@ -11,18 +11,18 @@ import { createI18n } from 'vue-i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
@@ -97,7 +97,8 @@ vi.mock(
     useAgentConsent: () => ({
       accepted: computed(() => useAgentPanelStore().consentAccepted),
       isChecking: computed(() => consentChecking.value),
-      withConsent
+      withConsent,
+      resumeAcceptAfterReload: vi.fn()
     })
   })
 )
@@ -361,43 +362,32 @@ describe('WorkflowTabs agent entry button', () => {
       host: 'a local Desktop 2 window',
       desktop: false,
       bridge: { isRemote: () => false }
+    },
+    {
+      host: 'a browser tab on a local Core',
+      desktop: false,
+      bridge: undefined
+    },
+    {
+      host: 'a remote Desktop 2 view',
+      desktop: false,
+      bridge: { isRemote: () => true }
     }
   ])(
-    'toggles the locked panel without consent in $host',
+    'asks for consent from the entry button in $host',
     async ({ desktop, bridge }) => {
       distribution.isCloud = false
       distribution.isDesktop = desktop
       window.__comfyDesktop2 = bridge
       const { user } = renderComponent()
-      const button = screen.getByRole('button', {
-        name: enMessages.agent.entryButton
-      })
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(true)
-      expect(useAgentPanelStore().consentAccepted).toBe(false)
-      expect(button).toHaveAttribute('aria-pressed', 'true')
+      await user.click(
+        screen.getByRole('button', { name: enMessages.agent.entryButton })
+      )
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(false)
-      expect(withConsent).not.toHaveBeenCalled()
+      expect(withConsent).toHaveBeenCalledOnce()
     }
   )
-
-  it.for([
-    { host: 'a browser tab on a local Core', bridge: undefined },
-    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
-  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
-    distribution.isCloud = false
-    window.__comfyDesktop2 = bridge
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.entryButton })
-    )
-
-    expect(withConsent).toHaveBeenCalledOnce()
-  })
 
   it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true

@@ -5,9 +5,9 @@ import EditKeybindingFooter from '@/platform/keybindings/components/EditKeybindi
 import EditKeybindingHeader from '@/platform/keybindings/components/EditKeybindingHeader.vue'
 import { EDIT_KEYBINDING_DIALOG_KEY } from '@/platform/keybindings/components/editKeybindingDialogState'
 import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
-import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useDialogService } from '@/services/dialogService'
 
 export function useEditKeybindingDialog() {

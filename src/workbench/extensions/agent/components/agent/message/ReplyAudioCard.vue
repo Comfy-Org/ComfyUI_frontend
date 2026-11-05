@@ -6,7 +6,6 @@ import Slider from '@comfyorg/design-system/slider/Slider'
 import Button from '@comfyorg/design-system/button/Button'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
@@ -27,7 +26,11 @@ const {
   volumeIcon,
   toggleMute,
   seekToRatio
-} = useWaveAudioPlayer({ src: toRef(() => asset.url), waveform: false })
+} = useWaveAudioPlayer({
+  src: toRef(() => asset.url),
+  surface: 'agent',
+  waveform: false
+})
 
 function onScrub(value: number[] | undefined): void {
   if (value?.length) seekToRatio(value[0] / 100)
@@ -57,13 +60,9 @@ async function download(): Promise<void> {
       class="shrink-0"
       @click="togglePlayPause"
     >
-      <span
-        :class="
-          cn(
-            'size-4',
-            isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
-          )
-        "
+      <i
+        aria-hidden="true"
+        :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
       />
     </Button>
     <div class="flex min-w-0 flex-1 flex-col">
@@ -91,7 +90,7 @@ async function download(): Promise<void> {
             class="size-6 rounded-lg"
             @click="toggleMute"
           >
-            <span :class="cn('size-4', volumeIcon)" />
+            <i aria-hidden="true" :class="volumeIcon" />
           </Button>
           <Button
             type="button"
@@ -101,7 +100,7 @@ async function download(): Promise<void> {
             class="size-6 rounded-lg"
             @click="download"
           >
-            <span class="icon-[lucide--download] size-4" />
+            <i aria-hidden="true" class="icon-[lucide--download]" />
           </Button>
         </div>
       </div>

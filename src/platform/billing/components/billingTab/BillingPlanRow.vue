@@ -1,6 +1,6 @@
 <template>
   <section
-    class="flex items-start justify-between gap-4 rounded-xl border border-card px-5 py-4"
+    class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">
@@ -27,16 +27,25 @@
         class="shrink-0 no-underline"
       >
         {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="action"
-        :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        as="a"
+        :href="plansHref"
+        target="_blank"
+        rel="noopener"
+        :variant="
+          action === 'manage' || addCreditsVariant === 'inverted'
+            ? 'secondary'
+            : 'inverted'
+        "
         size="md"
-        class="shrink-0"
-        @click="emit('openPlan')"
+        class="shrink-0 no-underline"
+        @click="trackPlans"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
+        <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -51,27 +60,31 @@ import BillingPlanLifecycle from '@/platform/billing/components/billingTab/Billi
 import {
   CONTACT_SALES_URL,
   formatPlanDate
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
 import type {
   PlanRowAction,
   PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 const {
   state,
   action,
   canManageSubscription,
-  salesVariant = 'secondary'
+  salesVariant = 'secondary',
+  addCreditsVariant = 'secondary'
 } = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
   canManageSubscription: boolean
   salesVariant?: 'inverted' | 'secondary'
+  addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
-const emit = defineEmits<{
-  openPlan: []
-}>()
+const { href: plansHref, track: trackPlans } = usePlatformHandoff(
+  '/profile/billing/plans',
+  { target: 'plans' }
+)
 
 const { t, locale } = useI18n()
 
@@ -81,6 +94,14 @@ const title = computed(() => {
   }
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
+  }
+  if (state.kind === 'ended') {
+    return state.planName ?? t('workspacePanel.billingTab.plan.unknown.title')
+  }
+  if (state.kind === 'salesManaged') {
+    return (
+      state.planName ?? t('workspacePanel.billingTab.plan.salesManaged.title')
+    )
   }
   return state.planName
 })
@@ -112,23 +133,35 @@ function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
     : t(`${key}.freeRunsUsed`, { total })
 }
 
+function endedLine(state: Extract<PlanRowState, { kind: 'ended' }>) {
+  const key = 'workspacePanel.billingTab.plan'
+  if (!state.endedAt) return t(`${key}.endedNoDate`)
+  return t(`${key}.ended`, {
+    date: formatPlanDate(state.endedAt, locale.value, state.cadence)
+  })
+}
+
 const statusLine = computed(() => {
   const key = 'workspacePanel.billingTab.plan'
   if (state.kind === 'activating') {
     return t(`${key}.activating`, { plan: state.planName })
   }
   if (state.kind === 'active') return activeLine(state)
+  if (state.kind === 'paused') return t(`${key}.paused`)
   if (state.kind === 'noPlan') return noPlanLine(state)
+  if (state.kind === 'salesManaged') {
+    return state.renewsAt
+      ? t(`${key}.salesManaged.renews`, {
+          date: formatPlanDate(state.renewsAt, locale.value, state.cadence)
+        })
+      : t(`${key}.salesManaged.line`)
+  }
   if (state.kind === 'ending') {
     return t(`${key}.ending`, {
       date: formatPlanDate(state.endsAt, locale.value, state.cadence)
     })
   }
-  if (state.kind === 'ended') {
-    return t(`${key}.ended`, {
-      date: formatPlanDate(state.endedAt, locale.value, state.cadence)
-    })
-  }
+  if (state.kind === 'ended') return endedLine(state)
   return ''
 })
 

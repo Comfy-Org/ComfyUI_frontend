@@ -3,7 +3,7 @@
     <SearchInput
       v-if="showSearch"
       :clear-label="$t('g.clear')"
-      :accessible-label="$t('g.search')"
+      :accessible-label="searchPlaceholderText"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
       :placeholder="searchPlaceholderText"

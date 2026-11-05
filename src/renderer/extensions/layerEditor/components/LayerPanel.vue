@@ -98,7 +98,7 @@
         :aria-label="t('layerEditor.moveUp')"
         @click="moveActive(1)"
       >
-        <i class="icon-[lucide--chevron-up] size-4" />
+        <i class="icon-[lucide--chevron-up]" />
       </Button>
       <Button
         variant="textonly"
@@ -109,7 +109,7 @@
         :aria-label="t('layerEditor.moveDown')"
         @click="moveActive(-1)"
       >
-        <i class="icon-[lucide--chevron-down] size-4" />
+        <i class="icon-[lucide--chevron-down]" />
       </Button>
     </div>
   </div>

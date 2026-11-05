@@ -64,7 +64,7 @@ const CREATOR_ANNUAL_PLAN = createPlan({
   maxSeats: 5
 })
 
-const LEGACY_ACTIVE_STANDARD_STATUS = {
+const ACTIVE_STANDARD_STATUS = {
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
@@ -73,12 +73,13 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
-  occupied_seats: 1,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  occupied_seats: 1
+} satisfies BillingStatusResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
@@ -217,7 +218,7 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
     await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
     await setupCloudApp(page)
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(

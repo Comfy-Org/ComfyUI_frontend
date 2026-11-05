@@ -5,7 +5,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import AppToaster from '@/components/common/AppToaster.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -13,8 +13,6 @@ import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { GraphOperation } from './graphOperations'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'
 
@@ -130,6 +128,12 @@ function mountFollower() {
     })
   )
   onTestFinished(unmount)
+  agentSocket.receive('doc_subscribed', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 0
+  })
 
   async function submitBatch(
     operations: GraphOperation[]

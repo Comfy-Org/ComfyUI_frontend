@@ -2,7 +2,6 @@
   <div class="relative">
     <Button
       :tooltip="localizedCurrentColorName ?? t('color.noColor')"
-      data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
       @click="() => (showColorPicker = !showColorPicker)"
