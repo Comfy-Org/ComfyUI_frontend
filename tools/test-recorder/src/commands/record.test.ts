@@ -184,7 +184,7 @@ const refactorOrPrPrompt = expect.objectContaining({
 const overwriteQuestions = () =>
   vi
     .mocked(confirm)
-    .mock.calls.filter(([options]) => options.message.includes('Overwrite it?'))
+    .mock.calls.filter(([options]) => overwritePrompt.asymmetricMatch(options))
 
 function answerOverwriteWith(answer: boolean | symbol) {
   vi.mocked(confirm).mockResolvedValue(true)
