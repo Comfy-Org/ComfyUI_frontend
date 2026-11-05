@@ -1,4 +1,5 @@
-import { getCurrentScope, onScopeDispose, shallowRef } from 'vue'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
+import { getCurrentScope, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -16,7 +17,27 @@ export function useSubscriptionPaymentRecovery() {
   const capabilities = useBillingCapabilities()
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
+  const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
   let stopReturnRefresh: (() => void) | null = null
+
+  watch(
+    () => subscriptionPaymentRecovery.value?.billing_op_id,
+    async (opId) => {
+      recoveryPlanTier.value = null
+      if (!opId) return
+      try {
+        const operation = await billingApi.getBillingOpStatus(opId)
+        if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
+        recoveryPlanTier.value = operation.plan?.tier ?? null
+      } catch (error) {
+        reportError(error, {
+          surface: 'billing',
+          errorType: 'signup_payment_recovery_plan_read_failed'
+        })
+      }
+    },
+    { immediate: true }
+  )
 
   function refreshBillingState() {
     return Promise.allSettled([
@@ -38,7 +59,7 @@ export function useSubscriptionPaymentRecovery() {
     void refreshBillingState()
   }
 
-  async function payInvoice(): Promise<void> {
+  async function finishPayment(): Promise<void> {
     const recovery = subscriptionPaymentRecovery.value
     if (!recovery || isOpeningPayment.value) return
     const tab = reserveBillingTab()
@@ -72,5 +93,10 @@ export function useSubscriptionPaymentRecovery() {
     }
   }
 
-  return { subscriptionPaymentRecovery, isOpeningPayment, payInvoice }
+  return {
+    subscriptionPaymentRecovery,
+    recoveryPlanTier,
+    isOpeningPayment,
+    finishPayment
+  }
 }

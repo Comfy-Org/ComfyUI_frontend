@@ -12,7 +12,10 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import type { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
-import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
+import type {
+  SubscriptionPaymentRecovery,
+  SubscriptionTier
+} from '@comfyorg/ingest-types'
 import type { BillingSubscriptionStatus, Plan } from '@comfyorg/billing-core'
 import UnifiedPricingTable from '@/platform/billing/components/UnifiedPricingTable.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
@@ -77,7 +80,8 @@ const mockUpdatePayment = vi.hoisted(() => vi.fn())
 const mockRefreshCapabilities = vi.hoisted(() => vi.fn())
 const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 const mockSignupPaymentRecovery = ref<SubscriptionPaymentRecovery | null>(null)
-const mockPayInvoice = vi.hoisted(() => vi.fn())
+const mockFinishPayment = vi.hoisted(() => vi.fn())
+const mockRecoveryPlanTier = ref<SubscriptionTier | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
@@ -90,8 +94,9 @@ vi.mock(
       subscriptionPaymentRecovery: computed(
         () => mockSignupPaymentRecovery.value
       ),
+      recoveryPlanTier: computed(() => mockRecoveryPlanTier.value),
       isOpeningPayment: ref(false),
-      payInvoice: mockPayInvoice
+      finishPayment: mockFinishPayment
     })
   })
 )
@@ -147,6 +152,7 @@ beforeEach(() => {
   mockApiPlans.value = []
   mockPaymentRecoveryLock.value = null
   mockSignupPaymentRecovery.value = null
+  mockRecoveryPlanTier.value = null
   const billingContext = useBillingContext()
   billingContext.plans = computed(() => mockApiPlans.value)
   billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
@@ -1280,10 +1286,12 @@ describe('UnifiedPricingTable past-due notice', () => {
 })
 
 describe('UnifiedPricingTable unpaid signup invoice notice', () => {
-  const NOTICE_COPY = enMessages.subscription.signupPaymentRecovery.notice
-  const HELD_COPY = enMessages.subscription.signupPaymentRecovery.planHeld
   const IN_PROGRESS_COPY =
     enMessages.subscription.planUnavailable.billingOperationInProgress
+  const RECOVERY = {
+    billing_op_id: 'op-signup',
+    reason: 'payment_required'
+  } as const
 
   beforeEach(() => {
     mockSubscription.value = null
@@ -1292,41 +1300,54 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
     mockDistributionTypes.isCloud = true
-    mockApiPlans.value = standardYearlyCatalog({
-      action: 'none',
-      denied_reason: 'billing_operation_in_progress'
-    }).map((plan) => ({
-      ...plan,
-      action: 'none',
-      denied_reason: 'billing_operation_in_progress'
-    }))
+    mockApiPlans.value = standardYearlyCatalog({ action: 'subscribe' }).map(
+      (plan) => ({
+        ...plan,
+        action: 'none',
+        denied_reason: 'billing_operation_in_progress'
+      })
+    )
   })
 
-  it('explains the unpaid plan invoice and offers to pay it', async () => {
+  it.for([
+    {
+      tier: 'CREATOR',
+      title: "Your Creator payment didn't go through."
+    },
+    { tier: null, title: "Your plan payment didn't go through." },
+    { tier: 'TEAM', title: "Your plan payment didn't go through." }
+  ] as const)(
+    'names the $tier plan whose payment did not go through',
+    ({ tier, title }) => {
+      mockSignupPaymentRecovery.value = RECOVERY
+      mockRecoveryPlanTier.value = tier
+
+      renderComponent()
+
+      const notice = screen.getByTestId('pricing-signup-payment-notice')
+      expect(notice.textContent).toContain(title)
+      expect(notice.textContent).toContain('Finish paying to start your plan.')
+    }
+  )
+
+  it('opens the payment page from Finish payment and links to support', async () => {
     const user = userEvent.setup()
-    mockSignupPaymentRecovery.value = {
-      billing_op_id: 'op-signup',
-      reason: 'payment_required'
-    }
+    mockSignupPaymentRecovery.value = RECOVERY
 
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'Finish payment' }))
+    expect(mockFinishPayment).toHaveBeenCalledOnce()
     expect(
-      screen.getByTestId('pricing-signup-payment-notice').textContent
-    ).toContain(NOTICE_COPY)
-    await user.click(screen.getByRole('button', { name: 'Pay invoice' }))
-    expect(mockPayInvoice).toHaveBeenCalledOnce()
+      screen.getByRole('link', { name: 'Contact support' })
+    ).toHaveAttribute('href', 'https://comfy.org/contact/')
   })
 
-  it('replaces the will-be-available-shortly copy on held plans', () => {
-    mockSignupPaymentRecovery.value = {
-      billing_op_id: 'op-signup',
-      reason: 'payment_required'
-    }
+  it('drops the will-be-available-shortly line from held plans', () => {
+    mockSignupPaymentRecovery.value = RECOVERY
 
     renderComponent()
 
-    expect(screen.getAllByText(HELD_COPY)).toHaveLength(3)
     expect(screen.queryByText(IN_PROGRESS_COPY)).toBeNull()
     expect(
       screen.getByRole('button', { name: 'Creator Yearly' })
@@ -1342,10 +1363,7 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
 
   it('shows instead of the past-due notice when both apply', () => {
     mockPaymentRecoveryLock.value = 'owner'
-    mockSignupPaymentRecovery.value = {
-      billing_op_id: 'op-signup',
-      reason: 'payment_required'
-    }
+    mockSignupPaymentRecovery.value = RECOVERY
 
     renderComponent()
 
@@ -1355,10 +1373,7 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
 
   it('stays hidden off Cloud', () => {
     mockDistributionTypes.isCloud = false
-    mockSignupPaymentRecovery.value = {
-      billing_op_id: 'op-signup',
-      reason: 'payment_required'
-    }
+    mockSignupPaymentRecovery.value = RECOVERY
 
     renderComponent()
 

@@ -355,15 +355,29 @@
         data-testid="pricing-signup-payment-notice"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
-        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
-        <span>{{ t('subscription.signupPaymentRecovery.notice') }}</span>
+        <i
+          class="icon-[lucide--circle-alert] bg-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{ signupPaymentTitle }}
+          {{ t('subscription.signupPaymentRecovery.body') }}
+        </span>
+        <a
+          :href="CONTACT_SUPPORT_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-inter text-sm font-bold text-background no-underline hover:opacity-80"
+        >
+          {{ t('subscription.signupPaymentRecovery.contactSupport') }}
+        </a>
         <button
           type="button"
           class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
           :disabled="isOpeningPayment"
-          @click="payInvoice"
+          @click="finishPayment"
         >
-          {{ t('subscription.signupPaymentRecovery.cta') }}
+          {{ t('subscription.signupPaymentRecovery.finishPayment') }}
         </button>
       </div>
       <div
@@ -485,7 +499,8 @@ import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/u
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
-  amountForBillingCycle
+  amountForBillingCycle,
+  toTierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
@@ -575,6 +590,7 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -697,11 +713,23 @@ const showPastDueNotice = computed(
   () => isCloud && paymentRecoveryLock.value !== null
 )
 const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
-const { subscriptionPaymentRecovery, isOpeningPayment, payInvoice } =
-  useSubscriptionPaymentRecovery()
+const {
+  subscriptionPaymentRecovery,
+  recoveryPlanTier,
+  isOpeningPayment,
+  finishPayment
+} = useSubscriptionPaymentRecovery()
 const showSignupPaymentNotice = computed(
   () => isCloud && subscriptionPaymentRecovery.value !== null
 )
+const signupPaymentTitle = computed(() => {
+  const tierKey = recoveryPlanTier.value && toTierKey(recoveryPlanTier.value)
+  return tierKey
+    ? t('subscription.signupPaymentRecovery.title', {
+        plan: t(`subscription.tiers.${tierKey}.name`)
+      })
+    : t('subscription.signupPaymentRecovery.titleNoPlan')
+})
 watch(
   () => outstandingPaymentRefusals,
   async () => {
@@ -950,7 +978,7 @@ const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
     plan.denied_reason === 'billing_operation_in_progress' &&
     showSignupPaymentNotice.value
   ) {
-    return t('subscription.signupPaymentRecovery.planHeld')
+    return undefined
   }
   const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
   return t(key || 'subscription.planUnavailable.generic')

@@ -67,7 +67,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     const tab = trackedTab()
     vi.mocked(reserveBillingTab).mockReturnValue(tab)
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
 
     expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith(SIGNUP_OP)
     expect(tab.opened).toEqual([INVOICE_URL])
@@ -79,7 +79,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     const context = serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
     const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
     await refresh()
 
@@ -98,7 +98,7 @@ describe('useSubscriptionPaymentRecovery', () => {
       status: 'succeeded'
     })
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
 
     expect(tab.closed).toBe(true)
     expect(tab.opened).toEqual([])
@@ -113,7 +113,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     const failure = new Error('network down')
     vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(failure)
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
 
     expect(tab.closed).toBe(true)
     expect(reportError).toHaveBeenCalledWith(
@@ -125,20 +125,53 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(toastKinds()).toEqual(['error'])
   })
 
-  it('warns about a blocked popup without reading the operation', async () => {
+  it('warns about a blocked popup and opens nothing', async () => {
     serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(null)
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
 
-    expect(billingApi.getBillingOpStatus).not.toHaveBeenCalled()
+    expect(registerRefreshOnReturn).not.toHaveBeenCalled()
     expect(toastKinds()).toEqual(['warning'])
+  })
+
+  it('names the plan the bound signup operation targets', async () => {
+    serveRecovery(true)
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+      id: SIGNUP_OP,
+      started_at: '2026-11-05T17:15:54Z',
+      status: 'pending',
+      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' }
+    })
+
+    const { recoveryPlanTier } = useSubscriptionPaymentRecovery()
+
+    await vi.waitFor(() => expect(recoveryPlanTier.value).toBe('CREATOR'))
+    expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith(SIGNUP_OP)
+  })
+
+  it('leaves the plan unnamed when the operation read fails', async () => {
+    serveRecovery(true)
+    const failure = new Error('network down')
+    vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(failure)
+
+    const { recoveryPlanTier } = useSubscriptionPaymentRecovery()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        failure,
+        expect.objectContaining({
+          errorType: 'signup_payment_recovery_plan_read_failed'
+        })
+      )
+    )
+    expect(recoveryPlanTier.value).toBeNull()
   })
 
   it('does nothing when the server serves no recovery', async () => {
     serveRecovery(false)
 
-    await useSubscriptionPaymentRecovery().payInvoice()
+    await useSubscriptionPaymentRecovery().finishPayment()
 
     expect(reserveBillingTab).not.toHaveBeenCalled()
     expect(billingApi.getBillingOpStatus).not.toHaveBeenCalled()
