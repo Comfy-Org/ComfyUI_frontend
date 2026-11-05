@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { toggleSwitch } from './toggleSwitch'
 
@@ -67,6 +67,35 @@ describe('toggleSwitch', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith({
       item: { text: 'change', value: 'change' },
       prev: { text: 'instant', value: 'instant' }
+    })
+  })
+
+  describe('on a browser without Array.prototype.findLastIndex', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Array.prototype,
+      'findLastIndex'
+    )
+
+    afterEach(() => {
+      if (descriptor) {
+        Object.defineProperty(Array.prototype, 'findLastIndex', descriptor)
+      }
+    })
+
+    it('still honours the last selected item', () => {
+      delete (Array.prototype as { findLastIndex?: unknown }).findLastIndex
+      expect('findLastIndex' in Array.prototype).toBe(false)
+
+      const container = toggleSwitch('mode', [
+        { text: 'a', selected: true },
+        { text: 'b', value: 'B', selected: true },
+        { text: 'c' }
+      ])
+
+      expect(readState(container)).toEqual({
+        selected: [false, true, false],
+        checked: [false, true, false]
+      })
     })
   })
 

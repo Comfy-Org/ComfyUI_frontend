@@ -13,14 +13,16 @@ const DOM_METHOD_MESSAGES = new Map([
 ])
 const PRIMEVUE_MODULE =
   /^(?:primevue(?:\/|$)|@primevue(?:\/|$)|@primeuix(?:\/|$))/
-const ES2023_ARRAY_COPY_METHODS = new Set([
+const ES2023_ARRAY_METHODS = new Set([
+  'findLast',
+  'findLastIndex',
   'toReversed',
   'toSorted',
   'toSpliced',
   'with'
 ])
-const ES2023_ARRAY_COPY_MESSAGE =
-  'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
+const ES2023_ARRAY_MESSAGE =
+  'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe equivalent (findLast/findLastIndex live in @/utils/arrayUtil).'
 const VITEST_MOCK_METHOD_NAMES = new Set([
   'mockClear',
   'mockReset',
@@ -402,14 +404,14 @@ export const noPrimeVueImports = restrictModules(
   'PrimeVue usage is banned. Use the project design-system components instead.'
 )
 
-export const noEs2023ArrayCopyMethod = {
+export const noEs2023ArrayMethod = {
   create(context: RuleContext) {
     return {
       CallExpression(node: CallExpression) {
         if (node.callee.type !== 'MemberExpression') return
         const method = staticPropertyName(node.callee as MemberExpression)
-        if (method !== undefined && ES2023_ARRAY_COPY_METHODS.has(method)) {
-          context.report({ node, message: ES2023_ARRAY_COPY_MESSAGE })
+        if (method !== undefined && ES2023_ARRAY_METHODS.has(method)) {
+          context.report({ node, message: ES2023_ARRAY_MESSAGE })
         }
       }
     }

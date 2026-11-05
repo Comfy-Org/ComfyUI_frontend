@@ -7,6 +7,7 @@ import {
   getAssetOutputCount,
   getTotalAssetOutputCount
 } from '@/platform/assets/utils/outputAssetCountUtil'
+import { findLastIndex } from '@/utils/arrayUtil'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
@@ -129,7 +130,7 @@ export function useAssetSelection() {
   function setSelectedIds(ids: string[], allAssets: AssetItem[]) {
     selectionStore.setSelection(ids)
     const selected = new Set(ids)
-    const anchorIndex = allAssets.findLastIndex((asset) =>
+    const anchorIndex = findLastIndex(allAssets, (asset) =>
       selected.has(asset.id)
     )
     setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)

@@ -74,6 +74,7 @@ import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/st
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { serializeWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import { findLast } from '@/utils/arrayUtil'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -3009,7 +3010,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (latest && !isTerminalTurnStatus(latest.status))
         return {
           kind: 'streaming',
-          pendingAsk: rows.findLast(
+          pendingAsk: findLast(
+            rows,
             (row) =>
               !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
           )?.pending_ask

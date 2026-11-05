@@ -44,6 +44,7 @@ import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { findLast } from '@/utils/arrayUtil'
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -1267,7 +1268,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast((jobId) =>
+    const ownedJobId = findLast(startedJobIds, (jobId) =>
       rememberStampAndCheckActiveWorkflow(jobId)
     )
     executionIdToLocatorCache.clear()
