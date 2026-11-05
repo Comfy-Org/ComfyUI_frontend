@@ -976,9 +976,6 @@ describe('errorMessageResolver', () => {
   })
 
   it('tells a Cloud server memory kill apart from GPU out of memory', () => {
-    // Sent verbatim by Cloud inference when the ComfyUI container is OOM
-    // killed (services/inference/gateways/comfy/container_exit.go). It is host
-    // memory, not VRAM, so the GPU copy would send users the wrong way.
     const serverOomMessage =
       'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
 

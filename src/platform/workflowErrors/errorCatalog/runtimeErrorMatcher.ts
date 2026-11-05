@@ -93,9 +93,6 @@ const CORE_OOM_TIP = 'This error means you ran out of memory on your GPU.'
 const CORE_OOM_ALLOCATION_PREFIX = 'Allocation on device'
 const CLOUD_OOM_PREFIX =
   'Workflow execution failed due to insufficient memory (OOM).'
-// Cloud inference sends this when the ComfyUI container itself is OOM killed
-// (host memory, not VRAM). It also carries exceptionType OOMError, so its rule
-// must run before isOutOfMemoryError.
 const SERVER_OOM_MESSAGE =
   'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
 const ERRNO_DIRECTORY_MESSAGE = '[Errno 21] Is a directory:'
