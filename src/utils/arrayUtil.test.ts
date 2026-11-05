@@ -48,4 +48,15 @@ describe('findLast', () => {
   it('distinguishes a matched falsy element from no match', () => {
     expect(findLast([0], (value) => value === 0)).toBe(0)
   })
+
+  it('returns the matched value before the predicate changes the array', () => {
+    const array = [1, 2, 3]
+
+    expect(
+      findLast(array, () => {
+        array.pop()
+        return true
+      })
+    ).toBe(3)
+  })
 })
