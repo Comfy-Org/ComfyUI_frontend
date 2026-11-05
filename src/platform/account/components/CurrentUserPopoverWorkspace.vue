@@ -95,7 +95,7 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="addCredits.kind !== 'hidden'"
+        v-if="creditsRowAction === 'addCredits'"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
@@ -107,7 +107,7 @@
         {{ $t('subscription.addCredits') }}
       </Button>
       <Button
-        v-if="paymentRecoveryAvailable"
+        v-if="creditsRowAction === 'updatePayment'"
         variant="secondary"
         size="sm"
         :loading="isUpdatingPayment"
@@ -116,7 +116,7 @@
         {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
       <SubscribeButton
-        v-if="showSubscribeAction && isPersonalWorkspace"
+        v-if="creditsRowAction === 'planAction' && isPersonalWorkspace"
         :fluid="false"
         :label="
           isCancelled
@@ -127,7 +127,7 @@
         button-variant="subscribe"
       />
       <Button
-        v-if="showSubscribeAction && !isPersonalWorkspace"
+        v-if="creditsRowAction === 'planAction' && !isPersonalWorkspace"
         variant="primary"
         size="sm"
         @click="handleOpenSubscriptionAction"
@@ -355,6 +355,7 @@ const {
   subscription,
   balance,
   isLoading,
+  isInitialized: isBillingInitialized,
   fetchBalance
 } = useBillingContext()
 
@@ -363,7 +364,10 @@ const subscriptionDialog = useSubscriptionDialog()
 
 const { locale, t } = useI18n()
 const refusalReason = computed(() =>
-  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+  creditsRowAction.value === 'addCredits' &&
+  addCredits.value.kind === 'disabled'
+    ? t(addCredits.value.reasonKey)
+    : null
 )
 const isLoadingBalance = isLoading
 
@@ -412,6 +416,26 @@ const showSubscribeAction = computed(
         !hasDelinquentSubscription.value &&
         canSubscribeSelfServe.value &&
         canTopUp.value))
+)
+
+type CreditsRowAction = 'updatePayment' | 'planAction' | 'addCredits'
+
+function pickCreditsRowAction(): CreditsRowAction | null {
+  if (paymentRecoveryAvailable.value) return 'updatePayment'
+  if (!showSubscribeAction.value) {
+    return addCredits.value.kind === 'hidden' ? null : 'addCredits'
+  }
+  if (!canAccessSubscriptionFeatures.value) return 'planAction'
+  return addCredits.value.kind === 'hidden' ? 'planAction' : 'addCredits'
+}
+
+const isBillingLoading = computed(
+  () =>
+    !hasResolvedCapabilities.value || (isCloud && !isBillingInitialized.value)
+)
+
+const creditsRowAction = computed((): CreditsRowAction | null =>
+  isBillingLoading.value ? null : pickCreditsRowAction()
 )
 
 const handleOpenUserSettings = () => {

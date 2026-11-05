@@ -203,6 +203,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
     )
     billingContext.isLoading = ref(false)
+    billingContext.isInitialized = ref(true)
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const workspaceUI = vi.mocked(useAccountUI())
     workspaceUI.permissions = computed(() => ({
@@ -491,18 +492,60 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
-  it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
+  it.for(['personal', 'team'] as const)(
+    'offers only Subscribe, not Add credits, to an unsubscribed Cloud owner in a %s workspace',
+    (workspaceType) => {
+      state.canAccessSubscriptionFeatures = false
+      useBillingCapabilities().canTopUp = computed(() => true)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+      state.canManageSubscription = true
+
+      renderComponent(workspaceType)
+
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    }
+  )
+
+  it('shows no billing action until capabilities resolve', () => {
     state.canAccessSubscriptionFeatures = false
     useBillingCapabilities().canTopUp = computed(() => true)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    state.canManageSubscription = true
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
 
     renderComponent('personal')
 
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe' })
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
+  it('shows no billing action on Cloud until the billing status loads', () => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    vi.mocked(useBillingContext()).isInitialized = ref(false)
+
+    renderComponent('personal')
+
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
+  it('offers Update payment alone, without the add-credits refusal, to a past-due owner', () => {
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+
+    renderComponent('team')
+
+    expect(
+      screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Update your payment method to add credits.')
+    ).not.toBeInTheDocument()
   })
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
@@ -687,8 +730,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     }
   )
 
-  it('keeps billing controls and resubscribe available to a promoted owner', async () => {
-    const user = userEvent.setup()
+  it('keeps billing controls available to a promoted owner and prefers Add credits over Resubscribe on an ending plan', () => {
     state.isCancelled = true
     useBillingCapabilities().canTopUp = computed(() => true)
     state.canManageSubscription = true
@@ -701,6 +743,17 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
     expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('opens the pricing table from Resubscribe when the ending plan has no Add credits', async () => {
+    const user = userEvent.setup()
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivatePlan = true
+    renderComponent('team')
 
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
