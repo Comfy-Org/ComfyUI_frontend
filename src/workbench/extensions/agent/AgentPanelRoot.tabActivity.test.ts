@@ -987,7 +987,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
   })
 
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
-    const { unmount } = renderPanel()
+    renderPanel()
     await send('install the video nodes')
 
     emitAskUser()
@@ -1007,13 +1007,18 @@ describe('AgentPanelRoot tab activity across chats', () => {
     emitRunApproval()
     await nextTick()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
 
-    // The server turn keeps waiting after the panel closes, so the page still says so.
+  it('keeps the page-wide prefix after the panel closes while an answer is pending, until it reopens', async () => {
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+
     unmount()
     await nextTick()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
-    // Reopening hands the prefix back to the live conversation state.
     renderPanel()
     await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
   })
@@ -1033,6 +1038,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
 
     unmount()
+    await nextTick()
 
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
