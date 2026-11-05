@@ -27,7 +27,7 @@
         :title="bannerTitle"
         :segments="bannerSegments"
         :checkbox-label="
-          exceedsMonthlyThreshold
+          requiresChargeConsent
             ? copy.reactivation.checkboxLabel(chargeDisplay)
             : null
         "
@@ -243,9 +243,6 @@ const isImmediate = computed(() => previewData.is_immediate)
 const newIsYearly = computed(() =>
   isAnnualDuration(previewData.new_plan.duration)
 )
-const currentIsYearly = computed(() =>
-  isAnnualDuration(previewData.current_plan?.duration)
-)
 
 const isCancelled = computed(
   () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
@@ -281,25 +278,13 @@ const isReactivating = computed(
     !!previewData.current_plan
 )
 
-// seat_summary.total_cost_cents is the whole-subscription price; price_cents
-// is per-seat and understates the threshold on multi-seat team plans. ANNUAL
-// divides by 12 for a monthly equivalent.
-const currentMonthlyPriceCents = computed(() => {
-  const current = previewData.current_plan
-  if (!current) return 0
-  const totalCents = current.seat_summary.total_cost_cents
-  return currentIsYearly.value ? totalCents / 12 : totalCents
-})
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
-// The downgrade copy always says "you won't be charged today" with no amount
-// shown, so it never gets the checkbox even if cost_today_cents is positive.
-const exceedsMonthlyThreshold = computed(
+const requiresChargeConsent = computed(
   () =>
     isReactivating.value &&
-    reactivationVariant.value !== 'downgrade' &&
-    chargeCents.value > currentMonthlyPriceCents.value
+    previewData.requires_reactivation_charge_confirmation === true
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`
@@ -318,7 +303,7 @@ watch(
 const confirmDisabled = computed(
   () =>
     !subscriptionLoaded ||
-    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
+    (requiresChargeConsent.value && !reactivationConfirmed.value)
 )
 const confirmBlocked = computed(
   () =>
@@ -329,7 +314,7 @@ const confirmBlocked = computed(
 const confirmReactivation = computed(
   () =>
     isReactivating.value &&
-    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
+    (!requiresChargeConsent.value || reactivationConfirmed.value)
 )
 
 const bannerTitle = computed(() =>
