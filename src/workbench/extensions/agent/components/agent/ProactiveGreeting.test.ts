@@ -4,7 +4,6 @@ import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import EmptyState from './EmptyState.vue'
@@ -74,7 +73,7 @@ describe('approved proactive variants', () => {
               promptIndex: 2,
               promptCount: 3,
               visiblePromptCount: 3,
-              promptTextHash: hashPath('Start from an idea'),
+              promptTextHash: 'a3f507a7',
               locale: 'en'
             }
           ]
