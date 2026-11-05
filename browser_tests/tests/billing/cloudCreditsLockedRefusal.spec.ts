@@ -111,6 +111,13 @@ async function arrangeEndedPlan(page: Page, hasFunds: boolean) {
   await page.route('**/api/features', (route) =>
     route.fulfill(jsonRoute({ subscription_required: true }))
   )
+  // cloud/1.59's legacy billing reads the balance during init; unmocked, init
+  // fails and the Subscribe to Run button never renders.
+  await page.route('**/customers/balance', (route) =>
+    route.fulfill(
+      jsonRoute({ amount_micros: hasFunds ? 5_000_000 : 0, currency: 'usd' })
+    )
+  )
 }
 
 async function clickSubscribeToRun(page: Page) {
