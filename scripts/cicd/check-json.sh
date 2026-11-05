@@ -63,7 +63,7 @@ fi
 
 failed=0
 for file in "${json_files[@]}"; do
-  if ! jq -e . "$file" >/dev/null; then
+  if ! jq empty "$file"; then
     echo "Invalid JSON syntax: $file" >&2
     failed=1
   fi
