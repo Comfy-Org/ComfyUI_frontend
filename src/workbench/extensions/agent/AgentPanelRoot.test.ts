@@ -322,6 +322,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
@@ -366,6 +367,7 @@ beforeEach(() => {
     return true
   })
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),
@@ -16759,6 +16761,28 @@ describe('AgentPanelRoot agent socket', () => {
 
     expect(agentSocket.reconnect).toHaveBeenCalledOnce()
     expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('reconnects on an account switch made while the panel is closed', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    panel.unmount()
+    await nextTick()
+    agentSocket.reconnect.mockClear()
+
+    signInAs({ firebase: 'account-b', apiKeyUser: null })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
   })
 
   it('handshakes once for a workspace switch that passes through null', async () => {
