@@ -234,7 +234,7 @@ describe('classifyPricingResult', () => {
       classifyPricingResult({
         type: 'usd',
         usd: 0.05,
-        format: { suffix: 1 as unknown as string }
+        format: { suffix: 1 }
       })
     ).toEqual({ basis: 'unpriced', reason: 'invalid' })
   })
@@ -246,7 +246,7 @@ describe('classifyPricingResult', () => {
         classifyPricingResult({
           type: 'usd',
           usd: 0.05,
-          format: { approximate: approximate as unknown as boolean }
+          format: { approximate }
         })
       ).toMatchObject({ basis: 'per-run', approximate: true })
     }
@@ -482,10 +482,13 @@ describe('estimateApiNodeRunCost', () => {
     })
   })
 
-  it('degrades to none when the sum does not stay finite', () => {
+  it.for([
+    { stage: 'the USD sum', price: Number.MAX_VALUE },
+    { stage: 'credit conversion', price: Number.MAX_VALUE / CREDITS_PER_USD }
+  ])('degrades to none when $stage overflows', ({ price }) => {
     const estimate = estimateApiNodeRunCost([
-      perRun('A', Number.MAX_VALUE),
-      perRun('B', Number.MAX_VALUE)
+      perRun('A', price),
+      perRun('B', price)
     ])
     expect(estimate).toMatchObject({
       coverage: 'none',

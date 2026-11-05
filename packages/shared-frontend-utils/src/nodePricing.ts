@@ -649,7 +649,12 @@ export const estimateApiNodeRunCost = (
     }
   }
 
-  if (!Number.isFinite(minUsd) || !Number.isFinite(maxUsd)) {
+  const hasFiniteTotals =
+    Number.isFinite(minUsd) &&
+    Number.isFinite(maxUsd) &&
+    Number.isFinite(minUsd * CREDITS_PER_USD) &&
+    Number.isFinite(maxUsd * CREDITS_PER_USD)
+  if (!hasFiniteTotals) {
     unpriced.push(...entries.filter(isSummableEntry))
     minUsd = 0
     maxUsd = 0
