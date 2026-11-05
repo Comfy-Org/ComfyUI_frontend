@@ -363,6 +363,323 @@ export async function evaluatePricingContext(
   }
 }
 
+// -----------------------------
+// Per-run cost basis, and the whole-graph estimate built from it
+// -----------------------------
+//
+// Everything above renders ONE node's price for display. A pre-execution
+// estimate for a whole run is a different question, and it cannot be answered
+// by adding up those display strings:
+//
+//   - The UNIT is not part of the PriceBadge contract. It survives only as
+//     `format.suffix`, a free-text display fragment that defaults to "/Run".
+//     Measured against ComfyUI core's `comfy_api_nodes/` on 2026-11-04, 83 of
+//     the 286 price results published there are NOT per run: 34 are
+//     " per 1K tokens", 26 per second ("/second" and the variant "/sec"), 5 per
+//     minute, 4 per image, 2 per 1K chars, and one each "/30 frames", "/8MP"
+//     and " x images/Run" — the last being a per-run figure that the prose
+//     silently multiplies by a widget. Nothing machine-readable separates those
+//     from the 203 that are per run.
+//   - `type: 'text'` carries no figure at all (core uses it for token-based LLM
+//     nodes, Topaz interpolation, and Tripo's "Free"), and so does a rule that
+//     fails to evaluate. Both render as prose or as '', which a string-summing
+//     caller reads as zero.
+//   - `formatCreditsValue` rounds to one decimal place, so summing the rendered
+//     labels accumulates rounding error on every node.
+//
+// So a caller that sums labels produces a number that looks like the run's cost
+// and is not. These two functions exist to make the alternative available: a
+// numeric basis per node that is explicit about what it cannot price, and an
+// aggregate that declares its own coverage instead of implying completeness.
+
+/** The canonical per-run suffix, and `format.suffix`'s own default. */
+const PER_RUN_SUFFIX = '/Run'
+
+/**
+ * What one evaluated price result can contribute to a per-run total.
+ *
+ * - `per-run` — a figure the run is charged once, so it can be summed.
+ * - `per-unit` — a real figure, priced per a unit the graph does not fix
+ *   (tokens, seconds, frames). It must not be summed, and `unit` is the
+ *   declared suffix so a caller can say what it is priced by.
+ * - `unpriced` — nothing summable. `reason` says why.
+ */
+export type NodeRunPrice =
+  | {
+      basis: 'per-run'
+      minUsd: number
+      maxUsd: number
+      approximate: boolean
+    }
+  | {
+      basis: 'per-unit'
+      unit: string
+      minUsd: number
+      maxUsd: number
+      approximate: boolean
+    }
+  | {
+      basis: 'unpriced'
+      /**
+       * - `descriptive` — the rule returned prose (`type: 'text'`), which may
+       *   name a real price ("Token-based") or a real zero ("Free"). Which one
+       *   is not decidable here, so neither is assumed.
+       * - `ambiguous` — a per-run `list_usd`. A list is rendered as
+       *   "5/10/20" and core uses it only for input/output token pairs, so
+       *   whether the entries are alternatives or components of one charge is
+       *   not stated. Summing and taking the max are both guesses.
+       * - `invalid` — not a pricing result, or one whose figures are not
+       *   finite numbers.
+       */
+      reason: 'descriptive' | 'ambiguous' | 'invalid'
+    }
+
+/**
+ * True only when the suffix positively declares a per-run charge: absent, or
+ * exactly "/Run" ignoring case, surrounding space and the leading slash.
+ *
+ * Deliberately an equality test and not a `.endsWith('/Run')` one. Core
+ * publishes `" x images/Run"`, a per-image price the label multiplies by a
+ * widget in prose; reading its tail as per-run would understate every node
+ * that uses it. Anything this cannot prove is per run is reported as per-unit,
+ * which a caller excludes from the total — never silently added to it.
+ */
+const isPerRunSuffix = (suffix: string | undefined): boolean => {
+  const normalized = (suffix ?? PER_RUN_SUFFIX)
+    .trim()
+    .toLowerCase()
+    .replace(/^\//, '')
+  return normalized === 'run'
+}
+
+/** The declared unit for a non-per-run price, trimmed of its display slash. */
+const declaredUnit = (suffix: string | undefined): string =>
+  (suffix ?? PER_RUN_SUFFIX).trim().replace(/^\//, '')
+
+const numericBasis = (
+  minUsd: number,
+  maxUsd: number,
+  format: CreditFormatOptions | undefined
+): NodeRunPrice => {
+  const approximate = format?.approximate === true
+  if (!isPerRunSuffix(format?.suffix)) {
+    return {
+      basis: 'per-unit',
+      unit: declaredUnit(format?.suffix),
+      minUsd,
+      maxUsd,
+      approximate
+    }
+  }
+  return { basis: 'per-run', minUsd, maxUsd, approximate }
+}
+
+/** The one answer every unreadable or non-finite figure gets. */
+const INVALID_PRICE: NodeRunPrice = { basis: 'unpriced', reason: 'invalid' }
+
+/** One finite figure charged once, or nothing. */
+const classifyScalar = (
+  usd: unknown,
+  format: CreditFormatOptions | undefined
+): NodeRunPrice => {
+  const value = asFiniteNumber(usd)
+  if (value === null) return INVALID_PRICE
+  return numericBasis(value, value, format)
+}
+
+const classifyRange = (
+  result: Extract<PricingResult, { type: 'range_usd' }>
+): NodeRunPrice => {
+  const minUsd = asFiniteNumber(result.min_usd)
+  const maxUsd = asFiniteNumber(result.max_usd)
+  if (minUsd === null || maxUsd === null) return INVALID_PRICE
+  // The rater orders these bounds, but a published badge is hand-written, so
+  // the pair is sorted rather than trusted: an inverted one would otherwise
+  // make the aggregate's minimum exceed its maximum.
+  return numericBasis(
+    Math.min(minUsd, maxUsd),
+    Math.max(minUsd, maxUsd),
+    result.format
+  )
+}
+
+const classifyList = (
+  result: Extract<PricingResult, { type: 'list_usd' }>
+): NodeRunPrice => {
+  const usdValues = result.usd
+    .map(asFiniteNumber)
+    .filter((usd): usd is number => usd !== null)
+  if (usdValues.length === 0) return INVALID_PRICE
+
+  // A non-per-run list is excluded by its unit, which is the more useful
+  // answer, so the unit is read first and the ambiguity below only decides
+  // lists that do claim to be per run.
+  const basis = numericBasis(
+    Math.min(...usdValues),
+    Math.max(...usdValues),
+    result.format
+  )
+  if (basis.basis === 'per-unit' || usdValues.length === 1) return basis
+  return { basis: 'unpriced', reason: 'ambiguous' }
+}
+
+/**
+ * The legacy bare-`{ usd }` shape, which carries no format block and so takes
+ * the default per-run suffix — the same reading formatPricingResult gives it.
+ */
+const isLegacyUsdResult = (result: unknown): result is { usd: unknown } =>
+  !!result &&
+  typeof result === 'object' &&
+  !('type' in result) &&
+  'usd' in result
+
+/**
+ * Read an evaluated pricing result as a per-run cost basis.
+ *
+ * Fail-closed in every direction: an unreadable result, a non-finite figure
+ * and prose all report `unpriced` rather than zero, and a figure whose unit
+ * cannot be proven to be per run reports `per-unit` rather than being treated
+ * as one charge.
+ */
+export const classifyPricingResult = (result: unknown): NodeRunPrice => {
+  if (isLegacyUsdResult(result)) return classifyScalar(result.usd, undefined)
+  if (!isPricingResult(result)) return INVALID_PRICE
+
+  switch (result.type) {
+    case 'text':
+      return { basis: 'unpriced', reason: 'descriptive' }
+    case 'usd':
+      return classifyScalar(result.usd, result.format)
+    case 'range_usd':
+      return classifyRange(result)
+    default:
+      return classifyList(result)
+  }
+}
+
+/** One cost-bearing node, already evaluated against its current widget state. */
+export type ApiNodeCostEntry = {
+  /** The node's class name, for naming what could not be priced. */
+  nodeType: string
+  /** The graph node, when the caller wants to point at it. */
+  nodeId?: string | number
+  price: NodeRunPrice
+}
+
+/**
+ * A per-run cost estimate over the API nodes it was given.
+ *
+ * It is NOT an estimate of a whole cloud run: cloud GPU/execution cost is
+ * billed separately and is not published per node, so nothing here can see it.
+ * A caller presenting this figure has to say what it covers.
+ */
+export type ApiNodeCostEstimate = {
+  /** Summed bounds over the per-run entries only, in USD. */
+  minUsd: number
+  maxUsd: number
+  /**
+   * The same bounds in Comfy credits, UNROUNDED. Rounding each node's credits
+   * before summing is the error the billing path is explicit about avoiding
+   * (dollars are converted from unrounded cents, never from rounded credits),
+   * and it is worse here because the sum has one term per node. Round at the
+   * display edge.
+   */
+  minCredits: number
+  maxCredits: number
+  /** How many entries contributed to the bounds. */
+  pricedCount: number
+  /** Cost-bearing entries priced per a unit the graph does not fix. */
+  perUnit: ApiNodeCostEntry[]
+  /** Cost-bearing entries carrying no usable figure. */
+  unpriced: ApiNodeCostEntry[]
+  /**
+   * - `complete` — every entry contributed, so the bounds cover every API node
+   *   supplied. Also the answer for no entries at all.
+   * - `partial` — at least one entry contributed and at least one did not.
+   * - `none` — entries were supplied and none of them could be priced, so the
+   *   bounds are 0 and mean nothing.
+   */
+  coverage: 'complete' | 'partial' | 'none'
+  /**
+   * True when the bounds understate the API-node cost, because at least one
+   * cost-bearing node was left out of them. The figure may only be presented
+   * as a floor ("at least N") while this holds.
+   */
+  isLowerBound: boolean
+  /** True when any contributing entry declared itself approximate. */
+  approximate: boolean
+}
+
+/**
+ * Sum the per-run entries and declare what was left out.
+ *
+ * The excluded entries are returned rather than counted so a caller can name
+ * them, which is the difference between "~300 credits" and "at least 300
+ * credits, plus Gemini priced per 1K tokens".
+ */
+export const estimateApiNodeRunCost = (
+  entries: readonly ApiNodeCostEntry[]
+): ApiNodeCostEstimate => {
+  let minUsd = 0
+  let maxUsd = 0
+  let pricedCount = 0
+  let approximate = false
+  const perUnit: ApiNodeCostEntry[] = []
+  const unpriced: ApiNodeCostEntry[] = []
+
+  for (const entry of entries) {
+    if (entry.price.basis === 'per-run') {
+      minUsd += entry.price.minUsd
+      maxUsd += entry.price.maxUsd
+      pricedCount++
+      approximate = approximate || entry.price.approximate
+    } else if (entry.price.basis === 'per-unit') {
+      perUnit.push(entry)
+    } else {
+      unpriced.push(entry)
+    }
+  }
+
+  const excluded = perUnit.length + unpriced.length
+  const coverage: ApiNodeCostEstimate['coverage'] =
+    excluded === 0 ? 'complete' : pricedCount === 0 ? 'none' : 'partial'
+
+  return {
+    minUsd,
+    maxUsd,
+    minCredits: minUsd * CREDITS_PER_USD,
+    maxCredits: maxUsd * CREDITS_PER_USD,
+    pricedCount,
+    perUnit,
+    unpriced,
+    coverage,
+    isLowerBound: excluded > 0,
+    approximate
+  }
+}
+
+/**
+ * Evaluate one node's badge and report its per-run basis — the per-node half of
+ * an `estimateApiNodeRunCost` walk, and the twin of `evaluatePricingContext`
+ * for callers that need the figure instead of the label.
+ *
+ * An absent or uncompilable badge is `unpriced`/`invalid`, not free: an API node
+ * whose price this build cannot read still charges the user.
+ */
+export async function evaluatePricingBasis(
+  name: string,
+  badge: PriceBadge | undefined,
+  context: JsonataEvalContext
+): Promise<NodeRunPrice> {
+  const rule = badge ? getCompiledRuleForNodeType(name, badge) : null
+  if (!rule?._compiled) return { basis: 'unpriced', reason: 'invalid' }
+  try {
+    return classifyPricingResult(await rule._compiled.evaluate(context))
+  } catch {
+    return { basis: 'unpriced', reason: 'invalid' }
+  }
+}
+
 /**
  * Extract default value from an input spec.
  */

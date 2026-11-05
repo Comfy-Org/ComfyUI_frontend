@@ -1,12 +1,17 @@
 import { zComfyNodeDef, zPriceBadge } from '@comfyorg/object-info-parser'
 import { describe, expect, it } from 'vitest'
 
+import { CREDITS_PER_USD } from './creditsUtil'
 import {
+  classifyPricingResult,
+  estimateApiNodeRunCost,
   evaluateNodeDefPricing,
+  evaluatePricingBasis,
   evaluatePricingContext,
   formatPricingResult,
   getCompiledRuleForNodeType
 } from './nodePricing'
+import type { ApiNodeCostEntry } from './nodePricing'
 
 const context = { widgets: {}, inputs: {}, inputGroups: {} }
 
@@ -137,4 +142,294 @@ describe('default node pricing', () => {
       expect(await evaluateNodeDefPricing(node)).toBe('')
     }
   )
+})
+
+describe('classifyPricingResult', () => {
+  it('reads an unsuffixed figure as the per-run charge it defaults to', () => {
+    expect(classifyPricingResult({ type: 'usd', usd: 0.05 })).toEqual({
+      basis: 'per-run',
+      minUsd: 0.05,
+      maxUsd: 0.05,
+      approximate: false
+    })
+  })
+
+  it('reads the legacy bare-usd shape as per-run too', () => {
+    expect(classifyPricingResult({ usd: 0.05 })).toEqual({
+      basis: 'per-run',
+      minUsd: 0.05,
+      maxUsd: 0.05,
+      approximate: false
+    })
+  })
+
+  it.for(['/Run', '/run', ' /Run ', 'Run'])(
+    'accepts %o as the per-run suffix',
+    (suffix) => {
+      expect(
+        classifyPricingResult({ type: 'usd', usd: 0.05, format: { suffix } })
+      ).toMatchObject({ basis: 'per-run' })
+    }
+  )
+
+  // Core publishes this one on a per-image node whose label multiplies the
+  // figure by a widget in prose. Matching the suffix's tail would read it as
+  // one per-run charge and understate every such node.
+  it('does not accept a suffix that merely ends in /Run', () => {
+    expect(
+      classifyPricingResult({
+        type: 'usd',
+        usd: 0.04,
+        format: { suffix: ' x images/Run' }
+      })
+    ).toEqual({
+      basis: 'per-unit',
+      unit: 'x images/Run',
+      minUsd: 0.04,
+      maxUsd: 0.04,
+      approximate: false
+    })
+  })
+
+  it.for([
+    [' per 1K tokens', 'per 1K tokens'],
+    ['/second', 'second'],
+    ['/minute', 'minute'],
+    ['/Image', 'Image'],
+    ['/30 frames', '30 frames'],
+    ['/8MP', '8MP']
+  ])('reports %o as priced per %o rather than per run', ([suffix, unit]) => {
+    expect(
+      classifyPricingResult({
+        type: 'usd',
+        usd: 0.1,
+        format: { suffix, approximate: true }
+      })
+    ).toEqual({
+      basis: 'per-unit',
+      unit,
+      minUsd: 0.1,
+      maxUsd: 0.1,
+      approximate: true
+    })
+  })
+
+  it('carries a per-run range through as its two bounds', () => {
+    expect(
+      classifyPricingResult({ type: 'range_usd', min_usd: 0.05, max_usd: 0.2 })
+    ).toEqual({
+      basis: 'per-run',
+      minUsd: 0.05,
+      maxUsd: 0.2,
+      approximate: false
+    })
+  })
+
+  it('sorts an inverted range so the aggregate cannot invert', () => {
+    expect(
+      classifyPricingResult({ type: 'range_usd', min_usd: 0.2, max_usd: 0.05 })
+    ).toMatchObject({ minUsd: 0.05, maxUsd: 0.2 })
+  })
+
+  it('refuses to guess what a multi-valued per-run list means', () => {
+    expect(
+      classifyPricingResult({ type: 'list_usd', usd: [0.05, 0.1] })
+    ).toEqual({ basis: 'unpriced', reason: 'ambiguous' })
+  })
+
+  it('reads a single-valued list as that one per-run charge', () => {
+    expect(classifyPricingResult({ type: 'list_usd', usd: [0.05] })).toEqual({
+      basis: 'per-run',
+      minUsd: 0.05,
+      maxUsd: 0.05,
+      approximate: false
+    })
+  })
+
+  // Every list_usd core publishes today is a per-1K-token input/output pair,
+  // so the unit excludes it before the ambiguity above has to.
+  it('excludes a token-priced list by its unit, not as ambiguous', () => {
+    expect(
+      classifyPricingResult({
+        type: 'list_usd',
+        usd: [0.00125, 0.01],
+        format: { suffix: ' per 1K tokens', separator: '-', approximate: true }
+      })
+    ).toEqual({
+      basis: 'per-unit',
+      unit: 'per 1K tokens',
+      minUsd: 0.00125,
+      maxUsd: 0.01,
+      approximate: true
+    })
+  })
+
+  it.for(['Token-based', 'Free', 'Interpolation only'])(
+    'treats the prose result %o as unpriced rather than as zero',
+    (text) => {
+      expect(classifyPricingResult({ type: 'text', text })).toEqual({
+        basis: 'unpriced',
+        reason: 'descriptive'
+      })
+    }
+  )
+
+  it.for([
+    undefined,
+    null,
+    '',
+    42,
+    {},
+    { type: 'usd' },
+    { type: 'usd', usd: Number.NaN },
+    { type: 'usd', usd: Number.POSITIVE_INFINITY },
+    { type: 'range_usd', min_usd: 0.05 },
+    { type: 'list_usd', usd: [] },
+    { type: 'something_else', usd: 0.05 }
+  ])('reports %o as invalid rather than free', (result) => {
+    expect(classifyPricingResult(result)).toEqual({
+      basis: 'unpriced',
+      reason: 'invalid'
+    })
+  })
+})
+
+describe('estimateApiNodeRunCost', () => {
+  const perRun = (nodeType: string, minUsd: number, maxUsd = minUsd) =>
+    ({
+      nodeType,
+      price: { basis: 'per-run', minUsd, maxUsd, approximate: false }
+    }) satisfies ApiNodeCostEntry
+
+  it('sums per-run bounds and reports complete coverage', () => {
+    const estimate = estimateApiNodeRunCost([
+      perRun('A', 0.05),
+      perRun('B', 0.1, 0.3)
+    ])
+    expect(estimate.minUsd).toBeCloseTo(0.15, 10)
+    expect(estimate.maxUsd).toBeCloseTo(0.35, 10)
+    expect(estimate).toMatchObject({
+      pricedCount: 2,
+      coverage: 'complete',
+      isLowerBound: false,
+      approximate: false,
+      perUnit: [],
+      unpriced: []
+    })
+  })
+
+  it('converts the summed dollars once, without rounding per node', () => {
+    const estimate = estimateApiNodeRunCost([
+      perRun('A', 0.05),
+      perRun('A', 0.05),
+      perRun('A', 0.05)
+    ])
+    // The rendered per-node label is "10.6 credits/Run", so summing the three
+    // labels gives 31.8. The true figure is 0.15 * 211.
+    expect(estimate.minCredits).toBeCloseTo(0.15 * CREDITS_PER_USD, 10)
+    expect(estimate.minCredits).not.toBeCloseTo(31.8, 2)
+  })
+
+  it('declares a lower bound and names what it left out', () => {
+    const tokenPriced: ApiNodeCostEntry = {
+      nodeType: 'GeminiNode',
+      nodeId: 7,
+      price: {
+        basis: 'per-unit',
+        unit: 'per 1K tokens',
+        minUsd: 0.00125,
+        maxUsd: 0.01,
+        approximate: true
+      }
+    }
+    const prose: ApiNodeCostEntry = {
+      nodeType: 'TripoNode',
+      price: { basis: 'unpriced', reason: 'descriptive' }
+    }
+    const estimate = estimateApiNodeRunCost([
+      perRun('A', 0.05),
+      tokenPriced,
+      prose
+    ])
+    expect(estimate).toMatchObject({
+      pricedCount: 1,
+      coverage: 'partial',
+      isLowerBound: true,
+      perUnit: [tokenPriced],
+      unpriced: [prose]
+    })
+    // The excluded nodes contribute nothing to the figure, which is the point:
+    // the caller has to present it as a floor.
+    expect(estimate.minUsd).toBeCloseTo(0.05, 10)
+    expect(estimate.maxUsd).toBeCloseTo(0.05, 10)
+  })
+
+  it('reports none, not a zero estimate, when nothing could be priced', () => {
+    const estimate = estimateApiNodeRunCost([
+      { nodeType: 'A', price: { basis: 'unpriced', reason: 'invalid' } }
+    ])
+    expect(estimate).toMatchObject({
+      coverage: 'none',
+      isLowerBound: true,
+      pricedCount: 0,
+      minUsd: 0,
+      maxUsd: 0
+    })
+  })
+
+  it('reports complete coverage of nothing for an empty graph', () => {
+    expect(estimateApiNodeRunCost([])).toMatchObject({
+      coverage: 'complete',
+      isLowerBound: false,
+      pricedCount: 0,
+      minUsd: 0,
+      maxUsd: 0
+    })
+  })
+
+  it('marks the whole estimate approximate when any term is', () => {
+    expect(
+      estimateApiNodeRunCost([
+        perRun('A', 0.05),
+        {
+          nodeType: 'B',
+          price: {
+            basis: 'per-run',
+            minUsd: 0.1,
+            maxUsd: 0.1,
+            approximate: true
+          }
+        }
+      ])
+    ).toMatchObject({ approximate: true, coverage: 'complete' })
+  })
+})
+
+describe('evaluatePricingBasis', () => {
+  it('prices a node from its badge and current widget state', async () => {
+    const badge = zPriceBadge.parse({
+      expr: '{"type":"usd","usd":widgets.count * 0.05}',
+      depends_on: { widgets: [{ name: 'count', type: 'INT' }] }
+    })
+    const price = await evaluatePricingBasis('BasisNode', badge, {
+      widgets: { count: 3 },
+      inputs: {},
+      inputGroups: {}
+    })
+    expect(price).toMatchObject({ basis: 'per-run' })
+    expect(price).toHaveProperty('minUsd', expect.closeTo(0.15, 10))
+    expect(price).toHaveProperty('maxUsd', expect.closeTo(0.15, 10))
+  })
+
+  it.for([
+    ['an absent badge', undefined],
+    ['an uncompilable expression', '{"type":"usd","usd":'],
+    ['an expression that throws', '$notAFunction()']
+  ])('reports %s as unpriced rather than free', async ([, expr]) => {
+    const badge =
+      expr === undefined ? undefined : zPriceBadge.parse({ expr: expr })
+    expect(
+      await evaluatePricingBasis('UnreadableNode', badge, context)
+    ).toEqual({ basis: 'unpriced', reason: 'invalid' })
+  })
 })
