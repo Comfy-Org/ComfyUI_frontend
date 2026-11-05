@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
 import { isAlreadyExistsError } from '../cli/fsErrors'
+import { writeFileExclusive } from '../cli/exclusiveWrite'
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { header } from '../ui/logger'
@@ -57,11 +58,7 @@ export async function runTransform(
     process.exit(1)
   }
   try {
-    writeFileSync(
-      outputPath,
-      result.code,
-      options.force ? undefined : { flag: 'wx' }
-    )
+    writeFileExclusive(outputPath, result.code, options.force === true)
   } catch (error) {
     if (isAlreadyExistsError(error)) {
       console.log(

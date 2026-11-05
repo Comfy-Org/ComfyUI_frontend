@@ -335,6 +335,36 @@ describe('runRecord overwrite guard', () => {
     }
   })
 
+  it('replaces a live symlink without changing its target when forced', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    const { root, outputPath } = seedMissingSpec('linked-destination')
+    const linkTarget = join(root, 'outside-the-tests-dir.spec.ts')
+    try {
+      writeFileSync(linkTarget, EXISTING_SPEC)
+      symlinkSync(linkTarget, outputPath)
+      vi.mocked(runRecording).mockResolvedValue({
+        success: true,
+        recordedCode: RECORDED_CODE
+      })
+      answerOverwriteWith(false)
+      vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`exit:${code}`)
+      })
+
+      await runRecord({ ...prefillFor('linked-destination'), force: true })
+
+      expect(readFileSync(linkTarget, 'utf-8')).toBe(EXISTING_SPEC)
+      expect(readFileSync(outputPath, 'utf-8')).toContain(
+        "comfyPage.page.getByText('Queue').click()"
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('refuses a late collision without prompting when stdin closed at EOF during the paste', async () => {
     const { root, outputPath } = seedMissingSpec('eof-overwrite')
     const stdinDescriptor = Object.getOwnPropertyDescriptors(process).stdin

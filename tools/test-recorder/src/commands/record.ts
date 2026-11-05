@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { existsSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   text,
@@ -24,6 +24,7 @@ import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { openPr } from '../pr/openPr'
 import { isAlreadyExistsError } from '../cli/fsErrors'
+import { writeFileExclusive } from '../cli/exclusiveWrite'
 import { runCommand } from '../cli/run'
 import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
@@ -810,11 +811,7 @@ export async function runRecord(
     allowOverwrite = true
   }
   try {
-    writeFileSync(
-      outputPath,
-      transformResult.code,
-      allowOverwrite ? undefined : { flag: 'wx' }
-    )
+    writeFileExclusive(outputPath, transformResult.code, allowOverwrite)
   } catch (error) {
     if (isAlreadyExistsError(error)) {
       fail(

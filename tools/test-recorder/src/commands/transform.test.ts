@@ -86,4 +86,22 @@ describe('runTransform overwrite guard', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
+
+  it('replaces a live symlink without changing its target when forced', async () => {
+    const { dir, input, output } = seedInput()
+    const target = join(dir, 'elsewhere.spec.ts')
+    try {
+      writeFileSync(target, '// existing committed spec\n')
+      symlinkSync(target, output)
+
+      vi.mocked(console.log).mockImplementation(() => {})
+      const { runTransform } = await import('./transform')
+      await runTransform(input, { output, force: true, testName: 'demo' })
+
+      expect(readFileSync(target, 'utf-8')).toBe('// existing committed spec\n')
+      expect(readFileSync(output, 'utf-8')).toContain(TRANSFORMED_ACTION)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })
