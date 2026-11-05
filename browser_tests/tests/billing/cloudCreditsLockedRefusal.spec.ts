@@ -94,3 +94,45 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     ).toHaveCount(0)
   })
 })
+
+test.describe(
+  'Subscribe to Run for an inactive account',
+  { tag: '@cloud' },
+  () => {
+    async function openFromSubscribeToRun(page: Page, hasFunds: boolean) {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        workspace('personal', 'owner'),
+        { ...PERSONAL_BILLING_STATUS, has_funds: hasFunds }
+      )
+      await page.route('**/api/features', (route) =>
+        route.fulfill(jsonRoute({ subscription_required: true }))
+      )
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+
+      await page.getByTestId(TestIds.topbar.subscribeToRunButton).click()
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
+    }
+
+    test('says why credits did not help when the account holds funds', async ({
+      page
+    }) => {
+      await openFromSubscribeToRun(page, true)
+
+      await expect(
+        page.getByTestId(TestIds.dialogs.creditsLockedNotice)
+      ).toContainText("Buying credits doesn't")
+    })
+
+    test('stays out of the dialog when the account has no funds', async ({
+      page
+    }) => {
+      await openFromSubscribeToRun(page, false)
+
+      await expect(
+        page.getByTestId(TestIds.dialogs.creditsLockedNotice)
+      ).toHaveCount(0)
+    })
+  }
+)
