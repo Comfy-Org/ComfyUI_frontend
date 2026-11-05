@@ -282,6 +282,31 @@ describe('useCustomerEventsService', () => {
       }
     )
 
+    it.for([
+      ['de', 'Credit', 'Credits'],
+      ['es', 'Crédito', 'Créditos'],
+      ['fr', 'Crédit', 'Crédits'],
+      ['he', 'קרדיט', 'קרדיטים'],
+      ['it', 'Credito', 'Crediti'],
+      ['pt-BR', 'Crédito', 'Créditos'],
+      ['tr', 'Kredi', 'Kredi']
+    ] as const)(
+      '%s charge unit is %s for one credit and %s for seven',
+      async ([locale, one, seven]) => {
+        const { createI18n } = await import('vue-i18n')
+        const { default: messages } = await import(
+          `../locales/${locale}/main.json`
+        )
+        const i18n = createI18n({
+          legacy: false,
+          locale,
+          messages: { [locale]: messages }
+        })
+        expect(i18n.global.t('credits.creditUnit', 1)).toBe(one)
+        expect(i18n.global.t('credits.creditUnit', 7)).toBe(seven)
+      }
+    )
+
     const withNothingToRender: ParamsCase[] = [
       ['params carry only non-allowlisted keys', unrenderableParams],
       [
