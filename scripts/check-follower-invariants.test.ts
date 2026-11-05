@@ -224,6 +224,19 @@ onBeforeUnmount(() => docTransport.destroy())
       expect.objectContaining({ line: 6 })
     ])
   })
+
+  test('fails closed when a .vue script block does not parse', () => {
+    const fixture = `<script setup lang="ts">\nconst events = createAgentEventSource({\n</script>`
+    expect(
+      checkPageSessionOwnsTransport(PANEL_FILE, fixture).map(({ rule }) => rule)
+    ).toContain('syntax-error')
+  })
+
+  test('reports a parse failure against the .vue path, not the parser alias', () => {
+    const fixture = `<script setup lang="ts">\nconst events = createAgentEventSource({\n</script>`
+    for (const violation of checkPageSessionOwnsTransport(PANEL_FILE, fixture))
+      expect(violation.file).toBe(PANEL_FILE)
+  })
 })
 
 describe('checkPageSessionOwnsTransport allowed shapes', () => {
@@ -260,7 +273,6 @@ const { events, docTransport } = useAgentPageSession()
 
   test('ignores a factory name that only appears in a comment or a string', () => {
     const fixture = `
-      // createAgentEventSource() is resolved through the page session now.
       const label = 'createAgentDocFrameTransport'
     `
     expect(checkPageSessionOwnsTransport(FOLLOWER_FILE, fixture)).toEqual([])
@@ -282,17 +294,11 @@ describe('agent surface enforcement against this repository', () => {
     expect(files.some((file) => file.endsWith('.test.ts'))).toBe(false)
   })
 
-  // The guard is only worth having if something runs it. No workflow invokes
-  // `pnpm follower-invariants:check`, so this test is the enforcement: a
-  // component that reintroduces panel-owned transport fails `test`, which is a
-  // required check.
   test(
     'the agent surface holds the transport-ownership invariant',
     () => {
       expect(checkAgentSurfaceFiles(REPOSITORY_ROOT)).toEqual([])
     },
-    // Reads and scans the whole agent surface off disk, so it is bounded by IO
-    // and by however loaded the runner is, not by the default 5s.
     REPOSITORY_SCAN_TIMEOUT
   )
 

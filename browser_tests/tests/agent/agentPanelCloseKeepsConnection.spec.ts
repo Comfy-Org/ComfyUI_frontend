@@ -17,27 +17,6 @@ import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
-/**
- * Stage 1a of
- * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`:
- * the agent transport is owned by the page, not by the Agent panel.
- *
- * Closing the panel is an ordinary component unmount (`DockedAgentPanel.vue`
- * renders the root under `v-if`). The panel used to construct the agent event
- * source and the doc-frame transport in its own `setup` and destroy the
- * transport in `onBeforeUnmount`. The event source reference-counts its socket
- * by listener count and disconnects at zero, so dropping the doc-frame tap and
- * the session stream in the same teardown closed the socket outright — and
- * reopening the panel had to dial a fresh one, re-reading credentials and
- * paying reconnect backoff for a panel the user only toggled.
- *
- * This pins the connection count across a close/reopen. It is deliberately a
- * narrow claim: Stage 1a moves the transport only, so the replica is still
- * panel-owned and the deleted-while-closed divergence in the ADR's cost A is
- * NOT fixed here — that is Stage 1b plus Stage 3. Asserting more than the
- * surviving connection would be asserting something this stage does not do.
- */
-
 const WORKFLOW_ID = 'b71c0f84-3a5e-4d21-9f08-5c7b2e1a4d33'
 const THREAD_ID = 'd48e2b17-6c90-4a3f-8e51-2f9c7b0a6e14'
 const MESSAGE_ID = '1f6c3a92-7b48-4e05-9c2d-3a8b5e7f1002'
@@ -136,11 +115,6 @@ test.describe(
         await expect(picker).toHaveText('Unsaved Workflow')
         await expect.poll(() => hostSocket.connectionCount()).toBe(1)
 
-        // Binding alone does not start the follower; the turn's active-tab
-        // frame is what makes it subscribe. The subscribe matters here because
-        // the doc-frame tap is what holds the socket open — the event source
-        // closes on its last listener, so a spec where the follower never
-        // subscribed would go red on the fix and the parent alike.
         const composer = panel.getByRole('textbox', {
           name: AGENT_COMPOSER_LABEL
         })
@@ -176,11 +150,6 @@ test.describe(
       })
 
       await test.step('the connection was never dropped and redialled', async () => {
-        // The assertion that fails on the parent: there, panel teardown
-        // destroyed the transport, the socket closed with its last listener,
-        // and the remount opened connection 2. `toBe` rather than a poll with
-        // a bound, because a second connection appearing late is the same
-        // defect arriving slowly.
         await expect.poll(() => hostSocket.connectionCount()).toBe(1)
         expect(hostSocket.refusedConnectionCount()).toBe(0)
       })

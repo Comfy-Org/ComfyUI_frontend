@@ -283,8 +283,6 @@ beforeEach(() => {
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
-  // Each test is a fresh page load; the transport is page-session owned now.
-  // See agentPageSession.ts and CRDT-FOLLOWER-0052.
   destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),

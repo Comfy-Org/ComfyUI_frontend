@@ -255,15 +255,6 @@ onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
-// Owned by the page, not by this component. Closing the panel must not close
-// the agent socket or drop the doc-frame tap: the follower session has to be
-// able to resubscribe on reopen rather than cold-seed. See
-// docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
-// Stage 1a. There is deliberately no `onBeforeUnmount` teardown here.
-// The identity is read here rather than imported there: the page session is on
-// this component's import graph, so pulling the auth stores into it would put
-// them on a path they were not on before. The *watcher* still lives in the
-// page's scope, which is the part that has to outlive this component.
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
@@ -289,11 +280,6 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-// Reconnecting the socket on an identity change is the page session's job now,
-// because the socket outlives this component: a workspace switch made while
-// the panel is closed must not leave a live connection authenticated for the
-// previous account. What stays here is the part that is genuinely panel-scoped
-// — re-resolving the agent identity this panel instance holds.
 onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 
 function onPaywallAction(

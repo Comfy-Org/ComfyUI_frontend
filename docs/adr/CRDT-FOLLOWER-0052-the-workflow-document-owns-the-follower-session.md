@@ -322,6 +322,30 @@ page-session owner means it is made on first agent use and does not become a
 new request on the cold page-load path. A page with no agent use opens no
 socket and asks for no identity.
 
+**Everything page-lifetime is constructed _inside_ the owner's detached
+`effectScope`, not merely referenced from it.** This is the implementation rule
+that is easiest to get subtly wrong, so it belongs here rather than in a code
+comment. A module-level singleton does not change the active Vue scope, and the
+first resolution of the page session runs synchronously inside
+`AgentPanelRoot.setup()`. So an event source constructed outside the detached
+scope registers `createAgentEventSource`'s `useTimeoutFn` reconnect timer
+against the panel via `tryOnScopeDispose`: closing the panel during a pending
+backoff would cancel the retry while the transport and its doc tap survive,
+leaving a connection that can never come back — strictly worse than the cold
+seed this record removes. One scope owns the event source, the doc-frame
+transport and the identity watcher, and only an explicit page teardown stops
+it. The same reasoning is why a panel close must never call that teardown.
+
+**The identity source is passed into the owner, not imported by it.** Also an
+implementation constraint with a non-obvious reason: the owner module is
+reached from `AgentPanelRoot.vue`'s import graph, so importing the auth,
+API-key and workspace stores there puts them on a path they were not on
+before, which hung an unrelated suite's app bootstrap. The caller already
+imports those stores, so handing over a getter keeps the import graph
+unchanged while the watcher still lives, and still survives, in the page's own
+scope — which is the property that matters. Prefer a getter parameter over a
+direct import at this seam.
+
 **As landed, Stage 1a moved `events`, `docTransport` and the
 `agentSocketIdentity` watcher, and left `resolveAgentIdentity` itself
 panel-owned.** The split is deliberate, not an omission. The watcher is the

@@ -335,11 +335,7 @@ export function checkNoHardcodedEndpoint(
   return runAstCheck(file, source, noHardcodedEndpoint)
 }
 
-/**
- * The agent extension tree, which is wider than the follower seam on purpose:
- * the transport-ownership rule below has to see `AgentPanelRoot.vue`, because
- * that component is the call site it exists to forbid.
- */
+/** The agent extension tree, wider than the follower seam. */
 export const AGENT_SURFACE_PATTERNS = [
   'src/workbench/extensions/agent/**/*.ts',
   'src/workbench/extensions/agent/**/*.vue'
@@ -367,11 +363,6 @@ export function findAgentSurfaceFiles(repositoryRoot: string): string[] {
     .sort()
 }
 
-/**
- * A Vue SFC is not TypeScript, so parse only its `<script>` blocks. Offsets are
- * preserved by blanking everything outside them, which keeps reported line
- * numbers pointing at the real line in the `.vue` file.
- */
 const SCRIPT_BLOCK = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
 
 function scriptOf(file: string, source: string): string {
@@ -400,21 +391,20 @@ function calledFactory(node: ts.Node): string | undefined {
     : undefined
 }
 
+const mentionsFactoryName = (source: string): boolean =>
+  [...PAGE_SESSION_FACTORIES].some((name) => source.includes(name))
+
+const atPath = (file: string, violations: Violation[]): Violation[] =>
+  violations.map((violation) => ({ ...violation, file }))
+
 function pageSessionOwnsTransport(file: string, source: string): Violation[] {
   if (!isAgentSurfaceFile(file) || file === PAGE_SESSION_OWNER) return []
-  // Cheap gate before an expensive one. This rule's scope is the whole agent
-  // surface — around 200 files — and parsing every one of them with the
-  // TypeScript compiler to look for two identifiers cost about 20 seconds on a
-  // CI runner, enough to blow the repo-tree test's timeout. A call expression
-  // cannot exist without the callee's text appearing in the source, so a
-  // substring miss is a sound skip rather than a heuristic.
-  if (![...PAGE_SESSION_FACTORIES].some((name) => source.includes(name)))
-    return []
+  if (!mentionsFactoryName(source)) return []
   const parsed = parse(
     file.endsWith('.vue') ? `${file}.ts` : file,
     scriptOf(file, source)
   )
-  if (parsed.violations.length) return []
+  if (parsed.violations.length) return atPath(file, parsed.violations)
   const violations: Violation[] = []
   visit(parsed.sourceFile, (node) => {
     const factory = calledFactory(node)
@@ -476,11 +466,7 @@ export function checkFollowerFiles(
   return violations
 }
 
-/**
- * Run the agent-surface rules, whose scope is wider than the follower seam.
- * Kept separate from {@link checkFollowerFiles} so each scope fails closed on
- * its own terms.
- */
+/** Run the agent-surface rules, whose scope is wider than the follower seam. */
 export function checkAgentSurfaceFiles(
   repositoryRoot: string,
   files?: readonly string[]
