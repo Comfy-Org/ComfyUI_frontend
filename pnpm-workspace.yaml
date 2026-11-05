@@ -64,14 +64,14 @@ catalog:
   dompurify: ^3.4.17
   dotenv: ^16.4.5
   es-toolkit: ^1.39.9
-  eslint: ^10.13.0
+  eslint: ^10.14.0
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
   eslint-plugin-better-tailwindcss: ^4.10.0
   eslint-plugin-import-x: ^4.17.1
-  eslint-plugin-oxlint: 1.77.0
-  eslint-plugin-playwright: ^2.12.1
-  eslint-plugin-regexp: ^3.3.2
+  eslint-plugin-oxlint: 1.90.0
+  eslint-plugin-playwright: ^2.12.2
+  eslint-plugin-regexp: ^3.3.3
   eslint-plugin-storybook: ^10.6.5
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
