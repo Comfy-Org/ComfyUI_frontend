@@ -5,11 +5,14 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemeSegmenter = once(() =>
-  typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+const graphemeSegmenter = once(() => {
+  // Feature-checked: Intl.Segmenter is missing on Firefox < 125.
+  // oxlint-disable-next-line no-restricted-properties
+  const Segmenter = Intl.Segmenter
+  return typeof Segmenter === 'function'
+    ? new Segmenter(undefined, { granularity: 'grapheme' })
     : undefined
-)
+})
 
 function truncatedTitle(text: string): string {
   const segmenter = graphemeSegmenter()
