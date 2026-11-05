@@ -190,6 +190,8 @@ export class BootstrapTracer {
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
   private _hidden = new HiddenTimeMeter()
+  /** The latest phase whose work rejected, kept to say where a failed startup broke. */
+  private _failure: { phase: BootstrapPhase; error: unknown } | undefined
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -231,6 +233,10 @@ export class BootstrapTracer {
     const span = this.startPhase(phase)
     try {
       return await work()
+    } catch (error) {
+      // An error rethrown through enclosing phases keeps the innermost phase.
+      if (this._failure?.error !== error) this._failure = { phase, error }
+      throw error
     } finally {
       span.stop()
     }
@@ -292,9 +298,30 @@ export class BootstrapTracer {
     this._completed = true
     this._outcome = outcome
     clearTimeout(this._watchdog)
+    const failure = outcome === 'failed' ? this._failureCause() : undefined
+    this._failure = undefined
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
-    this._report(outcome)
+    this._report(outcome, undefined, failure)
     this._hidden.stop()
+  }
+
+  /**
+   * Where a failed startup broke: the phase whose work last rejected, else
+   * the newest phase still open. Error names only, never messages.
+   */
+  private _failureCause(): Pick<
+    BootstrapCompleteMetadata,
+    'failure_phase' | 'failure_error'
+  > {
+    if (this._failure) {
+      const { phase, error } = this._failure
+      return {
+        failure_phase: phase,
+        failure_error: error instanceof Error ? error.name : typeof error
+      }
+    }
+    const open = Array.from(this._spans.keys())
+    return { failure_phase: open.at(-1) ?? 'untraced' }
   }
 
   /**
@@ -326,7 +353,8 @@ export class BootstrapTracer {
 
   private _report(
     outcome: BootstrapCompleteMetadata['outcome'],
-    pending?: BootstrapPhase[]
+    pending?: BootstrapPhase[],
+    failure?: Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'>
   ): void {
     try {
       const totalMs = Math.round(performance.now())
@@ -338,7 +366,8 @@ export class BootstrapTracer {
         untraced_ms: untracedMs(rows, totalMs),
         hidden_ms: this._hidden.hiddenMsUntil(totalMs),
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
-        ...(pending?.length ? { pending } : {})
+        ...(pending?.length ? { pending } : {}),
+        ...failure
       }
       getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
