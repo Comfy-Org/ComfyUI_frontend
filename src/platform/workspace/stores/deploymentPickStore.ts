@@ -30,11 +30,6 @@ import {
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-/**
- * What picking a linked deployment, or Comfy Cloud, did: `picked` (the page
- * is reloading onto it), `unchanged` (this browser already runs on it),
- * `timedOut`, or `refused` with the server's reason.
- */
 type LinkPickOutcome =
   | { kind: 'picked' }
   | { kind: 'unchanged' }
@@ -385,24 +380,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return pickAndReload(id, deploymentId)
   }
 
-  /**
-   * True when the first listing says this browser runs on Comfy Cloud: it
-   * answered with no deployment picked, or the account cannot pick at all.
-   */
   function runsOnComfyCloud(): boolean {
     if (listingRefused.value) return true
     return isVisible.value && pickedDeploymentId.value === null
   }
 
-  /**
-   * Pick the deployment a link names (BE-20294), or Comfy Cloud for null,
-   * then reload like `pick`. Comfy Cloud sends the switcher's own request
-   * for it (`pick(null)`). It waits for the page's first listing, so a link
-   * to what this browser already runs on does nothing, but it does not need
-   * that listing to have answered: an account outside the rollout, or a
-   * deployment that is gone or not the workspace's, gets the server's
-   * refusal rather than nothing.
-   */
   async function pickFromLink(
     deploymentId: string | null
   ): Promise<LinkPickOutcome> {
