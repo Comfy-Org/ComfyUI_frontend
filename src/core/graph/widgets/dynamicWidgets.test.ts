@@ -13,7 +13,12 @@ import {
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
@@ -21,7 +26,8 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {
@@ -1028,14 +1034,17 @@ describe('Sibling autogrow groups across a save and restore', () => {
     )
   }
 
-  function saveAndRestoreWithImagesConnected(imageCount: number) {
+  function nodeWithImagesConnected(imageCount: number) {
     const graph = new LGraph()
     const node = LiteGraph.createNode(MULTI_AUTOGROW_NODE_TYPE)
     assert.ok(node, 'multi autogrow node')
     graph.add(node)
+    const sources: LGraphNode[] = []
     for (let ordinal = 0; ordinal < imageCount; ordinal++) {
-      const source = new ImageSourceNode()
+      const source = LiteGraph.createNode('test/ImageSource')
+      assert.ok(source, 'image source')
       graph.add(source)
+      sources.push(source)
       source.connect(
         0,
         node,
@@ -1044,6 +1053,11 @@ describe('Sibling autogrow groups across a save and restore', () => {
         )
       )
     }
+    return { graph, node, sources }
+  }
+
+  function saveAndRestoreWithImagesConnected(imageCount: number) {
+    const { graph, node } = nodeWithImagesConnected(imageCount)
     const before = inputNames(node)
 
     const reloaded = new LGraph()
@@ -1068,6 +1082,47 @@ describe('Sibling autogrow groups across a save and restore', () => {
 
     expect(after.filter((name) => name.startsWith('ref_audios.'))).toEqual([
       'ref_audios.ref_audio_0'
+    ])
+  })
+
+  test('leaves a clone with no empty slots beyond the group minimum', () => {
+    const { node } = nodeWithImagesConnected(5)
+
+    const clone = node.clone()
+
+    assert.ok(clone, 'cloned node')
+    expect(
+      clone.inputs
+        .map(({ name }) => name)
+        .filter((name) => name.startsWith('ref_images.'))
+    ).toEqual(['ref_images.ref_image_0'])
+  })
+
+  test('keeps a link when only its source is copied with the node', () => {
+    const { graph, node, sources } = nodeWithImagesConnected(3)
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    const canvas = new LGraphCanvas(canvasElement, graph, {
+      skip_render: true,
+      skip_events: true
+    })
+
+    const pasted = canvas._deserializeItems(
+      canvas._serializeItems([node, sources[2]]),
+      { position: [300, 300] }
+    )
+
+    const pastedNode = pasted?.nodes.get(serializeNodeId(node.id))
+    assert.ok(pastedNode, 'pasted node')
+    expect(
+      inputNames(pastedNode).filter((name) => name.startsWith('ref_images.'))
+    ).toEqual([
+      'ref_images.ref_image_0',
+      'ref_images.ref_image_1',
+      'ref_images.ref_image_2*',
+      'ref_images.ref_image_3'
     ])
   })
 })
