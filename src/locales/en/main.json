@@ -1352,7 +1352,9 @@
     "enterFilenamePrompt": "Enter the filename:",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
-    "savedAsWorkflow": "Converted to node graph only workflow"
+    "savedAsWorkflow": "Converted to node graph only workflow",
+    "unsavedChangesLostTitle": "Unsaved changes were not saved",
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
