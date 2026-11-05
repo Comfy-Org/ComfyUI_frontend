@@ -1,5 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
 export class FeatureFlagHelper {
   private featuresRouteHandler: ((route: Route) => void) | null = null
 
@@ -7,9 +9,17 @@ export class FeatureFlagHelper {
 
   /**
    * Seed feature flags before the app boots, via `/api/features` — the
-   * endpoint that populates `remoteConfig` (see `resolveFlag()` in
-   * `useFeatureFlags.ts`). Must be called before `comfyPage.setup()` /
-   * `page.goto()`.
+   * endpoint that populates `remoteConfig`, which `resolveFlag()` in
+   * `useFeatureFlags.ts` falls back to. Must be called before
+   * `comfyPage.setup()` / `page.goto()`.
+   *
+   * Not the `ff:` localStorage channel `setFlags()` writes: `getDevOverride()`
+   * returns early unless `import.meta.env.DEV`, which is `false` in the
+   * production build CI serves, so a seeded `ff:` entry is never read there.
+   *
+   * The seeded flags are layered **over** whatever the endpoint answers, so a
+   * spec keeps the rest of the server's config and overrides only the keys it
+   * names. Where there is no answer to layer over, the seed stands alone.
    *
    * Only reaches flags whose getter falls back to `remoteConfig.value`
    * (most of them); one resolved purely from the server's WS
@@ -17,7 +27,18 @@ export class FeatureFlagHelper {
    * `setServerFlagsPersistent()` instead.
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.mockServerFeatures(flags)
+    await this.page.route('**/api/features', async (route) => {
+      let served: Record<string, unknown> = {}
+      try {
+        const response = await route.fetch()
+        const body: unknown = response.ok() ? await response.json() : null
+        if (body && typeof body === 'object' && !Array.isArray(body))
+          served = body as Record<string, unknown>
+      } catch {
+        // Nothing upstream to layer over; the seeded flags stand alone.
+      }
+      await route.fulfill(jsonRoute({ ...served, ...flags }))
+    })
   }
 
   /**

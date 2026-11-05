@@ -391,4 +391,27 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     expect(features).toHaveProperty('max_upload_size')
     expect(Object.keys(features).length).toBeGreaterThan(0)
   })
+
+  // `initialFeatureFlags` used to seed `ff:` localStorage, which only
+  // `getDevOverride()` reads, and that returns early unless
+  // `import.meta.env.DEV`. CI serves a production build, so the option was a
+  // no-op in exactly the environment it is run in — green against a dev
+  // server, silently dropped here. `window.__CONFIG__` is the remote config
+  // the app committed at boot, which is what `resolveFlag()` falls back to.
+  test.describe('initialFeatureFlags', () => {
+    test.use({ initialFeatureFlags: { e2e_seeded_probe: 'seeded' } })
+
+    test('reaches the config the app resolves flags from', async ({
+      comfyPage
+    }) => {
+      const config = await comfyPage.page.evaluate(
+        () => window.__CONFIG__ as Record<string, unknown> | undefined
+      )
+
+      expect(config?.e2e_seeded_probe).toBe('seeded')
+      // Layered over the server's answer rather than replacing it, so a spec
+      // that names one flag keeps the rest of the config.
+      expect(typeof config?.max_upload_size).toBe('number')
+    })
+  })
 })

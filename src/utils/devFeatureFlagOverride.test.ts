@@ -12,6 +12,16 @@ describe('getDevOverride', () => {
     expect(getDevOverride('some_flag')).toBeUndefined()
   })
 
+  // Why the e2e harness cannot seed flags through `ff:`: the production build
+  // CI serves has `DEV` false, so an entry written before navigation is never
+  // read. See `FeatureFlagHelper.seedFlags()`.
+  it('returns undefined outside a dev build even with an override set', () => {
+    vi.stubEnv('DEV', false)
+    localStorage.setItem('ff:some_flag', 'true')
+
+    expect(getDevOverride('some_flag')).toBeUndefined()
+  })
+
   it('returns parsed boolean true', () => {
     localStorage.setItem('ff:some_flag', 'true')
     expect(getDevOverride<boolean>('some_flag')).toBe(true)
