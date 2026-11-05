@@ -28,7 +28,6 @@ export const HighestPlan: Story = {
   render: renderAtMinimumWidth
 }
 
-// A Cloud owner with no plan: credits fund the agent but not workflow runs.
 export const NoPlan: Story = {
   args: {
     presentation: {

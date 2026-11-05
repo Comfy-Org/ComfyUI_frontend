@@ -3,8 +3,8 @@ import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { TOP_UP_PLAN_CREDIT_LINE_KEYS } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 
+import AgentPaywallPlanNote from '@/workbench/extensions/agent/components/agent/message/AgentPaywallPlanNote.vue'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
   toAgentPaywallRemediation
@@ -31,20 +31,19 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   local: 'agent.paywall.body.local',
   unavailable: 'agent.paywall.body.subscriptionRequired'
 }
-const planNoteKey = computed(() =>
-  presentation.kind === 'subscribed' && presentation.planCreditLine
-    ? TOP_UP_PLAN_CREDIT_LINE_KEYS[presentation.planCreditLine]
-    : null
+const hasNoPlan = computed(
+  () => presentation.kind === 'subscribed' && !!presentation.planCreditLine
 )
-// Without a plan there are no monthly credits to have spent.
 const bodyKey = computed(() =>
-  planNoteKey.value ? bodyKeys.local : bodyKeys[presentation.kind]
+  hasNoPlan.value ? bodyKeys.local : bodyKeys[presentation.kind]
 )
 const showUpgrade = computed(
   () => presentation.kind === 'subscribed' && presentation.showUpgrade
 )
 const remediation = computed(() => toAgentPaywallRemediation(presentation))
-const showSubscribe = computed(() => remediation.value === 'subscribe')
+const showSubscribe = computed(
+  () => remediation.value === 'subscribe' || hasNoPlan.value
+)
 const showAddCredits = computed(() => remediation.value === 'addCredits')
 </script>
 
@@ -66,13 +65,7 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
         <p class="m-0 text-muted-foreground">
           {{ message || $t(bodyKey) }}
         </p>
-        <p
-          v-if="planNoteKey"
-          data-testid="agent-paywall-plan-note"
-          class="m-0 mt-1 text-muted-foreground"
-        >
-          {{ $t(planNoteKey) }}
-        </p>
+        <AgentPaywallPlanNote :presentation />
       </div>
     </div>
 
@@ -90,7 +83,7 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
       </Button>
       <Button
         v-if="showSubscribe"
-        variant="inverted"
+        :variant="hasNoPlan ? 'secondary' : 'inverted'"
         size="sm"
         @click="emit('paywallAction', 'subscribe')"
       >

@@ -24,6 +24,36 @@ describe('resolveAgentPaywallPresentation', () => {
     })
   })
 
+  it('drops the plan-required line when the owner cannot subscribe self-serve', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: false,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'subscribed', showUpgrade: false })
+  })
+
+  it('suppresses Upgrade for an ended plan whose tier still reads CREATOR', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'CREATOR',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredResubscribe'
+      })
+    ).toStrictEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredResubscribe'
+    })
+  })
+
   it('omits the plan-required line on Local', () => {
     expect(
       resolveAgentPaywallPresentation({

@@ -13,10 +13,6 @@ export type AgentPaywallPresentation =
   | {
       kind: 'subscribed'
       showUpgrade: boolean
-      /**
-       * The account can top up but has no Cloud plan: credits fund the agent,
-       * not workflow runs, so the card says so before anyone pays.
-       */
       planCreditLine?: TopUpPlanCreditLine
     }
   | { kind: 'subscriptionRequired' }
@@ -31,7 +27,6 @@ interface AgentPaywallPresentationInput {
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
-  /** Plan-required Add credits line for this account, when one applies. */
   planCreditLine?: TopUpPlanCreditLine | null
 }
 
@@ -104,9 +99,11 @@ export function resolveAgentPaywallPresentation({
       ? { kind: 'subscriptionRequired' }
       : { kind: 'salesManaged' }
   }
+  if (planCreditLine && canSubscribeSelfServe) {
+    return { kind: 'subscribed', showUpgrade: false, planCreditLine }
+  }
   return {
     kind: 'subscribed',
-    ...(planCreditLine && { planCreditLine }),
     showUpgrade:
       canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
   }

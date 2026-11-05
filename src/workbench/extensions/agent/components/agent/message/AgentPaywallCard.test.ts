@@ -74,6 +74,10 @@ describe('AgentPaywallCard visual contract', () => {
       expect(
         screen.getByRole('button', { name: 'Add credits' })
       ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Upgrade plan' })).toBeNull()
     }
   )
 
