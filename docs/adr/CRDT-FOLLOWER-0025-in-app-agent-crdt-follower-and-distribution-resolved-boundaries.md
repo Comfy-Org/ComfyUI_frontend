@@ -436,7 +436,7 @@ the store-first layer that redesign would have reshaped; the widget-in-flight
 gap it identified is closed by the `localWidgetWrites` hold described above.
 
 Files under `src/workbench/extensions/agent/crdt/` that carry this decision:
-`docFrameClient`, `followerDoc`, `schemaGuard`, `docChangeCollector`,
+`docFrameClient`, `followerDoc`, `docChangeCollector`,
 `liveGraphApplier`, `agentCrdtProjection`, `localWidgetWrites`, `docOpMinter`,
 `opSender`, `opCoalescer`, `batchPlacement`, `layoutFollowerBridge`, and the
 `useAgentCrdtFollower` orchestrator. `ecsFollowerAdapter`, `graphMutations`,

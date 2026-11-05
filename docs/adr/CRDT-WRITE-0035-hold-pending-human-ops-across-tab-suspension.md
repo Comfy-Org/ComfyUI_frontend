@@ -100,11 +100,12 @@ Alternatives considered:
   unmounts.
 - The eager abort on a null subscription is kept for the refusal path, so a
   refused resubscribe on return still drops the held batch.
-- A delayed batch carries the creator-owned Lamport counter it was minted
-  with in both `base_version` and `stamp[0]`. The applier
-  orders a delete against the node's stamp, so a node another actor touched
-  at a higher Lamport counter while the tab was away can win and the delete is
-  dropped as `lww-dropped`; the follower then converges to the host's view.
+- A batch already carried by the wire retains its creator-owned Lamport
+  counter on retry. A node another actor touched at a higher counter can win
+  against that delete, which is dropped as `lww-dropped`. A batch parked
+  before its first send is instead lifted above the received document counter
+  after catch-up, as specified in
+  [CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the catch-up consults local
   intent.
