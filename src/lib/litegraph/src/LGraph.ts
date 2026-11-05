@@ -181,6 +181,10 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import {
+  captureSerialisedInputLinks,
+  pruneDanglingSubgraphLinks
+} from './subgraph/pruneDanglingSubgraphLinks'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -3619,9 +3623,11 @@ export class Subgraph
     keep_old?: boolean
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
+    const serialisedInputLinks = captureSerialisedInputLinks(normalized.nodes)
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)
+    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
     return r
   }
 
