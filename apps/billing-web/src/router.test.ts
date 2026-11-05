@@ -101,6 +101,10 @@ describe('plan selection, which the host app owns', () => {
     [
       `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
       'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    ],
+    [
+      '/v1/pricing?product=platform&return_to=platform_account',
+      'https://testplatform.comfy.org/'
     ]
   ])(
     'sends %s to %s without rebinding the tab',
@@ -123,25 +127,6 @@ describe('plan selection, which the host app owns', () => {
     expect(leave).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/v1/checkout')
   })
-
-  it.for(['/v1/pricing?product=platform&return_to=platform_account'])(
-    'explains %s, which has nowhere to go back to',
-    async (path) => {
-      const { router, onEntryWorkspace, leave } =
-        hostBoundRouter('authenticated')
-
-      await arriveAt(path, router)
-
-      expect(
-        await screen.findByText(
-          "That link doesn't name a place we can send you back to."
-        )
-      ).toBeInTheDocument()
-      expect(leave).not.toHaveBeenCalled()
-      expect(onEntryWorkspace).not.toHaveBeenCalled()
-      expect(useBillingEntry().entry.value).toBeUndefined()
-    }
-  )
 })
 
 describe('the billing route guard', () => {
@@ -245,10 +230,6 @@ describe("a checkout's return_to, which is optional", () => {
     {
       name: 'one outside the registry',
       path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
-    },
-    {
-      name: 'one this family has no destination for',
-      path: '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
     }
   ])(
     'checks out a link with $name and returns to Plan & Credits',

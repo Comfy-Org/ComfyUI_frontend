@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -55,6 +55,7 @@ export interface WorkflowChangeTracker {
   restore(): void
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
+  markModified(): void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
@@ -82,6 +83,8 @@ export interface WorkflowRuntime {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
+  /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
+  graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
   getDraft(path: string): WorkflowDraft | null
   removeDraft(path: string): void
   markDraftUsed(path: string): void
@@ -219,6 +222,37 @@ function readUsableDraft(
   }
 }
 
+function draftMatchesSavedFile(
+  runtime: WorkflowRuntime,
+  saved: ComfyWorkflowJSON,
+  draft: ComfyWorkflowJSON
+): boolean {
+  return (
+    Array.isArray(saved.nodes) &&
+    Array.isArray(draft.nodes) &&
+    runtime.graphEqual(saved, draft)
+  )
+}
+
+/**
+ * Stored workflow content is empty or not a JSON object, so it can never open.
+ * The message is static; the path is on `workflowPath`.
+ */
+export class UnreadableWorkflowError extends Error {
+  override readonly name = 'UnreadableWorkflowError'
+
+  constructor(
+    readonly reason: 'empty' | 'not-object',
+    readonly workflowPath: string
+  ) {
+    super(
+      reason === 'empty'
+        ? 'Workflow content is missing or empty'
+        : 'Workflow content is not a JSON object'
+    )
+  }
+}
+
 /**
  * The workflow object parsed from the stored text. Anything else (nothing
  * stored, empty text, JSON `null`, a number, an array) cannot back a change
@@ -232,16 +266,23 @@ function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   }
   // `undefined` means there was nothing to parse; anything else parsed to
   // something that is not a workflow.
-  if (parsed !== undefined) {
-    reportWorkflowStateAnomaly(
-      'Workflow content is not a JSON object',
-      'ComfyWorkflow.load',
-      workflow
-    )
-  }
-  throw new Error(
-    `Workflow content is ${parsed === undefined ? 'missing or empty' : 'not a JSON object'} for '${workflow.path}'`
+  const error = new UnreadableWorkflowError(
+    parsed === undefined ? 'empty' : 'not-object',
+    workflow.path
   )
+  reportUnreadableContent(error, workflow)
+  throw error
+}
+
+function reportUnreadableContent(
+  error: UnreadableWorkflowError,
+  workflow: ComfyWorkflow
+): void {
+  try {
+    reportWorkflowStateAnomaly(error.message, 'ComfyWorkflow.load', workflow)
+  } catch (devAssertion) {
+    console.warn('Unreadable stored workflow', devAssertion)
+  }
 }
 
 /** i18n keys for the dialog shown when a workflow is saved without a name. */
@@ -365,9 +406,11 @@ export class ComfyWorkflow extends UserFile {
     if (draft?.state && draft.content) {
       this.changeTracker.activeState = draft.state
       this.content = draft.content
-      this._isModified = true
-      // Saved-workflow draft overlay path; direct persisted-draft restores
-      // are touched in workflowDraftStoreV2.loadDraft().
+      this._isModified = !draftMatchesSavedFile(
+        runtime,
+        initialState,
+        draft.state
+      )
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow

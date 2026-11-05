@@ -74,6 +74,36 @@ export class VueNodeHelpers {
     )
   }
 
+  async waitForSlotLayout(nodeId: string): Promise<void> {
+    await expect
+      .poll(() =>
+        this.getNodeLocator(nodeId).evaluate((element, id) => {
+          const app = window.app!
+          const node = app.canvas.graph!.getNodeById(id)!
+          const errors = [
+            ...node.inputs.map((_, index) => ({
+              key: `${id}-in-${index}`,
+              position: node.getInputPos(index)
+            })),
+            ...node.outputs.map((_, index) => ({
+              key: `${id}-out-${index}`,
+              position: node.getOutputPos(index)
+            }))
+          ].flatMap(({ key, position }) => {
+            const dot = element.querySelector(`[data-slot-key="${key}"]`)
+            if (!dot) return []
+            const rect = dot.getBoundingClientRect()
+            const [, y] = app.canvasPosToClientPos(position)
+            return [
+              Math.abs(y - rect.top - rect.height / 2) / app.canvas.ds.scale
+            ]
+          })
+          return errors.length ? Math.max(...errors) : Infinity
+        }, toNodeId(nodeId))
+      )
+      .toBeLessThan(0.5)
+  }
+
   /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.

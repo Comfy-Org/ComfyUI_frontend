@@ -33,6 +33,7 @@ export interface TopupOperationView {
   readonly actionUrl: string | null
   readonly phase: BillingOperationPhase | null
   readonly authenticationState: BillingAuthenticationState | null
+  readonly authenticationDeadline?: string
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
   readonly errorMessage: string | null
@@ -67,6 +68,7 @@ export function projectTopupOperation(
     actionUrl: state.actionUrl ?? null,
     phase: state.serverPhase ?? null,
     authenticationState,
+    authenticationDeadline: state.authenticationDeadline,
     isAuthenticating: state.challenge?.status === 'in_progress',
     canRetryAuthentication: state.challenge?.status === 'required',
     errorMessage:
@@ -81,7 +83,7 @@ export function projectTopupOperation(
  * handles, carrying the terminal its status cannot: the decline reason, or
  * that this tab stopped watching, or that support must reconcile it.
  */
-export class UncreditedTopupResponse implements CreateTopupResponse {
+class UncreditedTopupResponse implements CreateTopupResponse {
   readonly topup_id = ''
 
   constructor(
@@ -110,7 +112,9 @@ function topupFailureError(
     serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
-    topupFailureCategory(failure)
+    topupFailureCategory(failure),
+    undefined,
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
   )
 }
 

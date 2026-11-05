@@ -22,7 +22,8 @@ import {
 import {
   deleteSelectedLinks,
   hideSelectedLinks,
-  showSelectedLinks
+  showSelectedLinks,
+  toggleNodeLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -74,9 +75,9 @@ import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,
   useManagerState
-} from '@/workbench/extensions/manager/composables/useManagerState'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+} from '@/platform/customNodes/manager/composables/useManagerState'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 
@@ -87,11 +88,20 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    isInitialized,
+    initialize,
+    type: billingType
+  } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
 
-  function blockRunWithoutSubscription(): boolean {
-    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+  async function blockRunWithoutSubscription(): Promise<boolean> {
+    if (!isCloud) return false
+    if (!isInitialized.value) await initialize().catch(() => undefined)
+    if (billingType.value === 'unknown') return true
+    if (canAccessSubscriptionFeatures.value) return false
     if (isSalesManagedTier(subscription.value?.tier)) {
       toast.warning(t('subscription.salesManagedRunBlockedTitle'), {
         description: t('subscription.salesManagedRunBlockedDetail'),
@@ -124,7 +134,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
 
-  const { getSelectedNodes, toggleSelectedNodesMode } =
+  const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
@@ -530,7 +540,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -550,7 +560,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -569,7 +579,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
@@ -676,6 +686,16 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Links',
+      icon: 'icon-[lucide--eye-off]',
+      label: 'Hide/Show Links on Selected Nodes',
+      versionAdded: '1.61.0',
+      mutatesGraph: true,
+      function: () => {
+        toggleNodeLinks(app.canvas, getSelectedNodesShallow())
       }
     },
     {

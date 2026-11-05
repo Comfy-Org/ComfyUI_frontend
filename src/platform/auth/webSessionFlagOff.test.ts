@@ -31,7 +31,7 @@ import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -97,7 +97,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {
@@ -176,6 +176,8 @@ const CAPABILITIES = {
     can_view_team_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
+    can_view_auto_top_up: false,
+    can_view_auto_top_up_member_notice: false,
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
@@ -196,6 +198,7 @@ const BILLING_STATUS = {
   has_funds: true,
   is_active: true,
   max_seats: 1,
+  next_charge: null,
   occupied_seats: 1,
   scheduled_change: null,
   team_credit_stop: null
@@ -768,58 +771,6 @@ describe.for([
     })
   }
 )
-describe.for([
-  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
-  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } }
-])('billing with unified_web_session off ($name)', ({ features }) => {
-  const onFirebaseToken = (method: string, path: string): RecordedRequest => ({
-    method,
-    path: `${getComfyApiBaseUrl()}${path}`,
-    headers: {
-      authorization: 'Bearer firebase-id-token',
-      'content-type': 'application/json'
-    },
-    credentials: null
-  })
-
-  beforeEach(() => {
-    identity.reset()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
-  it('sends balance, top-up, portal and the 409 recovery on the Firebase token and mints nothing', async () => {
-    const recorder = installFetchRecorder(features)
-    await refreshRemoteConfig({ useAuth: false })
-    const authStore = useAuthStore()
-    await authStore.login('user-a@example.com', 'password')
-    await vi.waitFor(() =>
-      expect(recorder.pending).toContainEqual(CUSTOMER_PROVISIONING)
-    )
-    recorder.take()
-
-    await authStore.fetchBalance()
-    await authStore.initiateCreditPurchase({
-      amount_micros: 5_000_000,
-      currency: 'usd'
-    })
-    await authStore.accessBillingPortal()
-    recorder.loseCustomer()
-    await authStore.fetchBalance()
-
-    expect(recorder.take()).toEqual([
-      onFirebaseToken('GET', '/customers/balance'),
-      onFirebaseToken('POST', '/customers/credit'),
-      onFirebaseToken('POST', '/customers/billing'),
-      onFirebaseToken('GET', '/customers/balance'),
-      onFirebaseToken('POST', '/customers'),
-      onFirebaseToken('GET', '/customers/balance')
-    ])
-  })
-})
-
 describe('an interactive sign-in with unified_web_session off', () => {
   beforeEach(() => {
     identity.reset()

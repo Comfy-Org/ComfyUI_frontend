@@ -391,8 +391,7 @@ describe('useFeatureFlags', () => {
     {
       flag: 'unifiedBillingSettingsEnabled' as const,
       offCloudTrue: true
-    },
-    { flag: 'autoTopUpEnabled' as const, offCloudTrue: false }
+    }
   ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
@@ -514,11 +513,10 @@ describe('useFeatureFlags', () => {
     })
 
     it('lets a served server false turn off the nightly default', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
-            ? false
-            : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+          ? false
+          : defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -584,11 +582,8 @@ describe('useFeatureFlags', () => {
     })
 
     it('falls back to the server feature of the same key', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === 'deployment_compatibility_marks_enabled'
-            ? true
-            : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'deployment_compatibility_marks_enabled' ? true : defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -604,6 +599,64 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.deploymentCompatibilityMarksEnabled).toBe(false)
+    })
+  })
+
+  describe('runtimeLibraryModelsEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { runtime_library_models_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('falls back to the server feature of the same key', () => {
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'runtime_library_models_enabled' ? true : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(false)
+    })
+  })
+
+  describe('modelUploadFolders', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('lists the folders the server accepts uploads into', () => {
+      remoteConfig.value = { model_upload_folders: ['checkpoints', 'loras'] }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual(['checkpoints', 'loras'])
+    })
+
+    it('is empty when the server sends no list', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual([])
     })
   })
 
@@ -994,9 +1047,8 @@ describe('useFeatureFlags', () => {
     it('ignores the server-feature fallback when /api/features lacks the flag', () => {
       remoteConfigState.value = 'authenticated'
       authenticatedRemoteConfigState.value = 'authenticated'
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
       )
 
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)

@@ -185,6 +185,29 @@ type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
     default_workspace_id?: string
   }
 
+type CreationDeniedReason = NonNullable<
+  NonNullable<ListWorkspacesResponse['denied_reasons']>['can_create_workspace']
+>
+
+const CREATION_DENIED_REASONS: Record<CreationDeniedReason, true> = {
+  organization_managed: true,
+  owned_workspace_limit: true
+}
+
+function isCreationDeniedReason(
+  reason: string
+): reason is CreationDeniedReason {
+  return Object.hasOwn(CREATION_DENIED_REASONS, reason)
+}
+
+function parseCreationDeniedReason(
+  reason: string | undefined
+): CreationDeniedReason | undefined {
+  return reason !== undefined && isCreationDeniedReason(reason)
+    ? reason
+    : undefined
+}
+
 function reportSsoLanding(
   { default_workspace_id }: ListedWorkspaces,
   workspaceId: string
@@ -194,7 +217,6 @@ function reportSsoLanding(
   )
 }
 
-const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 const INIT_READ_WITHOUT_STATUS_RETRY = { skipStatusRetry: true }
@@ -233,6 +255,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   )
   const identityGeneration = ref(0)
   let initializationPromise: Promise<void> | null = null
+  let hostChangedWhileLoading = false
   let pendingWorkspaceSwitch: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
@@ -261,35 +284,29 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     workspaces.value.filter((w) => w.type !== 'personal')
   )
 
-  const ownedWorkspacesCount = computed(
-    () => workspaces.value.filter((w) => w.role === 'owner').length
-  )
-
   const serverRefusesCreation = ref(false)
+  const creationDeniedReason = ref<CreationDeniedReason>()
+  const maxOwnedWorkspaces = ref<number>()
 
-  const workspacesManagedByOrganization = ref(false)
-
-  const canCreateWorkspace = computed(
-    () =>
-      !serverRefusesCreation.value &&
-      ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
-  )
+  const canCreateWorkspace = computed(() => !serverRefusesCreation.value)
 
   const createWorkspaceRefusal = computed<
-    'organization' | 'limit' | 'unknown' | null
-  >(() => {
-    if (canCreateWorkspace.value) return null
-    if (workspacesManagedByOrganization.value) return 'organization'
-    if (serverRefusesCreation.value) return 'unknown'
-    return 'limit'
-  })
+    CreationDeniedReason | 'unknown' | null
+  >(() =>
+    serverRefusesCreation.value
+      ? (creationDeniedReason.value ?? 'unknown')
+      : null
+  )
 
   function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
     serverRefusesCreation.value = response.can_create_workspace === false
-    workspacesManagedByOrganization.value = !!response.default_workspace_id
+    creationDeniedReason.value = parseCreationDeniedReason(
+      response.denied_reasons?.can_create_workspace
+    )
+    maxOwnedWorkspaces.value = response.max_owned_workspaces
   }
 
   const members = computed<WorkspaceMember[]>(
@@ -528,10 +545,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = promise
     void promise.then(
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        hostChangedWhileLoading = false
       },
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        retryIfHostChangedWhileLoading()
       }
     )
     return promise
@@ -1111,6 +1132,27 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
   }
 
+  function retryInitializationForHost(): void {
+    initialize().catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_reinitializing_workspaces_for_desktop_host',
+        surface: 'workspace'
+      })
+    )
+  }
+
+  watch(desktopHostUser, (hostUser) => {
+    if (!hostUser) return
+    if (initState.value === 'loading') hostChangedWhileLoading = true
+    if (initState.value === 'error') retryInitializationForHost()
+  })
+
+  function retryIfHostChangedWhileLoading(): void {
+    const retry = hostChangedWhileLoading && desktopHostUser.value !== null
+    hostChangedWhileLoading = false
+    if (retry) retryInitializationForHost()
+  }
+
   watch(
     () => desktopHostUser.value?.workspaceId,
     (hostWorkspaceId) => {
@@ -1130,10 +1172,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     mutableWorkspaceTransitionGeneration.value++
     pendingWorkspaceSwitch = null
     initializationPromise = null
+    hostChangedWhileLoading = false
     initState.value = 'uninitialized'
     workspaces.value = []
     serverRefusesCreation.value = false
-    workspacesManagedByOrganization.value = false
+    creationDeniedReason.value = undefined
+    maxOwnedWorkspaces.value = undefined
     mutableActiveWorkspaceId.value = null
     error.value = null
     isCreating.value = false
@@ -1163,10 +1207,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     personalWorkspace,
     isInPersonalWorkspace,
     sharedWorkspaces,
-    ownedWorkspacesCount,
     canCreateWorkspace,
     serverRefusesCreation,
-    workspacesManagedByOrganization,
+    creationDeniedReason,
+    maxOwnedWorkspaces,
     createWorkspaceRefusal,
     members,
     membersLoaded,

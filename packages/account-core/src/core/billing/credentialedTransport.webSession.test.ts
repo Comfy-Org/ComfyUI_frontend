@@ -93,6 +93,14 @@ describe('createCredentialedBillingTransport with a web session', () => {
         'x-comfy-workspace-id': 'ws-1',
         'x-csrf-token': 'stale-csrf'
       }
+    },
+    {
+      method: 'PUT' as const,
+      expected: {
+        'x-comfy-client': COMFY_CLIENT,
+        'x-comfy-workspace-id': 'ws-1',
+        'x-csrf-token': 'stale-csrf'
+      }
     }
   ])(
     'sends the cookie headers authorize decides for a $method',

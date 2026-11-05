@@ -8,12 +8,13 @@ import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
-import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import type {
+  SettingPanelType,
+  SettingParams
+} from '@comfyorg/settings-core/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -276,7 +277,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/settings/components/ExtensionPanel.vue')
+      () => import('@/platform/extensions/components/ExtensionPanel.vue')
     )
   }
 

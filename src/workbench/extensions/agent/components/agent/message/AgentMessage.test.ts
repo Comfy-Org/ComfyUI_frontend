@@ -1,8 +1,13 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import { i18n } from '@/i18n'
+import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
+import { i18n, loadLocale } from '@/i18n'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -40,6 +45,173 @@ function paywallMessage(message?: string): AssistantMessage {
     thinking: false
   }
 }
+
+describe('AgentMessage credit usage', () => {
+  beforeEach(() => {
+    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfig.value = { 'agent-credit-usage-summary': 'treatment' }
+  })
+
+  it('shows the completed turn charge without presenting it as a session total', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-credits')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.274
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      /^Agent used 1\.27 credits$/
+    )
+  })
+
+  it('uses singular copy for exactly one credit', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-one-credit')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      /^Agent used 1 credit$/
+    )
+  })
+
+  it('chooses the plural form from the displayed amount', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-rounded-credit')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.001
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      /^Agent used 1 credit$/
+    )
+  })
+
+  it('localizes the below-minimum amount', () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'fr'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-tiny-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: 0.004
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      const usage = screen.getByTestId('agent-credit-usage')
+      expect(usage).toHaveTextContent('<0,01')
+      expect(usage).not.toHaveTextContent('<0.01')
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
+
+  it('renders fractional Russian credits without hiding the usage row', async () => {
+    const previousLocale = i18n.global.locale.value
+    await loadLocale('ru')
+    i18n.global.locale.value = 'ru'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-russian-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: microUsdToCredits(6038)
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+        /^Агент использовал 1,27 кредита$/
+      )
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
+
+  it('pluralizes the Russian below-minimum amount from its displayed bound', async () => {
+    const previousLocale = i18n.global.locale.value
+    await loadLocale('ru')
+    i18n.global.locale.value = 'ru'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-russian-tiny-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: microUsdToCredits(1)
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+        /^Агент использовал <0,01 кредита$/
+      )
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
+
+  it('hides unavailable usage', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-no-credits')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-credit-usage')).not.toBeInTheDocument()
+  })
+
+  it('hides usage in the control arm', () => {
+    remoteConfig.value = { 'agent-credit-usage-summary': 'control' }
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-control')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.274
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-credit-usage')).not.toBeInTheDocument()
+  })
+})
 
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
@@ -385,7 +557,13 @@ describe('AgentMessage thinking narration', () => {
   it('keeps resumed thinking in the open trace alongside the earlier call', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'The first edit is complete.', state: 'done' },
       {
         type: 'thinking',
@@ -414,9 +592,21 @@ describe('AgentMessage thinking narration', () => {
     message.thinking = false
     message.streaming = false
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'Between calls', state: 'done' },
-      { type: 'tool', callId: 'tool_1', name: 'add_node', state: 'done' }
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
     ]
     render(AgentMessage, {
       props: { message },
@@ -454,6 +644,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_0',
         name: 'list_slots',
         state: 'done',
+        ok: true,
         durationMs: 500
       },
       {
@@ -461,6 +652,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_1',
         name: 'set_widget',
         state: 'done',
+        ok: true,
         durationMs: 800
       },
       {

@@ -45,7 +45,7 @@ import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
 import { useHasBlockingError } from '@/platform/workflowErrors/panel/useHasBlockingError'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
-import { createWorkflowErrorManager } from '@/workbench/extensions/manager/composables/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
 const canvasStore = useCanvasStore()
