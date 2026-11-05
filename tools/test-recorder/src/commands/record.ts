@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   text,
@@ -23,6 +23,8 @@ import {
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { openPr } from '../pr/openPr'
+import { isAlreadyExistsError } from '../cli/fsErrors'
+import { writeFileExclusive } from '../cli/exclusiveWrite'
 import { runCommand } from '../cli/run'
 import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
@@ -847,6 +849,28 @@ export async function runRecord(
   const featureFlags =
     prefill.featureFlags ?? parseFeatureFlagSpecs(selectedFeatureFlags)
 
+  const testsDir = join(projectRoot, 'browser_tests', 'tests')
+  mkdirSync(testsDir, { recursive: true })
+  const initialOutputPath = join(testsDir, `${slug}.spec.ts`)
+  let approvedOutputPath =
+    prefill.force === true ? initialOutputPath : undefined
+  if (!approvedOutputPath && existsSync(initialOutputPath)) {
+    const overwrite = answered(
+      await confirm({
+        message: `${slug}.spec.ts already exists. Overwrite it?`,
+        initialValue: false
+      })
+    )
+    if (!overwrite) {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${initialOutputPath} first.`
+      )
+      process.exit(1)
+    }
+    approvedOutputPath = initialOutputPath
+  }
+
   stepHeader(5, 7, 'Record')
 
   const serverSpinner = spinner()
@@ -989,10 +1013,47 @@ export async function runRecord(
     ])
   }
 
-  const testsDir = join(projectRoot, 'browser_tests', 'tests')
-  mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
-  writeFileSync(outputPath, transformResult.code)
+  let allowOverwrite =
+    prefill.force === true || approvedOutputPath === outputPath
+  if (!allowOverwrite && existsSync(outputPath)) {
+    if (!stdinOpen) {
+      fail(
+        'Refusing to overwrite existing test',
+        `${outputPath} already exists, and stdin is closed so the overwrite ` +
+          'prompt cannot be answered. Delete that file, or re-record and end ' +
+          'the paste with a single "." line to stay interactive, or pass ' +
+          '--force to replace it.'
+      )
+      process.exit(1)
+    }
+    const overwrite = answered(
+      await confirm({
+        message: `${slug}.spec.ts already exists. Overwrite it?`,
+        initialValue: false
+      })
+    )
+    if (!overwrite) {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${outputPath} first.`
+      )
+      process.exit(1)
+    }
+    allowOverwrite = true
+  }
+  try {
+    writeFileExclusive(outputPath, transformResult.code, allowOverwrite)
+  } catch (error) {
+    if (isAlreadyExistsError(error)) {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${outputPath} first.`
+      )
+      process.exit(1)
+    }
+    throw error
+  }
   if (!formatFile(outputPath)) {
     info([
       `Could not format ${outputPath} — run pnpm format before committing.`
@@ -1002,9 +1063,11 @@ export async function runRecord(
   blank()
   pass('Test saved', outputPath)
 
-  stepHeader(7, 7, 'Refactor (optional)')
-  await offerAgentRefactor(outputPath, projectRoot)
-  blank()
+  if (stdinOpen) {
+    stepHeader(7, 7, 'Refactor (optional)')
+    await offerAgentRefactor(outputPath, projectRoot)
+    blank()
+  }
 
   if (!stdinOpen) {
     // stdin is at EOF, so prompting here would hang.
