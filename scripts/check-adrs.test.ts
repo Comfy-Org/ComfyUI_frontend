@@ -52,7 +52,10 @@ describe('findLegacyAdrReferences', () => {
       ['current in ADR-LAYOUT/', '0008 and inventory'],
       ['This ADR (', '0008) defines the entity data model'],
       ['See ADR-', '0008 for details'],
-      ['See docs/adr/', '0008-entity-component-system.md']
+      ['See docs/adr/', '0008-entity-component-system.md'],
+      ['See ../adr/', '0008-entity-component-system.md'],
+      ['See ./docs/adr/', '0008-entity-component-system.md'],
+      ['See /docs/adr/', '0008-entity-component-system.md']
     ].map((parts) => parts.join(''))
   )('detects legacy reference form: %s', (reference) => {
     expect(findLegacyAdrReferences(reference)).toEqual([

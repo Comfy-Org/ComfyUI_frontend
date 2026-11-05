@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const ADR_FILE_PATTERN =
   /^([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/
 const LEGACY_REFERENCE_PATTERN =
-  /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?<![/A-Za-z0-9])(?:docs\/)?adr\/\d{4}-/
+  /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?<![A-Za-z0-9])(?:docs\/)?adr\/\d{4}-/
 
 type Adr = {
   date: string
@@ -25,7 +25,11 @@ export const findLegacyAdrReferences = (contents: string): LegacyReference[] =>
   contents
     .split('\n')
     .map((line, index) => ({ line, lineNumber: index + 1 }))
-    .filter(({ line }) => LEGACY_REFERENCE_PATTERN.test(line))
+    .filter(({ line }) =>
+      LEGACY_REFERENCE_PATTERN.test(
+        line.replace(/\b[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s<>()]+/g, '')
+      )
+    )
 
 const getMetadata = (directory: string, filename: string): Adr => {
   const id = ADR_FILE_PATTERN.exec(filename)?.[1]
