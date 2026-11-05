@@ -1644,8 +1644,6 @@ describe('useWorkflowStore', () => {
         )
       })
 
-      // Sentry groups thrown errors by message: a path in it splits one
-      // defect into a group per file name and leaks the user's file name.
       it('rejects with a typed error whose message does not include the path', async () => {
         await syncRemoteWorkflows(['secret-name.json'])
         const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
@@ -1678,6 +1676,18 @@ describe('useWorkflowStore', () => {
           })
         }
       )
+
+      it('does not leave a tab behind when opening unreadable content', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(store.openWorkflow(workflow)).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+
+        expect(store.openWorkflows).not.toContain(workflow)
+      })
 
       it('does not report content that is a JSON object', async () => {
         await syncRemoteWorkflows(['a.json'])

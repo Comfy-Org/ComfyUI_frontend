@@ -233,8 +233,13 @@ function queueWorkflowLoad<T>(
   return result
 }
 
-/** One toast per unreadable file, so repeated clicks do not stack them. */
 const unreadableWorkflowToastIds = new Map<string, ToastId>()
+const unreadableWorkflows = new WeakSet<ComfyWorkflow>()
+
+/** Whether opening this workflow failed because its stored file is unreadable. */
+export function isUnreadableWorkflow(workflow: ComfyWorkflow): boolean {
+  return unreadableWorkflows.has(workflow)
+}
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -466,8 +471,9 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
    * @returns false when the graph load reported failure (the error dialog was
-   * shown and the workflow never painted) or when the open was skipped because
-   * the workflow is mid-close; true otherwise
+   * shown and the workflow never painted), when the stored file is unreadable
+   * (a toast was shown; see `isUnreadableWorkflow`) or when the open was
+   * skipped because the workflow is mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -586,7 +592,7 @@ export const useWorkflowService = () => {
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         if (error instanceof UnreadableWorkflowError) {
-          showUnreadableWorkflowToast(workflow)
+          if (options.isCurrent?.() !== false) markUnreadable(workflow)
           return false
         }
         throw error
@@ -594,11 +600,11 @@ export const useWorkflowService = () => {
     }, workflow.path)
   }
 
-  /**
-   * The stored file can never open (see `UnreadableWorkflowError`). Load
-   * already reported it, so tell the user and offer to delete it rather than
-   * rejecting into an unhandled error they never see.
-   */
+  const markUnreadable = (workflow: ComfyWorkflow) => {
+    unreadableWorkflows.add(workflow)
+    showUnreadableWorkflowToast(workflow)
+  }
+
   const showUnreadableWorkflowToast = (workflow: ComfyWorkflow) => {
     const id = unreadableWorkflowToastIds.get(workflow.path) ?? createToastId()
     unreadableWorkflowToastIds.set(workflow.path, id)
@@ -708,8 +714,14 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if (!(await openWorkflow(replacementWorkflow))) return false
-          options.onReplacementOpened?.(replacementWorkflow)
+          if (await openWorkflow(replacementWorkflow)) {
+            options.onReplacementOpened?.(replacementWorkflow)
+          } else if (
+            !isUnreadableWorkflow(replacementWorkflow) ||
+            !(await loadDefaultAsReplacement())
+          ) {
+            return false
+          }
         } else {
           if (!(await loadDefaultAsReplacement())) return false
         }
@@ -896,6 +908,16 @@ export const useWorkflowService = () => {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
     }
 
+    async function bindStoredToCanvas(workflow: ComfyWorkflow) {
+      try {
+        return await bindToCanvas(workflow)
+      } catch (error) {
+        if (!(error instanceof UnreadableWorkflowError)) throw error
+        markUnreadable(workflow)
+        return undefined
+      }
+    }
+
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
@@ -937,12 +959,14 @@ export const useWorkflowService = () => {
               existingWorkflow.legacyId
             ))
 
-        if (
+        const reused =
           existingWorkflow &&
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
-        ) {
-          const loadedWorkflow = await bindToCanvas(existingWorkflow)
+            ? await bindStoredToCanvas(existingWorkflow)
+            : undefined
+        if (reused !== undefined) {
+          const loadedWorkflow = reused
           if (!loadedWorkflow) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {

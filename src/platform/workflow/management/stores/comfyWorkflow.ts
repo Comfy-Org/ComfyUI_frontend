@@ -235,13 +235,8 @@ function draftMatchesSavedFile(
 }
 
 /**
- * Stored workflow content that cannot back a change tracker: nothing stored,
- * empty text, or JSON that is not an object (files written as `null` by
- * frontends before the save guard below). Opening such a file can never
- * succeed, so callers tell the user instead of reporting it as a crash.
- *
- * The message is static so error grouping does not split per file name and
- * never carries the user's path; the path is on `workflowPath`.
+ * Stored workflow content is empty or not a JSON object, so it can never open.
+ * The message is static; the path is on `workflowPath`.
  */
 export class UnreadableWorkflowError extends Error {
   override readonly name = 'UnreadableWorkflowError'

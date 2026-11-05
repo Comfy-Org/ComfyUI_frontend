@@ -154,11 +154,6 @@ test.describe(
   }
 )
 
-/**
- * CLOUD-FRONTEND-PROD-397: opening a workflow whose stored file is `null`
- * (written by frontends before the save guard) rejected into an unhandled
- * error. The user saw nothing and the file stayed in the sidebar for good.
- */
 test.describe(
   'Opening a workflow whose stored content is null',
   { tag: '@workflow' },
