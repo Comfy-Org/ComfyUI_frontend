@@ -215,7 +215,12 @@ describe('AssetsSidebarTab folder navigation', () => {
       folderAsset,
       siblingOutput
     ])
-    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(true)
+    vi.mocked(useMediaAssetActions().deleteAssets).mockImplementation(
+      async () => {
+        useAssetsStore().outputAssets.items = [siblingOutput]
+        return true
+      }
+    )
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
@@ -227,7 +232,6 @@ describe('AssetsSidebarTab folder navigation', () => {
       ])
     )
 
-    vi.mocked(resolveOutputAssetItems).mockResolvedValue([siblingOutput])
     await fireEvent.contextMenu(
       screen.getByRole('button', { name: 'Enter output folder' })
     )
@@ -244,10 +248,6 @@ describe('AssetsSidebarTab folder navigation', () => {
     )
   })
 
-  // Known defect: a successful delete refreshes the output store, but the open
-  // folder lists its own resolved outputs and nothing re-resolves or prunes
-  // them, so the deleted output stays on screen until the folder is reopened.
-  // The test above guards this setup, so only the final assertion is pinned.
   it.fails('stops showing an output deleted from inside an open folder', async () => {
     await deleteFirstOutputInsideFolder()
 
