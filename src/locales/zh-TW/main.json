@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "新增點數",
       "body": {
-        "local": "您已用完點數餘額。新增點數以讓代理程式持續運作。",
+        "local": "您的帳戶沒有可供代理程式使用的點數。新增點數即可使用。",
         "member": "此工作區已用盡所有點數。請要求工作區擁有者新增更多點數。",
         "salesManaged": "此工作區透過您的 Comfy 帳戶團隊計費。請聯絡他們以新增點數。",
         "subscribed": "此工作區已用盡每月點數及儲值餘額。新增點數以讓代理程式持續運作。",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API 價格",
     "charge": "扣款",
+    "creditUnit": "點數 | 點數",
     "credits": "點數",
-    "creditUnit": "點數",
     "creditsAvailable": "可用點數",
     "details": "詳細資料",
     "eventType": "事件類型",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
-    "savedAsWorkflow": "已轉換為僅節點圖工作流程"
+    "savedAsWorkflow": "已轉換為僅節點圖工作流程",
+    "unsavedChangesLost": "對 {name} 所做的未儲存變更已無法取得，因此已儲存的檔案維持原樣。",
+    "unsavedChangesLostTitle": "未儲存的變更未能儲存"
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被加入 {workspaceName}",

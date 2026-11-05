@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "크레딧 추가",
       "body": {
-        "local": "크레딧 잔액을 모두 사용했습니다. 에이전트를 계속 실행하려면 크레딧을 추가하세요.",
+        "local": "계정에 에이전트에 사용할 수 있는 크레딧이 없습니다. 사용하려면 크레딧을 추가하세요.",
         "member": "이 워크스페이스의 크레딧이 모두 소진되었습니다. 워크스페이스 소유자에게 추가를 요청하세요.",
         "salesManaged": "이 워크스페이스는 Comfy 계정 팀을 통해 청구됩니다. 크레딧을 추가하려면 해당 팀에 문의하세요.",
         "subscribed": "이 워크스페이스의 월간 크레딧과 추가 충전 잔액이 모두 소진되었습니다. 에이전트를 계속 실행하려면 크레딧을 추가하세요.",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API 가격",
     "charge": "청구",
+    "creditUnit": "크레딧 | 크레딧",
     "credits": "크레딧",
-    "creditUnit": "크레딧",
     "creditsAvailable": "사용 가능한 크레딧",
     "details": "세부 정보",
     "eventType": "이벤트 유형",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장",
     "savedAsApp": "앱 워크플로우로 변환됨",
-    "savedAsWorkflow": "노드 그래프 전용 워크플로우로 변환됨"
+    "savedAsWorkflow": "노드 그래프 전용 워크플로우로 변환됨",
+    "unsavedChangesLost": "{name}에 저장하지 않은 변경 사항은 더 이상 사용할 수 없어, 저장된 파일은 그대로 유지되었습니다.",
+    "unsavedChangesLostTitle": "저장하지 않은 변경 사항이 저장되지 않았습니다"
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}에 추가되었습니다",

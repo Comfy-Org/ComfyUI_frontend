@@ -174,7 +174,7 @@
     "paywall": {
       "addCredits": "Credits hinzufügen",
       "body": {
-        "local": "Sie haben Ihr Credit-Guthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
+        "local": "Ihr Konto verfügt über keine Credits für den Agenten. Fügen Sie Credits hinzu, um ihn zu verwenden.",
         "member": "Dieser Workspace hat alle seine Credits verwendet. Bitten Sie den Inhaber Ihres Workspace, weitere Credits hinzuzufügen.",
         "salesManaged": "Dieser Workspace wird über Ihr Comfy-Kontoteam abgerechnet. Wenden Sie sich an dieses Team, um Credits hinzuzufügen.",
         "subscribed": "Dieser Workspace hat seine monatlichen Credits und sein Aufladeguthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
@@ -1215,8 +1215,8 @@
     "api": "API",
     "apiPricing": "API-Preise",
     "charge": "Abbuchung",
+    "creditUnit": "Guthaben | Guthaben",
     "credits": "Credits",
-    "creditUnit": "Credits",
     "creditsAvailable": "Verfügbare Credits",
     "details": "Details",
     "eventType": "Ereignistyp",
@@ -5830,7 +5830,9 @@
     "exportWorkflow": "Workflow exportieren",
     "saveWorkflow": "Workflow speichern",
     "savedAsApp": "In App-Workflow umgewandelt",
-    "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt"
+    "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt",
+    "unsavedChangesLost": "Die nicht gespeicherten Änderungen an {name} waren nicht mehr verfügbar, daher blieb die gespeicherte Datei unverändert.",
+    "unsavedChangesLostTitle": "Nicht gespeicherte Änderungen wurden nicht gespeichert"
   },
   "workspace": {
     "addedToNamedWorkspace": "Sie wurden zu {workspaceName} hinzugefügt",
