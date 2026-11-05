@@ -314,7 +314,7 @@
           {
             "object": "Intl",
             "property": "Segmenter",
-            "message": "Missing on Firefox < 125 (Firefox 115 ESR is still in use). Check typeof Intl.Segmenter === 'function' and fall back, as deriveSessionTitle in src/workbench/extensions/agent/utils/sessionTitle.ts does."
+            "message": "Missing on Firefox < 125 (Firefox 115 ESR is still in use). Read Intl.Segmenter once into a local under a one-line disable, typeof-check the local and fall back, as graphemeSegmenter in src/workbench/extensions/agent/utils/sessionTitle.ts does."
           }
         ]
       }
