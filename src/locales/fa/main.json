@@ -1195,6 +1195,7 @@
     "apiPricing": "قیمت‌گذاری API",
     "charge": "هزینه",
     "credits": "اعتبار",
+    "creditUnit": "اعتبار",
     "creditsAvailable": "اعتبار موجود",
     "details": "جزئیات",
     "eventType": "نوع رویداد",
