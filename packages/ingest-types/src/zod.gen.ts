@@ -497,7 +497,8 @@ export const zAgentSkillPublishRequest = z.object({
  */
 export const zAgentThinkingEntry = z.object({
   text: z.string(),
-  tool_call_id: z.string().optional()
+  tool_call_id: z.string().optional(),
+  truncated: z.boolean().optional()
 })
 
 /**
@@ -4090,6 +4091,20 @@ export const zPeriodCreditGrant = z.object({
 })
 
 /**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export const zSubscriptionPaymentRecovery = z.object({
+  billing_op_id: z.string(),
+  reason: z.enum(['payment_required'])
+})
+
+/**
  * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
  */
 export const zSubscriptionState = z.enum([
@@ -4623,6 +4638,7 @@ export const zTeamCreditStops = z.object({
 export const zBillingPlansResponse = z.object({
   current_plan_slug: z.string().optional(),
   plans: z.array(zPlan),
+  subscription_payment_recovery: zSubscriptionPaymentRecovery.optional(),
   team_credit_stops: zTeamCreditStops.optional()
 })
 
@@ -7485,9 +7501,12 @@ export const zGetCccPublicCacheAuthorityResponse = z.object({
 })
 
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  }),
+  rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   uid: z.uuid()
 })
 

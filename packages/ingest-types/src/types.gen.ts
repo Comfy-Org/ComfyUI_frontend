@@ -831,6 +831,10 @@ export type AgentThinkingEntry = {
    * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
    */
   tool_call_id?: string
+  /**
+   * True where the stored thinking stops being whole: this entry's text was cut at the per-round cap (8,192 characters), or a later round's thinking was dropped because the turn's cap (32,768 characters) was spent. A client should say the reasoning was shortened. Absent when nothing was cut.
+   */
+  truncated?: boolean
 }
 
 /**
@@ -3198,6 +3202,7 @@ export type BillingPlansResponse = {
    */
   current_plan_slug?: string
   plans: Array<Plan>
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
   team_credit_stops?: TeamCreditStops
 }
 
@@ -7692,6 +7697,26 @@ export type SubscriptionDiscount = {
  * Billing period (uppercase to match comfy-api)
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+
+/**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export type SubscriptionPaymentRecovery = {
+  /**
+   * Exact workspace-bound initial-subscription operation; never a newer top-up.
+   */
+  billing_op_id: string
+  /**
+   * The customer must finish or retry the existing initial invoice payment.
+   */
+  reason: 'payment_required'
+}
 
 /**
  * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.

@@ -1545,6 +1545,7 @@ export type {
   SubscribeToLogsResponses,
   SubscriptionDiscount,
   SubscriptionDuration,
+  SubscriptionPaymentRecovery,
   SubscriptionState,
   SubscriptionTier,
   SystemStatsResponse,
