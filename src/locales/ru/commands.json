@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Перезапустить"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Открыть средство 3D-просмотра (бета) для выбранного узла"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Экспериментально: Просмотр ресурсов моделей"
   },
@@ -105,7 +108,7 @@
     "label": "Свернуть/Развернуть выбранные ноды"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Links": {
-    "label": "Скрыть/показать связи выбранных нод"
+    "label": "Скрыть/показать связи у выбранных узлов"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Отключить/Включить звук выбранных нод"
