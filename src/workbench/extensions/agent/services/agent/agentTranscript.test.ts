@@ -713,6 +713,42 @@ describe('normalizeAgentTranscript', () => {
         'deleteApproval',
         'text'
       ])
+      expect(
+        normalizeAgentTranscript(history).messages[0].parts[2]
+      ).toMatchObject({
+        type: 'deleteApproval',
+        resolution: { status: 'answered', selected: ['keep'] }
+      })
+    })
+
+    it('places a later row\'s card among that row\'s own tool calls', () => {
+      const history = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', 'First', 'row-1'),
+          content: { text: 'First', tool_calls: [toolCall('call-1')] }
+        },
+        {
+          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+          content: { text: 'Done', tool_calls: [toolCall('call-2')] },
+          resolved_asks: [
+            {
+              ...askUser,
+              message_id: 'row-2',
+              status: 'answered',
+              selected: ['keep'],
+              after_tool_calls: 0
+            }
+          ]
+        }
+      ])
+
+      expect(shape(history)).toEqual([
+        'call-1',
+        'text',
+        'askUser',
+        'call-2',
+        'text'
+      ])
     })
 
     it('leaves out a run card, which keeps no card once answered', () => {

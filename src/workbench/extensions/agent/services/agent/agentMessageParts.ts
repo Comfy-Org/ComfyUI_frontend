@@ -383,10 +383,7 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
     : undefined
 }
 
-/**
- * The read-only card of an ask that already ended, or `undefined` for a kind
- * that keeps no card once it ends: `retireAskParts` drops those live too.
- */
+/** The read-only card of a finished ask; `undefined` for a kind that keeps none. */
 export function toResolvedAskPart(
   ask: AgentResolvedAsk
 ): AskUserPart | DeleteApprovalPart | undefined {

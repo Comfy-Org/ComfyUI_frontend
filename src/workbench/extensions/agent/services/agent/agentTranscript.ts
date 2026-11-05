@@ -445,28 +445,28 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * Puts each finished ask where it sat live: after the tool call it was asked
- * during, ahead of the next tool call and of the reply text. An ask with no
- * recorded position goes after the last tool call.
- */
-function insertResolvedAsks(message: AssistantMessage, raw: unknown): void {
+function insertResolvedAsks(
+  message: AssistantMessage,
+  raw: unknown,
+  rowStart: number
+): void {
   if (!Array.isArray(raw)) return
   for (const entry of raw) {
     const ask = zAgentResolvedAsk.safeParse(entry).data
     const part = ask && toResolvedAskPart(ask)
     if (!part) continue
     const parts = [...message.parts]
-    const tools = parts.filter(({ type }) => type === 'tool').length
+    const rowParts = parts.slice(rowStart)
+    const tools = rowParts.filter(({ type }) => type === 'tool').length
     const after = Math.min(ask.after_tool_calls ?? tools, tools)
     let seen = 0
-    const index = parts.findIndex((candidate) => {
+    const index = rowParts.findIndex((candidate) => {
       if (candidate.type === 'text') return seen === after
       if (candidate.type !== 'tool') return false
       seen += 1
       return seen === after + 1
     })
-    parts.splice(index === -1 ? parts.length : index, 0, part)
+    parts.splice(index === -1 ? parts.length : rowStart + index, 0, part)
     message.parts = parts
   }
 }
@@ -478,8 +478,9 @@ function applyAssistantRow(
 ): NormalizedAgentTranscript['pending'] {
   const isLive = row.status === 'streaming'
   message.streaming = isLive
+  const rowStart = message.parts.length
   appendAssistantContent(message, row, text, isLive)
-  insertResolvedAsks(message, row.resolved_asks)
+  insertResolvedAsks(message, row.resolved_asks, rowStart)
 
   if (!isLive) return undefined
 
