@@ -142,6 +142,7 @@ import MenuItemContent from '@comfyorg/design-system/menu/MenuItemContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
 
 import { formatTime } from '@/utils/formatUtil'
+import { reloadFailedMedia } from '@/utils/mediaReloadUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -195,7 +196,7 @@ const togglePlayPause = async () => {
 
   isPlaying.value = true
   try {
-    if (audio.error) audio.load()
+    if (audio.error) reloadFailedMedia(audio)
     await audio.play()
     if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
   } catch (error) {
