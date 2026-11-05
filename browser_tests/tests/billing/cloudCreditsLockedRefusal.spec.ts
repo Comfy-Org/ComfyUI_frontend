@@ -103,7 +103,11 @@ test.describe(
       await new CloudWorkspaceMockHelper(page).setup(
         DEFAULT_TEAM_MEMBERS,
         workspace('personal', 'owner'),
-        { ...PERSONAL_BILLING_STATUS, has_funds: hasFunds }
+        {
+          ...PERSONAL_BILLING_STATUS,
+          subscription_state: 'ended',
+          has_funds: hasFunds
+        }
       )
       await page.route('**/api/features', (route) =>
         route.fulfill(jsonRoute({ subscription_required: true }))
@@ -122,7 +126,9 @@ test.describe(
 
       await expect(
         page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-      ).toContainText("Buying credits doesn't")
+      ).toHaveText(
+        "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud."
+      )
     })
 
     test('stays out of the dialog when the account has no funds', async ({

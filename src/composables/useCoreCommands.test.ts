@@ -186,6 +186,7 @@ vi.mock<unknown>(
           return mockBillingState.subscriptionTier || mockBillingState.hasFunds
             ? {
                 tier: mockBillingState.subscriptionTier,
+                isActive: false,
                 hasFunds: mockBillingState.hasFunds
               }
             : null
