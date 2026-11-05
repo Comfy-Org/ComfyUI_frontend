@@ -15,6 +15,8 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
+  EXISTING_FRAME_INSERT_OPS,
+  EXISTING_FRAME_TITLE,
   STAGE_FRAME_TITLES,
   STAGE_FRAMES_CATALOG,
   STAGE_FRAMES_EXISTING_NODES,
@@ -194,6 +196,35 @@ test.describe(
         (saved.groups ?? []).map((group) => [group.title, [...group.bounding]])
       )
       expect(savedGeometry).toEqual(live.geometry)
+    })
+
+    test('keeps a group drawn around existing nodes on those nodes', async ({
+      page
+    }) => {
+      socket.send(JSON.stringify(host.apply(EXISTING_FRAME_INSERT_OPS)))
+
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            window.app!.graph.groups.map((group) => {
+              group.recomputeInsideNodes()
+              return {
+                title: group.title,
+                bounding: [...group._bounding],
+                members: group.nodes.map((node) =>
+                  String(node.widgets?.[0]?.value ?? '')
+                )
+              }
+            })
+          )
+        )
+        .toEqual([
+          {
+            title: EXISTING_FRAME_TITLE,
+            bounding: [-20, -60, 360, 280],
+            members: ['Existing node']
+          }
+        ])
     })
   }
 )

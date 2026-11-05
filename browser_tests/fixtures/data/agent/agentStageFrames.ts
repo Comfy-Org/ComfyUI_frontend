@@ -64,3 +64,26 @@ export const STAGE_FRAMES_CATALOG: WidgetCatalog = {
 export const STAGE_FRAMES_INSERT_OPS: RecordedGraphOperation[] = [
   { op: 'insert_workflow', workflow: STAGE_FRAMES_TEMPLATE }
 ]
+
+export const EXISTING_FRAME_TITLE = 'Existing node frame'
+
+/** A workflow that carries only a group drawn around the existing node. */
+export const EXISTING_FRAME_INSERT_OPS: RecordedGraphOperation[] = [
+  {
+    op: 'insert_workflow',
+    workflow: {
+      nodes: [],
+      links: [],
+      groups: [
+        {
+          id: 1,
+          title: EXISTING_FRAME_TITLE,
+          bounding: [-20, -60, 360, 280],
+          color: '#3f789e',
+          font_size: 24,
+          flags: {}
+        }
+      ]
+    }
+  }
+]

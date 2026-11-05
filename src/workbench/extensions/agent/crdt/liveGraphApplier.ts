@@ -28,6 +28,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { containsCentre } from '@/lib/litegraph/src/measure'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -62,7 +63,11 @@ import {
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
-import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  Bounds as PlacementRect,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
 export type NodeChange = 'add' | 'update' | 'delete'
@@ -2047,14 +2052,27 @@ export class LiveGraphApplier {
       width: item.size[0],
       height: item.size[1]
     })
-    const incoming = [
-      ...graph._nodes.filter((node) => createdSet.has(node.id)),
-      ...createdGroups
-    ]
+    const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
+    const existingNodes = graph._nodes.filter(
+      (node) => !createdSet.has(node.id)
+    )
+    const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const existingBounds = existingNodes.map((node) =>
+      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+    )
+    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
+    const framesOnlyExisting = (group: LGraphGroup) =>
+      framesAny(group, existingBounds) && !framesAny(group, createdBounds)
+    const kept = createdGroups.filter(framesOnlyExisting)
+    const placedGroups =
+      kept.length > 0 && createdNodes.length === 0
+        ? []
+        : createdGroups.filter((group) => !kept.includes(group))
+    const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...graph._nodes.filter((node) => !createdSet.has(node.id)),
-        ...graph.groups.filter((group) => !createdGroups.includes(group))
+        ...existingNodes,
+        ...graph.groups.filter((group) => !placedGroups.includes(group))
       ].map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect),
@@ -2065,6 +2083,37 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+/** True once a frame has measured the node; until then its bounds are zero. */
+function isRendered(node: LGraphNode): boolean {
+  const [, , width, height] = node.boundingRect
+  return width > 0 || height > 0
+}
+
+/**
+ * The bounds the next frame will give a node that has not been drawn yet,
+ * measured the way LiteGraph does it, including a collapsed node's title width.
+ * `measure()` caches the collapsed width the node renders at; that cache is
+ * left for the next frame to write, because without a canvas context it would
+ * be written as zero.
+ */
+function pendingBounds(
+  node: LGraphNode,
+  ctx: CanvasRenderingContext2D | undefined
+): ReadOnlyRect {
+  const out: Rect = [0, 0, 0, 0]
+  const collapsedWidth = node._collapsed_width
+  node.measure(out, ctx)
+  node._collapsed_width = collapsedWidth
+  return out
+}
+
+function framesAny(
+  group: LGraphGroup,
+  bounds: readonly ReadOnlyRect[]
+): boolean {
+  return bounds.some((rect) => containsCentre(group._bounding, rect))
 }
 
 function isLinkPresent(
