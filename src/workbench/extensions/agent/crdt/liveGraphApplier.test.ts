@@ -44,7 +44,11 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 import { followedDoc } from './__fixtures__/followedDoc'
 import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
+import {
+  LiveGraphApplier,
+  readDocGroups,
+  readDocWidgetValue
+} from './liveGraphApplier'
 import type {
   LiveGraphApplierDeps,
   RemoteApplyContext
@@ -3147,5 +3151,34 @@ describe('LiveGraphApplier change bracket', () => {
     detached.applyChanges(doc, catchUp, CONTEXT)
     detached.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
     expect(events).toHaveLength(4)
+  })
+})
+
+describe('readDocGroups', () => {
+  const frame = { title: 'Stage', bounding: [0, 0, 100, 100] }
+
+  it('keeps a stored positive integer id', () => {
+    expect([...readDocGroups([{ ...frame, id: 7 }]).keys()]).toEqual(['7'])
+  })
+
+  it('names a record without a usable id the same way on every read', () => {
+    const records = [frame, { ...frame, id: -1 }, { ...frame, id: Number.NaN }]
+    const first = [...readDocGroups(records).values()].map(({ id }) => id)
+    const second = [...readDocGroups(records).values()].map(({ id }) => id)
+    expect(first).toHaveLength(3)
+    expect(second).toEqual(first)
+    expect(first.every((id) => Number.isSafeInteger(id) && id > 0)).toBe(true)
+  })
+
+  it('tells apart id-less records whose titles differ only in an astral character', () => {
+    const groups = readDocGroups([
+      { ...frame, title: 'Stage \u{1F600}' },
+      { ...frame, title: 'Stage \u{1F601}' }
+    ])
+    expect(groups.size).toBe(2)
+  })
+
+  it('reads an id-less record that carries a bigint field', () => {
+    expect(readDocGroups([{ ...frame, extra: 1n }]).size).toBe(1)
   })
 })

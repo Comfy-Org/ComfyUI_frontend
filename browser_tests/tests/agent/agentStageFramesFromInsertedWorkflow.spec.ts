@@ -17,10 +17,12 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   EXISTING_FRAME_INSERT_OPS,
   EXISTING_FRAME_TITLE,
+  STAGE_FRAME_IDLESS_TITLES,
   STAGE_FRAME_TITLES,
   STAGE_FRAMES_CATALOG,
   STAGE_FRAMES_EXISTING_NODES,
   STAGE_FRAMES_INSERT_OPS,
+  STAGE_FRAMES_INSERT_OPS_WITHOUT_GROUP_IDS,
   STAGE_FRAMES_MESSAGE_ID,
   STAGE_FRAMES_SAVED_NAME,
   STAGE_FRAMES_TEMPLATE,
@@ -98,7 +100,10 @@ test.describe(
             return original(text, x, y, maxWidth)
           }
         },
-        { expectedTexts: STAGE_FRAME_TITLES, key: canvasTextProbeKey }
+        {
+          expectedTexts: [...STAGE_FRAME_TITLES, ...STAGE_FRAME_IDLESS_TITLES],
+          key: canvasTextProbeKey
+        }
       )
     })
 
@@ -225,6 +230,47 @@ test.describe(
             members: ['Existing node']
           }
         ])
+    })
+
+    test('shows stage frames the agent inserted without group ids, and saves them', async ({
+      page
+    }) => {
+      socket.send(
+        JSON.stringify(host.apply(STAGE_FRAMES_INSERT_OPS_WITHOUT_GROUP_IDS))
+      )
+
+      const titles = () =>
+        page.evaluate(() => window.app!.graph.groups.map(({ title }) => title))
+      await expect.poll(titles).toHaveLength(STAGE_FRAME_IDLESS_TITLES.length)
+      await expect
+        .poll(titles)
+        .toEqual(expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES))
+      await expect
+        .poll(() =>
+          page.evaluate((key) => {
+            const observed: unknown = Reflect.get(window, key)
+            if (!Array.isArray(observed)) return []
+            return observed.filter(
+              (text): text is string => typeof text === 'string'
+            )
+          }, canvasTextProbeKey)
+        )
+        .toEqual(expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES))
+
+      const savedRequest = page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          decodeURIComponent(new URL(request.url()).pathname).startsWith(
+            '/api/userdata/workflows/'
+          )
+      )
+      await new Topbar(page).saveWorkflowAs(STAGE_FRAMES_SAVED_NAME)
+      const saved = zComfyWorkflow.parse((await savedRequest).postDataJSON())
+      const savedTitles = (saved.groups ?? []).map(({ title }) => title)
+      expect(savedTitles).toHaveLength(STAGE_FRAME_IDLESS_TITLES.length)
+      expect(savedTitles).toEqual(
+        expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES)
+      )
     })
   }
 )

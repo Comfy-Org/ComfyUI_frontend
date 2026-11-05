@@ -237,17 +237,58 @@ const zDocNodeFields = zComfyNode
     [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
 
-const zDocGroup = zGroup.extend({ id: z.number() })
+const zDocGroup = zGroup.extend({ id: z.unknown().optional() })
 
-/** The `meta.groups` records that configure a canvas group, keyed by id. */
+/**
+ * The `meta.groups` records that configure a canvas group, keyed by id; a
+ * record without a usable id is keyed by a hash of its content.
+ */
 export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
   const parsed = new Map<string, ISerialisedGroup>()
   if (!Array.isArray(groups)) return parsed
   for (const record of groups) {
     const group = zDocGroup.safeParse(structuredClone(record))
-    if (group.success) parsed.set(String(group.data.id), group.data)
+    if (!group.success) continue
+    const id = isGroupId(group.data.id)
+      ? group.data.id
+      : contentGroupId(group.data)
+    parsed.set(String(id), { ...group.data, id })
   }
   return parsed
+}
+
+function isGroupId(id: unknown): id is number {
+  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0
+}
+
+function contentGroupId(record: Record<string, unknown>): number {
+  const json = canonicalJson(record)
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < json.length; i++) {
+    const code = json.charCodeAt(i)
+    h1 = Math.imul(h1 ^ code, 2654435761)
+    h2 = Math.imul(h2 ^ code, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0) + 1
+}
+
+function canonicalJson(value: unknown): string {
+  if (typeof value === 'bigint') return `${value}n`
+  if (value === undefined) return 'null'
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
+    return `{${entries.join(',')}}`
+  }
+  return JSON.stringify(value)
 }
 
 /**
