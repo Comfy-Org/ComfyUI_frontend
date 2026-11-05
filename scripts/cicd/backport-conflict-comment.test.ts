@@ -70,10 +70,9 @@ const jobToken = 'job-token'
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
-# REST calls made with a spent token fail the way GitHub fails them. GraphQL
-# (which \`gh pr comment\` and \`gh issue create\` use) has its own quota.
-if [[ "$1" == api && "$2" != graphql && -n "\${FAKE_SPENT_TOKEN:-}" &&
-  "\${GH_TOKEN:-}" == "\${FAKE_SPENT_TOKEN}" ]]; then
+if [[ "$1" == api && "$2" != graphql &&
+  " \${FAKE_SPENT_TOKENS:-} " == *" \${GH_TOKEN:-} "* ]]; then
+  echo '{"message":"API rate limit exceeded for user ID 1."}'
   echo 'gh: API rate limit exceeded for user ID 1.' >&2
   exit 1
 fi
@@ -143,7 +142,7 @@ interface Run {
   commentsRead?: 'ok' | 'error'
   login?: string
   prLocked?: boolean
-  sharedRestQuotaSpent?: boolean
+  spentRestTokens?: string[]
 }
 
 function reportConflict(
@@ -158,7 +157,7 @@ function reportConflict(
     commentsRead = 'ok',
     login = botLogin,
     prLocked = false,
-    sharedRestQuotaSpent = false
+    spentRestTokens = []
   }: Run = {}
 ) {
   const eventPath = join(sandbox, 'event.json')
@@ -193,7 +192,7 @@ function reportConflict(
       FAKE_LOGIN: login,
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
-      FAKE_SPENT_TOKEN: sharedRestQuotaSpent ? sharedToken : '',
+      FAKE_SPENT_TOKENS: spentRestTokens.join(' '),
       GH_TOKEN: sharedToken,
       JOB_TOKEN: jobToken,
       FAKE_TARGET_HEAD: targetHead,
@@ -327,8 +326,18 @@ describe('backport conflict comment', () => {
     {
       scenario:
         'a later labeled event while the shared token is out of REST quota',
-      second: { sharedRestQuotaSpent: true },
+      second: { spentRestTokens: [sharedToken] },
       expected: 1
+    },
+    {
+      scenario: 'a later labeled event while the job token is out of REST quota',
+      second: { spentRestTokens: [jobToken] },
+      expected: 1
+    },
+    {
+      scenario: 'a later labeled event while both tokens are out of REST quota',
+      second: { spentRestTokens: [sharedToken, jobToken] },
+      expected: 2
     },
     {
       scenario: 'an unresolvable posting identity',

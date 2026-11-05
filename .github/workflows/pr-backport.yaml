@@ -456,13 +456,20 @@ jobs:
           # A locked PR gets its report as a tracking issue, so search those too.
           # GraphQL has its own quota, so it still names the poster when the
           # shared token's REST quota is spent (seen on 2026-11-01 and 11-04).
-          POSTING_LOGIN=$(gh api user --jq '.login' ||
-            gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login') ||
+          # Assign each attempt separately: a failed `gh api` prints the error
+          # body on stdout, which must not end up in the value.
+          POSTING_LOGIN=$(gh api user --jq '.login') ||
+            POSTING_LOGIN=$(gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login') ||
             POSTING_LOGIN=""
 
           # Read with the job token first, then the shared token.
           read_all() {
-            GH_TOKEN="${JOB_TOKEN}" gh api --paginate "$1" || gh api --paginate "$1"
+            local out
+            if out=$(GH_TOKEN="${JOB_TOKEN}" gh api --paginate "$1"); then
+              printf '%s\n' "${out}"
+            else
+              gh api --paginate "$1"
+            fi
           }
 
           conflict_already_reported() {
