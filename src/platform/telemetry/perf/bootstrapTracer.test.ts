@@ -310,6 +310,55 @@ describe('bootstrapTracer', () => {
     })
   })
 
+  it('does not blame a handled rejection for a later, different terminal error', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () =>
+        Promise.reject(new Error('handled by the caller'))
+      )
+    ).rejects.toThrow()
+    tracer.complete('failed', { error: new TypeError('no canvas') })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'untraced',
+      failure_error: 'TypeError'
+    })
+  })
+
+  it('keeps the rejecting phase when the terminal error is that rejection', async () => {
+    const tracer = new BootstrapTracer()
+    const error = new RangeError('bad defs')
+
+    await expect(
+      tracer.settle('bootstrap/object-info', () => Promise.reject(error))
+    ).rejects.toBe(error)
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/object-info',
+      failure_error: 'RangeError'
+    })
+  })
+
+  it('reports Error when reading the error name throws', () => {
+    const tracer = new BootstrapTracer()
+    const error = new Error('x')
+    Object.defineProperty(error, 'name', {
+      get() {
+        throw new Error('getter')
+      }
+    })
+
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({ failure_error: 'Error' })
+    expect(tracer.outcome).toBe('failed')
+  })
+
   it('reports a failure outside every phase as untraced', () => {
     const tracer = new BootstrapTracer()
 
