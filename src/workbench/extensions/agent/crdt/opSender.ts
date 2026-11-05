@@ -5,7 +5,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import { chunkWireOps, mintWireOps } from './opEnvelope'
+import { chunkWireOps, mintWireOps, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { reportLostEdit } from './reportLostEdit'
 import type { UnboundAbortReason } from './reportLostEdit'
 
@@ -221,17 +221,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let detached = false
   let suspended = false
   let pumping = false
-  // Late-result credits: every send a batch leaves the client with may still
-  // draw a result, including the send whose silence provoked the resend and
-  // the sends of a batch that has already settled. As ANONYMOUS failures
-  // (empty id lists, no failure op_id) those are indistinguishable from the
-  // current batch's, so one is swallowed per credit rather than risk a
-  // mis-attributed settle, which poisons everything downstream of this seam.
-  // The cost is not one cycle: a credit reserved for a result that never
-  // arrives is never drained, so the next batch's own answer pays for it and
-  // reserves another on its resend. Once one result is lost, every later
-  // anonymous failure costs a RESULT_TIMEOUT_MS resend, until the host can
-  // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
   const mayReportLostEdit = createReportBudget()
@@ -531,11 +520,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     notify: (outcome: BatchOutcome, workflowId: string | null) => void,
     workflowId: string | null
   ): void {
-    for (let index = 0; index < ops.length; index += 256) {
+    for (let index = 0; index < ops.length; index += WIRE_MAX_OPS_PER_BATCH) {
       notify(
         {
           state: 'undeliverable',
-          ops: ops.slice(index, index + 256)
+          ops: ops.slice(index, index + WIRE_MAX_OPS_PER_BATCH)
         },
         workflowId
       )
@@ -553,10 +542,28 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     for (const op of minted) {
       try {
         const [inspection] = inspectOps([op])
-        const wire: DocOp = JSON.parse(
+        const wire: unknown = JSON.parse(
           new TextDecoder().decode(inspection.canonical_op)
         )
-        admitted.push({ op, wire, bytes: inspection.canonical_op.byteLength })
+        if (
+          typeof wire !== 'object' ||
+          wire === null ||
+          !('op_id' in wire) ||
+          typeof wire.op_id !== 'string' ||
+          !('actor' in wire) ||
+          typeof wire.actor !== 'string'
+        ) {
+          rejected.push(op)
+          cause ??= new TypeError(
+            'Operation did not serialize to a wire object'
+          )
+          continue
+        }
+        admitted.push({
+          op,
+          wire: { ...wire, op_id: wire.op_id, actor: wire.actor },
+          bytes: inspection.canonical_op.byteLength
+        })
       } catch (error) {
         rejected.push(op)
         cause ??= error
@@ -594,11 +601,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     else open = { workflowId, ops: admitted }
   }
 
-  // Admissions in mint order. Measurement runs user-controlled toJSON and
-  // commitment runs settlement listeners; either may re-enter admit(). A
-  // re-entrant admission takes the slot after the one in progress and is
-  // committed by the outermost call, so the open group and the queue receive
-  // ops in the order their base_versions were minted.
   const admitting: Admission[] = []
   let flushDeferred = false
 
@@ -824,8 +826,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       detached = true
       try {
         drainOutstanding(notifyDetachSettlement)
-        // The listener is inert once detached. Release late-result bookkeeping
-        // even if an injected unsubscribe implementation fails below.
         staleAnonymousBudget = 0
         retiredOpIds.clear()
       } finally {

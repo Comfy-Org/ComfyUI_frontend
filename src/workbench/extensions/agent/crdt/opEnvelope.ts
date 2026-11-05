@@ -41,7 +41,7 @@ export function chunkWireOps<T extends { op: Op; bytes: number }>(
       batches.push([sized])
       continue
     }
-    const overOps = current.length + 1 > 256
+    const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
       current.length > 0 &&
       currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES - STAMP_LIFT_HEADROOM
