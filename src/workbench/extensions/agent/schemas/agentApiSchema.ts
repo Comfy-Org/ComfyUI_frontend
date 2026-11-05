@@ -149,9 +149,7 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * One persisted `content.thinking` entry: a model round's thinking text,
- * anchored to that round's first tool call when it made one. `truncated`
- * marks where the stored reasoning stops being whole: the entry was cut at
- * the server's cap, or a later round's thinking was not saved (BE-24672).
+ * anchored to that round's first tool call, `truncated` where it was cut.
  */
 export const zPersistedThinkingEntry = zAgentThinkingEntry
   .pick({ text: true })
