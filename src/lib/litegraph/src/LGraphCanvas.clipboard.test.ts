@@ -931,6 +931,31 @@ describe('copyToClipboard when storage is full', () => {
     expect(telemetryMocks.reportError).not.toHaveBeenCalled()
   })
 
+  it('keeps the payload when only the copy stamp cannot be written', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation((key: string, value: string) => {
+        if (key === CLIPBOARD_KEYS[1]) {
+          throw new DOMException(
+            'The quota has been exceeded.',
+            'QuotaExceededError'
+          )
+        }
+        Storage.prototype.setItem.call(localStorage, key, value)
+      })
+    onTestFinished(() => setItem.mockRestore())
+
+    const copied = canvas.copyToClipboard([node])
+
+    expect(localStorage.getItem(CLIPBOARD_KEYS[0])).toBe(copied)
+    expect(localStorage.getItem(CLIPBOARD_KEYS[1])).toBeNull()
+    expect(canvas._pasteFromClipboard()).toBeDefined()
+    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+  })
+
   it('does not paste the previous selection after a copy that could not be stored', () => {
     const rootGraph = createTestRootGraph()
     const previous = createTestNode(rootGraph, ['number'])
@@ -975,6 +1000,8 @@ describe('copyToClipboard when storage is full', () => {
       removeItem.mockRestore()
     }
     expect(copied).toContain('"nodes"')
+    // Blocked storage is an environment condition nobody can act on.
+    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
   })
 })
 
