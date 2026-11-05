@@ -1193,6 +1193,7 @@
     "apiPricing": "API-Preise",
     "charge": "Belastung",
     "credits": "Credits",
+    "creditUnit": "Credits",
     "creditsAvailable": "Verfügbare Credits",
     "details": "Details",
     "eventType": "Ereignistyp",

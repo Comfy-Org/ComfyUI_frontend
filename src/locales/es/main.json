@@ -1193,6 +1193,7 @@
     "apiPricing": "Precios de la API",
     "charge": "Cargo",
     "credits": "Créditos",
+    "creditUnit": "Créditos",
     "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
