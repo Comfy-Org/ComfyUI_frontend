@@ -658,6 +658,56 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       group.pos[1] - inserted.pos[1]
     ]).toEqual([-20, -50])
   })
+  it('keeps a group clear of a new collapsed node it only overlaps unrendered', () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.pos = [1000, 20]
+    note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a66'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [20, 30],
+                size: [200, 100],
+                flags: { collapsed: true },
+                widgets_values: [20, 7]
+              }
+            ],
+            groups: [
+              { id: 1, title: 'Around source', bounding: [100, -20, 300, 200] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    const group = graph.groups.find(({ title }) => title === 'Around source')
+    assert(inserted && group, 'the insertion reached the canvas')
+    expect([...inserted.pos]).not.toEqual([20, 30])
+    expect([...group.pos]).toEqual([100, -20])
+  })
   it('keeps a group on a collapsed node it frames as rendered', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([600, 100])

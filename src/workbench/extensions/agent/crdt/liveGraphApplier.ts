@@ -2090,8 +2090,14 @@ function unrenderedBounds(node: LGraphNode): ReadOnlyRect {
       : LiteGraph.NODE_TITLE_HEIGHT
   const top = node.pos[1] - titleHeight
   if (node.collapsed && !LiteGraph.vueNodesMode)
-    return [node.pos[0], top, LiteGraph.NODE_COLLAPSED_WIDTH, titleHeight]
-  return [node.pos[0], top, node.size[0], node.size[1] + titleHeight]
+    return [
+      node.pos[0],
+      top,
+      LiteGraph.NODE_COLLAPSED_WIDTH,
+      LiteGraph.NODE_TITLE_HEIGHT
+    ]
+  const size = node.renderingSize
+  return [node.pos[0], top, size[0], size[1] + titleHeight]
 }
 
 function framesAny(
