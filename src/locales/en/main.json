@@ -1366,7 +1366,9 @@
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
     "unreadableWorkflowTitle": "Can't open this workflow",
-    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows."
+    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
+    "unsavedChangesLostTitle": "Unsaved changes were not saved",
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
