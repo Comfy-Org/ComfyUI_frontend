@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -162,7 +163,7 @@ describe('useJobMenu', () => {
     })
   })
 
-  it('does nothing when workflow is missing', async () => {
+  it('warns instead of opening when workflow is missing', async () => {
     const { openJobWorkflow } = mountJobMenu()
     setCurrentItem(createJobItem({ taskRef: {} }))
 
@@ -170,6 +171,12 @@ describe('useJobMenu', () => {
 
     expect(workflowStoreMock.createTemporary).not.toHaveBeenCalled()
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        description: 'queue.jobMenu.noWorkflowData'
+      })
+    ])
   })
 
   it('surfaces an error dialog when workflow open fails', async () => {
