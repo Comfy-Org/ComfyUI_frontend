@@ -45,15 +45,13 @@ describe('check-json.sh', () => {
   it.for(['null', 'false', '0', '{"a":1}', '[]'])(
     'accepts the valid JSON value %s',
     async (contents) => {
-      // The whole result is compared so a failure shows the script's stderr.
       expect(await checkTrackedJson(contents)).toMatchObject({ status: 0 })
     }
   )
 
-  it.for(['{bad', '', '   \n'])(
-    'rejects %j: malformed or holding no JSON value',
+  it.for(['{bad', '', '   \n', '{"a":1} true'])(
+    'rejects %j: malformed, or not exactly one JSON value',
     async (contents) => {
-      // The whole result is compared so a failure shows the script's stderr.
       expect(await checkTrackedJson(contents)).toMatchObject({ status: 1 })
     }
   )
