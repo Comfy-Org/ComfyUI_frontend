@@ -207,8 +207,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     const rejectionToasts = comfyPage.toast.toastWarnings.filter({
       hasText: enMessages.g.videoFilenameExtensionRequired
     })
-    const workflowLoadErrors = comfyPage.page.getByText(
-      enMessages.toastMessages.fileLoadError.replace('{fileName}', '')
+    const workflowLoadErrors = comfyPage.toast.withText(
+      enMessages.toastMessages.fileLoadError.replace(
+        '{fileName}',
+        'extensionless'
+      )
     )
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
