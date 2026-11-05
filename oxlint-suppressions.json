@@ -653,7 +653,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/workflow/management/stores/workflowStore.ts": {
