@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "message": "Este fluxo de trabalho atingiu o tempo máximo de execução do seu plano (@:subscription.maxDuration.free no Free, @:subscription.maxDuration.pro no Pro, @:subscription.maxDuration.standard em todos os outros planos). Tente reduzir a resolução da imagem, o tamanho do lote ou a duração do fluxo de trabalho e execute-o novamente.",
         "title": "Tempo de geração esgotado",
-        "toastMessage": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "toastMessage": "Este fluxo de trabalho atingiu o tempo máximo de execução do seu plano (@:subscription.maxDuration.free no Free, @:subscription.maxDuration.pro no Pro, @:subscription.maxDuration.standard em todos os outros planos). Tente reduzir a resolução da imagem, o tamanho do lote ou a duração do fluxo de trabalho e execute-o novamente.",
         "toastTitle": "Tempo de geração esgotado"
       },
       "unexpected_service_error": {

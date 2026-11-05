@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "message": "این workflow به حداکثر زمان اجرای طرح شما رسیده است (@:subscription.maxDuration.free در Free، @:subscription.maxDuration.pro در Pro، و @:subscription.maxDuration.standard در سایر طرح‌ها). رزولوشن تصویر، اندازهٔ batch یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
         "title": "زمان تولید به پایان رسید",
-        "toastMessage": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "toastMessage": "این workflow به حداکثر زمان اجرای طرح شما رسیده است (@:subscription.maxDuration.free در Free، @:subscription.maxDuration.pro در Pro، و @:subscription.maxDuration.standard در سایر طرح‌ها). رزولوشن تصویر، اندازهٔ batch یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
         "toastTitle": "زمان تولید به پایان رسید"
       },
       "unexpected_service_error": {

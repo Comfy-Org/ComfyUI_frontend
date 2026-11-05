@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "message": "Bu iş akışı, planınızın maksimum çalıştırma süresine ulaştı (Ücretsiz planda @:subscription.maxDuration.free, Pro planda @:subscription.maxDuration.pro, diğer tüm planlarda @:subscription.maxDuration.standard). Görüntü çözünürlüğünü, batch boyutunu veya iş akışı uzunluğunu azaltıp tekrar çalıştırmayı deneyin.",
         "title": "Oluşturma zaman aşımına uğradı",
-        "toastMessage": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "toastMessage": "Bu iş akışı, planınızın maksimum çalıştırma süresine ulaştı (Ücretsiz planda @:subscription.maxDuration.free, Pro planda @:subscription.maxDuration.pro, diğer tüm planlarda @:subscription.maxDuration.standard). Görüntü çözünürlüğünü, batch boyutunu veya iş akışı uzunluğunu azaltıp tekrar çalıştırmayı deneyin.",
         "toastTitle": "Oluşturma zaman aşımına uğradı"
       },
       "unexpected_service_error": {

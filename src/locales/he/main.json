@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "תהליך עבודה זה הגיע לזמן הריצה המרבי. נסה להקטין את רזולוציית התמונה, את גודל האצווה או את אורך תהליך העבודה ולהריץ שוב.",
+        "message": "תהליך עבודה זה הגיע לזמן הריצה המרבי של התוכנית שלך (@:subscription.maxDuration.free בתוכנית Free, @:subscription.maxDuration.pro בתוכנית Pro, ו-@:subscription.maxDuration.standard בכל שאר התוכניות). נסה להפחית את רזולוציית התמונה, גודל האצווה או אורך תהליך העבודה, והרץ שוב.",
         "title": "תם הזמן הקצוב ליצירה",
-        "toastMessage": "תהליך עבודה זה הגיע לזמן הריצה המרבי. נסה להקטין את רזולוציית התמונה, את גודל האצווה או את אורך תהליך העבודה ולהריץ שוב.",
+        "toastMessage": "תהליך עבודה זה הגיע לזמן הריצה המרבי של התוכנית שלך (@:subscription.maxDuration.free בתוכנית Free, @:subscription.maxDuration.pro בתוכנית Pro, ו-@:subscription.maxDuration.standard בכל שאר התוכניות). נסה להפחית את רזולוציית התמונה, גודל האצווה או אורך תהליך העבודה, והרץ שוב.",
         "toastTitle": "תם הזמן הקצוב ליצירה"
       },
       "unexpected_service_error": {

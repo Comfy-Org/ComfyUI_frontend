@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "message": "此工作流程已達到您方案的最長執行時間（免費方案為 @:subscription.maxDuration.free，Pro 方案為 @:subscription.maxDuration.pro，其他所有方案為 @:subscription.maxDuration.standard）。請嘗試降低影像解析度、批次大小或工作流程長度，然後再次執行。",
         "title": "生成逾時",
-        "toastMessage": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "toastMessage": "此工作流程已達到您方案的最長執行時間（免費方案為 @:subscription.maxDuration.free，Pro 方案為 @:subscription.maxDuration.pro，其他所有方案為 @:subscription.maxDuration.standard）。請嘗試降低影像解析度、批次大小或工作流程長度，然後再次執行。",
         "toastTitle": "生成逾時"
       },
       "unexpected_service_error": {

@@ -1896,9 +1896,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "Dieser Workflow hat die maximale Laufzeit erreicht. Verringern Sie die Bildauflösung, Batchgröße oder Workflow-Länge und führen Sie ihn erneut aus.",
+        "message": "Dieser Workflow hat die maximale Laufzeit Ihres Tarifs erreicht (@:subscription.maxDuration.free bei Free, @:subscription.maxDuration.pro bei Pro, @:subscription.maxDuration.standard bei allen anderen Tarifen). Reduzieren Sie die Bildauflösung, Batchgröße oder Workflow-Länge und führen Sie ihn erneut aus.",
         "title": "Zeitüberschreitung bei der Generierung",
-        "toastMessage": "Dieser Workflow hat die maximale Laufzeit erreicht. Verringern Sie die Bildauflösung, Batchgröße oder Workflow-Länge und führen Sie ihn erneut aus.",
+        "toastMessage": "Dieser Workflow hat die maximale Laufzeit Ihres Tarifs erreicht (@:subscription.maxDuration.free bei Free, @:subscription.maxDuration.pro bei Pro, @:subscription.maxDuration.standard bei allen anderen Tarifen). Reduzieren Sie die Bildauflösung, Batchgröße oder Workflow-Länge und führen Sie ihn erneut aus.",
         "toastTitle": "Zeitüberschreitung bei der Generierung"
       },
       "unexpected_service_error": {
