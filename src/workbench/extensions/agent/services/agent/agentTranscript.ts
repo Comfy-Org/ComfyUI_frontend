@@ -409,9 +409,8 @@ function appendAssistantContent(
   message: AssistantMessage,
   row: AgentMessages[number],
   text: string,
-  isLive: boolean
+  toolCalls: ParsedToolCall[] | undefined
 ): void {
-  const toolCalls = parseToolCalls(row.content, isLive)
   if (toolCalls) {
     let statusByCallId = toolCallStatusByMessage.get(message)
     if (!statusByCallId) {
@@ -452,20 +451,13 @@ function resolvedAskIndex(
   rowStart: number
 ): number {
   const after = Math.min(afterToolCalls ?? rowCallIds.length, rowCallIds.length)
-  const toolIndex = (callId: string) =>
-    parts.findIndex((part) => part.type === 'tool' && part.callId === callId)
-  if (after < rowCallIds.length) {
-    const next = toolIndex(rowCallIds[after])
-    if (next !== -1) return next
-  }
-  const start = Math.max(
-    after > 0 ? toolIndex(rowCallIds[after - 1]) + 1 : rowStart,
-    rowStart
+  const next = rowCallIds[after]
+  const index = parts.findIndex((part, i) =>
+    next === undefined
+      ? i >= rowStart && part.type === 'text'
+      : part.type === 'tool' && part.callId === next
   )
-  const text = parts.findIndex(
-    (part, index) => index >= start && part.type === 'text'
-  )
-  return text === -1 ? parts.length : text
+  return index === -1 ? parts.length : index
 }
 
 function insertResolvedAsks(
@@ -473,8 +465,9 @@ function insertResolvedAsks(
   raw: unknown,
   rowCallIds: string[],
   rowStart: number
-): void {
-  if (!Array.isArray(raw)) return
+): Set<string> {
+  const inserted = new Set<string>()
+  if (!Array.isArray(raw)) return inserted
   for (const entry of raw) {
     const ask = zAgentResolvedAsk.safeParse(entry).data
     const part = ask && toResolvedAskPart(ask)
@@ -486,7 +479,9 @@ function insertResolvedAsks(
       part
     )
     message.parts = parts
+    inserted.add(part.askId)
   }
+  return inserted
 }
 
 function applyAssistantRow(
@@ -497,15 +492,19 @@ function applyAssistantRow(
   const isLive = row.status === 'streaming'
   message.streaming = isLive
   const rowStart = message.parts.length
-  appendAssistantContent(message, row, text, isLive)
-  const rowCallIds = (parseToolCalls(row.content, isLive) ?? []).map(
-    ({ part }) => part.callId
+  const toolCalls = parseToolCalls(row.content, isLive)
+  appendAssistantContent(message, row, text, toolCalls)
+  const restored = insertResolvedAsks(
+    message,
+    row.resolved_asks,
+    (toolCalls ?? []).map(({ part }) => part.callId),
+    rowStart
   )
-  insertResolvedAsks(message, row.resolved_asks, rowCallIds, rowStart)
 
   if (!isLive) return undefined
 
-  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
+  if (row.pending_ask && !restored.has(row.pending_ask.ask_id))
+    message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }
 

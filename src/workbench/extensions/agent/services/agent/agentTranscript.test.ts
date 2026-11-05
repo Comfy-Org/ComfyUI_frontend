@@ -797,6 +797,66 @@ describe('normalizeAgentTranscript', () => {
       expect(shape(history)).toEqual(['call-1', 'call-2', 'text'])
     })
 
+    it('leaves out a run card on a live row too', () => {
+      const history = finished(
+        [
+          {
+            ...askUser,
+            kind: 'run_approval',
+            status: 'answered',
+            selected: ['cancel']
+          }
+        ],
+        'streaming'
+      )
+
+      expect(shape(history)).toEqual(['call-1', 'call-2', 'text'])
+    })
+
+    it('draws one card when the row lists the same ask as pending and as finished', () => {
+      const [live] = finished(
+        [{ ...askUser, status: 'answered', selected: ['keep'] }],
+        'streaming'
+      )
+      live.pending_ask = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
+          pending_ask: askUser
+        }
+      ])[0].pending_ask
+
+      const cards = normalizeAgentTranscript([live]).messages[0].parts.filter(
+        (part) => part.type === 'askUser'
+      )
+
+      expect(cards).toMatchObject([
+        { askId: 'ask-1', resolution: { status: 'answered' } }
+      ])
+    })
+
+    it("keeps a later row's card after the earlier row's text when the later row has no tool calls", () => {
+      const history = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', 'First', 'row-1'),
+          content: { text: 'First', tool_calls: [toolCall('call-1')] }
+        },
+        {
+          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+          resolved_asks: [
+            {
+              ...askUser,
+              message_id: 'row-2',
+              status: 'answered',
+              selected: ['keep'],
+              after_tool_calls: 0
+            }
+          ]
+        }
+      ])
+
+      expect(shape(history)).toEqual(['call-1', 'text', 'askUser', 'text'])
+    })
+
     it('drops a bad entry and keeps the rest of the history', () => {
       const history = finished([
         { ask_id: 'broken' },

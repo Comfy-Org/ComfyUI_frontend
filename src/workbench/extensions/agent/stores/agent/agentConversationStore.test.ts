@@ -2155,6 +2155,48 @@ describe('useAgentConversationStore', () => {
     expect(parts.filter((part) => part.type === 'askUser')).toHaveLength(1)
   })
 
+  it('reloading a chat with a card this session retired shows it once, with its answer', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.retireAsk('ask-1', { status: 'answered', selected: ['keep'] }, 'th')
+
+    store.hydrate(
+      zAgentMessages.parse([
+        historyRow(1, 'user', 'turn-1', 'go', 'user-message-1'),
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            'turn-1',
+            'Done',
+            'assistant-message-1'
+          ),
+          resolved_asks: [
+            {
+              message_id: 'assistant-message-1',
+              ask_id: 'ask-1',
+              kind: 'ask_user',
+              prompt: 'Replace your canvas?',
+              options: [{ id: 'keep', label: 'Keep' }],
+              min_selections: 1,
+              max_selections: 1,
+              allow_other: false,
+              status: 'answered',
+              selected: ['keep']
+            }
+          ]
+        }
+      ])
+    )
+
+    const cards = store.messages
+      .flatMap((message) => message.parts)
+      .filter((part) => part.type === 'askUser')
+    expect(cards).toMatchObject([
+      { askId: 'ask-1', resolution: { status: 'answered', selected: ['keep'] } }
+    ])
+  })
+
   it('settling keeps the answer the panel showed when the persisted card has a weaker one', () => {
     const store = useAgentConversationStore()
     const prompt = 'Replace your canvas?'
