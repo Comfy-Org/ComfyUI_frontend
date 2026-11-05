@@ -19,22 +19,27 @@ test.describe('Queue asset focus', { tag: ['@cloud', '@ui'] }, () => {
     comfyPage,
     outputAssetRequests
   }) => {
+    // First-page fetches (initial load, head refresh, sidebar reset) are
+    // incidental; the contract is the cursor walk that View triggers.
+    const requestedCursors = () =>
+      outputAssetRequests.flatMap((request) => {
+        const after = new URL(request).searchParams.get('after')
+        return after ? [after] : []
+      })
+
     await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
 
     const targetJob = comfyPage.page.locator(`[data-job-id="${TARGET_JOB_ID}"]`)
     await expect(targetJob).toBeVisible()
     await targetJob.hover()
+    expect(requestedCursors()).toEqual([])
     await targetJob.getByRole('button', { name: 'View' }).click()
 
     const assetsTab = comfyPage.menu.assetsTab
     const targetAsset = assetsTab.getAssetCardByName('queue-focus-target')
     await expect
-      .poll(() =>
-        outputAssetRequests.map((request) =>
-          new URL(request).searchParams.get('after')
-        )
-      )
-      .toEqual([null, 'queue-focus-page-1', 'queue-focus-page-2'])
+      .poll(requestedCursors)
+      .toEqual(['queue-focus-page-1', 'queue-focus-page-2'])
     await expect(assetsTab.generatedTab).toBeVisible()
     await expect(targetAsset).toBeVisible()
     await expect(targetAsset).toHaveAttribute('data-selected', 'true')
