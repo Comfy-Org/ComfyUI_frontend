@@ -5,6 +5,8 @@ import { t } from '@/i18n'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 import {
   normalizePendingWarnings,
   updatePendingWarnings
@@ -20,7 +22,10 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  reportWorkflowStateAnomaly,
+  UnreadableWorkflowError
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -217,6 +222,14 @@ function queueWorkflowLoad<T>(
     pendingWorkflowLoadsByPath.set(workflowPath, settledResult)
   }
   return result
+}
+
+const unreadableWorkflowToastIds = new Map<string, ToastId>()
+const unreadableWorkflows = new WeakSet<ComfyWorkflow>()
+
+/** Whether opening this workflow failed because its stored file is unreadable. */
+export function isUnreadableWorkflow(workflow: ComfyWorkflow): boolean {
+  return unreadableWorkflows.has(workflow)
 }
 
 export const useWorkflowService = () => {
@@ -476,9 +489,8 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error dialog was
-   * shown and the workflow never painted) or when the open was skipped because
-   * the workflow is mid-close; true otherwise
+   * @returns false when the graph load failed, the stored file is unreadable
+   * or the open was skipped mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -547,11 +559,13 @@ export const useWorkflowService = () => {
       options.navigationIntentId ??
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
+      let wasUnreadable = false
       try {
         if (options.isCurrent?.() === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
+        wasUnreadable = unreadableWorkflows.delete(workflow)
         const loadFromRemote = !workflow.isLoaded
         const wasModified = workflow.isModified
         if (loadFromRemote) {
@@ -586,6 +600,7 @@ export const useWorkflowService = () => {
           await restoreRetainedWorkflow(workflow)
           return false
         }
+        dismissUnreadableWorkflowToast(workflow)
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
@@ -594,9 +609,55 @@ export const useWorkflowService = () => {
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+        if (error instanceof UnreadableWorkflowError) {
+          if (options.isCurrent?.() !== false) markUnreadable(workflow)
+          return false
+        }
         throw error
+      } finally {
+        if (wasUnreadable && !isUnreadableWorkflow(workflow))
+          dismissUnreadableWorkflowToast(workflow)
       }
     }, workflow.path)
+  }
+
+  const markUnreadable = (workflow: ComfyWorkflow) => {
+    unreadableWorkflows.add(workflow)
+    showUnreadableWorkflowToast(workflow)
+  }
+
+  const showUnreadableWorkflowToast = (workflow: ComfyWorkflow) => {
+    const id = unreadableWorkflowToastIds.get(workflow.path) ?? createToastId()
+    unreadableWorkflowToastIds.set(workflow.path, id)
+    toast.error(t('workflowService.unreadableWorkflowTitle'), {
+      id,
+      description: t('workflowService.unreadableWorkflowMessage', {
+        name: workflow.key
+      }),
+      ...(!workflow.isTemporary && {
+        action: {
+          label: t('g.delete'),
+          onClick: async () => {
+            const stillTarget = () =>
+              isUnreadableWorkflow(workflow) &&
+              workflowStore.getWorkflowByPath(workflow.path) === workflow
+            const kept =
+              stillTarget() &&
+              !(await deleteWorkflow(workflow, false, { stillTarget })) &&
+              stillTarget()
+            if (kept) return
+            dismissUnreadableWorkflowToast(workflow)
+          }
+        }
+      })
+    })
+  }
+
+  const dismissUnreadableWorkflowToast = (workflow: ComfyWorkflow) => {
+    const id = unreadableWorkflowToastIds.get(workflow.path)
+    if (id === undefined) return
+    toast.dismiss(id)
+    unreadableWorkflowToastIds.delete(workflow.path)
   }
 
   /**
@@ -687,8 +748,14 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if (!(await openWorkflow(replacementWorkflow))) return false
-          options.onReplacementOpened?.(replacementWorkflow)
+          if (await openWorkflow(replacementWorkflow)) {
+            options.onReplacementOpened?.(replacementWorkflow)
+          } else if (
+            !isUnreadableWorkflow(replacementWorkflow) ||
+            !(await loadDefaultAsReplacement())
+          ) {
+            return false
+          }
         } else {
           if (!(await loadDefaultAsReplacement())) return false
         }
@@ -745,13 +812,17 @@ export const useWorkflowService = () => {
   /**
    * Delete a workflow
    * @param workflow The workflow to delete
+   * @param options.stillTarget Checked after each wait; `false` aborts
    * @returns `true` if the workflow was deleted; `false` if the user
-   * cancelled or the close was aborted by a failed replacement load
+   * cancelled, the target changed or the close was aborted by a failed
+   * replacement load
    */
   const deleteWorkflow = async (
     workflow: ComfyWorkflow,
-    silent = false
+    silent = false,
+    options: { stillTarget?: () => boolean } = {}
   ): Promise<boolean> => {
+    const stillTarget = options.stillTarget ?? (() => true)
     const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
     let confirmed: boolean | null = bypassConfirm || silent
 
@@ -762,7 +833,7 @@ export const useWorkflowService = () => {
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
       })
-      if (!confirmed) return false
+      if (!confirmed || !stillTarget()) return false
     }
 
     if (workflowStore.isOpen(workflow)) {
@@ -772,6 +843,7 @@ export const useWorkflowService = () => {
       })
       if (workflowStore.isOpen(workflow)) return false
     }
+    if (!stillTarget()) return false
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
@@ -874,6 +946,18 @@ export const useWorkflowService = () => {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
     }
 
+    async function bindStoredToCanvas(workflow: ComfyWorkflow) {
+      try {
+        const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+        if (graphState !== useApp().rootGraphOrUndefined?.state) return null
+        return loadedWorkflow
+      } catch (error) {
+        if (!(error instanceof UnreadableWorkflowError)) throw error
+        markUnreadable(workflow)
+        return undefined
+      }
+    }
+
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
@@ -908,14 +992,15 @@ export const useWorkflowService = () => {
               existingWorkflow.legacyId
             ))
 
-        if (
+        const reused =
           existingWorkflow &&
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
-        ) {
-          const loadedWorkflow =
-            await workflowStore.openWorkflow(existingWorkflow)
-          if (graphState !== useApp().rootGraphOrUndefined?.state) return
+            ? await bindStoredToCanvas(existingWorkflow)
+            : undefined
+        if (reused !== undefined) {
+          const loadedWorkflow = reused
+          if (!loadedWorkflow) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
