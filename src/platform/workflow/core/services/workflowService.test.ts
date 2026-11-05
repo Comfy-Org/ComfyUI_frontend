@@ -2562,6 +2562,43 @@ describe('useWorkflowService', () => {
       expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
     })
 
+    it('does not delete a file that replaced it while the confirmation was open', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/raced.json')
+      const lookup = vi
+        .spyOn(workflowStore, 'getWorkflowByPath')
+        .mockReturnValue(workflow)
+      let confirm!: (value: boolean) => void
+      vi.mocked(useDialogService().confirm).mockReturnValue(
+        new Promise<boolean | null>((resolve) => (confirm = resolve))
+      )
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+
+      const clicked = options.action!.onClick()
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalled()
+      )
+      lookup.mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/raced.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+      confirm(true)
+      await clicked
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
     it('forgets the unreadable mark once the file opens', async () => {
       const workflow = unreadableWorkflow('workflows/fixed.json')
       const service = useWorkflowService()

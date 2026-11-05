@@ -616,9 +616,13 @@ export const useWorkflowService = () => {
         action: {
           label: t('g.delete'),
           onClick: async () => {
-            const stillStored =
+            const stillTarget = () =>
               workflowStore.getWorkflowByPath(workflow.path) === workflow
-            if (stillStored && !(await deleteWorkflow(workflow))) return
+            const kept =
+              stillTarget() &&
+              !(await deleteWorkflow(workflow, false, { stillTarget })) &&
+              stillTarget()
+            if (kept) return
             toast.dismiss(id)
             unreadableWorkflowToastIds.delete(workflow.path)
           }
@@ -779,13 +783,17 @@ export const useWorkflowService = () => {
   /**
    * Delete a workflow
    * @param workflow The workflow to delete
+   * @param options.stillTarget Checked after each wait; `false` aborts
    * @returns `true` if the workflow was deleted; `false` if the user
-   * cancelled or the close was aborted by a failed replacement load
+   * cancelled, the target changed or the close was aborted by a failed
+   * replacement load
    */
   const deleteWorkflow = async (
     workflow: ComfyWorkflow,
-    silent = false
+    silent = false,
+    options: { stillTarget?: () => boolean } = {}
   ): Promise<boolean> => {
+    const stillTarget = options.stillTarget ?? (() => true)
     const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
     let confirmed: boolean | null = bypassConfirm || silent
 
@@ -796,7 +804,7 @@ export const useWorkflowService = () => {
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
       })
-      if (!confirmed) return false
+      if (!confirmed || !stillTarget()) return false
     }
 
     if (workflowStore.isOpen(workflow)) {
@@ -806,6 +814,7 @@ export const useWorkflowService = () => {
       })
       if (workflowStore.isOpen(workflow)) return false
     }
+    if (!stillTarget()) return false
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
