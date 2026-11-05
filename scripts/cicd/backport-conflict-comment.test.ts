@@ -325,7 +325,8 @@ describe('backport conflict comment', () => {
       expected: 2
     },
     {
-      scenario: 'a later labeled event while the shared token is out of REST quota',
+      scenario:
+        'a later labeled event while the shared token is out of REST quota',
       second: { sharedRestQuotaSpent: true },
       expected: 1
     },
