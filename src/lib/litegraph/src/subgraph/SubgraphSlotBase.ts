@@ -161,7 +161,7 @@ export abstract class SubgraphSlot
     const { subgraph } = this.parent
 
     // removeLink splices the id out of linkIds; iterate a copy so no link is skipped
-    for (const linkId of [...this.linkIds]) {
+    for (const linkId of this.linkIds.slice()) {
       subgraph.removeLink(linkId)
     }
 

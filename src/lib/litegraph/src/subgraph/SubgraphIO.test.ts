@@ -128,7 +128,7 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       for (const node of firstTargets) {
         expect(node.inputs[0].link).toBeNull()
       }
-      const link = subgraph.getLink(secondTarget.inputs[0].link!)
+      const link = subgraph.getLink(secondTarget.inputs[0].link)
       expect(link?.origin_slot).toBe(0)
       expect(second.linkIds).toEqual([link?.id])
     }
