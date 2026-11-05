@@ -279,6 +279,30 @@ describe('useComfyRegistryStore', () => {
     expect(ids).toHaveLength(packsPastRegistryPageMax.length)
   })
 
+  it('keeps packs from an earlier page when a later page is null', async () => {
+    const requestedIds = Array.from(
+      { length: REGISTRY_PAGE_MAX + 1 },
+      (_, index) => `later-null-pack-${index + 1}`
+    )
+    mockRegistryService.listAllPacks.mockImplementation(
+      (params?: ListPacksQuery) => {
+        if ((params?.page ?? 1) > 1) return Promise.resolve(null)
+        return Promise.resolve(clampedPagesOfRequestedPacks(params))
+      }
+    )
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(requestedIds)
+
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
+      { node_id: requestedIds, limit: requestedIds.length, page: 2 },
+      expect.any(Object)
+    )
+    expect(result.map((pack) => pack.id)).toEqual(
+      requestedIds.slice(0, REGISTRY_PAGE_MAX)
+    )
+  })
+
   it('returns a pack another lookup cached while this one waited', async () => {
     const sharedId = 'concurrent-pack'
     const onlyFirstId = 'concurrent-pack-other'
