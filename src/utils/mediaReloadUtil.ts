@@ -3,11 +3,17 @@ export function reloadFailedMedia(media: HTMLMediaElement) {
   const src = media.src
   media.load()
   if (!(resumeAt > 0)) return
+
+  const controller = new AbortController()
+  const { signal } = controller
+  media.addEventListener('seeking', () => controller.abort(), { signal })
   media.addEventListener(
     'loadedmetadata',
     () => {
-      if (media.src === src) media.currentTime = resumeAt
+      controller.abort()
+      if (media.src === src && media.currentTime === 0)
+        media.currentTime = resumeAt
     },
-    { once: true }
+    { signal }
   )
 }
