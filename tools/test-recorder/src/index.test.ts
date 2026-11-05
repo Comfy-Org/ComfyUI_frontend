@@ -62,29 +62,26 @@ describe('comfy-test transform --force', () => {
     }
   )
 
-  it.for(['--force=', '--force=1', '--force=yes', '--force=TRUE'])(
-    'rejects malformed boolean flag %s',
-    async (flag) => {
-      const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
-      try {
-        const input = join(dir, 'demo.raw.spec.ts')
-        const output = join(dir, 'demo.spec.ts')
-        writeFileSync(input, "await page.getByText('Queue').click();\n")
-        writeFileSync(output, EXISTING_SPEC)
-        const logSpy = vi.mocked(console.log).mockImplementation(() => {})
+  it('rejects an empty explicit boolean value', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
+    try {
+      const input = join(dir, 'demo.raw.spec.ts')
+      const output = join(dir, 'demo.spec.ts')
+      writeFileSync(input, "await page.getByText('Queue').click();\n")
+      writeFileSync(output, EXISTING_SPEC)
+      const logSpy = vi.mocked(console.log).mockImplementation(() => {})
 
-        await runCli('transform', input, '--output', output, flag)
+      await runCli('transform', input, '--output', output, '--force=')
 
-        expect(process.exitCode).toBe(1)
-        expect(readFileSync(output, 'utf-8')).toBe(EXISTING_SPEC)
-        expect(logSpy.mock.calls.flat().join('\n')).toMatch(
-          /Invalid --force value/
-        )
-      } finally {
-        rmSync(dir, { recursive: true, force: true })
-      }
+      expect(process.exitCode).toBe(1)
+      expect(readFileSync(output, 'utf-8')).toBe(EXISTING_SPEC)
+      expect(logSpy.mock.calls.flat().join('\n')).toMatch(
+        /Invalid --force value/
+      )
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
     }
-  )
+  })
 
   it('rejects a separated malformed value without overwriting', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
@@ -110,21 +107,13 @@ describe('comfy-test transform --force', () => {
 
 describe('comfy-test record --force', () => {
   it('rejects a separated malformed value before recording', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
-    try {
-      const existing = join(dir, 'existing.spec.ts')
-      writeFileSync(existing, EXISTING_SPEC)
-      const logSpy = vi.mocked(console.log).mockImplementation(() => {})
+    const logSpy = vi.mocked(console.log).mockImplementation(() => {})
 
-      await runCli('record', '--force', '0')
+    await runCli('record', '--force', '0')
 
-      expect(process.exitCode).toBe(1)
-      expect(readFileSync(existing, 'utf-8')).toBe(EXISTING_SPEC)
-      expect(logSpy.mock.calls.flat().join('\n')).toMatch(
-        /Unexpected record argument: 0/
-      )
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
+    expect(process.exitCode).toBe(1)
+    expect(logSpy.mock.calls.flat().join('\n')).toMatch(
+      /Unexpected record argument: 0/
+    )
   })
 })

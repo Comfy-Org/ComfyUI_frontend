@@ -27,15 +27,18 @@ describe('parseFlags', () => {
     expect(positional).toEqual(['a.ts'])
   })
 
-  it('reads a separated true or false as the value of a flag that takes none', () => {
-    const { positional, flags } = parseFlags(
-      ['a.ts', '--force', 'false'],
-      [],
-      ['force']
-    )
-    expect(flags.force).toBe('false')
-    expect(positional).toEqual(['a.ts'])
-  })
+  it.for(['true', 'false'])(
+    'reads a separated %s as the value of a flag that takes none',
+    (value) => {
+      const { positional, flags } = parseFlags(
+        ['a.ts', '--force', value],
+        [],
+        ['force']
+      )
+      expect(flags.force).toBe(value)
+      expect(positional).toEqual(['a.ts'])
+    }
+  )
 
   it('leaves separated booleans positional for flags not declared boolean-valued', () => {
     const { positional, flags } = parseFlags(['--headed', 'false'])

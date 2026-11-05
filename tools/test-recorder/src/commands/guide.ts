@@ -63,9 +63,10 @@ export function runGuide(): void {
     'Nothing records until they press Record.',
     'Signing in and looking around before that is safe.',
     'They press Record, do the thing they are testing, add a proof step with',
-    'the toolbar, and close the window. The code saves automatically unless a',
-    'test with that name already exists: then the tool asks "Overwrite it?",',
-    'and only a yes (or `record --force`) replaces the old test.',
+    'the toolbar, and close the window. For an existing selected filename,',
+    'the tool asks "Overwrite it?" before opening the browser. Only yes',
+    'or `record --force` permits replacement. A renamed or newly occupied',
+    'destination can require another confirmation before saving.',
     'On cloud environments, feature-flag links apply only to that browser',
     'tab and disappear when it closes.'
   ])
