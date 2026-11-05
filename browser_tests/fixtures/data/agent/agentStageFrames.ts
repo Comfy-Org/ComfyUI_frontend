@@ -57,6 +57,8 @@ export const STAGE_FRAME_TITLES = STAGE_FRAMES_TEMPLATE.groups
   .map(({ title }) => title)
   .sort()
 
+export const STAGE_FRAME_IDLESS_TITLES = ['Stage 😀', 'Stage 😁']
+
 export const STAGE_FRAMES_CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
@@ -98,9 +100,14 @@ export const STAGE_FRAMES_INSERT_OPS_WITHOUT_GROUP_IDS: RecordedGraphOperation[]
       op: 'insert_workflow',
       workflow: {
         ...STAGE_FRAMES_TEMPLATE,
-        groups: STAGE_FRAMES_TEMPLATE.groups.map(
-          ({ id: _id, ...group }) => group
-        )
+        groups: STAGE_FRAME_IDLESS_TITLES.map((title) => {
+          const {
+            id: _id,
+            title: _title,
+            ...group
+          } = STAGE_FRAMES_TEMPLATE.groups[0]
+          return { ...group, title }
+        })
       }
     }
   ]

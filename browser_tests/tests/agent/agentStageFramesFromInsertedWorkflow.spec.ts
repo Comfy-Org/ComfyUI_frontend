@@ -17,6 +17,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   EXISTING_FRAME_INSERT_OPS,
   EXISTING_FRAME_TITLE,
+  STAGE_FRAME_IDLESS_TITLES,
   STAGE_FRAME_TITLES,
   STAGE_FRAMES_CATALOG,
   STAGE_FRAMES_EXISTING_NODES,
@@ -99,7 +100,10 @@ test.describe(
             return original(text, x, y, maxWidth)
           }
         },
-        { expectedTexts: STAGE_FRAME_TITLES, key: canvasTextProbeKey }
+        {
+          expectedTexts: [...STAGE_FRAME_TITLES, ...STAGE_FRAME_IDLESS_TITLES],
+          key: canvasTextProbeKey
+        }
       )
     })
 
@@ -237,8 +241,21 @@ test.describe(
 
       const titles = () =>
         page.evaluate(() => window.app!.graph.groups.map(({ title }) => title))
-      await expect.poll(titles).toHaveLength(STAGE_FRAME_TITLES.length)
-      expect(await titles()).toEqual(expect.arrayContaining(STAGE_FRAME_TITLES))
+      await expect.poll(titles).toHaveLength(STAGE_FRAME_IDLESS_TITLES.length)
+      await expect
+        .poll(titles)
+        .toEqual(expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES))
+      await expect
+        .poll(() =>
+          page.evaluate((key) => {
+            const observed: unknown = Reflect.get(window, key)
+            if (!Array.isArray(observed)) return []
+            return observed.filter(
+              (text): text is string => typeof text === 'string'
+            )
+          }, canvasTextProbeKey)
+        )
+        .toEqual(expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES))
 
       const savedRequest = page.waitForRequest(
         (request) =>
@@ -250,8 +267,10 @@ test.describe(
       await new Topbar(page).saveWorkflowAs(STAGE_FRAMES_SAVED_NAME)
       const saved = zComfyWorkflow.parse((await savedRequest).postDataJSON())
       const savedTitles = (saved.groups ?? []).map(({ title }) => title)
-      expect(savedTitles).toHaveLength(STAGE_FRAME_TITLES.length)
-      expect(savedTitles).toEqual(expect.arrayContaining(STAGE_FRAME_TITLES))
+      expect(savedTitles).toHaveLength(STAGE_FRAME_IDLESS_TITLES.length)
+      expect(savedTitles).toEqual(
+        expect.arrayContaining(STAGE_FRAME_IDLESS_TITLES)
+      )
     })
   }
 )

@@ -509,7 +509,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     ]).toEqual([-20, -20])
     expect([...group.size]).toEqual([300, 200])
   })
-  it('creates and clears an inserted group that carries no id', () => {
+  it('creates and clears id-less inserted groups whose titles differ only by emoji', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
@@ -535,22 +535,33 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
                 widgets_values: [20, 7]
               }
             ],
-            groups: [{ title: 'KSamplers', bounding: [0, 10, 300, 200] }]
+            groups: [
+              { title: 'Stage 😀', bounding: [0, 10, 300, 200] },
+              { title: 'Stage 😁', bounding: [0, 10, 300, 200] }
+            ]
           }
         }),
       { actor: HOST_OP.actor, catchUp: false }
     )
 
-    expect(graph.groups.map(({ title }) => title)).toEqual(['KSamplers'])
-    const [group] = graph.groups
+    const groupTitles = graph.groups.map(({ title }) => title)
+    expect(groupTitles).toHaveLength(2)
+    expect(groupTitles).toEqual(
+      expect.arrayContaining(['Stage 😀', 'Stage 😁'])
+    )
     const inserted = graph._nodes.find(
       (node) => node !== source && node !== note
     )
     assert(inserted, 'the insertion reached the canvas')
-    expect([
-      group.pos[0] - inserted.pos[0],
-      group.pos[1] - inserted.pos[1]
-    ]).toEqual([-20, -20])
+    expect(
+      graph.groups.map((group) => [
+        group.pos[0] - inserted.pos[0],
+        group.pos[1] - inserted.pos[1]
+      ])
+    ).toEqual([
+      [-20, -20],
+      [-20, -20]
+    ])
 
     hostEdit(() =>
       applyHostOp(host, {
