@@ -36,6 +36,13 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import {
+  zDynamicComboOption,
+  zDynamicComboSpecV2
+} from '@/schemas/nodeDefSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
@@ -562,11 +569,198 @@ function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
   )
 }
 
+const MAX_OPTION_NESTING = 8
+
+const VARIABLE_LENGTH_CONTROL_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+interface OptionGate {
+  readonly selector: string
+  readonly optionKey: string
+}
+
+interface OptionOwnedBranch {
+  readonly prefix: string
+  readonly gates: readonly OptionGate[]
+}
+
+interface OptionSelector {
+  readonly name: string
+  readonly widestOptionWidgetCount: number
+}
+
+interface OptionLayout {
+  readonly branches: readonly OptionOwnedBranch[]
+  readonly selectors: readonly OptionSelector[]
+}
+
+const NO_OPTION_LAYOUT: OptionLayout = { branches: [], selectors: [] }
+
+const optionLayouts = new WeakMap<object, OptionLayout>()
+
+function optionLayout(node: LGraphNode): OptionLayout {
+  const { nodeData } = node.constructor
+  if (!nodeData) return NO_OPTION_LAYOUT
+  const cached = optionLayouts.get(nodeData)
+  if (cached) return cached
+
+  const branches: OptionOwnedBranch[] = []
+  const selectors: OptionSelector[] = []
+  for (const [name, spec] of Object.entries(nodeData.inputs)) {
+    const combo = zDynamicComboSpecV2.safeParse(spec)
+    if (!combo.success) continue
+    selectors.push({
+      name,
+      widestOptionWidgetCount: widestOptionWidgetCount(combo.data, 0)
+    })
+    collectOptionOwnedBranches(name, combo.data, [], branches, 0)
+  }
+  const layout: OptionLayout = { branches, selectors }
+  optionLayouts.set(nodeData, layout)
+  return layout
+}
+
+function comboOptions(combo: {
+  options: readonly unknown[]
+}): { key: string; inputs: ComfyInputsSpec }[] {
+  return combo.options.flatMap((candidate) => {
+    const option = zDynamicComboOption.safeParse(candidate)
+    return option.success ? [option.data] : []
+  })
+}
+
+function optionChildSpecs(option: {
+  inputs: ComfyInputsSpec
+}): [string, InputSpecV2][] {
+  const { required, optional } = option.inputs
+  return Object.entries({ ...required, ...optional }).map(([key, child]) => [
+    key,
+    transformInputSpecV1ToV2(child, { name: key })
+  ])
+}
+
+function collectOptionOwnedBranches(
+  selector: string,
+  combo: { options: readonly unknown[] },
+  gates: readonly OptionGate[],
+  branches: OptionOwnedBranch[],
+  depth: number
+): void {
+  if (depth >= MAX_OPTION_NESTING) return
+  for (const option of comboOptions(combo)) {
+    const optionGates = [...gates, { selector, optionKey: option.key }]
+    for (const [key, spec] of optionChildSpecs(option)) {
+      const prefix = `${selector}.${key}`
+      branches.push({ prefix, gates: optionGates })
+      const nested = zDynamicComboSpecV2.safeParse(spec)
+      if (nested.success)
+        collectOptionOwnedBranches(
+          prefix,
+          nested.data,
+          optionGates,
+          branches,
+          depth + 1
+        )
+    }
+  }
+}
+
+function widestOptionWidgetCount(
+  combo: { options: readonly unknown[] },
+  depth: number
+): number {
+  if (depth >= MAX_OPTION_NESTING) return Number.POSITIVE_INFINITY
+  let widest = 0
+  for (const option of comboOptions(combo)) {
+    let width = 0
+    for (const [, spec] of optionChildSpecs(option)) {
+      const nested = zDynamicComboSpecV2.safeParse(spec)
+      if (nested.success)
+        width += 1 + widestOptionWidgetCount(nested.data, depth + 1)
+      else if (VARIABLE_LENGTH_CONTROL_TYPES.has(spec.type))
+        return Number.POSITIVE_INFINITY
+      else width += 1
+    }
+    widest = Math.max(widest, width)
+  }
+  return widest
+}
+
 const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
 
 function overflowWidgetIndex(name: string): number | null {
   const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
   return match ? Number(match[1]) : null
+}
+
+type OptionOwnership = 'selectedOption' | 'unselectedOption' | 'noOption'
+
+const OWNERSHIP_PRECEDENCE: Record<OptionOwnership, number> = {
+  noOption: 0,
+  unselectedOption: 1,
+  selectedOption: 2
+}
+
+function liveSelectedOptionKey(
+  node: LGraphNode,
+  selector: string
+): string | undefined {
+  const value = node.widgets?.find(({ name }) => name === selector)?.value
+  return typeof value === 'string' ? value : undefined
+}
+
+function branchOwnership(
+  node: LGraphNode,
+  branch: OptionOwnedBranch
+): OptionOwnership {
+  for (const { selector, optionKey } of branch.gates) {
+    const selected = liveSelectedOptionKey(node, selector)
+    if (selected === undefined) return 'noOption'
+    if (selected !== optionKey) return 'unselectedOption'
+  }
+  return 'selectedOption'
+}
+
+function optionOwnership(node: LGraphNode, name: string): OptionOwnership {
+  let longestPrefix = -1
+  let ownership: OptionOwnership = 'noOption'
+  for (const branch of optionLayout(node).branches) {
+    if (name !== branch.prefix && !name.startsWith(`${branch.prefix}.`))
+      continue
+    const { length } = branch.prefix
+    if (length < longestPrefix) continue
+    const verdict = branchOwnership(node, branch)
+    if (length > longestPrefix) {
+      longestPrefix = length
+      ownership = verdict
+    } else if (OWNERSHIP_PRECEDENCE[verdict] > OWNERSHIP_PRECEDENCE[ownership])
+      ownership = verdict
+  }
+  return ownership
+}
+
+function widestSelectionWidgetCount(node: LGraphNode): number {
+  const widgets = serializableWidgets(node)
+  return optionLayout(node).selectors.reduce(
+    (total, { name, widestOptionWidgetCount: widest }) =>
+      total +
+      Math.max(
+        0,
+        widest -
+          widgets.filter(({ name: widget }) => widget.startsWith(`${name}.`))
+            .length
+      ),
+    widgets.length
+  )
+}
+
+function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
+  const index = overflowWidgetIndex(name)
+  return index === null
+    ? optionOwnership(node, name) === 'unselectedOption'
+    : index < widestSelectionWidgetCount(node)
 }
 
 function documentWidget(
@@ -1316,6 +1510,7 @@ export class LiveGraphApplier {
     reportMissing: boolean
   ): void {
     for (const [name] of unresolved) {
+      if (selectionDependentAbsence(node, name)) continue
       if (reportMissing || overflowWidgetIndex(name) !== null)
         this.reportMissingWidget(node, name)
     }
