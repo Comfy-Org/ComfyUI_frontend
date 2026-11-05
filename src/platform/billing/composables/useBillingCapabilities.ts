@@ -237,6 +237,18 @@ function useBillingCapabilitiesInternal() {
       resolvedResponse.value?.has_parked_billing_operation === true
     )
   )
+  const billingNoticeAudience = computed(() =>
+    receiveServerFact(
+      'billing_notice_audience',
+      resolvedResponse.value?.billing_notice_audience ?? null
+    )
+  )
+  const endingNoticeStartsAt = computed(() =>
+    receiveServerFact(
+      'ending_notice_starts_at',
+      resolvedResponse.value?.ending_notice_starts_at ?? null
+    )
+  )
   const runWorkflowsDenial = computed(() =>
     receiveServerFact(
       'denied_reasons.can_run_workflows',
@@ -598,6 +610,8 @@ function useBillingCapabilitiesInternal() {
     paymentRecoveryAvailable,
     runWorkflowsDenial,
     hasParkedBillingOperation,
+    billingNoticeAudience,
+    endingNoticeStartsAt,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,

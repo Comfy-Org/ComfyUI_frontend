@@ -1,5 +1,8 @@
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import {
+  runDeniedPaymentPastDueFact,
+  serveBillingNotices
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -312,6 +315,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
         'can_manage_subscription',
         mockCanManageSubscriptionLifecycle.value
       )
+    }))
+    serveBillingNotices(() => ({
+      isTeamPlan: mockHasTeamPlan.value,
+      tier: mockSubscriptionTier.value,
+      isCancelled: mockSubscriptionStatus.value === 'canceled',
+      endDate: mockEndDate.value
     }))
     useBillingCapabilities().canLeaveWorkspace = computed(() =>
       receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
