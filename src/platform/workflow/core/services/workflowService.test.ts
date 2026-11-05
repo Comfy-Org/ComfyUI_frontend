@@ -2481,14 +2481,17 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow with unreadable stored content', () => {
-    function unreadableWorkflow(path = 'workflows/video_REDO.json') {
+    function unreadableWorkflow(
+      path = 'workflows/video_REDO.json',
+      reason: UnreadableWorkflowError['reason'] = 'not-object'
+    ) {
       const workflow = new ComfyWorkflowClass({
         path,
         modified: Date.now(),
         size: 4
       })
       vi.spyOn(workflow, 'load').mockRejectedValue(
-        new UnreadableWorkflowError('not-object', workflow.path)
+        new UnreadableWorkflowError(reason, workflow.path)
       )
       return workflow
     }
@@ -2519,6 +2522,23 @@ describe('useWorkflowService', () => {
         })
       )
     })
+
+    // Every reason reaches the same recovery. `unparseable` is the arm that
+    // used to escape as a native `SyntaxError` and bypass this catch entirely.
+    it.for(['empty', 'unparseable', 'not-object'] as const)(
+      'tells the user when the stored file is %s',
+      async (reason) => {
+        const workflow = unreadableWorkflow('workflows/video_REDO.json', reason)
+
+        const opened = await useWorkflowService().openWorkflow(workflow)
+
+        expect(opened).toBe(false)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(shownToast().title).toBe(
+          t('workflowService.unreadableWorkflowTitle')
+        )
+      }
+    )
 
     it('offers to delete the unreadable file', async () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(

@@ -235,43 +235,71 @@ function draftMatchesSavedFile(
 }
 
 /**
- * Stored workflow content is empty or not a JSON object, so it can never open.
- * The message is static; the path is on `workflowPath`.
+ * Stored workflow content is empty, not valid JSON, or not a JSON object, so it
+ * can never open. The message is static; the path is on `workflowPath`.
+ *
+ * `unparseable` carries no detail from the content on purpose. The native
+ * `SyntaxError` quotes the text it choked on, which both splits one defect into
+ * a Sentry group per corrupted file and puts the user's own content in the
+ * issue title.
  */
 export class UnreadableWorkflowError extends Error {
   override readonly name = 'UnreadableWorkflowError'
 
   constructor(
-    readonly reason: 'empty' | 'not-object',
+    readonly reason: 'empty' | 'unparseable' | 'not-object',
     readonly workflowPath: string
   ) {
-    super(
-      reason === 'empty'
-        ? 'Workflow content is missing or empty'
-        : 'Workflow content is not a JSON object'
-    )
+    super(UNREADABLE_WORKFLOW_MESSAGES[reason])
   }
+}
+
+const UNREADABLE_WORKFLOW_MESSAGES: Record<
+  UnreadableWorkflowError['reason'],
+  string
+> = {
+  empty: 'Workflow content is missing or empty',
+  unparseable: 'Workflow content is not valid JSON',
+  'not-object': 'Workflow content is not a JSON object'
 }
 
 /**
  * The workflow object parsed from the stored text. Anything else (nothing
- * stored, empty text, JSON `null`, a number, an array) cannot back a change
- * tracker: a tracker around `null` is what later reads as a missing state.
+ * stored, empty text, text that is not JSON at all, JSON `null`, a number, an
+ * array) cannot back a change tracker: a tracker around `null` is what later
+ * reads as a missing state.
  */
 function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   const content = workflow.originalContent
-  const parsed: unknown = content?.trim() ? JSON.parse(content) : undefined
+  const parsed = content?.trim() ? parseContent(content, workflow) : undefined
   if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     return parsed as ComfyWorkflowJSON
   }
   // `undefined` means there was nothing to parse; anything else parsed to
   // something that is not a workflow.
-  const error = new UnreadableWorkflowError(
-    parsed === undefined ? 'empty' : 'not-object',
-    workflow.path
-  )
+  throw unreadable(parsed === undefined ? 'empty' : 'not-object', workflow)
+}
+
+/**
+ * Stored text that is not JSON at all is as unopenable as JSON that is not an
+ * object, so it fails the same way rather than escaping as a `SyntaxError` that
+ * no caller recognises.
+ */
+function parseContent(content: string, workflow: ComfyWorkflow): unknown {
+  try {
+    return JSON.parse(content)
+  } catch {
+    throw unreadable('unparseable', workflow)
+  }
+}
+
+function unreadable(
+  reason: UnreadableWorkflowError['reason'],
+  workflow: ComfyWorkflow
+): UnreadableWorkflowError {
+  const error = new UnreadableWorkflowError(reason, workflow.path)
   reportUnreadableContent(error, workflow)
-  throw error
+  return error
 }
 
 function reportUnreadableContent(
