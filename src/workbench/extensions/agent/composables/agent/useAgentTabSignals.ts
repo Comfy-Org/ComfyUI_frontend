@@ -22,7 +22,7 @@ export function useAgentTabSignals({
   const { t } = useI18n()
   const conversationStore = useAgentConversationStore()
   const tabActivity = useWorkflowTabActivityStore()
-  let awaitingSince: number | null = null
+  const askSeenAt = new Map<string, number>()
 
   conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
   watch(
@@ -33,19 +33,28 @@ export function useAgentTabSignals({
   watch(
     () =>
       conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,
-    (text) => {
-      awaitingSince = text === null ? null : (awaitingSince ?? Date.now())
-      setAgentTabTitlePrefix(text)
+    setAgentTabTitlePrefix,
+    { immediate: true, flush: 'sync' }
+  )
+  watch(
+    () => conversationStore.awaitedAskIds,
+    (askIds) => {
+      const now = Date.now()
+      for (const askId of askSeenAt.keys())
+        if (!askIds.includes(askId)) askSeenAt.delete(askId)
+      for (const askId of askIds)
+        if (!askSeenAt.has(askId)) askSeenAt.set(askId, now)
     },
     { immediate: true, flush: 'sync' }
   )
 
   function clearTurnSignals(): void {
     tabActivity.setAgentTurnTabs([])
-    if (awaitingSince === null) setAgentTabTitlePrefix(null)
+    if (!conversationStore.awaitingApproval || askSeenAt.size === 0)
+      setAgentTabTitlePrefix(null)
     else
       holdAgentTabTitlePrefixUntil(
-        awaitingSince + answerWaitLimitMs,
+        Math.max(...askSeenAt.values()) + answerWaitLimitMs,
         onIdentityChange
       )
   }
