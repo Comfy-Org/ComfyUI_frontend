@@ -1008,7 +1008,32 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
+    // The server turn keeps waiting after the panel closes, so the page still says so.
     unmount()
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    // Reopening hands the prefix back to the live conversation state.
+    renderPanel()
+    await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
+  })
+
+  it('clears the page-wide prefix on close when nothing waits for an answer', async () => {
+    const { unmount } = renderPanel()
+    await send('install the video nodes')
+    emitAskUser()
+    await nextTick()
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-2',
+      status: 'answered',
+      selected: ['allow']
+    })
+    await nextTick()
+
+    unmount()
+
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
 
