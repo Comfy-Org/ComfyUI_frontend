@@ -115,6 +115,16 @@ function pendingAskIdsOf(message: AssistantMessage): string[] {
   )
 }
 
+/** Clears the retired resolution of `askId`'s card so it shows as pending again. */
+function reopenAsk(message: AssistantMessage, askId: string): void {
+  message.parts = message.parts.map((part) =>
+    (part.type === 'askUser' || part.type === 'deleteApproval') &&
+    askIdOf(part) === askId
+      ? { ...part, resolution: undefined }
+      : part
+  )
+}
+
 export interface LiveTurn {
   threadId: string
   messageId: TurnId
@@ -470,6 +480,12 @@ export const useAgentConversationStore = defineStore(
       if (path !== null) void turnCompleted.trigger(path)
     }
 
+    function refreshBackgroundAskIds(entry: BackgroundTurn): void {
+      const pendingAskIds = pendingAskIdsOf(entry.message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(entry.messageId, { pendingAskIds })
+    }
+
     function updateBackgroundTurn(
       turnId: TurnId,
       change: Partial<Pick<BackgroundTurn, 'settled' | 'tab' | 'pendingAskIds'>>
@@ -706,22 +722,17 @@ export const useAgentConversationStore = defineStore(
       if (provisional?.delete(askId) !== true) return
       if (provisional.size === 0) provisionalRetiredAsks.delete(key)
       if (retiredAsks.get(key)?.has(askId) === true) return
-      const reopen = (message: AssistantMessage): void => {
-        message.parts = message.parts.map((part) =>
-          (part.type === 'askUser' || part.type === 'deleteApproval') &&
-          askIdOf(part) === askId
-            ? { ...part, resolution: undefined }
-            : part
-        )
-      }
+      reopenAskInThread(key, askId)
+    }
+
+    function reopenAskInThread(key: string, askId: string): void {
+      const reopen = (message: AssistantMessage) => reopenAsk(message, askId)
       if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
-      for (const entry of backgroundTurns.values()) {
-        if (entry.threadId !== key) continue
-        reopen(entry.message)
-        const pendingAskIds = pendingAskIdsOf(entry.message)
-        if (!isEqual(pendingAskIds, entry.pendingAskIds))
-          updateBackgroundTurn(entry.messageId, { pendingAskIds })
-      }
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === key) {
+          reopen(entry.message)
+          refreshBackgroundAskIds(entry)
+        }
       if (key === threadKey()) messages.value.forEach(reopen)
     }
 
