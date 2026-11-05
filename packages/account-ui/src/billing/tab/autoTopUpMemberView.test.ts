@@ -1,3 +1,4 @@
+import { formatPlanDate } from '@comfyorg/account-core/billing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
@@ -12,6 +13,7 @@ import {
 } from './__fixtures__/autoTopUpCopy'
 
 const CONTACT = 'Contact a workspace owner to manage this.'
+const RESET_DAY = formatPlanDate('2026-11-28T00:00:00Z', 'en', 'monthly')
 
 describe('autoTopUpMemberView', () => {
   it.for<{
@@ -40,7 +42,7 @@ describe('autoTopUpMemberView', () => {
       view: memberView({ status: 'paused_by_budget' }),
       expected: {
         status: 'limitReached',
-        line: `Monthly limit reached. Resets Nov 28. ${CONTACT}`
+        line: `Monthly limit reached. Resets ${RESET_DAY}. ${CONTACT}`
       }
     },
     {
@@ -59,7 +61,7 @@ describe('autoTopUpMemberView', () => {
       }),
       expected: {
         status: 'maximumReached',
-        line: `Monthly maximum reached. Resets Nov 28. ${CONTACT}`
+        line: `Monthly maximum reached. Resets ${RESET_DAY}. ${CONTACT}`
       }
     },
     {
