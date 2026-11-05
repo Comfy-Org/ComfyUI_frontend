@@ -28,6 +28,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { containsCentre } from '@/lib/litegraph/src/measure'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -2047,22 +2048,18 @@ export class LiveGraphApplier {
       width: item.size[0],
       height: item.size[1]
     })
+    const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
-    // A batch that adds no nodes but a group drawn around nodes already on the
-    // canvas is the agent grouping those nodes: moving it would leave an empty
-    // frame beside them and a canvas that disagrees with the document.
+    const framesOnlyExisting = (group: LGraphGroup) =>
+      framesAny(group, existingNodes) && !framesAny(group, createdNodes)
+    const kept = createdGroups.filter(framesOnlyExisting)
     const placedGroups =
-      created.length === 0
-        ? createdGroups.filter(
-            (group) => !framesAnyNode(rect(group), existingNodes.map(rect))
-          )
-        : createdGroups
-    const incoming = [
-      ...graph._nodes.filter((node) => createdSet.has(node.id)),
-      ...placedGroups
-    ]
+      kept.length > 0 && createdNodes.length === 0
+        ? []
+        : createdGroups.filter((group) => !kept.includes(group))
+    const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
         ...existingNodes,
@@ -2079,20 +2076,11 @@ export class LiveGraphApplier {
   }
 }
 
-/** Whether the centre of any of `nodes` lies inside `frame`. */
-function framesAnyNode(
-  frame: PlacementRect,
-  nodes: readonly PlacementRect[]
-): boolean {
+function framesAny(group: LGraphGroup, nodes: readonly LGraphNode[]): boolean {
+  const bounds: [number, number, number, number] = [0, 0, 0, 0]
   return nodes.some((node) => {
-    const x = node.x + node.width / 2
-    const y = node.y + node.height / 2
-    return (
-      x >= frame.x &&
-      x <= frame.x + frame.width &&
-      y >= frame.y &&
-      y <= frame.y + frame.height
-    )
+    node.measure(bounds)
+    return containsCentre(group._bounding, bounds)
   })
 }
 

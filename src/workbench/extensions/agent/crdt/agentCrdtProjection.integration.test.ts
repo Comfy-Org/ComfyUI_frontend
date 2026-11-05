@@ -494,8 +494,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect([...group.size]).toEqual([300, 200])
   })
   it('keeps a group-only insertion on the existing nodes it frames', () => {
-    // FE 1.60 QA REG04: "put both KSamplers in one group" inserts a workflow
-    // that carries only a group drawn around nodes already on the canvas.
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
@@ -526,6 +524,84 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect([...group.pos]).toEqual([0, 10])
     expect([...group.size]).toEqual([300, 200])
     expect([...source.pos]).toEqual([10, 20])
+  })
+  it('keeps a group around existing nodes in place when the same insertion adds a node', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a62'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [20, 30],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ],
+            groups: [
+              { id: 1, title: 'Around note', bounding: [380, -20, 240, 160] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    const group = graph.groups.find(({ title }) => title === 'Around note')
+    assert(inserted && group, 'the insertion reached the canvas')
+    expect([...inserted.pos]).not.toEqual([20, 30])
+    expect([...group.pos]).toEqual([380, -20])
+    expect([...note.pos]).toEqual([400, 20])
+  })
+  it('keeps every group of a group-only insertion together when one frames existing nodes', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a63'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [],
+            groups: [
+              { id: 1, title: 'Around source', bounding: [0, -20, 240, 160] },
+              { id: 2, title: 'Next stage', bounding: [250, 0, 100, 300] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const positions = Object.fromEntries(
+      graph.groups.map((group) => [group.title, [...group.pos]])
+    )
+    expect(positions).toEqual({
+      'Around source': [0, -20],
+      'Next stage': [250, 0]
+    })
   })
   it('places a group-only insertion that frames no node clear of the canvas content', () => {
     const { graph, source, note } = buildLiveGraph()
