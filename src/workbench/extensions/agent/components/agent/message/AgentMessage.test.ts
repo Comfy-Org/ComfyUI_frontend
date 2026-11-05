@@ -587,6 +587,51 @@ describe('AgentMessage thinking narration', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('draws steps taken after an answered question below its card', () => {
+    const message = thinkingMessage()
+    message.thinking = false
+    message.parts = [
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'list_slots',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'askUser',
+        askId: 'turn-1:call-1',
+        prompt: 'Which model should I use?',
+        options: [{ id: 'sdxl', label: 'SDXL' }],
+        minSelections: 1,
+        maxSelections: 1,
+        allowOther: false,
+        resolution: { status: 'answered', selected: ['sdxl'] }
+      },
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const before = screen.getByText('List slots')
+    const card = screen.getByText('Which model should I use?')
+    const after = screen.getByText('Set widget')
+    expect(
+      before.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      card.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   it('gathers text-separated tool runs into the one summary', async () => {
     const message = thinkingMessage()
     message.thinking = false

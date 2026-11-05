@@ -46,8 +46,6 @@ const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
-// Every thinking and tool part of the turn reads as one trace, wherever they fall
-// between the reply's text parts, so the completed turn folds into a single summary.
 const activityParts = computed<readonly ActivityPart[]>(() =>
   message.parts.filter(
     (part): part is ActivityPart =>
@@ -140,7 +138,6 @@ const status = computed(() => {
       <AgentMessageGroup
         :group
         :streaming="message.streaming"
-        :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
         @answer="(askId, answer) => emit('answerAsk', askId, answer)"

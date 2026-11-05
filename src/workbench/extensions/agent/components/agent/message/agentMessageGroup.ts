@@ -12,12 +12,13 @@ import type {
   TabLinkPart,
   TextPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
   | { kind: 'notice'; part: NoticePart | AskUnavailablePart }
   | { kind: 'paywall'; part: PaywallPart }
-  | { kind: 'trace' }
+  | { kind: 'trace'; parts: ActivityPart[] }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
   | { kind: 'extensionChange'; part: ExtensionChangePart }
   | { kind: 'runApproval'; part: RunApprovalPart }
@@ -26,19 +27,28 @@ export type AgentMessageGroup =
   | { kind: 'paused'; part: PausedPart }
 
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
+type TraceGroup = Extract<AgentMessageGroup, { kind: 'trace' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
+/**
+ * Tool and thinking parts gather into one trace at the position of the first,
+ * across text, until a card the user answers. Steps after that card start a new
+ * trace below it, so the card stays where it was asked.
+ */
 export function groupMessageParts(
   parts: readonly MessagePart[]
 ): AgentMessageGroup[] {
   const out: AgentMessageGroup[] = []
-  let tracePlaced = false
+  let openTrace: TraceGroup | null = null
   let openTextGroup: TextGroup | null = null
   for (const part of parts) {
     if (part.type === 'tool' || part.type === 'thinking') {
-      if (tracePlaced) continue
-      tracePlaced = true
-      out.push({ kind: 'trace' })
+      if (openTrace) {
+        openTrace.parts.push(part)
+        continue
+      }
+      openTrace = { kind: 'trace', parts: [part] }
+      out.push(openTrace)
       continue
     }
     if (part.type === 'text') {
@@ -46,6 +56,7 @@ export function groupMessageParts(
       continue
     }
     openTextGroup = null
+    if (askIdOf(part) !== undefined) openTrace = null
     pushInterruptingGroup(out, part)
   }
   return out
