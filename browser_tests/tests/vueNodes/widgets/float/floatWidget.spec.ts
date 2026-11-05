@@ -106,8 +106,6 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await expect(input).toHaveValue('7.5')
   })
 
-  // Re-expresses #11412 with real mouse input instead of patched pointer
-  // capture: https://github.com/Comfy-Org/ComfyUI_frontend/pull/11412
   test('slider thumb shows the grabbing cursor only while dragged', async ({
     comfyPage
   }) => {
