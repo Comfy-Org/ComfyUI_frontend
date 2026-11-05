@@ -65,8 +65,18 @@ const secondTargetHead = 'd'.repeat(40)
 const coreConflict = 'core/1.56:conflicts:src/a.ts,src/b.ts'
 const cloudConflict = 'cloud/1.56:conflicts:src/a.ts'
 
+const sharedToken = 'shared-token'
+const jobToken = 'job-token'
+
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
+# REST calls made with a spent token fail the way GitHub fails them. GraphQL
+# (which \`gh pr comment\` and \`gh issue create\` use) has its own quota.
+if [[ "$1" == api && "$2" != graphql && -n "\${FAKE_SPENT_TOKEN:-}" &&
+  "\${GH_TOKEN:-}" == "\${FAKE_SPENT_TOKEN}" ]]; then
+  echo 'gh: API rate limit exceeded for user ID 1.' >&2
+  exit 1
+fi
 record() {
   jq -cn --arg login "\${FAKE_LOGIN}" --arg title "$1" --arg body "$2" \\
     '{user: {login: $login}, title: (if $title == "" then null else $title end), body: $body}'
@@ -74,6 +84,10 @@ record() {
 case "$1 $2" in
   "api user")
     [[ -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
+    echo "\${FAKE_LOGIN}"
+    ;;
+  "api graphql")
+    [[ "$*" == *"viewer"* && -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
     echo "\${FAKE_LOGIN}"
     ;;
   "api --paginate")
@@ -129,6 +143,7 @@ interface Run {
   commentsRead?: 'ok' | 'error'
   login?: string
   prLocked?: boolean
+  sharedRestQuotaSpent?: boolean
 }
 
 function reportConflict(
@@ -142,7 +157,8 @@ function reportConflict(
     forceRerun = false,
     commentsRead = 'ok',
     login = botLogin,
-    prLocked = false
+    prLocked = false,
+    sharedRestQuotaSpent = false
   }: Run = {}
 ) {
   const eventPath = join(sandbox, 'event.json')
@@ -177,6 +193,9 @@ function reportConflict(
       FAKE_LOGIN: login,
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
+      FAKE_SPENT_TOKEN: sharedRestQuotaSpent ? sharedToken : '',
+      GH_TOKEN: sharedToken,
+      JOB_TOKEN: jobToken,
       FAKE_TARGET_HEAD: targetHead,
       FAILED_TARGETS: failed,
       FORCE_RERUN: evaluateForceRerun(event, forceRerun),
@@ -221,6 +240,10 @@ describe('backport conflict comment', () => {
         .filter(Boolean)
         .map((line) => (JSON.parse(line) as { title: string }).title)
     ).toEqual(['Backport of #21078 to core/1.56 not needed'])
+  })
+
+  it('reads existing reports with the job token, which has its own quota', () => {
+    expect(commentEnv.JOB_TOKEN).toBe('${{ github.token }}')
   })
 
   it('reads the target lists from the backport step outputs', () => {
@@ -300,6 +323,11 @@ describe('backport conflict comment', () => {
       scenario: 'a failed read of the existing comments',
       second: { commentsRead: 'error' },
       expected: 2
+    },
+    {
+      scenario: 'a later labeled event while the shared token is out of REST quota',
+      second: { sharedRestQuotaSpent: true },
+      expected: 1
     },
     {
       scenario: 'an unresolvable posting identity',
