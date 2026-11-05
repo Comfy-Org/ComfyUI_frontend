@@ -376,7 +376,7 @@ describe('runRecord overwrite guard', () => {
 
   it('replaces with --force after EOF without prompting for anything', async () => {
     const { root, outputPath } = seedExistingSpec('eof-force')
-    const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')!
+    const stdinDescriptor = Object.getOwnPropertyDescriptors(process).stdin
     try {
       vi.mocked(runRecording).mockResolvedValue({
         success: true,
