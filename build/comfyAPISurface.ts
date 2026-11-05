@@ -2,7 +2,7 @@ import path from 'path'
 
 const COMFY_API_DIRS = ['extensions/core', 'scripts'] as const
 
-export const COMFY_API_ENTRY_GLOBS = COMFY_API_DIRS.map(
+export const COMFY_API_SOURCE_GLOBS = COMFY_API_DIRS.map(
   (dir) => `src/${dir}/**/*.ts`
 )
 

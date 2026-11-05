@@ -1,16 +1,18 @@
 import type { KnipConfig } from 'knip'
 
-import { COMFY_API_ENTRY_GLOBS } from './build/comfyAPISurface'
+import { COMFY_API_SOURCE_GLOBS } from './build/comfyAPISurface'
 
 const config: KnipConfig = {
   treatConfigHintsAsErrors: true,
   treatTagHintsAsErrors: true,
+  ignoreIssues: Object.fromEntries(
+    COMFY_API_SOURCE_GLOBS.map((glob) => [glob, ['exports']])
+  ),
   workspaces: {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
-        ...COMFY_API_ENTRY_GLOBS,
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',

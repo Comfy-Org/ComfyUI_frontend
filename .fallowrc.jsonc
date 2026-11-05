@@ -30,12 +30,7 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": [
-    "index.html",
-    "src/main.ts",
-    "src/extensions/core/**/*.ts",
-    "src/scripts/**/*.ts"
-  ],
+  "entry": ["index.html", "src/main.ts"],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
@@ -116,6 +111,10 @@
     },
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
+    // Every value export here is published on window.comfyAPI by
+    // build/plugins/comfyAPIPlugin.ts (globs mirror build/comfyAPISurface.ts).
+    { "file": "src/extensions/core/**/*.ts", "exports": ["*"] },
+    { "file": "src/scripts/**/*.ts", "exports": ["*"] },
     { "file": "src/types/index.ts", "exports": ["*"] },
     { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
@@ -181,6 +180,10 @@
       "exports": ["default"]
     }
   ],
+
+  // Legacy dialog API: custom nodes call these members on window.comfyAPI
+  // classes (e.g. ClipspaceDialog.registerButton), invisible statically.
+  "usedClassMembers": [{ "extends": "ComfyDialog", "members": ["*"] }],
 
   "duplicates": {
     "minOccurrences": 3,
