@@ -224,6 +224,7 @@ describe('runRecord overwrite guard', () => {
         )
 
         expect(confirm).toHaveBeenCalledWith(overwritePrompt)
+        expect(runRecording).not.toHaveBeenCalled()
         expect(readFileSync(outputPath, 'utf-8')).toBe(EXISTING_SPEC)
       } finally {
         rmSync(root, { recursive: true, force: true })
@@ -334,13 +335,16 @@ describe('runRecord overwrite guard', () => {
     }
   })
 
-  it('refuses without prompting when stdin closed at EOF during the paste', async () => {
-    const { root, outputPath } = seedExistingSpec('eof-overwrite')
+  it('refuses a late collision without prompting when stdin closed at EOF during the paste', async () => {
+    const { root, outputPath } = seedMissingSpec('eof-overwrite')
     const stdinDescriptor = Object.getOwnPropertyDescriptors(process).stdin
     try {
-      vi.mocked(runRecording).mockResolvedValue({
-        success: true,
-        recordedCode: ''
+      vi.mocked(runRecording).mockImplementation(async () => {
+        writeFileSync(outputPath, EXISTING_SPEC)
+        return {
+          success: true,
+          recordedCode: ''
+        }
       })
       vi.mocked(confirm).mockImplementation(async () => true)
       const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {

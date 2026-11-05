@@ -616,6 +616,28 @@ export async function runRecord(
   const featureFlags =
     prefill.featureFlags ?? parseFeatureFlagSpecs(selectedFeatureFlags)
 
+  const testsDir = join(projectRoot, 'browser_tests', 'tests')
+  mkdirSync(testsDir, { recursive: true })
+  const initialOutputPath = join(testsDir, `${slug}.spec.ts`)
+  let approvedOutputPath =
+    prefill.force === true ? initialOutputPath : undefined
+  if (!approvedOutputPath && existsSync(initialOutputPath)) {
+    const overwrite = answered(
+      await confirm({
+        message: `${slug}.spec.ts already exists. Overwrite it?`,
+        initialValue: false
+      })
+    )
+    if (!overwrite) {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${initialOutputPath} first.`
+      )
+      process.exit(1)
+    }
+    approvedOutputPath = initialOutputPath
+  }
+
   stepHeader(5, 7, 'Record')
 
   const serverSpinner = spinner()
@@ -758,10 +780,9 @@ export async function runRecord(
     ])
   }
 
-  const testsDir = join(projectRoot, 'browser_tests', 'tests')
-  mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
-  let allowOverwrite = prefill.force === true
+  let allowOverwrite =
+    prefill.force === true || approvedOutputPath === outputPath
   if (!allowOverwrite && existsSync(outputPath)) {
     if (!stdinOpen) {
       fail(
