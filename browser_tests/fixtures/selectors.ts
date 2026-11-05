@@ -86,6 +86,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    deprecatedNodesGroup: 'deprecated-nodes-group',
     swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
     missingMediaLocateButton: 'missing-media-locate-button',

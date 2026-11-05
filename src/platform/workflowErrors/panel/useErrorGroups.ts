@@ -7,6 +7,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { app } from '@/scripts/app'
@@ -118,6 +119,38 @@ function resolveNodeInfo(nodeId: NodeExecutionId) {
     }),
     graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
+}
+
+function nodeIdsOf(nodeTypes: readonly MissingNodeType[]): string[] {
+  return nodeTypes.flatMap((nodeType) =>
+    typeof nodeType === 'string' || nodeType.nodeId == null
+      ? []
+      : [String(nodeType.nodeId)]
+  )
+}
+
+function groupSwapNodes(
+  nodeTypes: readonly MissingNodeType[]
+): SwapNodeGroup[] {
+  const map = new Map<string, SwapNodeGroup>()
+
+  for (const nodeType of nodeTypes) {
+    if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
+
+    const typeName = nodeType.type
+    const existing = map.get(typeName)
+    if (existing) {
+      existing.nodeTypes.push(nodeType)
+    } else {
+      map.set(typeName, {
+        type: typeName,
+        newNodeId: nodeType.replacement?.new_node_id,
+        nodeTypes: [nodeType]
+      })
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
 }
 
 function getOrCreateGroup(
@@ -266,6 +299,7 @@ export function useErrorGroups(
 ) {
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
+  const deprecatedNodesStore = useDeprecatedNodesStore()
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
@@ -674,28 +708,17 @@ export function useErrorGroups(
       }))
   })
 
-  const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
-    const nodeTypes =
-      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
-    const map = new Map<string, SwapNodeGroup>()
+  const swapNodeGroups = computed(() =>
+    groupSwapNodes(missingNodesStore.visibleMissingNodesError?.nodeTypes ?? [])
+  )
 
-    for (const nodeType of nodeTypes) {
-      if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
-
-      const typeName = nodeType.type
-      const existing = map.get(typeName)
-      if (existing) {
-        existing.nodeTypes.push(nodeType)
-      } else {
-        map.set(typeName, {
-          type: typeName,
-          newNodeId: nodeType.replacement?.new_node_id,
-          nodeTypes: [nodeType]
-        })
-      }
-    }
-
-    return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
+  const deprecatedNodeGroups = computed(() => {
+    const query = toValue(searchQuery).trim().toLowerCase()
+    return groupSwapNodes(deprecatedNodesStore.nodeTypes).filter((group) =>
+      [group.type, group.newNodeId].some((name) =>
+        name?.toLowerCase().includes(query)
+      )
+    )
   })
 
   /**
@@ -975,14 +998,10 @@ export function useErrorGroups(
       ...(missingModelStore.visibleMissingModelCandidates ?? []),
       ...(missingMediaStore.visibleMissingMediaCandidates ?? [])
     ].map((candidate) => candidate.nodeId)
-    const missingNodeTypeIds = (
-      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
-    ).map((nodeType) =>
-      typeof nodeType === 'string' ? undefined : nodeType.nodeId
-    )
-    return [...candidateIds, ...missingNodeTypeIds]
-      .filter((nodeId) => nodeId != null)
-      .map(String)
+    return [
+      ...candidateIds.filter((nodeId) => nodeId != null).map(String),
+      ...nodeIdsOf(missingNodesStore.visibleMissingNodesError?.nodeTypes ?? [])
+    ]
   })
 
   /**
@@ -992,7 +1011,10 @@ export function useErrorGroups(
   const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
     if (!hasSelection.value) return new Set()
     const matched = new Set(
-      assetNodeIdsWithError.value.filter(isAssetCandidateInSelection)
+      [
+        ...assetNodeIdsWithError.value,
+        ...nodeIdsOf(deprecatedNodesStore.nodeTypes)
+      ].filter(isAssetCandidateInSelection)
     )
     for (const candidate of missingModelCandidatesForSelection.value) {
       if (candidate.nodeId != null) matched.add(String(candidate.nodeId))
@@ -1046,6 +1068,7 @@ export function useErrorGroups(
     missingModelGroups,
     missingMediaGroups,
     swapNodeGroups,
+    deprecatedNodeGroups,
     hasSelection,
     selectedNodeCount,
     selectedNodeTitle,

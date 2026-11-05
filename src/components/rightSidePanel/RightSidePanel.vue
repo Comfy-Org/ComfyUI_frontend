@@ -23,6 +23,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -216,35 +217,48 @@ const hasPendingErrorScanSelected = computed(() => {
 
 const hasBlockingError = useHasBlockingError()
 
+const deprecatedNodesStore = useDeprecatedNodesStore()
+const hasDeprecatedNodes = computed(
+  () => deprecatedNodesStore.nodeTypes.length > 0
+)
+
+function errorsTabIcon() {
+  if (hasRelevantErrors.value)
+    return {
+      className: cn(
+        'ml-1',
+        hasBlockingError.value
+          ? 'icon-[lucide--octagon-alert] bg-destructive'
+          : 'icon-[lucide--triangle-alert] bg-warning'
+      ),
+      label: () =>
+        t(
+          hasBlockingError.value
+            ? 'rightSidePanel.severityErrorLabel'
+            : 'rightSidePanel.severitySetupLabel'
+        )
+    }
+  if (hasDeprecatedNodes.value)
+    return {
+      className: 'ml-1 icon-[lucide--info] bg-muted-foreground',
+      label: () => t('nodeReplacement.deprecatedNodesLabel')
+    }
+  return undefined
+}
+
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
     (hasRelevantErrors.value ||
+      hasDeprecatedNodes.value ||
       (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      // No icon while the tab is only retained by a pending scan: with both
-      // severities absent there is no state for it to describe.
-      icon: hasRelevantErrors.value
-        ? {
-            className: cn(
-              'ml-1',
-              hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-destructive'
-                : 'icon-[lucide--triangle-alert] bg-warning'
-            ),
-            label: () =>
-              t(
-                hasBlockingError.value
-                  ? 'rightSidePanel.severityErrorLabel'
-                  : 'rightSidePanel.severitySetupLabel'
-              )
-          }
-        : undefined
+      icon: errorsTabIcon()
     })
   }
 

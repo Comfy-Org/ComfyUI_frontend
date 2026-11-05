@@ -134,6 +134,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -842,8 +843,9 @@ export class ComfyApp implements IComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    api.addEventListener('feature_flags', () => {
-      void useNodeReplacementStore().load()
+    api.addEventListener('feature_flags', async () => {
+      await useNodeReplacementStore().load()
+      useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
     })
 
     useJobModelDownloadStore()

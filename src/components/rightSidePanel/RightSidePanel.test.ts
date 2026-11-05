@@ -12,6 +12,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -171,6 +172,20 @@ describe('RightSidePanel active tab fallback', () => {
 
     expect(screen.queryByTestId('panel-tab-errors')).not.toBeInTheDocument()
     expect(openPanel).not.toHaveBeenCalled()
+  })
+
+  it('shows the errors tab with a notice icon when only deprecated nodes are listed', async () => {
+    const { finishScan } = renderPanel('parameters')
+    finishScan()
+    useDeprecatedNodesStore().nodeTypes = [
+      { type: 'ImageBatch', nodeId: '1', isReplaceable: true }
+    ]
+    await nextTick()
+
+    expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Deprecated nodes can be replaced' })
+    ).toBeInTheDocument()
   })
 
   it('does not update the panel when a pending scan finishes after unmount', async () => {

@@ -16,6 +16,7 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type {
   MissingNodeType,
@@ -449,11 +450,8 @@ function replaceWithMapping(
 }
 
 function removeReplacedMissingNodeTypes(types: string[]): void {
-  // Remove from the rendered store directly rather than re-projecting the
-  // cache into it: entries surfaced outside the load path (e.g. the
-  // missing_node_type rescan) exist only in the store, and a projection from
-  // a cache that never saw them would wipe them.
   useMissingNodesErrorStore().removeMissingNodesByType(types)
+  useDeprecatedNodesStore().removeByType(types)
 
   const activeWorkflow = useWorkflowStore().activeWorkflow
   if (!activeWorkflow) return
@@ -464,6 +462,33 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
       types
     )
   })
+}
+
+function replacePlaceholder(
+  node: LGraphNode,
+  replacement: NodeReplacement
+): boolean {
+  const nodeGraph = node.graph
+  if (!nodeGraph) return false
+
+  const idx = nodeGraph._nodes.indexOf(node)
+  if (idx === -1) return false
+
+  const newNode = LiteGraph.createNode(replacement.new_node_id)
+  if (!newNode) return false
+
+  const hasMapping =
+    replacement.input_mapping != null || replacement.output_mapping != null
+  const effectiveReplacement = hasMapping
+    ? replacement
+    : {
+        ...replacement,
+        ...generateDefaultMapping(
+          node.last_serialization ?? node.serialize(),
+          newNode
+        )
+      }
+  return replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 }
 
 export function useNodeReplacement() {
@@ -488,13 +513,6 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
-    // Target types come from node_replacements fetched at workflow load time
-    // and the missing nodes detected at that point — not from the current
-    // registered_node_types. This ensures replacement still works even if
-    // the user has since installed the missing node pack.
-    // Also include sanitized variants so that when the fallback path reads
-    // n.type (which app.ts may have already run through sanitizeNodeName),
-    // we can still match against the original type stored in selectedTypes.
     const targetTypes = new Set([
       ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
       ...selectedTypes.map((t) =>
@@ -504,12 +522,9 @@ export function useNodeReplacement() {
 
     try {
       const placeholders = collectAllNodes(graph, (n) => {
-        if (!n.last_serialization) return false
-        // Prefer the original serialized type; fall back to the live type
-        // for nodes whose serialization predates the type field.
-        // n.type may have been sanitized by app.ts (HTML special chars stripped);
-        // the sanitized variants in targetTypes ensure we still match correctly.
-        const originalType = n.last_serialization.type || n.type
+        if (!n.last_serialization && !n.constructor.nodeData?.deprecated)
+          return false
+        const originalType = n.last_serialization?.type || n.type
         return !!originalType && targetTypes.has(originalType)
       })
 
@@ -517,46 +532,7 @@ export function useNodeReplacement() {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
 
-        const replacement = match.replacement
-        const nodeGraph = node.graph
-        if (!nodeGraph) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const idx = nodeGraph._nodes.indexOf(node)
-        if (idx === -1) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const newNode = LiteGraph.createNode(replacement.new_node_id)
-        if (!newNode) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const hasMapping =
-          replacement.input_mapping != null ||
-          replacement.output_mapping != null
-
-        const effectiveReplacement = hasMapping
-          ? replacement
-          : {
-              ...replacement,
-              ...generateDefaultMapping(
-                node.last_serialization ?? node.serialize(),
-                newNode
-              )
-            }
-        const replaced = replaceWithMapping(
-          node,
-          newNode,
-          effectiveReplacement,
-          nodeGraph,
-          idx
-        )
-        if (!replaced) {
+        if (!replacePlaceholder(node, match.replacement)) {
           recordReplacementFailure(match.type)
           continue
         }
@@ -568,11 +544,6 @@ export function useNodeReplacement() {
         ) {
           replacedTypes.push(match.type)
         }
-      }
-
-      if (anyNodeReplaced) {
-        graph.updateExecutionOrder()
-        graph.setDirtyCanvas(true, true)
       }
 
       if (replacedTypes.length > 0) {
@@ -590,15 +561,14 @@ export function useNodeReplacement() {
       }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
+      })
+    } finally {
       if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toast.error(t('g.error'), {
-        description: t('nodeReplacement.replaceFailed')
-      })
-      return replacedTypes
-    } finally {
       changeTracker?.afterChange()
     }
 

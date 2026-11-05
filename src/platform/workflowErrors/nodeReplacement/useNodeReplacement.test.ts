@@ -774,6 +774,39 @@ describe('useNodeReplacement', () => {
       ).toEqual(['multiplier', 1.5])
     })
 
+    it('carries a widget value from an installed deprecated node, which has no last_serialization', () => {
+      const installedNode = createPlaceholderNode(1, 'OldScaler')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      vi.mocked(installedNode.serialize).mockReturnValue({
+        ...installedNode.serialize(),
+        widgets_values: [1.5]
+      })
+      const graph = createMockGraph([installedNode])
+      installedNode.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([installedNode])
+
+      const newNode = createNewNode([], [], [{ name: 'scale', value: 1 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['scale_by'],
+          input_mapping: [{ new_id: 'scale', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(graph._nodes[0].widgets?.map((widget) => widget.value)).toEqual([
+        1.5
+      ])
+    })
+
     it('lets the later mapping win when two mappings target one widget', () => {
       const placeholder = createPlaceholderNode(1, 'OldScaler')
       placeholder.last_serialization!.widgets_values = ['saved']
@@ -1380,6 +1413,31 @@ describe('useNodeReplacement', () => {
 
       const predicate = capturedPredicate()
       expect(predicate(freshNode)).toBe(false)
+    })
+
+    it('detects an installed node without last_serialization when its definition is deprecated', () => {
+      const installedNode = createPlaceholderNode(1, 'OldNode')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      installedNode.constructor = Object.assign({}, installedNode.constructor, {
+        nodeData: { deprecated: true }
+      })
+      Object.assign(app, { rootGraph: createMockGraph([installedNode]) })
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(capturedPredicate()(installedNode)).toBe(true)
     })
 
     it('should fall back to node.type when last_serialization.type is undefined', () => {
