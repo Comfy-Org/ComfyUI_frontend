@@ -1,4 +1,4 @@
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/types/entityRegistry'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
