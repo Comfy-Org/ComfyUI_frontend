@@ -84,7 +84,7 @@
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
-          @keydown.capture="replayNavigationAfterPendingHighlight"
+          @keydown.capture="replayComboboxNavigation"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
@@ -184,6 +184,7 @@ import type { CSSProperties } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -420,27 +421,6 @@ function focusSearchInput() {
 
   input.focus({ preventScroll: true })
   return true
-}
-
-const NAVIGATION_KEYS = new Set([
-  'ArrowDown',
-  'ArrowUp',
-  'Home',
-  'End',
-  'PageDown',
-  'PageUp',
-  'Enter'
-])
-
-function replayNavigationAfterPendingHighlight(event: KeyboardEvent) {
-  if (!event.isTrusted || event.isComposing || !NAVIGATION_KEYS.has(event.key))
-    return
-  const { target } = event
-  event.preventDefault()
-  event.stopPropagation()
-  requestAnimationFrame(() =>
-    target?.dispatchEvent(new KeyboardEvent(event.type, event))
-  )
 }
 
 function handleOpenChange(open: boolean) {

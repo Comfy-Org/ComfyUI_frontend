@@ -44,7 +44,7 @@ function unformatValue(value: string) {
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const formattedValue = computed(() => {
+const displayValue = computed(() => {
   const value = modelValue.value
   if ((value as unknown) === '' || !isFinite(value)) return `${value}`
 
@@ -58,7 +58,7 @@ const formattedValue = computed(() => {
   return formatNumber(value, options)
 })
 
-function parseWidgetValue(raw: string): number | undefined {
+function parseValue(raw: string): number | undefined {
   return evaluateInput(unformatValue(raw))
 }
 
@@ -77,7 +77,7 @@ const filteredProps = computed(() => {
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const isDisabled = computed(() => props.widget.options?.disabled ?? false)
+const disabled = computed(() => props.widget.options?.disabled ?? false)
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
@@ -86,29 +86,20 @@ const precision = computed(() => {
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-// Calculate the step value based on precision or widget options
-const stepValue = computed(() => {
-  // Use step2 (correct input spec value) if available
+const step = computed(() => {
   if (props.widget.options?.step2 !== undefined) {
     return props.widget.options.step2
   }
-  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
-  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
-  // We skip default step values (1, 10) to avoid affecting normal widgets
   const step = props.widget.options?.step as number | undefined
   if (step !== undefined && step > 10) {
     return step / 10
   }
-  // Otherwise, derive from precision
   if (precision.value !== undefined) {
     if (precision.value === 0) {
       return 1
     }
-    // For precision > 0, step = 1 / (10^precision)
-    // precision 1 → 0.1, precision 2 → 0.01, etc.
     return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
   }
-  // Default to 'any' for unrestricted stepping
   return 0
 })
 
@@ -146,7 +137,7 @@ const sliderWidth = computed(() => {
   return (ratio * 100).toFixed(0)
 })
 
-const inputAriaAttrs = computed(() => ({
+const inputAttrs = computed(() => ({
   id: inputId,
   'aria-label': props.widget.label || props.widget.name,
   'aria-valuenow': modelValue.value,
@@ -175,11 +166,11 @@ const inputAriaAttrs = computed(() => ({
             v-model="modelValue"
             :min="filteredProps.min"
             :max="filteredProps.max"
-            :step="stepValue"
-            :display-value="formattedValue"
-            :disabled="isDisabled"
-            :parse-value="parseWidgetValue"
-            :input-attrs="inputAriaAttrs"
+            :step
+            :display-value
+            :disabled
+            :parse-value
+            :input-attrs
             :scrub-element="rowElement"
             :class="
               cn(

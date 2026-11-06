@@ -73,7 +73,7 @@ const getAssetData = () => {
 const assetData = getAssetData()
 
 const {
-  dropdownItems,
+  dropdownItems: items,
   displayItems,
   filterSelected,
   filterOptions,
@@ -83,7 +83,7 @@ const {
   baseModelSelected,
   showBaseModelFilter,
   baseModelOptions,
-  selectedSet
+  selectedSet: selected
 } = useWidgetSelectItems({
   values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
@@ -95,7 +95,7 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  dropdownItems,
+  dropdownItems: items,
   locatorId: props.widget.nodeLocatorId,
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
@@ -103,7 +103,7 @@ const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   widget: () => props.widget
 })
 
-const mediaPlaceholder = computed(() => {
+const placeholder = computed(() => {
   const options = props.widget.options
 
   if (options?.placeholder) {
@@ -133,9 +133,7 @@ const uploadable = computed(() => {
   return props.allowUpload === true
 })
 
-const acceptTypes = computed(() => {
-  // Be permissive with accept types because backend uses libraries
-  // that can handle a wide range of formats
+const accept = computed(() => {
   switch (props.assetKind) {
     case 'image':
       return 'image/*,.exr'
@@ -168,13 +166,13 @@ async function updateFiles(files: File[]) {
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :input-id
-      :selected="selectedSet"
-      :items="dropdownItems"
+      :selected
+      :items
       :display-items
-      :placeholder="mediaPlaceholder"
+      :placeholder
       :multiple="false"
       :uploadable
-      :accept="acceptTypes"
+      :accept
       :filter-options
       :show-ownership-filter
       :ownership-options
