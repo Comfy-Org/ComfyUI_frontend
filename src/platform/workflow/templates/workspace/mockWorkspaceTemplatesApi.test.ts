@@ -46,7 +46,6 @@ function memoryStorage(): Pick<Storage, 'getItem' | 'setItem'> {
 function setup(overrides: Partial<MockWorkspaceTemplatesContext> = {}) {
   const context: MockWorkspaceTemplatesContext = {
     workspaceId: 'ws-1',
-    isTeamWorkspace: true,
     viewer: () => ({ id: 'me', name: 'Me' }),
     officialTemplate: (name) => OFFICIAL_TEMPLATES[name],
     officialThumbnailUrl: (template, index) =>
@@ -86,12 +85,12 @@ function createRequest(
 
 describe('createMockWorkspaceTemplatesApi', () => {
   it.for([
-    { isTeamWorkspace: true, expected: true },
-    { isTeamWorkspace: false, expected: false }
+    { workspaceId: 'ws-1', expected: true },
+    { workspaceId: null, expected: false }
   ])(
-    'grants view and create only in a team workspace (team: $isTeamWorkspace)',
-    async ({ isTeamWorkspace, expected }) => {
-      const { api } = setup({ isTeamWorkspace })
+    'grants view and create whenever a workspace is active ($workspaceId)',
+    async ({ workspaceId, expected }) => {
+      const { api } = setup({ workspaceId })
 
       await expect(api.getPermissions()).resolves.toEqual({
         'workspace_templates:view': expected,
@@ -100,8 +99,8 @@ describe('createMockWorkspaceTemplatesApi', () => {
     }
   )
 
-  it('refuses to list templates outside a team workspace', async () => {
-    const { api } = setup({ isTeamWorkspace: false })
+  it('refuses to list templates before a workspace is active', async () => {
+    const { api } = setup({ workspaceId: null })
 
     await expect(api.list()).rejects.toMatchObject({
       code: 'workspace_templates_unavailable'

@@ -1337,7 +1337,7 @@
     "deleted": "Template deleted",
     "you": "You",
     "errors": {
-      "workspace_templates_unavailable": "Workspace templates are available in team workspaces only",
+      "workspace_templates_unavailable": "Workspace templates aren't available until a workspace loads. Try again.",
       "forbidden": "Only the person who added this template can change it",
       "not_found": "This template no longer exists",
       "invalid_request": "Add a title of up to 120 characters and a thumbnail",

@@ -14,7 +14,6 @@ import type {
 /** What the mock server knows about the request, as a real one would from the session. */
 export interface MockWorkspaceTemplatesContext {
   workspaceId: string | null
-  isTeamWorkspace: boolean
   viewer: () => { id: string; name: string }
   officialTemplate: (name: string) => TemplateInfo | undefined
   officialThumbnailUrl: (template: TemplateInfo, index: '1' | '2') => string
@@ -174,16 +173,16 @@ function trimmedDetails(body: UpdateWorkspaceTemplateRequest) {
 
 /**
  * The proposed `/api/workspace/templates` endpoints, kept in this browser's
- * local storage per workspace. Only a template's creator may edit or delete it.
+ * local storage for any workspace. Only a template's creator may change one.
  */
 export function createMockWorkspaceTemplatesApi(
   getContext: () => MockWorkspaceTemplatesContext,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
   now: () => Date = () => new Date()
 ): WorkspaceTemplatesApi {
-  function teamContext() {
+  function workspaceContext() {
     const context = getContext()
-    if (!context.isTeamWorkspace || !context.workspaceId)
+    if (!context.workspaceId)
       throw new MockWorkspaceTemplatesError('workspace_templates_unavailable')
     return { ...context, workspaceId: context.workspaceId }
   }
@@ -267,7 +266,7 @@ export function createMockWorkspaceTemplatesApi(
   }
 
   function findManageable(id: string) {
-    const context = teamContext()
+    const context = workspaceContext()
     const workspace = readWorkspace(context.workspaceId)
     const template = allTemplates(context, workspace).find((t) => t.id === id)
     if (!template) throw new MockWorkspaceTemplatesError('not_found')
@@ -278,15 +277,15 @@ export function createMockWorkspaceTemplatesApi(
 
   return {
     async getPermissions(): Promise<WorkspaceTemplatePermissionsResponse> {
-      const { isTeamWorkspace } = getContext()
+      const hasWorkspace = getContext().workspaceId !== null
       return {
-        'workspace_templates:view': isTeamWorkspace,
-        'workspace_templates:create': isTeamWorkspace
+        'workspace_templates:view': hasWorkspace,
+        'workspace_templates:create': hasWorkspace
       }
     },
 
     async list() {
-      const context = teamContext()
+      const context = workspaceContext()
       const workspace = readWorkspace(context.workspaceId)
       return allTemplates(context, workspace)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -294,7 +293,7 @@ export function createMockWorkspaceTemplatesApi(
     },
 
     async getWorkflow(id) {
-      const context = teamContext()
+      const context = workspaceContext()
       if (id.startsWith(SEED_ID_PREFIX))
         return context.fetchOfficialWorkflow(id.slice(SEED_ID_PREFIX.length))
       const workspace = readWorkspace(context.workspaceId)
@@ -302,7 +301,7 @@ export function createMockWorkspaceTemplatesApi(
     },
 
     async create(body: CreateWorkspaceTemplateRequest) {
-      const context = teamContext()
+      const context = workspaceContext()
       assertValidDetails(body)
       if (!body.thumbnail.url)
         throw new MockWorkspaceTemplatesError('invalid_request')

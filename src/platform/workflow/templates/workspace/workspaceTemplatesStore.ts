@@ -102,7 +102,6 @@ export const useWorkspaceTemplatesStore = defineStore(
 
     const workspaceTemplatesApi = createMockWorkspaceTemplatesApi(() => ({
       workspaceId: teamWorkspaceStore.activeWorkspaceId,
-      isTeamWorkspace: teamWorkspaceStore.activeWorkspace?.type === 'team',
       viewer,
       officialTemplate: (name) =>
         workflowTemplatesStore.enhancedTemplates.find(
@@ -238,10 +237,7 @@ export const useWorkspaceTemplatesStore = defineStore(
     }
 
     watch(
-      () => [
-        teamWorkspaceStore.activeWorkspaceId,
-        teamWorkspaceStore.activeWorkspace?.type
-      ],
+      () => teamWorkspaceStore.activeWorkspaceId,
       async () => {
         templates.value = []
         await refreshPermissions()
