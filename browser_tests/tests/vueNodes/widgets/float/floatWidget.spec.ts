@@ -105,4 +105,33 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     // UI (or vice versa) still fails this test.
     await expect(input).toHaveValue('7.5')
   })
+
+  test('slider thumb shows the grabbing cursor only while dragged', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/simple_slider')
+
+    const node = comfyPage.vueNodes.getNodeByTitle('Simple Slider')
+    const thumb = node.getByRole('slider')
+    const { input } = comfyPage.vueNodes.getInputNumberControls(node)
+    await expect(thumb).toHaveCSS('cursor', 'grab')
+    const initial = Number(await input.inputValue())
+
+    const box = await thumb.boundingBox()
+    if (!box) throw new Error('Slider thumb has no bounding box')
+    const { mouse } = comfyPage.page
+    await mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await mouse.down()
+    await mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, {
+      steps: 5
+    })
+
+    await expect(thumb).toHaveCSS('cursor', 'grabbing')
+    await expect
+      .poll(async () => Number(await input.inputValue()))
+      .toBeGreaterThan(initial)
+
+    await mouse.up()
+    await expect(thumb).toHaveCSS('cursor', 'grab')
+  })
 })

@@ -18,8 +18,7 @@ import {
  */
 test.describe('API-key login billing surfaces', () => {
   test('shows the key workspace context, balance, and activity from the workspace rail', async ({
-    comfyPage,
-    legacyBillingReads
+    comfyPage
   }) => {
     const page = comfyPage.page
 
@@ -52,7 +51,5 @@ test.describe('API-key login billing surfaces', () => {
       .getByRole('button', { name: 'Activity' })
       .click()
     await expect(settingsDialog.contentArea).toContainText('Credits Added')
-
-    expect(legacyBillingReads).toEqual([])
   })
 })

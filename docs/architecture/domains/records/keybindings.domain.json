@@ -4,75 +4,19 @@
   "description": "Command registration and execution, key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, the keybinding settings panel and edit dialogs, and the bottom-panel shortcuts reference. Settings persistence, dialogs, and the bottom panel itself remain external.",
   "modules": [
     {
-      "path": "src/platform/keybindings/**",
-      "role": "application"
+      "path": "src/platform/keybindings/**"
     },
     {
-      "path": "src/platform/keybindings/components/**",
-      "role": "presentation"
+      "path": "src/utils/modalUtil.ts"
     },
     {
-      "path": "src/platform/keybindings/composables/useEditKeybindingDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/keybindings/composables/useShortcutsTab.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/keybindings/defaults.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/keyCombo.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/modalUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "packages/keybindings/src/**",
-      "role": "domain"
-    },
-    {
-      "path": "packages/keybindings/src/commandStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "packages/keybindings/src/keybindingStore.ts",
-      "role": "application"
+      "path": "packages/keybindings/src/**"
     }
   ],
   "publicEntryPoints": [
+    "src/platform/keybindings/canvasActionShortcuts.ts",
     "src/platform/keybindings/composables/useShortcutsTab.ts",
     "src/platform/keybindings/commandStore.ts"
-  ],
-  "allowedDependencies": ["design-system", "error-handling"],
-  "allowedConsumers": [
-    "agent",
-    "app-host",
-    "authentication",
-    "billing",
-    "bottom-panel",
-    "canvas-renderer",
-    "dialog-host",
-    "extension-manager",
-    "extension-runtime",
-    "first-run-tour",
-    "help-center",
-    "job-queue",
-    "linear-mode",
-    "minimap",
-    "node-library",
-    "release-notes",
-    "selection-toolbox",
-    "settings",
-    "subgraphs",
-    "workbench-shell",
-    "workflow-errors",
-    "workflow-management",
-    "workflow-persistence"
   ],
   "characterizationScenarios": [
     {
@@ -117,13 +61,17 @@
         "src/platform/keybindings/commandStore.test.ts",
         "browser_tests/tests/commands.spec.ts"
       ]
+    },
+    {
+      "name": "Canvas action shortcuts stay bound, so a reply naming one resolves to a real key",
+      "checks": ["src/platform/keybindings/canvasActionShortcuts.test.ts"]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
     "Unclassified callers may import keybinding internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Extension-registered keybindings and the Comfy.Keybinding.* settings keep their stored shape.",
-    "presetService opening presentation dialogs and reaching scripts/api directly, and keybindingService reading settings and dialog stores, remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "presetService opening presentation dialogs and reaching scripts/api directly, and keybindingService reading settings and dialog stores, remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

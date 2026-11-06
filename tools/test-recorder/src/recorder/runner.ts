@@ -75,15 +75,21 @@ export function listWorkflows(projectRoot: string): string[] {
   return results.sort()
 }
 
+function readRecordedCode(path: string): string | undefined {
+  if (!existsSync(path)) return undefined
+  try {
+    return readFileSync(path, 'utf-8')
+  } catch {
+    return undefined
+  }
+}
+
 export async function runRecording(
   options: RunnerOptions
 ): Promise<RecordingResult> {
   const browserTestsDir = join(options.projectRoot, 'browser_tests')
   const target = recordingTarget(options.distribution)
 
-  // A Ctrl-C'd session can leave a stale autosave behind — the playwright
-  // child flushes it after our signal handler runs. Start clean so this
-  // session can't pick up code recorded by a previous one.
   cleanupRecordedCode(browserTestsDir)
 
   let storageStateFile: string | undefined
@@ -111,19 +117,20 @@ export async function runRecording(
     'A browser window is about to open with a small floating toolbar',
     'at the top middle. That toolbar is all you need.',
     '',
-    '1. Get set up first — sign in, look around. Nothing is recorded',
-    '   until you press Record.',
-    '2. Press the ⏺ Record button in the floating toolbar, then do the',
+    '1. Turn off Pick locator: click the arrow in the toolbar. While',
+    '   it is on, your clicks pick elements instead of using the app.',
+    '2. Get set up — sign in, look around. Nothing is recorded until',
+    '   you press Record.',
+    '3. Press the ⏺ Record button in the floating toolbar, then do the',
     '   thing you want to show: click, type, drag.',
-    '3. Add a proof step (required): press one of the assert buttons',
+    '4. Add a proof step (required): press one of the assert buttons',
     '   next to Record, then click the thing that proves your action',
     '   worked — text that appeared, a value that changed.',
-    '4. When done, just close the window — everything is saved',
+    '5. When done, just close the window — everything is saved',
     '   automatically as you go, no copying needed.'
   ])
   console.log()
 
-  // The temp spec calls page.pause(), so a leaked copy hangs later test runs.
   const cleanUp = () => {
     cleanupRecordingTemplate(browserTestsDir)
     cleanupRecordedCode(browserTestsDir)
@@ -152,14 +159,8 @@ export async function runRecording(
         stdio: 'inherit',
         env: {
           ...process.env,
-          // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // The Inspector window confuses non-devs into clicking around in
-          // it; the in-app floating toolbar carries Record and the assert
-          // buttons, which is everything a recording needs.
-          PW_CODEGEN_NO_INSPECTOR: '1',
-          // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL:
             devServerUrl() +
             (target === 'cloud' ? buildFfQuery(options.featureFlags ?? {}) : '')
@@ -174,20 +175,8 @@ export async function runRecording(
       }
     }
 
-    // Read before cleanUp() runs in `finally` — it deletes this file.
-    const savedCodePath = recordedCodePath(browserTestsDir)
-    let recordedCode: string | undefined
-    if (existsSync(savedCodePath)) {
-      try {
-        recordedCode = readFileSync(savedCodePath, 'utf-8')
-      } catch {
-        // Fall through to the manual paste flow below.
-      }
-    }
+    const recordedCode = readRecordedCode(recordedCodePath(browserTestsDir))
 
-    // Closing the browser mid-pause makes playwright report a failure even
-    // though the recording itself finished fine — the autosaved code is the
-    // real signal of success.
     if (result.status !== 0 && !recordedCode) {
       return {
         success: false,
