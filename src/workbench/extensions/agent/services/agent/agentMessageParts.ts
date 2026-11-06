@@ -383,7 +383,7 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
     : undefined
 }
 
-export function isSettleableAskPart(
+function isSettleableAskPart(
   part: MessagePart | undefined
 ): part is AskUserPart | DeleteApprovalPart {
   return part?.type === 'askUser' || part?.type === 'deleteApproval'
