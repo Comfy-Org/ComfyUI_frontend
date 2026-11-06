@@ -6,13 +6,14 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingPlansResponse,
   BillingStatusResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -53,8 +54,10 @@ const ACTIVE_PRO_STATUS: BillingStatusResponse = {
   renewal_date: '2099-02-20T12:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 }
 
 const STANDARD_YEARLY_PLAN = createPlan({
@@ -103,9 +106,6 @@ async function setupRefusedPlanChange(page: Page, portalUrl: string) {
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
   await page.route('**/api/billing/capabilities', (r) => {
     if (r.request().method() !== 'GET') return r.fallback()
     return r.fulfill(jsonRoute(createWorkspaceBillingCapabilities(PERSONAL)))
@@ -142,6 +142,8 @@ async function changeToStandardYearly(page: Page) {
 }
 
 test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('opens the custom-domain portal session the server mints', async ({
     page
   }) => {

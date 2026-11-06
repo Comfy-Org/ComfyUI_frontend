@@ -6,18 +6,18 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
-  createNode,
   isAudioNode,
   isImageNode,
   isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {

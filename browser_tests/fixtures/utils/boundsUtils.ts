@@ -1,7 +1,10 @@
+import type {
+  CompactRect,
+  CompactRect as CanvasRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
-import type { CanvasRect } from '@/base/common/selectionBounds'
 
 interface MeasureResult {
   selectionBounds: CanvasRect | null
@@ -41,10 +44,7 @@ export async function measureSelectionBounds(
 
       const canvasEl = canvas.canvas
       const canvasRect = canvasEl.getBoundingClientRect()
-      const nodeVisualBounds: Record<
-        string,
-        { x: number; y: number; w: number; h: number }
-      > = {}
+      const nodeVisualBounds: Record<string, CompactRect> = {}
 
       for (const id of ids) {
         const nodeEl = document.querySelector(

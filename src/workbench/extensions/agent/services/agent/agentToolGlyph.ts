@@ -1,6 +1,7 @@
 import { upperFirst } from 'es-toolkit'
 
-import type { PartState } from './agentMessageParts'
+import type { PartState, ToolPart } from './agentMessageParts'
+import { isUnconfirmedCanvasWrite } from './agentMessageParts'
 
 interface KnownTool {
   labelKey: string
@@ -31,6 +32,16 @@ const KNOWN_TOOLS: Record<string, KnownTool> = {
     labelKey: 'agent.toolForgotPreference',
     activeLabelKey: 'agent.toolForgettingPreference',
     icon: 'icon-[lucide--circle-question-mark]'
+  },
+  set_extension_enabled: {
+    labelKey: 'agent.toolSwitchedNodePack',
+    activeLabelKey: 'agent.toolSwitchingNodePack',
+    icon: 'icon-[lucide--package]'
+  },
+  remove_extension: {
+    labelKey: 'agent.toolRemovedNodePack',
+    activeLabelKey: 'agent.toolRemovingNodePack',
+    icon: 'icon-[lucide--package-minus]'
   }
 }
 
@@ -38,6 +49,10 @@ const KNOWN_TOOLS: Record<string, KnownTool> = {
 // to something off Object.prototype.
 function knownTool(name: string): KnownTool | undefined {
   return Object.hasOwn(KNOWN_TOOLS, name) ? KNOWN_TOOLS[name] : undefined
+}
+
+export function toolUsesOutcomeCopy(name: string): boolean {
+  return knownTool(name) !== undefined
 }
 
 export function toolLabel(
@@ -56,9 +71,10 @@ export function toolLabel(
 export function toolGlyph(
   name: string,
   state: PartState,
-  ok?: boolean
+  outcome: Pick<ToolPart, 'ok' | 'canvasConfirmed'> = {}
 ): string {
   if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
-  if (ok === false) return 'icon-[lucide--circle-x]'
+  if (outcome.ok === false) return 'icon-[lucide--circle-x]'
+  if (isUnconfirmedCanvasWrite(outcome)) return 'icon-[lucide--triangle-alert]'
   return knownTool(name)?.icon ?? 'icon-[lucide--wrench]'
 }

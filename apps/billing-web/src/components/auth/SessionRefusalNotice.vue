@@ -23,12 +23,12 @@ const ssoBody = computed(() =>
     : t('auth.sso.required.body')
 )
 
-const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
+const alertClass = 'rounded-lg bg-background p-3 text-sm'
 </script>
 
 <template>
   <template v-if="ssoOffered">
-    <div role="alert" :class="cn(alertClass, 'text-base-foreground')">
+    <div role="alert" :class="cn(alertClass, 'text-foreground')">
       <p class="m-0 font-semibold">{{ t('auth.sso.required.title') }}</p>
       <p class="mt-1 mb-0 text-muted-foreground">{{ ssoBody }}</p>
     </div>
@@ -42,16 +42,12 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
     <div
       v-if="signOutFailed"
       role="alert"
-      :class="cn(alertClass, 'text-destructive-background')"
+      :class="cn(alertClass, 'text-destructive')"
     >
       {{ t('auth.errors.generic') }}
     </div>
   </template>
-  <div
-    v-else
-    role="alert"
-    :class="cn(alertClass, 'text-destructive-background')"
-  >
+  <div v-else role="alert" :class="cn(alertClass, 'text-destructive')">
     {{ message }}
   </div>
 </template>

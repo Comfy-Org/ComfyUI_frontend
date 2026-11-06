@@ -2,8 +2,8 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import * as videoThumbnail from '../../utils/videoThumbnail'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import * as videoThumbnail from '@/workbench/extensions/agent/utils/videoThumbnail'
 import { useAgentComposerStore } from './agentComposerStore'
 
 const video: ComposerAttachment = {

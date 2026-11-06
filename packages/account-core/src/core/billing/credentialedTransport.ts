@@ -24,27 +24,30 @@
  * then come from `authorize`, and a `csrf_invalid` answer is retried once
  * after re-reading the session, only while it still belongs to the same user.
  */
-import type { RequestAuthorization, RequestAuthorizer } from '../requestAuth.js'
+import type {
+  RequestAuthorization,
+  RequestAuthorizer
+} from '#/core/requestAuth'
 import type {
   WebSession,
   WebSessionErrorCode,
   WebSessionFailure,
   WebSessionResult
-} from '../sessionContracts.js'
+} from '#/core/sessionContracts'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
-import { readBillingErrorCode } from './billingErrorBody.js'
+} from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { sameBillingScope } from './billingScope'
+import { readBillingErrorCode } from './billingErrorBody'
 import {
   DEFAULT_BILLING_TIMEOUT_MS,
   exchangeBillingRequest,
   startRequestBudget
-} from './transportExchange.js'
+} from './transportExchange'
 
 export interface CredentialedBillingTransportOptions {
   /** Resolves a route to an absolute URL, as the session transport's does. */

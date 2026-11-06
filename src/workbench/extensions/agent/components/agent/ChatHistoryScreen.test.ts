@@ -6,7 +6,7 @@ import { i18n } from '@/i18n'
 import type {
   ChatSession,
   HistoryGroups
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 
@@ -97,7 +97,7 @@ describe('ChatHistoryScreen', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
     await user.hover(back)
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       'Back to previous chat'
     )
   })
@@ -199,7 +199,7 @@ describe('ChatHistoryScreen', () => {
 
     await user.hover(screen.getByRole('button', { name: 'Copy as markdown' }))
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       'Copy as markdown'
     )
   })

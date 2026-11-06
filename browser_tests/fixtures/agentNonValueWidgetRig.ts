@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -33,7 +33,6 @@ interface NonValueWidgetRigConfig {
   nodeDefs: Record<string, ComfyNodeDef>
   samplerNodeId: number
   seed: WorkflowJSON
-  socketSid: string
   threadId: string
   visibleNodeId: number
   workflowId: string
@@ -65,7 +64,6 @@ export class AgentNonValueWidgetRig {
       page,
       config.workflowId,
       host,
-      config.socketSid,
       'apply'
     )
     await hostSocket.install()

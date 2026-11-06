@@ -136,7 +136,18 @@ describe('isGatedPath', () => {
     ['src/__mocks__/api.ts', false],
     ['src/storybook/mocks/useBillingCapabilities.ts', false],
     ['browser_tests/fixtures/billing.ts', false],
-    ['packages/account-core/src/index.ts', false],
+    [
+      'packages/account-core/src/core/billing/billingTab/autoTopUpCard.ts',
+      true
+    ],
+    ['packages/account-ui/src/billing/AutoTopUpCard.vue', true],
+    [
+      'packages/account-core/src/core/billing/billingTab/autoTopUpCard.test.ts',
+      false
+    ],
+    ['packages/account-core/scripts/verify-publish.ts', false],
+    ['packages/design-system/src/index.ts', false],
+    ['packages/account-ui/src/../../../outside.ts', false],
     ['src/locales/en/main.json', false],
     ['src/../../outside.ts', false],
     ['src/a/../../../outside.vue', false],
@@ -173,6 +184,28 @@ describe('lintSnapshot', () => {
       detail: `${file} resolves outside the snapshot`
     })
     expect(existsSync(path.join(dir, 'escaped.ts'))).toBe(false)
+  })
+
+  it('reports a fact minted inside a Vue single-file component', () => {
+    const component = [
+      '<template><div /></template>',
+      '<script setup lang="ts">',
+      "import { receiveServerFact } from '@/platform/serverFacts/serverFact'",
+      "const canInvite = receiveServerFact('can_invite_members', true)",
+      '</script>'
+    ].join('\n')
+
+    const outcome = lintSnapshot(
+      new Map([['src/components/InviteButton.vue', component]])
+    )
+
+    expect(outcome.ok && outcome.diagnostics).toEqual([
+      expect.objectContaining({
+        filename: 'src/components/InviteButton.vue',
+        message: expect.stringContaining('`receiveServerFact` is used outside'),
+        labels: [{ span: expect.objectContaining({ line: 3 }) }]
+      })
+    ])
   })
 })
 

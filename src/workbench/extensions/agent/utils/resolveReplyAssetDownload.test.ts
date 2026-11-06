@@ -110,4 +110,18 @@ describe('resolveReplyAssetDownload', () => {
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it('strips a re-homed absolute url back to an api route', async () => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `/ComfyBackendDirect/api${route}`
+    )
+    vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
+
+    const download = await resolveReplyAssetDownload({
+      ...generatedAsset,
+      url: `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output`
+    })
+
+    expect(download.url).toBe('/view?filename=ComfyUI_00001_.png&type=output')
+  })
 })

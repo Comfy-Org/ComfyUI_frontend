@@ -3,8 +3,8 @@ import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -13,15 +13,15 @@ import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComboInputSpec, InputSpec } from '@comfyorg/object-info-parser'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,
   zMatchTypeOptions
-} from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
+} from '@comfyorg/object-info-parser'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -30,10 +30,10 @@ import {
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &
@@ -104,7 +104,7 @@ function dynamicComboWidget(
   appArg: ComfyApp,
   widgetName?: string
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
@@ -155,7 +155,7 @@ function dynamicComboWidget(
           ? useWidgetValueStore().getRestoredWidgetValue(
               graphId,
               node.id,
-              name,
+              addedWidget,
               positionalIndex
             )
           : undefined
@@ -422,7 +422,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 }
 
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const name = inputSpec.name
   const parseResult = zMatchTypeOptions.safeParse(inputSpec)
   if (!parseResult.success) {
@@ -482,7 +482,7 @@ function addAutogrowGroup(
   groupName: string,
   node: AutogrowNode
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 

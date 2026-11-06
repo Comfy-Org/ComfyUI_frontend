@@ -63,7 +63,7 @@ test.describe(
         await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).toHaveClass(/outline-node-component-outline/)
+        ).toHaveClass(/outline-foreground/)
       })
     })
   }

@@ -24,7 +24,7 @@ test.describe(
       const originalGraph = await serializeGraph()
 
       await test.step('open the chat from History', async () => {
-        await agentPanel.openHistoryChat(chatTitle)
+        await agentPanel.openChatFromHistory(chatTitle)
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
           earlierPrompt
         ])

@@ -115,7 +115,7 @@ const meta: Meta<StoryArgs> = {
     (story) => ({
       components: { story },
       template: `
-        <div class="w-[440px] rounded-xl bg-component-node-background p-4">
+        <div class="w-[440px] rounded-xl bg-card p-4">
           <story />
         </div>
       `

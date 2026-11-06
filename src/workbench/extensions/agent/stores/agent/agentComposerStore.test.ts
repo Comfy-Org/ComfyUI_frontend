@@ -1,5 +1,11 @@
+import { getActivePinia } from 'pinia'
 import { assert, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentComposerStore } from './agentComposerStore'
@@ -314,6 +320,158 @@ describe('composer draft reset (PM-1331)', () => {
 
     expect(store.nodes).toEqual([])
     expect(store.draft).toBe('')
+  })
+})
+
+describe('composer draft presence', () => {
+  type ComposerStore = ReturnType<typeof useAgentComposerStore>
+
+  it.for([
+    { draft: 'empty', fill: () => {}, expected: false },
+    {
+      draft: 'whitespace only',
+      fill: (store: ComposerStore) => store.setText('  \n '),
+      expected: false
+    },
+    {
+      draft: 'text',
+      fill: (store: ComposerStore) => store.setText('make it blue'),
+      expected: true
+    },
+    {
+      draft: 'an attachment',
+      fill: (store: ComposerStore) =>
+        store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' }),
+      expected: true
+    },
+    {
+      draft: 'a node reference',
+      fill: (store: ComposerStore) => {
+        store.setNodeScope('workflow-A')
+        store.setNodes([{ id: '1', title: 'KSampler' }])
+      },
+      expected: true
+    },
+    {
+      draft: 'a workflow reference',
+      fill: (store: ComposerStore) =>
+        store.setWorkflowReferences([
+          { id: 'wf-portrait', name: 'portrait', textOffset: 0 }
+        ]),
+      expected: true
+    },
+    {
+      draft: 'a skill reference',
+      fill: (store: ComposerStore) => {
+        store.setSkillScope('workspace-a')
+        store.restorePrompt({
+          text: ' ',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: 'workspace-a',
+              textOffset: 0
+            }
+          ]
+        })
+      },
+      expected: true
+    }
+  ])('reports $draft as a draft: $expected', ({ fill, expected }) => {
+    const store = useAgentComposerStore()
+    fill(store)
+    expect(store.hasDraft).toBe(expected)
+  })
+})
+
+describe('composer draft persistence (PM-2002)', () => {
+  async function reloadPage() {
+    await nextTick()
+    const store = useAgentComposerStore()
+    store.$dispose()
+    delete getActivePinia()?.state.value[store.$id]
+    return useAgentComposerStore()
+  }
+
+  it('does not restore a draft into a different chat', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Only for thread A')
+
+    const otherChat = await reloadPage()
+    otherChat.trackDraftThread('thread-b')
+    expect(otherChat.hasDraft).toBe(false)
+  })
+
+  it('restores text and workflow references, dropping node references and attachments', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Use  as the style')
+    store.setWorkflowReferences([
+      { id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+    ])
+    store.setNodeScope('tab-1')
+    store.setNodes([{ id: '7', title: 'KSampler' }])
+    store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' })
+    const text = store.draft
+
+    const restored = await reloadPage()
+    restored.trackDraftThread('thread-a')
+    expect(restored.prompt).toEqual({
+      text,
+      references: [
+        { kind: 'workflow', id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+      ]
+    })
+    expect(restored.attachments).toEqual([])
+  })
+
+  it.for([
+    { threadId: null, text: null, workflowReferences: [] },
+    { threadId: null, text: 'Hi', workflowReferences: null },
+    { threadId: null, text: 'Hi', workflowReferences: [{ id: 'wf' }] },
+    { threadId: null, text: 'Hi', workflowReferences: ['wf'] }
+  ])(
+    'discards a malformed saved draft %j and keeps the composer usable',
+    async (saved) => {
+      const key = StorageKeys.agentComposerDraft(getWorkspaceId())
+      localStorage.setItem(key, JSON.stringify(saved))
+
+      const store = useAgentComposerStore()
+      expect(() => store.trackDraftThread(null)).not.toThrow()
+      expect(store.hasDraft).toBe(false)
+      await nextTick()
+      expect(localStorage.getItem(key)).toBeNull()
+
+      store.setText('Make it blue')
+      expect(store.prompt).toEqual({ text: 'Make it blue', references: [] })
+    }
+  )
+
+  it('forgets the draft once it is sent or cleared', async () => {
+    const sent = useAgentComposerStore()
+    sent.trackDraftThread(null)
+    sent.setText('Make it blue')
+    await nextTick()
+    const id = sent.startSubmission({
+      prompt: sent.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    sent.settleSubmission(id, true)
+    const afterSend = await reloadPage()
+    afterSend.trackDraftThread(null)
+    expect(afterSend.hasDraft).toBe(false)
+
+    afterSend.setText('Make it red')
+    await nextTick()
+    afterSend.clearDraft()
+    const afterClear = await reloadPage()
+    afterClear.trackDraftThread(null)
+    expect(afterClear.hasDraft).toBe(false)
   })
 })
 

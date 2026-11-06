@@ -1,7 +1,11 @@
 import { RuleTester } from 'oxlint/plugins-dev'
 import { describe, it } from 'vitest'
 
-import { noCapabilityRecombination, noServerFactLiterals } from './serverFacts'
+import {
+  noCapabilityRecombination,
+  noServerFactLiterals,
+  noStrayServerFactConstructor
+} from './serverFacts'
 
 RuleTester.describe = describe
 RuleTester.it = it
@@ -163,9 +167,171 @@ const a = capabilities.value ? capabilities.value.can_top_up : false
 const b = !capabilities.value ? false : capabilities.value.can_top_up
 const c = capabilities.value?.can_top_up ?? false
 `
+    },
+    {
+      name: 'capability members of a facts parameter combined inside pendingServerFact',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return pendingServerFact('BE-1', facts.canManageAutoTopUp && facts.canTopUp)
+}
+`
+    },
+    {
+      name: 'one capability member of a facts parameter narrowed by local and non-capability fields',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  const a = facts.canTopUp && !facts.isLoading
+  const b = facts.autoTopUpEnabled && facts.hasSeats
+}
+`
+    },
+    {
+      name: 'known scope limit: a fact capability gated by a capability-named member of an unnamed object',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return facts.canTopUp && options.canTopUp
+}
+`
+    },
+    {
+      name: 'a served refusal rendered next to its capability',
+      code: `
+function describe(facts: AddCreditsFacts) {
+  const a = !facts.canTopUp && facts.canTopUpRefusal
+  const b = facts.canTopUpRefusal ?? facts.canTopUpReason
+  const c = facts.canChangeSeats || facts.canChangeSeatsDenial
+  const d = !facts.canTopUp && facts.canTopUpRefusal && !isLoading
+  const e = !this.facts.canTopUp && this.facts.canTopUpRefusal
+}
+`
+    },
+    {
+      name: 'detail fields of a tracked capability source rendered together',
+      code: `
+const capabilities = useBillingCapabilities()
+const detail = capabilities.canTopUpRefusal.value ?? capabilities.canTopUpReason.value
+const refusal = !capabilities.canTopUp.value && capabilities.canTopUpRefusal.value
+`
+    },
+    {
+      name: 'capability-named members of an object nested inside a facts object',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  return facts.dialog.canClose && facts.dialog.canOpen
+}
+`
+    },
+    {
+      name: 'capability-named members of a local options object combined',
+      code: `
+function close(options: DialogOptions) {
+  return options.canTopUp && options.canClose
+}
+`
     }
   ],
   invalid: [
+    {
+      name: 'two capability members of a facts parameter combined',
+      code: `
+function deriveSection(facts: SectionFacts) {
+  if (facts.canManageAutoTopUp && facts.canTopUp) return 'card'
+  return !facts.value.canTopUp || !facts.value.canManageAutoTopUp
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } }
+      ]
+    },
+    {
+      name: 'two capability members of a facts object held under another object',
+      code: `
+function deriveSection(props: Props, section: Section) {
+  if (props.facts.canManageAutoTopUp && props.facts.canTopUp) return 'card'
+  if (section.billingFacts.canTopUp || section.billingFacts.canChangeSeats) return 'seats'
+  return this.facts.canTopUp && this.facts.canChangeSeats
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
+    {
+      name: 'capability members of two different fact objects combined',
+      code: `
+function deriveSection(billingFacts: BillingFacts, seatFacts: SeatFacts) {
+  if (billingFacts.canTopUp && seatFacts.canChangeSeats) return 'card'
+  return facts.canTopUp || capabilities.canManageBilling
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } }
+      ]
+    },
+    {
+      name: 'capability refs of an untracked capabilities object combined',
+      code: `
+function deriveSection(capabilities: BillingCapabilities) {
+  return capabilities.canTopUp.value && !capabilities.canManageAutoTopUp.value
+}
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a capability combined with other state beside its served refusal',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = !capabilities.canTopUp.value && capabilities.canTopUpRefusal.value && isCloud
+const b = capabilities.canTopUp.value && options.canTopUpReason
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
+    {
+      name: 'a capability gated by a served detail of another capability or holder',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = capabilities.canTopUp.value && !billingFacts.canManageBillingReason
+const b = !capabilities.canTopUp.value && billingFacts.canTopUpRefusal
+const c = capabilities.canTopUp.value && capabilities.canManageBillingRefusal.value
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
+    {
+      name: 'a capability gated by its own served refusal as a boolean',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = capabilities.canTopUp.value || !capabilities.canTopUpRefusal.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'a fact-object capability gated by a served detail of another capability or holder',
+      code: `
+function f(billingFacts: BillingFacts, seatFacts: SeatFacts) {
+  return !billingFacts.canTopUp && seatFacts.canTopUpRefusal
+}
+function g(facts: SectionFacts) {
+  const a = facts.canTopUp && !facts.canManageBillingReason
+  const b = facts.canTopUp && !facts.canTopUpRefusal
+}
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
+    },
     {
       name: '#15675 capability chosen by isCloud with a role fallback',
       code: `
@@ -650,7 +816,8 @@ const ended = subscriptionStatus.value === 'ended' ? true : isCancelled.value
     },
     {
       name: 'a server error message matched as text',
-      filename: 'src/platform/errorCatalog/runtimeErrorMatcher.ts',
+      filename:
+        'src/platform/workflowErrors/errorCatalog/runtimeErrorMatcher.ts',
       code: `
 const oom = error.message.includes('CUDA')
 const blocked = (message: string) => message.includes('content policy')
@@ -659,3 +826,64 @@ const blocked = (message: string) => message.includes('content policy')
     }
   ]
 })
+
+const constructorImport = `import { receiveServerFact } from '@/platform/serverFacts/serverFact'`
+
+ruleTester.run(
+  'no-stray-server-fact-constructor',
+  noStrayServerFactConstructor,
+  {
+    valid: [
+      {
+        name: 'the capability read decoding the API response',
+        filename: 'src/platform/billing/composables/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a unit test building a fact double',
+        filename: 'src/platform/workspace/composables/useMembersPanel.test.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a vitest manual mock',
+        filename:
+          'src/platform/billing/composables/__mocks__/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a storybook mock',
+        filename: 'src/storybook/mocks/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a gate reading facts without minting one',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: `import { narrowServerFact } from '@/platform/serverFacts/serverFact'`
+      }
+    ],
+    invalid: [
+      {
+        name: 'a gate minting its own fact',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: constructorImport,
+        errors: [{ messageId: 'stray' }]
+      },
+      {
+        name: 'a namespace import whose member mints a fact',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: `
+import * as facts from '@/platform/serverFacts/serverFact'
+const canInvite = facts.receiveServerFact('can_invite_members', true)
+const canManage = facts['receiveServerFact']('can_manage_members', true)
+`,
+        errors: [{ messageId: 'stray' }, { messageId: 'stray' }]
+      },
+      {
+        name: 'an aliased import in a component',
+        filename: 'src/platform/billing/components/UnifiedPricingTable.vue',
+        code: `import { receiveServerFact as fact } from '@/platform/serverFacts/serverFact'`,
+        errors: [{ messageId: 'stray' }]
+      }
+    ]
+  }
+)

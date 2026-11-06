@@ -1,0 +1,1302 @@
+import type { MaybeRef, Ref } from 'vue'
+
+import { toRef, useDebounceFn } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
+import { getActivePinia } from 'pinia'
+import { ref, toRaw, watch } from 'vue'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ModelStats } from '@comfyorg/viewport3d/load3d/modelStats'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
+import type {
+  AnimationItem,
+  CameraConfig,
+  CameraState,
+  CameraType,
+  EventCallback,
+  GizmoConfig,
+  GizmoMode,
+  LightConfig,
+  MaterialMode,
+  Model3DInfo,
+  ModelConfig,
+  StoredModelConfig,
+  SceneConfig,
+  UpDirection
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+
+type Load3dReadyCallback = (load3d: Load3d) => void
+export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
+
+export type Load3dCachedOutput = {
+  image: string
+  mask: string
+  normal: string
+  camera_info: CameraState | null
+  recording: string
+  model_3d_info: Model3DInfo
+}
+
+const load3dSceneDirty = new WeakMap<LGraphNode, boolean>()
+const load3dSceneRevisions = new WeakMap<LGraphNode, number>()
+const load3dOutputCache = new WeakMap<LGraphNode, Load3dCachedOutput>()
+
+export const markLoad3dSceneDirty = (node: LGraphNode | null): void => {
+  if (!node) return
+  load3dSceneRevisions.set(node, (load3dSceneRevisions.get(node) ?? 0) + 1)
+  load3dSceneDirty.set(node, true)
+}
+
+export const getLoad3dSceneRevision = (node: LGraphNode): number =>
+  load3dSceneRevisions.get(node) ?? 0
+
+export const isLoad3dSceneDirty = (node: LGraphNode): boolean =>
+  load3dSceneDirty.get(node) !== false
+
+export const getLoad3dOutputCache = (
+  node: LGraphNode
+): Load3dCachedOutput | undefined => load3dOutputCache.get(node)
+
+export const setLoad3dOutputCache = (
+  node: LGraphNode,
+  output: Load3dCachedOutput,
+  sceneRevision: number = getLoad3dSceneRevision(node)
+): boolean => {
+  if (getLoad3dSceneRevision(node) !== sceneRevision) return false
+  load3dOutputCache.set(node, output)
+  load3dSceneDirty.set(node, false)
+  return true
+}
+const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+
+const nodesWithCleanup = new WeakSet<LGraphNode>()
+const rootGraphOfRemovedNodes = new WeakMap<LGraphNode, string>()
+
+const rootGraphIdOf = (node: LGraphNode) => node.graph?.rootGraph.id
+
+const ensureNodeCleanupChained = (node: LGraphNode): void => {
+  if (nodesWithCleanup.has(node)) return
+  nodesWithCleanup.add(node)
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    const rootGraphId = rootGraphIdOf(node)
+    if (rootGraphId) rootGraphOfRemovedNodes.set(node, rootGraphId)
+    pendingCallbacks.delete(node)
+    persistentReadyCallbacks.delete(node)
+  })
+}
+
+const isReloadedCopy = (node: LGraphNode, previous: LGraphNode) =>
+  node.type === previous.type &&
+  rootGraphIdOf(node) !== undefined &&
+  rootGraphOfRemovedNodes.get(previous) === rootGraphIdOf(node)
+
+const reattachedNodes = new WeakSet<LGraphNode>()
+
+const hasGizmoTransform = ({ position, rotation, scale }: GizmoConfig) =>
+  [position.x, position.y, position.z, rotation.x, rotation.y, rotation.z].some(
+    (value) => value !== 0
+  ) || [scale.x, scale.y, scale.z].some((value) => value !== 1)
+
+const invokePersistentReadyCallback = (
+  node: LGraphNode,
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  if (reattachedNodes.has(node))
+    keepingLoadedModel(instance, () => invokeReadyCallback(callback, instance))
+  else invokeReadyCallback(callback, instance)
+}
+
+const nodeShowing = (instance: Load3d): LGraphNode | null => {
+  for (const [node, shown] of nodeToLoad3dMap) {
+    if (shown === instance) return node
+  }
+  return null
+}
+
+const dimensionsOf = (
+  node: LGraphNode | null
+): { width: number; height: number } | null => {
+  const width = node?.widgets?.find((w) => w.name === 'width')?.value
+  const height = node?.widgets?.find((w) => w.name === 'height')?.value
+  return typeof width === 'number' && typeof height === 'number'
+    ? { width, height }
+    : null
+}
+
+const invokeReadyCallback = (
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  try {
+    callback(instance)
+  } catch (error) {
+    console.error('Load3d ready callback failed:', error)
+  }
+}
+
+export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
+  const nodeRef = toRef(nodeOrRef)
+  let load3d: Load3d | null = null
+  let viewerContainer: HTMLElement | null = null
+  let isFirstModelLoad = true
+
+  const markDirty = () => {
+    const rawNode = toRaw(nodeRef.value)
+    if (rawNode) markLoad3dSceneDirty(rawNode)
+  }
+
+  const debouncedHandleResize = useDebounceFn(() => {
+    load3d?.handleResize()
+  }, 150)
+
+  watch(
+    () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
+    debouncedHandleResize
+  )
+
+  const defaultSceneConfig = (): SceneConfig => ({
+    showGrid: true,
+    backgroundColor: getActivePinia()
+      ? '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+      : '#282828',
+    backgroundImage: '',
+    backgroundRenderMode: 'tiled'
+  })
+
+  const defaultGizmoConfig = (): GizmoConfig => ({
+    enabled: false,
+    mode: 'translate',
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 }
+  })
+
+  const defaultModelConfig = (): ModelConfig => ({
+    upDirection: 'original',
+    materialMode: 'original',
+    showSkeleton: false,
+    gizmo: defaultGizmoConfig()
+  })
+
+  const defaultCameraConfig = (): CameraConfig => ({
+    cameraType: 'perspective',
+    fov: 75,
+    hasCustomUp: false
+  })
+
+  const defaultLightConfig = (): LightConfig => ({
+    intensity: 5,
+    hdri: {
+      enabled: false,
+      hdriPath: '',
+      showAsBackground: false,
+      intensity: 1
+    }
+  })
+
+  const sceneConfig = ref<SceneConfig>(defaultSceneConfig())
+  const modelConfig = ref<ModelConfig>(defaultModelConfig())
+  const hasSkeleton = ref(false)
+  const modelStats = ref<ModelStats | null>(null)
+  let modelStatsAbort: AbortController | null = null
+  const cameraConfig = ref<CameraConfig>(defaultCameraConfig())
+  const lightConfig = ref<LightConfig>(defaultLightConfig())
+  const lastNonHdriLightIntensity = ref(lightConfig.value.intensity)
+
+  const isRecording = ref(false)
+  const hasRecording = ref(false)
+  const recordingDuration = ref(0)
+
+  const animations = ref<AnimationItem[]>([])
+  const playing = ref(false)
+  const selectedSpeed = ref(1)
+  const selectedAnimation = ref(0)
+  const animationProgress = ref(0)
+  const animationDuration = ref(0)
+  const loading = ref(false)
+  const loadingMessage = ref('')
+  const isPreview = ref(false)
+  const isSplatModel = ref(false)
+  const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
+  const canFitToViewer = ref(true)
+  const canCenterCameraOnModel = ref(false)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'clay',
+    'normal',
+    'wireframe'
+  ])
+
+  const createNodeLoad3d = (
+    container: HTMLElement,
+    node: LGraphNode
+  ): Load3d => {
+    let instance: Load3d | null = null
+    const shownNode = () => (instance && nodeShowing(instance)) ?? node
+    const dimensions = dimensionsOf(node)
+    instance = createLoad3d(container, load3dHost, {
+      width: dimensions?.width,
+      height: dimensions?.height,
+      getDimensions: dimensions ? () => dimensionsOf(shownNode()) : undefined,
+      getZoomScale: () => {
+        return app.canvas.ds.scale
+      },
+      onContextMenu: (event) => {
+        const target = shownNode()
+        const menuOptions = app.canvas.getNodeMenuOptions(target)
+        new LiteGraph.ContextMenu(menuOptions, {
+          event,
+          title: target.type,
+          extra: target
+        })
+      }
+    })
+    return instance
+  }
+
+  const initializeLoad3dKeeping = async (
+    containerRef: HTMLElement | null,
+    kept: Load3d | null
+  ) => {
+    viewerContainer = containerRef
+    const rawNode = toRaw(nodeRef.value)
+    if (!containerRef || !rawNode) return
+
+    const node = rawNode
+
+    try {
+      const comfyClass = node.constructor.comfyClass
+      const isPreviewClass =
+        typeof comfyClass === 'string' &&
+        (isLoad3dResultViewerNode(comfyClass) ||
+          comfyClass.startsWith('Preview'))
+
+      if (isPreviewClass || !dimensionsOf(node)) {
+        isPreview.value = true
+      }
+
+      if (kept) reattachedNodes.add(node)
+      load3d = kept ?? createNodeLoad3d(containerRef, node)
+
+      const instance = load3d
+      await restoreConfigurationsFromNode(instance, node)
+      if (!isCurrentInitialization(instance, node)) return
+      if (kept) {
+        applyEntireGizmoConfig(kept)
+        refreshModelStats()
+      }
+
+      node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
+        load3d?.refreshViewport()
+        load3d?.updateStatusMouseOnNode(true)
+      })
+
+      node.onMouseLeave = useChainCallback(node.onMouseLeave, () => {
+        load3d?.updateStatusMouseOnNode(false)
+      })
+
+      node.onResize = useChainCallback(node.onResize, () => {
+        load3d?.handleResize()
+      })
+
+      node.onDrawBackground = useChainCallback(
+        node.onDrawBackground,
+        function (this: LGraphNode) {
+          if (load3d) {
+            load3d.domElement.hidden = this.flags.collapsed ?? false
+          }
+        }
+      )
+
+      ensureNodeCleanupChained(node)
+
+      nodeToLoad3dMap.set(node, load3d)
+
+      handleEvents('add')
+      const initializedLoad3d = load3d
+
+      const callbacks = pendingCallbacks.get(node)
+
+      if (callbacks) {
+        callbacks.forEach((callback) => {
+          invokeReadyCallback(callback, initializedLoad3d)
+        })
+        pendingCallbacks.delete(node)
+      }
+
+      const persistent = persistentReadyCallbacks.get(node)
+      if (persistent) {
+        persistent.forEach((callback) => {
+          invokePersistentReadyCallback(node, callback, initializedLoad3d)
+        })
+      }
+    } catch (error) {
+      console.error('Error initializing Load3d:', error)
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
+    }
+  }
+
+  const initializeLoad3d = (containerRef: HTMLElement | null) =>
+    initializeLoad3dKeeping(containerRef, null)
+
+  const savedSceneConfigOf = (node: LGraphNode): SceneConfig => {
+    const saved = node.properties['Scene Config'] as
+      | Partial<SceneConfig>
+      | undefined
+    if (!saved) return defaultSceneConfig()
+    return {
+      ...defaultSceneConfig(),
+      ...saved,
+      backgroundRenderMode: saved.backgroundRenderMode || 'tiled'
+    }
+  }
+
+  const savedModelConfigOf = (node: LGraphNode): ModelConfig => {
+    const saved = node.properties['Model Config'] as
+      | StoredModelConfig
+      | undefined
+    if (!saved) return defaultModelConfig()
+    return {
+      ...defaultModelConfig(),
+      ...saved,
+      gizmo: {
+        ...defaultGizmoConfig(),
+        ...saved.gizmo,
+        scale: saved.gizmo?.scale ?? defaultGizmoConfig().scale
+      }
+    }
+  }
+
+  const savedLightConfigOf = (node: LGraphNode) => {
+    const saved = node.properties['Light Config'] as
+      | Partial<LightConfig>
+      | undefined
+    const defaults = defaultLightConfig()
+    return {
+      hdriEnabled: saved?.hdri?.enabled ?? false,
+      config: {
+        intensity: saved?.intensity ?? defaults.intensity,
+        hdri: { ...defaults.hdri!, ...saved?.hdri, enabled: false }
+      }
+    }
+  }
+
+  const restoreSceneConfig = (node: LGraphNode, instance: Load3d) => {
+    const next = savedSceneConfigOf(node)
+    const backgroundImageWatched =
+      sceneConfig.value.backgroundImage !== next.backgroundImage
+    replaceConfig(sceneConfig, next)
+    if (!backgroundImageWatched && next.backgroundImage)
+      void instance.setBackgroundImage(next.backgroundImage)
+  }
+
+  const isCurrentInitialization = (instance: Load3d, node: LGraphNode) =>
+    load3d === instance && toRaw(nodeRef.value) === node
+
+  const restoreHdri = async (
+    instance: Load3d,
+    node: LGraphNode,
+    enable: boolean
+  ) => {
+    const hdriPath = lightConfig.value.hdri?.hdriPath
+    if (!hdriPath) return
+    const hdriUrl = api.apiURL(
+      Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(hdriPath),
+        'input'
+      )
+    )
+    try {
+      if (
+        !Load3dUtils.isSameResourceURL(instance.hdriManager.loadedUrl, hdriUrl)
+      )
+        await instance.loadHDRI(hdriUrl)
+    } catch (error) {
+      if (!isCurrentInitialization(instance, node)) return
+      console.warn('Failed to restore HDRI:', error)
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: { ...lightConfig.value.hdri!, hdriPath: '', enabled: false }
+      }
+      return
+    }
+    if (enable && isCurrentInitialization(instance, node)) {
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: { ...lightConfig.value.hdri!, enabled: true }
+      }
+    }
+  }
+
+  const restoreConfigurationsFromNode = async (
+    instance: Load3d,
+    node: LGraphNode
+  ) => {
+    restoreSceneConfig(node, instance)
+    replaceConfig(modelConfig, savedModelConfigOf(node))
+    replaceConfig(
+      cameraConfig,
+      (node.properties['Camera Config'] as CameraConfig | null | undefined) ??
+        defaultCameraConfig()
+    )
+    const savedLight = savedLightConfigOf(node)
+    replaceConfig(lightConfig, savedLight.config)
+    lastNonHdriLightIntensity.value = lightConfig.value.intensity
+    await restoreHdri(instance, node, savedLight.hdriEnabled)
+    if (!isCurrentInitialization(instance, node)) return
+
+    applySceneConfigToLoad3d()
+    applyLightConfigToLoad3d()
+  }
+
+  const applySceneConfigToLoad3d = () => {
+    if (!load3d) return
+    const cfg = sceneConfig.value
+    load3d.toggleGrid(cfg.showGrid)
+    if (!lightConfig.value.hdri?.enabled) {
+      load3d.setBackgroundColor(cfg.backgroundColor)
+    }
+    if (cfg.backgroundRenderMode) {
+      load3d.setBackgroundRenderMode(cfg.backgroundRenderMode)
+    }
+  }
+
+  const applyEntireGizmoConfig = (instance: Load3d) => {
+    const { gizmo } = modelConfig.value
+    if (!gizmo) return
+    const { position, rotation, scale } = hasGizmoTransform(gizmo)
+      ? gizmo
+      : instance.getGizmoManager().getInitialTransform()
+    instance.applyGizmoTransform(position, rotation, scale)
+    instance.setGizmoEnabled(gizmo.enabled)
+    instance.setGizmoMode(gizmo.mode)
+  }
+
+  const applyGizmoConfigToLoad3d = () => {
+    if (!load3d) return
+    const gizmo = modelConfig.value.gizmo
+    if (!gizmo) return
+    if (hasGizmoTransform(gizmo)) {
+      load3d.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
+    }
+    if (gizmo.enabled) {
+      load3d.setGizmoEnabled(true)
+    }
+    if (gizmo.mode !== 'translate') {
+      load3d.setGizmoMode(gizmo.mode)
+    }
+  }
+
+  const applyLightConfigToLoad3d = () => {
+    if (!load3d) return
+    const cfg = lightConfig.value
+    load3d.setLightIntensity(cfg.intensity)
+    const hdri = cfg.hdri
+    if (!hdri) return
+    load3d.setHDRIIntensity(hdri.intensity)
+    load3d.setHDRIAsBackground(hdri.showAsBackground)
+    load3d.setHDRIEnabled(hdri.enabled)
+  }
+
+  const replaceConfig = <T>(config: Ref<T>, next: T) => {
+    if (!isEqual(config.value, next)) config.value = next
+  }
+
+  const writeNodeConfig = (key: string, value: object, defaults: object) => {
+    const properties = nodeRef.value?.properties
+    if (!properties) return
+    if (!(key in properties) && isEqual(value, defaults)) return
+    properties[key] = value
+  }
+
+  const persistLightConfigToNode = () => {
+    writeNodeConfig('Light Config', lightConfig.value, defaultLightConfig())
+    markDirty()
+  }
+
+  const waitForLoad3d = (callback: Load3dReadyCallback) => {
+    const node = toRaw(nodeRef.value)
+    if (!node) return
+    const existingInstance = nodeToLoad3dMap.get(node)
+
+    if (existingInstance) {
+      invokeReadyCallback(callback, existingInstance)
+      return
+    }
+
+    if (!pendingCallbacks.has(node)) {
+      pendingCallbacks.set(node, [])
+    }
+
+    pendingCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+  }
+
+  const onLoad3dReady = (callback: Load3dReadyCallback) => {
+    const node = toRaw(nodeRef.value)
+    if (!node) return
+
+    if (!persistentReadyCallbacks.has(node)) {
+      persistentReadyCallbacks.set(node, [])
+    }
+    persistentReadyCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+
+    const existingInstance = nodeToLoad3dMap.get(node)
+    if (existingInstance)
+      invokePersistentReadyCallback(node, callback, existingInstance)
+  }
+
+  watch(
+    sceneConfig,
+    (newValue) => {
+      writeNodeConfig('Scene Config', newValue, defaultSceneConfig())
+      markDirty()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => sceneConfig.value.showGrid,
+    (showGrid) => {
+      load3d?.toggleGrid(showGrid)
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundColor,
+    (color) => {
+      if (!load3d || lightConfig.value.hdri?.enabled) return
+      load3d.setBackgroundColor(color)
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundImage,
+    async (image) => {
+      if (!load3d) return
+      await load3d.setBackgroundImage(image || '')
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundRenderMode,
+    (mode) => {
+      if (mode) load3d?.setBackgroundRenderMode(mode)
+    }
+  )
+
+  watch(
+    modelConfig,
+    (newValue) => {
+      writeNodeConfig('Model Config', newValue, defaultModelConfig())
+      markDirty()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => modelConfig.value.upDirection,
+    (newValue) => {
+      if (load3d) load3d.setUpDirection(newValue)
+    }
+  )
+
+  watch(
+    () => modelConfig.value.materialMode,
+    (newValue) => {
+      if (load3d) load3d.setMaterialMode(newValue)
+    }
+  )
+
+  watch(
+    () => modelConfig.value.showSkeleton,
+    (newValue) => {
+      if (load3d) load3d.setShowSkeleton(newValue)
+    }
+  )
+
+  watch(
+    cameraConfig,
+    (newValue) => {
+      if (load3d && nodeRef.value) {
+        writeNodeConfig('Camera Config', newValue, defaultCameraConfig())
+        load3d.toggleCamera(newValue.cameraType)
+        load3d.setFOV(newValue.fov)
+        if (newValue.hasCustomUp) {
+          load3d.setUseCustomUp(newValue.useCustomUp)
+        }
+      }
+      markDirty()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => lightConfig.value.intensity,
+    (intensity) => {
+      if (!load3d || !nodeRef.value) return
+      if (!lightConfig.value.hdri?.enabled) {
+        lastNonHdriLightIntensity.value = intensity
+      }
+      persistLightConfigToNode()
+      load3d.setLightIntensity(intensity)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.intensity,
+    (intensity) => {
+      if (!load3d || !nodeRef.value) return
+      if (intensity === undefined) return
+      persistLightConfigToNode()
+      load3d.setHDRIIntensity(intensity)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.showAsBackground,
+    (show) => {
+      if (!load3d || !nodeRef.value) return
+      if (show === undefined) return
+      persistLightConfigToNode()
+      load3d.setHDRIAsBackground(show)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.enabled,
+    (enabled, prevEnabled) => {
+      if (!load3d || !nodeRef.value) return
+      if (enabled === undefined) return
+      if (enabled && prevEnabled === false) {
+        lastNonHdriLightIntensity.value = lightConfig.value.intensity
+      }
+      if (!enabled && prevEnabled === true) {
+        lightConfig.value = {
+          ...lightConfig.value,
+          intensity: lastNonHdriLightIntensity.value
+        }
+      }
+      persistLightConfigToNode()
+      load3d.setHDRIEnabled(enabled)
+    }
+  )
+
+  watch(playing, (newValue) => {
+    if (load3d) {
+      load3d.toggleAnimation(newValue)
+    }
+    markDirty()
+  })
+
+  watch(selectedSpeed, (newValue) => {
+    if (load3d && newValue) {
+      load3d.setAnimationSpeed(newValue)
+    }
+    markDirty()
+  })
+
+  watch(selectedAnimation, (newValue) => {
+    if (load3d) {
+      load3d.updateSelectedAnimation(newValue)
+    }
+    markDirty()
+  })
+
+  const handleMouseEnter = () => {
+    load3d?.updateStatusMouseOnScene(true)
+  }
+
+  const handleMouseLeave = () => {
+    load3d?.updateStatusMouseOnScene(false)
+  }
+
+  const handleStartRecording = async () => {
+    if (load3d) {
+      await load3d.startRecording()
+      isRecording.value = true
+      markDirty()
+    }
+  }
+
+  const handleStopRecording = () => {
+    if (load3d) {
+      load3d.stopRecording()
+      isRecording.value = false
+      recordingDuration.value = load3d.getRecordingDuration()
+      hasRecording.value = recordingDuration.value > 0
+      if (hasRecording.value) markDirty()
+    }
+  }
+
+  const handleExportRecording = () => {
+    if (load3d) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `${timestamp}-scene-recording.mp4`
+      load3d.exportRecording(filename)
+    }
+  }
+
+  const handleClearRecording = () => {
+    if (load3d) {
+      load3d.clearRecording()
+      hasRecording.value = false
+      recordingDuration.value = 0
+      markDirty()
+    }
+  }
+
+  const handleSeek = (progress: number) => {
+    if (load3d && animationDuration.value > 0) {
+      const time = (progress / 100) * animationDuration.value
+      load3d.setAnimationTime(time)
+      markDirty()
+    }
+  }
+
+  const handleHDRIFileUpdate = async (file: File | null) => {
+    const capturedLoad3d = load3d
+    if (!capturedLoad3d) return
+
+    if (!file) {
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: '',
+          enabled: false,
+          showAsBackground: false
+        }
+      }
+      capturedLoad3d.clearHDRI()
+      return
+    }
+
+    const resourceFolder =
+      (nodeRef.value?.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) {
+      return
+    }
+
+    if (load3d !== capturedLoad3d) return
+
+    const hdriUrl = api.apiURL(
+      Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(uploadedPath),
+        'input'
+      )
+    )
+
+    try {
+      loading.value = true
+      loadingMessage.value = t('load3d.loadingHDRI')
+      await capturedLoad3d.loadHDRI(hdriUrl)
+
+      if (load3d !== capturedLoad3d) return
+
+      let sceneMin = 1
+      let sceneMax = 10
+      if (getActivePinia() != null) {
+        const settingStore = useSettingStore()
+        sceneMin = settingStore.get('Comfy.Load3D.LightIntensityMinimum')
+        sceneMax = settingStore.get('Comfy.Load3D.LightIntensityMaximum')
+      }
+      const mappedHdriIntensity = Load3dUtils.mapSceneLightIntensityToHdri(
+        lightConfig.value.intensity,
+        sceneMin,
+        sceneMax
+      )
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: uploadedPath,
+          enabled: true,
+          showAsBackground: true,
+          intensity: mappedHdriIntensity
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load HDRI:', error)
+      capturedLoad3d.clearHDRI()
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: '',
+          enabled: false,
+          showAsBackground: false
+        }
+      }
+      useToast().warning(t('toastMessages.failedToLoadHDRI'))
+    } finally {
+      loading.value = false
+      loadingMessage.value = ''
+    }
+  }
+
+  const handleBackgroundImageUpdate = async (file: File | null) => {
+    if (!file) {
+      sceneConfig.value.backgroundImage = ''
+      await load3d?.setBackgroundImage('')
+      return
+    }
+
+    const resourceFolder =
+      (nodeRef.value?.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) return
+
+    sceneConfig.value.backgroundRenderMode = 'tiled'
+    sceneConfig.value.backgroundImage = uploadedPath
+    await load3d?.setBackgroundImage(uploadedPath)
+  }
+
+  const handleExportModel = async (format: string) => {
+    if (!load3d) {
+      useToast().warning(t('toastMessages.no3dSceneToExport'))
+      return
+    }
+
+    try {
+      await load3d.exportModel(format)
+    } catch (error) {
+      console.error('Error exporting model:', error)
+      useToast().warning(
+        t('toastMessages.failedToExportModel', {
+          format: format.toUpperCase()
+        })
+      )
+    }
+  }
+
+  const handleModelDrop = async (file: File) => {
+    if (!load3d) {
+      useToast().warning(t('toastMessages.no3dScene'))
+      return
+    }
+
+    const node = toRaw(nodeRef.value)
+    if (!node) return
+
+    try {
+      const resourceFolder =
+        (node.properties['Resource Folder'] as string) || ''
+
+      const subfolder = resourceFolder.trim()
+        ? `3d/${resourceFolder.trim()}`
+        : '3d'
+
+      loading.value = true
+      loadingMessage.value = t('load3d.uploadingModel')
+
+      const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+
+      if (!uploadedPath) {
+        useToast().warning(t('toastMessages.fileUploadFailed'))
+        return
+      }
+
+      const modelUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(uploadedPath),
+          isPreview.value ? 'output' : 'input'
+        )
+      )
+
+      loadingMessage.value = t('load3d.loadingModel')
+      const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
+      if (outcome !== 'loaded') return
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+
+      if (modelWidget) {
+        const options = modelWidget.options as { values?: string[] } | undefined
+        if (options?.values && !options.values.includes(uploadedPath)) {
+          options.values.push(uploadedPath)
+        }
+        modelWidget.value = uploadedPath
+      }
+    } catch (error) {
+      console.error('Model drop failed:', error)
+      useToast().warning(t('toastMessages.failedToLoadModel'))
+    } finally {
+      loading.value = false
+      loadingMessage.value = ''
+    }
+  }
+
+  const syncSceneModels = () => {
+    const modelInfo = load3d?.getModelInfo()
+    sceneConfig.value.models = modelInfo ? [modelInfo] : []
+  }
+
+  const eventConfig = {
+    materialModeChange: (value: string) => {
+      modelConfig.value.materialMode = value as MaterialMode
+    },
+    backgroundColorChange: (value: string) => {
+      sceneConfig.value.backgroundColor = value
+    },
+    backgroundRenderModeChange: (value: string) => {
+      sceneConfig.value.backgroundRenderMode = value as 'tiled' | 'panorama'
+    },
+    lightIntensityChange: (value: number) => {
+      lightConfig.value.intensity = value
+    },
+    fovChange: (value: number) => {
+      cameraConfig.value.fov = value
+    },
+    cameraTypeChange: (value: string) => {
+      cameraConfig.value.cameraType = value as CameraType
+    },
+    cameraUpStateChange: (value: {
+      hasCustomUp: boolean
+      usingCustomUp: boolean
+    }) => {
+      const { cameraType, fov, state } = cameraConfig.value
+      cameraConfig.value = value.hasCustomUp
+        ? {
+            cameraType,
+            fov,
+            state,
+            hasCustomUp: true,
+            useCustomUp: value.usingCustomUp
+          }
+        : { cameraType, fov, state, hasCustomUp: false }
+    },
+    showGridChange: (value: boolean) => {
+      sceneConfig.value.showGrid = value
+    },
+    upDirectionChange: (value: string) => {
+      modelConfig.value.upDirection = value as UpDirection
+    },
+    backgroundImageChange: (value: string) => {
+      sceneConfig.value.backgroundImage = value
+    },
+    backgroundImageLoadingStart: () => {
+      loadingMessage.value = t('load3d.loadingBackgroundImage')
+      loading.value = true
+    },
+    backgroundImageLoadingEnd: () => {
+      loadingMessage.value = ''
+      loading.value = false
+    },
+    modelLoadingStart: () => {
+      loadingMessage.value = t('load3d.loadingModel')
+      loading.value = true
+      clearModelStats()
+      if (!isFirstModelLoad) {
+        modelConfig.value = {
+          upDirection: 'original',
+          materialMode: 'original',
+          showSkeleton: false,
+          gizmo: {
+            enabled: false,
+            mode: 'translate',
+            position: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 }
+          }
+        }
+      }
+    },
+    modelCleared: () => clearModelStats(),
+    modelLoadingEnd: () => {
+      loadingMessage.value = ''
+      loading.value = false
+      isSplatModel.value = load3d?.isSplatModel() ?? false
+      isPlyModel.value = load3d?.isPlyModel() ?? false
+      sourceFormat.value = load3d?.getSourceFormat() ?? null
+      canCenterCameraOnModel.value = isSplatModel.value || isPlyModel.value
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
+      hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      refreshModelStats()
+      applyGizmoConfigToLoad3d()
+      syncSceneModels()
+      isFirstModelLoad = false
+    },
+    modelReady: () => {
+      if (!load3d || !isAssetPreviewSupported()) return
+
+      const node = nodeRef.value
+      if (node?.properties['Last Time Model Folder'] === 'temp') return
+      const modelWidget = node?.widgets?.find(
+        (w) => w.name === 'model_file' || w.name === 'image'
+      )
+      const widgetValue = modelWidget?.value
+      const value =
+        typeof widgetValue === 'string' && widgetValue.trim()
+          ? widgetValue
+          : node?.properties['Last Time Model File']
+      if (typeof value !== 'string' || !value) return
+
+      const filename = value.trim().replace(/\s*\[output\]$/, '')
+      const modelName = Load3dUtils.splitFilePath(filename)[1]
+      load3d
+        .captureThumbnail(256, 256)
+        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+        .then((blob) => persistThumbnail(modelName, blob))
+        .catch(() => {})
+    },
+    skeletonVisibilityChange: (value: boolean) => {
+      modelConfig.value.showSkeleton = value
+    },
+    exportLoadingStart: (message: string) => {
+      loadingMessage.value = message || t('load3d.exportingModel')
+      loading.value = true
+    },
+    exportLoadingEnd: () => {
+      loadingMessage.value = ''
+      loading.value = false
+    },
+    recordingStatusChange: (value: boolean) => {
+      isRecording.value = value
+
+      if (!value && load3d) {
+        recordingDuration.value = load3d.getRecordingDuration()
+        hasRecording.value = recordingDuration.value > 0
+      }
+    },
+    animationListChange: (newValue: AnimationItem[]) => {
+      animations.value = newValue
+    },
+    animationProgressChange: (data: {
+      progress: number
+      currentTime: number
+      duration: number
+    }) => {
+      animationProgress.value = data.progress
+      animationDuration.value = data.duration
+    },
+    cameraChanged: (cameraState: CameraState) => {
+      const rawNode = toRaw(nodeRef.value)
+      if (rawNode) {
+        const node = rawNode
+        const cameraConfigProp = node.properties['Camera Config']
+
+        if (cameraConfigProp) {
+          ;(cameraConfigProp as CameraConfig).state = cameraState
+        } else {
+          node.properties['Camera Config'] = {
+            cameraType: cameraConfig.value.cameraType,
+            fov: cameraConfig.value.fov,
+            state: cameraState
+          }
+        }
+        markLoad3dSceneDirty(node)
+      }
+    },
+    gizmoTransformChange: (data: GizmoConfig) => {
+      if (modelConfig.value.gizmo && nodeRef.value) {
+        modelConfig.value.gizmo.position = data.position
+        modelConfig.value.gizmo.rotation = data.rotation
+        modelConfig.value.gizmo.scale = data.scale
+        modelConfig.value.gizmo.enabled = data.enabled
+        modelConfig.value.gizmo.mode = data.mode
+      }
+      syncSceneModels()
+    }
+  } as const
+
+  const handleToggleGizmo = (enabled: boolean) => {
+    if (load3d && modelConfig.value.gizmo) {
+      modelConfig.value.gizmo.enabled = enabled
+      load3d.setGizmoEnabled(enabled)
+    }
+  }
+
+  const handleSetGizmoMode = (mode: GizmoMode) => {
+    if (load3d && modelConfig.value.gizmo) {
+      modelConfig.value.gizmo.mode = mode
+      load3d.setGizmoMode(mode)
+    }
+  }
+
+  const handleFitToViewer = () => {
+    if (!load3d) return
+    load3d.fitToViewer()
+
+    if (!modelConfig.value.gizmo) return
+    const transform = load3d.getGizmoTransform()
+    modelConfig.value.gizmo.position = transform.position
+    modelConfig.value.gizmo.scale = transform.scale
+    syncSceneModels()
+  }
+
+  const handleCenterCameraOnModel = () => {
+    if (!load3d) return
+    load3d.centerCameraOnModel()
+    markDirty()
+  }
+
+  const handleResetGizmoTransform = () => {
+    if (load3d) {
+      load3d.resetGizmoTransform()
+    }
+  }
+
+  const handleEvents = (action: 'add' | 'remove') => {
+    Object.entries(eventConfig).forEach(([event, handler]) => {
+      const method = `${action}EventListener` as const
+      load3d?.[method](event, handler as EventCallback)
+    })
+  }
+
+  const abortModelStats = () => {
+    modelStatsAbort?.abort()
+    modelStatsAbort = null
+  }
+
+  const clearModelStats = () => {
+    abortModelStats()
+    modelStats.value = null
+  }
+
+  const refreshModelStats = () => {
+    abortModelStats()
+    const controller = new AbortController()
+    modelStatsAbort = controller
+    void load3d
+      ?.getModelStats(controller.signal)
+      .then((stats) => {
+        if (modelStatsAbort !== controller) return
+        modelStats.value = stats
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        reportError(error, {
+          errorType: 'error_computing_load3d_model_stats',
+          surface: 'graph'
+        })
+      })
+  }
+
+  const releaseLoad3d = (keep = false): Load3d | null => {
+    if (keep) abortModelStats()
+    else clearModelStats()
+    handleEvents('remove')
+    const released = load3d
+    load3d = null
+    if (!released) return null
+
+    const shownBy = nodeShowing(released)
+    if (shownBy) nodeToLoad3dMap.delete(shownBy)
+    if (keep) return released
+    released.remove()
+    return null
+  }
+
+  const cleanup = () => releaseLoad3d()
+
+  watch(nodeRef, (node, previous) => {
+    const current = node ? toRaw(node) : null
+    const replaced = previous ? toRaw(previous) : null
+    const kept = replaced
+      ? releaseLoad3d(!!current && isReloadedCopy(current, replaced))
+      : null
+    if (!node) viewerContainer = null
+    else if (viewerContainer)
+      void initializeLoad3dKeeping(viewerContainer, kept)
+  })
+
+  return {
+    load3d,
+    sceneConfig,
+    modelConfig,
+    cameraConfig,
+    lightConfig,
+    isRecording,
+    isPreview,
+    isSplatModel,
+    isPlyModel,
+    sourceFormat,
+    canFitToViewer,
+    canCenterCameraOnModel,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
+    hasSkeleton,
+    modelStats,
+    hasRecording,
+    recordingDuration,
+    animations,
+    playing,
+    selectedSpeed,
+    selectedAnimation,
+    animationProgress,
+    animationDuration,
+    loading,
+    loadingMessage,
+
+    initializeLoad3d,
+    waitForLoad3d,
+    onLoad3dReady,
+    handleMouseEnter,
+    handleMouseLeave,
+    handleStartRecording,
+    handleStopRecording,
+    handleExportRecording,
+    handleClearRecording,
+    handleSeek,
+    handleBackgroundImageUpdate,
+    handleHDRIFileUpdate,
+    handleExportModel,
+    handleModelDrop,
+    handleToggleGizmo,
+    handleSetGizmoMode,
+    handleResetGizmoTransform,
+    handleFitToViewer,
+    handleCenterCameraOnModel,
+    cleanup
+  }
+}

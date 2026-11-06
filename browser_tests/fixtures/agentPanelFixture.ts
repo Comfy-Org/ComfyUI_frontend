@@ -3,7 +3,6 @@ import type { Page, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
   AgentRunMode,
-  AgentThreadListResponse,
   BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
@@ -12,16 +11,19 @@ import type {
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import {
+  AGENT_CONSENT_SETTING_ID,
+  AGENT_ONBOARDED_SCOPES_SETTING_ID
+} from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import {
   AGENT_COMPOSER_THREAD_ID,
   agentComposerRunMode,
@@ -29,6 +31,7 @@ import {
   createAgentComposerThreadList
 } from '@e2e/fixtures/data/agent/agentComposerPerformance'
 import type { AgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
+import { agentThreadPage } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -36,6 +39,15 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+
+const onboardedScopesByPage = new WeakMap<Page, string[]>()
+
+export const AGENT_ONBOARDING_SCOPE_KEY =
+  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+
+export function storedOnboardedScopes(page: Page): readonly string[] {
+  return onboardedScopesByPage.get(page) ?? []
+}
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
@@ -79,12 +91,14 @@ async function mockAgentBoot(
     billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
+  const onboardedScopes: string[] = []
+  onboardedScopesByPage.set(page, onboardedScopes)
   await mockCloudBoot(page, {
     features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
-      ...DEPLOY_ACTION_SEEN_SETTINGS,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: onboardedScopes,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
         'Comfy.VueNodes.Enabled': true
@@ -93,6 +107,7 @@ async function mockAgentBoot(
     objectInfo
   })
   await mockBilling(page, { billingStatus })
+  await mockAgentIdentity(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,
@@ -101,6 +116,20 @@ async function mockAgentBoot(
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
     (route) => route.fulfill(jsonRoute(storedConsent))
+  )
+  await page.route(
+    `**/api/settings/${AGENT_ONBOARDED_SCOPES_SETTING_ID}`,
+    (route) => {
+      const request = route.request()
+      if (request.method() === 'POST') {
+        const posted: unknown = request.postDataJSON()
+        const scopes = Array.isArray(posted)
+          ? posted.filter((scope): scope is string => typeof scope === 'string')
+          : []
+        onboardedScopes.splice(0, onboardedScopes.length, ...scopes)
+      }
+      return route.fulfill(jsonRoute(onboardedScopes))
+    }
   )
   const listedAssets: ListAssetsResponse = assets ?? {
     assets: [],
@@ -124,36 +153,31 @@ async function mockAgentBoot(
 export async function mockAgentTurnApi(
   page: Page,
   turnAccepted: AgentTurnAccepted,
-  savedChat?: AgentSavedChat
+  {
+    savedChat,
+    beforeAccept
+  }: { savedChat?: AgentSavedChat; beforeAccept?: () => Promise<void> } = {}
 ): Promise<AgentPostMessageRequest[]> {
-  const summaries = savedChat ? [savedChat.thread] : []
-  const threads: AgentThreadListResponse = {
-    threads: summaries,
-    pagination: {
-      has_more: false,
-      limit: 100,
-      offset: 0,
-      total: summaries.length
-    }
-  }
+  const threads = agentThreadPage(savedChat ? [savedChat.thread] : [])
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
   await page.route('**/api/experiment/models', (route) =>
     route.fulfill(jsonRoute([]))
   )
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
   const posted: AgentPostMessageRequest[] = []
-  await page.route('**/api/agent/threads/*/messages', (route) => {
+  await page.route('**/api/agent/threads/*/messages', async (route) => {
     const request = route.request()
     if (savedChat && request.method() === 'GET')
       return route.fulfill(jsonRoute(savedChat.messages))
     if (request.method() === 'POST')
       posted.push(zAgentPostMessageRequest.parse(request.postDataJSON()))
-    return route.fulfill(jsonRoute(turnAccepted))
+    await beforeAccept?.()
+    await route.fulfill(jsonRoute(turnAccepted))
   })
   return posted
 }
@@ -212,6 +236,7 @@ export async function mockWorkflowPersistence(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  crdtDebugEnabled: boolean
 }
 
 /**
@@ -221,16 +246,26 @@ type AgentFixtures = {
  * signed-in `bootCloud`, navigate, wait for the app.
  */
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }]
+  agentFlagEnabled: [true, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
+  page: async ({ crdtDebugEnabled, page }, use) => {
+    if (crdtDebugEnabled) {
+      await page.addInitScript(() => {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      })
+    }
+    await use(page)
+  }
 })
 
-type AgentComposerPerformanceFixtures = {
+type RestoredTargetlessAgentThreadFixtures = {
   agentComposerTurnCount: number
   agentComposerPanel: AgentPanel
 }
 
-export const agentComposerPerformanceTest =
-  agentTest.extend<AgentComposerPerformanceFixtures>({
+export const restoredTargetlessAgentThreadTest =
+  agentTest.extend<RestoredTargetlessAgentThreadFixtures>({
     agentComposerTurnCount: [0, { option: true }],
     agentComposerPanel: async (
       { page, agentFlagEnabled, agentComposerTurnCount },
@@ -242,7 +277,7 @@ export const agentComposerPerformanceTest =
       await page.route('**/api/experiment/models', (route) =>
         route.fulfill(jsonRoute([]))
       )
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threads))
       )
       await page.route('**/api/agent/run-mode', (route) =>

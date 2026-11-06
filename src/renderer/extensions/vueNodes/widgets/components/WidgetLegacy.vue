@@ -6,12 +6,12 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
@@ -93,8 +93,8 @@ function getWidgetHeight(
 function draw() {
   if (!widgetInstance || !node) return
   const width =
-    canvasEl.value.getBoundingClientRect().width ||
-    canvasEl.value.parentElement.clientWidth
+    canvasEl.value.parentElement.clientWidth ||
+    canvasEl.value.getBoundingClientRect().width
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
   node.canvasHeight = height

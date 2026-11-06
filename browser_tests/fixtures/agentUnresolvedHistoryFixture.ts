@@ -49,7 +49,7 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
         latest_version: 1
       }
     ]
-    const posted = await mockAgentTurnApi(page, accepted, savedChat)
+    const posted = await mockAgentTurnApi(page, accepted, { savedChat })
     await bootAgentApp(page, agentFlagEnabled, {
       beforeNavigate: (page) =>
         mockWorkflowPersistence(page, chosenId, listedWorkflows)

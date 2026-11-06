@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 
 const actionBarButtonStore = useActionBarButtonStore()

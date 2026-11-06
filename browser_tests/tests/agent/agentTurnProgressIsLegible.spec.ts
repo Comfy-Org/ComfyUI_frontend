@@ -8,10 +8,12 @@ import {
   MESSAGE_DONE_EVENT,
   OPEN_TAB_TOOL_EVENT,
   RUNNING_OPEN_TAB_TOOL_EVENT,
+  RUNNING_RUN_TOOL_EVENT,
   THINKING_EVENT,
   agentTest,
   pushAgentEvent,
-  thinkingEvent
+  thinkingEvent,
+  toolCallEvent
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -24,13 +26,13 @@ test.describe(
 
     test('shows a spinning in-progress row for a running tool call and settles it when the call finishes', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Open a new tab for the upscale graph')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
@@ -63,15 +65,91 @@ test.describe(
       await expect(settledRow.locator('.animate-spin')).toHaveCount(0)
     })
 
-    test('renders a multi-sentence thinking update in full instead of cutting it off', async ({
+    test('stops an unresolved tool spinner neutrally before the next message', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('Run the workflow')
+      await expect.poll(() => postedMessages.length).toBe(1)
+
+      pushAgentEvent(ws, RUNNING_RUN_TOOL_EVENT)
+      const runRow = agentPanel.activityRows.filter({ hasText: 'Run' })
+      await expect(runRow.locator('.animate-spin')).toBeVisible()
+
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(agentPanel.sendButton).toBeVisible()
+      await agentPanel.sendMessage('Continue')
+      await expect.poll(() => postedMessages.length).toBe(2)
+
+      await agentPanel.openWorkSummary()
+      await expect(runRow).toHaveCount(1)
+      await expect(runRow.locator('.animate-spin')).toHaveCount(0)
+      await expect(runRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+    })
+
+    test('distinguishes unknown, successful, and failed tool outcomes', async ({
+      agentPanel,
+      getAgentSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('Remember this and prepare another tab')
+      await expect.poll(() => postedMessages.length).toBe(1)
+
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-remember-1', 'remember', 'success')
+      )
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-remember-2', 'remember', 'running')
+      )
+      pushAgentEvent(ws, toolCallEvent('call-new-tab', 'new_tab', 'success'))
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-load-skill', 'load_skill', 'error', 'broken-skill')
+      )
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+
+      await expect(agentPanel.sendButton).toBeVisible()
+      await agentPanel.openWorkSummary()
+
+      const unknownRow = agentPanel.activityRows.filter({
+        hasText: 'Saving a preference — outcome unknown'
+      })
+      const successRow = agentPanel.activityRows.filter({
+        hasText: enMessages.agent.toolOpenedNewTab
+      })
+      const failureRow = agentPanel.activityRows.filter({
+        hasText: 'Failed to load broken-skill'
+      })
+
+      await expect(unknownRow).toHaveCount(1)
+      await expect(unknownRow).toContainText('×2')
+      await expect(successRow).toHaveCount(1)
+      await expect(failureRow).toHaveCount(1)
+      await expect(unknownRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+      await expect(successRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+      await expect(failureRow.locator('i')).toHaveClass(/lucide--circle-x/)
+    })
+
+    test('renders a multi-sentence thinking update in full instead of cutting it off', async ({
+      agentPanel,
+      getAgentSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Plan the upscale pass before you edit')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
@@ -102,13 +180,13 @@ test.describe(
 
     test('names how long the finished turn took', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 

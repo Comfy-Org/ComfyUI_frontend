@@ -23,7 +23,7 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
@@ -31,17 +31,8 @@ import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const WORKFLOW_ID = 'wf-1'
 
-/**
- * Transport double that models the real socket lifecycle rather than an
- * always-ready pipe: it starts CLOSED (the state `apiTransport` is in while
- * `ComfyApi.createSocket` awaits its auth token) and THROWS on a send while
- * closed — byte-for-byte the behaviour the shipped `apiTransport` had. It also
- * counts live listener registrations so a leak is observable.
- */
 class SocketTransport extends EventTarget implements DocFrameTransport {
   open = false
   readonly sent: string[] = []
@@ -90,11 +81,17 @@ function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
   return Y.encodeStateAsUpdate(doc)
 }
 
-function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
+function docUpdateFrame(
+  update: Uint8Array,
+  workflowId = WORKFLOW_ID,
+  seq = 1,
+  lineageSeq = 0
+) {
   return {
     v: 1,
     workflow_id: workflowId,
     seq,
+    lineage_seq: lineageSeq,
     update_b64: encodeBase64(update)
   }
 }
@@ -380,7 +377,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
       lineage_seq: 43
     })
 
-    // The old lineage is dropped wholesale, never folded into.
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
@@ -389,8 +385,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     ])
     expect(followerSeenDuringReset).toBe(oldDoc)
 
-    // The resubscribe carries the FRESH doc's state vector — the empty one —
-    // so the server's ordinary catch-up path returns the full folded state.
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
@@ -400,12 +394,13 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     )
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
-    // The next update lands on the fresh lineage and is projected.
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1, 43)
+    )
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(projected).toHaveLength(2)
 
-    // KA-6: a reset provokes nothing but subscription frames from the follower.
     const writes = transport.sent
       .map((frame) => JSON.parse(frame) as { type: string })
       .filter(
@@ -1650,6 +1645,16 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     transport.open = true
     bridge.reconcile()
     expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+  })
+
+  it('reports whether an explicit resubscribe left the socket', () => {
+    const { transport, bridge } = wire()
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.resubscribe()).toBe(false)
+
+    transport.open = true
+    expect(bridge.resubscribe()).toBe(true)
   })
 
   it.for([

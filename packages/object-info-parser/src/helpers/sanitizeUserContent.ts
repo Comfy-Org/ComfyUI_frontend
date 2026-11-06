@@ -4,12 +4,12 @@ import type {
   InputSpec,
   ComboInputSpec,
   ComboInputSpecV2
-} from '../schemas/nodeDefSchema'
+} from '#/schemas/nodeDefSchema'
 import {
   isComboInputSpecV1,
   isComboInputSpecV2,
   zDynamicGroupInputSpec
-} from '../schemas/nodeDefSchema'
+} from '#/schemas/nodeDefSchema'
 
 const USER_CONTENT_REGEX =
   /\.(png|jpe?g|webp|gif|mp4|mov|webm|wav|mp3|flac|ogg|safetensors|ckpt|pt)$/i

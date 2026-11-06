@@ -59,9 +59,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const USER = fromPartial<User>({
   uid: 'user-a',
@@ -136,7 +134,7 @@ const sessionRequest = (path: string, workspace: string): IngestRequest => ({
   method: 'GET',
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...workspaceHeader(workspace) },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 describe('remote widgets on the shared web session', () => {

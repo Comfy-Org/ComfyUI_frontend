@@ -266,7 +266,15 @@ describe('extractTickets', () => {
     ['pendingServerFact("BE-12", x)', 'double quotes'],
     ['pendingServerFact(`BE-12`, x)', 'a substitution-free template'],
     ['pendingServerFact(\n  "BE-12",\n  x\n)', 'newlines inside the call'],
-    ['pendingServerFact ( "BE-12" , x)', 'spaces around the literal']
+    ['pendingServerFact ( "BE-12" , x)', 'spaces around the literal'],
+    [
+      "pendingServerFact<'denied_reasons.can_run_workflows', boolean>('BE-12', x)",
+      'type arguments'
+    ],
+    [
+      "pendingServerFact<'plans', Array<string>>(\n  'BE-12',\n  x\n)",
+      'nested type arguments'
+    ]
   ])('finds the ticket in %s (%s)', ([source]) => {
     expect(extractTickets(source)).toEqual([{ line: 1, ticket: 'BE-12' }])
   })
@@ -298,7 +306,9 @@ describe('extractTickets', () => {
   it('ignores imports and the declaration', () => {
     const source = [
       "import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'",
-      'export function pendingServerFact<T>(_ticket: BackendTicket, value: T): T {'
+      'export function pendingServerFact<T>(_ticket: BackendTicket, value: T): T {',
+      'export function pendingServerFact<Field extends string, T>(',
+      '  _ticket: BackendTicket,'
     ].join('\n')
 
     expect(extractTickets(source)).toEqual([])

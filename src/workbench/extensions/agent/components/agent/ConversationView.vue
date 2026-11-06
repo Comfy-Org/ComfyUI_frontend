@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -7,7 +9,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -17,10 +19,10 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { PromptSnapshot } from '../../types/workflowReference'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
@@ -41,11 +43,11 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
 const { t } = useI18n()
@@ -253,10 +255,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
-                  emit('answerAsk', askId, selection)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)
@@ -265,7 +264,9 @@ watch(
                 (askId: string, workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', askId, workflowId, workflowName)
               "
-              @paywall-action="emit('paywallAction', $event)"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
+              "
             />
           </template>
         </div>
@@ -282,7 +283,7 @@ watch(
       class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--chevron-down] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--chevron-down]" />
     </Button>
   </div>
 </template>
