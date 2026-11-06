@@ -9,7 +9,7 @@
         :href="repositoryUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="max-w-full justify-start py-0"
+        class="max-w-full justify-start py-0 text-foreground"
       >
         <span class="truncate">{{ row.pack.name }}</span>
       </Button>
