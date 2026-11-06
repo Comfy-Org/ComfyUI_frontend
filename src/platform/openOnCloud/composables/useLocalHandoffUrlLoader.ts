@@ -87,7 +87,6 @@ export function useLocalHandoffUrlLoader(
   const { flags } = useFeatureFlags()
 
   async function receiveHandoff(nonce: string) {
-    // Taken even when the flag is off, so a stale Desktop handoff is cleared.
     const desktop = takeDesktopWorkflowHandoff(nonce)
     if (!flags.openOnCloudEnabled) return
     if (desktop)
