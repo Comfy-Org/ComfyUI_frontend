@@ -143,6 +143,12 @@ describe(handleDesktopWorkflowHandoff, () => {
       }
     },
     {
+      name: 'an expired transfer',
+      arrange: () => {
+        vi.setSystemTime(Date.now() + 11 * 60_000)
+      }
+    },
+    {
       name: 'a destination outside Comfy Cloud',
       arrange: () => {
         vi.mocked(api.getUserData).mockResolvedValue(
