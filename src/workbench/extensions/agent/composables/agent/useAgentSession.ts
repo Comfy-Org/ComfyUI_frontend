@@ -1539,6 +1539,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         i18n.global.t('agent.askSendRefused')
       )
+      reportSendFailure(error)
+      trackAgentError('request_failed', 'pre_acceptance', 'inline_notice', {
+        retryable: isRetryableRequestFailure(error, false)
+      })
       return
     }
     if (!accepted && refusedBeforeAcceptance(error))

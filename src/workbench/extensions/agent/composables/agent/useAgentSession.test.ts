@@ -3618,6 +3618,17 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(runCard()).not.toMatchObject({ dismissed: true })
       expect(session.sendDismissesAsk.value).toBe(false)
       expect(lastNotice(session)).toBe('Answer the card or press Stop first.')
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 409 }),
+        expect.objectContaining({ errorType: 'agent_send_message_failed' })
+      )
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+        error_class: 'request_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: false,
+        turn_accepted: false,
+        ui_treatment: 'inline_notice'
+      })
       await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
       expect(rest.answerAsk).toHaveBeenCalledWith(
         'th-1',
