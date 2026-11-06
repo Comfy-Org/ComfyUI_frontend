@@ -4282,7 +4282,6 @@
       "columnLicense": "License",
       "columnInstall": "Install",
       "installLabel": "Add {pack} to the Build",
-      "inBuild": "In Build",
       "noVersion": "No published version",
       "versionLabel": "Choose a version of {pack}. {version} is picked now.",
       "versionsOf": "Versions of {pack}",
@@ -4298,10 +4297,36 @@
       "noMatches": "No node packs match \"{query}\".",
       "inBuildCount": "{count} node pack in {build} | {count} node packs in {build}",
       "pickedCount": "· none picked yet | · {count} picked | · {count} picked",
-      "page": "Page {page}",
       "previousPage": "Previous page",
       "nextPage": "Next page",
-      "review": "Review changes | Review {count} node pack | Review {count} node packs"
+      "review": "Review changes | Review {count} node pack | Review {count} node packs",
+      "inBuildLabel": "{pack} is already in the Build",
+      "pageOf": "Page {page} of {count}",
+      "editOnPlatform": "Edit on platform",
+      "editOnPlatformLabel": "Edit the custom nodes of {build} on the Developer Platform",
+      "statusMenuLabel": "Filter node packs by status. Showing {value}.",
+      "licenseMenuLabel": "Filter node packs by license. Showing {value}.",
+      "sortMenuLabel": "Sort node packs. Sorted by {value}.",
+      "status": {
+        "heading": "Status",
+        "all": "All packs",
+        "installed": "Installed",
+        "notInstalled": "Not installed"
+      },
+      "license": {
+        "heading": "License",
+        "any": "Any license",
+        "count": "{count} license | {count} licenses",
+        "unlisted": "No license listed",
+        "clear": "Clear license filter"
+      },
+      "sort": {
+        "heading": "Sort",
+        "installs": "Most installs",
+        "stars": "Most stars",
+        "nameAsc": "Pack name, A to Z",
+        "nameDesc": "Pack name, Z to A"
+      }
     },
     "review": {
       "title": "Add {count} node pack to {build} | Add {count} node packs to {build}",

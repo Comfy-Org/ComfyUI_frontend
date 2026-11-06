@@ -13,20 +13,22 @@
         }}
       </p>
     </div>
-    <SearchInput
-      v-model="draftQuery"
-      :placeholder="$t('buildCustomNodes.picker.search')"
-      :accessible-label="$t('buildCustomNodes.picker.search')"
-      :clear-label="$t('buildCustomNodes.picker.clearSearch')"
-      :loading="status === 'loading'"
-      class="max-w-96"
-      @search="search"
+    <NodePackToolbar
+      :query="view.query"
+      :status="view.status"
+      :licenses="view.licenses"
+      :sort="view.sort"
+      :license-choices="licenseChoices"
+      @update:query="setView({ query: $event })"
+      @update:status="setView({ status: $event })"
+      @update:licenses="setView({ licenses: $event })"
+      @update:sort="setView({ sort: $event })"
     />
     <div class="flex flex-col gap-2">
       <NodePackTable
         :rows
-        :status
-        :query
+        :status="searchStatus"
+        :query="view.query"
         @toggle="(pack, choice) => emit('toggle', pack, choice)"
         @choose="(pack, choice) => emit('choose', pack, choice)"
         @retry="retry"
@@ -55,13 +57,18 @@
             <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
           </Button>
           <span class="text-muted-foreground tabular-nums">
-            {{ $t('buildCustomNodes.picker.page', { page: page + 1 }) }}
+            {{
+              $t('buildCustomNodes.picker.pageOf', {
+                page: page + 1,
+                count: pageCount
+              })
+            }}
           </span>
           <Button
             variant="muted-textonly"
             size="icon"
             :aria-label="$t('buildCustomNodes.picker.nextPage')"
-            :disabled="!hasMore"
+            :disabled="page + 1 >= pageCount"
             @click="page++"
           >
             <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
@@ -73,6 +80,25 @@
       <CustomNodesDocsLink class="mr-auto" />
       <Button variant="secondary" size="lg" @click="emit('cancel')">
         {{ $t('g.cancel') }}
+      </Button>
+      <Button
+        variant="secondary"
+        size="lg"
+        as="a"
+        :href="editOnPlatformUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        :aria-label="
+          $t('buildCustomNodes.picker.editOnPlatformLabel', {
+            build: buildName
+          })
+        "
+      >
+        {{ $t('buildCustomNodes.picker.editOnPlatform') }}
+        <i
+          class="icon-[lucide--square-arrow-out-up-right]"
+          aria-hidden="true"
+        />
       </Button>
       <Button
         variant="inverted"
@@ -89,15 +115,17 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type { BuildSession } from '@/platform/workspace/buildCustomNodes/buildCustomNodesFlow'
 import type { NodePack } from '@/platform/workspace/buildCustomNodes/buildCustomNodesTypes'
 import CustomNodesDocsLink from '@/platform/workspace/buildCustomNodes/components/CustomNodesDocsLink.vue'
 import NodePackTable from '@/platform/workspace/buildCustomNodes/components/NodePackTable.vue'
+import NodePackToolbar from '@/platform/workspace/buildCustomNodes/components/NodePackToolbar.vue'
 import type { NodePackVersionChoice } from '@/platform/workspace/buildCustomNodes/nodePackChoice'
+import type { NodePackView } from '@/platform/workspace/buildCustomNodes/useNodePackRows'
 import { useNodePackRows } from '@/platform/workspace/buildCustomNodes/useNodePackRows'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const { session } = defineProps<{
   session: BuildSession
@@ -110,22 +138,37 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const draftQuery = ref('')
-const query = ref('')
+const view = shallowRef<NodePackView>({
+  query: '',
+  status: 'all',
+  licenses: new Set(),
+  sort: 'installs'
+})
 const page = ref(0)
 
-const { rows, status, hasMore, retry } = useNodePackRows(
+function setView(change: Partial<NodePackView>) {
+  view.value = { ...view.value, ...change }
+  page.value = 0
+}
+
+const {
+  rows,
+  status: searchStatus,
+  pageCount,
+  licenses: licenseChoices,
+  retry
+} = useNodePackRows(
   () => session,
-  query,
+  () => view.value,
   page
 )
 
 const buildName = computed(() => session.build.build.name)
 const buildCount = computed(() => session.build.build.custom_nodes.length)
 const pickCount = computed(() => session.picks.length)
-
-function search(value: string) {
-  query.value = value.trim()
-  page.value = 0
-}
+const editOnPlatformUrl = computed(() =>
+  platformLink(
+    `/profile/builds/new?edit=${encodeURIComponent(session.build.build.build_id)}&step=nodes`
+  )
+)
 </script>

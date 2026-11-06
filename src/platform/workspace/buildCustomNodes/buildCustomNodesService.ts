@@ -1,9 +1,10 @@
+import { uniqBy } from 'es-toolkit'
+
 import { buildCustomNodesStub } from '@/platform/workspace/buildCustomNodes/buildCustomNodesStub'
 import type {
   BuildCustomNode,
   DeploymentBuild,
   NodePack,
-  NodePackPage,
   ReleaseBuild,
   ReleaseMove,
   SavedCustomNodes,
@@ -11,20 +12,14 @@ import type {
   StartedRelease
 } from '@/platform/workspace/buildCustomNodes/buildCustomNodesTypes'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { RegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type RegistryNode = components['schemas']['Node']
 
-const NODE_PACK_PAGE_SIZE = 25
+const INDEX_PAGE_SIZE = 100
+const INDEX_CONCURRENCY = 6
 
-let searchGateway: RegistrySearchGateway | undefined
-
-function registrySearch(): RegistrySearchGateway {
-  searchGateway ??= useRegistrySearchGateway()
-  return searchGateway
-}
+let nodePackIndex: Promise<ServiceOutcome<NodePack[]>> | undefined
 
 function parsedLicenseText(raw: string): string {
   try {
@@ -57,6 +52,48 @@ function toNodePacks(node: RegistryNode): NodePack[] {
       latestVersion: node.latest_version?.version
     }
   ]
+}
+
+type IndexPage = { nodes: RegistryNode[]; total: number } | null
+
+async function readIndexPage(page: number): Promise<IndexPage> {
+  const registry = useComfyRegistryService()
+  const response = await registry.listAllPacks({ page, limit: INDEX_PAGE_SIZE })
+  return response
+    ? { nodes: response.nodes ?? [], total: response.total ?? 0 }
+    : null
+}
+
+async function readIndexPages(pages: number[]): Promise<IndexPage[]> {
+  const results: IndexPage[] = []
+  for (let start = 0; start < pages.length; start += INDEX_CONCURRENCY) {
+    const batch = pages.slice(start, start + INDEX_CONCURRENCY)
+    results.push(...(await Promise.all(batch.map(readIndexPage))))
+  }
+  return results
+}
+
+async function readNodePackIndex(): Promise<ServiceOutcome<NodePack[]>> {
+  const first = await readIndexPage(1)
+  if (!first) return unreachableRegistry()
+  const pageCount = Math.ceil(first.total / INDEX_PAGE_SIZE)
+  const rest = await readIndexPages(
+    Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) => index + 2)
+  )
+  if (rest.some((page) => page === null)) return unreachableRegistry()
+  const nodes = [first, ...rest].flatMap((page) => page?.nodes ?? [])
+  return {
+    ok: true,
+    value: uniqBy(nodes.flatMap(toNodePacks), (pack) => pack.id)
+  }
+}
+
+function unreachableRegistry(): ServiceOutcome<never> {
+  return {
+    ok: false,
+    code: 'registry_unreachable',
+    message: 'The Comfy Registry did not answer.'
+  }
 }
 
 /** Every backend call the Extensions node picker makes. */
@@ -109,34 +146,13 @@ export const buildCustomNodesService = {
     )
   },
 
-  async searchNodePacks(
-    query: string,
-    page: number
-  ): Promise<ServiceOutcome<NodePackPage>> {
-    const outcome = await registrySearch().searchPacks(query, {
-      pageSize: NODE_PACK_PAGE_SIZE,
-      pageNumber: page
+  /** The whole Comfy Registry index, read once per page load and shared. */
+  listNodePacks(): Promise<ServiceOutcome<NodePack[]>> {
+    nodePackIndex ??= readNodePackIndex().then((outcome) => {
+      if (!outcome.ok) nodePackIndex = undefined
+      return outcome
     })
-    if (!outcome.ok)
-      return {
-        ok: false,
-        code: 'registry_unreachable',
-        message: String(outcome.cause)
-      }
-    const { nodePacks, hasMore } = outcome.result
-    return {
-      ok: true,
-      value: {
-        packs: nodePacks.flatMap(toNodePacks),
-        hasMore: hasMore ?? nodePacks.length === NODE_PACK_PAGE_SIZE
-      }
-    }
-  },
-
-  async getNodePacks(ids: readonly string[]): Promise<NodePack[]> {
-    const registry = useComfyRegistryService()
-    const nodes = await Promise.all(ids.map((id) => registry.getPackById(id)))
-    return nodes.flatMap((node) => (node ? toNodePacks(node) : []))
+    return nodePackIndex
   },
 
   async getNodePackVersions(id: string): Promise<ServiceOutcome<string[]>> {

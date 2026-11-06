@@ -93,8 +93,3 @@ export interface NodePack {
   repository?: string
   latestVersion?: string
 }
-
-export interface NodePackPage {
-  packs: NodePack[]
-  hasMore: boolean
-}

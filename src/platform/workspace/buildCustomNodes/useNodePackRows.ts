@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
 import type { BuildSession } from '@/platform/workspace/buildCustomNodes/buildCustomNodesFlow'
@@ -17,14 +17,27 @@ import {
   defaultVersionChoice,
   registryIdOf
 } from '@/platform/workspace/buildCustomNodes/nodePackChoice'
+import type {
+  NodePackSort,
+  NodePackStatusFilter
+} from '@/platform/workspace/buildCustomNodes/nodePackTable'
+import {
+  comparePacks,
+  licenseOptions,
+  matchesLicenses,
+  matchesQuery,
+  matchesStatus
+} from '@/platform/workspace/buildCustomNodes/nodePackTable'
+
+export const NODE_PACK_PAGE_SIZE = 25
 
 export type NodePackRow =
   | {
       kind: 'inBuild'
       key: string
-      name: string
-      pack: NodePack | null
+      pack: NodePack
       label: NodePackVersionLabel
+      listed: boolean
     }
   | {
       kind: 'pickable'
@@ -37,89 +50,119 @@ export type NodePackRow =
 
 export type NodePackSearchStatus = 'loading' | 'ready' | 'failed'
 
-function inBuildRow(
-  entry: BuildCustomNode,
-  pack: NodePack | null
-): NodePackRow {
+export interface NodePackView {
+  query: string
+  status: NodePackStatusFilter
+  licenses: ReadonlySet<string>
+  sort: NodePackSort
+}
+
+function packOfEntry(entry: BuildCustomNode): NodePack {
   return {
-    kind: 'inBuild',
-    key: `build:${registryIdOf(entry) ?? entry.name}`,
-    name: pack?.name ?? entry.name,
-    pack,
-    label: buildNodeLabel(entry)
+    id: registryIdOf(entry) ?? entry.name,
+    name: entry.name,
+    publisher: '',
+    installs: 0,
+    stars: 0,
+    license: '',
+    repository: 'repository' in entry ? entry.repository : undefined
   }
 }
 
-function packRow(pack: NodePack, session: BuildSession): NodePackRow {
+function rowOf(
+  pack: NodePack,
+  session: BuildSession,
+  listed: boolean
+): NodePackRow {
+  const entry = buildEntryFor(pack, session.build.build.custom_nodes)
+  if (entry)
+    return {
+      kind: 'inBuild',
+      key: `build:${pack.id}`,
+      pack,
+      label: buildNodeLabel(entry),
+      listed
+    }
   const pick = session.picks.find((picked) => picked.pack.id === pack.id)
   const choice = pick?.choice ?? defaultVersionChoice(pack)
   if (!choice) return { kind: 'unavailable', key: pack.id, pack }
   return { kind: 'pickable', key: pack.id, pack, choice, picked: !!pick }
 }
 
+function isInstalled(row: NodePackRow): boolean {
+  return row.kind === 'inBuild' || (row.kind === 'pickable' && row.picked)
+}
+
+function buildPacksMissingFrom(
+  index: readonly NodePack[],
+  session: BuildSession
+): NodePack[] {
+  return session.build.build.custom_nodes
+    .filter(
+      (entry) =>
+        !index.some((pack) => buildEntryFor(pack, [entry]) !== undefined)
+    )
+    .map(packOfEntry)
+}
+
 /**
- * The picker's rows: the Build's own packs first on an empty first page, then
- * the Comfy Registry's matches for `query`.
+ * The picker's table over the whole Comfy Registry index: searched, filtered
+ * and sorted in the browser like the platform wizard, with the Build's own
+ * packs first.
  */
 export function useNodePackRows(
   session: () => BuildSession,
-  query: Ref<string>,
+  view: () => NodePackView,
   page: Ref<number>
 ) {
-  const results = shallowRef<NodePack[]>([])
-  const hasMore = ref(false)
+  const index = shallowRef<NodePack[]>([])
   const status = ref<NodePackSearchStatus>('loading')
-  const buildPacks = shallowRef<NodePack[]>([])
-  let latestRequest = 0
 
-  async function fetchPage() {
-    const request = ++latestRequest
+  async function loadIndex() {
     status.value = 'loading'
-    const outcome = await buildCustomNodesService.searchNodePacks(
-      query.value,
-      page.value
-    )
-    if (request !== latestRequest) return
+    const outcome = await buildCustomNodesService.listNodePacks()
     if (!outcome.ok) {
       status.value = 'failed'
       return
     }
-    results.value = outcome.value.packs
-    hasMore.value = outcome.value.hasMore
+    index.value = outcome.value
     status.value = 'ready'
   }
 
-  async function fetchBuildPacks() {
-    const ids = session().build.build.custom_nodes.flatMap(
-      (entry) => registryIdOf(entry) ?? []
-    )
-    buildPacks.value = await buildCustomNodesService.getNodePacks(ids)
-  }
+  onMounted(loadIndex)
 
-  watch([query, page], fetchPage, { immediate: true })
-  onMounted(fetchBuildPacks)
+  const licenses = computed(() => licenseOptions(index.value))
 
-  const showsBuildFirst = computed(() => query.value === '' && page.value === 0)
-
-  const rows = computed<NodePackRow[]>(() => {
+  const matchingRows = computed<NodePackRow[]>(() => {
     const current = session()
-    const entries = current.build.build.custom_nodes
-    const leading = showsBuildFirst.value
-      ? entries.map((entry) =>
-          inBuildRow(
-            entry,
-            buildPacks.value.find((pack) => pack.id === registryIdOf(entry)) ??
-              null
-          )
-        )
-      : []
-    const listed = results.value.flatMap((pack) => {
-      const entry = buildEntryFor(pack, entries)
-      if (!entry) return [packRow(pack, current)]
-      return showsBuildFirst.value ? [] : [inBuildRow(entry, pack)]
-    })
-    return [...leading, ...listed]
+    const { query, status: statusFilter, licenses: picked, sort } = view()
+    const unlisted = buildPacksMissingFrom(index.value, current)
+    const packs = [...unlisted, ...index.value]
+      .filter(
+        (pack) => matchesQuery(pack, query) && matchesLicenses(pack, picked)
+      )
+      .sort(comparePacks(sort))
+    const rows = packs
+      .map((pack) => rowOf(pack, current, !unlisted.includes(pack)))
+      .filter((row) =>
+        matchesStatus(statusFilter, { installed: isInstalled(row) })
+      )
+    return [
+      ...rows.filter((row) => row.kind === 'inBuild'),
+      ...rows.filter((row) => row.kind !== 'inBuild')
+    ]
   })
 
-  return { rows, status, hasMore, retry: fetchPage }
+  const pageCount = computed(() =>
+    Math.max(1, Math.ceil(matchingRows.value.length / NODE_PACK_PAGE_SIZE))
+  )
+
+  const rows = computed(() =>
+    matchingRows.value.slice(
+      page.value * NODE_PACK_PAGE_SIZE,
+      (page.value + 1) * NODE_PACK_PAGE_SIZE
+    )
+  )
+
+  return { rows, status, pageCount, licenses, retry: loadIndex }
 }

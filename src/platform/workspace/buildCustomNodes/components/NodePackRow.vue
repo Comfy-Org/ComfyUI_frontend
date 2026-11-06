@@ -1,14 +1,19 @@
 <template>
   <TableRow>
-    <TableCell class="truncate font-medium" :title="name">{{ name }}</TableCell>
-    <TableCell class="truncate text-muted-foreground" :title="pack?.publisher">
-      {{ pack?.publisher || '—' }}
+    <TableCell class="truncate font-medium" :title="row.pack.name">
+      {{ row.pack.name }}
+    </TableCell>
+    <TableCell
+      class="truncate text-muted-foreground"
+      :title="row.pack.publisher"
+    >
+      {{ row.pack.publisher || EMPTY_CELL }}
     </TableCell>
     <TableCell class="text-muted-foreground tabular-nums">
-      {{ pack ? formatCount(pack.installs) : '—' }}
+      {{ hasRegistryData ? formatCount(row.pack.installs) : EMPTY_CELL }}
     </TableCell>
     <TableCell class="text-muted-foreground tabular-nums">
-      {{ pack ? formatCount(pack.stars) : '—' }}
+      {{ hasRegistryData ? formatCount(row.pack.stars) : EMPTY_CELL }}
     </TableCell>
     <TableCell>
       <NodePackVersionSelect
@@ -21,32 +26,38 @@
         {{ versionCell }}
       </span>
     </TableCell>
-    <TableCell class="truncate text-muted-foreground" :title="pack?.license">
-      {{ pack?.license || '—' }}
+    <TableCell class="truncate text-muted-foreground" :title="row.pack.license">
+      {{ row.pack.license || EMPTY_CELL }}
     </TableCell>
     <TableCell>
-      <Checkbox
+      <NodePackCheckbox
         v-if="row.kind === 'pickable'"
         :model-value="row.picked"
-        :aria-label="$t('buildCustomNodes.picker.installLabel', { pack: name })"
+        :aria-label="
+          $t('buildCustomNodes.picker.installLabel', { pack: row.pack.name })
+        "
         @update:model-value="emit('toggle', row.pack, row.choice)"
       />
-      <Badge v-else-if="row.kind === 'inBuild'">
-        {{ $t('buildCustomNodes.picker.inBuild') }}
-      </Badge>
+      <NodePackCheckbox
+        v-else-if="row.kind === 'inBuild'"
+        :model-value="true"
+        disabled
+        :aria-label="
+          $t('buildCustomNodes.picker.inBuildLabel', { pack: row.pack.name })
+        "
+      />
     </TableCell>
   </TableRow>
 </template>
 
 <script setup lang="ts">
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodePack } from '@/platform/workspace/buildCustomNodes/buildCustomNodesTypes'
+import NodePackCheckbox from '@/platform/workspace/buildCustomNodes/components/NodePackCheckbox.vue'
 import NodePackVersionSelect from '@/platform/workspace/buildCustomNodes/components/NodePackVersionSelect.vue'
 import type { NodePackVersionChoice } from '@/platform/workspace/buildCustomNodes/nodePackChoice'
 import type { NodePackRow } from '@/platform/workspace/buildCustomNodes/useNodePackRows'
@@ -64,8 +75,9 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 const { versionText } = useNodePackListItems()
 
-const pack = computed(() => row.pack)
-const name = computed(() => (row.kind === 'inBuild' ? row.name : row.pack.name))
+const EMPTY_CELL = '—'
+
+const hasRegistryData = computed(() => row.kind !== 'inBuild' || row.listed)
 const versionCell = computed(() =>
   row.kind === 'inBuild'
     ? versionText(row.label)

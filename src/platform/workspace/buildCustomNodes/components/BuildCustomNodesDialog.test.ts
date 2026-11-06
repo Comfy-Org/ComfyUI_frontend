@@ -96,11 +96,17 @@ const RGTHREE = {
   publisher: 'rgthree'
 }
 const IMPACT = nodePack('comfyui-impact-pack', 'ComfyUI Impact Pack', '8.30.0')
-const SUBPACK = nodePack(
-  'comfyui-impact-subpack',
-  'ComfyUI Impact Subpack',
-  '1.3.5'
-)
+const SUBPACK = {
+  ...nodePack('comfyui-impact-subpack', 'ComfyUI Impact Subpack', '1.3.5'),
+  installs: 2_300_000,
+  license: 'AGPL-3.0'
+}
+const EASY_USE = {
+  ...nodePack('comfyui-easy-use', 'ComfyUI-Easy-Use', '1.3.1'),
+  publisher: 'yolain',
+  installs: 3_800_000,
+  license: 'MIT'
+}
 
 function release(overrides: Partial<ReleaseBuild> = {}): ReleaseBuild {
   return {
@@ -152,6 +158,15 @@ async function renderDialog(build = deploymentBuild()) {
   return { user, onDone, onDismiss }
 }
 
+function packRowNames(): string[] {
+  return screen
+    .getAllByRole('row')
+    .slice(1)
+    .flatMap((row) => within(row).queryAllByRole('cell').slice(0, 1))
+    .map((cell) => cell.textContent.trim())
+    .filter((name) => name !== '')
+}
+
 async function poll() {
   await vi.advanceTimersByTimeAsync(BUILD_CUSTOM_NODES_POLL_MS)
 }
@@ -168,11 +183,10 @@ async function pickImpactAndReview(user: ReturnType<typeof userEvent.setup>) {
 describe('BuildCustomNodesDialog', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    service.searchNodePacks.mockResolvedValue({
+    service.listNodePacks.mockResolvedValue({
       ok: true,
-      value: { packs: [RGTHREE, IMPACT, SUBPACK], hasMore: false }
+      value: [SUBPACK, RGTHREE, IMPACT, EASY_USE]
     })
-    service.getNodePacks.mockResolvedValue([RGTHREE])
     service.getNodePackVersions.mockResolvedValue({
       ok: true,
       value: ['1.3.5', '1.3.4', '1.3.3']
@@ -206,11 +220,25 @@ describe('BuildCustomNodesDialog', () => {
     expect(
       screen.getByRole('heading', { name: 'Add custom nodes to Studio Build' })
     ).toBeInTheDocument()
-    const inBuild = (await screen.findAllByRole('row')).find((row) =>
-      within(row).queryByText('In Build')
+    const inBuild = await screen.findByRole('checkbox', {
+      name: 'rgthree-comfy is already in the Build'
+    })
+    expect(inBuild).toBeChecked()
+    expect(inBuild).toBeDisabled()
+    expect(packRowNames()).toEqual([
+      'rgthree-comfy',
+      'ComfyUI-Easy-Use',
+      'ComfyUI Impact Pack',
+      'ComfyUI Impact Subpack'
+    ])
+    expect(
+      screen.getByRole('link', {
+        name: 'Edit the custom nodes of Studio Build on the Developer Platform'
+      })
+    ).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/builds/new?edit=bld-1&step=nodes'
     )
-    expect(inBuild).toHaveTextContent(/rgthree-comfy.*1\.0\.2/)
-    expect(within(inBuild!).queryByRole('checkbox')).not.toBeInTheDocument()
     expect(
       screen.getByRole('checkbox', {
         name: 'Add ComfyUI Impact Pack to the Build'
@@ -223,13 +251,19 @@ describe('BuildCustomNodesDialog', () => {
 
   it('searches the registry, and the review lists exactly the picked packs at their versions', async () => {
     const { user } = await renderDialog()
+    await screen.findByRole('checkbox', {
+      name: 'rgthree-comfy is already in the Build'
+    })
 
     await user.type(
       screen.getByRole('combobox', { name: 'Search node packs' }),
       'impact'
     )
     await vi.advanceTimersByTimeAsync(300)
-    expect(service.searchNodePacks).toHaveBeenLastCalledWith('impact', 0)
+    expect(packRowNames()).toEqual([
+      'ComfyUI Impact Pack',
+      'ComfyUI Impact Subpack'
+    ])
 
     await user.click(
       await screen.findByRole('checkbox', {
@@ -280,6 +314,59 @@ describe('BuildCustomNodesDialog', () => {
     expect(items[1]).toHaveTextContent(
       /^ComfyUI Impact Subpack\s*Dr\.Lt\.Data\s*Pinned\s*1\.3\.4$/
     )
+  })
+
+  it('filters to installed packs and sorts by pack name, like the platform wizard', async () => {
+    const { user } = await renderDialog()
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: 'Add ComfyUI Impact Pack to the Build'
+      })
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Filter node packs by status. Showing All packs.'
+      })
+    )
+    await user.click(await screen.findByRole('radio', { name: 'Installed' }))
+    expect(packRowNames()).toEqual(['rgthree-comfy', 'ComfyUI Impact Pack'])
+
+    await user.click(screen.getByRole('radio', { name: 'Not installed' }))
+    await user.keyboard('{Escape}')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Sort node packs. Sorted by Most installs.'
+      })
+    )
+    await user.click(
+      await screen.findByRole('radio', { name: 'Pack name, Z to A' })
+    )
+    expect(packRowNames()).toEqual([
+      'ComfyUI-Easy-Use',
+      'ComfyUI Impact Subpack'
+    ])
+  })
+
+  it('filters by license', async () => {
+    const { user } = await renderDialog()
+    await screen.findByRole('checkbox', {
+      name: 'rgthree-comfy is already in the Build'
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Filter node packs by license. Showing Any license.'
+      })
+    )
+    await user.click(await screen.findByRole('checkbox', { name: 'MIT' }))
+
+    expect(packRowNames()).toEqual(['ComfyUI-Easy-Use'])
+    expect(
+      screen.getByRole('button', {
+        name: 'Filter node packs by license. Showing MIT.'
+      })
+    ).toBeInTheDocument()
   })
 
   it('adds the picks to the Build, builds a Release, then moves the deployment to it', async () => {
