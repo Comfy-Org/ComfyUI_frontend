@@ -1206,6 +1206,34 @@ describe('useBillingCapabilities', () => {
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
       expect(billingCapabilities.canTopUp.value).toBe(true)
     })
+
+    it('reads again when the flag arrives while the denied read is in flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectRead = reject
+          })
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      const initialized = billingCapabilities.initialize()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
   })
 
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {

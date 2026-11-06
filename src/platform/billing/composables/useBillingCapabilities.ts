@@ -84,6 +84,7 @@ function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const webSession = useCloudWebSessionStore()
   const { flags } = useFeatureFlags()
+  const lapseRecoveryEnabled = () => flags.webSessionLapseRecoveryEnabled
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -396,6 +397,7 @@ function useBillingCapabilitiesInternal() {
     else resetRead()
 
     const requestId = ++latestRequestId
+    const recoveryEnabledAtStart = lapseRecoveryEnabled()
     const controller = new AbortController()
     const abortRequest = () => controller.abort()
     if (signal?.aborted) controller.abort()
@@ -494,6 +496,12 @@ function useBillingCapabilitiesInternal() {
             : unavailableState(userId, workspaceId)
         }
         scheduleRefresh()
+        // A flag that arrived mid-flight missed the fetch layer's 401 replay.
+        refetchAfterSettle =
+          denied &&
+          !recoveryEnabledAtStart &&
+          lapseRecoveryEnabled() &&
+          webSession.state.phase === 'signed_in'
         // A sustained outage retries on a timer, so reporting every attempt
         // would emit one warning a minute for as long as the tab is open.
         if (!denied && !firstFailure) return
@@ -561,7 +569,7 @@ function useBillingCapabilitiesInternal() {
   )
 
   watch(
-    [() => webSession.state, () => flags.webSessionLapseRecoveryEnabled],
+    [() => webSession.state, lapseRecoveryEnabled],
     ([state, recoveryEnabled]) => {
       if (
         state.phase === 'signed_in' &&
