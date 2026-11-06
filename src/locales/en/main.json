@@ -4284,6 +4284,8 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "downloaded": "Workflow downloaded",
+    "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
       "checking": "Checking Comfy Cloud…"
