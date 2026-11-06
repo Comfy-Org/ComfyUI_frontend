@@ -26,7 +26,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -1035,11 +1035,11 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
 
     expect(nodesStore.missingNodesError).toBeNull()
@@ -1069,15 +1069,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
 
-    // loadGraphData runs this after clearing isLoadingGraph.
     executionErrorStore.retireResolvedMissingNodePromptError()
 
     expect(executionErrorStore.lastPromptError).toBeNull()
