@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { isDesktop } from '@/platform/distribution/types'
 
 export const LOCAL_HANDOFF_PARAM = 'from_local'
 
@@ -62,7 +63,12 @@ export function isLocalOrigin(origin: string): boolean {
   }
 }
 
+/** Desktop hands off through its userdata relay instead of a postMessage. */
+export function handsOffThroughDesktopRelay(): boolean {
+  return isDesktop || Boolean(window.__comfyDesktop2)
+}
+
 /** The Cloud receiver accepts a browser handoff only from a local origin. */
 export function canHandOffToCloud(): boolean {
-  return isLocalOrigin(window.location.origin)
+  return handsOffThroughDesktopRelay() || isLocalOrigin(window.location.origin)
 }
