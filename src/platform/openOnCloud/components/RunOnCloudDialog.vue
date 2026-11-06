@@ -1,6 +1,13 @@
 <template>
+  <DeploySetupCard
+    v-if="state.kind === 'deploySetup'"
+    :video-sources="DEPLOY_VIDEO_SOURCES"
+    :poster-src="DEPLOY_VIDEO_POSTER_SRC"
+    @done="emit('done')"
+    @dismiss="emit('dismiss')"
+  />
   <RunOnCloudCard
-    v-if="state.kind === 'ready'"
+    v-else-if="state.kind === 'ready'"
     :asks-to-sign-in="state.asksToSignIn"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
@@ -13,9 +20,14 @@ import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
+import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import {
+  DEPLOY_VIDEO_POSTER_SRC,
+  DEPLOY_VIDEO_SOURCES
+} from '@/platform/workflow/deploy/constants'
 
 const emit = defineEmits<{
   done: []

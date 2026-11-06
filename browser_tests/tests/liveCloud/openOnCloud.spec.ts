@@ -56,5 +56,44 @@ test.describe(
         })
       })
     })
+
+    test('offers deployment when Cloud lacks a workflow node', async ({
+      comfyPage,
+      cloudOrigin
+    }) => {
+      await test.step('Load the workflow containing VAESave', async () => {
+        await comfyPage.workflow.loadWorkflow(
+          'openOnCloud/02-missing-cloud-node'
+        )
+      })
+
+      await test.step('Read the missing node from the real Cloud server', async () => {
+        const responsePromise = comfyPage.page.waitForResponse(
+          (response) =>
+            response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
+            response.request().method() === 'POST'
+        )
+        await comfyPage.page.getByTestId('cloud-button').click()
+        const response = await responsePromise
+
+        expect(response.status()).toBe(200)
+        expect(await response.serverAddr()).not.toBeNull()
+        const compatibility = zCloudCompatibility.parse(await response.json())
+        expect(compatibility.cloud.missing_node_types).toContain('VAESave')
+        expect(compatibility.cloud.missing_models).toEqual([])
+      })
+
+      await test.step('Offer the deployment', async () => {
+        await expect(
+          comfyPage.page.getByRole('heading', {
+            name: 'Deploy your setup to Comfy Cloud',
+            exact: true
+          })
+        ).toBeVisible()
+        await comfyPage.attachScreenshot('missing-cloud-node.png', {
+          runInCI: true
+        })
+      })
+    })
   }
 )
