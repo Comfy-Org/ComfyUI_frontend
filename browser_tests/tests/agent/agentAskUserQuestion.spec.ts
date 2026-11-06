@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -16,11 +15,7 @@ import {
   unknownKindAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
-
-async function top(locator: Locator): Promise<number> {
-  const box = await locator.boundingBox()
-  return box?.y ?? Number.NaN
-}
+import { expectTopToBottom } from '@e2e/fixtures/utils/verticalOrder'
 
 test.describe(
   'Agent ask_user question',
@@ -92,14 +87,7 @@ test.describe(
       send(toolCall('set_widget', 'success'))
       await expect(step('Set widget')).toBeVisible()
 
-      await expect
-        .poll(async () => {
-          const [first, middle, last] = await Promise.all(
-            [step('List slots'), card, step('Set widget')].map(top)
-          )
-          return first < middle && middle < last
-        })
-        .toBe(true)
+      await expectTopToBottom(step('List slots'), card, step('Set widget'))
     })
 
     test('a radio, in-flight, closed, refused and unconfirmed question and an unrenderable ask each show their own card', async ({
