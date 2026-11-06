@@ -47,7 +47,7 @@ async function openHandedOffWorkflow(
     if (outcome === false || outcome === undefined) return
   } catch (error) {
     reportError(error, {
-      errorType: 'open_on_cloud_load_failure',
+      errorType: 'failure_loading_open_on_cloud_workflow',
       surface: 'graph'
     })
     toast.error(t('openOnCloud.handoffFailed'), { duration: NOTICE_MS })

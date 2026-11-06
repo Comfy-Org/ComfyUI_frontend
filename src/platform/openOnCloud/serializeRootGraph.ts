@@ -7,7 +7,7 @@ export function serializeRootGraph(): ComfyWorkflowJSON | null {
     return app.rootGraph.serialize() as unknown as ComfyWorkflowJSON
   } catch (error) {
     reportError(error, {
-      errorType: 'open_on_cloud_serialize_failure',
+      errorType: 'failure_serializing_open_on_cloud_graph',
       surface: 'graph'
     })
     return null

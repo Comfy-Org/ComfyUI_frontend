@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -25,6 +26,7 @@ vi.mock(
 vi.mock(import('vue-router'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function linkWithNonce(): string {
   const nonce = crypto.randomUUID()
@@ -193,6 +195,29 @@ describe(useLocalHandoffUrlLoader, () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(useToast().toasts).not.toContainEqual(
       expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
+  })
+
+  it('reports a load that throws and says the workflow did not open', async () => {
+    vi.mocked(app.loadGraphData).mockRejectedValue(new Error('configure'))
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: "Couldn't open the workflow from ComfyUI on your computer"
+        })
+      )
+    )
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_loading_open_on_cloud_workflow'
+      })
     )
   })
 
