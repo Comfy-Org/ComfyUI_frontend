@@ -216,6 +216,24 @@ describe('WidgetInputNumberInput Value Binding', () => {
       max: 5000,
       moves: [80],
       expected: 2.25
+    },
+    {
+      name: 'precision boundary',
+      start: 9007199254740990,
+      step: 3,
+      width: 300,
+      max: Number.MAX_VALUE,
+      moves: [80],
+      expected: 9007199254740991
+    },
+    {
+      name: 'unsafe starting value',
+      start: 9007199254740992,
+      step: 3,
+      width: 300,
+      max: Number.MAX_VALUE,
+      moves: [10],
+      expected: 9007199254740992
     }
   ])(
     'keeps scrubbing position-based for $name',
@@ -350,6 +368,134 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
 describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
   const SAFE_INTEGER_MAX = Number.MAX_SAFE_INTEGER
   const UNSAFE_LARGE_INTEGER = 18446744073709552000
+
+  it.for([
+    { start: 9007199254740990, key: 'ArrowUp', expected: '9007199254740991' },
+    { start: 9007199254740991, key: 'ArrowUp', expected: '9007199254740991' },
+    { start: 9007199254740991, key: 'ArrowDown', expected: '9007199254740990' },
+    { start: -9007199254740991, key: 'PageUp', expected: '-9007199254740981' },
+    {
+      start: -9007199254740991,
+      key: 'ArrowDown',
+      expected: '-9007199254740991'
+    },
+    { start: 9007199254740988, key: 'PageUp', expected: '9007199254740991' },
+    {
+      start: -9007199254740988,
+      key: 'PageDown',
+      expected: '-9007199254740991'
+    },
+    { start: 9007199254740992, key: 'ArrowDown', expected: '9007199254740992' },
+    { start: -9007199254740992, key: 'PageUp', expected: '-9007199254740992' },
+    { start: 0.25, key: 'ArrowUp', expected: '1.25' }
+  ])(
+    'limits $key from $start to $expected',
+    async ({ start, key, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(start, 'float', { step2: 1 }),
+        start
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+    }
+  )
+
+  it.for([
+    { start: 8, key: 'ArrowUp', expected: '9' },
+    { start: 8, key: 'PageUp', expected: '9' },
+    { start: -3, key: 'ArrowDown', expected: '-4' },
+    { start: -3, key: 'PageDown', expected: '-4' }
+  ])(
+    'respects tighter bounds for $key from $start',
+    async ({ start, key, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(start, 'int', { min: -4, max: 9, step2: 3 }),
+        start
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+    }
+  )
+
+  it.for([
+    {
+      start: 9007199254740990,
+      button: 'increment',
+      expected: '9007199254740991',
+      disabled: true
+    },
+    {
+      start: -9007199254740990,
+      button: 'decrement',
+      expected: '-9007199254740991',
+      disabled: true
+    },
+    {
+      start: 9007199254740991,
+      button: 'decrement',
+      expected: '9007199254740988',
+      disabled: false
+    },
+    {
+      start: -9007199254740991,
+      button: 'increment',
+      expected: '-9007199254740988',
+      disabled: false
+    }
+  ])(
+    'steps $button from $start to $expected at the precision boundary',
+    async ({ start, button, expected, disabled }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(start, 'int', { step2: 3 }),
+        start
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+
+      await user.click(screen.getByTestId(button))
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+      expect(screen.getByTestId(button)).toHaveProperty('disabled', disabled)
+    }
+  )
+
+  it('commits unsafe text and allows editing back into the stepping range', async () => {
+    const user = userEvent.setup()
+    const { rerender } = renderComponent(
+      createNumberInputWidget(37, 'int', { step2: 1 }),
+      37
+    )
+    await rerender({
+      'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
+    })
+    const input = screen.getByRole('spinbutton')
+
+    await user.clear(input)
+    await user.type(input, '9007199254740992{Enter}')
+    expect(input).toHaveValue('9007199254740992')
+    expect(screen.getByTestId('increment')).toBeDisabled()
+
+    await user.clear(input)
+    await user.type(input, '41{Enter}{ArrowUp}')
+    expect(input).toHaveValue('42')
+  })
 
   it('shows buttons for safe integer values', () => {
     renderComponent(createNumberInputWidget(1000, 'int'), 1000)
