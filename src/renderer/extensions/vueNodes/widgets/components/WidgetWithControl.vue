@@ -25,7 +25,7 @@ const controlModel = ref(props.widget.controlWidget.value)
 watch(controlModel, props.widget.controlWidget.update)
 </script>
 <template>
-  <div class="relative grid grid-cols-subgrid">
+  <div class="relative">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
       <template #between>
         <PopoverRoot>

@@ -251,7 +251,10 @@ const meta: Meta<StoryArgs> = {
             }
           ]
           return definitions.map(({ arg, ...widget }) => ({
-            renderKey: `${widget.name}:${args.seedMode}`,
+            renderKey:
+              widget.name === 'seed'
+                ? `${widget.name}:${args.seedMode}`
+                : widget.name,
             visible: true,
             simplified: {
               ...widget,

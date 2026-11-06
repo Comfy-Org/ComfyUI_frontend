@@ -34,7 +34,7 @@ test.describe('App mode builder selection', () => {
       })
 
       await test.step('Select the input in the sidebar', async () => {
-        await row.click()
+        await comfyPage.appMode.select.selectInputWidget('KSampler', 'seed')
         await expect(comfyPage.appMode.select.inputItems).toHaveCount(1)
       })
     }

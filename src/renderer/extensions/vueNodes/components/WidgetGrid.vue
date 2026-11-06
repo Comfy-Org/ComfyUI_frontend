@@ -55,7 +55,7 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="grid min-w-0 grid-cols-2">
+                <div class="grid min-w-0 grid-cols-1">
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -66,7 +66,7 @@
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
-                      cn('col-span-2', row.widget.hasError && 'font-bold')
+                      cn('col-span-full', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
                     @contextmenu="row.widget.handleContextMenu"

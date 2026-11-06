@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -21,11 +21,6 @@ const i18n = createI18n({
       }
     }
   }
-})
-
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  template: '<div class="relative"><slot /></div>'
 })
 
 const flushPromises = () =>
@@ -64,10 +59,7 @@ describe('WidgetSelectDefault', () => {
       },
       slots,
       global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetLayoutField: WidgetLayoutFieldStub
-        }
+        plugins: [i18n]
       }
     })
 

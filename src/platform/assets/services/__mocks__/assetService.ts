@@ -9,6 +9,15 @@ export const assetService: Partial<typeof RealAssetService> = {
   getAssetsPageByTag: vi.fn(),
   getAssetsPageForNodeType: vi.fn(),
   getExportDownloadUrl: vi.fn(),
+  isAssetBrowserEligible: vi.fn<typeof RealAssetService.isAssetBrowserEligible>(
+    () => false
+  ),
+  isWidgetAssetPickerEnabled: vi.fn<
+    typeof RealAssetService.isWidgetAssetPickerEnabled
+  >(() => false),
   removeAssetTags: vi.fn(),
+  shouldUseWidgetAssetPicker: vi.fn<
+    typeof RealAssetService.shouldUseWidgetAssetPicker
+  >(() => false),
   updateAsset: vi.fn()
 }

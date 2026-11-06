@@ -1,10 +1,11 @@
 import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -15,18 +16,7 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-// Mock state for asset service
-const mockShouldUseWidgetAssetPicker = vi.hoisted(() => vi.fn(() => false))
-const mockIsWidgetAssetPickerEnabled = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetBrowserEligible = vi.hoisted(() => vi.fn(() => false))
-
-vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
-  assetService: {
-    isAssetBrowserEligible: mockIsAssetBrowserEligible,
-    shouldUseWidgetAssetPicker: mockShouldUseWidgetAssetPicker,
-    isWidgetAssetPickerEnabled: mockIsWidgetAssetPickerEnabled
-  }
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
 
 const WidgetSelectDropdownStub = defineComponent({
   name: 'WidgetSelectDropdown',
@@ -80,7 +70,7 @@ it.for([
     expected: 'schedule/custom'
   }
 ])('summarizes $name', ({ name, eligible, value, expected }) => {
-  mockIsAssetBrowserEligible.mockReturnValue(eligible)
+  vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(eligible)
   render(WidgetSelect, {
     props: {
       widget: { name, type: 'combo', value, options: { values: [value] } },
@@ -95,11 +85,6 @@ it.for([
 })
 
 describe('WidgetSelect Value Binding', () => {
-  beforeEach(() => {
-    mockShouldUseWidgetAssetPicker.mockReturnValue(false)
-    mockIsWidgetAssetPickerEnabled.mockReturnValue(false)
-  })
-
   type SelectWidgetOptions = {
     values?: string[]
     return_index?: boolean
@@ -183,7 +168,7 @@ describe('WidgetSelect Value Binding', () => {
 
   describe('Asset mode detection', () => {
     it('enables asset mode when shouldUseWidgetAssetPicker returns true', () => {
-      mockShouldUseWidgetAssetPicker.mockReturnValue(true)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {
@@ -194,7 +179,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('disables asset mode when shouldUseWidgetAssetPicker returns false', () => {
-      mockShouldUseWidgetAssetPicker.mockReturnValue(false)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
+import en from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
@@ -11,7 +12,8 @@ import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'en'
+  locale: 'en',
+  messages: { en }
 })
 
 function createNumberInputWidget(
@@ -75,8 +77,8 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it.for([
-    { target: 'row', disabled: false, expected: 49 },
-    { target: 'label', disabled: false, expected: 49 },
+    { target: 'row', disabled: false, expected: 157 },
+    { target: 'label', disabled: false, expected: 157 },
     { target: 'input', disabled: false, expected: 37 },
     { target: 'increment', disabled: false, expected: 39 },
     { target: 'row', disabled: true, expected: 37 }
@@ -98,6 +100,9 @@ describe('WidgetInputNumberInput Value Binding', () => {
         input: screen.getByRole('spinbutton'),
         increment: screen.getByTestId('increment')
       }
+      vi.spyOn(targets.row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 300, 24)
+      )
 
       await user.pointer([
         {
@@ -113,16 +118,109 @@ describe('WidgetInputNumberInput Value Binding', () => {
     }
   )
 
-  it('keeps precision-limited steppers visible and disabled in unified rows', () => {
-    renderComponent(
-      createNumberInputWidget(18446744073709552000),
-      18446744073709552000
-    )
+  it.for([
+    {
+      name: 'fragmented',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [30, 40, 50, 80],
+      expected: 157
+    },
+    {
+      name: 'return to origin',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [80, 20],
+      expected: 37
+    },
+    {
+      name: 'return after clamping',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 50,
+      moves: [620, 20],
+      expected: 37
+    },
+    {
+      name: 'larger magnitude',
+      start: 3700,
+      step: 2,
+      width: 300,
+      max: 10000,
+      moves: [80],
+      expected: 5180
+    },
+    {
+      name: 'scaled row',
+      start: 3700,
+      step: 2,
+      width: 600,
+      max: 10000,
+      moves: [140],
+      expected: 5180
+    },
+    {
+      name: 'zero',
+      start: 0,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [80],
+      expected: 120
+    },
+    {
+      name: 'fractional',
+      start: -0.75,
+      step: 0.05,
+      width: 300,
+      max: 5000,
+      moves: [80],
+      expected: 2.25
+    }
+  ])(
+    'keeps scrubbing position-based for $name',
+    async ({ start, step, width, max, moves, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(start, 'float', {
+          step2: step,
+          max,
+          precision: 2
+        }),
+        start
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const row = screen.getByTestId('widget-number-row')
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, width, 24)
+      )
 
-    expect(screen.getByTestId('increment')).toBeDisabled()
-    expect(screen.getByTestId('decrement')).toBeDisabled()
-    expect(screen.getByRole('spinbutton')).toBeEnabled()
-  })
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: row,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        ...moves.map((clientX) => ({
+          target: row,
+          coords: { clientX, clientY: 10 }
+        })),
+        { keys: '[/MouseLeft]', target: row }
+      ])
+
+      expect(
+        Number(screen.getByRole('spinbutton').getAttribute('aria-valuenow'))
+      ).toBeCloseTo(expected, 12)
+    }
+  )
 
   it('focuses the numeric input when its label is clicked', async () => {
     const user = userEvent.setup()
@@ -132,38 +230,6 @@ describe('WidgetInputNumberInput Value Binding', () => {
 
     expect(screen.getByRole('spinbutton')).toHaveFocus()
   })
-
-  it.for([
-    { disabled: false, expected: 49 },
-    { disabled: true, expected: 37 }
-  ])(
-    'scrubs the label with disabled=$disabled',
-    async ({ disabled, expected }) => {
-      const user = userEvent.setup()
-      const widget = createNumberInputWidget(37, 'int', {
-        step2: 2,
-        disabled
-      })
-      const { rerender } = renderComponent(widget, 37)
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
-      const label = screen.getByText('test_input_number')
-
-      await user.pointer([
-        {
-          keys: '[MouseLeft>]',
-          target: label,
-          coords: { clientX: 20, clientY: 10 }
-        },
-        { target: label, coords: { clientX: 80, clientY: 10 } },
-        { keys: '[/MouseLeft]', target: label }
-      ])
-
-      expect(screen.getByRole('spinbutton')).toHaveValue(String(expected))
-    }
-  )
 
   it('displays initial value in input field', () => {
     const widget = createNumberInputWidget(42, 'int')
@@ -265,7 +331,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('disables buttons for unsafe large integer values', () => {
+  it('disables unsafe stepping but keeps direct editing available', async () => {
     renderComponent(
       createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int'),
       UNSAFE_LARGE_INTEGER
@@ -273,6 +339,11 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
     expect(screen.getByTestId('increment')).toBeDisabled()
     expect(screen.getByTestId('decrement')).toBeDisabled()
+    expect(screen.getByRole('spinbutton')).toBeEnabled()
+
+    await userEvent.click(screen.getByTestId('widget-number-row'))
+
+    expect(screen.getByRole('spinbutton')).toHaveFocus()
   })
 
   it('disables buttons for unsafe negative integer values', () => {

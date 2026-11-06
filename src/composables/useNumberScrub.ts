@@ -1,37 +1,57 @@
-import { useEventListener, usePointerSwipe, whenever } from '@vueuse/core'
+import { useEventListener, usePointerSwipe } from '@vueuse/core'
 import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useNumberScrub(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
   {
+    value,
+    min,
+    max,
+    step,
     disabled,
     onScrub,
     onClick
   }: {
+    value: MaybeRefOrGetter<number>
+    min: MaybeRefOrGetter<number>
+    max: MaybeRefOrGetter<number>
+    step: MaybeRefOrGetter<number>
     disabled: MaybeRefOrGetter<boolean>
-    onScrub: (steps: number) => void
+    onScrub: (value: number) => void
     onClick: () => void
   }
 ) {
-  let dragDelta = 0
+  let startValue = 0
+  let unitsPerPixel = 0
   let dragged = false
-  let editingControl = false
+  let editingControl = true
   const swipe = usePointerSwipe(target, {
+    threshold: 3,
     onSwipeStart: (event) => {
-      dragDelta = 0
       dragged = false
       editingControl = isEditingControl(event.target)
+      startValue = toValue(value)
+      const width = toValue(target)?.getBoundingClientRect().width ?? 0
+      const span = Math.min(
+        toValue(max) - toValue(min),
+        Math.abs(startValue) * 2
+      )
+      unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
     },
-    onSwipeEnd: () => (dragDelta = 0)
-  })
-
-  whenever(swipe.distanceX, () => {
-    if (toValue(disabled) || editingControl) return
-    const delta = ((swipe.distanceX.value - dragDelta) / 10) | 0
-    dragDelta += delta * 10
-    dragged ||= delta !== 0
-    onScrub(-delta)
+    onSwipe: () => {
+      if (toValue(disabled) || editingControl) return
+      dragged = true
+      const increment = toValue(step)
+      const delta = -swipe.distanceX.value * unitsPerPixel
+      const offset =
+        increment > 0 ? Math.round(delta / increment) * increment : delta
+      const nextValue = Math.min(
+        toValue(max),
+        Math.max(toValue(min), startValue + offset)
+      )
+      if (nextValue !== toValue(value)) onScrub(nextValue)
+    }
   })
 
   useEventListener(target, 'click', (event) => {

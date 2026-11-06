@@ -14,13 +14,13 @@
         :model-value="[modelValue]"
         v-bind="filteredProps"
         class="grow text-xs"
-        :step="stepValue"
+        :step
         :aria-label="widget.name"
         @update:model-value="updateLocalValue"
       />
       <NumberField
         v-model="modelValue"
-        :step="stepValue"
+        :step
         :min="widget.options?.min"
         :max="widget.options?.max"
         :disabled="widget.options?.disabled"
@@ -28,7 +28,7 @@
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
         }"
-        class="h-auto w-auto shrink-0 bg-transparent hover:bg-transparent"
+        class="h-auto w-auto shrink-0 bg-transparent focus-within:ring-0 hover:bg-transparent"
       >
         <NumberFieldInput
           :id="inputId"
@@ -76,6 +76,5 @@ const filteredProps = computed(() =>
 const p = widget.options?.precision
 const precision = typeof p === 'number' && p >= 0 ? p : undefined
 
-// Calculate the step value based on precision or widget options
-const stepValue = useNumberStepCalculation(widget.options, precision, true)
+const step = useNumberStepCalculation(widget.options, precision, true)
 </script>

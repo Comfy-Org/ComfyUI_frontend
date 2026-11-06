@@ -15,14 +15,14 @@
         :stops="gradientStops"
         :min="widget.options?.min ?? 0"
         :max="widget.options?.max ?? 100"
-        :step="stepValue"
+        :step
         :disabled="widget.options?.disabled"
         :aria-label="widget.name"
         class="min-w-0 flex-1"
       />
       <NumberField
         v-model="modelValue"
-        :step="stepValue"
+        :step
         :min="widget.options?.min"
         :max="widget.options?.max"
         :disabled="widget.options?.disabled"
@@ -30,7 +30,7 @@
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
         }"
-        class="h-auto w-auto shrink-0 bg-transparent hover:bg-transparent"
+        class="h-auto w-auto shrink-0 bg-transparent focus-within:ring-0 hover:bg-transparent"
       >
         <NumberFieldInput
           :id="inputId"
@@ -81,5 +81,5 @@ const precision = computed(() => {
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const stepValue = useNumberStepCalculation(widget.options, precision, true)
+const step = useNumberStepCalculation(widget.options, precision, true)
 </script>

@@ -3,9 +3,25 @@
     :widget
     :input-id
     :value-text="selectedSummary"
-    :root-class="rowCursor"
-    has-leading-button
+    :root-class="cn(!disabled && 'cursor-pointer')"
   >
+    <template #leading>
+      <Button
+        type="button"
+        tabindex="-1"
+        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :disabled="isStepDisabled(-1)"
+        class="h-full w-6 shrink-0 rounded-none p-0 disabled:opacity-30"
+        variant="muted-textonly"
+        size="unset"
+        @click="stepOption(-1)"
+      >
+        <i
+          class="icon-[lucide--chevron-left] text-muted-foreground"
+          aria-hidden="true"
+        />
+      </Button>
+    </template>
     <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
@@ -51,23 +67,21 @@
             </button>
           </ComboboxTrigger>
           <slot />
-          <template v-for="button in stepperButtons" :key="button.direction">
-            <button
-              type="button"
-              tabindex="-1"
-              :aria-label="`${widgetLabel}: ${$t(button.labelKey)}`"
-              :disabled="isStepDisabled(button.direction)"
-              :class="
-                cn(
-                  'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none not-disabled:hover:bg-muted disabled:cursor-default disabled:opacity-30',
-                  button.className
-                )
-              "
-              @click="stepOption(button.direction)"
-            >
-              <i :class="button.icon" aria-hidden="true" />
-            </button>
-          </template>
+          <Button
+            type="button"
+            tabindex="-1"
+            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :disabled="isStepDisabled(1)"
+            class="h-full w-6 shrink-0 rounded-none p-0 disabled:opacity-30"
+            variant="muted-textonly"
+            size="unset"
+            @click="stepOption(1)"
+          >
+            <i
+              class="icon-[lucide--chevron-right] text-muted-foreground"
+              aria-hidden="true"
+            />
+          </Button>
         </div>
       </ComboboxAnchor>
 
@@ -182,6 +196,7 @@ import {
 import { computed, ref, useId } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
@@ -212,20 +227,6 @@ const inputId = useId()
 const widgetLabel = computed(() => widget.label || widget.name)
 
 const MAX_VISIBLE_OPTIONS = 7
-const stepperButtons = [
-  {
-    direction: -1,
-    labelKey: 'g.previous',
-    icon: 'icon-[lucide--chevron-left] text-muted-foreground',
-    className: 'absolute inset-y-0 left-0'
-  },
-  {
-    direction: 1,
-    labelKey: 'g.next',
-    icon: 'icon-[lucide--chevron-right] text-muted-foreground',
-    className: ''
-  }
-] as const
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -291,9 +292,6 @@ const dynamicOptions = computed(
   () => typeof widgetOptions.value?.values === 'function'
 )
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
-const rowCursor = computed(() =>
-  !disabled.value ? 'cursor-pointer' : undefined
-)
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(
   () => widgetOptions.value?.filterPlaceholder ?? placeholder.value

@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
   test('reclaims numeric draft width after keyboard stepping', async ({
@@ -24,6 +25,37 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
       expect(steppedBounds.width).toBeLessThan(draftBounds.width - 50)
     }).toPass({ timeout: 5000 })
     await expect(row.getByText('steps', { exact: true })).toBeVisible()
+
+    await test.step('Narrow the node so the seed label yields before its committed value', async () => {
+      const seedRow = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
+      const seedInput = seedRow.getByRole('spinbutton', { name: 'seed' })
+      const label = seedRow.getByTestId(TestIds.widgets.layoutFieldLabel)
+      await seedInput.fill('9007199254740991')
+      await seedInput.press('Enter')
+      await seedInput.blur()
+      await expect(seedInput).toHaveValue('9007199254740991')
+
+      const nodeFixture = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const width = await nodeFixture.root.evaluate(
+        (element) => element.getBoundingClientRect().width
+      )
+      await nodeFixture.resizeFromCorner('SE', 260 - width, 0)
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() =>
+          label.evaluate((element) => element.scrollWidth - element.clientWidth)
+        )
+        .toBeGreaterThan(0)
+      await expect
+        .poll(() =>
+          seedInput.evaluate(
+            (element) => element.scrollWidth - element.clientWidth
+          )
+        )
+        .toBeLessThanOrEqual(1)
+      await expect(seedInput).toHaveValue('9007199254740991')
+    })
   })
 
   test('should be suppressed while linked and editable after unlinking', async ({
