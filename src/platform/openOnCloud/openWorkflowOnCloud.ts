@@ -60,6 +60,13 @@ async function prepareWorkflow(): Promise<ComfyWorkflowJSON | null> {
   return graph ? validateComfyWorkflow(graph) : null
 }
 
+function showPrepareFailed() {
+  useToast().error(t('openOnCloud.prepareFailed'), {
+    description: t('openOnCloud.prepareFailedDetail'),
+    duration: NOTICE_MS
+  })
+}
+
 function downloadWorkflow(filename: string, workflow: ComfyWorkflowJSON) {
   downloadBlob(
     `${filename}.json`,
@@ -101,17 +108,12 @@ async function openFromDesktop(
   filename: string
 ): Promise<void> {
   const workflow = await prepareWorkflow()
-  if (workflow) {
-    const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
-      () => undefined
-    )
-    if (relay) {
-      tabs.openDisowned(relay)
-      return
-    }
-  }
+  if (!workflow) return showPrepareFailed()
+  const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
+    () => undefined
+  )
+  if (relay) return tabs.openDisowned(relay)
   tabs.openDisowned(cloudEditorUrl())
-  if (!workflow) return
   downloadWorkflow(filename, workflow)
   useToast().info(t('openOnCloud.downloaded'), {
     description: t('openOnCloud.downloadedDetail'),
@@ -134,5 +136,5 @@ export async function openWorkflowOnCloud(
   }
   const prepared = prepareWorkflow()
   armHandoff(tab, nonce, filename, prepared)
-  await prepared
+  if (!(await prepared)) showPrepareFailed()
 }

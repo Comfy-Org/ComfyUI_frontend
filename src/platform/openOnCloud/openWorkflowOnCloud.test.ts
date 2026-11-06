@@ -31,6 +31,10 @@ vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
 }))
 
 const cloudOrigin = new URL(getComfyCloudBaseUrl()).origin
+const PREPARE_FAILED_TOAST = expect.objectContaining({
+  kind: 'error',
+  title: "Couldn't prepare this workflow for Comfy Cloud"
+})
 
 function fakeTabs(opens = true) {
   const tab = {
@@ -139,7 +143,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     expect(tab.postMessage).not.toHaveBeenCalled()
   })
 
-  it('sends nothing when the graph cannot be serialized', async () => {
+  it('sends nothing and says so when the graph cannot be serialized', async () => {
     vi.mocked(serializeRootGraph).mockReturnValueOnce(null)
     const { tab, tabs } = fakeTabs()
     await openWorkflowOnCloud(tabs)
@@ -148,6 +152,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(tab.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(PREPARE_FAILED_TOAST)
   })
 
   it('says so when a popup blocker refuses the tab', async () => {
@@ -211,6 +216,21 @@ describe('openWorkflowOnCloud on Desktop', () => {
       }),
       expect.objectContaining({ stringify: true, overwrite: false })
     )
+  })
+
+  it('opens nothing and says so when the graph cannot be serialized', async () => {
+    distribution.isDesktop = true
+    onTestFinished(() => {
+      distribution.isDesktop = false
+    })
+    vi.mocked(serializeRootGraph).mockReturnValueOnce(null)
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(PREPARE_FAILED_TOAST)
   })
 
   it('keeps the download fallback when the local server cannot stage a transfer', async () => {
