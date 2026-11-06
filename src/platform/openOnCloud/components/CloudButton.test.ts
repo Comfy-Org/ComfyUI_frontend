@@ -68,6 +68,21 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
   })
 
+  it('keeps a held answer when hovered again', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    render(CloudButton, { global: { plugins: [testI18n] } })
+    const user = userEvent.setup()
+    const button = screen.getByTestId('cloud-button')
+    await user.hover(button)
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+
+    await user.unhover(button)
+    await user.hover(button)
+
+    expect(button).not.toHaveAttribute('aria-busy')
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
   it('checks again after the workflow is edited', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
     render(CloudButton, { global: { plugins: [testI18n] } })

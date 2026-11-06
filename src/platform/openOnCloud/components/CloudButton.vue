@@ -48,7 +48,8 @@ const tooltip = computed(() =>
 )
 
 function checkWorkflow() {
-  if (!isChecking.value) void checkStore.check()
+  const { phase } = check.value
+  if (phase === 'idle' || phase === 'failed') void checkStore.check()
 }
 
 function showModal() {
