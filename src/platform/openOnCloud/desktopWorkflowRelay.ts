@@ -70,23 +70,31 @@ export async function stageDesktopWorkflowHandoff(
   return relay.href
 }
 
-async function relayWorkflow(url: URL): Promise<boolean> {
-  const nonce = url.searchParams.get(DESKTOP_RELAY_PARAM)
-  if (
-    !z.uuid().safeParse(nonce).success ||
-    !nonce ||
-    !isLocalOrigin(url.origin)
-  )
-    return false
-  api.user = url.searchParams.get('user') ?? ''
+function relayNonce(url: URL): string | undefined {
+  if (!isLocalOrigin(url.origin)) return undefined
+  return z.uuid().safeParse(url.searchParams.get(DESKTOP_RELAY_PARAM)).data
+}
+
+/** Reads and removes the staged transfer, so a relay link works once. */
+async function takeRelayDestination(
+  nonce: string
+): Promise<string | undefined> {
   const file = transferFile(nonce)
   const response = await api.getUserData(file)
-  if (!response.ok) return false
+  if (!response.ok) return undefined
   const record = zRelayRecord.safeParse(await response.json())
-  if (!record.success || record.data.expiresAt <= Date.now()) return false
+  if (!record.success || record.data.expiresAt <= Date.now()) return undefined
   const removed = await api.deleteUserData(file)
-  if (!removed.ok) return false
-  window.location.replace(record.data.destination)
+  return removed.ok ? record.data.destination : undefined
+}
+
+async function relayWorkflow(url: URL): Promise<boolean> {
+  const nonce = relayNonce(url)
+  if (!nonce) return false
+  api.user = url.searchParams.get('user') ?? ''
+  const destination = await takeRelayDestination(nonce)
+  if (!destination) return false
+  window.location.replace(destination)
   return true
 }
 
