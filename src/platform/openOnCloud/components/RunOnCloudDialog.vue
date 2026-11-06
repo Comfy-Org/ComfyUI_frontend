@@ -1,13 +1,11 @@
 <template>
   <MissingModelsCard
     v-if="state.kind === 'missingModels'"
-    :title-id
     :models="state.models"
     @dismiss="emit('dismiss')"
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
-    :title-id
     :video-sources="DEPLOY_VIDEO_SOURCES"
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     @done="emit('done')"
@@ -15,7 +13,6 @@
   />
   <RunOnCloudCard
     v-else-if="state.kind === 'ready'"
-    :title-id
     :asks-to-sign-in="state.asksToSignIn"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
@@ -37,10 +34,6 @@ import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
-
-const { titleId } = defineProps<{
-  titleId?: string
-}>()
 
 const emit = defineEmits<{
   done: []

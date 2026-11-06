@@ -24,7 +24,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import {
   closeRunOnCloudDialog,
@@ -34,7 +33,6 @@ import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudW
 
 const { t } = useI18n()
 const toast = useToast()
-const { toastErrorHandler } = useErrorHandling()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
 
@@ -57,7 +55,7 @@ function showModal() {
     toast.error(t('openOnCloud.checkFailed'))
     return
   }
-  openRunOnCloudDialog().catch(toastErrorHandler)
+  void openRunOnCloudDialog()
 }
 
 function openModal() {

@@ -1,12 +1,9 @@
 <template>
   <DeploymentDialogFrame @dismiss="emit('dismiss')">
     <section class="flex flex-col gap-4 px-9 pt-9 pb-8">
-      <h2
-        :id="titleId"
-        class="my-0 pr-8 text-2xl/8 font-bold tracking-tight text-foreground"
-      >
+      <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
         {{ $t('openOnCloud.missingModels.title', models.length) }}
-      </h2>
+      </DialogTitle>
       <p class="my-0 text-sm/5 text-muted-foreground">
         {{ $t('openOnCloud.missingModels.unavailable') }}
       </p>
@@ -37,10 +34,11 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { CloudMissingModel } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-defineProps<{ titleId?: string; models: CloudMissingModel[] }>()
+defineProps<{ models: CloudMissingModel[] }>()
 
 const emit = defineEmits<{ dismiss: [] }>()
 </script>

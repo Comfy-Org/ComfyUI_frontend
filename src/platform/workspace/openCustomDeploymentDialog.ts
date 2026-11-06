@@ -18,7 +18,8 @@ function cardOf(module: { default?: Component } | undefined): Component {
   return module.default
 }
 
-async function openCardDialog(
+/** Lazily opens a headless deployment card; a failed load shows a toast and resolves false. */
+export async function openCardDialog(
   key: string,
   load: () => Promise<{ default?: Component } | undefined>,
   props: Record<string, unknown>

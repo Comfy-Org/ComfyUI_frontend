@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -44,6 +45,24 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
+  it('names the dialog after its title', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
+    ).toBeVisible()
   })
 
   it('waits for the pending hover request when clicked', async () => {

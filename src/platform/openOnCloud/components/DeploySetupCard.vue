@@ -1,19 +1,4 @@
 <template>
-  <DefineDocsLink>
-    <Button
-      variant="link"
-      size="link"
-      class="w-fit"
-      as="a"
-      :href="docsUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {{ $t('deployToComfyApi.readDocs') }}
-      <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
-    </Button>
-  </DefineDocsLink>
-
   <DeploymentDialogFrame
     data-testid="deploy-setup-card"
     @dismiss="emit('dismiss')"
@@ -46,12 +31,9 @@
 
     <section class="flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8">
       <div class="flex flex-col gap-3">
-        <h2
-          :id="titleId"
-          class="my-0 text-xl font-semibold text-foreground @xl:text-2xl"
-        >
+        <DialogTitle class="my-0 text-xl @xl:text-2xl">
           {{ $t('openOnCloud.deploySetup') }}
-        </h2>
+        </DialogTitle>
         <p class="my-0 text-sm/5 text-muted-foreground">
           {{ $t('openOnCloud.deploySetupDialog.body') }}
         </p>
@@ -68,13 +50,13 @@
             {{ point }}
           </li>
         </ul>
-        <ReuseDocsLink class="@xl:hidden" />
+        <DeploymentDocsLink class="@xl:hidden" />
       </div>
 
       <footer
         class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
       >
-        <ReuseDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
+        <DeploymentDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
         <Button
           variant="secondary"
           size="lg"
@@ -98,19 +80,18 @@
 </template>
 
 <script setup lang="ts">
-import { createReusableTemplate } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
-import { useExternalLink } from '@/composables/useExternalLink'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
+import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
-  titleId?: string
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -120,13 +101,7 @@ const emit = defineEmits<{
   dismiss: []
 }>()
 
-defineOptions({ inheritAttrs: false })
-
 const { t } = useI18n()
-const { buildDocsUrl } = useExternalLink()
-const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-
-const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const platformUrl = getComfyPlatformBaseUrl()
 const points = [
   t('openOnCloud.deploySetupDialog.pointGpu'),
