@@ -35,7 +35,10 @@ export function localHandoffWorkflow(
 }
 
 export function cloudEditorUrl(nonce?: string): string {
-  const url = new URL('/', getComfyCloudBaseUrl())
+  const configured = new URL(getComfyCloudBaseUrl())
+  const url = new URL('/', configured)
+  for (const override of configured.searchParams.getAll('ff'))
+    url.searchParams.append('ff', override)
   if (nonce) url.searchParams.set(LOCAL_HANDOFF_PARAM, nonce)
   return url.href
 }
