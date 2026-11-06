@@ -245,7 +245,9 @@ it.for([
     ]
     renderTab()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Preview clip.mp4' })
+    )
 
     expect(
       screen.getByTestId('lightbox-url').getAttribute('data-display-name')
