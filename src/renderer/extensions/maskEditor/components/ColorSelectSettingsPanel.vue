@@ -123,13 +123,11 @@ const store = useMaskEditorStore()
 const methodMenuOpen = ref(false)
 const methodValueId = useId()
 
-const methodLabels = computed(
-  (): Record<ColorComparisonMethod, string> => ({
-    [ColorComparisonMethod.Simple]: t('maskEditor.methodSimple'),
-    [ColorComparisonMethod.HSL]: t('maskEditor.methodHsl'),
-    [ColorComparisonMethod.LAB]: t('maskEditor.methodLab')
-  })
-)
+const methodLabels = computed((): Record<ColorComparisonMethod, string> => ({
+  [ColorComparisonMethod.Simple]: t('maskEditor.methodSimple'),
+  [ColorComparisonMethod.HSL]: t('maskEditor.methodHsl'),
+  [ColorComparisonMethod.LAB]: t('maskEditor.methodLab')
+}))
 
 const methodMenuItems = computed<MenuItem[]>(() =>
   Object.values(ColorComparisonMethod).map((method) => ({

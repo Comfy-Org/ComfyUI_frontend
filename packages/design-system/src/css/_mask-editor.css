@@ -30,8 +30,8 @@
 }
 .maskEditor_toolPanelContainerSelected::before,
 .maskEditor_toolPanelContainer:not(
-  .maskEditor_toolPanelContainerSelected
-):hover::before {
+    .maskEditor_toolPanelContainerSelected
+  ):hover::before {
   content: '';
   position: absolute;
   inset: 6px;
@@ -44,8 +44,8 @@
   opacity: 1;
 }
 .maskEditor_toolPanelContainer:not(
-  .maskEditor_toolPanelContainerSelected
-):hover::before {
+    .maskEditor_toolPanelContainerSelected
+  ):hover::before {
   background-color: var(--muted-foreground);
 }
 .maskEditor_toolPanelContainer svg {
