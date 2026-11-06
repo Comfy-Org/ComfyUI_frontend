@@ -249,6 +249,41 @@ describe('BuildCustomNodesDialog', () => {
     ).toBeDisabled()
   })
 
+  it('links each pack name to its repository, and leaves a name without an http link as text', async () => {
+    service.listNodePacks.mockResolvedValue({
+      ok: true,
+      value: [
+        IMPACT,
+        {
+          ...nodePack('unsafe-pack', 'Unsafe Pack', '1.0.0'),
+          repository: 'javascript:alert(1)'
+        },
+        {
+          ...nodePack('no-repo-pack', 'No Repo Pack', '1.0.0'),
+          repository: undefined
+        }
+      ]
+    })
+    await renderDialog()
+
+    const impact = await screen.findByRole('link', {
+      name: 'ComfyUI Impact Pack'
+    })
+    expect(impact).toHaveAttribute(
+      'href',
+      'https://github.com/ltdrdata/comfyui-impact-pack'
+    )
+    expect(impact).toHaveAttribute('target', '_blank')
+    expect(packRowNames()).toContain('Unsafe Pack')
+    expect(packRowNames()).toContain('No Repo Pack')
+    expect(
+      screen.queryByRole('link', { name: 'Unsafe Pack' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'No Repo Pack' })
+    ).not.toBeInTheDocument()
+  })
+
   it('searches the registry, and the review lists exactly the picked packs at their versions', async () => {
     const { user } = await renderDialog()
     await screen.findByRole('checkbox', {

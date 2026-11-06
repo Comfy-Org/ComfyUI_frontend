@@ -1,7 +1,16 @@
 <template>
   <TableRow>
     <TableCell class="truncate pl-4 font-medium" :title="row.pack.name">
-      {{ row.pack.name }}
+      <a
+        v-if="repositoryUrl"
+        :href="repositoryUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="underline-offset-4 hover:underline"
+      >
+        {{ row.pack.name }}
+      </a>
+      <template v-else>{{ row.pack.name }}</template>
     </TableCell>
     <TableCell
       class="truncate text-muted-foreground"
@@ -62,6 +71,7 @@ import NodePackVersionSelect from '@/platform/workspace/buildCustomNodes/compone
 import type { NodePackVersionChoice } from '@/platform/workspace/buildCustomNodes/nodePackChoice'
 import type { NodePackRow } from '@/platform/workspace/buildCustomNodes/useNodePackRows'
 import { useNodePackListItems } from '@/platform/workspace/buildCustomNodes/useNodePackListItems'
+import { isSafeExternalUrl } from '@/utils/urlSafety'
 
 const { row } = defineProps<{
   row: NodePackRow
@@ -78,6 +88,10 @@ const { versionText } = useNodePackListItems()
 const EMPTY_CELL = '—'
 
 const hasRegistryData = computed(() => row.kind !== 'inBuild' || row.listed)
+const repositoryUrl = computed(() => {
+  const { repository } = row.pack
+  return repository && isSafeExternalUrl(repository) ? repository : undefined
+})
 const versionCell = computed(() =>
   row.kind === 'inBuild'
     ? versionText(row.label)
