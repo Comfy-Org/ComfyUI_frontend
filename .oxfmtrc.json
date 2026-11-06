@@ -6,6 +6,7 @@
   "trailingComma": "none",
   "printWidth": 80,
   "ignorePatterns": [
+    "eslint-suppressions.json",
     "oxlint-suppressions.json",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "packages/comfyui-api-types/openapi.yaml",

@@ -12,6 +12,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { selectBillingBanners } from '@comfyorg/account-ui/billing'
 import type {
+  AutoTopUpMemberView,
   BillingBannerKind,
   BillingBannerView
 } from '@comfyorg/account-ui/billing'
@@ -26,6 +27,10 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -100,7 +105,9 @@ interface Scenario {
   balance?: BalanceInfo | null
   autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
-  manageAutoTopUpDenial?: string
+  canViewAutoTopUp?: boolean
+  canViewAutoTopUpMemberNotice?: boolean
+  autoTopUpMemberView?: AutoTopUpMemberView
   canTopUp?: boolean
   topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
@@ -166,6 +173,14 @@ function arrange(scenario: Scenario = {}) {
       resubscribe
     })
   )
+  function servedNoticePlan() {
+    return {
+      isTeamPlan: false,
+      ...(scenario.subscription === undefined
+        ? activeSubscription
+        : scenario.subscription)
+    }
+  }
   vi.mocked(useBillingCapabilities).mockReturnValue(
     fromPartial({
       canSubscribeSelfServe: computed(
@@ -205,6 +220,18 @@ function arrange(scenario: Scenario = {}) {
       runDeniedPaymentPastDue: computed(() =>
         receiveServerFact('denied_reasons.can_run_workflows', false)
       ),
+      billingNoticeAudience: computed(() =>
+        receiveServerFact(
+          'billing_notice_audience',
+          servedBillingNoticeAudience(servedNoticePlan())
+        )
+      ),
+      endingNoticeStartsAt: computed(() =>
+        receiveServerFact(
+          'ending_notice_starts_at',
+          servedEndingNoticeStartsAt(servedNoticePlan())
+        )
+      ),
       canTopUp: computed(() => scenario.canTopUp ?? true),
       topUpDenial: computed(() => scenario.topUpDenial),
       canManageAutoTopUp: computed(() =>
@@ -213,19 +240,31 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageAutoTopUp ?? true
         )
       ),
+      canViewAutoTopUpCard: computed(() =>
+        receiveServerFact(
+          'can_view_auto_top_up',
+          scenario.canViewAutoTopUp ?? true
+        )
+      ),
+      canViewAutoTopUpMemberNotice: computed(() =>
+        receiveServerFact(
+          'can_view_auto_top_up_member_notice',
+          scenario.canViewAutoTopUpMemberNotice ?? false
+        )
+      ),
       autoTopUpEnabled: computed(() =>
         receiveServerFact(
           'auto_top_up_enabled',
           scenario.autoTopUpEnabled ?? true
         )
       ),
-      manageAutoTopUpDenial: computed(() =>
+      autoTopUpSetup: computed(() => null),
+      autoTopUpMemberView: computed(() =>
         receiveServerFact(
-          'denied_reasons.can_manage_auto_top_up',
-          scenario.manageAutoTopUpDenial
+          'auto_top_up_member_view',
+          scenario.autoTopUpMemberView ?? null
         )
       ),
-      autoTopUpSetup: computed(() => null),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
         () => scenario.capabilitiesResolved ?? true
@@ -396,7 +435,7 @@ describe('BillingTab', () => {
     arrange({ isInitialized: false })
 
     const skeleton = screen.getByTestId('billing-plan-skeleton')
-    expect(skeleton).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(skeleton).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
     expect(
       within(screen.getByTestId('billing-plan-section')).getByRole('heading', {
         name: 'Plan'
@@ -410,7 +449,7 @@ describe('BillingTab', () => {
 
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent("We couldn't load your plan.")
-    expect(alert).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
     expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -474,7 +513,7 @@ describe('BillingTab', () => {
     )
     expect(within(plan).getByTestId('billing-plan-row')).toHaveClass(
       'rounded-xl',
-      'border-card',
+      'border-border',
       'px-5',
       'py-4'
     )
@@ -489,7 +528,12 @@ describe('BillingTab', () => {
       })
     ).toHaveClass('text-base', 'font-medium')
     const handoffCard = within(handoff).getByTestId('billing-handoff-card')
-    expect(handoffCard).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(handoffCard).toHaveClass(
+      'rounded-xl',
+      'border-border',
+      'px-5',
+      'py-4'
+    )
     expect(
       within(handoffCard).getByRole('link', { name: 'Open billing' })
     ).toContainHTML('icon-[lucide--arrow-up-right]')
@@ -650,7 +694,7 @@ describe('BillingTab', () => {
         /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
       )
     )
-    expect(usage).toContainHTML('icon-[lucide--external-link]')
+    expect(usage).toContainHTML('icon-[lucide--arrow-up-right]')
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
     ).not.toBeInTheDocument()
@@ -1073,17 +1117,74 @@ describe('BillingTab', () => {
         arrange(scenario)
       }
 
-      it('shows Plan ending with the plan row keeping the actions', () => {
+      it('shows Plan ending with Resume plan on both the banner and the plan row', () => {
         arrangeOnCloud(ending)
 
         const banner = screen.getByRole('status')
         expect(banner).toHaveTextContent(
           'Your Pro plan ends on October 28, 2026'
         )
-        expect(within(banner).queryAllByRole('button')).toEqual([])
         expect(
-          screen.getByRole('button', { name: 'Resume plan' })
-        ).toBeInTheDocument()
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(['Resume plan'])
+        expect(
+          screen.getAllByRole('button', { name: 'Resume plan' })
+        ).toHaveLength(2)
+      })
+
+      const ended: Scenario = {
+        subscription: {
+          ...activeSubscription,
+          isActive: false,
+          endDate: '2026-09-01T00:00:00Z'
+        },
+        subscriptionStatus: 'ended'
+      }
+
+      it('shows Plan ended with Choose a plan as the white button on both the banner and the plan row', async () => {
+        arrangeOnCloud(ended)
+
+        const bannerLink = within(screen.getByRole('status')).getByRole(
+          'link',
+          { name: 'Choose a plan' }
+        )
+        const plansLink = {
+          variant: 'inverted',
+          href: expect.stringMatching(
+            /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+          )
+        }
+        expect(
+          screen
+            .getAllByRole('link', { name: 'Choose a plan' })
+            .map((link) => ({
+              variant: link.dataset.variant,
+              href: link.getAttribute('href')
+            }))
+        ).toEqual([plansLink, plansLink])
+        bannerLink.addEventListener('click', (event) => event.preventDefault())
+
+        await userEvent.click(bannerLink)
+
+        expect(
+          vi.mocked(useTelemetry)()?.trackBillingEvent
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operation: 'platform_handoff',
+            target: 'plans'
+          })
+        )
+      })
+
+      it('shows Plan ended without Choose a plan when the server withholds can_open_plans', () => {
+        arrangeOnCloud({ ...ended, canOpenPlans: false })
+
+        expect(screen.getByRole('status')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
       })
 
       it('shows no lifecycle banner on an active plan', () => {
@@ -1470,18 +1571,29 @@ describe('BillingTab', () => {
         isCloud: true,
         choosePlan: 'inverted',
         addCredits: 'secondary',
-        planEndedBanners: 1
+        planEndedBanners: 1,
+        choosePlanLinks: 2,
+        whiteActions: 2
       },
       {
         surface: 'local ComfyUI',
         isCloud: false,
         choosePlan: 'secondary',
         addCredits: 'inverted',
-        planEndedBanners: 0
+        planEndedBanners: 0,
+        choosePlanLinks: 1,
+        whiteActions: 1
       }
     ])(
-      'keeps one white button on $surface when an ended plan is out of credits',
-      async ({ isCloud, choosePlan, addCredits, planEndedBanners }) => {
+      'keeps one white action on $surface when an ended plan is out of credits',
+      async ({
+        isCloud,
+        choosePlan,
+        addCredits,
+        planEndedBanners,
+        choosePlanLinks,
+        whiteActions
+      }) => {
         distribution.isCloud = isCloud
         onTestFinished(() => {
           distribution.isCloud = false
@@ -1493,9 +1605,12 @@ describe('BillingTab', () => {
         })
 
         await screen.findByTestId('billing-auto-top-up-status')
-        expect(
-          screen.getByRole('link', { name: 'Choose a plan' })
-        ).toHaveAttribute('data-variant', choosePlan)
+        const choosePlanVariants = screen
+          .getAllByRole('link', { name: 'Choose a plan' })
+          .map((link) => link.dataset.variant)
+        expect(choosePlanVariants).toEqual(
+          Array(choosePlanLinks).fill(choosePlan)
+        )
         expect(addCreditsVariants()).toEqual([addCredits])
         expect(screen.queryAllByText(/^Your .*plan has ended$/)).toHaveLength(
           planEndedBanners
@@ -1505,7 +1620,7 @@ describe('BillingTab', () => {
             ...screen.queryAllByRole('button'),
             ...screen.queryAllByRole('link')
           ].filter((el) => el.dataset.variant === 'inverted')
-        ).toHaveLength(1)
+        ).toHaveLength(whiteActions)
       }
     )
 
@@ -1539,7 +1654,7 @@ describe('BillingTab', () => {
         within(card).getByRole('button', { name: 'Add credits' })
       ).toBeDisabled()
       expect(card).toHaveTextContent(
-        "Buying credits isn't available right now. Try again later, or message support."
+        "Buying credits isn't available right now. Try again later."
       )
     })
 
@@ -1923,13 +2038,18 @@ describe('BillingTab', () => {
         reads: 0
       },
       {
-        case: 'a member without can_manage_auto_top_up',
-        scenario: { canManageAutoTopUp: false },
+        case: 'a member without can_view_auto_top_up',
+        scenario: { canManageAutoTopUp: false, canViewAutoTopUp: false },
         reads: 0
       },
       {
-        case: 'top-up is paused (can_top_up false)',
-        scenario: { canTopUp: false },
+        case: 'top-up is paused (can_view_auto_top_up false)',
+        scenario: { canTopUp: false, canViewAutoTopUp: false },
+        reads: 1
+      },
+      {
+        case: 'the server withholds can_view_auto_top_up from an owner who can manage and top up',
+        scenario: { canViewAutoTopUp: false },
         reads: 1
       }
     ])('hides the card when $case', ({ scenario, reads }) => {
@@ -1944,7 +2064,8 @@ describe('BillingTab', () => {
     describe('member block', () => {
       const member: Scenario = {
         canManageAutoTopUp: false,
-        manageAutoTopUpDenial: 'not_workspace_owner',
+        canViewAutoTopUp: false,
+        canViewAutoTopUpMemberNotice: true,
         canTopUp: false
       }
 
@@ -1972,18 +2093,38 @@ describe('BillingTab', () => {
         expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
       })
 
+      it('shows a member the served auto top-up status, still without an action or a settings read', () => {
+        arrange({
+          ...member,
+          autoTopUpMemberView: {
+            status: 'paused_by_budget',
+            threshold_credits: 1000,
+            target_credits: 6275,
+            cycle_resets_at: null,
+            monthly_budget_is_default: true
+          }
+        })
+
+        const block = screen.getByTestId('billing-auto-top-up-member-card')
+        expect(
+          within(block).getByTestId('billing-auto-top-up-status')
+        ).toHaveTextContent('Maximum reached')
+        expect(block).toHaveTextContent(
+          'Monthly maximum reached. Contact a workspace owner to manage this.'
+        )
+        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
+        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
+        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
+      })
+
       it.for<{ case: string; scenario: Scenario }>([
         {
           case: 'the flag is off',
           scenario: { ...member, autoTopUpEnabled: false }
         },
         {
-          case: 'the denial is not not_workspace_owner',
-          scenario: { ...member, manageAutoTopUpDenial: 'not_a_member' }
-        },
-        {
-          case: 'the server sends no denial',
-          scenario: { ...member, manageAutoTopUpDenial: undefined }
+          case: 'the workspace is paused (can_view_auto_top_up_member_notice false)',
+          scenario: { ...member, canViewAutoTopUpMemberNotice: false }
         },
         { case: 'the actor is an owner', scenario: {} }
       ])('hides the member block when $case', ({ scenario }) => {
@@ -2037,7 +2178,7 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       action: 'contactSupport',
       href: 'https://comfy.org/contact/'
     },
-    planStatus: { kind: 'planStatus', ...text },
+    planStatus: { kind: 'planStatus', ...text, action: null, href: null },
     autoTopUp: {
       kind: 'autoTopUp',
       ...text,

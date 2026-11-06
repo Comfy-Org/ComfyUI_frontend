@@ -72,6 +72,8 @@ function capabilitiesBody(deniedReasons: Record<string, string>) {
       can_invite_members: false,
       can_leave_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_billing: true,
       can_manage_members: false,
       can_manage_partner_node_access: false,
@@ -164,7 +166,7 @@ describe('BillingLocalCreditBanner from a served capabilities read', () => {
 
     const banner = await screen.findByTestId('billing-local-credit-banner')
     expect(banner).toHaveTextContent(
-      "Your team has used all its credits. Buying credits isn't available right now. Try again later."
+      "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     )
     expect(
       screen.queryByRole('button', { name: 'Add credits' })

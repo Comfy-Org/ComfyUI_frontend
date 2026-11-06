@@ -251,10 +251,11 @@ export function useWorkflowPersistenceV2() {
     if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved, { isCurrent })
+      if (
+        saved &&
+        (await useWorkflowService().openWorkflow(saved, { isCurrent }))
+      )
         return true
-      }
     }
 
     return await draftStore.loadPersistedWorkflow({

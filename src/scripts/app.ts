@@ -792,7 +792,10 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const executionStore = useExecutionStore()
-      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const isActive = executionStore.rememberStampAndCheckActiveWorkflow(
+        detail.prompt_id,
+        detail.workflow_id
+      )
       const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
       const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
       const executionId = tryNormalizeNodeExecutionId(
@@ -817,7 +820,10 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('execution_start', ({ detail }) => {
       const executionStore = useExecutionStore()
-      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const isActive = executionStore.rememberStampAndCheckActiveWorkflow(
+        detail.prompt_id,
+        detail.workflow_id
+      )
       const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
       const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
       if (graph) triggerCallbackOnAllNodes(graph, 'onExecutionStart')
@@ -837,14 +843,19 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          jobId,
+          workflowId
+        )
+      ) {
         releaseSharedObjectUrl(blobUrl)
         return
       }

@@ -26,6 +26,7 @@ interface TopupBalanceSource {
 /**
  * Watch for the user returning from a Stripe top-up and refresh the balance.
  * Safe to call repeatedly: a new call replaces any watch still pending.
+ * Returns a function that stops the watch.
  */
 export function watchForTopupBalanceUpdate({
   source,
@@ -33,8 +34,9 @@ export function watchForTopupBalanceUpdate({
 }: {
   source: TopupBalanceSource
   onBalanceIncreased?: () => Promise<unknown>
-}): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return
+}): () => void {
+  if (typeof window === 'undefined' || typeof document === 'undefined')
+    return () => {}
 
   stopActiveWatch?.()
 
@@ -116,4 +118,5 @@ export function watchForTopupBalanceUpdate({
   timeouts.add(setTimeout(stop, WATCH_LIFETIME_MS))
 
   stopActiveWatch = stop
+  return stop
 }

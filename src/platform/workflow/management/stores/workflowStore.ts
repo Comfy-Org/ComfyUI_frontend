@@ -204,11 +204,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
       )
     }
 
-    if (!openWorkflowPaths.value.includes(workflow.path)) {
-      openWorkflowPaths.value.push(workflow.path)
-    }
+    const addedTab = !openWorkflowPaths.value.includes(workflow.path)
+    if (addedTab) openWorkflowPaths.value.push(workflow.path)
     const graphState = useApp().rootGraphOrUndefined?.state
-    const loadedWorkflow = await workflow.load()
+    const loadedWorkflow = await workflow.load().catch((error: unknown) => {
+      if (addedTab) {
+        openWorkflowPaths.value = openWorkflowPaths.value.filter(
+          (path) => path !== workflow.path
+        )
+      }
+      throw error
+    })
     if (graphState !== useApp().rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
@@ -434,6 +440,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
           const isActiveWorkflow =
             activeWorkflow.value?.path === existingWorkflow.path
 
+          if (!isActiveWorkflow && existingWorkflow.isModified) return
+
           const nextLastModified = Math.max(
             existingWorkflow.lastModified,
             file.modified
@@ -448,12 +456,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
             existingWorkflow.size = file.size
           }
 
-          // Never unload the active workflow - it may contain unsaved in-memory edits.
           if (isActiveWorkflow) {
             return
           }
 
-          // If nothing changed, keep any loaded content cached.
           if (isMetadataUnchanged) {
             return
           }
