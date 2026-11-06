@@ -52,6 +52,20 @@ beforeEach(() => {
 })
 
 describe('resolveModelNodeFromAsset', () => {
+  it.for([
+    '../private.safetensors',
+    '/absolute.safetensors',
+    'folder\\model.safetensors'
+  ])('refuses unsafe server loader path %s', (loader_path) => {
+    mockProvider(createMockNodeProvider())
+    expect(
+      resolveModelNodeFromAsset(createMockAsset({ loader_path }))
+    ).toMatchObject({
+      success: false,
+      error: { code: 'INVALID_ASSET' }
+    })
+  })
+
   describe('valid assets', () => {
     it('uses the server loader path instead of the uploaded display filename', () => {
       mockProvider(createMockNodeProvider())

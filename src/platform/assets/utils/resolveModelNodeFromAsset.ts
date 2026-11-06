@@ -1,4 +1,7 @@
-import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
+import {
+  assetItemSchema,
+  assetFilenameSchema
+} from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
@@ -57,15 +60,18 @@ export function resolveModelNodeFromAsset(
   const validAsset = validatedAsset.data
 
   const filename = validAsset.loader_path ?? getAssetFilename(validAsset)
-  if (filename.length === 0) {
-    console.error(
-      `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
-    )
+  if (
+    filename.length === 0 ||
+    (validAsset.loader_path != null &&
+      !assetFilenameSchema.safeParse(validAsset.loader_path).success)
+  ) {
+    console.error(`Asset ${validAsset.id} has an invalid loader filename`)
     return {
       success: false,
       error: {
         code: 'INVALID_ASSET',
-        message: `Invalid filename (expected non-empty string, got ${typeof filename})`,
+        message:
+          'Invalid filename (expected non-empty string and a safe relative loader path)',
         assetId: validAsset.id
       }
     }

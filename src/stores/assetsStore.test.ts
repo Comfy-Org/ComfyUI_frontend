@@ -1,9 +1,11 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, toValue, watch } from 'vue'
+import { nextTick, ref, toValue, watch } from 'vue'
 
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -194,6 +196,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   it('bounds output lookup when pagination never reports exhaustion', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     let outputPage = 0
     vi.mocked(api.fetchApi).mockImplementation(async (url) => {
       const isInputQuery = url.includes('tags_any=input')
@@ -1784,6 +1787,10 @@ describe('deployment Model Library', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
+    vi.spyOn(useTeamWorkspaceStore(), 'workspaceId', 'get').mockReturnValue(
+      'workspace-1'
+    )
     useDeploymentPickStore().bootDeployment = {
       deployment_id: 'deployment-1',
       release_id: 'release-1',
@@ -1810,7 +1817,7 @@ describe('deployment Model Library', () => {
         'checkpoints',
         'shared.safetensors'
       )
-      const upload = asset('upload', 'loras', 'artist/style.safetensors')
+      const upload = asset('upload', 'loras', 'style.safetensors')
       const releaseLast = asset('release-last')
       const withTypes = (row: AssetItem) =>
         modelTypeMode
@@ -1844,12 +1851,169 @@ describe('deployment Model Library', () => {
       expect(store.getAssets('tag:models')).toEqual([
         withTypes(release),
         withTypes(releaseLast),
-        { ...withTypes(otherCategory), isWorkspaceLibrary: true },
-        { ...withTypes(upload), isWorkspaceLibrary: true }
+        { ...withTypes(upload), isWorkspaceLibrary: true },
+        { ...withTypes(otherCategory), isWorkspaceLibrary: true }
       ])
       expect(store.hasMore('tag:models')).toBe(false)
     }
   )
+
+  it.for([
+    { transition: 'workspace', nextWorkspace: 'workspace-2', nextIdentity: 1 },
+    { transition: 'identity', nextWorkspace: 'workspace-1', nextIdentity: 2 }
+  ])(
+    'clears private cards and rejects pending reads after a $transition change',
+    async ({ nextWorkspace, nextIdentity }) => {
+      const workspace = ref('workspace-1')
+      const identity = ref(1)
+      const workspaceStore = useTeamWorkspaceStore()
+      vi.spyOn(workspaceStore, 'workspaceId', 'get').mockImplementation(
+        () => workspace.value
+      )
+      vi.spyOn(workspaceStore, 'identityGeneration', 'get').mockImplementation(
+        () => identity.value
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(page([]))
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+        page([asset('private')])
+      )
+      const store = useAssetsStore()
+      await store.updateModelsForTag('models')
+      let resolveOld!: (response: AssetResponse) => void
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOld = resolve
+        })
+      )
+      const pending = store.updateModelsForTag('models', { restart: true })
+      workspace.value = nextWorkspace
+      identity.value = nextIdentity
+      expect(store.getAssets('tag:models')).toEqual([])
+      resolveOld(page([asset('stale-private')]))
+      await pending
+      vi.mocked(
+        assetService.getWorkspaceLibraryAssetsPage
+      ).mockRejectedValueOnce(new Error('unavailable'))
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models')).toEqual([])
+    }
+  )
+
+  it('keeps only the runtime winner for each folder and name across pages', async () => {
+    const old = {
+      ...asset('old', 'loras', 'style.safetensors'),
+      created_at: '2026-11-01T00:00:00Z'
+    }
+    const winner = asset('winner', 'loras', 'style.safetensors')
+    const tied = asset('tied', 'loras', 'style.safetensors')
+    const other = asset('other', 'checkpoints', 'style.safetensors')
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(page([]))
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage)
+      .mockResolvedValueOnce(page([old, tied, other], 'next'))
+      .mockResolvedValueOnce(page([winner]))
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+      'winner',
+      'other'
+    ])
+  })
+
+  it.for([
+    { category: 'loras', name: 'legacy.ckpt' },
+    { category: 'loras', name: 'nested/style.safetensors' },
+    { category: 'ipadapter', name: 'style.safetensors' }
+  ])(
+    'omits library models the deployment cannot download: $category/$name',
+    async ({ category, name }) => {
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        page([asset('release')])
+      )
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+        page([asset('unloadable', category, name), asset('valid')])
+      )
+      const store = useAssetsStore()
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+        'release',
+        'valid'
+      ])
+    }
+  )
+
+  it('clears cached library cards and pending reads when runtime support is disabled', async () => {
+    const flags = vi.mocked(useFeatureFlags().flags)
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      page([asset('release')])
+    )
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValueOnce(
+      page([asset('private')])
+    )
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    let resolveOld!: (response: AssetResponse) => void
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOld = resolve
+      })
+    )
+    const pending = store.updateModelsForTag('models', { restart: true })
+    flags.runtimeLibraryModelsEnabled = false
+    expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+      'release'
+    ])
+    await store.updateModelsForTag('models')
+    expect(assetService.getWorkspaceLibraryAssetsPage).toHaveBeenCalledTimes(2)
+    flags.runtimeLibraryModelsEnabled = true
+    resolveOld(page([asset('stale-private')]))
+    await pending
+    expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+      'release'
+    ])
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValueOnce(
+      page([asset('fresh')])
+    )
+    await store.updateModelsForTag('models')
+    expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+      'release',
+      'fresh'
+    ])
+  })
+
+  it('reports a rejected teammate metadata save and restores the original details', async () => {
+    const teammate = asset('teammate')
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(page([]))
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+      page([teammate])
+    )
+    vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
+      new Error('Asset not found')
+    )
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    const result = await store.updateAssetMetadata(
+      teammate,
+      { name: 'changed' },
+      'tag:models'
+    )
+    expect(result).toBe(false)
+    expect(store.getAssets('tag:models')[0].user_metadata).toEqual(
+      teammate.user_metadata
+    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: expect.stringContaining('save')
+      })
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        surface: 'assets',
+        errorType: 'error_updating_asset_metadata'
+      })
+    )
+  })
 
   it('keeps Release cards and reports a failed library read', async () => {
     const release = asset('release')
@@ -1865,6 +2029,7 @@ describe('deployment Model Library', () => {
     expect(store.getAssets('tag:models')).toEqual([release])
     expect(store.getError('tag:models')).toBe(error)
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'assets',
       errorType: 'error_loading_workspace_library_models'
     })
   })

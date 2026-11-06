@@ -13,6 +13,10 @@ import {
 } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
@@ -113,6 +117,8 @@ export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
   const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const toast = useToast()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -439,7 +445,12 @@ export const useAssetsStore = defineStore('assets', () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
 
     function includesLibrary(): boolean {
-      return isCloud && !!useDeploymentPickStore().bootDeployment
+      return (
+        isCloud &&
+        flags.runtimeLibraryModelsEnabled &&
+        !!workspaceStore.workspaceId &&
+        !!useDeploymentPickStore().bootDeployment
+      )
     }
 
     const mergedAssets = computed<ModelBrowserAsset[]>(() => {
@@ -448,6 +459,10 @@ export const useAssetsStore = defineStore('assets', () => {
       )
       const library = Array.from(
         modelStateByCategory.value.get(libraryCategory)?.assets.values() ?? []
+      ).sort(
+        (a, b) =>
+          Date.parse(b.created_at) - Date.parse(a.created_at) ||
+          (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
       )
       const keysFor = (asset: AssetItem) =>
         getAssetCategories(asset, flags.supportsModelTypeTags).map((category) =>
@@ -458,14 +473,31 @@ export const useAssetsStore = defineStore('assets', () => {
         )
       const releaseKeys = new Set(release.flatMap(keysFor))
       const releaseIds = new Set(release.map((asset) => asset.id))
+      const libraryKeys = new Set<string>()
       return [
         ...release,
         ...library
-          .filter(
-            (asset) =>
-              !releaseIds.has(asset.id) &&
-              !keysFor(asset).some((key) => releaseKeys.has(key))
-          )
+          .filter((asset) => {
+            const categories = getAssetCategories(
+              asset,
+              flags.supportsModelTypeTags
+            )
+            const filename = asset.loader_path ?? getAssetFilename(asset)
+            if (
+              !categories.some((category) =>
+                deploymentDownloads(category, filename)
+              )
+            )
+              return false
+            const keys = keysFor(asset)
+            if (
+              releaseIds.has(asset.id) ||
+              keys.some((key) => releaseKeys.has(key) || libraryKeys.has(key))
+            )
+              return false
+            keys.forEach((key) => libraryKeys.add(key))
+            return true
+          })
           .map((asset) => ({ ...asset, isWorkspaceLibrary: true }))
       ]
     })
@@ -482,6 +514,28 @@ export const useAssetsStore = defineStore('assets', () => {
       AbortController,
       Promise<void>
     >()
+
+    watch(
+      [
+        () => workspaceStore.workspaceId,
+        () => workspaceStore.identityGeneration
+      ],
+      () => {
+        for (const controller of abortByCategory.values()) controller.abort()
+        abortByCategory.clear()
+        pendingRequestByCategory.clear()
+        pendingPromiseByCategory.clear()
+        assetsArrayCache.clear()
+        modelStateByCategory.value.clear()
+      },
+      { flush: 'sync' }
+    )
+
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      () => invalidateCategory(libraryCategory),
+      { flush: 'sync' }
+    )
 
     function createState(
       existingAssets?: Map<string, AssetItem>
@@ -703,6 +757,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
             if (category === libraryCategory) {
               reportError(err, {
+                surface: 'assets',
                 errorType: 'error_loading_workspace_library_models'
               })
             }
@@ -845,12 +900,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
-    /**
-     * Update asset metadata with optimistic cache update
-     * @param asset The asset to update
-     * @param userMetadata The user_metadata to save
-     * @param cacheKey Optional cache key to target for optimistic update
-     */
     async function updateAssetMetadata(
       asset: AssetItem,
       userMetadata: Record<string, unknown>,
@@ -864,13 +913,19 @@ export const useAssetsStore = defineStore('assets', () => {
           user_metadata: userMetadata
         })
         updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        return true
       } catch (error) {
-        console.error('Failed to update asset metadata:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_metadata'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(
           asset.id,
           { user_metadata: originalMetadata },
           cacheKey
         )
+        return false
       }
     }
 
@@ -914,7 +969,11 @@ export const useAssetsStore = defineStore('assets', () => {
           updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
         }
       } catch (error) {
-        console.error('Failed to update asset tags:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_tags'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
 
         if (removedTagsOnServer.length > 0) {
