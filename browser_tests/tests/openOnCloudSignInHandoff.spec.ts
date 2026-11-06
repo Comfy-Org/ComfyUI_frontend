@@ -34,10 +34,6 @@ const HANDED_OVER_WORKFLOW = {
   version: 0.4
 }
 
-/**
- * Plays the local ComfyUI tab: answers the Cloud tab's ready message for
- * `NONCE` with the workflow, the same exchange `openWorkflowOnCloud` runs.
- */
 async function openLocalOpener(page: Page): Promise<void> {
   await page.route(`**${OPENER_PATH}`, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
@@ -94,7 +90,7 @@ test.describe(
   'Open on Cloud handoff through sign-in',
   { tag: '@cloud' },
   () => {
-    test('opens the handed-over workflow after the signed-out Cloud tab signs in', async ({
+    test('opens the handed-over workflow, uncovered, after a fresh account signs in', async ({
       page
     }) => {
       await openLocalOpener(page)
@@ -117,6 +113,7 @@ test.describe(
           hasText: 'Opened from ComfyUI on your computer'
         })
       ).toBeVisible()
+      await expect(cloudTab.getByRole('dialog')).toHaveCount(0)
       expect(new URL(cloudTab.url()).searchParams.has('from_local')).toBe(false)
     })
   }
