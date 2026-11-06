@@ -8,7 +8,7 @@
         v-bind="progressAttrs"
       >
         <div
-          v-if="state.status === 'uploading'"
+          v-if="isTransferring"
           class="pointer-events-none absolute inset-y-0 left-0 bg-primary/30 transition-[width]"
           :style="{ width: `${percent}%` }"
         />
@@ -48,7 +48,7 @@
         />
       </div>
 
-      <p v-else-if="statusLine" class="m-0">
+      <p v-else-if="statusLine" role="status" class="m-0">
         {{ statusLine }}
       </p>
 
@@ -134,7 +134,10 @@ import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { ModelFileUpload } from '@/platform/workspace/composables/useUploadModelFile'
-import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
+import {
+  formatDuration,
+  formatSize
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const { state, folders } = defineProps<{
   state: Exclude<ModelFileUpload, { status: 'idle' }>
@@ -153,24 +156,43 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { modelTypes, isLoading } = useModelTypes()
 
+const isTransferring = computed(
+  () => state.status === 'uploading' || state.status === 'reconnecting'
+)
+
 const percent = computed(() =>
-  state.status === 'uploading' && state.file.size > 0
+  (state.status === 'uploading' || state.status === 'reconnecting') &&
+  state.file.size > 0
     ? Math.round((state.sent / state.file.size) * 100)
     : 0
 )
 
 const canCancel = computed(
-  () => state.status === 'uploading' || state.status === 'stopping'
+  () => isTransferring.value || state.status === 'stopping'
 )
 
 const statusLine = computed(() => {
+  if (state.status === 'reconnecting')
+    return t('assetBrowser.fileUpload.reconnecting')
+  if (
+    state.status === 'uploading' &&
+    state.bytesPerSecond &&
+    state.bytesPerSecond > 0
+  ) {
+    return t('assetBrowser.fileUpload.transferEstimate', {
+      rate: formatSize(Math.max(1, Math.round(state.bytesPerSecond))),
+      time: formatDuration(
+        Math.ceil((state.file.size - state.sent) / state.bytesPerSecond) * 1000
+      )
+    })
+  }
   if (state.status === 'saving') return t('assetBrowser.fileUpload.saving')
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   return undefined
 })
 
 const progressAttrs = computed(() =>
-  state.status === 'uploading'
+  isTransferring.value
     ? {
         role: 'progressbar',
         'aria-label': title.value,
@@ -182,13 +204,13 @@ const progressAttrs = computed(() =>
 )
 
 const title = computed(() =>
-  state.status === 'uploading'
+  isTransferring.value
     ? t('assetBrowser.fileUpload.uploading', { name: state.file.name })
     : state.file.name
 )
 
 const sizeText = computed(() =>
-  state.status === 'uploading'
+  state.status === 'uploading' || state.status === 'reconnecting'
     ? t('assetBrowser.fileUpload.progress', {
         sent: formatSize(state.sent),
         total: formatSize(state.file.size)
