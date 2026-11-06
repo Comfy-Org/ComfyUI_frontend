@@ -3404,6 +3404,14 @@
     "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
     "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
+    "signupPaymentRecovery": {
+      "title": "Your {plan} payment didn't go through.",
+      "titleNoPlan": "Your plan payment didn't go through.",
+      "body": "Finish paying to start your plan.",
+      "contactSupport": "Contact support",
+      "finishPayment": "Finish payment",
+      "unavailable": "We couldn't open the payment page. Try again, or contact support."
+    },
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
