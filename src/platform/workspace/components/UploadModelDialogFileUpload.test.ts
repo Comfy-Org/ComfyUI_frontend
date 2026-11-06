@@ -23,6 +23,7 @@ vi.mock(import('@/scripts/api'))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  fallbackLocale: 'en',
   messages: { en: enMessages, ko: koMessages },
   missingWarn: false,
   fallbackWarn: false
