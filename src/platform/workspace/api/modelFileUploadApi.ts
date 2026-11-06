@@ -1,11 +1,10 @@
-import type {
-  CompleteModelUploadData,
-  ModelUploadStarted,
-  StartModelUploadData
-} from '@comfyorg/ingest-types'
+import type { z } from 'zod'
+
 import {
+  zCompleteModelUploadBody,
   zCompleteModelUploadResponse,
   zErrorResponse,
+  zStartModelUploadBody,
   zStartModelUploadResponse
 } from '@comfyorg/ingest-types/zod'
 
@@ -67,7 +66,10 @@ interface StorageAnswer {
 }
 
 function putFile(
-  start: Pick<ModelUploadStarted, 'method' | 'upload_url' | 'headers'>,
+  start: Pick<
+    ReturnType<typeof zStartModelUploadResponse.parse>,
+    'method' | 'upload_url' | 'headers'
+  >,
   file: Blob | null,
   { signal, onProgress }: ModelFileUploadOptions,
   contentRange?: string
@@ -134,6 +136,31 @@ function heldBytes(range: string | null, size: number): number | undefined {
     : undefined
 }
 
+type ResumableAnswer =
+  | { status: 'complete' | 'retry' }
+  | { status: 'held'; bytes: number }
+  | ModelFileUploadStopped
+
+function readResumableAnswer(
+  answer: StorageAnswer,
+  size: number
+): ResumableAnswer {
+  const { status, range } = answer
+  if ([200, 201, 412].includes(status)) return { status: 'complete' }
+  if (status === 404 || status === 410) {
+    return { ok: false, reason: 'sessionExpired' }
+  }
+  if (status === 308) {
+    const bytes = heldBytes(range, size)
+    return bytes === undefined
+      ? { ok: false, reason: 'failed', cause: 'invalid storage range' }
+      : { status: 'held', bytes }
+  }
+  if (status === 0 || status === 429 || status >= 500)
+    return { status: 'retry' }
+  return { ok: false, reason: 'failed', cause: `storage ${status}` }
+}
+
 async function putResumable(
   start: ReturnType<typeof zStartModelUploadResponse.parse>,
   file: File,
@@ -156,20 +183,15 @@ async function putResumable(
       query ? `bytes */${file.size}` : `bytes ${offset}-${end - 1}/${file.size}`
     )
     if (!('status' in answer)) return answer
-    const { status, range } = answer
-    if (status === 200 || status === 201 || status === 412) {
+    const outcome = readResumableAnswer(answer, file.size)
+    if ('ok' in outcome) return outcome
+    if (outcome.status === 'complete') {
       options.onProgress(file.size)
       options.onReconnecting?.(false)
       return undefined
     }
-    if (status === 404 || status === 410) {
-      return { ok: false, reason: 'sessionExpired' }
-    }
-    if (status === 308) {
-      const next = heldBytes(range, file.size)
-      if (next === undefined) {
-        return { ok: false, reason: 'failed', cause: 'invalid storage range' }
-      }
+    if (outcome.status === 'held') {
+      const next = outcome.bytes
       const canSend = next < file.size && (query || next > offset)
       if (next > offset) delay = 1000
       offset = next
@@ -178,8 +200,6 @@ async function putResumable(
         query = false
         continue
       }
-    } else if (status !== 0 && status !== 429 && status < 500) {
-      return { ok: false, reason: 'failed', cause: `storage ${status}` }
     }
     query = true
     options.onReconnecting?.(true)
@@ -209,7 +229,7 @@ async function stageFile(
       size_bytes: file.size,
       resumable: true,
       tags: options.tags
-    } satisfies StartModelUploadData['body'],
+    } satisfies z.input<typeof zStartModelUploadBody>,
     options.signal
   )
   if (!startRes.ok) return await readFailure(startRes)
@@ -238,7 +258,9 @@ async function uploadModelFile(
 
     const completeRes = await postJson(
       `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged)}/complete`,
-      { filename: file.name, tags } satisfies CompleteModelUploadData['body'],
+      { filename: file.name, tags } satisfies z.input<
+        typeof zCompleteModelUploadBody
+      >,
       signal
     )
     if (!completeRes.ok) return await readFailure(completeRes)
