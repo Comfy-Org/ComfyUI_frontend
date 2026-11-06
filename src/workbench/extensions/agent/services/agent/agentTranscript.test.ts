@@ -5,7 +5,7 @@ import {
   toTurnId,
   zAgentMessages
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { normalizeAgentTranscript } from './agentTranscript'
+import { normalizeAgentTranscript, openPendingAsk } from './agentTranscript'
 
 const row = (
   seq: number,
@@ -832,6 +832,119 @@ describe('normalizeAgentTranscript', () => {
       expect(cards).toMatchObject([
         { askId: 'ask-1', resolution: { status: 'answered' } }
       ])
+    })
+
+    const repeatingTurn = (resolvedAsks: unknown[]) =>
+      zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', 'First', 'row-1'),
+          content: { text: 'First', tool_calls: [toolCall('call-a')] }
+        },
+        {
+          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+          content: {
+            text: 'Done',
+            tool_calls: [toolCall('call-a'), toolCall('call-b')]
+          },
+          resolved_asks: resolvedAsks
+        }
+      ])
+
+    it('keeps a card that comes before a repeated call inside its own row', () => {
+      const history = repeatingTurn([
+        {
+          ...askUser,
+          ask_id: 'ask-1',
+          message_id: 'row-2',
+          status: 'answered',
+          selected: ['keep'],
+          after_tool_calls: 0
+        },
+        {
+          ...askUser,
+          ask_id: 'ask-2',
+          message_id: 'row-2',
+          status: 'cancelled',
+          selected: null,
+          after_tool_calls: null
+        }
+      ])
+
+      expect(shape(history)).toEqual([
+        'call-a',
+        'text',
+        'askUser',
+        'call-b',
+        'askUser',
+        'text'
+      ])
+    })
+
+    it('draws one card per finished ask and closes an open copy from an earlier row', () => {
+      const history = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
+          status: 'streaming',
+          content: { text: '', tool_calls: [toolCall('call-1')] },
+          pending_ask: askUser
+        },
+        {
+          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+          status: 'streaming',
+          resolved_asks: [
+            {
+              ...askUser,
+              message_id: 'row-2',
+              status: 'answered',
+              selected: ['keep']
+            },
+            {
+              ...askUser,
+              message_id: 'row-2',
+              status: 'answered',
+              selected: ['keep']
+            }
+          ]
+        }
+      ])
+
+      const cards = normalizeAgentTranscript(history).messages[0].parts.filter(
+        (part) => part.type === 'askUser'
+      )
+
+      expect(cards).toMatchObject([
+        {
+          askId: 'ask-1',
+          resolution: { status: 'answered', selected: ['keep'] }
+        }
+      ])
+    })
+
+    it('treats an ask the row lists as finished as no longer open for recovery', () => {
+      const [live] = finished(
+        [
+          {
+            ...askUser,
+            kind: 'run_approval',
+            status: 'answered',
+            selected: ['run']
+          }
+        ],
+        'streaming'
+      )
+      live.pending_ask = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
+          pending_ask: { ...askUser, kind: 'run_approval' }
+        }
+      ])[0].pending_ask
+
+      expect(openPendingAsk(live)).toBeUndefined()
+      expect(
+        openPendingAsk({ ...live, resolved_asks: undefined })
+      ).toMatchObject({
+        ask_id: 'ask-1'
+      })
     })
 
     it('drops an open run card the row also lists as finished', () => {

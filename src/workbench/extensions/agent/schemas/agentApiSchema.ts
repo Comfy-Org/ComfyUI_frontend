@@ -79,7 +79,7 @@ export const zAgentResolvedAsk = zTolerantPendingAsk.extend({
   status: zAgentAskStatus,
   selected: z.array(z.string()).nullish(),
   other_text: z.string().nullish(),
-  after_tool_calls: z.number().int().nonnegative().optional()
+  after_tool_calls: z.number().int().nonnegative().nullish()
 })
 export type AgentResolvedAsk = z.infer<typeof zAgentResolvedAsk>
 

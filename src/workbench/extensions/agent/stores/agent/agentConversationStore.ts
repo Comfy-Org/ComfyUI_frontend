@@ -367,7 +367,7 @@ function finishWithPersistedParts(
   const persistedHasThinking = persistedParts.some(
     (part) => part.type === 'thinking'
   )
-  const persistedAskIds = new Set(
+  const persistedAskIds = new Set<string | undefined>(
     persistedParts.map(askIdOf).filter((askId) => askId !== undefined)
   )
   message.parts = interleaveLocalParts(
@@ -379,7 +379,7 @@ function finishWithPersistedParts(
       .filter(
         ({ part }) =>
           (!persistedHasThinking || part.type !== 'thinking') &&
-          !persistedAskIds.has(askIdOf(part) ?? '')
+          !persistedAskIds.has(askIdOf(part))
       )
       .map((anchor) => ({
         ...anchor,
