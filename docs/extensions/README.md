@@ -16,6 +16,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - Extension architecture principles
   - Hook execution sequence
   - Best practices for extension development
+- **[Workflow Wire Zip Ties](./zip-ties.md)** - Bundle, move, and release workflow wires
 - **[Node ID Migration Notes](./node-id-migration.md)** - Compatibility guidance for branded node IDs and subgraph boundary sentinel values
 - **[Link Registration Migration Notes](./link-registration-migration.md)** - Guidance for handling defensive floating-link registration failures
 - **[Widget System Migration Notes](./widgets-migration.md)** - Keep widget names unique per node; `node.widgets` may be `undefined` until first assigned

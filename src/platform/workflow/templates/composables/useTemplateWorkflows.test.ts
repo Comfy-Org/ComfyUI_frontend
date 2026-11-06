@@ -1,4 +1,5 @@
 import { render } from '@testing-library/vue'
+import zipTieDemo from '@/assets/templates/zip_tie_demo.json'
 import { useDialogStore } from '@/stores/dialogStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -403,6 +404,32 @@ describe('useTemplateWorkflows', () => {
       }
     )
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
+  })
+
+  it('opens the bundled zip tie example without fetching it from the backend', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(zipTieDemo))
+
+    expect(await loader.loadWorkflowTemplate('zip_tie_demo', 'default')).toBe(
+      'loaded'
+    )
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/src/assets/templates/zip_tie_demo.json'),
+      { signal: expect.any(AbortSignal) }
+    )
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          zipTies: [{ rerouteIds: [1, 2, 3, 4, 5, 6] }]
+        })
+      }),
+      true,
+      true,
+      'zip_tie_demo',
+      { openSource: 'template' }
+    )
   })
 
   // 'all' is a category label, not a source: it resolves to the template's

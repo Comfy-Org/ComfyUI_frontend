@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import commands from '@/locales/en/commands.json'
 import en from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -16,8 +17,10 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -86,6 +89,34 @@ describe('SelectionToolbox', () => {
         'Comfy.Load3D.3DViewerEnable': true
       }
     })
+  })
+
+  it('offers zip ties for multiple wires and executes the bundling command', async () => {
+    const links = [1, 2].map((id) => createMockLLink({ id: toLinkId(id) }))
+    setCanvasSelection([])
+    const selection = {
+      links,
+      marquee: { x: 10, y: 20, width: 30, height: 40 },
+      anchorX: 40
+    }
+    useLinkSelectionStore().select(selection)
+    const action = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.Canvas.ZipTieSelectedLinks',
+      function: action
+    })
+    renderToolbox()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Zip tie selected links' }))
+
+    expect(action).toHaveBeenCalledOnce()
+    useLinkSelectionStore().select({ ...selection, links: [links[0]] })
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: 'Zip tie selected links' })
+    ).toBeNull()
   })
 
   it('updates actions when selection changes without remounting', async () => {
