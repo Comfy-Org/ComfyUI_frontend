@@ -82,7 +82,21 @@ function putFile(
       return
     }
     const request = new XMLHttpRequest()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let loaded = 0
+    const resetDeadline = () => {
+      if (!contentRange) return
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        resolve({ status: 0, range: null })
+        request.abort()
+      }, 30_000)
+    }
     request.upload.onprogress = (event) => {
+      if (event.loaded > loaded) {
+        loaded = event.loaded
+        resetDeadline()
+      }
       if (file) onProgress(event.loaded)
     }
     request.onload = () =>
@@ -94,7 +108,11 @@ function putFile(
       resolve({ status: 0, range: null })
     request.onabort = () => resolve({ ok: false, reason: 'cancelled' })
     const abort = () => request.abort()
-    request.onloadend = () => signal.removeEventListener('abort', abort)
+    const cleanup = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', abort)
+    }
+    request.onloadend = cleanup
     signal.addEventListener('abort', abort, { once: true })
     try {
       request.open(start.method, start.upload_url)
@@ -102,9 +120,10 @@ function putFile(
         request.setRequestHeader(name, value)
       }
       if (contentRange) request.setRequestHeader('Content-Range', contentRange)
+      resetDeadline()
       request.send(file)
     } catch {
-      signal.removeEventListener('abort', abort)
+      cleanup()
       resolve({ ok: false, reason: 'failed', cause: 'storage request failed' })
     }
   })
@@ -158,7 +177,7 @@ function readResumableAnswer(
       ? { ok: false, reason: 'failed', cause: 'invalid storage range' }
       : { status: 'held', bytes }
   }
-  if (status === 0 || status === 429 || status >= 500)
+  if ([0, 408, 429].includes(status) || status >= 500)
     return { status: 'retry' }
   return { ok: false, reason: 'failed', cause: `storage ${status}` }
 }

@@ -425,7 +425,7 @@ describe('resumable model transfers', () => {
     }
   )
 
-  it.for([429, 500, 503])(
+  it.for([408, 429, 500, 503])(
     'queries storage before resending after %s',
     async (status) => {
       start()
@@ -438,6 +438,84 @@ describe('resumable model transfers', () => {
       await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
     }
   )
+
+  it('retries a stalled status query and resumes from the held bytes', async () => {
+    const calls = start()
+    const { result } = upload()
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    const stalled = await storageRequest(2)
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(stalled.aborted).toBe(true)
+    const query = await storageRequest(3)
+    expect(query.headers['Content-Range']).toBe('bytes */12')
+    query.finish(308, 'bytes=0-2')
+    const resumed = await storageRequest(4)
+    expect(resumed.headers['Content-Range']).toBe('bytes 3-10/12')
+    resumed.finish(308, 'bytes=0-10')
+    ;(await storageRequest(5)).finish(200)
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(calls).toHaveLength(2)
+  })
+
+  it('queries held bytes after a piece stalls without a network error', async () => {
+    start()
+    const { result } = upload()
+    const stalled = await storageRequest()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(stalled.aborted).toBe(true)
+    const query = await storageRequest(2)
+    expect(query.headers['Content-Range']).toBe('bytes */12')
+    query.finish(412)
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+  })
+
+  it('keeps a slow piece alive while its upload makes progress', async () => {
+    start()
+    const { result } = upload()
+    const piece = await storageRequest()
+
+    await vi.advanceTimersByTimeAsync(20_000)
+    piece.progress(1)
+    await vi.advanceTimersByTimeAsync(20_000)
+    piece.progress(2)
+    await vi.advanceTimersByTimeAsync(20_000)
+    piece.progress(3)
+    await vi.advanceTimersByTimeAsync(20_000)
+
+    expect(piece.aborted).toBe(false)
+    expect(StorageRequest.sent).toHaveLength(1)
+    piece.finish(308, 'bytes=0-7')
+    ;(await storageRequest(2)).finish(200)
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+  })
+
+  it('resumes after a partial piece acknowledgment without duplicating bytes', async () => {
+    start()
+    const { result } = upload()
+    const first = await storageRequest()
+    assert.instanceOf(first.body, Blob)
+    const held = first.body.slice(0, 3)
+    first.finish(308, 'bytes=0-2')
+
+    const resumed = await storageRequest(2)
+    expect(resumed.headers['Content-Range']).toBe('bytes 3-10/12')
+    assert.instanceOf(resumed.body, Blob)
+    resumed.finish(308, 'bytes=0-10')
+    const last = await storageRequest(3)
+    expect(last.headers['Content-Range']).toBe('bytes 11-11/12')
+    assert.instanceOf(last.body, Blob)
+    last.finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(await new Blob([held, resumed.body, last.body]).text()).toBe(
+      'twelve bytes'
+    )
+  })
 
   it('keeps querying with capped backoff while storage is unavailable', async () => {
     start()
