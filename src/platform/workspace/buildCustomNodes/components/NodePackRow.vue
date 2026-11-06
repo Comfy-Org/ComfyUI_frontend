@@ -1,15 +1,18 @@
 <template>
   <TableRow>
     <TableCell class="truncate pl-4" :title="row.pack.name">
-      <a
+      <Button
         v-if="repositoryUrl"
+        variant="link"
+        size="link"
+        as="a"
         :href="repositoryUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="underline-offset-4 hover:underline"
+        class="max-w-full justify-start py-0"
       >
-        {{ row.pack.name }}
-      </a>
+        <span class="truncate">{{ row.pack.name }}</span>
+      </Button>
       <template v-else>{{ row.pack.name }}</template>
     </TableCell>
     <TableCell
@@ -60,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { computed } from 'vue'

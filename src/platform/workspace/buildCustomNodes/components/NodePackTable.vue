@@ -2,7 +2,7 @@
   <Table class="h-[min(30rem,55dvh)] border-border">
     <colgroup>
       <col />
-      <col class="w-[18%]" />
+      <col class="w-1/5" />
       <col class="w-22" />
       <col class="w-16" />
       <col class="w-40" />
