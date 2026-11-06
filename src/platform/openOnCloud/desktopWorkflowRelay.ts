@@ -1,10 +1,12 @@
 import { z } from 'zod'
 
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import {
   DESKTOP_HANDOFF_HASH,
   DESKTOP_HANDOFF_LIFETIME_MS,
   DESKTOP_RELAY_PARAM,
+  captureDesktopWorkflowHandoff,
   desktopWorkflowUrl
 } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 import {
@@ -23,6 +25,12 @@ const zRelayRecord = z.object({
   }),
   expiresAt: z.number()
 })
+
+export async function handleDesktopWorkflowHandoff(): Promise<boolean> {
+  if (!isCloud) return redirectDesktopWorkflowRelay()
+  await captureDesktopWorkflowHandoff()
+  return false
+}
 
 function transferFile(nonce: string) {
   return `open-on-cloud/${nonce}.json`
@@ -82,7 +90,7 @@ async function relayWorkflow(url: URL): Promise<boolean> {
   return true
 }
 
-export async function redirectDesktopWorkflowRelay(): Promise<boolean> {
+async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
   const relayed = await relayWorkflow(url).catch(() => false)
