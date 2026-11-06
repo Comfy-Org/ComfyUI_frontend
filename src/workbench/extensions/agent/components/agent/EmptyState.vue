@@ -59,7 +59,7 @@ const suggestions = computed(() =>
         text: item.label,
         prompt: item.prompt,
         index,
-        icon: promptIcons[index],
+        icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
         requiresSelection: false
       }))
     : prompts.value

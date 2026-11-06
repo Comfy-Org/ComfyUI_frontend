@@ -2,8 +2,8 @@ import type { AgentStarterPromptId } from '@comfyorg/telemetry/types'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 /**
- * Slot ids shared by suggestedPrompts lists and proactiveGreeting.controlPrompts.
- * Pair with the displayed-label hash and its locale to identify copy.
+ * Index-aligned prompt/icon slots; indices past the table are `unregistered`.
+ * Pair ids with the displayed-label hash and source locale to identify copy.
  */
 export const STARTER_PROMPT_IDS = [
   'slot_1',

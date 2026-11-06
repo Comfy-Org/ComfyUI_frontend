@@ -10,9 +10,8 @@ export function splitWords(text: string): string[] {
 }
 
 /**
- * Paces parts of a message like speech: each part starts after the previous
- * one's last word plus its pause, and words within a part are staggered.
- * `next` is when a word following the last part would start.
+ * Returns each part's start in milliseconds and the next word's start.
+ * Starts include per-part pauses and WORD_STAGGER_MS between words.
  */
 export function speechTiming(parts: readonly SpeechPart[]): {
   starts: number[]
