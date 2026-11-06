@@ -4,7 +4,10 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
@@ -20,7 +23,8 @@ vi.mock(
   }
 )
 
-it('declines the refusal takeover without opening an empty dialog when pricing cannot load', async () => {
+it('declines the refusal takeover without opening an empty dialog when the Plans tab is blocked and pricing cannot load', async () => {
+  vi.spyOn(window, 'open').mockReturnValue(null)
   const originalConfig = window.__CONFIG__
   window.__CONFIG__ = { subscription_required: true }
   onTestFinished(() => {

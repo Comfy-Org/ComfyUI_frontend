@@ -15,6 +15,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -239,7 +240,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyStatus).toBe(0)
   })
 
-  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
+  test('subscribe-to-run routes an inactive FREE user to the platform Plans page', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -267,11 +268,9 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     )
     await bootApp(page)
 
-    await page.getByTestId('subscribe-to-run-button').click()
-
-    await expect(
-      page.getByRole('heading', { name: 'Choose a Plan' })
-    ).toBeVisible()
+    await expectPlatformPlansOpened(page, () =>
+      page.getByTestId('subscribe-to-run-button').click()
+    )
   })
 
   test('keeps the free-tier quota inside the top action bars', async ({

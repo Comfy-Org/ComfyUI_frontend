@@ -17,6 +17,7 @@ import type {
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { openPlatformPlans } from '@/platform/billing/openPlatformPlans'
 import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -133,6 +134,11 @@ export const useSubscriptionDialog = () => {
       }
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
+
+      if (!options?.resumingCheckout && openPlatformPlans()) {
+        trackPaywallShown(paymentIntentSource)
+        return true
+      }
 
       const legacyPricingDialogProps = {
         dismissOnPointerDownOutside: false
@@ -321,6 +327,7 @@ export const useSubscriptionDialog = () => {
     const initialCheckout = await restoreCheckoutSelection(pending)
     await showPricingTable({
       planMode: pending.selection.planMode,
+      resumingCheckout: true,
       ...(initialCheckout && { initialCheckout })
     })
   }

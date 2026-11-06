@@ -30,6 +30,11 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
+import { openBillingUrl } from '@/platform/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
 vi.mock(
@@ -74,6 +79,9 @@ const mockSubscription = vi.hoisted(() => ({
 const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
+vi.mock(import('@/platform/billing/billingTab'), { spy: true })
+vi.mock(import('@/platform/billing/refreshOnReturn'), { spy: true })
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction: mockRumAddAction }
@@ -168,6 +176,7 @@ beforeEach(() => {
 
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
+    vi.mocked(openBillingUrl).mockReturnValue(false)
     mockIsCloud.value = true
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsFreeTier.value = false
@@ -183,6 +192,98 @@ describe('useSubscriptionDialog', () => {
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     sessionStorage.clear()
+  })
+
+  describe('showPricingTable on the platform Plans page', () => {
+    beforeEach(() => {
+      vi.mocked(openBillingUrl).mockReturnValue(true)
+    })
+
+    function openedUrl(): URL {
+      const [url] = vi.mocked(openBillingUrl).mock.calls[0]
+      return new URL(url)
+    }
+
+    it('opens the Plans page instead of the pricing table', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await expect(
+        showPricingTable({ reason: 'subscribe_to_run' })
+      ).resolves.toBe(true)
+
+      expect(openedUrl().pathname).toBe('/profile/billing/plans')
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    })
+
+    it('reports the hand-off with the journey id the link carries', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'platform_handoff',
+          target: 'plans',
+          correlation_id: openedUrl().searchParams.get('correlation_id')
+        })
+      )
+    })
+
+    it('reports the paywall without a modal_opened for a modal that never opened', async () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'entry', stage: 'paywall_shown' })
+      )
+    })
+
+    it('re-reads the account and capabilities when the customer returns from the Plans page', async () => {
+      const refreshedScopes: string[] = []
+      const stopListening = onBillingRefresh((scope) => {
+        refreshedScopes.push(scope)
+      })
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+      const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
+      await refresh()
+      stopListening()
+
+      expect(refreshedScopes).toEqual(['account'])
+      expect(useBillingCapabilities().refresh).toHaveBeenCalled()
+    })
+
+    it('still shows the read-only member dialog to a member who cannot manage the plan', async () => {
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useWorkspaceUI().permissions.value.canManageSubscription = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(openBillingUrl).not.toHaveBeenCalled()
+      expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+    })
+
+    it('falls back to the pricing table when the browser blocks the tab', async () => {
+      vi.mocked(openBillingUrl).mockReturnValue(false)
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+    })
+
+    it('opens nothing off Cloud', async () => {
+      mockIsCloud.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await expect(showPricingTable()).resolves.toBe(false)
+
+      expect(openBillingUrl).not.toHaveBeenCalled()
+    })
   })
 
   describe('showPricingTable', () => {
@@ -939,6 +1040,31 @@ describe('useSubscriptionDialog', () => {
       await resumePendingPricingFlow()
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
+
+    it.for([{ popupsAllowed: false }, { popupsAllowed: true }])(
+      'reopens the attempted checkout in the table, not the Plans page (popups allowed: $popupsAllowed)',
+      async ({ popupsAllowed }) => {
+        vi.mocked(openBillingUrl).mockReturnValue(popupsAllowed)
+        useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+        mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+        savePendingSubscriptionCheckout({
+          operationId: 'op-alipay',
+          workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          },
+          attemptedAt: Date.now()
+        })
+
+        await useSubscriptionDialog().resumePendingPricingFlow()
+
+        expect(openBillingUrl).not.toHaveBeenCalled()
+        expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
+      }
+    )
 
     it('reconciles a failed redirect and reopens the attempted checkout', async () => {
       useBillingRouting().type = computed(() => 'workspace')
