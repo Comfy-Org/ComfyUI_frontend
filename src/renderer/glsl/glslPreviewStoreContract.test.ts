@@ -5,7 +5,7 @@ import { nextTick, shallowRef } from 'vue'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
@@ -22,6 +22,8 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
  */
 
 const SHADER = 'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const mockRenderer = vi.hoisted(() => {
   const compileFragment = vi.fn(() => ({ success: true, log: '' }))

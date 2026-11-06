@@ -4,8 +4,10 @@ import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))

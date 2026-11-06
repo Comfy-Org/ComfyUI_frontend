@@ -5,10 +5,12 @@ import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSche
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import {
-  createDOMWidgetNode,
+  useDOMWidgetTestNodes,
   stubWidgetValueCallbacks
 } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const { canvasMock, reportErrorMock } = vi.hoisted(() => ({
   canvasMock: {
@@ -71,9 +73,11 @@ describe('useMarkdownWidget', () => {
     widget.callback = callback
     textarea.value = 'hello'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(callback).toHaveBeenCalledExactlyOnceWith('hello')
+    textarea.value = 'changed'
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
-    expect(callback).toHaveBeenCalledWith('hello')
+    expect(callback).toHaveBeenLastCalledWith('changed')
   })
 
   it('fires the real widget callback once when its value is assigned', () => {

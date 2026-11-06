@@ -9,9 +9,11 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import {
-  createDOMWidgetNode,
+  useDOMWidgetTestNodes,
   stubWidgetValueCallbacks
 } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const { canvasMock } = vi.hoisted(() => ({
   canvasMock: {

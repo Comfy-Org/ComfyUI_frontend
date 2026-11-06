@@ -1,9 +1,11 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
-import { createDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { isDOMWidget } from '@/scripts/domWidget'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/scripts/app'))

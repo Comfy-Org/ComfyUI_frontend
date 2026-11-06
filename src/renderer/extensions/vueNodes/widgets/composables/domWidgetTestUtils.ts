@@ -8,26 +8,28 @@ type NodeOverrides = Partial<
   Pick<LGraphNode, 'id' | 'type' | 'size' | 'imgs' | 'graph'>
 >
 
-let nodes: LGraphNode[]
+export function useDOMWidgetTestNodes() {
+  let nodes: LGraphNode[]
 
-beforeEach(() => {
-  const ownedNodes: LGraphNode[] = []
-  nodes = ownedNodes
-  return () => {
-    for (const node of ownedNodes) {
-      for (const widget of node.widgets ?? []) widget.onRemove?.()
+  beforeEach(() => {
+    const ownedNodes: LGraphNode[] = []
+    nodes = ownedNodes
+    return () => {
+      for (const node of ownedNodes) {
+        for (const widget of node.widgets ?? []) widget.onRemove?.()
+      }
     }
-  }
-})
+  })
 
-export function createDOMWidgetNode(overrides: NodeOverrides = {}) {
-  const { graph, type, ...properties } = overrides
-  const node = new LGraphNode('Test', type)
-  node.widgets = []
-  Object.assign(node, { id: toNodeId(1) }, properties)
-  graph?.add(node)
-  nodes.push(node)
-  return node
+  return (overrides: NodeOverrides = {}) => {
+    const { graph, type, ...properties } = overrides
+    const node = new LGraphNode('Test', type)
+    node.widgets = []
+    Object.assign(node, { id: toNodeId(1) }, properties)
+    graph?.add(node)
+    nodes.push(node)
+    return node
+  }
 }
 
 class SilentValueDOMWidget<
