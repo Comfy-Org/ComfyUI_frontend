@@ -135,6 +135,14 @@ describe(handleDesktopWorkflowHandoff, () => {
       }
     },
     {
+      name: 'a transfer the server no longer has',
+      arrange: () => {
+        vi.mocked(api.getUserData).mockResolvedValue(
+          new Response(null, { status: 404 })
+        )
+      }
+    },
+    {
       name: 'a destination outside Comfy Cloud',
       arrange: () => {
         vi.mocked(api.getUserData).mockResolvedValue(
@@ -159,13 +167,15 @@ describe(handleDesktopWorkflowHandoff, () => {
         vi.mocked(api.getUserData).mockRejectedValue(new TypeError('offline'))
       }
     }
-  ])('refuses $name without leaving the relay page', async ({ arrange }) => {
+  ])('refuses $name and says the transfer failed', async ({ arrange }) => {
     const { relay } = await stagedRelay()
     openAt(arrange(relay) ?? relay)
     const replace = relayed()
+    const splash = showSplash()
 
     await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(replace).not.toHaveBeenCalled()
+    expect(splash.textContent).not.toBe('')
   })
 })
