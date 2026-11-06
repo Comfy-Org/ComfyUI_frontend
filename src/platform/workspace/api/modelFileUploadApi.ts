@@ -260,20 +260,35 @@ async function postJson(route: string, body: unknown, signal: AbortSignal) {
   })
 }
 
+async function startFileUpload(
+  file: File,
+  options: ModelFileUploadOptions
+): Promise<Response> {
+  const body = {
+    filename: file.name,
+    size_bytes: file.size,
+    resumable: true,
+    tags: options.tags
+  } satisfies z.input<typeof zStartModelUploadBody>
+  const response = await postJson(UPLOADS_ENDPOINT, body, options.signal)
+  if (response.status !== 403 || file.size > 2 ** 31) return response
+  const refusal = zErrorResponse.safeParse(
+    await response.clone().json().catch(() => null)
+  )
+  if (!refusal.success || refusal.data.code !== 'FEATURE_DISABLED')
+    return response
+  return postJson(
+    UPLOADS_ENDPOINT,
+    { ...body, resumable: false },
+    options.signal
+  )
+}
+
 async function stageFile(
   file: File,
   options: ModelFileUploadOptions
 ): Promise<string | ModelFileUploadStopped> {
-  const startRes = await postJson(
-    UPLOADS_ENDPOINT,
-    {
-      filename: file.name,
-      size_bytes: file.size,
-      resumable: true,
-      tags: options.tags
-    } satisfies z.input<typeof zStartModelUploadBody>,
-    options.signal
-  )
+  const startRes = await startFileUpload(file, options)
   if (!startRes.ok) return await readFailure(startRes)
   const start = zStartModelUploadResponse.safeParse(await startRes.json())
   if (!start.success) {
