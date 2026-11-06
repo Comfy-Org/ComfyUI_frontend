@@ -672,6 +672,11 @@ export function useSlotLinkInteraction({
     app.canvas.setDirty(true, true)
   }
 
+  const handleWindowBlur = () => {
+    cleanupInteraction()
+    app.canvas.setDirty(true, true)
+  }
+
   function connectByPriority(
     target: EventTarget | null,
     snappedCandidate: SlotDropCandidate | null
@@ -860,7 +865,8 @@ export function useSlotLinkInteraction({
       }),
       useEventListener('pointercancel', handlePointerCancel, {
         capture: true
-      })
+      }),
+      useEventListener(window, 'blur', handleWindowBlur)
     )
     const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
     clearCompatible()

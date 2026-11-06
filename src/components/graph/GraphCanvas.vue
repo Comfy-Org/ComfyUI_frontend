@@ -178,6 +178,7 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { cancelLinkDragOnWindowBlur } from '@/renderer/core/canvas/litegraph/cancelLinkDragOnWindowBlur'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -324,6 +325,11 @@ watch(
 watchEffect((onCleanup) => {
   const canvas = canvasStore.canvas
   if (canvas) onCleanup(notifyLayoutChanges(canvas))
+})
+
+watchEffect((onCleanup) => {
+  const canvas = canvasStore.canvas
+  if (canvas) onCleanup(cancelLinkDragOnWindowBlur(canvas))
 })
 
 watch(
