@@ -572,7 +572,9 @@ describe('model import with a dropped storage connection', () => {
     await user.click(screen.getByRole('button', { name: 'Upload' }))
     await vi.waitFor(() => expect(BucketRequest.sent).toHaveLength(1))
     vi.useFakeTimers()
-    onTestFinished(() => vi.useRealTimers())
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     BucketRequest.sent[0].fail()
     await vi.advanceTimersByTimeAsync(1000)
     expect(screen.getByRole('status')).toHaveTextContent('Reconnecting...')
