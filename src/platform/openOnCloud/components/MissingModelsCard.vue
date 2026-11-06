@@ -20,7 +20,9 @@
             class="icon-[lucide--package] text-muted-foreground"
             aria-hidden="true"
           />
-          <span class="truncate text-foreground">{{ model.name }}</span>
+          <span class="min-w-0 flex-1 break-all text-foreground">{{
+            model.name
+          }}</span>
           <span class="shrink-0 text-muted-foreground">{{ model.folder }}</span>
         </li>
       </ul>
