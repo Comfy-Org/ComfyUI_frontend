@@ -153,19 +153,15 @@
                 :value="option"
                 :text-value="option.label"
                 :aria-label="
-                  option.kind === 'folder'
-                    ? $t(
-                        'widgets.selectFolder',
+                  option.kind === 'value'
+                    ? option.label
+                    : $t(
+                        option.kind === 'folder'
+                          ? 'widgets.selectFolder'
+                          : 'widgets.backFromFolder',
                         { name: option.label },
                         { escapeParameter: false }
                       )
-                    : option.kind === 'back'
-                      ? $t(
-                          'widgets.backFromFolder',
-                          { name: option.label },
-                          { escapeParameter: false }
-                        )
-                      : option.label
                 "
                 class="flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none hover:bg-secondary data-highlighted:bg-secondary data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30"
                 @select="handleOptionSelect($event, option)"
