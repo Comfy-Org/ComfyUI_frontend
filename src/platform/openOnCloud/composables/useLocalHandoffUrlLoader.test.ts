@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -6,6 +6,11 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { app } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import {
+  captureDesktopWorkflowHandoff,
+  DESKTOP_HANDOFF_LIFETIME_MS,
+  desktopWorkflowUrl
+} from '@/platform/openOnCloud/desktopWorkflowHandoff'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -63,6 +68,31 @@ describe(useLocalHandoffUrlLoader, () => {
 
     expect(useRouter().replace).not.toHaveBeenCalled()
     expect(window.postMessage).not.toHaveBeenCalled()
+  })
+
+  it('imports the Desktop workflow after sign-in without an opener window', async () => {
+    const nonce = linkWithNonce()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'desktop-portrait',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    await captureDesktopWorkflowHandoff(new URL(destination))
+
+    await loadWithOpener(null)
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({ nodes: expect.any(Array) }),
+      true,
+      true,
+      'desktop-portrait'
+    )
+    expect(window.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
   })
 
   it('strips the param and asks the opener for the workflow with its nonce', async () => {

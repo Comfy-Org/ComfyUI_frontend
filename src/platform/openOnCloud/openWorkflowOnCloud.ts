@@ -9,6 +9,7 @@ import {
   zLocalHandoffReady
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
+import { stageDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
@@ -100,6 +101,15 @@ async function openFromDesktop(
   filename: string
 ): Promise<void> {
   const workflow = await prepareWorkflow()
+  if (workflow) {
+    const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
+      () => undefined
+    )
+    if (relay) {
+      tabs.openDisowned(relay)
+      return
+    }
+  }
   tabs.openDisowned(cloudEditorUrl())
   if (!workflow) return
   downloadWorkflow(filename, workflow)
@@ -113,7 +123,8 @@ export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (isDesktop) return openFromDesktop(tabs, filename)
+  if (isDesktop || window.__comfyDesktop2)
+    return openFromDesktop(tabs, filename)
 
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))

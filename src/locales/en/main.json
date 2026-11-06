@@ -4261,6 +4261,7 @@
     "handoffMissingDetail": "ComfyUI stops waiting after 10 minutes. Click Open on Comfy Cloud in ComfyUI again.",
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "downloaded": "Workflow downloaded",
+    "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",

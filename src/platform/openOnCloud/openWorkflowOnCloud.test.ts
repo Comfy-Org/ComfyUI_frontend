@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -10,6 +11,7 @@ import type {
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { api } from '@/scripts/api'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -165,11 +167,60 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
-  it('downloads the workflow and opens Comfy Cloud in the system browser', async () => {
+  it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
+    const previous = window.__comfyDesktop2
+    window.__comfyDesktop2 = fromPartial<
+      NonNullable<Window['__comfyDesktop2']>
+    >({})
+    onTestFinished(() => {
+      window.__comfyDesktop2 = previous
+    })
+    vi.spyOn(api, 'storeUserData').mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(tabs.open).not.toHaveBeenCalled()
+    expect(tabs.openDisowned).toHaveBeenCalledOnce()
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('stages the workflow and opens the real local relay in the system browser', async () => {
     distribution.isDesktop = true
     onTestFinished(() => {
       distribution.isDesktop = false
     })
+    vi.spyOn(api, 'storeUserData').mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(tabs.open).not.toHaveBeenCalled()
+    const url = new URL(tabs.openDisowned.mock.calls[0][0])
+    expect(url.origin).toBe(window.location.origin)
+    expect(url.searchParams.get('desktop_workflow')).toMatch(/^[\da-f-]{36}$/)
+    expect(api.storeUserData).toHaveBeenCalledWith(
+      expect.stringMatching(/^open-on-cloud\/[\da-f-]{36}\.json$/),
+      expect.objectContaining({
+        destination: expect.stringContaining('#desktop_workflow=')
+      }),
+      expect.objectContaining({ stringify: true, overwrite: false })
+    )
+  })
+
+  it('keeps the download fallback when the local server cannot stage a transfer', async () => {
+    distribution.isDesktop = true
+    onTestFinished(() => {
+      distribution.isDesktop = false
+    })
+    vi.spyOn(api, 'storeUserData').mockResolvedValue(
+      new Response(null, { status: 503 })
+    )
     const { tabs } = fakeTabs()
 
     await openWorkflowOnCloud(tabs)

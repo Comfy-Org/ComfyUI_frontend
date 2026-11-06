@@ -18,6 +18,7 @@ import {
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { app } from '@/scripts/app'
+import { takeDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
 const HANDOFF_WAIT_MS = 60_000
@@ -100,10 +101,16 @@ export function useLocalHandoffUrlLoader(
     })
     clearPreservedQuery(NAMESPACE)
 
-    const opener = getOpener()
+    const desktop =
+      typeof nonce === 'string' ? takeDesktopWorkflowHandoff(nonce) : undefined
     if (typeof nonce === 'string' && flags.openOnCloudEnabled) {
-      if (opener) requestWorkflow(opener, nonce)
-      else showMissingWorkflow()
+      if (desktop)
+        await openHandedOffWorkflow(desktop.filename, desktop.workflow)
+      else {
+        const opener = getOpener()
+        if (opener) requestWorkflow(opener, nonce)
+        else showMissingWorkflow()
+      }
     }
     await stripped
   }
