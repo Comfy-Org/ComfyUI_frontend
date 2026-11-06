@@ -23,6 +23,8 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -138,6 +140,27 @@ const agentPlatformChannelRestrictions = [
   }
 ]
 
+function hashCatalogs(catalogPaths: readonly string[]): string {
+  const catalogHash = createHash('sha256')
+  for (const catalogPath of catalogPaths)
+    catalogHash.update(
+      readFileSync(path.resolve(import.meta.dirname, catalogPath))
+    )
+  return catalogHash.digest('hex')
+}
+
+const coreCatalogs = [
+  'src/locales/en/main.json',
+  'src/locales/en/commands.json',
+  'src/locales/en/nodeDefs.json',
+  'src/locales/en/settings.json',
+  'scripts/i18n/eslint-generated-messages.js'
+] as const
+
+const billingWebCatalogs = [
+  'apps/billing-web/src/locales/en/main.json'
+] as const
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
@@ -169,10 +192,6 @@ const settings = {
     // The rule checks that a path exists, not that it reaches a string, so
     // t('g') is accepted. packages/** is left out because a shared package is
     // consumed against all three catalogs, so there is no single one to pin.
-    //
-    // ESLint's --cache keys on file content and config, never on catalog
-    // content, so removing a key without touching its call sites can survive a
-    // cache hit.
     localeDir: [
       { pattern: './src/locales/en/main.json', localeKey: 'path' },
       {
@@ -492,13 +511,16 @@ export default defineConfig([
   },
   ...(
     [
-      ['src', settings],
-      ['apps/billing-web', billingWebI18nSettings]
+      ['src', settings, coreCatalogs],
+      ['apps/billing-web', billingWebI18nSettings, billingWebCatalogs]
     ] as const
-  ).map(([root, treeSettings]) => ({
+  ).map(([root, treeSettings, catalogs]) => ({
     files: [`${root}/**/*.{ts,vue}`],
     ignores: tailwindScriptIgnores,
-    settings: treeSettings,
+    settings: {
+      ...treeSettings,
+      'comfy/i18nCatalogHash': hashCatalogs(catalogs)
+    },
     plugins: { '@intlify/vue-i18n': i18nPlugin },
     rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
   })),
