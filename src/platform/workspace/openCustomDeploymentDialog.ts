@@ -7,6 +7,8 @@ import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { useBuildCustomNodesStore } from '@/platform/workspace/buildCustomNodes/buildCustomNodesStore'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
@@ -80,6 +82,19 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
     platformLabel: t('deployToComfyApi.deployOnPlatform'),
     brief: CUSTOM_DEPLOYMENT_BRIEF
   })
+}
+
+/** Opens the Extensions node picker for the deployment's Build; false if it could not load. */
+export function openBuildCustomNodesDialog(
+  deployment: WorkspaceDeployment
+): Promise<boolean> {
+  void useBuildCustomNodesStore().open(deployment)
+  return openCardDialog(
+    'global-build-custom-nodes',
+    () =>
+      import('@/platform/workspace/buildCustomNodes/components/BuildCustomNodesDialog.vue'),
+    {}
+  )
 }
 
 const WORKFLOW_NEEDS_DEPLOYMENT_KEY = 'global-workflow-needs-deployment'

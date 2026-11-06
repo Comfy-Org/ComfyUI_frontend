@@ -32,7 +32,11 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
-import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import {
+  openBuildCustomNodesDialog,
+  openDeployCustomNodesDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -641,39 +645,88 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('span.bg-destructive')).not.toBeNull()
   })
 
+  const deploymentWithBuild: WorkspaceDeployment = {
+    deployment_id: 'dep-prod',
+    deployment_name: 'production',
+    build_id: 'bld-1',
+    build_name: 'Studio Build',
+    release_id: 'rel-3',
+    release_version: 3,
+    status: 'ready',
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
+  }
+  const deploymentWithoutBuild: WorkspaceDeployment = {
+    ...deploymentWithBuild,
+    build_id: undefined,
+    build_name: undefined
+  }
+  const runningOn = (deployment: WorkspaceDeployment) =>
+    reduceDeploymentPick(
+      { phase: 'idle' },
+      loadedEvent({
+        builds_visible: true,
+        items: [deployment],
+        picked_deployment_id: deployment.deployment_id,
+        pick_source: 'browser'
+      })
+    )
+
   it.for([
     {
-      listing: 'was served',
+      account: 'whose deployments listing was served',
       state: reduceDeploymentPick(
         { phase: 'idle' },
         loadedEvent({ builds_visible: true, items: [] })
       ),
-      pitchCount: 1,
-      surveyCount: 0
+      pickerOn: true,
+      opens: 'pitch'
     },
     {
-      listing: 'was served without Build names',
+      account: 'whose deployments listing was served without Build names',
       state: reduceDeploymentPick(
         { phase: 'idle' },
         loadedEvent({ builds_visible: false, items: [] })
       ),
-      pitchCount: 1,
-      surveyCount: 0
+      pickerOn: true,
+      opens: 'pitch'
     },
     {
-      listing: 'refused this account',
+      account: 'running on a deployment with a Build',
+      state: runningOn(deploymentWithBuild),
+      pickerOn: true,
+      opens: 'picker'
+    },
+    {
+      account: 'running on a deployment with a Build, before the picker is on',
+      state: runningOn(deploymentWithBuild),
+      pickerOn: false,
+      opens: 'pitch'
+    },
+    {
+      account: 'running on a deployment with no Build',
+      state: runningOn(deploymentWithoutBuild),
+      pickerOn: true,
+      opens: 'pitch'
+    },
+    {
+      account: 'the deployments listing refused',
       state: { phase: 'hidden' },
-      pitchCount: 0,
-      surveyCount: 1
+      pickerOn: true,
+      opens: 'survey'
     }
   ] as const)(
-    'on Comfy Cloud, Extensions chooses between the custom deployment pitch and the survey when the deployments listing $listing',
-    async ({ state, pitchCount, surveyCount }) => {
+    'on Comfy Cloud, Extensions opens the $opens for an account $account',
+    async ({ state, pickerOn, opens }) => {
       distribution.isCloud = true
       onTestFinished(() => {
         distribution.isCloud = false
       })
+      Object.assign(useFeatureFlags().flags, {
+        buildCustomNodesEnabled: pickerOn
+      })
       vi.mocked(openDeployCustomNodesDialog).mockResolvedValue(true)
+      vi.mocked(openBuildCustomNodesDialog).mockResolvedValue(true)
       useDeploymentPickStore().state = state
       const { user } = createWrapper()
 
@@ -683,12 +736,20 @@ describe('TopMenuSection', () => {
 
       await waitFor(() =>
         expect(
-          vi.mocked(openDeployCustomNodesDialog).mock.calls.length +
+          vi.mocked(openBuildCustomNodesDialog).mock.calls.length +
+            vi.mocked(openDeployCustomNodesDialog).mock.calls.length +
             managerSurveyDialog.show.mock.calls.length
         ).toBe(1)
       )
-      expect(openDeployCustomNodesDialog).toHaveBeenCalledTimes(pitchCount)
-      expect(managerSurveyDialog.show).toHaveBeenCalledTimes(surveyCount)
+      expect({
+        picker: vi.mocked(openBuildCustomNodesDialog).mock.calls.length,
+        pitch: vi.mocked(openDeployCustomNodesDialog).mock.calls.length,
+        survey: managerSurveyDialog.show.mock.calls.length
+      }).toEqual({ picker: 0, pitch: 0, survey: 0, [opens]: 1 })
+      if (opens === 'picker')
+        expect(openBuildCustomNodesDialog).toHaveBeenCalledWith(
+          deploymentWithBuild
+        )
     }
   )
 

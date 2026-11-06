@@ -4260,6 +4260,111 @@
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
     "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
+  "buildCustomNodes": {
+    "loading": "Loading the Build's custom nodes",
+    "pinned": "Pinned",
+    "defaultBranch": "Default branch",
+    "uploaded": "Uploaded",
+    "learnCustomNodes": "Learn about custom nodes",
+    "loadFailed": {
+      "title": "Couldn't load the Build's custom nodes"
+    },
+    "picker": {
+      "title": "Add custom nodes to {build}",
+      "body": "Pick node packs to add. Comfy Cloud builds a new Release of {build}, then moves {deployment} to it.",
+      "search": "Search node packs",
+      "clearSearch": "Clear search",
+      "columnName": "Pack name",
+      "columnPublisher": "Publisher",
+      "columnInstalls": "Installs",
+      "columnStars": "Stars",
+      "columnVersion": "Version",
+      "columnLicense": "License",
+      "columnInstall": "Install",
+      "installLabel": "Add {pack} to the Build",
+      "inBuild": "In Build",
+      "noVersion": "No published version",
+      "versionLabel": "Choose a version of {pack}. {version} is picked now.",
+      "versionsOf": "Versions of {pack}",
+      "latest": "Latest",
+      "loadingVersions": "Loading versions",
+      "pinCommit": "Pin a commit hash",
+      "pinCommitLabel": "Pin a commit hash for {pack}",
+      "commitField": "Commit hash",
+      "pin": "Pin",
+      "notCommit": "Enter a commit hash of 7 to 40 letters and digits.",
+      "loading": "Loading node packs",
+      "searchFailed": "Couldn't reach the Comfy Registry. Try again.",
+      "noMatches": "No node packs match \"{query}\".",
+      "inBuildCount": "{count} node pack in {build} | {count} node packs in {build}",
+      "pickedCount": "· none picked yet | · {count} picked | · {count} picked",
+      "page": "Page {page}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "review": "Review changes | Review {count} node pack | Review {count} node packs"
+    },
+    "review": {
+      "title": "Add {count} node pack to {build} | Add {count} node packs to {build}",
+      "body": "Comfy Cloud builds a new Release of {build} with them, then moves {deployment} to it. This usually takes 10–15 minutes.",
+      "listLabel": "Node packs to add",
+      "note": "Jobs running now finish on v{version}. When the new Release is ready, reload the editor to use the new nodes.",
+      "backLabel": "Back to node packs",
+      "submit": "Add and redeploy"
+    },
+    "readOnly": {
+      "title": "Custom nodes in {build}",
+      "body": "You can't add node packs to this Build. Ask the person who manages it to add them for you.",
+      "listLabel": "Node packs in {build}"
+    },
+    "building": {
+      "titleStarting": "Starting the build",
+      "title": "Building Release v{version}",
+      "body": "Installing {count} node pack into {build}. Builds usually take 10–15 minutes. | Installing {count} node packs into {build}. Builds usually take 10–15 minutes.",
+      "step": {
+        "queued": "Waiting for a builder",
+        "resolving": "Resolving node pack versions",
+        "installing": "Installing node packs",
+        "checking": "Checking that the nodes load",
+        "packaging": "Packaging the Release"
+      },
+      "stepOf": "Step {step} of {count}",
+      "elapsed": "Under a minute so far | {count} min so far | {count} min so far",
+      "progressLabel": "Build progress",
+      "showLog": "Show build log",
+      "hideLog": "Hide build log",
+      "logLabel": "Build log",
+      "logEmpty": "The builder hasn't written to the log yet.",
+      "note": "You can close this window. Keep this tab open so {deployment} can move to the new Release."
+    },
+    "failed": {
+      "title": "Release v{version} didn't build",
+      "body": "{deployment} still runs v{version}. Change the version of the node pack the message names, or remove it. Then build again.",
+      "messageHeading": "Message from the builder",
+      "copyLabel": "Copy the builder's message",
+      "openLog": "Open full log",
+      "noMessage": "The builder didn't say why. Open the full log to see what happened.",
+      "change": "Change node packs",
+      "retry": "Build again"
+    },
+    "moving": {
+      "title": "Moving {deployment} to v{version}",
+      "body": "Release v{version} is built. {deployment} switches to it when its new copy is ready, usually in a few minutes.",
+      "step": "Starting a new copy of {deployment}",
+      "progressLabel": "Redeploy progress",
+      "note": "New jobs run on v{version} until then. Jobs that already started finish on v{version}."
+    },
+    "moveFailed": {
+      "title": "{deployment} didn't move to v{version}",
+      "body": "Release v{version} is built, but {deployment} still runs v{current}. Move it again, or change its Release on the Developer Platform.",
+      "retry": "Move again"
+    },
+    "landed": {
+      "title": "{deployment} now runs {build} v{version}",
+      "body": "Reload the editor to use the node pack you added. Your tabs stay open. | Reload the editor to use the {count} node packs you added. Your tabs stay open.",
+      "later": "Later",
+      "reload": "Reload"
+    }
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
