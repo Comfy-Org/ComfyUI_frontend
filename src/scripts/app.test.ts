@@ -744,6 +744,7 @@ describe('ComfyApp', () => {
 
         expect(workflow.graph).toBe(graph)
         expect(app.rootGraph).toBe(graph)
+        expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'onGraphLoadError',
           error

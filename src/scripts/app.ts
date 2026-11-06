@@ -1456,6 +1456,7 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         try {
+          if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error, {
             notifyExtensions: !backgroundRestore
           })
@@ -1563,6 +1564,7 @@ export class ComfyApp implements IComfyApp {
             }
           }
         } catch (error) {
+          if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error, {
             notifyExtensions: !backgroundRestore
           })
