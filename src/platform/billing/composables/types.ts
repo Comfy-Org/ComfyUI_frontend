@@ -1,4 +1,7 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  SubscriptionPaymentRecovery,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
@@ -176,6 +179,8 @@ export interface BillingState {
   currentPlanSlug: ComputedRef<string | null>
   /** Team per-credit pricing ladder; null for personal/legacy. */
   teamCreditStops: ComputedRef<TeamCreditStops | null>
+  /** The served unpaid initial-signup invoice holding plan changes; null when none is served. */
+  subscriptionPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
   /** Effective member limit for the current workspace; zero is unlimited. */

@@ -179,6 +179,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
   const teamCreditStops = computed(() => null)
+  const subscriptionPaymentRecovery = computed(() => null)
   const currentTeamCreditStop = computed(
     () => legacySubscriptionStatus.value?.team_credit_stop ?? null
   )
@@ -322,6 +323,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
