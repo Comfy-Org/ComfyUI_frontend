@@ -38,20 +38,25 @@ function licenseName(raw: string | undefined): string {
   return raw.trimStart().startsWith('{') ? parsedLicenseText(raw) : raw
 }
 
+function publisherName({ publisher }: RegistryNode): string {
+  return publisher?.name ?? publisher?.id ?? ''
+}
+
+function toNodePack(node: RegistryNode & { id: string }): NodePack {
+  return {
+    id: node.id,
+    name: node.name ?? node.id,
+    publisher: publisherName(node),
+    installs: node.downloads ?? 0,
+    stars: node.github_stars ?? 0,
+    license: licenseName(node.license),
+    repository: node.repository,
+    latestVersion: node.latest_version?.version
+  }
+}
+
 function toNodePacks(node: RegistryNode): NodePack[] {
-  if (!node.id) return []
-  return [
-    {
-      id: node.id,
-      name: node.name ?? node.id,
-      publisher: node.publisher?.name ?? node.publisher?.id ?? '',
-      installs: node.downloads ?? 0,
-      stars: node.github_stars ?? 0,
-      license: licenseName(node.license),
-      repository: node.repository,
-      latestVersion: node.latest_version?.version
-    }
-  ]
+  return node.id ? [toNodePack({ ...node, id: node.id })] : []
 }
 
 type IndexPage = { nodes: RegistryNode[]; total: number } | null

@@ -29,7 +29,7 @@ import {
   matchesStatus
 } from '@/platform/workspace/buildCustomNodes/nodePackTable'
 
-export const NODE_PACK_PAGE_SIZE = 25
+const NODE_PACK_PAGE_SIZE = 25
 
 export type NodePackRow =
   | {
