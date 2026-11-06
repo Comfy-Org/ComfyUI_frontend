@@ -6,6 +6,7 @@ import {
   DESKTOP_HANDOFF_HASH,
   DESKTOP_HANDOFF_LIFETIME_MS,
   DESKTOP_RELAY_PARAM,
+  captureDesktopWorkflowHandoff,
   desktopWorkflowUrl
 } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 import {
@@ -27,6 +28,7 @@ const zRelayRecord = z.object({
 
 export async function handleDesktopWorkflowHandoff(): Promise<boolean> {
   if (!isCloud) return redirectDesktopWorkflowRelay()
+  await captureDesktopWorkflowHandoff()
   return false
 }
 
