@@ -11,7 +11,7 @@ export const localDeploymentAgentExtension: ComfyExtension = {
         const brief =
           typeof metadata?.brief === 'string'
             ? metadata.brief
-            : useAgentHandoff().buildBrief()
+            : useAgentHandoff().buildBrief('local-deployment')
         const { useLocalDeploymentAgent } =
           await import('@/workbench/extensions/agent/composables/agent/useLocalDeploymentAgent')
         if (await useLocalDeploymentAgent().open(brief)) closeRunOnCloudDialog()

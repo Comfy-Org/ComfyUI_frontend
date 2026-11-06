@@ -12,7 +12,7 @@ const MAX_HANDOFF_BYTES = 8 * 1024 * 1024
 const MAX_ENCODED_LENGTH = 1024 * 1024
 const STORAGE_PREFIX = 'Comfy.OpenOnCloud.Desktop.'
 
-export const zDesktopWorkflowHandoff = z.object({
+const zDesktopWorkflowHandoff = z.object({
   filename: z.string().min(1).max(256),
   workflow: z.unknown(),
   expiresAt: z.number()

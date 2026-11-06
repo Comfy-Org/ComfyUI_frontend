@@ -77,7 +77,7 @@ const copied = ref(false)
 function openInLocalAgent() {
   void commands
     .execute(LOCAL_DEPLOYMENT_AGENT_COMMAND, {
-      metadata: { brief: buildBrief() }
+      metadata: { brief: buildBrief('local-deployment') }
     })
     .catch(toastErrorHandler)
 }

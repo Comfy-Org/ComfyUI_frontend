@@ -9,6 +9,9 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import { openDeploySetupDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -30,6 +33,11 @@ describe('Deployment dialog local-agent handoff', () => {
     })
     const panel = useAgentPanelStore()
     panel.enabled = true
+    useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
+      instanceId: 'deploy-target',
+      filename: 'workflow',
+      activeState: defaultGraph
+    })
     useCommandStore().loadExtensionCommands(localDeploymentAgentExtension)
     await openDeploySetupDialog()
     render(DeploySetupCard, {
@@ -49,6 +57,8 @@ describe('Deployment dialog local-agent handoff', () => {
       )
     )
     expect(panel.isVisible).toBe(true)
-    expect(useAgentComposerStore().draft).toContain('Comfy API Build')
+    expect(useAgentComposerStore().draft).toContain(
+      'Deploy the ComfyUI installation that hosts this agent'
+    )
   })
 })

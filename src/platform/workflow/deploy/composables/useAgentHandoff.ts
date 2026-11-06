@@ -9,6 +9,7 @@ import {
   buildAgentHandoffDocument,
   handoffFileName
 } from '@/platform/workflow/deploy/utils/agentHandoff'
+import type { AgentHandoffGoal } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { deriveBuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -59,8 +60,12 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     return snapshot().inputs
   }
 
-  function buildBrief(): string {
-    return buildAgentHandoffDocument({ distribution, inputs: captureInputs() })
+  function buildBrief(goal: AgentHandoffGoal = 'build'): string {
+    return buildAgentHandoffDocument({
+      distribution,
+      inputs: captureInputs(),
+      goal
+    })
   }
 
   async function copyBrief(): Promise<boolean> {
