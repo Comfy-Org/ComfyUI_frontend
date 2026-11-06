@@ -36,16 +36,12 @@ describe('DeploySetupAgentMenu', () => {
       (await screen.findAllByRole('menuitem')).map((row) =>
         row.textContent.trim()
       )
-    ).toEqual([
-      'Open in Claude desktop',
-      'Open in ChatGPT desktop',
-      'Copy prompt'
-    ])
+    ).toEqual(['Open in Claude desktop', 'Open in Codex', 'Copy prompt'])
   })
 
   it.for([
     { row: 'Open in Claude desktop', app: 'claude' },
-    { row: 'Open in ChatGPT desktop', app: 'chatGpt' }
+    { row: 'Open in Codex', app: 'codex' }
   ])('$row opens the brief in that app', async ({ row, app }) => {
     const user = renderMenu()
 
@@ -62,7 +58,7 @@ describe('DeploySetupAgentMenu', () => {
     expect(button).toHaveTextContent(/^Copied/)
 
     await user.click(button)
-    expect(button).toHaveTextContent('Build with your agent')
+    expect(button).toHaveTextContent('Deploy with your agent')
   })
 
   it('keeps its label when the brief did not reach the clipboard', async () => {
@@ -72,7 +68,7 @@ describe('DeploySetupAgentMenu', () => {
     await pickRow(user, 'Copy prompt')
 
     expect(screen.getByTestId('deploy-setup-agent')).toHaveTextContent(
-      'Build with your agent'
+      'Deploy with your agent'
     )
   })
 })

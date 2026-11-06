@@ -17,7 +17,7 @@ function recordFrameNavigations() {
 describe('openAgentApp', () => {
   it.for([
     { app: 'claude', url: 'claude://code/new?q=a%20b%0Ac%26d%3D1%23e' },
-    { app: 'chatGpt', url: 'codex://new?prompt=a%20b%0Ac%26d%3D1%23e' }
+    { app: 'codex', url: 'codex://new?prompt=a%20b%0Ac%26d%3D1%23e' }
   ] as const)(
     'hands the whole prompt, encoded, to the $app app from a hidden frame',
     ({ app, url }) => {
@@ -32,7 +32,7 @@ describe('openAgentApp', () => {
   it('replaces a lone surrogate instead of throwing, and keeps a pair whole', () => {
     const navigations = recordFrameNavigations()
 
-    openAgentApp('chatGpt', '\uD800 build \uDC00 🙂')
+    openAgentApp('codex', '\uD800 build \uDC00 🙂')
 
     expect(navigations.map(({ url }) => url)).toEqual([
       'codex://new?prompt=%EF%BF%BD%20build%20%EF%BF%BD%20%F0%9F%99%82'
@@ -43,7 +43,7 @@ describe('openAgentApp', () => {
     const navigations = recordFrameNavigations()
 
     openAgentApp('claude', 'first')
-    openAgentApp('chatGpt', 'second')
+    openAgentApp('codex', 'second')
 
     expect(navigations.map(({ url }) => url)).toEqual([
       'claude://code/new?q=first',

@@ -4299,7 +4299,7 @@
     },
     "agentMenu": {
       "openInClaude": "Open in Claude desktop",
-      "openInChatGpt": "Open in ChatGPT desktop",
+      "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt"
     },
     "missingModels": {
@@ -4920,7 +4920,7 @@
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
     "deployOnPlatform": "Deploy on Platform",
-    "deployWithAgent": "Build with your agent",
+    "deployWithAgent": "Deploy with your agent",
     "copied": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",

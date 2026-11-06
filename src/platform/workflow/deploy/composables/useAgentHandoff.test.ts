@@ -123,7 +123,7 @@ describe('useAgentHandoff', () => {
 
   it.for([
     { app: 'claude', distribution: 'localhost', downloads: 1 },
-    { app: 'chatGpt', distribution: 'desktop', downloads: 0 }
+    { app: 'codex', distribution: 'desktop', downloads: 0 }
   ] as const)(
     'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
     ({ app, distribution, downloads }) => {
@@ -158,6 +158,7 @@ describe('useAgentHandoff', () => {
     useAgentHandoff().openBriefIn('claude')
 
     expect(order).toEqual(['download', 'open'])
+    expect(openAgentApp).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'error_opening_deploy_agent_brief',
       surface: 'platform'
