@@ -10,7 +10,7 @@ import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 type LinkEndNode =
@@ -61,12 +61,10 @@ function inputEnd(
   }
 }
 
-function outputEnd({
-  link,
-  outputNode,
-  output,
-  subgraphInput
-}: ResolvedConnection): LinkEnd | undefined {
+function outputEnd(
+  graph: LGraph,
+  { link, outputNode, output, subgraphInput }: ResolvedConnection
+): LinkEnd | undefined {
   const slot = link.origin_slot
   if (subgraphInput) {
     if (!subgraphInput.linkIds.includes(link.id)) return
@@ -77,7 +75,12 @@ function outputEnd({
       position: subgraphInput.pos
     }
   }
-  if (!outputNode || !output) return
+  if (
+    !outputNode ||
+    !output ||
+    !outputLinkIds(graph, outputNode.id, slot).includes(link.id)
+  )
+    return
   return {
     kind: 'node',
     node: outputNode,
@@ -92,7 +95,9 @@ export function getLinkEnd(
   side: SlotDirection
 ): LinkEnd | undefined {
   const resolved = link.resolve(graph)
-  return side === 'input' ? inputEnd(graph, resolved) : outputEnd(resolved)
+  return side === 'input'
+    ? inputEnd(graph, resolved)
+    : outputEnd(graph, resolved)
 }
 
 export function getLinkEndpointPositions(
@@ -100,7 +105,7 @@ export function getLinkEndpointPositions(
   link: LLink
 ): [Point, Point] | undefined {
   const resolved = link.resolve(graph)
-  const start = outputEnd(resolved)
+  const start = outputEnd(graph, resolved)
   const end = inputEnd(graph, resolved)
   return start && end && [start.position, end.position]
 }
