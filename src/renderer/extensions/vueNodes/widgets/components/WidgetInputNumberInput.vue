@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
+import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -79,22 +80,7 @@ const precision = computed(() => {
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = computed(() => {
-  if (props.widget.options?.step2 !== undefined) {
-    return props.widget.options.step2
-  }
-  const step = props.widget.options?.step as number | undefined
-  if (step !== undefined && step > 10) {
-    return step / 10
-  }
-  if (precision.value !== undefined) {
-    if (precision.value === 0) {
-      return 1
-    }
-    return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
-  }
-  return 0
-})
+const step = useNumberStepCalculation(() => props.widget.options, precision)
 
 const useGrouping = computed(() => {
   return props.widget.options?.useGrouping === true

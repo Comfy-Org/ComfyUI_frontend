@@ -200,6 +200,7 @@ import type { CSSProperties } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -394,25 +395,14 @@ function selectOption(option: SelectOption | null) {
   isOpen.value = false
 }
 
-function adjacentOption(direction: -1 | 1) {
-  const options = normalizedOptions.value
-  const index = selectedOption.value
-    ? options.indexOf(selectedOption.value)
-    : direction === 1
-      ? -1
-      : options.length
-  return options[index + direction]
-}
-
-function isStepDisabled(direction: -1 | 1) {
-  return disabled.value || (!dynamicOptions.value && !adjacentOption(direction))
-}
-
-function stepOption(direction: -1 | 1) {
-  refreshOptions()
-  const option = adjacentOption(direction)
-  if (option) selectOption(option)
-}
+const { isStepDisabled, stepOption } = useComboStepping({
+  options: normalizedOptions,
+  selectedOption,
+  disabled,
+  dynamicOptions,
+  refreshOptions,
+  onSelect: selectOption
+})
 
 function focusSearchInput() {
   const input =
