@@ -1,14 +1,16 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-export function useComboStepping<T>(config: {
+interface ComboSteppingOptions<T> {
   options: MaybeRefOrGetter<readonly T[]>
   selectedOption: MaybeRefOrGetter<T | undefined>
   disabled: MaybeRefOrGetter<boolean>
   dynamicOptions: MaybeRefOrGetter<boolean>
   refreshOptions: () => void
   onSelect: (option: T) => void
-}) {
+}
+
+export function useComboStepping<T>(config: ComboSteppingOptions<T>) {
   const adjacentOptions = computed(() => {
     const options = toValue(config.options)
     const selected = toValue(config.selectedOption)

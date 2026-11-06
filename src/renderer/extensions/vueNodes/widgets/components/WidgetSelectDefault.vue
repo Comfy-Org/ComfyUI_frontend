@@ -11,15 +11,12 @@
         tabindex="-1"
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
-        class="h-full w-6 shrink-0 rounded-none p-0 disabled:opacity-30"
+        class="h-full w-6 shrink-0 rounded-none"
         variant="muted-textonly"
-        size="unset"
+        size="icon-sm"
         @click="stepOption(-1)"
       >
-        <i
-          class="icon-[lucide--chevron-left] text-muted-foreground"
-          aria-hidden="true"
-        />
+        <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
       </Button>
     </template>
     <template #between><slot name="between" /></template>
@@ -60,8 +57,8 @@
               tabindex="0"
               data-testid="widget-select-default-trigger"
               variant="textonly"
-              size="unset"
-              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 text-xs font-normal disabled:cursor-default"
+              size="sm"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
             >
               <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
                 {{ selectedSummary || placeholder || '\u00a0' }}
@@ -74,15 +71,12 @@
             tabindex="-1"
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
-            class="h-full w-6 shrink-0 rounded-none p-0 disabled:opacity-30"
+            class="h-full w-6 shrink-0 rounded-none"
             variant="muted-textonly"
-            size="unset"
+            size="icon-sm"
             @click="stepOption(1)"
           >
-            <i
-              class="icon-[lucide--chevron-right] text-muted-foreground"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
           </Button>
         </div>
       </ComboboxAnchor>

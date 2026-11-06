@@ -12,6 +12,7 @@ import {
   hsvaToHex,
   rgbToHex
 } from '@comfyorg/shared-frontend-utils/colorUtil'
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -92,14 +93,14 @@ const isOpen = ref(false)
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <slot name="trigger">
-        <button
+        <Button
           :id="triggerId"
           type="button"
           :disabled
           :aria-label="accessibleLabel"
           :class="
             cn(
-              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
+              'w-full gap-0 overflow-clip border border-solid border-transparent p-0 pr-2 font-normal',
               isOpen && 'border-border',
               className
             )
@@ -136,7 +137,7 @@ const isOpen = ref(false)
             </template>
             <span v-if="alpha">{{ hsva.a }}%</span>
           </div>
-        </button>
+        </Button>
       </slot>
     </PopoverTrigger>
     <PopoverContent

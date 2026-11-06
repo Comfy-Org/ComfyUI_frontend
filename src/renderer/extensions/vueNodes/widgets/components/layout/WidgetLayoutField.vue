@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -22,24 +20,22 @@ const { widget, rootClass, valueText, inputId, fullWidthControl, noBorder } =
   }>()
 
 const hideLayoutField = useHideLayoutField()
-const rowClass = computed(() =>
-  cn(
-    'relative isolate flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
-    fullWidthControl && 'py-2',
-    !noBorder && widget.borderStyle,
-    rootClass
-  )
-)
-const controlClass = computed(() =>
-  cn(
-    'col-start-1 row-start-1 min-w-0 cursor-[inherit] rounded-md transition-all',
-    fullWidthControl && 'absolute inset-0'
-  )
-)
 </script>
 
 <template>
-  <div :class="rowClass" @pointerdown.stop @pointermove.stop @pointerup.stop>
+  <div
+    :class="
+      cn(
+        'relative isolate flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
+        fullWidthControl && 'py-2',
+        !noBorder && widget.borderStyle,
+        rootClass
+      )
+    "
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+  >
     <label
       v-if="inputId && !hideLayoutField"
       :for="inputId"
@@ -66,7 +62,14 @@ const controlClass = computed(() =>
           )
         "
       />
-      <div :class="controlClass">
+      <div
+        :class="
+          cn(
+            'col-start-1 row-start-1 min-w-0 cursor-[inherit] rounded-md transition-all',
+            fullWidthControl && 'absolute inset-0'
+          )
+        "
+      >
         <slot :border-style="widget.borderStyle" />
       </div>
     </div>
