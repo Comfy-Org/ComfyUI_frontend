@@ -201,7 +201,9 @@ function formatTimeLeft(seconds: number) {
     { unit: 'second', count: seconds % 60 }
   ]
   return units
-    .filter(({ unit, count }) => count > 0 || (unit === 'second' && seconds === 0))
+    .filter(
+      ({ unit, count }) => count > 0 || (unit === 'second' && seconds === 0)
+    )
     .map(({ unit, count }) =>
       new Intl.NumberFormat(locale.value, {
         style: 'unit',
