@@ -59,6 +59,8 @@ export interface SubscriptionDialogOptions {
   creditsLocked?: boolean
   /** Server `error.type` of the refused run, reported with the paywall opening. */
   refusalType?: string
+  /** Reopens the in-app table to restore a failed checkout instead of handing off to the platform Plans page. */
+  resumingCheckout?: boolean
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature

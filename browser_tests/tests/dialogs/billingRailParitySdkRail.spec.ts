@@ -28,6 +28,7 @@ import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -459,6 +460,8 @@ async function topUpThenUpgrade(
 }
 
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test.describe('with only the subscription rail on', () => {
     test('buys credits on the legacy transport and refreshes the balance', async ({
       page,
