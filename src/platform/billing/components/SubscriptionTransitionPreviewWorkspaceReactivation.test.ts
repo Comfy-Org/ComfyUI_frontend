@@ -190,7 +190,8 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       mockSubscription.value = { isCancelled: false, endDate: null }
       const preview = makePreview({
         transition_type: 'upgrade',
-        cost_today_cents: 2500
+        cost_today_cents: 2500,
+        requires_reactivation_charge_confirmation: true
       })
       preview.current_plan!.tier = 'TEAM'
       preview.current_plan!.period_end = '2026-08-29T00:00:00Z'
@@ -391,25 +392,96 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
     })
   })
 
-  describe('charge threshold', () => {
-    it('shows no checkbox and an enabled confirm when the charge is at or below the current monthly price', () => {
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2026-08-15T00:00:00Z'
+  describe('charge consent', () => {
+    it.for([
+      { served: false, checkbox: false, case: 'served false' },
+      { served: undefined, checkbox: true, case: 'absent (interim rule)' }
+    ])(
+      'reads the checkbox for a large charge when the preview consent is $case',
+      ({ served, checkbox }) => {
+        mockSubscription.value = {
+          isCancelled: true,
+          endDate: '2026-08-15T00:00:00Z'
+        }
+        renderComponent(
+          makePreview({
+            transition_type: 'upgrade',
+            cost_today_cents: 99_900,
+            requires_reactivation_charge_confirmation: served
+          })
+        )
+
+        expect(screen.queryAllByRole('checkbox')).toHaveLength(checkbox ? 1 : 0)
+        expect(
+          screen.getByRole('button', {
+            name: 'Confirm & reactivate — $999.00 today'
+          })
+        ).toHaveProperty('disabled', checkbox)
       }
-      renderComponent(
-        makePreview({ transition_type: 'upgrade', cost_today_cents: 1500 })
-      )
+    )
 
-      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-      expect(
-        screen.getByRole('button', {
-          name: 'Confirm & reactivate — $15.00 today'
-        })
-      ).toBeEnabled()
-    })
+    it.for([
+      {
+        case: 'the whole multi-seat subscription total',
+        costTodayCents: 5000,
+        charge: '$50.00',
+        checkbox: false,
+        currentPlan: {
+          slug: 'team-per-credit-monthly',
+          tier: 'PRO',
+          duration: 'MONTHLY',
+          price_cents: 2000,
+          credits_cents: 0,
+          seat_summary: {
+            seat_count: 3,
+            total_cost_cents: 6000,
+            total_credits_cents: 0
+          }
+        }
+      },
+      {
+        case: 'a twelfth of an annual subscription total',
+        costTodayCents: 2500,
+        charge: '$25.00',
+        checkbox: true,
+        currentPlan: {
+          slug: 'standard-annual',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          price_cents: 24_000,
+          credits_cents: 0,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 24_000,
+            total_credits_cents: 0
+          }
+        }
+      }
+    ] as const)(
+      'compares the charge with $case when the preview omits consent',
+      ({ costTodayCents, charge, checkbox, currentPlan }) => {
+        mockSubscription.value = {
+          isCancelled: true,
+          endDate: '2026-08-15T00:00:00Z'
+        }
+        renderComponent(
+          makePreview({
+            transition_type: 'upgrade',
+            cost_today_cents: costTodayCents,
+            current_plan: currentPlan
+          })
+        )
 
-    it('requires the checkbox before enabling confirm when the charge exceeds the current monthly price', async () => {
+        expect(screen.queryAllByRole('checkbox')).toHaveLength(checkbox ? 1 : 0)
+        expect(
+          screen.getByRole('button', {
+            name: `Confirm & reactivate — ${charge} today`
+          })
+        ).toHaveProperty('disabled', checkbox)
+      }
+    )
+
+    it('requires the checkbox before enabling confirm when the preview demands consent, even for a small charge', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
         isCancelled: true,
@@ -417,63 +489,24 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       }
       renderComponent(
         makePreview({
-          transition_type: 'duration_change',
-          cost_today_cents: 33_600,
-          new_plan: {
-            slug: 'standard-annual',
-            tier: 'STANDARD',
-            duration: 'ANNUAL',
-            price_cents: 33_600,
-            credits_cents: 0,
-            period_end: '2027-08-15T00:00:00Z',
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 33_600,
-              total_credits_cents: 0
-            }
-          }
+          transition_type: 'upgrade',
+          cost_today_cents: 500,
+          requires_reactivation_charge_confirmation: true
         })
       )
 
       const confirmButton = screen.getByRole('button', {
-        name: 'Confirm & reactivate — $336.00 today'
+        name: 'Confirm & reactivate — $5.00 today'
       })
-      const checkbox = screen.getByRole('checkbox')
       expect(confirmButton).toBeDisabled()
 
-      await user.click(checkbox)
-
-      expect(confirmButton).toBeEnabled()
-    })
-
-    it('uses the whole-subscription seat total, not the per-seat price, on a multi-seat team plan', () => {
-      // 3 seats at 2000/seat = 6000 total; a 5000 charge is below the
-      // per-seat price (2000) x... actually below the *total* (6000) so no
-      // checkbox should appear even though it exceeds the per-seat price.
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2026-08-15T00:00:00Z'
-      }
-      renderComponent(
-        makePreview({
-          transition_type: 'upgrade',
-          cost_today_cents: 5000,
-          current_plan: {
-            slug: 'team-per-credit-monthly',
-            tier: 'PRO',
-            duration: 'MONTHLY',
-            price_cents: 2000,
-            credits_cents: 0,
-            seat_summary: {
-              seat_count: 3,
-              total_cost_cents: 6000,
-              total_credits_cents: 0
-            }
-          }
+      await user.click(
+        screen.getByRole('checkbox', {
+          name: "I understand I'll be charged $5.00 today"
         })
       )
 
-      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+      expect(confirmButton).toBeEnabled()
     })
   })
 
@@ -490,7 +523,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(emitted().confirm).toEqual([[false]])
     })
 
-    it('emits confirmReactivation true below the charge threshold, with no checkbox to tick', async () => {
+    it('emits confirmReactivation true with no checkbox to tick when the preview demands no consent', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
         isCancelled: true,
@@ -509,7 +542,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(emitted().confirm).toEqual([[true]])
     })
 
-    it('emits confirmReactivation true above the threshold only once the checkbox is ticked', async () => {
+    it('emits confirmReactivation true on a consent-demanding preview only once the checkbox is ticked', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
         isCancelled: true,
@@ -517,26 +550,17 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       }
       const { emitted } = renderComponent(
         makePreview({
-          transition_type: 'duration_change',
-          cost_today_cents: 33_600,
-          new_plan: {
-            slug: 'standard-annual',
-            tier: 'STANDARD',
-            duration: 'ANNUAL',
-            price_cents: 33_600,
-            credits_cents: 0,
-            period_end: '2027-08-15T00:00:00Z',
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 33_600,
-              total_credits_cents: 0
-            }
-          }
+          transition_type: 'upgrade',
+          cost_today_cents: 4500,
+          requires_reactivation_charge_confirmation: true
         })
       )
       const confirmButton = screen.getByRole('button', {
-        name: 'Confirm & reactivate — $336.00 today'
+        name: 'Confirm & reactivate — $45.00 today'
       })
+
+      await user.click(confirmButton)
+      expect(emitted().confirm).toBeUndefined()
 
       await user.click(screen.getByRole('checkbox'))
       await user.click(confirmButton)
@@ -584,7 +608,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       ).toBeNull()
     })
 
-    it('disables confirm while subscription status has not loaded yet, even below the charge threshold', () => {
+    it('disables confirm while subscription status has not loaded yet', () => {
       mockSubscription.value = null
       renderComponent(
         makePreview({ transition_type: 'downgrade', is_immediate: false })
@@ -656,83 +680,34 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       }
       const { rerender } = renderComponent(
         makePreview({
-          transition_type: 'duration_change',
-          cost_today_cents: 33_600,
-          new_plan: {
-            slug: 'standard-annual',
-            tier: 'STANDARD',
-            duration: 'ANNUAL',
-            price_cents: 33_600,
-            credits_cents: 0,
-            period_end: '2027-08-15T00:00:00Z',
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 33_600,
-              total_credits_cents: 0
-            }
-          }
+          transition_type: 'upgrade',
+          cost_today_cents: 4500,
+          requires_reactivation_charge_confirmation: true
         })
       )
       await user.click(screen.getByRole('checkbox'))
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $336.00 today'
+          name: 'Confirm & reactivate — $45.00 today'
         })
       ).toBeEnabled()
 
-      // A fresh quote can carry materially different billing state while
-      // displaying the same charge; the earlier tick must not carry over.
       await rerender({
         previewData: makePreview({
-          transition_type: 'duration_change',
-          cost_today_cents: 33_600,
+          transition_type: 'upgrade',
+          cost_today_cents: 4500,
           credits_next_period_cents: 1_000,
           proration_at: '2026-08-01T00:01:00Z',
-          new_plan: {
-            slug: 'standard-annual',
-            tier: 'STANDARD',
-            duration: 'ANNUAL',
-            price_cents: 33_600,
-            credits_cents: 0,
-            period_end: '2027-08-15T00:00:00Z',
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 33_600,
-              total_credits_cents: 0
-            }
-          }
+          requires_reactivation_charge_confirmation: true
         })
       })
 
       expect(screen.getByRole('checkbox')).not.toBeChecked()
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $336.00 today'
+          name: 'Confirm & reactivate — $45.00 today'
         })
       ).toBeDisabled()
-    })
-  })
-
-  describe('downgrade variant checkbox suppression', () => {
-    it('never shows a checkbox for the downgrade variant, even if cost_today_cents is unexpectedly positive', () => {
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2026-08-15T00:00:00Z'
-      }
-      renderComponent(
-        makePreview({
-          transition_type: 'downgrade',
-          is_immediate: false,
-          // A downgrade should never charge today; this asserts the FE
-          // doesn't surface a contradictory checkbox even if it did.
-          cost_today_cents: 999_999
-        })
-      )
-
-      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: 'Confirm & reactivate' })
-      ).toBeEnabled()
     })
   })
 
