@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
@@ -20,6 +21,7 @@ const { widget, rootClass, valueText, inputId, fullWidthControl, noBorder } =
     fillWidth?: boolean
   }>()
 
+const hideLayoutField = useHideLayoutField()
 const rowClass = computed(() =>
   cn(
     'relative isolate flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
@@ -39,7 +41,7 @@ const controlClass = computed(() =>
 <template>
   <div :class="rowClass" @pointerdown.stop @pointermove.stop @pointerup.stop>
     <label
-      v-if="inputId"
+      v-if="inputId && !hideLayoutField"
       :for="inputId"
       aria-hidden="true"
       data-testid="widget-row-hit-area"

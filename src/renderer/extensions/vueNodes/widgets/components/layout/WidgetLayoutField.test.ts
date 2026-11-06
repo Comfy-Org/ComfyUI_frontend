@@ -26,7 +26,7 @@ function renderField(
   const Harness = defineComponent({
     components: { WidgetLayoutField },
     setup: () => ({ widget }),
-    template: `<WidgetLayoutField :widget="widget">${slotContent}</WidgetLayoutField>`
+    template: `<WidgetLayoutField :widget input-id="field-input">${slotContent}</WidgetLayoutField>`
   })
   return render(Harness, {
     global: {
@@ -105,9 +105,17 @@ describe('WidgetLayoutField', () => {
       expect(screen.queryByTestId('widget-layout-field-label')).toBeNull()
     })
 
-    it('still renders the slotted content when the label is hidden', () => {
-      renderField({ name: 'seed' }, { hideLayoutField: true })
-      expect(screen.getByTestId('slot')).toBeInTheDocument()
+    it('preserves the control name when the label is hidden', () => {
+      renderField(
+        { name: 'ckpt_name' },
+        {
+          hideLayoutField: true,
+          slotContent: '<button id="field-input">model.safetensors</button>'
+        }
+      )
+      expect(
+        screen.getByRole('button', { name: 'model.safetensors' })
+      ).toBeInTheDocument()
     })
   })
 

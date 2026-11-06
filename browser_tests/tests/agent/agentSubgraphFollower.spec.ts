@@ -506,8 +506,7 @@ test.describe(
         const nodes = new VueNodeHelpers(page)
         const interiorSteps = nodes
           .getNodeByTitle('KSampler')
-          .getByLabel('steps', { exact: true })
-          .getByRole('spinbutton')
+          .getByRole('spinbutton', { name: 'steps', exact: true })
 
         await test.step('open the agent-enabled workflow', async () => {
           await page.setViewportSize({ width: 1920, height: 1280 })
