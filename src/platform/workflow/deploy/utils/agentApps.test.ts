@@ -1,4 +1,5 @@
-// @vitest-environment-options {"happyDOM":{"settings":{"disableIframePageLoading":false}}}
+// @vitest-environment happy-dom
+// @vitest-environment-options {"settings":{"disableIframePageLoading":false,"enableIframePageLoading":true}}
 import { describe, expect, it, vi } from 'vitest'
 
 import { openAgentApp } from './agentApps'

@@ -1,6 +1,9 @@
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { shallowRef, watch } from 'vue'
 
+import { api } from '@/scripts/api'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
@@ -32,6 +35,14 @@ export const useCloudWorkflowCheckStore = defineStore(
         dispatch({ type: 'failed', run })
       }
     }
+
+    function invalidate() {
+      dispatch({ type: 'invalidated' })
+    }
+
+    const workflowStore = useWorkflowStore()
+    useEventListener(api, 'graphChanged', invalidate)
+    watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
     watch(isLoggedIn, () => {
       if (lastRun) void check()
