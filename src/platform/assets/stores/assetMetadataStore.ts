@@ -9,6 +9,18 @@ import type {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 
+function unconfirmedUpdates(
+  pending: AssetUserMetadata,
+  submitted: AssetUserMetadata
+): AssetUserMetadata {
+  const confirmed = new Map(Object.entries(submitted))
+  return Object.fromEntries(
+    Object.entries(pending).filter(
+      ([key, value]) => !confirmed.has(key) || value !== confirmed.get(key)
+    )
+  )
+}
+
 export const useAssetMetadataStore = defineStore('assetMetadata', () => {
   const assetsStore = useAssetsStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -47,22 +59,24 @@ export const useAssetMetadataStore = defineStore('assetMetadata', () => {
         targetCacheKey
       )
       saving = false
+      finishSave(submitted, metadata, saved)
+    }, 500)
+
+    function finishSave(
+      submitted: AssetUserMetadata,
+      metadata: AssetItem['user_metadata'],
+      saved: boolean
+    ) {
       if (drafts.get(initialAsset.id) !== draft) return
       const hasNewerEdits = updates.value !== submitted
       if (saved) {
         targetAsset = { ...targetAsset, user_metadata: metadata }
-        const confirmed = new Map(Object.entries(submitted))
-        updates.value = Object.fromEntries(
-          Object.entries(updates.value).filter(
-            ([key, value]) =>
-              !confirmed.has(key) || value !== confirmed.get(key)
-          )
-        )
+        updates.value = unconfirmedUpdates(updates.value, submitted)
       }
       if (Object.keys(updates.value).length === 0)
         drafts.delete(initialAsset.id)
       else if (saved || hasNewerEdits) void flush()
-    }, 500)
+    }
 
     function queue(
       newUpdates: AssetUserMetadata,
