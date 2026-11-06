@@ -219,6 +219,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -243,7 +244,9 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
-const isCloudButtonShown = computed(() => !isCloud && flags.openOnCloudEnabled)
+const isCloudButtonShown = computed(
+  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+)
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({

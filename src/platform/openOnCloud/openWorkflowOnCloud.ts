@@ -1,10 +1,10 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { isDesktop } from '@/platform/distribution/types'
 import {
   cloudEditorUrl,
   cloudOrigin,
+  handsOffThroughDesktopRelay,
   localHandoffWorkflow,
   zLocalHandoffReady
 } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -125,8 +125,7 @@ export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (isDesktop || window.__comfyDesktop2)
-    return openFromDesktop(tabs, filename)
+  if (handsOffThroughDesktopRelay()) return openFromDesktop(tabs, filename)
 
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))
