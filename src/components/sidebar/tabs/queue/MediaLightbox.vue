@@ -35,7 +35,6 @@
         </Button>
       </div>
 
-      <!-- Previous Button -->
       <Button
         v-if="hasMultiple"
         variant="secondary"
@@ -47,7 +46,6 @@
         <i class="icon-[lucide--chevron-left] size-6" />
       </Button>
 
-      <!-- Content -->
       <div
         ref="contentRef"
         class="relative flex max-h-full max-w-full items-center justify-center"
@@ -90,17 +88,10 @@
       <div
         v-if="activeItem"
         data-testid="lightbox-caption"
-        :class="
-          cn(
-            'absolute bottom-4 left-4 z-10 max-w-[60vw] truncate bg-black/60 px-2 py-1 text-xs text-white/90 backdrop-blur-sm transition-opacity',
-            captionPinned || captionVisible
-              ? 'pointer-events-auto opacity-100'
-              : 'pointer-events-none opacity-0'
-          )
-        "
-        @mouseenter="onCaptionMouseEnter"
-        @mouseleave="onCaptionMouseLeave"
-        @focusin="onCaptionFocusIn"
+        :class="captionClass"
+        @mouseenter="pinCaption"
+        @mouseleave="unpinCaption"
+        @focusin="pinCaption"
         @focusout="onCaptionFocusOut"
       >
         <span data-testid="lightbox-filename" :title="activeItem.filename">
@@ -108,7 +99,6 @@
         </span>
       </div>
 
-      <!-- Next Button -->
       <Button
         v-if="hasMultiple"
         variant="secondary"
@@ -124,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -140,11 +130,12 @@ import {
   isTextResult,
   isVideoResult
 } from '@/utils/resultItem'
-import { cn } from '@comfyorg/tailwind-utils'
-
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { useLightboxCaption } from './useLightboxCaption'
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
@@ -169,86 +160,25 @@ const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
 const contentRef = ref<HTMLElement>()
 
-const captionVisible = ref(false)
-const captionPinned = ref(false)
 const mediaReady = ref(false)
 const mediaSeq = ref(0)
-let revealQueued = false
-let captionHideTimer: ReturnType<typeof setTimeout> | undefined
 
-const imageSettled = computed(() => {
-  const seq = mediaSeq.value
-  return {
-    load: () => markMediaReady(seq),
-    error: () => markMediaReady(seq)
-  }
-})
+const {
+  visible: captionVisible,
+  reveal: revealCaption,
+  hide: hideCaption,
+  pin: pinCaption,
+  unpin: unpinCaption
+} = useLightboxCaption(() => mediaReady.value)
 
-function showCaptionTransient() {
-  if (!mediaReady.value) {
-    revealQueued = true
-    return
-  }
-  captionPinned.value = false
-  captionVisible.value = true
-  clearTimeout(captionHideTimer)
-  captionHideTimer = setTimeout(() => {
-    captionVisible.value = false
-  }, 2000)
-}
-
-function markMediaReady(seq: number) {
-  if (seq !== mediaSeq.value) return
-  mediaReady.value = true
-  if (revealQueued) {
-    revealQueued = false
-    showCaptionTransient()
-  }
-}
-
-function hideCaptionNow() {
-  clearTimeout(captionHideTimer)
-  captionVisible.value = false
-  captionPinned.value = false
-}
-
-function onContentMouseMove() {
-  showCaptionTransient()
-}
-
-function onContentTouchStart() {
-  showCaptionTransient()
-}
-
-function onContentFocusIn() {
-  showCaptionTransient()
-}
-
-function onContentFocusOut(event: FocusEvent) {
-  if (
-    event.relatedTarget instanceof Node &&
-    contentRef.value?.contains(event.relatedTarget)
+const captionClass = computed(() =>
+  cn(
+    'absolute bottom-4 left-4 z-10 max-w-[60vw] truncate bg-black/60 px-2 py-1 text-xs text-white/90 backdrop-blur-sm transition-opacity',
+    captionVisible.value
+      ? 'pointer-events-auto opacity-100'
+      : 'pointer-events-none opacity-0'
   )
-    return
-  hideCaptionNow()
-}
-
-function onCaptionMouseEnter() {
-  clearTimeout(captionHideTimer)
-  captionPinned.value = true
-  captionVisible.value = true
-}
-
-function onCaptionMouseLeave() {
-  captionPinned.value = false
-  captionVisible.value = false
-}
-
-function onCaptionFocusIn() {
-  clearTimeout(captionHideTimer)
-  captionPinned.value = true
-  captionVisible.value = true
-}
+)
 
 function onCaptionFocusOut(event: FocusEvent) {
   const { currentTarget, relatedTarget } = event
@@ -258,11 +188,42 @@ function onCaptionFocusOut(event: FocusEvent) {
     currentTarget.contains(relatedTarget)
   )
     return
-  captionPinned.value = false
-  captionVisible.value = false
+  unpinCaption()
 }
 
-onBeforeUnmount(() => clearTimeout(captionHideTimer))
+const imageSettled = computed(() => {
+  const seq = mediaSeq.value
+  return {
+    load: () => markMediaReady(seq),
+    error: () => markMediaReady(seq)
+  }
+})
+
+function markMediaReady(seq: number) {
+  if (seq !== mediaSeq.value) return
+  mediaReady.value = true
+}
+
+function onContentMouseMove() {
+  revealCaption()
+}
+
+function onContentTouchStart() {
+  revealCaption()
+}
+
+function onContentFocusIn() {
+  revealCaption()
+}
+
+function onContentFocusOut(event: FocusEvent) {
+  if (
+    event.relatedTarget instanceof Node &&
+    contentRef.value?.contains(event.relatedTarget)
+  )
+    return
+  hideCaption()
+}
 
 let lastActiveUrl: string | undefined
 
@@ -272,7 +233,7 @@ watch(
     if (index === -1) {
       galleryVisible.value = false
       lastActiveUrl = undefined
-      hideCaptionNow()
+      hideCaption()
       return
     }
     const item = activeItem.value
@@ -289,13 +250,12 @@ watch(
     mediaSeq.value += 1
     const seq = mediaSeq.value
     mediaReady.value = false
-    revealQueued = false
-    hideCaptionNow()
+    hideCaption()
     void nextTick(() => {
       if (seq !== mediaSeq.value) return
       const nextItem = activeItem.value
       if (nextItem && !isImageResult(nextItem)) markMediaReady(seq)
-      showCaptionTransient()
+      revealCaption()
       dialogRef.value?.focus()
     })
   },
