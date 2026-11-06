@@ -32,6 +32,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useUserStore } from '@/stores/userStore'
@@ -188,7 +189,6 @@ function installCloudAuthGuards(router: Router): void {
     }
   }
   const watchedSessions = new WeakSet<object>()
-  /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
     const webSession = useCloudWebSessionStore()
     if (watchedSessions.has(webSession)) return
@@ -207,9 +207,11 @@ function installCloudAuthGuards(router: Router): void {
     const authStore = useAuthStore()
     if (watchedAccounts.has(authStore)) return
     watchedAccounts.add(authStore)
+    const apiKeyAuthStore = useApiKeyAuthStore()
     const webSession = useCloudWebSessionStore()
     const account = computed(() => {
-      if (authStore.isAuthenticated) return 'signed_in'
+      if (authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated)
+        return 'signed_in'
       return RECOVERING_SESSION_PHASES.has(webSession.state.phase)
         ? 'recovering'
         : 'signed_out'
@@ -217,8 +219,14 @@ function installCloudAuthGuards(router: Router): void {
     let hadAccount = false
     let rerouteEnabled = false
     watch(
-      [account, () => flags.signedOutRerouteEnabled, remoteConfigState],
-      ([state, enabled, configState]) => {
+      [
+        account,
+        () => flags.signedOutRerouteEnabled,
+        remoteConfigState,
+        () => authStore.currentUser?.uid
+      ],
+      ([state, enabled, configState, uid], [, , , previousUid]) => {
+        if (uid && previousUid && uid !== previousUid) rerouteEnabled = false
         if (state === 'signed_in') {
           hadAccount = true
           if (enabled || AUTHORITATIVE_CONFIG_STATES.has(configState))
@@ -226,14 +234,15 @@ function installCloudAuthGuards(router: Router): void {
         }
         if (state !== 'signed_out' || !hadAccount) return
         hadAccount = false
+        const reroute = rerouteEnabled
+        rerouteEnabled = false
         const { path, query, hash, meta } = router.currentRoute.value
-        if (!rerouteEnabled || !meta.requiresAuth) return
+        if (!reroute || !meta.requiresAuth) return
         void router.replace({ path, query, hash, force: true })
       },
       { immediate: true }
     )
   }
-  /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
     query: LocationQueryRaw

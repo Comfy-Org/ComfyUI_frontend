@@ -13,6 +13,7 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { createAppRouter } from '@/router'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -51,7 +52,9 @@ async function openSurveySignedIn() {
 describe('a requiresAuth route whose account leaves the tab', () => {
   beforeEach(() => {
     vi.mocked(cloudSignIn).mockImplementation(async () =>
-      useAuthStore().isAuthenticated ? 'signed_in' : 'signed_out'
+      useAuthStore().isAuthenticated || useApiKeyAuthStore().isAuthenticated
+        ? 'signed_in'
+        : 'signed_out'
     )
   })
 
@@ -135,6 +138,39 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     await vi.waitFor(() =>
       expect(router.currentRoute.value.name).toBe('cloud-login')
     )
+  })
+
+  it('lands on sign-in when an API-key-only account leaves', async () => {
+    localStorage.setItem(REROUTE_FLAG, 'true')
+    const authStore = useAuthStore()
+    authStore.isInitialized = true
+    const apiKeyAuthStore = useApiKeyAuthStore()
+    apiKeyAuthStore.currentUser = fromPartial({ id: 'api-key-user' })
+    const router = await createAppRouter()
+    await router.push('/cloud/survey')
+    expect(router.currentRoute.value.name).toBe('cloud-survey')
+
+    apiKeyAuthStore.currentUser = null
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.name).toBe('cloud-login')
+    )
+  })
+
+  it("stays on the page when a switched-in account's flag is off and its config fails", async () => {
+    remoteConfig.value = { signed_out_reroute_enabled: true }
+    remoteConfigState.value = 'authenticated'
+    const router = await openSurveySignedIn()
+
+    remoteConfig.value = {}
+    remoteConfigState.value = 'error'
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-b' })
+    await nextTick()
+    useAuthStore().currentUser = null
+    await nextTick()
+
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.name).toBe('cloud-survey')
   })
 
   it('lands on sign-in when the remote config fails to load before the account leaves', async () => {
