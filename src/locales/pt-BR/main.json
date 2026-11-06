@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "Padrão do espaço de trabalho"
   },
+  "buildCustomNodes": {
+    "loading": "Carregando os nós personalizados do Build",
+    "pinned": "Fixado",
+    "defaultBranch": "Branch padrão",
+    "uploaded": "Enviado",
+    "learnCustomNodes": "Saiba mais sobre nós personalizados",
+    "loadFailed": {
+      "title": "Não foi possível carregar os nós personalizados do Build"
+    },
+    "picker": {
+      "title": "Adicionar nós personalizados a {build}",
+      "body": "Escolha os pacotes de nós que deseja adicionar. O Comfy Cloud gera uma nova versão de {build} e depois move {deployment} para ela.",
+      "search": "Pesquisar pacotes de nós",
+      "clearSearch": "Limpar pesquisa",
+      "columnName": "Nome do pacote",
+      "columnPublisher": "Publicador",
+      "columnInstalls": "Instalações",
+      "columnStars": "Estrelas",
+      "columnVersion": "Versão",
+      "columnLicense": "Licença",
+      "columnInstall": "Instalar",
+      "installLabel": "Adicionar {pack} ao Build",
+      "inBuild": "No Build",
+      "noVersion": "Nenhuma versão publicada",
+      "versionLabel": "Escolha uma versão de {pack}. {version} está selecionada agora.",
+      "versionsOf": "Versões de {pack}",
+      "latest": "Mais recente",
+      "loadingVersions": "Carregando versões",
+      "pinCommit": "Fixar um hash de commit",
+      "pinCommitLabel": "Fixar um hash de commit para {pack}",
+      "commitField": "Hash de commit",
+      "pin": "Fixar",
+      "notCommit": "Digite um hash de commit de 7 a 40 letras e dígitos.",
+      "loading": "Carregando pacotes de nós",
+      "searchFailed": "Não foi possível acessar o Registro do Comfy. Tente novamente.",
+      "noMatches": "Nenhum pacote de nós corresponde a \"{query}\".",
+      "inBuildCount": "{count} pacote de nós em {build} | {count} pacotes de nós em {build}",
+      "pickedCount": "· nenhum selecionado ainda | · {count} selecionado | · {count} selecionados",
+      "page": "Página {page}",
+      "previousPage": "Página anterior",
+      "nextPage": "Próxima página",
+      "review": "Revisar alterações | Revisar {count} pacote de nós | Revisar {count} pacotes de nós"
+    },
+    "review": {
+      "title": "Adicionar {count} pacote de nós a {build} | Adicionar {count} pacotes de nós a {build}",
+      "body": "O Comfy Cloud gera com eles uma nova versão de {build} e depois move {deployment} para ela. Isso costuma levar de 10 a 15 minutos.",
+      "listLabel": "Pacotes de nós a adicionar",
+      "note": "As tarefas em execução terminam na v{version}. Quando a nova versão estiver pronta, recarregue o editor para usar os novos nós.",
+      "backLabel": "Voltar aos pacotes de nós",
+      "submit": "Adicionar e reimplantar"
+    },
+    "readOnly": {
+      "title": "Nós personalizados em {build}",
+      "body": "Você não pode adicionar pacotes de nós a este Build. Peça à pessoa que o gerencia para adicioná-los por você.",
+      "listLabel": "Pacotes de nós em {build}"
+    },
+    "building": {
+      "titleStarting": "Iniciando a compilação",
+      "title": "Compilando a versão v{version}",
+      "body": "Instalando {count} pacote de nós em {build}. As compilações costumam levar de 10 a 15 minutos. | Instalando {count} pacotes de nós em {build}. As compilações costumam levar de 10 a 15 minutos.",
+      "step": {
+        "queued": "Aguardando um servidor de compilação",
+        "resolving": "Resolvendo as versões dos pacotes de nós",
+        "installing": "Instalando pacotes de nós",
+        "checking": "Verificando se os nós carregam",
+        "packaging": "Empacotando a versão"
+      },
+      "stepOf": "Etapa {step} de {count}",
+      "elapsed": "Menos de um minuto até agora | {count} min até agora | {count} min até agora",
+      "progressLabel": "Progresso da compilação",
+      "showLog": "Mostrar log de compilação",
+      "hideLog": "Ocultar log de compilação",
+      "logLabel": "Log de compilação",
+      "logEmpty": "O servidor de compilação ainda não escreveu no log.",
+      "note": "Você pode fechar esta janela. Mantenha esta aba aberta para que {deployment} possa passar para a nova versão."
+    },
+    "failed": {
+      "title": "A versão v{version} não foi compilada",
+      "body": "{deployment} continua executando a v{version}. Altere a versão do pacote de nós citado na mensagem ou remova-o. Depois, compile novamente.",
+      "messageHeading": "Mensagem do servidor de compilação",
+      "copyLabel": "Copiar a mensagem do servidor de compilação",
+      "openLog": "Abrir log completo",
+      "noMessage": "O servidor de compilação não informou o motivo. Abra o log completo para ver o que aconteceu.",
+      "change": "Alterar pacotes de nós",
+      "retry": "Compilar novamente"
+    },
+    "moving": {
+      "title": "Movendo {deployment} para a v{version}",
+      "body": "A versão v{version} foi compilada. {deployment} passa para ela quando sua nova cópia estiver pronta, geralmente em alguns minutos.",
+      "step": "Iniciando uma nova cópia de {deployment}",
+      "progressLabel": "Progresso da reimplantação",
+      "note": "Até lá, as novas tarefas são executadas na v{version}. As tarefas já iniciadas terminam na v{version}."
+    },
+    "moveFailed": {
+      "title": "{deployment} não foi movida para a v{version}",
+      "body": "A versão v{version} foi compilada, mas {deployment} continua executando a v{current}. Mova-a novamente ou altere a versão dela na Plataforma do Desenvolvedor.",
+      "retry": "Mover novamente"
+    },
+    "landed": {
+      "title": "{deployment} agora executa {build} v{version}",
+      "body": "Recarregue o editor para usar o pacote de nós que você adicionou. Suas abas permanecem abertas. | Recarregue o editor para usar os {count} pacotes de nós que você adicionou. Suas abas permanecem abertas.",
+      "later": "Mais tarde",
+      "reload": "Recarregar"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "O aplicativo desktop do ComfyUI está aguardando para entrar com sua conta. Continue apenas se você acabou de iniciar o login pelo aplicativo desktop do ComfyUI.",
     "confirmSummary": "Aprovar login no desktop?",

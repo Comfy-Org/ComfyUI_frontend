@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "워크스페이스 기본값"
   },
+  "buildCustomNodes": {
+    "loading": "빌드의 사용자 지정 노드를 불러오는 중",
+    "pinned": "고정됨",
+    "defaultBranch": "기본 브랜치",
+    "uploaded": "업로드됨",
+    "learnCustomNodes": "사용자 지정 노드 알아보기",
+    "loadFailed": {
+      "title": "빌드의 사용자 지정 노드를 불러오지 못했습니다"
+    },
+    "picker": {
+      "title": "{build}에 사용자 지정 노드 추가",
+      "body": "추가할 노드 팩을 선택하세요. Comfy Cloud가 {build}의 새 릴리스를 빌드한 다음 {deployment}을(를) 새 릴리스로 옮깁니다.",
+      "search": "노드 팩 검색",
+      "clearSearch": "검색어 지우기",
+      "columnName": "팩 이름",
+      "columnPublisher": "게시자",
+      "columnInstalls": "설치 수",
+      "columnStars": "별",
+      "columnVersion": "버전",
+      "columnLicense": "라이선스",
+      "columnInstall": "설치",
+      "installLabel": "빌드에 {pack} 추가",
+      "inBuild": "빌드에 포함됨",
+      "noVersion": "게시된 버전 없음",
+      "versionLabel": "{pack}의 버전을 선택하세요. 현재 {version}이(가) 선택되어 있습니다.",
+      "versionsOf": "{pack}의 버전",
+      "latest": "최신",
+      "loadingVersions": "버전을 불러오는 중",
+      "pinCommit": "커밋 해시로 고정",
+      "pinCommitLabel": "{pack}을(를) 커밋 해시로 고정",
+      "commitField": "커밋 해시",
+      "pin": "고정",
+      "notCommit": "7~40자의 영문자와 숫자로 된 커밋 해시를 입력하세요.",
+      "loading": "노드 팩을 불러오는 중",
+      "searchFailed": "Comfy Registry에 연결할 수 없습니다. 다시 시도하세요.",
+      "noMatches": "'{query}'에 해당하는 노드 팩이 없습니다.",
+      "inBuildCount": "{build}의 노드 팩 {count}개 | {build}의 노드 팩 {count}개",
+      "pickedCount": "· 아직 선택하지 않음 | · {count}개 선택됨 | · {count}개 선택됨",
+      "page": "{page}페이지",
+      "previousPage": "이전 페이지",
+      "nextPage": "다음 페이지",
+      "review": "변경 사항 검토 | 노드 팩 {count}개 검토 | 노드 팩 {count}개 검토"
+    },
+    "review": {
+      "title": "{build}에 노드 팩 {count}개 추가 | {build}에 노드 팩 {count}개 추가",
+      "body": "Comfy Cloud가 이 노드 팩으로 {build}의 새 릴리스를 빌드한 다음 {deployment}을(를) 새 릴리스로 옮깁니다. 보통 10~15분 정도 걸립니다.",
+      "listLabel": "추가할 노드 팩",
+      "note": "지금 실행 중인 작업은 v{version}에서 완료됩니다. 새 릴리스가 준비되면 편집기를 다시 로드해 새 노드를 사용하세요.",
+      "backLabel": "노드 팩으로 돌아가기",
+      "submit": "추가 후 재배포"
+    },
+    "readOnly": {
+      "title": "{build}의 사용자 지정 노드",
+      "body": "이 빌드에는 노드 팩을 추가할 수 없습니다. 빌드를 관리하는 사람에게 추가해 달라고 요청하세요.",
+      "listLabel": "{build}의 노드 팩"
+    },
+    "building": {
+      "titleStarting": "빌드 시작 중",
+      "title": "릴리스 v{version} 빌드 중",
+      "body": "{build}에 노드 팩 {count}개를 설치하는 중입니다. 빌드는 보통 10~15분 정도 걸립니다. | {build}에 노드 팩 {count}개를 설치하는 중입니다. 빌드는 보통 10~15분 정도 걸립니다.",
+      "step": {
+        "queued": "빌더 대기 중",
+        "resolving": "노드 팩 버전 확인 중",
+        "installing": "노드 팩 설치 중",
+        "checking": "노드가 로드되는지 확인 중",
+        "packaging": "릴리스 패키징 중"
+      },
+      "stepOf": "{count}단계 중 {step}단계",
+      "elapsed": "1분 미만 경과 | {count}분 경과 | {count}분 경과",
+      "progressLabel": "빌드 진행률",
+      "showLog": "빌드 로그 표시",
+      "hideLog": "빌드 로그 숨기기",
+      "logLabel": "빌드 로그",
+      "logEmpty": "빌더가 아직 로그를 기록하지 않았습니다.",
+      "note": "이 창은 닫아도 됩니다. {deployment}이(가) 새 릴리스로 옮겨질 수 있도록 이 탭은 열어 두세요."
+    },
+    "failed": {
+      "title": "릴리스 v{version}을(를) 빌드하지 못했습니다",
+      "body": "{deployment}은(는) 계속 v{version}에서 실행됩니다. 메시지에 나온 노드 팩의 버전을 바꾸거나 해당 노드 팩을 제거하세요. 그런 다음 다시 빌드하세요.",
+      "messageHeading": "빌더 메시지",
+      "copyLabel": "빌더 메시지 복사",
+      "openLog": "전체 로그 열기",
+      "noMessage": "빌더가 원인을 알려 주지 않았습니다. 전체 로그를 열어 무슨 일이 있었는지 확인하세요.",
+      "change": "노드 팩 변경",
+      "retry": "다시 빌드"
+    },
+    "moving": {
+      "title": "{deployment}을(를) v{version}(으)로 옮기는 중",
+      "body": "릴리스 v{version} 빌드가 완료되었습니다. {deployment}의 새 사본이 준비되면 전환되며, 보통 몇 분 정도 걸립니다.",
+      "step": "{deployment}의 새 사본 시작 중",
+      "progressLabel": "재배포 진행률",
+      "note": "그때까지 새 작업은 v{version}에서 실행됩니다. 이미 시작된 작업은 v{version}에서 완료됩니다."
+    },
+    "moveFailed": {
+      "title": "{deployment}을(를) v{version}(으)로 옮기지 못했습니다",
+      "body": "릴리스 v{version}은(는) 빌드되었지만 {deployment}은(는) 여전히 v{current}에서 실행됩니다. 다시 옮기거나 Developer Platform에서 릴리스를 변경하세요.",
+      "retry": "다시 옮기기"
+    },
+    "landed": {
+      "title": "{deployment}이(가) 이제 {build} v{version}에서 실행됩니다",
+      "body": "추가한 노드 팩을 사용하려면 편집기를 다시 로드하세요. 탭은 열린 상태로 유지됩니다. | 추가한 노드 팩 {count}개를 사용하려면 편집기를 다시 로드하세요. 탭은 열린 상태로 유지됩니다.",
+      "later": "나중에",
+      "reload": "다시 로드"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 데스크톱 앱이 귀하의 계정으로 로그인 대기 중입니다. ComfyUI 데스크톱 앱에서 로그인을 시작한 경우에만 계속 진행하세요.",
     "confirmSummary": "데스크톱 로그인 승인하시겠습니까?",

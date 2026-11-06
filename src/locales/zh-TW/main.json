@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "工作區預設"
   },
+  "buildCustomNodes": {
+    "loading": "正在載入建置的自訂節點",
+    "pinned": "已固定",
+    "defaultBranch": "預設分支",
+    "uploaded": "已上傳",
+    "learnCustomNodes": "了解自訂節點",
+    "loadFailed": {
+      "title": "無法載入建置的自訂節點"
+    },
+    "picker": {
+      "title": "將自訂節點加入 {build}",
+      "body": "選擇要加入的節點套件。Comfy Cloud 會建置 {build} 的新版本，然後將 {deployment} 移至該版本。",
+      "search": "搜尋節點套件",
+      "clearSearch": "清除搜尋",
+      "columnName": "套件名稱",
+      "columnPublisher": "發佈者",
+      "columnInstalls": "安裝次數",
+      "columnStars": "星號",
+      "columnVersion": "版本",
+      "columnLicense": "授權條款",
+      "columnInstall": "安裝",
+      "installLabel": "將 {pack} 加入建置",
+      "inBuild": "已在建置中",
+      "noVersion": "沒有已發佈的版本",
+      "versionLabel": "選擇 {pack} 的版本。目前已選取 {version}。",
+      "versionsOf": "{pack} 的版本",
+      "latest": "最新版本",
+      "loadingVersions": "正在載入版本",
+      "pinCommit": "固定至提交雜湊",
+      "pinCommitLabel": "將 {pack} 固定至提交雜湊",
+      "commitField": "提交雜湊",
+      "pin": "固定",
+      "notCommit": "請輸入由 7 到 40 個英文字母和數字組成的提交雜湊。",
+      "loading": "正在載入節點套件",
+      "searchFailed": "無法連線至 Comfy Registry。請再試一次。",
+      "noMatches": "沒有符合「{query}」的節點套件。",
+      "inBuildCount": "{build} 中有 {count} 個節點套件 | {build} 中有 {count} 個節點套件",
+      "pickedCount": "· 尚未選取 | · 已選取 {count} 個 | · 已選取 {count} 個",
+      "page": "第 {page} 頁",
+      "previousPage": "上一頁",
+      "nextPage": "下一頁",
+      "review": "檢閱變更 | 檢閱 {count} 個節點套件 | 檢閱 {count} 個節點套件"
+    },
+    "review": {
+      "title": "將 {count} 個節點套件加入 {build} | 將 {count} 個節點套件加入 {build}",
+      "body": "Comfy Cloud 會以這些套件建置 {build} 的新版本，然後將 {deployment} 移至該版本。這通常需要 10–15 分鐘。",
+      "listLabel": "要加入的節點套件",
+      "note": "目前執行中的工作會在 v{version} 上完成。新版本準備就緒後，請重新載入編輯器以使用新節點。",
+      "backLabel": "返回節點套件",
+      "submit": "加入並重新部署"
+    },
+    "readOnly": {
+      "title": "{build} 中的自訂節點",
+      "body": "您無法將節點套件加入此建置。請洽詢管理此建置的人員代為加入。",
+      "listLabel": "{build} 中的節點套件"
+    },
+    "building": {
+      "titleStarting": "正在開始建置",
+      "title": "正在建置版本 v{version}",
+      "body": "正在將 {count} 個節點套件安裝至 {build}。建置通常需要 10–15 分鐘。 | 正在將 {count} 個節點套件安裝至 {build}。建置通常需要 10–15 分鐘。",
+      "step": {
+        "queued": "正在等待建置器",
+        "resolving": "正在解析節點套件版本",
+        "installing": "正在安裝節點套件",
+        "checking": "正在檢查節點能否載入",
+        "packaging": "正在封裝版本"
+      },
+      "stepOf": "第 {step} 步，共 {count} 步",
+      "elapsed": "已過不到 1 分鐘 | 已過 {count} 分鐘 | 已過 {count} 分鐘",
+      "progressLabel": "建置進度",
+      "showLog": "顯示建置記錄",
+      "hideLog": "隱藏建置記錄",
+      "logLabel": "建置記錄",
+      "logEmpty": "建置器尚未寫入任何記錄。",
+      "note": "您可以關閉此視窗。請保持此分頁開啟，讓 {deployment} 能移至新版本。"
+    },
+    "failed": {
+      "title": "版本 v{version} 建置失敗",
+      "body": "{deployment} 仍在執行 v{version}。請變更訊息中提到的節點套件版本，或將其移除，然後再建置一次。",
+      "messageHeading": "建置器的訊息",
+      "copyLabel": "複製建置器的訊息",
+      "openLog": "開啟完整記錄",
+      "noMessage": "建置器未說明原因。請開啟完整記錄查看發生了什麼事。",
+      "change": "變更節點套件",
+      "retry": "再建置一次"
+    },
+    "moving": {
+      "title": "正在將 {deployment} 移至 v{version}",
+      "body": "版本 v{version} 已建置完成。{deployment} 的新副本準備就緒後就會切換過去，通常只需幾分鐘。",
+      "step": "正在啟動 {deployment} 的新副本",
+      "progressLabel": "重新部署進度",
+      "note": "在此之前，新工作仍會在 v{version} 上執行。已開始的工作會在 v{version} 上完成。"
+    },
+    "moveFailed": {
+      "title": "{deployment} 未能移至 v{version}",
+      "body": "版本 v{version} 已建置完成，但 {deployment} 仍在執行 v{current}。請再移動一次，或在開發者平台上變更其版本。",
+      "retry": "再移動一次"
+    },
+    "landed": {
+      "title": "{deployment} 現在執行的是 {build} v{version}",
+      "body": "重新載入編輯器即可使用您加入的節點套件。您的分頁會保持開啟。 | 重新載入編輯器即可使用您加入的 {count} 個節點套件。您的分頁會保持開啟。",
+      "later": "稍後",
+      "reload": "重新載入"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
     "confirmSummary": "批准桌面端登入？",

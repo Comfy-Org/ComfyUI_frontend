@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "工作区默认"
   },
+  "buildCustomNodes": {
+    "loading": "正在加载构建的自定义节点",
+    "pinned": "已固定",
+    "defaultBranch": "默认分支",
+    "uploaded": "已上传",
+    "learnCustomNodes": "了解自定义节点",
+    "loadFailed": {
+      "title": "无法加载构建的自定义节点"
+    },
+    "picker": {
+      "title": "向 {build} 添加自定义节点",
+      "body": "选择要添加的节点包。Comfy Cloud 会构建 {build} 的新版本，然后将 {deployment} 迁移到该版本。",
+      "search": "搜索节点包",
+      "clearSearch": "清除搜索",
+      "columnName": "节点包名称",
+      "columnPublisher": "发布者",
+      "columnInstalls": "安装量",
+      "columnStars": "星标",
+      "columnVersion": "版本",
+      "columnLicense": "许可证",
+      "columnInstall": "安装",
+      "installLabel": "将 {pack} 添加到构建",
+      "inBuild": "已在构建中",
+      "noVersion": "没有已发布的版本",
+      "versionLabel": "选择 {pack} 的版本。当前已选择 {version}。",
+      "versionsOf": "{pack} 的版本",
+      "latest": "最新",
+      "loadingVersions": "正在加载版本",
+      "pinCommit": "固定到提交哈希",
+      "pinCommitLabel": "将 {pack} 固定到提交哈希",
+      "commitField": "提交哈希",
+      "pin": "固定",
+      "notCommit": "请输入由 7 到 40 个字母和数字组成的提交哈希。",
+      "loading": "正在加载节点包",
+      "searchFailed": "无法连接到 Comfy 注册表。请重试。",
+      "noMatches": "没有与“{query}”匹配的节点包。",
+      "inBuildCount": "{build} 中有 {count} 个节点包 | {build} 中有 {count} 个节点包",
+      "pickedCount": "· 尚未选择 | · 已选择 {count} 个 | · 已选择 {count} 个",
+      "page": "第 {page} 页",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "review": "查看更改 | 查看 {count} 个节点包 | 查看 {count} 个节点包"
+    },
+    "review": {
+      "title": "向 {build} 添加 {count} 个节点包 | 向 {build} 添加 {count} 个节点包",
+      "body": "Comfy Cloud 会用它们构建 {build} 的新版本，然后将 {deployment} 迁移到该版本。通常需要 10–15 分钟。",
+      "listLabel": "要添加的节点包",
+      "note": "正在运行的作业会在 v{version} 上完成。新版本就绪后，请重新加载编辑器以使用新节点。",
+      "backLabel": "返回节点包",
+      "submit": "添加并重新部署"
+    },
+    "readOnly": {
+      "title": "{build} 中的自定义节点",
+      "body": "你无法向此构建添加节点包。请让管理它的人为你添加。",
+      "listLabel": "{build} 中的节点包"
+    },
+    "building": {
+      "titleStarting": "正在启动构建",
+      "title": "正在构建版本 v{version}",
+      "body": "正在将 {count} 个节点包安装到 {build}。构建通常需要 10–15 分钟。 | 正在将 {count} 个节点包安装到 {build}。构建通常需要 10–15 分钟。",
+      "step": {
+        "queued": "正在等待构建器",
+        "resolving": "正在解析节点包版本",
+        "installing": "正在安装节点包",
+        "checking": "正在检查节点能否加载",
+        "packaging": "正在打包版本"
+      },
+      "stepOf": "第 {step} 步，共 {count} 步",
+      "elapsed": "已用时不到 1 分钟 | 已用时 {count} 分钟 | 已用时 {count} 分钟",
+      "progressLabel": "构建进度",
+      "showLog": "显示构建日志",
+      "hideLog": "隐藏构建日志",
+      "logLabel": "构建日志",
+      "logEmpty": "构建器尚未写入日志。",
+      "note": "你可以关闭此窗口。请保持此标签页打开，以便 {deployment} 迁移到新版本。"
+    },
+    "failed": {
+      "title": "版本 v{version} 构建失败",
+      "body": "{deployment} 仍在运行 v{version}。请更改消息中提到的节点包的版本，或将其移除，然后重新构建。",
+      "messageHeading": "构建器消息",
+      "copyLabel": "复制构建器消息",
+      "openLog": "打开完整日志",
+      "noMessage": "构建器未说明原因。请打开完整日志查看发生了什么。",
+      "change": "更改节点包",
+      "retry": "重新构建"
+    },
+    "moving": {
+      "title": "正在将 {deployment} 迁移到 v{version}",
+      "body": "版本 v{version} 已构建完成。{deployment} 的新副本就绪后便会切换过去，通常需要几分钟。",
+      "step": "正在启动 {deployment} 的新副本",
+      "progressLabel": "重新部署进度",
+      "note": "在此之前，新作业仍在 v{version} 上运行。已开始的作业会在 v{version} 上完成。"
+    },
+    "moveFailed": {
+      "title": "{deployment} 未能迁移到 v{version}",
+      "body": "版本 v{version} 已构建完成，但 {deployment} 仍在运行 v{current}。请重新迁移，或在开发者平台上更改其版本。",
+      "retry": "重新迁移"
+    },
+    "landed": {
+      "title": "{deployment} 现在运行的是 {build} v{version}",
+      "body": "重新加载编辑器即可使用你添加的节点包。你的标签页将保持打开。 | 重新加载编辑器即可使用你添加的 {count} 个节点包。你的标签页将保持打开。",
+      "later": "稍后",
+      "reload": "重新加载"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",

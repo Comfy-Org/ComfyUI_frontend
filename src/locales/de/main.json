@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "Workspace-Standard"
   },
+  "buildCustomNodes": {
+    "loading": "Benutzerdefinierte Nodes des Builds werden geladen",
+    "pinned": "Fixiert",
+    "defaultBranch": "Standard-Branch",
+    "uploaded": "Hochgeladen",
+    "learnCustomNodes": "Mehr über benutzerdefinierte Nodes erfahren",
+    "loadFailed": {
+      "title": "Die benutzerdefinierten Nodes des Builds konnten nicht geladen werden"
+    },
+    "picker": {
+      "title": "Benutzerdefinierte Nodes zu {build} hinzufügen",
+      "body": "Wählen Sie die Node-Pakete aus, die Sie hinzufügen möchten. Comfy Cloud erstellt ein neues Release von {build} und verschiebt {deployment} anschließend darauf.",
+      "search": "Node-Pakete suchen",
+      "clearSearch": "Suche löschen",
+      "columnName": "Paketname",
+      "columnPublisher": "Herausgeber",
+      "columnInstalls": "Installationen",
+      "columnStars": "Sterne",
+      "columnVersion": "Version",
+      "columnLicense": "Lizenz",
+      "columnInstall": "Installieren",
+      "installLabel": "{pack} zum Build hinzufügen",
+      "inBuild": "Im Build",
+      "noVersion": "Keine veröffentlichte Version",
+      "versionLabel": "Wählen Sie eine Version von {pack}. Ausgewählt ist {version}.",
+      "versionsOf": "Versionen von {pack}",
+      "latest": "Neueste",
+      "loadingVersions": "Versionen werden geladen",
+      "pinCommit": "Commit-Hash fixieren",
+      "pinCommitLabel": "Commit-Hash für {pack} fixieren",
+      "commitField": "Commit-Hash",
+      "pin": "Fixieren",
+      "notCommit": "Geben Sie einen Commit-Hash aus 7 bis 40 Buchstaben und Ziffern ein.",
+      "loading": "Node-Pakete werden geladen",
+      "searchFailed": "Die Comfy Registry ist nicht erreichbar. Versuchen Sie es erneut.",
+      "noMatches": "Keine Node-Pakete entsprechen „{query}“.",
+      "inBuildCount": "{count} Node-Paket in {build} | {count} Node-Pakete in {build}",
+      "pickedCount": "· noch keine ausgewählt | · {count} ausgewählt | · {count} ausgewählt",
+      "page": "Seite {page}",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite",
+      "review": "Änderungen prüfen | {count} Node-Paket prüfen | {count} Node-Pakete prüfen"
+    },
+    "review": {
+      "title": "{count} Node-Paket zu {build} hinzufügen | {count} Node-Pakete zu {build} hinzufügen",
+      "body": "Comfy Cloud erstellt damit ein neues Release von {build} und verschiebt {deployment} anschließend darauf. Das dauert in der Regel 10–15 Minuten.",
+      "listLabel": "Hinzuzufügende Node-Pakete",
+      "note": "Laufende Jobs werden auf v{version} abgeschlossen. Sobald das neue Release bereit ist, laden Sie den Editor neu, um die neuen Nodes zu verwenden.",
+      "backLabel": "Zurück zu den Node-Paketen",
+      "submit": "Hinzufügen und neu deployen"
+    },
+    "readOnly": {
+      "title": "Benutzerdefinierte Nodes in {build}",
+      "body": "Sie können diesem Build keine Node-Pakete hinzufügen. Bitten Sie die Person, die ihn verwaltet, sie für Sie hinzuzufügen.",
+      "listLabel": "Node-Pakete in {build}"
+    },
+    "building": {
+      "titleStarting": "Build wird gestartet",
+      "title": "Release v{version} wird gebaut",
+      "body": "{count} Node-Paket wird in {build} installiert. Builds dauern in der Regel 10–15 Minuten. | {count} Node-Pakete werden in {build} installiert. Builds dauern in der Regel 10–15 Minuten.",
+      "step": {
+        "queued": "Warten auf einen Build-Server",
+        "resolving": "Versionen der Node-Pakete werden aufgelöst",
+        "installing": "Node-Pakete werden installiert",
+        "checking": "Prüfen, ob die Nodes geladen werden",
+        "packaging": "Release wird verpackt"
+      },
+      "stepOf": "Schritt {step} von {count}",
+      "elapsed": "Bisher unter einer Minute | Bisher {count} Min. | Bisher {count} Min.",
+      "progressLabel": "Build-Fortschritt",
+      "showLog": "Build-Log anzeigen",
+      "hideLog": "Build-Log ausblenden",
+      "logLabel": "Build-Log",
+      "logEmpty": "Der Build-Server hat noch nichts ins Log geschrieben.",
+      "note": "Sie können dieses Fenster schließen. Lassen Sie diesen Tab geöffnet, damit {deployment} auf das neue Release wechseln kann."
+    },
+    "failed": {
+      "title": "Release v{version} konnte nicht gebaut werden",
+      "body": "{deployment} läuft weiterhin auf v{version}. Ändern Sie die Version des Node-Pakets, das in der Meldung genannt wird, oder entfernen Sie es. Starten Sie den Build dann erneut.",
+      "messageHeading": "Meldung des Build-Servers",
+      "copyLabel": "Meldung des Build-Servers kopieren",
+      "openLog": "Vollständiges Log öffnen",
+      "noMessage": "Der Build-Server hat keinen Grund angegeben. Öffnen Sie das vollständige Log, um zu sehen, was passiert ist.",
+      "change": "Node-Pakete ändern",
+      "retry": "Erneut bauen"
+    },
+    "moving": {
+      "title": "{deployment} wird auf v{version} verschoben",
+      "body": "Release v{version} ist gebaut. {deployment} wechselt darauf, sobald seine neue Instanz bereit ist, in der Regel in wenigen Minuten.",
+      "step": "Neue Instanz von {deployment} wird gestartet",
+      "progressLabel": "Redeploy-Fortschritt",
+      "note": "Bis dahin laufen neue Jobs auf v{version}. Bereits gestartete Jobs werden auf v{version} abgeschlossen."
+    },
+    "moveFailed": {
+      "title": "{deployment} wurde nicht auf v{version} verschoben",
+      "body": "Release v{version} ist gebaut, aber {deployment} läuft weiterhin auf v{current}. Verschieben Sie es erneut, oder ändern Sie sein Release auf der Developer Platform.",
+      "retry": "Erneut verschieben"
+    },
+    "landed": {
+      "title": "{deployment} läuft jetzt auf {build} v{version}",
+      "body": "Laden Sie den Editor neu, um das hinzugefügte Node-Paket zu verwenden. Ihre Tabs bleiben geöffnet. | Laden Sie den Editor neu, um die {count} hinzugefügten Node-Pakete zu verwenden. Ihre Tabs bleiben geöffnet.",
+      "later": "Später",
+      "reload": "Neu laden"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "Die ComfyUI-Desktop-App wartet darauf, sich mit Ihrem Konto anzumelden. Fahren Sie nur fort, wenn Sie die Anmeldung gerade über die ComfyUI-Desktop-App gestartet haben.",
     "confirmSummary": "Desktop-Anmeldung genehmigen?",

@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "Çalışma alanı varsayılanı"
   },
+  "buildCustomNodes": {
+    "loading": "Derlemenin özel düğümleri yükleniyor",
+    "pinned": "Sabitlendi",
+    "defaultBranch": "Varsayılan dal",
+    "uploaded": "Karşıya yüklendi",
+    "learnCustomNodes": "Özel düğümler hakkında bilgi edinin",
+    "loadFailed": {
+      "title": "Derlemenin özel düğümleri yüklenemedi"
+    },
+    "picker": {
+      "title": "{build} Derlemesine özel düğüm ekleyin",
+      "body": "Eklenecek düğüm paketlerini seçin. Comfy Cloud, {build} Derlemesinin yeni bir Release'ini oluşturur ve ardından {deployment} dağıtımını bu Release'e taşır.",
+      "search": "Düğüm paketlerinde ara",
+      "clearSearch": "Aramayı temizle",
+      "columnName": "Paket adı",
+      "columnPublisher": "Yayıncı",
+      "columnInstalls": "Kurulum sayısı",
+      "columnStars": "Yıldızlar",
+      "columnVersion": "Sürüm",
+      "columnLicense": "Lisans",
+      "columnInstall": "Yükle",
+      "installLabel": "{pack} paketini Derlemeye ekle",
+      "inBuild": "Derlemede",
+      "noVersion": "Yayımlanmış sürüm yok",
+      "versionLabel": "{pack} için bir sürüm seçin. Şu anda {version} seçili.",
+      "versionsOf": "{pack} sürümleri",
+      "latest": "En son",
+      "loadingVersions": "Sürümler yükleniyor",
+      "pinCommit": "Commit hash'ine sabitle",
+      "pinCommitLabel": "{pack} için commit hash'ine sabitle",
+      "commitField": "Commit hash'i",
+      "pin": "Sabitle",
+      "notCommit": "7 ile 40 arasında harf ve rakamdan oluşan bir commit hash'i girin.",
+      "loading": "Düğüm paketleri yükleniyor",
+      "searchFailed": "Comfy Kayıt Defteri'ne ulaşılamadı. Tekrar deneyin.",
+      "noMatches": "\"{query}\" ile eşleşen düğüm paketi yok.",
+      "inBuildCount": "{build} içinde {count} düğüm paketi | {build} içinde {count} düğüm paketi",
+      "pickedCount": "· henüz seçim yok | · {count} seçildi | · {count} seçildi",
+      "page": "Sayfa {page}",
+      "previousPage": "Önceki sayfa",
+      "nextPage": "Sonraki sayfa",
+      "review": "Değişiklikleri incele | {count} düğüm paketini incele | {count} düğüm paketini incele"
+    },
+    "review": {
+      "title": "{build} Derlemesine {count} düğüm paketi ekleyin | {build} Derlemesine {count} düğüm paketi ekleyin",
+      "body": "Comfy Cloud bunlarla {build} Derlemesinin yeni bir Release'ini oluşturur, ardından {deployment} dağıtımını bu Release'e taşır. Bu işlem genellikle 10–15 dakika sürer.",
+      "listLabel": "Eklenecek düğüm paketleri",
+      "note": "Şu anda çalışan işler v{version} üzerinde tamamlanır. Yeni Release hazır olduğunda yeni düğümleri kullanmak için düzenleyiciyi yeniden yükleyin.",
+      "backLabel": "Düğüm paketlerine dön",
+      "submit": "Ekle ve yeniden dağıt"
+    },
+    "readOnly": {
+      "title": "{build} içindeki özel düğümler",
+      "body": "Bu Derlemeye düğüm paketi ekleyemezsiniz. Derlemeyi yöneten kişiden bunları sizin için eklemesini isteyin.",
+      "listLabel": "{build} içindeki düğüm paketleri"
+    },
+    "building": {
+      "titleStarting": "Derleme başlatılıyor",
+      "title": "Release v{version} derleniyor",
+      "body": "{build} içine {count} düğüm paketi kuruluyor. Derlemeler genellikle 10–15 dakika sürer. | {build} içine {count} düğüm paketi kuruluyor. Derlemeler genellikle 10–15 dakika sürer.",
+      "step": {
+        "queued": "Bir derleme sunucusu bekleniyor",
+        "resolving": "Düğüm paketi sürümleri belirleniyor",
+        "installing": "Düğüm paketleri kuruluyor",
+        "checking": "Düğümlerin yüklendiği kontrol ediliyor",
+        "packaging": "Release paketleniyor"
+      },
+      "stepOf": "Adım {step} / {count}",
+      "elapsed": "Şimdiye kadar bir dakikadan az | Şimdiye kadar {count} dk | Şimdiye kadar {count} dk",
+      "progressLabel": "Derleme ilerlemesi",
+      "showLog": "Derleme günlüğünü göster",
+      "hideLog": "Derleme günlüğünü gizle",
+      "logLabel": "Derleme günlüğü",
+      "logEmpty": "Derleme sunucusu henüz günlüğe bir şey yazmadı.",
+      "note": "Bu pencereyi kapatabilirsiniz. {deployment} dağıtımının yeni Release'e geçebilmesi için bu sekmeyi açık tutun."
+    },
+    "failed": {
+      "title": "Release v{version} derlenemedi",
+      "body": "{deployment} hâlâ v{version} çalıştırıyor. Mesajda adı geçen düğüm paketinin sürümünü değiştirin veya paketi kaldırın. Ardından yeniden derleyin.",
+      "messageHeading": "Derleme sunucusunun mesajı",
+      "copyLabel": "Derleme sunucusunun mesajını kopyala",
+      "openLog": "Tam günlüğü aç",
+      "noMessage": "Derleme sunucusu nedenini belirtmedi. Ne olduğunu görmek için tam günlüğü açın.",
+      "change": "Düğüm paketlerini değiştir",
+      "retry": "Yeniden derle"
+    },
+    "moving": {
+      "title": "{deployment} dağıtımı v{version} sürümüne taşınıyor",
+      "body": "Release v{version} derlendi. {deployment}, yeni kopyası hazır olduğunda bu sürüme geçer; bu genellikle birkaç dakika sürer.",
+      "step": "{deployment} dağıtımının yeni bir kopyası başlatılıyor",
+      "progressLabel": "Yeniden dağıtım ilerlemesi",
+      "note": "O zamana kadar yeni işler v{version} üzerinde çalışır. Başlamış olan işler v{version} üzerinde tamamlanır."
+    },
+    "moveFailed": {
+      "title": "{deployment} dağıtımı v{version} sürümüne taşınamadı",
+      "body": "Release v{version} derlendi, ancak {deployment} hâlâ v{current} çalıştırıyor. Yeniden taşıyın veya Geliştirici Platformu'nda Release'ini değiştirin.",
+      "retry": "Yeniden taşı"
+    },
+    "landed": {
+      "title": "{deployment} artık {build} v{version} çalıştırıyor",
+      "body": "Eklediğiniz düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır. | Eklediğiniz {count} düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır.",
+      "later": "Daha sonra",
+      "reload": "Yeniden yükle"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",

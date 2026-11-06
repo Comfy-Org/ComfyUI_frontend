@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
+  "buildCustomNodes": {
+    "loading": "Cargando los nodos personalizados de la compilación",
+    "pinned": "Fijado",
+    "defaultBranch": "Rama predeterminada",
+    "uploaded": "Subido",
+    "learnCustomNodes": "Más información sobre los nodos personalizados",
+    "loadFailed": {
+      "title": "No se pudieron cargar los nodos personalizados de la compilación"
+    },
+    "picker": {
+      "title": "Añadir nodos personalizados a {build}",
+      "body": "Elige los paquetes de nodos que quieres añadir. Comfy Cloud compila una nueva versión de {build} y luego traslada {deployment} a ella.",
+      "search": "Buscar paquetes de nodos",
+      "clearSearch": "Borrar búsqueda",
+      "columnName": "Nombre del paquete",
+      "columnPublisher": "Editor",
+      "columnInstalls": "Instalaciones",
+      "columnStars": "Estrellas",
+      "columnVersion": "Versión",
+      "columnLicense": "Licencia",
+      "columnInstall": "Instalar",
+      "installLabel": "Añadir {pack} a la compilación",
+      "inBuild": "En la compilación",
+      "noVersion": "Sin versión publicada",
+      "versionLabel": "Elige una versión de {pack}. Ahora está seleccionada {version}.",
+      "versionsOf": "Versiones de {pack}",
+      "latest": "Última",
+      "loadingVersions": "Cargando versiones",
+      "pinCommit": "Fijar un hash de commit",
+      "pinCommitLabel": "Fijar un hash de commit para {pack}",
+      "commitField": "Hash de commit",
+      "pin": "Fijar",
+      "notCommit": "Introduce un hash de commit de 7 a 40 letras y dígitos.",
+      "loading": "Cargando paquetes de nodos",
+      "searchFailed": "No se pudo conectar con el Registro de Comfy. Inténtalo de nuevo.",
+      "noMatches": "Ningún paquete de nodos coincide con «{query}».",
+      "inBuildCount": "{count} paquete de nodos en {build} | {count} paquetes de nodos en {build}",
+      "pickedCount": "· ninguno seleccionado aún | · {count} seleccionado | · {count} seleccionados",
+      "page": "Página {page}",
+      "previousPage": "Página anterior",
+      "nextPage": "Página siguiente",
+      "review": "Revisar cambios | Revisar {count} paquete de nodos | Revisar {count} paquetes de nodos"
+    },
+    "review": {
+      "title": "Añadir {count} paquete de nodos a {build} | Añadir {count} paquetes de nodos a {build}",
+      "body": "Comfy Cloud compila con ellos una nueva versión de {build} y luego traslada {deployment} a ella. Esto suele tardar entre 10 y 15 minutos.",
+      "listLabel": "Paquetes de nodos que se añadirán",
+      "note": "Los trabajos en curso terminan en la v{version}. Cuando la nueva versión esté lista, recarga el editor para usar los nuevos nodos.",
+      "backLabel": "Volver a los paquetes de nodos",
+      "submit": "Añadir y volver a desplegar"
+    },
+    "readOnly": {
+      "title": "Nodos personalizados en {build}",
+      "body": "No puedes añadir paquetes de nodos a esta compilación. Pide a la persona que la gestiona que los añada por ti.",
+      "listLabel": "Paquetes de nodos en {build}"
+    },
+    "building": {
+      "titleStarting": "Iniciando la compilación",
+      "title": "Compilando la versión v{version}",
+      "body": "Instalando {count} paquete de nodos en {build}. Las compilaciones suelen tardar entre 10 y 15 minutos. | Instalando {count} paquetes de nodos en {build}. Las compilaciones suelen tardar entre 10 y 15 minutos.",
+      "step": {
+        "queued": "Esperando un servidor de compilación",
+        "resolving": "Resolviendo las versiones de los paquetes de nodos",
+        "installing": "Instalando paquetes de nodos",
+        "checking": "Comprobando que los nodos se cargan",
+        "packaging": "Empaquetando la versión"
+      },
+      "stepOf": "Paso {step} de {count}",
+      "elapsed": "Menos de un minuto hasta ahora | {count} min hasta ahora | {count} min hasta ahora",
+      "progressLabel": "Progreso de la compilación",
+      "showLog": "Mostrar registro de compilación",
+      "hideLog": "Ocultar registro de compilación",
+      "logLabel": "Registro de compilación",
+      "logEmpty": "El servidor de compilación aún no ha escrito nada en el registro.",
+      "note": "Puedes cerrar esta ventana. Mantén esta pestaña abierta para que {deployment} pueda pasar a la nueva versión."
+    },
+    "failed": {
+      "title": "La versión v{version} no se compiló",
+      "body": "{deployment} sigue ejecutando la v{version}. Cambia la versión del paquete de nodos que indica el mensaje o quítalo. Después, vuelve a compilar.",
+      "messageHeading": "Mensaje del servidor de compilación",
+      "copyLabel": "Copiar el mensaje del servidor de compilación",
+      "openLog": "Abrir registro completo",
+      "noMessage": "El servidor de compilación no indicó el motivo. Abre el registro completo para ver qué pasó.",
+      "change": "Cambiar paquetes de nodos",
+      "retry": "Volver a compilar"
+    },
+    "moving": {
+      "title": "Trasladando {deployment} a la v{version}",
+      "body": "La versión v{version} está compilada. {deployment} cambia a ella cuando su nueva copia esté lista, normalmente en unos minutos.",
+      "step": "Iniciando una nueva copia de {deployment}",
+      "progressLabel": "Progreso del nuevo despliegue",
+      "note": "Hasta entonces, los trabajos nuevos se ejecutan en la v{version}. Los trabajos que ya comenzaron terminan en la v{version}."
+    },
+    "moveFailed": {
+      "title": "{deployment} no se trasladó a la v{version}",
+      "body": "La versión v{version} está compilada, pero {deployment} sigue ejecutando la v{current}. Vuelve a trasladarlo o cambia su versión en la Plataforma para desarrolladores.",
+      "retry": "Volver a trasladar"
+    },
+    "landed": {
+      "title": "{deployment} ahora ejecuta {build} v{version}",
+      "body": "Recarga el editor para usar el paquete de nodos que añadiste. Tus pestañas permanecen abiertas. | Recarga el editor para usar los {count} paquetes de nodos que añadiste. Tus pestañas permanecen abiertas.",
+      "later": "Más tarde",
+      "reload": "Recargar"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
     "confirmSummary": "¿Aprobar inicio de sesión en el escritorio?",

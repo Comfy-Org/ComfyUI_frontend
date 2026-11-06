@@ -1606,6 +1606,111 @@
     },
     "workspaceDefault": "ワークスペースのデフォルト"
   },
+  "buildCustomNodes": {
+    "loading": "ビルドのカスタムノードを読み込んでいます",
+    "pinned": "固定",
+    "defaultBranch": "デフォルトブランチ",
+    "uploaded": "アップロード済み",
+    "learnCustomNodes": "カスタムノードについて詳しく見る",
+    "loadFailed": {
+      "title": "ビルドのカスタムノードを読み込めませんでした"
+    },
+    "picker": {
+      "title": "{build} にカスタムノードを追加",
+      "body": "追加するノードパックを選んでください。Comfy Cloud が {build} の新しいリリースをビルドし、{deployment} をそのリリースに移行します。",
+      "search": "ノードパックを検索",
+      "clearSearch": "検索をクリア",
+      "columnName": "パック名",
+      "columnPublisher": "公開者",
+      "columnInstalls": "インストール数",
+      "columnStars": "スター",
+      "columnVersion": "バージョン",
+      "columnLicense": "ライセンス",
+      "columnInstall": "インストール",
+      "installLabel": "{pack} をビルドに追加",
+      "inBuild": "ビルドに追加済み",
+      "noVersion": "公開バージョンなし",
+      "versionLabel": "{pack} のバージョンを選んでください。現在は {version} が選ばれています。",
+      "versionsOf": "{pack} のバージョン",
+      "latest": "最新",
+      "loadingVersions": "バージョンを読み込んでいます",
+      "pinCommit": "コミットハッシュで固定",
+      "pinCommitLabel": "{pack} をコミットハッシュで固定",
+      "commitField": "コミットハッシュ",
+      "pin": "固定",
+      "notCommit": "7〜40 文字の英数字でコミットハッシュを入力してください。",
+      "loading": "ノードパックを読み込んでいます",
+      "searchFailed": "Comfy Registry に接続できませんでした。もう一度お試しください。",
+      "noMatches": "「{query}」に一致するノードパックはありません。",
+      "inBuildCount": "{build} のノードパック {count} 個 | {build} のノードパック {count} 個",
+      "pickedCount": "· まだ選択されていません | · {count} 個選択中 | · {count} 個選択中",
+      "page": "{page} ページ",
+      "previousPage": "前のページ",
+      "nextPage": "次のページ",
+      "review": "変更を確認 | {count} 個のノードパックを確認 | {count} 個のノードパックを確認"
+    },
+    "review": {
+      "title": "{build} に {count} 個のノードパックを追加 | {build} に {count} 個のノードパックを追加",
+      "body": "Comfy Cloud がこれらを含む {build} の新しいリリースをビルドし、{deployment} をそのリリースに移行します。通常 10〜15 分かかります。",
+      "listLabel": "追加するノードパック",
+      "note": "実行中のジョブは v{version} で完了します。新しいリリースの準備ができたら、エディタを再読み込みして新しいノードを使ってください。",
+      "backLabel": "ノードパックに戻る",
+      "submit": "追加して再デプロイ"
+    },
+    "readOnly": {
+      "title": "{build} のカスタムノード",
+      "body": "このビルドにはノードパックを追加できません。ビルドを管理している人に追加を依頼してください。",
+      "listLabel": "{build} のノードパック"
+    },
+    "building": {
+      "titleStarting": "ビルドを開始しています",
+      "title": "リリース v{version} をビルドしています",
+      "body": "{build} に {count} 個のノードパックをインストールしています。ビルドには通常 10〜15 分かかります。 | {build} に {count} 個のノードパックをインストールしています。ビルドには通常 10〜15 分かかります。",
+      "step": {
+        "queued": "ビルダーを待っています",
+        "resolving": "ノードパックのバージョンを解決しています",
+        "installing": "ノードパックをインストールしています",
+        "checking": "ノードを読み込めるか確認しています",
+        "packaging": "リリースをパッケージ化しています"
+      },
+      "stepOf": "ステップ {step}/{count}",
+      "elapsed": "1 分未満経過 | {count} 分経過 | {count} 分経過",
+      "progressLabel": "ビルドの進行状況",
+      "showLog": "ビルドログを表示",
+      "hideLog": "ビルドログを非表示",
+      "logLabel": "ビルドログ",
+      "logEmpty": "ビルダーはまだログを書き込んでいません。",
+      "note": "このウィンドウは閉じてもかまいません。{deployment} を新しいリリースに移行できるよう、このタブは開いたままにしてください。"
+    },
+    "failed": {
+      "title": "リリース v{version} をビルドできませんでした",
+      "body": "{deployment} は引き続き v{version} で実行されています。メッセージに書かれているノードパックのバージョンを変更するか、削除してください。そのうえで、もう一度ビルドしてください。",
+      "messageHeading": "ビルダーからのメッセージ",
+      "copyLabel": "ビルダーのメッセージをコピー",
+      "openLog": "ログ全体を開く",
+      "noMessage": "ビルダーは原因を示しませんでした。何が起きたかはログ全体を開いて確認してください。",
+      "change": "ノードパックを変更",
+      "retry": "もう一度ビルド"
+    },
+    "moving": {
+      "title": "{deployment} を v{version} に移行しています",
+      "body": "リリース v{version} のビルドが完了しました。{deployment} の新しいコピーの準備ができしだい切り替わります。通常は数分で完了します。",
+      "step": "{deployment} の新しいコピーを起動しています",
+      "progressLabel": "再デプロイの進行状況",
+      "note": "それまでは新しいジョブも v{version} で実行されます。すでに開始したジョブは v{version} で完了します。"
+    },
+    "moveFailed": {
+      "title": "{deployment} を v{version} に移行できませんでした",
+      "body": "リリース v{version} はビルドされましたが、{deployment} は引き続き v{current} で実行されています。もう一度移行するか、Developer Platform でリリースを変更してください。",
+      "retry": "もう一度移行"
+    },
+    "landed": {
+      "title": "{deployment} は {build} v{version} で実行中です",
+      "body": "追加したノードパックを使うには、エディタを再読み込みしてください。タブは開いたままです。 | 追加した {count} 個のノードパックを使うには、エディタを再読み込みしてください。タブは開いたままです。",
+      "later": "後で",
+      "reload": "再読み込み"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
     "confirmSummary": "デスクトップサインインを承認しますか？",
