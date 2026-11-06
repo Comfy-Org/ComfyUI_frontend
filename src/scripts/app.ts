@@ -1287,9 +1287,11 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(() =>
+    const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
     )
+    await surfaceWarnings?.()
+    return loaded
   }
 
   private async loadGraphDataNow(
@@ -1298,9 +1300,12 @@ export class ComfyApp implements IComfyApp {
     restore_view: boolean,
     workflow: string | null | ComfyWorkflow,
     options: LoadGraphDataOptions
-  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+  ): Promise<{
+    loaded: LoadedComfyWorkflow | boolean | undefined
+    surfaceWarnings?: () => Promise<void>
+  }> {
     if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
-      return false
+      return { loaded: false }
     }
 
     const {
@@ -1325,7 +1330,7 @@ export class ComfyApp implements IComfyApp {
         'onGraphLoadError',
         new Error('The workflow graph was released while preparing the load')
       )
-      return false
+      return { loaded: false }
     }
     const graph = this.rootGraphForLoad(
       workflow instanceof ComfyWorkflow ? workflow : null,
@@ -1494,7 +1499,7 @@ export class ComfyApp implements IComfyApp {
           'workflow-load',
           workflowNavigationId
         )
-        return false
+        return { loaded: false }
       }
 
       const workflowCameraState = graphData.extra?.ds
@@ -1528,8 +1533,6 @@ export class ComfyApp implements IComfyApp {
       }
 
       let activatedWorkflow: LoadedComfyWorkflow | undefined
-      let reconcileResourceErrors: (() => void) | undefined
-      let resourceScanLoadCompleted = false
       try {
         if (
           !clean &&
@@ -1542,7 +1545,7 @@ export class ComfyApp implements IComfyApp {
               'The workflow graph was released while preparing the load'
             )
           )
-          return false
+          return { loaded: false }
         }
         try {
           graph.configure(graphData as ISerialisedGraph)
@@ -1576,7 +1579,7 @@ export class ComfyApp implements IComfyApp {
           await this.reportGraphLoadFailure(error, {
             notifyExtensions: !backgroundRestore
           })
-          return false
+          return { loaded: false }
         }
         const snapTo = LiteGraph.alwaysSnapToGrid
           ? graph.getSnapToGridSize()
@@ -1655,7 +1658,7 @@ export class ComfyApp implements IComfyApp {
         ) {
           workflow.changeTracker?.reset(configuredGraphData)
           graphsAwaitingNodeTypes.delete(graph)
-          return true
+          return { loaded: true }
         }
 
         const effectiveShareId =
@@ -1685,7 +1688,7 @@ export class ComfyApp implements IComfyApp {
             'onGraphLoadError',
             error
           )
-          return undefined
+          return { loaded: undefined }
         }
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         ChangeTracker.isLoadingGraph = false
@@ -1698,22 +1701,22 @@ export class ComfyApp implements IComfyApp {
             isAncestorPathActive(graph, String(n.nodeId))
         )
 
-        if (!skipAssetScans) {
+        const loadedGraphData = graphData
+        const scanAssets = async () => {
           const errorStore = useExecutionErrorStore()
           const resourceScanKey = errorStore.captureRunErrorKey()
           let models: MissingModelCandidate[] | undefined
           let media: MissingMediaCandidate[] | undefined
           const reconcile = () => {
-            if (!resourceScanLoadCompleted || (!models && !media)) return
+            if (!models && !media) return
             errorStore.retireResolvedMissingResourceErrors(
               { models, media },
               resourceScanKey
             )
           }
-          reconcileResourceErrors = reconcile
           await runMissingModelPipeline({
             graph,
-            graphData,
+            graphData: loadedGraphData,
             missingModelStore: useMissingModelStore(),
             missingNodeTypes: activeMissingNodeTypes,
             silent: silentAssetErrors,
@@ -1722,7 +1725,6 @@ export class ComfyApp implements IComfyApp {
               reconcile()
             }
           })
-
           await runMissingMediaPipeline({
             rootGraph: graph,
             silent: silentAssetErrors,
@@ -1732,19 +1734,20 @@ export class ComfyApp implements IComfyApp {
             }
           })
         }
-
-        if (!deferWarnings) {
+        const surfaceWarnings = async () => {
+          if (this.rootGraph !== graph) return
+          if (!skipAssetScans) await scanAssets()
+          if (deferWarnings || this.rootGraph !== graph) return
           useWorkflowService().showPendingWarnings(undefined, {
             silent: silentAssetErrors
           })
         }
-        resourceScanLoadCompleted = true
 
         requestAnimationFrame(() => {
           this.canvas.setDirty(true, true)
         })
         graphsAwaitingNodeTypes.delete(graph)
-        return activatedWorkflow ?? true
+        return { loaded: activatedWorkflow ?? true, surfaceWarnings }
       } finally {
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1752,7 +1755,6 @@ export class ComfyApp implements IComfyApp {
         )
         ChangeTracker.isLoadingGraph = false
         useExecutionErrorStore().retireResolvedMissingNodePromptError()
-        reconcileResourceErrors?.()
       }
     } finally {
       if (graph !== this.rootGraph) {

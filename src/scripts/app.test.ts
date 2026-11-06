@@ -1722,6 +1722,35 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('lets a queued root graph switch run ahead of pending asset scans and drops their warnings', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseModels!: () => void
+      const modelsPending = new Promise<void>((resolve) => {
+        releaseModels = resolve
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        await modelsPending
+        return { missingModels: [], confirmedCandidates: [] }
+      })
+      const load = app.loadGraphData(createWorkflowGraphData(), false, false)
+      await vi.waitFor(() =>
+        expect(runMissingModelPipeline).toHaveBeenCalledOnce()
+      )
+      const switched = app.enqueueGraphLoad(async () => {
+        app.activateRootGraph(new LGraph())
+        return 'switched'
+      })
+      try {
+        await expect(switched).resolves.toBe('switched')
+      } finally {
+        releaseModels()
+        await load
+      }
+
+      expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
+    })
+
     it('keeps a configured load when the next queued configure fails without clearing it', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
