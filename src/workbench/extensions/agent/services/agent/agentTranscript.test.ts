@@ -865,8 +865,7 @@ describe('normalizeAgentTranscript', () => {
           ask_id: 'ask-2',
           message_id: 'row-2',
           status: 'cancelled',
-          selected: null,
-          after_tool_calls: null
+          selected: null
         }
       ])
 
@@ -877,46 +876,6 @@ describe('normalizeAgentTranscript', () => {
         'call-b',
         'askUser',
         'text'
-      ])
-    })
-
-    it('draws one card per finished ask and closes an open copy from an earlier row', () => {
-      const history = zAgentMessages.parse([
-        {
-          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
-          status: 'streaming',
-          content: { text: '', tool_calls: [toolCall('call-1')] },
-          pending_ask: askUser
-        },
-        {
-          ...row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
-          status: 'streaming',
-          resolved_asks: [
-            {
-              ...askUser,
-              message_id: 'row-2',
-              status: 'answered',
-              selected: ['keep']
-            },
-            {
-              ...askUser,
-              message_id: 'row-2',
-              status: 'answered',
-              selected: ['keep']
-            }
-          ]
-        }
-      ])
-
-      const cards = normalizeAgentTranscript(history).messages[0].parts.filter(
-        (part) => part.type === 'askUser'
-      )
-
-      expect(cards).toMatchObject([
-        {
-          askId: 'ask-1',
-          resolution: { status: 'answered', selected: ['keep'] }
-        }
       ])
     })
 

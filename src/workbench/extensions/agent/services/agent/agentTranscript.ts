@@ -1,5 +1,3 @@
-import { uniqBy } from 'es-toolkit'
-
 import type {
   AgentMessages,
   AgentResolvedAsk,
@@ -24,9 +22,7 @@ import {
   askIdOf,
   createAssistantMessage,
   isOpenAskPart,
-  retireAskParts,
   toAskOrNoticePart,
-  toAskResolution,
   toResolvedAskPart
 } from './agentMessageParts'
 
@@ -452,10 +448,7 @@ function appendAssistantContent(
 function resolvedAsksOf(row: AgentMessages[number]): AgentResolvedAsk[] {
   const raw = row.resolved_asks
   if (!Array.isArray(raw)) return []
-  return uniqBy(
-    raw.flatMap((entry) => zAgentResolvedAsk.safeParse(entry).data ?? []),
-    ({ ask_id }) => ask_id
-  )
+  return raw.flatMap((entry) => zAgentResolvedAsk.safeParse(entry).data ?? [])
 }
 
 export function openPendingAsk(
@@ -476,7 +469,7 @@ interface RowCalls {
 function resolvedAskIndex(
   parts: AssistantMessage['parts'],
   rowCalls: RowCalls,
-  afterToolCalls: number | null | undefined,
+  afterToolCalls: number | undefined,
   rowText: AssistantMessage['parts'][number] | undefined
 ): number {
   const next = rowCalls.ids
@@ -495,20 +488,8 @@ function insertResolvedAsks(
   rowCalls: RowCalls,
   rowText: AssistantMessage['parts'][number] | undefined
 ): void {
-  let parts = [...message.parts]
+  const parts = [...message.parts]
   for (const ask of asks) {
-    if (parts.some((part) => askIdOf(part) === ask.ask_id)) {
-      parts = retireAskParts(
-        parts,
-        ask.ask_id,
-        toAskResolution({
-          status: ask.status,
-          selected: ask.selected ?? undefined,
-          other_text: ask.other_text ?? undefined
-        })
-      )
-      continue
-    }
     const part = toResolvedAskPart(ask)
     if (!part) continue
     parts.splice(
