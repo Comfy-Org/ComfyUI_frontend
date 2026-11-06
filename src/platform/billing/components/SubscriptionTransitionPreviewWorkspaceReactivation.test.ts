@@ -420,6 +420,67 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       }
     )
 
+    it.for([
+      {
+        case: 'the whole multi-seat subscription total',
+        costTodayCents: 5000,
+        charge: '$50.00',
+        checkbox: false,
+        currentPlan: {
+          slug: 'team-per-credit-monthly',
+          tier: 'PRO',
+          duration: 'MONTHLY',
+          price_cents: 2000,
+          credits_cents: 0,
+          seat_summary: {
+            seat_count: 3,
+            total_cost_cents: 6000,
+            total_credits_cents: 0
+          }
+        }
+      },
+      {
+        case: 'a twelfth of an annual subscription total',
+        costTodayCents: 2500,
+        charge: '$25.00',
+        checkbox: true,
+        currentPlan: {
+          slug: 'standard-annual',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          price_cents: 24_000,
+          credits_cents: 0,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 24_000,
+            total_credits_cents: 0
+          }
+        }
+      }
+    ] as const)(
+      'compares the charge with $case when the preview omits consent',
+      ({ costTodayCents, charge, checkbox, currentPlan }) => {
+        mockSubscription.value = {
+          isCancelled: true,
+          endDate: '2026-08-15T00:00:00Z'
+        }
+        renderComponent(
+          makePreview({
+            transition_type: 'upgrade',
+            cost_today_cents: costTodayCents,
+            current_plan: currentPlan
+          })
+        )
+
+        expect(screen.queryAllByRole('checkbox')).toHaveLength(checkbox ? 1 : 0)
+        expect(
+          screen.getByRole('button', {
+            name: `Confirm & reactivate — ${charge} today`
+          })
+        ).toHaveProperty('disabled', checkbox)
+      }
+    )
+
     it('requires the checkbox before enabling confirm when the preview demands consent, even for a small charge', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
