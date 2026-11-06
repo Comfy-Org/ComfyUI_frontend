@@ -86,6 +86,17 @@ export function useLocalHandoffUrlLoader(
   const router = useRouter()
   const { flags } = useFeatureFlags()
 
+  async function receiveHandoff(nonce: string) {
+    // Taken even when the flag is off, so a stale Desktop handoff is cleared.
+    const desktop = takeDesktopWorkflowHandoff(nonce)
+    if (!flags.openOnCloudEnabled) return
+    if (desktop)
+      return openHandedOffWorkflow(desktop.filename, desktop.workflow)
+    const opener = getOpener()
+    if (opener) requestWorkflow(opener, nonce)
+    else showMissingWorkflow()
+  }
+
   async function loadLocalHandoffFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
@@ -103,17 +114,7 @@ export function useLocalHandoffUrlLoader(
     })
     clearPreservedQuery(NAMESPACE)
 
-    const desktop =
-      typeof nonce === 'string' ? takeDesktopWorkflowHandoff(nonce) : undefined
-    if (typeof nonce === 'string' && flags.openOnCloudEnabled) {
-      if (desktop)
-        await openHandedOffWorkflow(desktop.filename, desktop.workflow)
-      else {
-        const opener = getOpener()
-        if (opener) requestWorkflow(opener, nonce)
-        else showMissingWorkflow()
-      }
-    }
+    if (typeof nonce === 'string') await receiveHandoff(nonce)
     await stripped
   }
 

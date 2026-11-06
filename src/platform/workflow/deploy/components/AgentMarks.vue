@@ -26,9 +26,12 @@
         y1="3"
         y2="21"
       >
-        <stop stop-color="#B1A7FF" />
-        <stop offset="0.5" stop-color="#7A9DFF" />
-        <stop offset="1" stop-color="#3941FF" />
+        <stop
+          v-for="stop in CODEX_GRADIENT_STOPS"
+          :key="stop.offset"
+          :offset="stop.offset"
+          :stop-color="stop.color"
+        />
       </linearGradient>
     </defs>
     <g :mask="`url(#${cutoutId})`">
@@ -69,6 +72,7 @@ import { useId } from 'vue'
 
 import {
   CLAUDE_MARK_PATH,
+  CODEX_GRADIENT_STOPS,
   CODEX_MARK_PATH
 } from '@/platform/workflow/deploy/components/agentMarkPaths'
 

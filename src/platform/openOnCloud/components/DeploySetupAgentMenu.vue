@@ -32,7 +32,7 @@
       <AgentMark agent="codex" />
       {{ $t('openOnCloud.agentMenu.openInChatGpt') }}
     </MenuItem>
-    <MenuItem @select="copyHandoff">
+    <MenuItem @select="copyWith(copyBrief)">
       <i class="icon-[lucide--copy]" aria-hidden="true" />
       {{ $t('openOnCloud.agentMenu.copyPrompt') }}
     </MenuItem>
@@ -55,9 +55,5 @@ const { isCopying, copied, copyWith } = useBriefCopy()
 
 function clearCopiedOnOpen(open: boolean) {
   if (open) copied.value = false
-}
-
-function copyHandoff() {
-  return copyWith(copyBrief)
 }
 </script>

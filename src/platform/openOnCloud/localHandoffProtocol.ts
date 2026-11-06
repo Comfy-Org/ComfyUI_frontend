@@ -51,21 +51,16 @@ export function cloudOrigin(): string {
 const LOCAL_HOSTNAME =
   /^(localhost|\[::1\]|127(\.\d{1,3}){3}|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|[\w-]+\.local)$/
 
-function parseOrigin(origin: string): URL | null {
-  try {
-    return new URL(origin)
-  } catch {
-    return null
-  }
-}
-
 export function isLocalOrigin(origin: string): boolean {
-  const url = parseOrigin(origin)
-  return (
-    url !== null &&
-    (url.protocol === 'http:' || url.protocol === 'https:') &&
-    LOCAL_HOSTNAME.test(url.hostname)
-  )
+  try {
+    const url = new URL(origin)
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      LOCAL_HOSTNAME.test(url.hostname)
+    )
+  } catch {
+    return false
+  }
 }
 
 /** Desktop hands off through its userdata relay instead of a postMessage. */

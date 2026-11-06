@@ -84,7 +84,7 @@
             class="w-full @xl:w-auto"
             data-testid="deploy-to-comfy-api-agent"
             :loading="isCopying"
-            @click="copyHandoff"
+            @click="copyWith(copyBrief)"
           >
             <template v-if="copied">
               <i class="icon-[lucide--check]" aria-hidden="true" />
@@ -168,8 +168,4 @@ const summary = computed(() =>
     t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
   ].join(' · ')
 )
-
-function copyHandoff() {
-  return copyWith(copyBrief)
-}
 </script>
