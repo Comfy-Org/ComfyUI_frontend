@@ -118,6 +118,7 @@ function makeNode(
   executionId?: string
 ): LGraphNode {
   const graph = createTestRootGraph()
+  testGraphs.push(graph)
   graph.state.lastNodeId = id - 1
   const node = createTestNode(graph)
   node.type = type
@@ -256,12 +257,18 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
+let testGraphs: LGraph[]
 
 beforeEach(() => {
+  const graphs: LGraph[] = []
+  testGraphs = graphs
   vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
     mockUpdateModelsForNodeType
   )
   vi.mocked(useAssetsStore().getAssets).mockImplementation(mockGetAssets)
+  return () => {
+    for (const graph of graphs) graph.clear()
+  }
 })
 
 describe('isModelFileName', () => {
