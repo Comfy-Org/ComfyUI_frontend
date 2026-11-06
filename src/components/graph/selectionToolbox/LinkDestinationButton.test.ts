@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import log from 'loglevel'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -108,6 +109,20 @@ describe('LinkDestinationButton', () => {
       name: 'Go to a linked node'
     })
     await waitFor(() => expect(menuButton).toHaveFocus())
+  })
+
+  it('leaves a debug trace when the destination goes away as it is clicked', () => {
+    const debug = vi.spyOn(log.getLogger('LinkDestinationNavigation'), 'debug')
+    const { graph, source, targets, canvas } = createWorkflow()
+    clickSocket(graph, targets[0], 'input')
+    renderButton()
+    const goTo = screen.getByRole('button', { name: 'Go to Load Checkpoint' })
+
+    graph.removeLink(getSelectedLinkIds(graph)[0])
+    goTo.click()
+
+    expect(debug).toHaveBeenCalledWith(expect.any(String), source.id)
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 
   it('lets the user choose a destination after linked nodes move', async () => {

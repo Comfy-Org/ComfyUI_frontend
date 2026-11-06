@@ -1,11 +1,10 @@
 <template>
   <span ref="goToControl" class="contents">
     <ToolboxButton
-      v-if="singleDestination"
-      :label="goToLabel(singleDestination)"
+      v-if="singleDestinationButton"
+      v-bind="singleDestinationButton"
       icon="icon-[lucide--locate]"
       data-testid="go-to-link-destination-button"
-      @click="goTo(singleDestination.node.id)"
     />
     <Menu v-else-if="destinations.length" :items="destinationItems">
       <template #trigger="{ open }">
@@ -60,9 +59,14 @@ const destinations = computed(() => {
   return graph ? getSelectedLinkDestinations(graph) : []
 })
 
-const singleDestination = computed(() =>
-  destinations.value.length === 1 ? destinations.value[0] : undefined
-)
+const singleDestinationButton = computed(() => {
+  if (destinations.value.length !== 1) return undefined
+  const [destination] = destinations.value
+  return {
+    label: goToLabel(destination),
+    onClick: () => goTo(destination.node.id)
+  }
+})
 
 const destinationNames = computed(
   () =>

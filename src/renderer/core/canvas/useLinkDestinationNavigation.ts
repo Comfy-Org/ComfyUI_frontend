@@ -1,4 +1,5 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
+import log from 'loglevel'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { selectLinkDestination } from '@/lib/litegraph/src/canvas/linkSelection'
@@ -11,6 +12,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
+const logger = log.getLogger('LinkDestinationNavigation')
+
 export function useLinkDestinationNavigation() {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
@@ -18,8 +21,12 @@ export function useLinkDestinationNavigation() {
 
   function goToLinkDestination(nodeId: NodeId): boolean {
     const canvas = canvasStore.canvas
-    const arrival = canvas?.graph && selectLinkDestination(canvas.graph, nodeId)
-    if (!canvas || !arrival) return false
+    if (!canvas?.graph) return false
+    const arrival = selectLinkDestination(canvas.graph, nodeId)
+    if (!arrival) {
+      logger.debug('No linked socket left to go to on node', nodeId)
+      return false
+    }
     frameArrival(canvas, arrival)
     return true
   }
