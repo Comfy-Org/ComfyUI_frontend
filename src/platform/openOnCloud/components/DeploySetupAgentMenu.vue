@@ -28,9 +28,9 @@
       <AgentMark agent="claude" />
       {{ $t('openOnCloud.agentMenu.openInClaude') }}
     </MenuItem>
-    <MenuItem @select="openBriefIn('chatGpt')">
+    <MenuItem @select="openBriefIn('codex')">
       <AgentMark agent="codex" />
-      {{ $t('openOnCloud.agentMenu.openInChatGpt') }}
+      {{ $t('openOnCloud.agentMenu.openInCodex') }}
     </MenuItem>
     <MenuItem @select="copyWith(copyBrief)">
       <i class="icon-[lucide--copy]" aria-hidden="true" />

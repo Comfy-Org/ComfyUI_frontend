@@ -91,7 +91,7 @@ test.describe(
           })
         ).toBeVisible()
         await comfyPage.page
-          .getByRole('button', { name: 'Build with your agent', exact: true })
+          .getByRole('button', { name: 'Deploy with your agent', exact: true })
           .click()
         await expect(
           comfyPage.page.getByRole('menuitem', {
@@ -101,7 +101,7 @@ test.describe(
         ).toBeVisible()
         await expect(
           comfyPage.page.getByRole('menuitem', {
-            name: 'Open in ChatGPT desktop',
+            name: 'Open in Codex',
             exact: true
           })
         ).toBeVisible()
