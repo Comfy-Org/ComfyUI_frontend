@@ -13,7 +13,7 @@ VITE_STAGING_CLOUD_BASE_URL=https://fe-pr-22949.testenvs.comfy.org pnpm dev --ho
 
 - Confirm `http://localhost:8188/system_stats` and `http://localhost:5173/` respond.
 - Install the Chromium version required by the repository's Playwright dependency.
-- The local development build enables `open_on_cloud_enabled`. The three tests use fresh signed-out browser contexts.
+- The local development build enables `open_on_cloud_enabled`. The compatibility and login tests use fresh signed-out browser contexts.
 
 ## Run
 
@@ -48,7 +48,11 @@ The login fixture permits the hosted application's analytics, diagnostics, and I
 
 Authenticated local-to-Cloud import and Cloud execution require an authenticated Cloud browser context and an enabled receiver flag. These are separate from the three compatibility cases and the signed-out login test.
 
-The deployment menu offers **Use local agent** when the backend reports `agent.state: ready`. Start ComfyUI with `--enable-agent` and the supported agent package installed to exercise it. After the existing consent and sign-in flow, the deployment dialog closes and the agent composer contains the setup brief. The user reviews and sends it. Actual agent execution and release creation still need live acceptance; opening the composer does not prove deployment succeeded.
+The deployment menu offers **Use local agent** when the backend reports `agent.state: ready`. Start ComfyUI with `--enable-agent` and the supported agent package installed to exercise it. After the existing consent and sign-in flow, the deployment dialog closes and an empty composer submits the deployment brief once through the normal session/send pipeline. An existing draft is preserved for review. Editing the pending draft, changing its workflow target or closing the panel cancels automatic submission. The brief names the configured Platform environment and requests a ready deployment plus a real workflow run. An accepted message does not prove deployment succeeded.
+
+The isolated `playwright.local-deployment-agent.config.ts` suite verifies the real compatibility response and automatic HTTP 202 submission without clicking Send. Use the model-free `04-local-agent-deployment.json` fixture with the published `comfyui-custom-scripts` pack installed. Supply a real Playwright authentication state through `OPEN_ON_CLOUD_AUTH_STATE`, or set `OPEN_ON_CLOUD_INTERACTIVE_LOGIN=1` for operator-controlled normal sign-in and consent in the headed test browser. The suite requires an actual ready agent; it never replaces auth, readiness or API responses. It stops its own accepted turn during cleanup.
+
+The live QA agent must be built for the same Cloud environment as the account. The official release package uses the production proxy; its documented QA build pins the staging proxy. Real staging acceptance reached agent tool execution, but the official CLI broker refuses `comfy build` and `comfy deploy` commands (`comfy_command_refused`). Completing Build/release/deployment creation needs supported agent tooling; this frontend does not loosen the broker or bypass its sandbox.
 
 The Issues panel offers deployment for an out-of-memory error when `open_on_cloud_enabled` is enabled. Its error-catalog routing and dialog action are covered together by the focused integration suite. The live suite does not exhaust GPU memory to produce this condition.
 
@@ -56,4 +60,6 @@ A missing local opener, or a sender that no longer answers after sign-in, shows 
 
 Local model upload, background progress, cancellation, and sign-in-to-upload remain incomplete. The local asset-content API requires ComfyUI's assets system (`--enable-assets`); the live backend used here has it disabled and returns HTTP 503. The Cloud loopback CORS route allowlist permits compatibility checks but does not permit `/api/assets/uploads` or its completion route; the preview's upload preflight returns HTTP 404 without `Access-Control-Allow-Origin`. A supported local model-content capability and Cloud upload transport are required before these user stories can be accepted. The unavailable notice remains visible instead of a nonfunctional Upload button.
 
-Desktop still opens Cloud and downloads workflow JSON for manual import. Automatic Desktop handoff is not covered by the browser suite.
+Desktop stages a short-lived transfer in the real local userdata API and opens a local relay through its native external browser. The relay consumes that record and carries the compressed workflow in a Cloud URL fragment. Cloud removes the fragment before telemetry, preserves the transfer in tab session storage through sign-in and imports it through the normal validator. Ten-minute expiry and payload limits retain download/manual-import fallback when transport is unavailable.
+
+`browser_tests/tests/liveCloud/desktopWorkflowRelay.spec.ts` covers the real userdata GET/DELETE and hosted login, plus missing and expired records. Run it with the same live-suite environment variables. It proves browser relay transport; authenticated import and native Desktop window acceptance are additional checks.
