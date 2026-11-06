@@ -156,23 +156,35 @@
     </template>
 
     <template #content>
-      <!-- No Results State (only show when loaded and no results) -->
       <div
-        v-if="!activeDetail && !isLoading && filteredTemplates.length === 0"
+        v-if="
+          !activeDetail &&
+          !isLoading &&
+          !isWorkspaceListLoading &&
+          filteredTemplates.length === 0
+        "
         class="flex h-64 flex-col items-center justify-center px-6 text-muted-foreground"
       >
-        <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
-        <p class="mb-2 text-lg">
-          {{ $t('templateWorkflows.noResults', 'No templates found') }}
-        </p>
-        <p class="text-sm">
-          {{
-            $t(
-              'templateWorkflows.noResultsHint',
-              'Try adjusting your search or filters'
-            )
-          }}
-        </p>
+        <template v-if="isWorkspaceNav && !hasActiveQuery">
+          <i class="mb-4 icon-[comfy--template] size-12 opacity-50" />
+          <p class="m-0 text-lg">
+            {{ $t('workspaceTemplates.emptyState') }}
+          </p>
+        </template>
+        <template v-else>
+          <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
+          <p class="mb-2 text-lg">
+            {{ $t('templateWorkflows.noResults', 'No templates found') }}
+          </p>
+          <p class="text-sm">
+            {{
+              $t(
+                'templateWorkflows.noResultsHint',
+                'Try adjusting your search or filters'
+              )
+            }}
+          </p>
+        </template>
       </div>
       <div v-else v-show="!activeDetail" class="px-6">
         <!-- Title -->
@@ -275,9 +287,17 @@
                   </div>
                 </template>
                 <template
-                  v-if="template.isPartnerNode || template.tutorialUrl"
+                  v-if="
+                    template.isPartnerNode ||
+                    template.tutorialUrl ||
+                    isWorkspaceTemplate(template)
+                  "
                   #top-right
                 >
+                  <WorkspaceTemplateCardMenu
+                    v-if="isWorkspaceTemplate(template)"
+                    :template-id="template.name"
+                  />
                   <Button
                     v-if="template.tutorialUrl"
                     :tooltip="$t('g.seeTutorial')"
@@ -313,6 +333,12 @@
                       )
                     }}
                   </h3>
+                  <p
+                    v-if="isWorkspaceTemplate(template)"
+                    class="m-0 line-clamp-2 text-sm text-muted-foreground"
+                  >
+                    {{ template.description }}
+                  </p>
                   <div
                     v-if="tags.visible.length"
                     class="flex items-center gap-2 py-1"
@@ -498,6 +524,12 @@ import type {
   TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import WorkspaceTemplateCardMenu from '@/platform/workflow/templates/workspace/components/WorkspaceTemplateCardMenu.vue'
+import { useWorkspaceTemplatesStore } from '@/platform/workflow/templates/workspace/workspaceTemplatesStore'
+import {
+  WORKSPACE_TEMPLATE_SOURCE,
+  WORKSPACE_TEMPLATES_NAV_ID
+} from '@/platform/workflow/templates/workspace/workspaceTemplateTypes'
 import {
   filterTemplatesByType,
   getTemplateTags,
@@ -561,6 +593,7 @@ const modalLayoutLabels = useModalLayoutLabels()
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
+const workspaceTemplatesStore = useWorkspaceTemplatesStore()
 const {
   loadTemplates,
   loadingTemplateId,
@@ -575,12 +608,29 @@ const {
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
+const isWorkspaceTemplate = (template: TemplateInfo) =>
+  template.sourceModule === WORKSPACE_TEMPLATE_SOURCE
+
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
+  if (isWorkspaceTemplate(template))
+    return (
+      workspaceTemplatesStore.findTemplate(template.name)?.thumbnail_url ?? ''
+    )
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
 }
 
 const getOverlayThumbnailSrc = (template: TemplateInfo) => {
+  if (isWorkspaceTemplate(template)) {
+    const workspaceTemplate = workspaceTemplatesStore.findTemplate(
+      template.name
+    )
+    return (
+      workspaceTemplate?.comparison_url ??
+      workspaceTemplate?.thumbnail_url ??
+      ''
+    )
+  }
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
@@ -592,9 +642,7 @@ const openTutorial = (template: TemplateInfo) => {
   }
 }
 
-// Get navigation items from the store, with skeleton items while loading
 const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
-  // Show skeleton navigation items while loading
   if (isLoading.value) {
     return [
       {
@@ -622,8 +670,27 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
       }
     ]
   }
-  return workflowTemplatesStore.navGroupedTemplates
+  const items = workflowTemplatesStore.navGroupedTemplates
+  if (workspaceTemplatesStore.canViewWorkspaceTemplates)
+    return withWorkspaceNavItem(items)
+  return items
 })
+
+function withWorkspaceNavItem(
+  items: (NavItemData | NavGroupData)[]
+): (NavItemData | NavGroupData)[] {
+  const allIndex = items.findIndex((item) => 'id' in item && item.id === 'all')
+  const workspaceItem: NavItemData = {
+    id: WORKSPACE_TEMPLATES_NAV_ID,
+    label: t('workspaceTemplates.navLabel'),
+    icon: 'icon-[lucide--users]'
+  }
+  return [
+    ...items.slice(0, allIndex + 1),
+    workspaceItem,
+    ...items.slice(allIndex + 1)
+  ]
+}
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {
@@ -633,10 +700,20 @@ const allTemplates = computed(() => {
 // Navigation
 const selectedNavItem = ref<string | null>(initialCategory)
 
-// Filter templates based on selected navigation item
+const isWorkspaceNav = computed(
+  () => selectedNavItem.value === WORKSPACE_TEMPLATES_NAV_ID
+)
+const isWorkspaceListLoading = computed(
+  () => isWorkspaceNav.value && workspaceTemplatesStore.isLoading
+)
+
 const navigationFilteredTemplates = computed(() => {
   if (!selectedNavItem.value) {
     return allTemplates.value
+  }
+
+  if (isWorkspaceNav.value) {
+    return workspaceTemplatesStore.templateInfos
   }
 
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
@@ -733,6 +810,18 @@ watch(selectedNavItem, () => coordinateNavAndSort('nav'), {
   immediate: selectedNavItem.value === 'popular'
 })
 watch(sortSelection, () => coordinateNavAndSort('sort'))
+watch(
+  selectedNavItem,
+  async (navItem, previousNavItem) => {
+    if (navItem === WORKSPACE_TEMPLATES_NAV_ID) {
+      sortSelection.value = 'newest'
+      await workspaceTemplatesStore.refreshTemplates()
+    } else if (previousNavItem === WORKSPACE_TEMPLATES_NAV_ID) {
+      sortSelection.value = 'default'
+    }
+  },
+  { immediate: true }
+)
 
 // Convert between string array and object array for MultiSelect component
 // Only show selected items that exist in the current scope
@@ -933,7 +1022,8 @@ const filterControlBindings = computed(() => ({
   sortOptions: sortOptions.value,
   modelFilterLabel: modelFilterLabel.value,
   useCaseFilterLabel: useCaseFilterLabel.value,
-  runsOnFilterLabel: runsOnFilterLabel.value
+  runsOnFilterLabel: runsOnFilterLabel.value,
+  showUseCaseFilter: !isWorkspaceNav.value
 }))
 
 // Lazy pagination setup
@@ -1311,8 +1401,24 @@ async function showModelSetupIfNeeded(
   return true
 }
 
+async function openWorkspaceTemplate(template: TemplateInfo) {
+  openPending.value = true
+  try {
+    templateWasSelected.value = await workspaceTemplatesStore.openTemplate(
+      template.name
+    )
+    if (templateWasSelected.value) handleClose()
+  } finally {
+    openPending.value = false
+  }
+}
+
 const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   if (openPending.value) return
+  if (isWorkspaceTemplate(template)) {
+    await openWorkspaceTemplate(template)
+    return
+  }
 
   invalidateDetailWork()
   const generation = detailGeneration

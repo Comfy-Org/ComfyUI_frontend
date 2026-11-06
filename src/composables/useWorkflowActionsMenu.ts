@@ -15,6 +15,8 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useWorkspaceTemplateDialogs } from '@/platform/workflow/templates/workspace/useWorkspaceTemplateDialogs'
+import { useWorkspaceTemplatesStore } from '@/platform/workflow/templates/workspace/workspaceTemplatesStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type {
@@ -57,6 +59,8 @@ export function useWorkflowActionsMenu(
   const { pruneLinearData } = appModeStore
   const { enterBuilder } = useEnterBuilder()
   const { toastErrorHandler } = useErrorHandling()
+  const workspaceTemplatesStore = useWorkspaceTemplatesStore()
+  const { showAddDialog } = useWorkspaceTemplateDialogs()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -164,6 +168,20 @@ export function useWorkflowActionsMenu(
       },
       visible: isRoot
     })
+
+    if (isRoot) {
+      addItem({
+        id: 'add-as-workspace-template',
+        label: t('workspaceTemplates.addAsTemplate'),
+        icon: 'icon-[comfy--template]',
+        command: async () => {
+          if (!workflow) return
+          await ensureWorkflowActive(workflow)
+          showAddDialog(workflow)
+        },
+        visible: workspaceTemplatesStore.canAddWorkspaceTemplates
+      })
+    }
 
     addItem({
       id: 'export',
