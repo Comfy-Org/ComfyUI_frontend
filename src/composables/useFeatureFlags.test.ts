@@ -524,6 +524,37 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('openOnCloudEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('stays off in a production build that serves no value', () => {
+      vi.stubEnv('DEV', false)
+
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+    })
+
+    it.for([
+      { dev: false, served: true, expected: true },
+      { dev: true, served: false, expected: false }
+    ])(
+      'follows a remote config $served over the dev=$dev default',
+      ({ dev, served, expected }) => {
+        vi.stubEnv('DEV', dev)
+        remoteConfig.value = { open_on_cloud_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
+      }
+    )
+  })
+
   describe('assetsEnabled', () => {
     it.for([
       ['stable cohort without the flag', undefined, false],
