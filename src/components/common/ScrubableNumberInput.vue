@@ -22,7 +22,7 @@
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue - step)"
+          @click="updateValueBy(-step)"
         >
           <i class="icon-[lucide--minus]" />
         </Button>
@@ -66,7 +66,7 @@
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue + step)"
+          @click="updateValueBy(step)"
         >
           <i class="icon-[lucide--plus]" />
         </Button>
@@ -125,11 +125,13 @@ function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
+const stepMin = computed(() => Math.max(min, -Number.MAX_SAFE_INTEGER))
+const stepMax = computed(() => Math.min(max, Number.MAX_SAFE_INTEGER))
 const canDecrement = computed(
-  () => modelValue.value > min && !disabled && canStep.value
+  () => modelValue.value > stepMin.value && !disabled && canStep.value
 )
 const canIncrement = computed(
-  () => modelValue.value < max && !disabled && canStep.value
+  () => modelValue.value < stepMax.value && !disabled && canStep.value
 )
 const canStep = computed(
   () =>
@@ -165,18 +167,21 @@ function startTextEdit() {
 
 useNumberScrub(scrubElement, {
   value: modelValue,
-  min: () => Math.max(min, -Number.MAX_SAFE_INTEGER),
-  max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
+  min: stepMin,
+  max: stepMax,
   step: () => step,
   disabled: () => disabled,
-  onScrub: (value) => {
-    if (canStep.value) modelValue.value = value
-  },
+  onScrub: updateIncrementalValue,
   onClick: startTextEdit
 })
 
 function updateValueBy(delta: number) {
-  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
+  updateIncrementalValue(modelValue.value + delta)
+}
+
+function updateIncrementalValue(value: number) {
+  if (disabled || !canStep.value) return
+  modelValue.value = Math.min(stepMax.value, Math.max(stepMin.value, value))
   draft.value = undefined
 }
 </script>
