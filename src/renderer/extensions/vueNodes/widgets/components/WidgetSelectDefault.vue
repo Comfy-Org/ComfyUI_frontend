@@ -311,18 +311,19 @@ const widgetOptions = computed(
 const {
   searchQuery,
   directory,
-  dynamicOptions,
   hasFolders,
   isFilterable,
   selection,
   longestLabel,
-  adjacentOptions,
+  isStepDisabled,
+  stepOption,
   openingDirectory,
   browseOptions,
   refreshOptions
 } = useComboOptions(() => widgetOptions.value, modelValue, {
   filenameSummary: () => filenameSummary,
-  lockedDirectory
+  lockedDirectory,
+  onSelect: selectOption
 })
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
@@ -420,19 +421,6 @@ function selectOption(option: ComboItem | null) {
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   searchQuery.value = ''
   isOpen.value = false
-}
-
-function isStepDisabled(direction: -1 | 1) {
-  return (
-    disabled.value ||
-    (!dynamicOptions.value && !adjacentOptions.value[direction])
-  )
-}
-
-function stepOption(direction: -1 | 1) {
-  refreshOptions()
-  const option = adjacentOptions.value[direction]
-  if (option) selectOption(option)
 }
 
 function focusSearchInput() {

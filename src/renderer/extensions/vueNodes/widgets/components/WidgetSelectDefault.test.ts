@@ -129,15 +129,19 @@ describe('WidgetSelectDefault', () => {
   })
 
   it.for([
-    { current: 42, action: 'Next', expected: 89 },
+    { current: 42, action: 'Next', expected: -7 },
     { current: 42, action: 'Previous', expected: 11 },
     { current: 11, action: 'Next', expected: 42 },
-    { current: 89, action: 'Previous', expected: 42 }
+    { current: -7, action: 'Previous', expected: 42 },
+    { current: '', action: 'Next', expected: 11 },
+    { current: '', action: 'Previous', expected: -7 },
+    { current: 'missing', action: 'Next', expected: 11 },
+    { current: 'missing', action: 'Previous', expected: -7 }
   ])(
     'steps $action from $current to raw value $expected',
     async ({ current, action, expected }) => {
       const { user, onUpdate } = renderComponent(
-        createWidget([11, 42, 89]),
+        createWidget([11, 42, -7]),
         current,
         undefined,
         false
@@ -456,6 +460,16 @@ describe('WidgetSelectDefault', () => {
       current: 'MOSS/nested/b.safetensors',
       action: 'Previous',
       expected: 'MOSS/a.safetensors'
+    },
+    {
+      current: 'Other/between.safetensors',
+      action: 'Next',
+      expected: 'MOSS/a.safetensors'
+    },
+    {
+      current: 'missing.safetensors',
+      action: 'Previous',
+      expected: 'MOSS/nested/b.safetensors'
     }
   ])(
     'keeps $action from $current inside the locked folder',
@@ -476,8 +490,9 @@ describe('WidgetSelectDefault', () => {
       await user.click(
         screen.getByRole('button', { name: 'Lock folder: MOSS' })
       )
-      await user.keyboard('{Escape}')
       await rerender({ modelValue: current })
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), 'Other')
+      expect(optionLabels()).toEqual([])
       const stepper = screen.getByRole('button', {
         name: `test_combo: ${action}`
       })
@@ -505,6 +520,11 @@ describe('WidgetSelectDefault', () => {
     expect(onUpdate).not.toHaveBeenCalled()
     await openDropdown(user)
     expect(optionLabels()).toEqual([])
+    await user.keyboard('{Escape}')
+    values = ['Other/b.safetensors', 'MOSS/nested/recovered.safetensors']
+    await user.click(screen.getByRole('button', { name: 'test_combo: Next' }))
+    expect(onUpdate).toHaveBeenCalledWith('MOSS/nested/recovered.safetensors')
+    await openDropdown(user)
     await user.click(
       screen.getByRole('button', { name: 'Unlock folder: MOSS' })
     )
@@ -866,10 +886,22 @@ describe('WidgetSelectDefault', () => {
       expect(trigger).not.toHaveAttribute('aria-invalid')
     })
 
-    it('disables the trigger when widget options are disabled', () => {
-      renderComponent(createWidget(['a'], { disabled: true }), 'a')
+    it('disables the trigger and both steppers when widget options are disabled', async () => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['a', 'b', 'c'], { disabled: true }),
+        'b'
+      )
 
       expect(screen.getByTestId('widget-select-default-trigger')).toBeDisabled()
+      const previous = screen.getByRole('button', {
+        name: 'test_combo: Previous'
+      })
+      const next = screen.getByRole('button', { name: 'test_combo: Next' })
+      expect(previous).toBeDisabled()
+      expect(next).toBeDisabled()
+      await user.click(previous)
+      await user.click(next)
+      expect(onUpdate).not.toHaveBeenCalled()
     })
 
     it('uses getOptionLabel for trigger and option labels', async () => {
