@@ -1,6 +1,7 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { Distribution } from '@/platform/distribution/types'
 import { DISTRIBUTION } from '@/platform/distribution/types'
@@ -61,11 +62,14 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
   }
 
   function buildBrief(goal: AgentHandoffGoal = 'build'): string {
-    return buildAgentHandoffDocument({
+    const brief = buildAgentHandoffDocument({
       distribution,
       inputs: captureInputs(),
       goal
     })
+    return goal === 'local-deployment'
+      ? `${brief}\n\nTarget platform: ${getComfyPlatformBaseUrl()}\nUse this environment for Build, release and deployment operations.`
+      : brief
   }
 
   async function copyBrief(): Promise<boolean> {
