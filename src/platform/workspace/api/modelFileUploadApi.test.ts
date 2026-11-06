@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -22,12 +22,14 @@ class StorageRequest {
   headers: Record<string, string> = {}
   body: unknown
   status = 0
+  range: string | null = null
   aborted = false
   upload: { onprogress: ((event: { loaded: number }) => void) | null } = {
     onprogress: null
   }
   onload: (() => void) | null = null
   onerror: (() => void) | null = null
+  ontimeout: (() => void) | null = null
   onabort: (() => void) | null = null
   onloadend: (() => void) | null = null
 
@@ -50,7 +52,11 @@ class StorageRequest {
   progress(loaded: number) {
     this.upload.onprogress?.({ loaded })
   }
-  finish(status: number) {
+  getResponseHeader(name: string) {
+    return name === 'Range' ? this.range : null
+  }
+  finish(status: number, range: string | null = null) {
+    this.range = range
     this.status = status
     this.onload?.()
     this.onloadend?.()
@@ -121,7 +127,7 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     return { result, onProgress }
   }
 
-  it('starts, puts the bytes straight to storage with the signed headers, then completes', async () => {
+  it('keeps one PUT with signed headers when the server omits upload_mode', async () => {
     const calls = serverAnswers(
       json(201, started),
       json(202, { task_id: TASK_ID, status: 'created' })
@@ -142,7 +148,12 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       {
         route: '/assets/uploads',
         method: 'POST',
-        body: { filename: file.name, size_bytes: file.size, tags }
+        body: {
+          filename: file.name,
+          size_bytes: file.size,
+          resumable: true,
+          tags
+        }
       },
       {
         route: `/assets/uploads/${UPLOAD_ID}/complete`,
@@ -308,5 +319,211 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     ;(await storageRequest()).finish(200)
 
     await expect(result).resolves.toMatchObject({ ok: false, reason: 'failed' })
+  })
+})
+
+const resumable = {
+  ...started,
+  headers: {},
+  upload_mode: 'resumable',
+  chunk_size_bytes: 8,
+  max_size_bytes: 26_843_545_600
+}
+
+describe('resumable model transfers', () => {
+  beforeEach(() => {
+    StorageRequest.sent = []
+    vi.stubGlobal('XMLHttpRequest', StorageRequest)
+    vi.useFakeTimers()
+    return () => vi.useRealTimers()
+  })
+
+  function upload(signal = new AbortController().signal) {
+    const onProgress = vi.fn()
+    const onReconnecting = vi.fn()
+    const result = modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal,
+      onProgress,
+      onReconnecting
+    })
+    return { result, onProgress, onReconnecting }
+  }
+
+  function start() {
+    return serverAnswers(
+      json(201, resumable),
+      json(202, { task_id: TASK_ID, status: 'created' })
+    )
+  }
+
+  it('continues at the held byte after a dropped piece and stores the original file', async () => {
+    const calls = start()
+    const { result, onProgress, onReconnecting } = upload()
+    const first = await storageRequest()
+    expect(first.headers['Content-Range']).toBe('bytes 0-7/12')
+    assert.instanceOf(first.body, Blob)
+    const held = first.body.slice(0, 3)
+    first.progress(6)
+    first.fail()
+    await vi.advanceTimersByTimeAsync(1000)
+
+    const query = await storageRequest(2)
+    expect(query.headers['Content-Range']).toBe('bytes */12')
+    expect(query.body).toBeNull()
+    expect(onReconnecting).toHaveBeenLastCalledWith(true)
+    query.finish(308, 'bytes=0-2')
+
+    const resumed = await storageRequest(3)
+    expect(resumed.headers['Content-Range']).toBe('bytes 3-10/12')
+    assert.instanceOf(resumed.body, Blob)
+    expect(onReconnecting).toHaveBeenLastCalledWith(false)
+    resumed.progress(4)
+    expect(onProgress).toHaveBeenLastCalledWith(7)
+    resumed.finish(308, 'bytes=0-10')
+
+    const last = await storageRequest(4)
+    expect(last.headers['Content-Range']).toBe('bytes 11-11/12')
+    assert.instanceOf(last.body, Blob)
+    last.finish(201)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(await new Blob([held, resumed.body, last.body]).text()).toBe(
+      'twelve bytes'
+    )
+    expect(onProgress).toHaveBeenLastCalledWith(12)
+    expect(calls.at(-1)?.route).toBe(`/assets/uploads/${UPLOAD_ID}/complete`)
+  })
+
+  it('restarts at zero when a status query has no held range', async () => {
+    start()
+    const { result } = upload()
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    ;(await storageRequest(2)).finish(308)
+
+    const retried = await storageRequest(3)
+    expect(retried.headers['Content-Range']).toBe('bytes 0-7/12')
+    retried.finish(308, 'bytes=0-7')
+    const last = await storageRequest(4)
+    expect(last.headers['Content-Range']).toBe('bytes 8-11/12')
+    last.finish(200)
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+  })
+
+  it.for([200, 201, 412])(
+    'completes after a status query answers %s',
+    async (status) => {
+      const calls = start()
+      const { result } = upload()
+      ;(await storageRequest()).fail()
+      await vi.advanceTimersByTimeAsync(1000)
+      ;(await storageRequest(2)).finish(status)
+
+      await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+      expect(calls.at(-1)?.route).toBe(`/assets/uploads/${UPLOAD_ID}/complete`)
+    }
+  )
+
+  it.for([429, 500, 503])(
+    'queries storage before resending after %s',
+    async (status) => {
+      start()
+      const { result } = upload()
+      ;(await storageRequest()).finish(status)
+      await vi.advanceTimersByTimeAsync(1000)
+      const query = await storageRequest(2)
+      expect(query.headers['Content-Range']).toBe('bytes */12')
+      query.finish(412)
+      await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    }
+  )
+
+  it('keeps querying with capped backoff while storage is unavailable', async () => {
+    start()
+    const { result } = upload()
+    ;(await storageRequest()).fail()
+    async function retry(nth: number, delay: number) {
+      await vi.advanceTimersByTimeAsync(delay - 1)
+      expect(StorageRequest.sent).toHaveLength(nth - 1)
+      await vi.advanceTimersByTimeAsync(1)
+      const query = await storageRequest(nth)
+      expect(query.headers['Content-Range']).toBe('bytes */12')
+      query.finish(503)
+    }
+    await retry(2, 1000)
+    await retry(3, 2000)
+    await retry(4, 4000)
+    await retry(5, 8000)
+    await retry(6, 16_000)
+    await retry(7, 32_000)
+    await retry(8, 60_000)
+    await vi.advanceTimersByTimeAsync(60_000)
+    ;(await storageRequest(9)).finish(200)
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+  })
+
+  it.for([404, 410])(
+    'offers a fresh session after storage answers %s',
+    async (status) => {
+      const calls = start()
+      const { result } = upload()
+      ;(await storageRequest()).finish(status)
+      await expect(result).resolves.toEqual({
+        ok: false,
+        reason: 'sessionExpired'
+      })
+      expect(calls).toHaveLength(1)
+    }
+  )
+
+  it.for(['bytes=0-12', 'bytes=3-7', 'unreadable'])(
+    'stops on an invalid storage range %s',
+    async (range) => {
+      const calls = start()
+      const { result } = upload()
+      ;(await storageRequest()).finish(308, range)
+      await expect(result).resolves.toMatchObject({
+        ok: false,
+        reason: 'failed'
+      })
+      expect(calls).toHaveLength(1)
+    }
+  )
+
+  it('stops an active piece when canceled', async () => {
+    start()
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    const piece = await storageRequest()
+    controller.abort()
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(piece.aborted).toBe(true)
+    expect(StorageRequest.sent).toHaveLength(1)
+  })
+
+  it('stops a retry wait without another request when canceled', async () => {
+    start()
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(0)
+    controller.abort()
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(StorageRequest.sent).toHaveLength(1)
+  })
+
+  it('stops an in-flight status query when canceled', async () => {
+    start()
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    const query = await storageRequest(2)
+    controller.abort()
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(query.aborted).toBe(true)
+    expect(StorageRequest.sent).toHaveLength(2)
   })
 })

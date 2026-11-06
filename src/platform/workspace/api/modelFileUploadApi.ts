@@ -20,6 +20,7 @@ type ModelFileUploadFailure =
   | 'tooLarge'
   | 'privateModelsDisabled'
   | 'planUnavailable'
+  | 'sessionExpired'
   | 'cancelled'
   | 'failed'
 
@@ -46,6 +47,7 @@ interface ModelFileUploadOptions {
   tags: string[]
   signal: AbortSignal
   onProgress: (sentBytes: number) => void
+  onReconnecting?: (reconnecting: boolean) => void
 }
 
 async function readFailure(res: Response): Promise<ModelFileUploadStopped> {
@@ -59,30 +61,48 @@ async function readFailure(res: Response): Promise<ModelFileUploadStopped> {
   return { ok: false, reason: 'failed', cause: `${res.status} ${code ?? ''}` }
 }
 
+interface StorageAnswer {
+  status: number
+  range: string | null
+}
+
 function putFile(
   start: Pick<ModelUploadStarted, 'method' | 'upload_url' | 'headers'>,
-  file: File,
-  { signal, onProgress }: ModelFileUploadOptions
-): Promise<ModelFileUploadStopped | undefined> {
+  file: Blob | null,
+  { signal, onProgress }: ModelFileUploadOptions,
+  contentRange?: string
+): Promise<StorageAnswer | ModelFileUploadStopped> {
   return new Promise((resolve) => {
     if (signal.aborted) {
       resolve({ ok: false, reason: 'cancelled' })
       return
     }
     const request = new XMLHttpRequest()
-    request.open(start.method, start.upload_url)
-    for (const [name, value] of Object.entries(start.headers)) {
-      request.setRequestHeader(name, value)
+    request.upload.onprogress = (event) => {
+      if (file) onProgress(event.loaded)
     }
-    request.upload.onprogress = (event) => onProgress(event.loaded)
-    request.onload = () => resolve(readStorageAnswer(request.status))
-    request.onerror = () =>
-      resolve({ ok: false, reason: 'failed', cause: 'storage network error' })
+    request.onload = () =>
+      resolve({
+        status: request.status,
+        range: request.getResponseHeader('Range')
+      })
+    request.onerror = request.ontimeout = () =>
+      resolve({ status: 0, range: null })
     request.onabort = () => resolve({ ok: false, reason: 'cancelled' })
     const abort = () => request.abort()
     request.onloadend = () => signal.removeEventListener('abort', abort)
     signal.addEventListener('abort', abort, { once: true })
-    request.send(file)
+    try {
+      request.open(start.method, start.upload_url)
+      for (const [name, value] of Object.entries(start.headers)) {
+        request.setRequestHeader(name, value)
+      }
+      if (contentRange) request.setRequestHeader('Content-Range', contentRange)
+      request.send(file)
+    } catch {
+      signal.removeEventListener('abort', abort)
+      resolve({ ok: false, reason: 'failed', cause: 'storage request failed' })
+    }
   })
 }
 
@@ -90,6 +110,83 @@ function readStorageAnswer(status: number): ModelFileUploadStopped | undefined {
   if (status >= 200 && status < 300) return undefined
   if (status === STORAGE_OBJECT_ALREADY_WRITTEN) return undefined
   return { ok: false, reason: 'failed', cause: `storage ${status}` }
+}
+
+function retryWait(delay: number, signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', finish)
+      resolve(!signal.aborted)
+    }
+    const timer = setTimeout(finish, delay)
+    signal.addEventListener('abort', finish, { once: true })
+  })
+}
+
+function heldBytes(range: string | null, size: number): number | undefined {
+  if (range === null) return 0
+  const match = /^bytes=0-(\d+)$/.exec(range)
+  const next = match ? Number(match[1]) + 1 : NaN
+  return Number.isSafeInteger(next) && next > 0 && next <= size
+    ? next
+    : undefined
+}
+
+async function putResumable(
+  start: ReturnType<typeof zStartModelUploadResponse.parse>,
+  file: File,
+  options: ModelFileUploadOptions
+): Promise<ModelFileUploadStopped | undefined> {
+  const chunkSize = Number(start.chunk_size_bytes ?? 64 * 1024 * 1024)
+  if (!Number.isSafeInteger(chunkSize) || chunkSize <= 0) {
+    return { ok: false, reason: 'failed', cause: 'invalid upload piece size' }
+  }
+  let offset = 0
+  let query = false
+  let delay = 1000
+  while (!options.signal.aborted) {
+    const end = Math.min(offset + chunkSize, file.size)
+    if (!query) options.onReconnecting?.(false)
+    const answer = await putFile(
+      start,
+      query ? null : file.slice(offset, end),
+      { ...options, onProgress: (sent) => options.onProgress(offset + sent) },
+      query ? `bytes */${file.size}` : `bytes ${offset}-${end - 1}/${file.size}`
+    )
+    if (!('status' in answer)) return answer
+    const { status, range } = answer
+    if (status === 200 || status === 201 || status === 412) {
+      options.onProgress(file.size)
+      options.onReconnecting?.(false)
+      return undefined
+    }
+    if (status === 404 || status === 410) {
+      return { ok: false, reason: 'sessionExpired' }
+    }
+    if (status === 308) {
+      const next = heldBytes(range, file.size)
+      if (next === undefined) {
+        return { ok: false, reason: 'failed', cause: 'invalid storage range' }
+      }
+      const canSend = next < file.size && (query || next > offset)
+      if (next > offset) delay = 1000
+      offset = next
+      options.onProgress(offset)
+      if (canSend) {
+        query = false
+        continue
+      }
+    } else if (status !== 0 && status !== 429 && status < 500) {
+      return { ok: false, reason: 'failed', cause: `storage ${status}` }
+    }
+    query = true
+    options.onReconnecting?.(true)
+    if (!(await retryWait(delay, options.signal))) break
+    delay = Math.min(delay * 2, 60_000)
+  }
+  return { ok: false, reason: 'cancelled' }
 }
 
 async function postJson(route: string, body: unknown, signal: AbortSignal) {
@@ -110,6 +207,7 @@ async function stageFile(
     {
       filename: file.name,
       size_bytes: file.size,
+      resumable: true,
       tags: options.tags
     } satisfies StartModelUploadData['body'],
     options.signal
@@ -119,7 +217,14 @@ async function stageFile(
   if (!start.success) {
     return { ok: false, reason: 'failed', cause: start.error }
   }
-  return (await putFile(start.data, file, options)) ?? start.data.upload_id
+  if (start.data.upload_mode === 'resumable') {
+    return (
+      (await putResumable(start.data, file, options)) ?? start.data.upload_id
+    )
+  }
+  const answer = await putFile(start.data, file, options)
+  if (!('status' in answer)) return answer
+  return readStorageAnswer(answer.status) ?? start.data.upload_id
 }
 
 async function uploadModelFile(
