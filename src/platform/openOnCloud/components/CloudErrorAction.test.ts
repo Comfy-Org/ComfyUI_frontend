@@ -9,6 +9,8 @@ import { testI18n } from '@/utils/__tests__/testI18n'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
+await import('@/platform/openOnCloud/components/DeploySetupCard.vue')
+
 describe('Cloud deployment from an out-of-memory error', () => {
   it('opens the deployment dialog from the memory-error action', async () => {
     vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
