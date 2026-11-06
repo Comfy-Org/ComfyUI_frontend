@@ -7,27 +7,23 @@
       })
     "
     :description="
-      $t('buildCustomNodes.moveFailed.body', {
+      $t('buildCustomNodes.moveFailed.bodyPlatform', {
         deployment: session.deploymentName,
         version: release.version,
         current: session.build.release.version
       })
     "
   >
-    <p
-      v-if="message"
-      role="alert"
-      class="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-    >
-      {{ message }}
-    </p>
+    <template #icon>
+      <BuildFailureIcon />
+    </template>
     <template #actions>
       <Button variant="secondary" size="lg" @click="emit('close')">
         {{ $t('g.close') }}
       </Button>
-      <Button variant="inverted" size="lg" @click="emit('retry')">
-        {{ $t('buildCustomNodes.moveFailed.retry') }}
-      </Button>
+      <FixOnPlatformLink
+        :path="`/profile/deployments/${session.deploymentId}`"
+      />
     </template>
   </BuildDialogStep>
 </template>
@@ -38,15 +34,15 @@ import Button from '@comfyorg/design-system/button/Button'
 import type { BuildSession } from '@/platform/workspace/buildCustomNodes/buildCustomNodesFlow'
 import type { ReleaseBuild } from '@/platform/workspace/buildCustomNodes/buildCustomNodesTypes'
 import BuildDialogStep from '@/platform/workspace/buildCustomNodes/components/BuildDialogStep.vue'
+import BuildFailureIcon from '@/platform/workspace/buildCustomNodes/components/BuildFailureIcon.vue'
+import FixOnPlatformLink from '@/platform/workspace/buildCustomNodes/components/FixOnPlatformLink.vue'
 
-const { session, release, message } = defineProps<{
+const { session, release } = defineProps<{
   session: BuildSession
   release: ReleaseBuild
-  message: string | null
 }>()
 
 const emit = defineEmits<{
   close: []
-  retry: []
 }>()
 </script>

@@ -431,7 +431,7 @@ describe('BuildCustomNodesDialog', () => {
     await poll()
     expect(
       screen.getByRole('progressbar', { name: 'Build progress' })
-    ).toHaveAttribute('aria-valuetext', 'Step 2 of 4')
+    ).toHaveAttribute('aria-valuetext', 'Installing node packs')
 
     service.getDeploymentBuild.mockResolvedValue({
       ok: true,
@@ -450,7 +450,7 @@ describe('BuildCustomNodesDialog', () => {
     )
   })
 
-  it("shows the builder's message when the build fails, and Build again builds once more", async () => {
+  it('sends the user to the Release on the Developer Platform when the build fails', async () => {
     service.getRelease.mockResolvedValueOnce({ ok: true, value: FAILED })
     const { user } = await renderDialog()
     await pickImpactAndReview(user)
@@ -460,36 +460,12 @@ describe('BuildCustomNodesDialog', () => {
     expect(
       screen.getByRole('heading', { name: "Release v4 didn't build" })
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Message from the builder')).toHaveTextContent(
-      'Cannot install comfyui-impact-pack==8.30.0'
+    expect(
+      screen.getByRole('link', { name: 'Fix on Developer Platform' })
+    ).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/builds/bld-1/releases/rel-4'
     )
-
-    service.startRelease.mockResolvedValueOnce({
-      ok: true,
-      value: { release_id: 'rel-5', version: 5 }
-    })
-    await user.click(screen.getByRole('button', { name: 'Build again' }))
-
-    expect(service.startRelease).toHaveBeenCalledTimes(2)
-    expect(
-      await screen.findByRole('heading', { name: 'Building Release v5' })
-    ).toBeInTheDocument()
-  })
-
-  it('goes back to the picker with the picks kept when the user changes node packs after a failure', async () => {
-    service.getRelease.mockResolvedValueOnce({ ok: true, value: FAILED })
-    const { user } = await renderDialog()
-    await pickImpactAndReview(user)
-    await user.click(screen.getByRole('button', { name: 'Add and redeploy' }))
-    await poll()
-
-    await user.click(screen.getByRole('button', { name: 'Change node packs' }))
-
-    expect(
-      await screen.findByRole('checkbox', {
-        name: 'Add ComfyUI Impact Pack to the Build'
-      })
-    ).toBeChecked()
   })
 
   it("lists the Build's packs without any way to change them for a viewer who may not change the Build", async () => {

@@ -1,14 +1,5 @@
 <template>
-  <div
-    :class="
-      cn(
-        '@container',
-        wide
-          ? 'w-[min(1040px,calc(100vw-2rem))]'
-          : 'w-[min(640px,calc(100vw-2rem))]'
-      )
-    "
-  >
+  <div :class="cn('@container', FRAME_WIDTH[size])">
     <div
       v-bind="$attrs"
       class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
@@ -33,8 +24,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 
-const { wide = false } = defineProps<{
-  wide?: boolean
+type DialogFrameSize = 'narrow' | 'default' | 'wide'
+
+const FRAME_WIDTH: Record<DialogFrameSize, string> = {
+  narrow: 'w-[min(480px,calc(100vw-2rem))]',
+  default: 'w-[min(640px,calc(100vw-2rem))]',
+  wide: 'w-[min(1040px,calc(100vw-2rem))]'
+}
+
+const { size = 'default' } = defineProps<{
+  size?: DialogFrameSize
 }>()
 
 const emit = defineEmits<{

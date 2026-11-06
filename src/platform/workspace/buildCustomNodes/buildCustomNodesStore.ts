@@ -203,37 +203,6 @@ export const useBuildCustomNodesStore = defineStore('buildCustomNodes', () => {
     await startBuild(session.deploymentId)
   }
 
-  async function retryBuild() {
-    const current = state.value
-    if (current.phase !== 'buildFailed') return
-    dispatch({ type: 'retried' })
-    await startBuild(current.session.deploymentId)
-  }
-
-  async function retryMove() {
-    const current = state.value
-    if (current.phase !== 'moveFailed') return
-    const outcome = await buildCustomNodesService.getDeploymentBuild(
-      current.session.deploymentId
-    )
-    if (!outcome.ok) {
-      dispatch({ type: 'moveRefused', message: outcome.message })
-      return
-    }
-    dispatch({ type: 'moveRetried', build: outcome.value })
-    await moveProduction()
-  }
-
-  async function fetchReleaseLog(): Promise<string | null> {
-    const current = state.value
-    if (current.phase !== 'building' || !current.release) return null
-    const outcome = await buildCustomNodesService.getReleaseLog(
-      current.session.deploymentId,
-      current.release.release_id
-    )
-    return outcome.ok ? outcome.value : null
-  }
-
   return {
     state,
     open,
@@ -243,9 +212,6 @@ export const useBuildCustomNodesStore = defineStore('buildCustomNodes', () => {
     review,
     backToPicking,
     dismiss,
-    submit,
-    retryBuild,
-    retryMove,
-    fetchReleaseLog
+    submit
   }
 })

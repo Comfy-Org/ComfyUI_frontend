@@ -4359,7 +4359,10 @@
       "hideLog": "Hide build log",
       "logLabel": "Build log",
       "logEmpty": "The builder hasn't written to the log yet.",
-      "note": "You can close this window. Keep this tab open so {deployment} can move to the new Release."
+      "note": "You can close this window. Keep this tab open so {deployment} can move to the new Release.",
+      "bodyShort": "Takes about 10–15 minutes. Keep working, just keep this tab open.",
+      "elapsedShort": "Under a minute | {count} min | {count} min",
+      "keepWorking": "Keep working"
     },
     "failed": {
       "title": "Release v{version} didn't build",
@@ -4369,7 +4372,8 @@
       "openLog": "Open full log",
       "noMessage": "The builder didn't say why. Open the full log to see what happened.",
       "change": "Change node packs",
-      "retry": "Build again"
+      "retry": "Build again",
+      "bodyPlatform": "Nothing changed: {deployment} still runs v{version}. The Developer Platform shows what went wrong and how to fix it."
     },
     "moving": {
       "title": "Moving {deployment} to v{version}",
@@ -4381,14 +4385,16 @@
     "moveFailed": {
       "title": "Couldn't move {deployment} to v{version}",
       "body": "Release v{version} is built, but {deployment} still runs v{current}. Move it again, or change its Release on the Developer Platform.",
-      "retry": "Move again"
+      "retry": "Move again",
+      "bodyPlatform": "Release v{version} built, but {deployment} could not start on it and still runs v{current}. The Developer Platform shows what went wrong."
     },
     "landed": {
       "title": "Now running {build} v{version} on {deployment}",
       "body": "Reload the editor to use the node pack you added. Your tabs stay open. | Reload the editor to use the {count} node packs you added. Your tabs stay open.",
       "later": "Later",
       "reload": "Reload"
-    }
+    },
+    "fixOnPlatform": "Fix on Developer Platform"
   },
   "selectionToolbox": {
     "executeButton": {

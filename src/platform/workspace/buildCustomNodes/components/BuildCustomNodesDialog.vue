@@ -1,6 +1,6 @@
 <template>
   <DeploymentDialogFrame
-    :wide="state.phase === 'picking'"
+    :size="FRAME_SIZE[state.phase] ?? 'default'"
     data-testid="build-custom-nodes-dialog"
     @dismiss="dismiss"
   >
@@ -42,7 +42,6 @@
     />
     <ReleaseBuildProgress
       v-else-if="state.phase === 'building'"
-      :session="state.session"
       :version="state.release?.version ?? null"
       :progress="state.progress"
       :started-at="state.startedAt"
@@ -52,8 +51,7 @@
       v-else-if="state.phase === 'buildFailed'"
       :session="state.session"
       :release="state.release"
-      @change="store.backToPicking()"
-      @retry="store.retryBuild()"
+      @close="dismiss"
     />
     <ReleaseMoveProgress
       v-else-if="state.phase === 'redeploying'"
@@ -65,9 +63,7 @@
       v-else-if="state.phase === 'moveFailed'"
       :session="state.session"
       :release="state.release"
-      :message="state.message"
       @close="dismiss"
-      @retry="store.retryMove()"
     />
   </DeploymentDialogFrame>
 </template>
@@ -77,6 +73,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
+import type { BuildCustomNodesState } from '@/platform/workspace/buildCustomNodes/buildCustomNodesFlow'
 import { useBuildCustomNodesStore } from '@/platform/workspace/buildCustomNodes/buildCustomNodesStore'
 import BuildCustomNodesReadOnly from '@/platform/workspace/buildCustomNodes/components/BuildCustomNodesReadOnly.vue'
 import BuildDialogStep from '@/platform/workspace/buildCustomNodes/components/BuildDialogStep.vue'
@@ -95,6 +92,16 @@ const emit = defineEmits<{
   done: []
   dismiss: []
 }>()
+
+const FRAME_SIZE: Partial<
+  Record<BuildCustomNodesState['phase'], 'narrow' | 'wide'>
+> = {
+  picking: 'wide',
+  building: 'narrow',
+  buildFailed: 'narrow',
+  redeploying: 'narrow',
+  moveFailed: 'narrow'
+}
 
 const store = useBuildCustomNodesStore()
 const { state } = storeToRefs(store)
