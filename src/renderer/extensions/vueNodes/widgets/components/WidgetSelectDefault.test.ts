@@ -5,7 +5,6 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -52,8 +51,7 @@ describe('WidgetSelectDefault', () => {
     widget: SimplifiedWidget<string | undefined>,
     modelValue?: WidgetValue,
     slots?: Record<string, string>,
-    filenameSummary = false,
-    unifiedRows = false
+    filenameSummary = false
   ) {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
@@ -67,7 +65,6 @@ describe('WidgetSelectDefault', () => {
       slots,
       global: {
         plugins: [i18n],
-        provide: { [UnifiedWidgetRowsKey]: unifiedRows },
         stubs: {
           WidgetLayoutField: WidgetLayoutFieldStub
         }
@@ -94,8 +91,7 @@ describe('WidgetSelectDefault', () => {
         modelValue: 'euler'
       },
       global: {
-        plugins: [i18n],
-        provide: { [UnifiedWidgetRowsKey]: true }
+        plugins: [i18n]
       }
     })
 
@@ -138,8 +134,7 @@ describe('WidgetSelectDefault', () => {
         createWidget([11, 42, 89]),
         current,
         undefined,
-        false,
-        true
+        false
       )
       await user.click(
         screen.getByRole('button', { name: `test_combo: ${action}` })
@@ -156,7 +151,7 @@ describe('WidgetSelectDefault', () => {
   ])(
     'disables unavailable directions for $values with current=$current',
     ({ values, current, expected }) => {
-      renderComponent(createWidget(values), current, undefined, false, true)
+      renderComponent(createWidget(values), current)
 
       expect(
         [
@@ -178,8 +173,7 @@ describe('WidgetSelectDefault', () => {
         createWidget(() => values),
         42,
         undefined,
-        false,
-        true
+        false
       )
       const arrow = screen.getByRole('button', {
         name: `test_combo: ${action}`

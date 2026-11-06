@@ -5,7 +5,6 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -32,13 +31,11 @@ function createNumberInputWidget(
 
 function renderComponent(
   widget: SimplifiedWidget<number>,
-  modelValue: number | undefined,
-  unifiedRows = false
+  modelValue: number | undefined
 ) {
   return render(WidgetInputNumberInput, {
     global: {
-      plugins: [i18n],
-      provide: { [UnifiedWidgetRowsKey]: unifiedRows }
+      plugins: [i18n]
     },
     props: {
       widget,
@@ -58,8 +55,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
     const user = userEvent.setup()
     const { emitted, rerender } = renderComponent(
       createNumberInputWidget(37, 'int', { useGrouping: true }),
-      37,
-      true
+      37
     )
     await rerender({
       'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
@@ -90,8 +86,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       const user = userEvent.setup()
       const { rerender } = renderComponent(
         createNumberInputWidget(37, 'int', { step2: 2, disabled }),
-        37,
-        true
+        37
       )
       await rerender({
         'onUpdate:modelValue': (value: number) =>
@@ -121,8 +116,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
   it('keeps precision-limited steppers visible and disabled in unified rows', () => {
     renderComponent(
       createNumberInputWidget(18446744073709552000),
-      18446744073709552000,
-      true
+      18446744073709552000
     )
 
     expect(screen.getByTestId('increment')).toBeDisabled()
@@ -271,23 +265,25 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('hides buttons for unsafe large integer values', () => {
+  it('disables buttons for unsafe large integer values', () => {
     renderComponent(
       createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int'),
       UNSAFE_LARGE_INTEGER
     )
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
-  it('hides buttons for unsafe negative integer values', () => {
+  it('disables buttons for unsafe negative integer values', () => {
     const unsafeNegative = -UNSAFE_LARGE_INTEGER
     renderComponent(
       createNumberInputWidget(unsafeNegative, 'int'),
       unsafeNegative
     )
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('shows tooltip for disabled buttons due to precision limits', async () => {
@@ -317,11 +313,12 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('hides buttons for unsafe floating point values', () => {
+  it('disables buttons for unsafe floating point values', () => {
     const unsafeFloat = UNSAFE_LARGE_INTEGER + 0.5
     renderComponent(createNumberInputWidget(unsafeFloat, 'float'), unsafeFloat)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 })
 
@@ -335,18 +332,21 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
   it('handles NaN values gracefully', () => {
     renderComponent(createNumberInputWidget(NaN, 'int'), NaN)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('handles Infinity values', () => {
     renderComponent(createNumberInputWidget(Infinity, 'int'), Infinity)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('handles negative Infinity values', () => {
     renderComponent(createNumberInputWidget(-Infinity, 'int'), -Infinity)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 })

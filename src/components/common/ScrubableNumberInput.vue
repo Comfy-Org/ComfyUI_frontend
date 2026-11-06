@@ -3,9 +3,10 @@
     ref="container"
     :class="
       cn(
-        'flex overflow-hidden rounded-md bg-input text-xs text-foreground',
+        'relative flex overflow-visible rounded-md bg-input text-xs text-foreground',
         useWidgetHeight(),
-        edgeButtons && 'static overflow-visible'
+        !hideButtons && 'pl-6',
+        className
       )
     "
   >
@@ -14,12 +15,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      :class="
-        cn(
-          'aspect-square h-full rounded-none p-0 hover:bg-muted disabled:opacity-30',
-          edgeButtons && 'absolute inset-y-0 left-0 w-6'
-        )
-      "
+      class="absolute inset-y-0 left-0 h-full w-6 rounded-none p-0 hover:bg-muted disabled:opacity-30"
       variant="muted-textonly"
       size="unset"
       :disabled="!canDecrement"
@@ -29,11 +25,7 @@
       <i class="icon-[lucide--minus]" />
     </Button>
     <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
-      <span
-        v-if="edgeButtons"
-        aria-hidden="true"
-        class="invisible block truncate px-2"
-      >
+      <span aria-hidden="true" class="invisible block truncate px-2">
         {{ draft ?? displayValue ?? modelValue }}
       </span>
       <input
@@ -41,12 +33,7 @@
         v-bind="inputAttrs"
         :value="draft ?? displayValue ?? modelValue"
         :disabled
-        :class="
-          cn(
-            'peer absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0',
-            edgeButtons && 'pr-2 text-right'
-          )
-        "
+        class="peer absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0"
         inputmode="decimal"
         autocomplete="off"
         autocorrect="off"
@@ -67,7 +54,6 @@
             textEdit && 'pointer-events-none hidden'
           )
         "
-        @pointerup="!scrubElement && handlePointerUp()"
       />
     </div>
     <slot />
@@ -88,44 +74,36 @@
 </template>
 
 <script setup lang="ts">
-import {
-  onClickOutside,
-  useEventListener,
-  usePointerSwipe,
-  whenever
-} from '@vueuse/core'
+import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { useNumberScrub } from '@/composables/useNumberScrub'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
+  class: className,
   min = -Number.MAX_VALUE,
   max = Number.MAX_VALUE,
   step = 1,
   disabled = false,
   hideButtons = false,
-  buttonsDisabled = false,
-  edgeButtons = false,
   displayValue,
   parseValue,
-  labelElement,
   scrubElement
 } = defineProps<{
+  class?: HTMLAttributes['class']
   min?: number
   max?: number
   step?: number
   disabled?: boolean
   hideButtons?: boolean
-  buttonsDisabled?: boolean
-  edgeButtons?: boolean
   displayValue?: string
   parseValue?: (raw: string) => number | undefined
   inputAttrs?: Record<string, unknown>
-  labelElement?: HTMLLabelElement | null
   scrubElement?: HTMLElement | null
 }>()
 
@@ -147,10 +125,15 @@ function clamp(value: number): number {
 }
 
 const canDecrement = computed(
-  () => modelValue.value > min && !disabled && !buttonsDisabled
+  () => modelValue.value > min && !disabled && canStep.value
 )
 const canIncrement = computed(
-  () => modelValue.value < max && !disabled && !buttonsDisabled
+  () => modelValue.value < max && !disabled && canStep.value
+)
+const canStep = computed(
+  () =>
+    Number.isFinite(modelValue.value) &&
+    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER
 )
 
 function handleInput(event: Event) {
@@ -176,49 +159,18 @@ function handleBlur(e: Event) {
 }
 
 function handlePointerUp() {
-  if (disabled || isSwiping.value) return
-
   textEdit.value = true
   inputField.value?.focus()
   inputField.value?.select()
 }
 
-function useScrubTarget(
-  target: MaybeRefOrGetter<HTMLElement | null | undefined>
-) {
-  let dragDelta = 0
-  let dragged = false
-  let editingControl = false
-  const swipe = usePointerSwipe(target, {
-    onSwipeStart: (event) => {
-      dragDelta = 0
-      dragged = false
-      editingControl = isEditingControl(event.target)
-    },
-    onSwipeEnd: () => (dragDelta = 0)
-  })
-
-  whenever(swipe.distanceX, () => {
-    if (disabled || editingControl) return
-    const delta = ((swipe.distanceX.value - dragDelta) / 10) | 0
-    dragDelta += delta * 10
-    dragged ||= delta !== 0
-    modelValue.value = clamp(modelValue.value - delta * step)
-  })
-
-  useEventListener(target, 'click', (event) => {
-    if (dragged) event.preventDefault()
-    else if (scrubElement && !isEditingControl(event.target)) handlePointerUp()
-  })
-  return swipe
-}
-
-function isEditingControl(target: EventTarget | null) {
-  return target instanceof HTMLElement && !!target.closest('button, input')
-}
-
-const { isSwiping } = useScrubTarget(() => scrubElement ?? swipeElement.value)
-useScrubTarget(() => (scrubElement ? undefined : labelElement))
+useNumberScrub(() => scrubElement ?? swipeElement.value, {
+  disabled: () => disabled,
+  onScrub: (steps) => {
+    modelValue.value = clamp(modelValue.value + steps * step)
+  },
+  onClick: handlePointerUp
+})
 
 function updateValueBy(delta: number) {
   modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))

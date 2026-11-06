@@ -1,19 +1,15 @@
 <template>
   <WidgetLayoutField
+    data-testid="widget-text-row"
     :widget="layoutWidget"
     :input-id
     :value-text="modelValue"
     full-width-control
     :root-class="
-      unifiedRows
-        ? cn(
-            !isReadOnly && 'hover:bg-muted',
-            size === 'large' && 'py-3 text-sm'
-          )
-        : undefined
+      cn(!isReadOnly && 'hover:bg-muted', size === 'large' && 'py-3 text-sm')
     "
   >
-    <div :class="cn('relative', unifiedRows && 'h-full')">
+    <div class="relative h-full">
       <Loader
         v-if="loading"
         size="sm"
@@ -27,14 +23,12 @@
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            !unifiedRows && !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
-            unifiedRows &&
-              'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
+            'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
             loading && 'pl-9'
           )
         "
-        :size="unifiedRows ? 1 : undefined"
+        :size="1"
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
@@ -44,12 +38,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -73,7 +66,6 @@ const {
 
 const modelValue = defineModel<string>({ default: '' })
 const inputId = useId()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)

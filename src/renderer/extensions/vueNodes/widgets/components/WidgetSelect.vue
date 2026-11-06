@@ -4,12 +4,12 @@
     v-model="modelValue"
     :widget
     :node-type="widget.nodeType ?? nodeType"
-    :asset-kind="assetKind"
-    :allow-upload="allowUpload"
-    :upload-folder="uploadFolder"
-    :upload-subfolder="uploadSubfolder"
-    :is-asset-mode="isAssetMode"
-    :default-layout-mode="defaultLayoutMode"
+    :asset-kind
+    :allow-upload
+    :upload-folder
+    :upload-subfolder
+    :is-asset-mode
+    :default-layout-mode
   />
   <WidgetWithControl
     v-else-if="widget.controlWidget"
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
@@ -38,7 +38,6 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
@@ -48,14 +47,11 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
-const filenameSummary = computed(
-  () =>
-    unifiedRows &&
-    assetService.isAssetBrowserEligible(
-      props.widget.nodeType ?? props.nodeType ?? '',
-      props.widget.name
-    )
+const filenameSummary = computed(() =>
+  assetService.isAssetBrowserEligible(
+    props.widget.nodeType ?? props.nodeType ?? '',
+    props.widget.name
+  )
 )
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {

@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetLayoutField from './WidgetLayoutField.vue'
@@ -18,11 +17,9 @@ function renderField(
   widget: WidgetShape,
   {
     hideLayoutField = false,
-    unifiedRows = false,
     slotContent = '<span data-testid="slot">content</span>'
   }: {
     hideLayoutField?: boolean
-    unifiedRows?: boolean
     slotContent?: string
   } = {}
 ) {
@@ -34,8 +31,7 @@ function renderField(
   return render(Harness, {
     global: {
       provide: {
-        [HideLayoutFieldKey as symbol]: hideLayoutField,
-        [UnifiedWidgetRowsKey]: unifiedRows
+        [HideLayoutFieldKey as symbol]: hideLayoutField
       }
     }
   })
@@ -43,14 +39,13 @@ function renderField(
 
 describe('WidgetLayoutField', () => {
   it.for([
-    { target: 'row', unifiedRows: true, disabled: false, expected: '1' },
-    { target: 'row', unifiedRows: false, disabled: false, expected: '0' },
-    { target: 'row', unifiedRows: true, disabled: true, expected: '0' },
-    { target: 'primary', unifiedRows: true, disabled: false, expected: '1' },
-    { target: 'secondary', unifiedRows: true, disabled: false, expected: '0' }
+    { target: 'row', disabled: false, expected: '1' },
+    { target: 'row', disabled: true, expected: '0' },
+    { target: 'primary', disabled: false, expected: '1' },
+    { target: 'secondary', disabled: false, expected: '0' }
   ] as const)(
-    'activates $target with unifiedRows=$unifiedRows and disabled=$disabled',
-    async ({ target, unifiedRows, disabled, expected }) => {
+    'activates $target with disabled=$disabled',
+    async ({ target, disabled, expected }) => {
       const user = userEvent.setup()
       const Harness = defineComponent({
         components: { WidgetLayoutField },
@@ -63,13 +58,9 @@ describe('WidgetLayoutField', () => {
           </WidgetLayoutField>
         `
       })
-      render(Harness, {
-        global: { provide: { [UnifiedWidgetRowsKey]: unifiedRows } }
-      })
+      render(Harness)
       const targets = {
-        row: unifiedRows
-          ? screen.getByTestId('widget-row-hit-area')
-          : screen.getByTestId('row'),
+        row: screen.getByTestId('widget-row-hit-area'),
         primary: screen.getByRole('button', { name: 'field' }),
         secondary: screen.getByRole('button', { name: 'Secondary' })
       }

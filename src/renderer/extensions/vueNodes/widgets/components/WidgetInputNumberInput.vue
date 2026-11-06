@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, useId } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -8,7 +8,6 @@ import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -20,7 +19,6 @@ import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { locale } = useI18n()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const inputId = useId()
 
 const props = defineProps<{
@@ -167,12 +165,10 @@ const inputAriaAttrs = computed(() => ({
     :activate-on-click="false"
     has-leading-button
     label-class="cursor-ew-resize touch-pan-y"
-    :root-class="
-      cn(unifiedRows && 'cursor-ew-resize touch-pan-y', props.rootClass)
-    "
+    :root-class="cn('cursor-ew-resize touch-pan-y', props.rootClass)"
   >
     <template #between><slot name="between" /></template>
-    <template #default="{ labelElement, rowElement }">
+    <template #default="{ rowElement }">
       <Tooltip :disabled="!buttonTooltip">
         <TooltipTrigger as-child>
           <ScrubableNumberInput
@@ -182,31 +178,20 @@ const inputAriaAttrs = computed(() => ({
             :step="stepValue"
             :display-value="formattedValue"
             :disabled="isDisabled"
-            :hide-buttons="buttonsDisabled && !unifiedRows"
-            :buttons-disabled
-            :edge-buttons="unifiedRows"
             :parse-value="parseWidgetValue"
             :input-attrs="inputAriaAttrs"
-            :label-element
-            :scrub-element="unifiedRows ? rowElement : undefined"
+            :scrub-element="rowElement"
             :class="
               cn(
                 WidgetInputBaseClass,
-                'flex grow text-xs',
-                unifiedRows && 'not-disabled:bg-transparent',
-                !unifiedRows && 'relative',
+                'static flex grow pl-0 text-xs not-disabled:bg-transparent',
                 useWidgetHeight()
               )
             "
           >
             <template #background>
               <div
-                :class="
-                  cn(
-                    'pointer-events-none absolute size-full overflow-clip rounded-md',
-                    unifiedRows && 'inset-0'
-                  )
-                "
+                class="pointer-events-none absolute inset-0 size-full overflow-clip rounded-md"
               >
                 <div
                   class="size-full bg-primary/15"

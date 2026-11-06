@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger, useForwardProps } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
 import type {
@@ -20,9 +20,23 @@ import ColorPickerPanel from './ColorPickerPanel.vue'
 const {
   alpha = true,
   align = 'start',
+  sideOffset = 7,
   accessibleLabel,
-  triggerId
+  triggerId,
+  class: className,
+  disabled,
+  hexLabel,
+  rgbaLabel,
+  hueLabel,
+  alphaLabel,
+  redLabel,
+  greenLabel,
+  blueLabel,
+  saturationBrightnessLabel,
+  formatLabel,
+  ...restProps
 } = defineProps<ColorPickerProps>()
+const forwarded = useForwardProps(restProps)
 
 const modelValue = defineModel<string>({ default: '#000000' })
 
@@ -81,13 +95,13 @@ const isOpen = ref(false)
         <button
           :id="triggerId"
           type="button"
-          :disabled="$props.disabled"
+          :disabled
           :aria-label="accessibleLabel"
           :class="
             cn(
               'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
               isOpen && 'border-border',
-              $props.class
+              className
             )
           "
         >
@@ -126,23 +140,24 @@ const isOpen = ref(false)
       </slot>
     </PopoverTrigger>
     <PopoverContent
+      v-bind="forwarded"
       :align
-      :side-offset="7"
+      :side-offset
       class="w-auto border-0 bg-transparent p-0 shadow-none"
     >
       <ColorPickerPanel
         v-model:hsva="hsva"
         v-model:display-mode="displayMode"
         :alpha
-        :hex-label="$props.hexLabel"
-        :rgba-label="$props.rgbaLabel"
-        :hue-label="$props.hueLabel"
-        :alpha-label="$props.alphaLabel"
-        :red-label="$props.redLabel"
-        :green-label="$props.greenLabel"
-        :blue-label="$props.blueLabel"
-        :saturation-brightness-label="$props.saturationBrightnessLabel"
-        :format-label="$props.formatLabel"
+        :hex-label
+        :rgba-label
+        :hue-label
+        :alpha-label
+        :red-label
+        :green-label
+        :blue-label
+        :saturation-brightness-label
+        :format-label
       />
     </PopoverContent>
   </PopoverRoot>

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { useArgs } from 'storybook/preview-api'
 import { fn } from 'storybook/test'
-import { computed, onScopeDispose, provide, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -19,7 +19,6 @@ import {
 } from '@/stores/modelToNodeStore'
 import { CONTROL_OPTIONS, isControlOption } from '@/types/simplifiedWidget'
 import type { ControlOptions, SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { zeroUuid } from '@/utils/uuid'
 
 import NodeHeader from './components/NodeHeader.vue'
@@ -117,7 +116,6 @@ const meta: Meta<StoryArgs> = {
     return {
       components: { NodeHeader, SlotConnectionDot, WidgetGrid },
       setup() {
-        provide(UnifiedWidgetRowsKey, true)
         const store = useModelToNodeStore()
         const previousMappings = store.modelToNodeMap
         store.modelToNodeMap = {
@@ -341,7 +339,6 @@ export const OtherControlTypes: Story = {
       WidgetToggleSwitch
     },
     setup() {
-      provide(UnifiedWidgetRowsKey, true)
       const slider = ref(37)
       const gradient = ref(63)
       const color = ref('#E06CBD')

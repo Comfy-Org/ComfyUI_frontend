@@ -7,14 +7,15 @@ export interface HSVA {
   a: number
 }
 
-export interface ColorPickerProps {
+export interface ColorPickerOptions extends PopoverContentProps {
   triggerId?: string
-  align?: PopoverContentProps['align']
   class?: string
   disabled?: boolean
   alpha?: boolean
-  /** Defaults to the trigger's visible color value. */
   accessibleLabel?: string
+}
+
+export interface ColorPickerProps extends ColorPickerOptions {
   hexLabel: string
   rgbaLabel: string
   hueLabel: string

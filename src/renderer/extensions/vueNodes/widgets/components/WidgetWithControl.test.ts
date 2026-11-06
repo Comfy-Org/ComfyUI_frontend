@@ -10,7 +10,6 @@ import type {
   SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
@@ -49,7 +48,7 @@ const RenderedComponent = defineComponent({
     <div data-testid="rendered"
          :data-widget-name="widget?.name"
          :data-model-value="String(modelValue)">
-      <slot />
+      <slot name="between" />
     </div>
   `
 })
@@ -121,8 +120,7 @@ describe('WidgetWithControl', () => {
         global: {
           plugins: [
             createI18n({ legacy: false, locale: 'en', messages: { en } })
-          ],
-          provide: { [UnifiedWidgetRowsKey]: true }
+          ]
         }
       })
       const user = userEvent.setup()

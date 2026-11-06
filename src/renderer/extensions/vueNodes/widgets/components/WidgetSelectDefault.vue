@@ -24,10 +24,7 @@
           :class="
             cn(
               WidgetInputBaseClass,
-              'flex w-full min-w-0 items-center overflow-hidden',
-              unifiedRows
-                ? 'not-disabled:bg-transparent'
-                : !disabled && 'hover:bg-muted',
+              'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
               disabled && 'opacity-50',
               isInvalid && 'ring-1 ring-destructive'
@@ -48,23 +45,14 @@
               data-testid="widget-select-default-trigger"
               class="flex h-full min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none not-disabled:hover:bg-muted disabled:cursor-default"
             >
-              <span
-                :class="
-                  cn(
-                    'min-w-[4ch] flex-1 truncate px-2',
-                    unifiedRows ? 'text-right' : 'text-left'
-                  )
-                "
-              >
+              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
             </button>
           </ComboboxTrigger>
           <slot />
-          <template v-if="unifiedRows">
+          <template v-for="button in stepperButtons" :key="button.direction">
             <button
-              v-for="button in stepperButtons"
-              :key="button.direction"
               type="button"
               tabindex="-1"
               :aria-label="`${widgetLabel}: ${$t(button.labelKey)}`"
@@ -80,20 +68,6 @@
               <i :class="button.icon" aria-hidden="true" />
             </button>
           </template>
-          <button
-            v-else
-            type="button"
-            tabindex="-1"
-            aria-hidden="true"
-            :disabled
-            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(!isOpen)"
-          >
-            <i
-              class="icon-[lucide--chevron-down] bg-muted-foreground"
-              aria-hidden="true"
-            />
-          </button>
         </div>
       </ComboboxAnchor>
 
@@ -103,7 +77,7 @@
           data-testid="widget-select-default-overlay"
           position="popper"
           :side-offset="1"
-          :align="unifiedRows ? 'end' : 'start'"
+          align="end"
           :class="
             cn(
               'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
@@ -205,13 +179,12 @@ import {
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, inject, ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -234,7 +207,6 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 }
 
 const { widget, filenameSummary = false } = defineProps<Props>()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const inputId = useId()
 const widgetLabel = computed(() => widget.label || widget.name)
 
@@ -319,7 +291,7 @@ const dynamicOptions = computed(
 )
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const rowCursor = computed(() =>
-  unifiedRows && !disabled.value ? 'cursor-pointer' : undefined
+  !disabled.value ? 'cursor-pointer' : undefined
 )
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(

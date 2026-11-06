@@ -17,6 +17,7 @@ const flushPromises = () =>
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
+    isAssetBrowserEligible: vi.fn(() => true),
     shouldUseWidgetAssetPicker: vi.fn(() => true),
     isWidgetAssetPickerEnabled: vi.fn(() => true)
   }

@@ -5,8 +5,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'flex items-center gap-2 pr-2 pl-3',
-          unifiedRows && 'not-disabled:bg-transparent',
+          'flex items-center gap-2 pr-2 pl-3 not-disabled:bg-transparent',
           useWidgetHeight()
         )
       "
@@ -31,23 +30,12 @@
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
         }"
-        :class="
-          cn(
-            'h-auto shrink-0 bg-transparent hover:bg-transparent',
-            unifiedRows ? 'w-auto' : 'w-16'
-          )
-        "
+        class="h-auto w-auto shrink-0 bg-transparent hover:bg-transparent"
       >
         <NumberFieldInput
           :id="inputId"
           :aria-label="widget.name"
-          :class="
-            cn(
-              'text-xs',
-              unifiedRows &&
-                'field-sizing-content w-auto max-w-16 flex-none text-right'
-            )
-          "
+          class="field-sizing-content w-auto max-w-16 flex-none text-right text-xs"
         />
       </NumberField>
     </div>
@@ -55,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
@@ -63,7 +51,6 @@ import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldIn
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -82,7 +69,6 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const gradientStops = computed<ColorStop[]>(() => {
   const stops = widget.options?.gradient_stops

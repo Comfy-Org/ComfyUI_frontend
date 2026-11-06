@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -15,7 +14,6 @@ const { widgetId, name } = defineProps<{
 }>()
 
 const appModeStore = useAppModeStore()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
 function matchesThis([storedId]: LinearInput) {
@@ -30,12 +28,7 @@ function togglePromotion() {
 <template>
   <div
     v-if="enable"
-    :class="
-      cn(
-        'pointer-events-auto relative flex min-w-0 cursor-pointer gap-1',
-        !unifiedRows && 'col-span-2'
-      )
-    "
+    class="pointer-events-auto relative flex min-w-0 cursor-pointer gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -58,8 +51,7 @@ function togglePromotion() {
     <div
       :class="
         cn(
-          'pointer-events-none grid min-w-0 flex-1 items-stretch rounded-lg ring-primary',
-          unifiedRows ? 'grid-cols-1' : 'grid-cols-2',
+          'pointer-events-none grid min-w-0 flex-1 grid-cols-1 items-stretch rounded-lg ring-primary',
           isPromoted && 'ring-2'
         )
       "
