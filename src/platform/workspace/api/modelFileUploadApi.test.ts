@@ -163,6 +163,106 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     ])
   })
 
+  it.for([12, 2147483648])(
+    'uploads a %s-byte file with one PUT when resumable uploads are disabled',
+    async (size) => {
+      vi.spyOn(file, 'size', 'get').mockReturnValue(size)
+      const headers = {
+        ...SIGNED_HEADERS,
+        'x-goog-content-length-range': `0,${size}`
+      }
+      const calls = serverAnswers(
+        json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' }),
+        json(201, { ...started, headers }),
+        json(202, { task_id: TASK_ID, status: 'created' })
+      )
+      const { result } = upload()
+
+      const put = await storageRequest()
+      expect(put.headers).toEqual(headers)
+      expect(put.body).toBe(file)
+      put.finish(200)
+
+      await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+      expect(calls).toEqual([
+        {
+          route: '/assets/uploads',
+          method: 'POST',
+          body: {
+            filename: file.name,
+            size_bytes: size,
+            resumable: true,
+            tags
+          }
+        },
+        {
+          route: '/assets/uploads',
+          method: 'POST',
+          body: {
+            filename: file.name,
+            size_bytes: size,
+            resumable: false,
+            tags
+          }
+        },
+        {
+          route: `/assets/uploads/${UPLOAD_ID}/complete`,
+          method: 'POST',
+          body: { filename: file.name, tags }
+        }
+      ])
+    }
+  )
+
+  it('does not request a single PUT for a file over 2 GiB', async () => {
+    vi.spyOn(file, 'size', 'get').mockReturnValue(2147483649)
+    const calls = serverAnswers(
+      json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' })
+    )
+
+    await expect(upload().result).resolves.toMatchObject({
+      ok: false,
+      reason: 'failed'
+    })
+    expect(calls).toHaveLength(1)
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
+
+  it.for([
+    { code: 'FEATURE_DISABLED', expected: { ok: false, reason: 'failed' } },
+    {
+      code: 'PRIVATE_MODELS_DISABLED',
+      expected: { ok: false, reason: 'privateModelsDisabled' }
+    }
+  ])(
+    'stops when the single-PUT start also refuses $code',
+    async ({ code, expected }) => {
+      const calls = serverAnswers(
+        json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' }),
+        json(403, { code, message: 'not enabled' })
+      )
+
+      await expect(upload().result).resolves.toMatchObject(expected)
+      expect(calls).toHaveLength(2)
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
+
+  it('cancels while waiting for the single-PUT start', async () => {
+    serverAnswers(
+      json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' }),
+      'never'
+    )
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+
+    controller.abort()
+
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
+
   it.for([
     {
       refusal: 'the file type',
