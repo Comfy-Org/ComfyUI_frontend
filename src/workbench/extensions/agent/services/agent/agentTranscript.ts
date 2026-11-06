@@ -450,7 +450,7 @@ function resolvedAskIndex(
   afterToolCalls: number | undefined,
   rowStart: number
 ): number {
-  const after = Math.min(afterToolCalls ?? rowCallIds.length, rowCallIds.length)
+  const after = afterToolCalls ?? rowCallIds.length
   const next = after < rowCallIds.length ? rowCallIds[after] : undefined
   const index = parts.findIndex((part, i) =>
     next === undefined
@@ -468,19 +468,19 @@ function insertResolvedAsks(
 ): Set<string> {
   const inserted = new Set<string>()
   if (!Array.isArray(raw)) return inserted
+  const parts = [...message.parts]
   for (const entry of raw) {
     const ask = zAgentResolvedAsk.safeParse(entry).data
     const part = ask && toResolvedAskPart(ask)
     if (!part) continue
-    const parts = [...message.parts]
     parts.splice(
       resolvedAskIndex(parts, rowCallIds, ask.after_tool_calls, rowStart),
       0,
       part
     )
-    message.parts = parts
     inserted.add(part.askId)
   }
+  message.parts = parts
   return inserted
 }
 

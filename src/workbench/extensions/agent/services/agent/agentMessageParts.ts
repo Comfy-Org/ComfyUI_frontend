@@ -383,12 +383,17 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
     : undefined
 }
 
+export function isSettleableAskPart(
+  part: MessagePart | undefined
+): part is AskUserPart | DeleteApprovalPart {
+  return part?.type === 'askUser' || part?.type === 'deleteApproval'
+}
+
 export function toResolvedAskPart(
   ask: AgentResolvedAsk
 ): AskUserPart | DeleteApprovalPart | undefined {
   const part = toAskPart(ask)
-  if (part?.type !== 'askUser' && part?.type !== 'deleteApproval')
-    return undefined
+  if (!isSettleableAskPart(part)) return undefined
   return {
     ...part,
     resolution: toAskResolution({

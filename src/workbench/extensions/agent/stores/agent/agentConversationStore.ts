@@ -31,6 +31,7 @@ import {
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
+  isSettleableAskPart,
   retireAskParts,
   settleResolution
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -356,14 +357,13 @@ function keepStrongerAskResolutions(
 ): AssistantMessage['parts'] {
   const local = new Map(
     localParts.flatMap((part) =>
-      (part.type === 'askUser' || part.type === 'deleteApproval') &&
-      part.resolution
+      isSettleableAskPart(part) && part.resolution
         ? [[part.askId, part.resolution] as const]
         : []
     )
   )
   return persistedParts.map((part) => {
-    if (part.type !== 'askUser' && part.type !== 'deleteApproval') return part
+    if (!isSettleableAskPart(part)) return part
     const shown = local.get(part.askId)
     if (!shown || !part.resolution) return part
     return { ...part, resolution: settleResolution(part.resolution, shown) }

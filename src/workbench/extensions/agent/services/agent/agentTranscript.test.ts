@@ -864,7 +864,7 @@ describe('normalizeAgentTranscript', () => {
       ])
 
       expect(shape(history)).toEqual(['call-1', 'call-2', 'askUser', 'text'])
-      expect(shape(finished('not a list'))).toEqual([
+      expect(shape(finished({ not: 'a list' }))).toEqual([
         'call-1',
         'call-2',
         'text'
