@@ -161,29 +161,53 @@ function readResumableAnswer(
   return { ok: false, reason: 'failed', cause: `storage ${status}` }
 }
 
+interface TransferPosition {
+  offset: number
+  query: boolean
+  delay: number
+}
+
+async function sendPiece(
+  start: ReturnType<typeof zStartModelUploadResponse.parse>,
+  file: File,
+  options: ModelFileUploadOptions,
+  { offset, query }: TransferPosition
+): Promise<ResumableAnswer> {
+  const chunkSize = Number(start.chunk_size_bytes ?? 64 * 1024 * 1024)
+  if (!Number.isSafeInteger(chunkSize) || chunkSize <= 0) {
+    return { ok: false, reason: 'failed', cause: 'invalid upload piece size' }
+  }
+  const end = Math.min(offset + chunkSize, file.size)
+  if (!query) options.onReconnecting?.(false)
+  const answer = await putFile(
+    start,
+    query ? null : file.slice(offset, end),
+    { ...options, onProgress: (sent) => options.onProgress(offset + sent) },
+    query ? `bytes */${file.size}` : `bytes ${offset}-${end - 1}/${file.size}`
+  )
+  return 'status' in answer ? readResumableAnswer(answer, file.size) : answer
+}
+
+function nextPosition(
+  previous: TransferPosition,
+  next: number,
+  size: number
+): TransferPosition {
+  return {
+    offset: next,
+    query: next >= size || (!previous.query && next <= previous.offset),
+    delay: next > previous.offset ? 1000 : previous.delay
+  }
+}
+
 async function putResumable(
   start: ReturnType<typeof zStartModelUploadResponse.parse>,
   file: File,
   options: ModelFileUploadOptions
 ): Promise<ModelFileUploadStopped | undefined> {
-  const chunkSize = Number(start.chunk_size_bytes ?? 64 * 1024 * 1024)
-  if (!Number.isSafeInteger(chunkSize) || chunkSize <= 0) {
-    return { ok: false, reason: 'failed', cause: 'invalid upload piece size' }
-  }
-  let offset = 0
-  let query = false
-  let delay = 1000
+  let position: TransferPosition = { offset: 0, query: false, delay: 1000 }
   while (!options.signal.aborted) {
-    const end = Math.min(offset + chunkSize, file.size)
-    if (!query) options.onReconnecting?.(false)
-    const answer = await putFile(
-      start,
-      query ? null : file.slice(offset, end),
-      { ...options, onProgress: (sent) => options.onProgress(offset + sent) },
-      query ? `bytes */${file.size}` : `bytes ${offset}-${end - 1}/${file.size}`
-    )
-    if (!('status' in answer)) return answer
-    const outcome = readResumableAnswer(answer, file.size)
+    const outcome = await sendPiece(start, file, options, position)
     if ('ok' in outcome) return outcome
     if (outcome.status === 'complete') {
       options.onProgress(file.size)
@@ -191,20 +215,17 @@ async function putResumable(
       return undefined
     }
     if (outcome.status === 'held') {
-      const next = outcome.bytes
-      const canSend = next < file.size && (query || next > offset)
-      if (next > offset) delay = 1000
-      offset = next
-      options.onProgress(offset)
-      if (canSend) {
-        query = false
-        continue
-      }
+      position = nextPosition(position, outcome.bytes, file.size)
+      options.onProgress(position.offset)
+      if (!position.query) continue
     }
-    query = true
     options.onReconnecting?.(true)
-    if (!(await retryWait(delay, options.signal))) break
-    delay = Math.min(delay * 2, 60_000)
+    if (!(await retryWait(position.delay, options.signal))) break
+    position = {
+      ...position,
+      query: true,
+      delay: Math.min(position.delay * 2, 60_000)
+    }
   }
   return { ok: false, reason: 'cancelled' }
 }
