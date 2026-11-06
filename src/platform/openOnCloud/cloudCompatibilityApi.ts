@@ -12,42 +12,43 @@ type PromptNode = Awaited<
   ReturnType<typeof app.graphToPrompt>
 >['output'][string]
 
-function collectModels(nodes: PromptNode[]) {
+type CloudModel = { folder: string; name: string }
+
+/** Model inputs per loader node type, so the graph is walked once. */
+function modelInputsByNodeType() {
   const store = useModelToNodeStore()
   store.registerDefaults()
-  const models = new Map<string, { folder: string; name: string }>()
+  const inputs = new Map<string, [folder: string, key: string | RegExp][]>()
   for (const [folder, providers] of Object.entries(store.modelToNodeMap)) {
-    for (const provider of providers ?? []) {
-      const names = modelNames(nodes, provider.nodeDef.name, provider.key)
-      for (const name of names) {
-        models.set(JSON.stringify([folder, name]), { folder, name })
+    for (const { nodeDef, key } of providers ?? []) {
+      const entries = inputs.get(nodeDef.name) ?? []
+      inputs.set(nodeDef.name, [...entries, [folder, key]])
+    }
+  }
+  return inputs
+}
+
+function collectModels(nodes: PromptNode[]): CloudModel[] {
+  const inputsByType = modelInputsByNodeType()
+  const models = new Map<string, CloudModel>()
+  for (const node of nodes) {
+    for (const [folder, key] of inputsByType.get(node.class_type) ?? []) {
+      for (const [input, name] of Object.entries(node.inputs)) {
+        if (typeof name === 'string' && matchesWidgetName(input, key))
+          models.set(JSON.stringify([folder, name]), { folder, name })
       }
     }
   }
   return [...models.values()]
 }
 
-function modelNames(
-  nodes: PromptNode[],
-  nodeType: string,
-  key: string | RegExp
-) {
-  return nodes
-    .filter((node) => node.class_type === nodeType)
-    .flatMap((node) =>
-      Object.entries(node.inputs).flatMap(([input, value]) =>
-        typeof value === 'string' && matchesWidgetName(input, key)
-          ? [value]
-          : []
-      )
-    )
-}
-
 async function postCompatibilityCheck(): Promise<Response> {
-  const { output } = await app.graphToPrompt()
+  const [{ output }, auth] = await Promise.all([
+    app.graphToPrompt(),
+    useAuthStore().getAuthHeader()
+  ])
   const nodes = Object.values(output)
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-  const auth = await useAuthStore().getAuthHeader()
   return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...auth },
