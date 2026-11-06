@@ -557,6 +557,39 @@ export const useWorkflowService = () => {
       }
     })
 
+  const loadWorkflowState = (
+    workflow: ComfyWorkflow,
+    options: { keepSavedBaseline?: boolean },
+    skipAssetScans: boolean,
+    navigationIntentId: number
+  ) => {
+    const load = () =>
+      useApp().loadGraphData(
+        toRaw(workflow.activeState) as ComfyWorkflowJSON,
+        true,
+        true,
+        workflow,
+        {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans,
+          workflowNavigationId: navigationIntentId
+        }
+      )
+    return options.keepSavedBaseline && workflow.isModified
+      ? keepingSavedBaseline(workflow, load)
+      : load()
+  }
+
+  const completeActivation = (
+    workflow: ComfyWorkflow,
+    initiator: 'user' | undefined,
+    silent: boolean
+  ) => {
+    showPendingWarnings(undefined, { silent })
+    if (initiator === 'user') workflowStore.reportUserActivation(workflow)
+  }
+
   /**
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
@@ -610,9 +643,7 @@ export const useWorkflowService = () => {
             navigationIntentId
           ))
         ) {
-          showPendingWarnings(undefined, { silent: true })
-          if (options.initiator === 'user')
-            workflowStore.reportUserActivation(workflow)
+          completeActivation(workflow, options.initiator, true)
           return true
         }
 
@@ -628,34 +659,20 @@ export const useWorkflowService = () => {
         }
 
         workflow.changeTracker?.prepareForSave()
-        const load = () =>
-          useApp().loadGraphData(
-            toRaw(workflow.activeState) as ComfyWorkflowJSON,
-            true,
-            true,
-            workflow,
-            {
-              checkForRerouteMigration: false,
-              deferWarnings: true,
-              skipAssetScans: !loadFromRemote && !options.force,
-              workflowNavigationId: navigationIntentId
-            }
-          )
-        const loaded =
-          options.keepSavedBaseline && workflow.isModified
-            ? await keepingSavedBaseline(workflow, load)
-            : await load()
+        const reusesScans = !loadFromRemote && !options.force
+        const loaded = await loadWorkflowState(
+          workflow,
+          options,
+          reusesScans,
+          navigationIntentId
+        )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
           return false
         }
         dismissUnreadableWorkflowToast(workflow)
-        showPendingWarnings(undefined, {
-          silent: !loadFromRemote && !options.force
-        })
-        if (options.initiator === 'user')
-          workflowStore.reportUserActivation(workflow)
+        completeActivation(workflow, options.initiator, reusesScans)
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
