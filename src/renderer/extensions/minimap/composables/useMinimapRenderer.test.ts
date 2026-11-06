@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref, shallowRef } from 'vue'
-import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/useMinimapRenderer'
@@ -34,7 +33,7 @@ describe('useMinimapRenderer', () => {
 
   it('should initialize with full redraw needed', () => {
     const canvasRef = shallowRef<HTMLCanvasElement | null>(mockCanvas)
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(mockGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -69,7 +68,7 @@ describe('useMinimapRenderer', () => {
   it('should handle empty graph with fast path', () => {
     const emptyGraph = { _nodes: [] } as Partial<LGraph> as LGraph
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(emptyGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(emptyGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -105,7 +104,7 @@ describe('useMinimapRenderer', () => {
 
   it('should only render when redraw is needed', () => {
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(mockGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -133,15 +132,12 @@ describe('useMinimapRenderer', () => {
       200
     )
 
-    // First render (needsFullRedraw is true by default)
     renderer.renderMinimap()
     expect(renderMinimapToCanvas).toHaveBeenCalledTimes(1)
 
-    // Second render without changes (should not render)
     renderer.renderMinimap()
     expect(renderMinimapToCanvas).toHaveBeenCalledTimes(1)
 
-    // Set update flag and render again
     updateFlagsRef.value.nodes = true
     renderer.renderMinimap()
     expect(renderMinimapToCanvas).toHaveBeenCalledTimes(2)
@@ -152,7 +148,7 @@ describe('useMinimapRenderer', () => {
     const updateViewport = vi.fn()
 
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(mockGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -185,13 +181,13 @@ describe('useMinimapRenderer', () => {
     expect(updateBounds).toHaveBeenCalled()
     expect(updateViewport).toHaveBeenCalled()
     expect(updateFlagsRef.value.bounds).toBe(false)
-    expect(renderer.needsFullRedraw.value).toBe(false) // After rendering, needsFullRedraw is reset to false
-    expect(updateFlagsRef.value.viewport).toBe(false) // After updating viewport, this is reset to false
+    expect(renderer.needsFullRedraw.value).toBe(false)
+    expect(updateFlagsRef.value.viewport).toBe(false)
   })
 
   it('should force full redraw when requested', () => {
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(mockGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -230,7 +226,7 @@ describe('useMinimapRenderer', () => {
 
   it('should handle null canvas gracefully', () => {
     const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphRef = shallowRef(mockGraph)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -258,7 +254,6 @@ describe('useMinimapRenderer', () => {
       200
     )
 
-    // Should not throw
     expect(() => renderer.renderMinimap()).not.toThrow()
     expect(mockCanvas.getContext).not.toHaveBeenCalled()
   })

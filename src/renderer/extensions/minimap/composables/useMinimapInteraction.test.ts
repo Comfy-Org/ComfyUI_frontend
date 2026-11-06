@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 import { useMinimapInteraction } from '@/renderer/extensions/minimap/composables/useMinimapInteraction'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
@@ -35,7 +34,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -60,7 +59,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -88,7 +87,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -116,7 +115,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -128,7 +127,6 @@ describe('useMinimapInteraction', () => {
       canvasRef
     )
 
-    // Start dragging
     interaction.handlePointerDown(
       new PointerEvent('pointerdown', {
         clientX: 150,
@@ -136,7 +134,6 @@ describe('useMinimapInteraction', () => {
       })
     )
 
-    // Move pointer
     const moveEvent = new PointerEvent('pointermove', {
       clientX: 200,
       clientY: 150
@@ -144,16 +141,14 @@ describe('useMinimapInteraction', () => {
 
     interaction.handlePointerMove(moveEvent)
 
-    // Should calculate world coordinates and center view
-    expect(centerViewOnMock).toHaveBeenCalledTimes(2) // Once on down, once on move
+    expect(centerViewOnMock).toHaveBeenCalledTimes(2)
 
-    // Calculate expected world coordinates
-    const x = 200 - 100 // clientX - containerLeft
-    const y = 150 - 50 // clientY - containerTop
-    const offsetX = (250 - 500 * 0.5) / 2 // (width - bounds.width * scale) / 2
-    const offsetY = (200 - 400 * 0.5) / 2 // (height - bounds.height * scale) / 2
-    const worldX = (x - offsetX) / 0.5 + 0 // (x - offsetX) / scale + bounds.minX
-    const worldY = (y - offsetY) / 0.5 + 0 // (y - offsetY) / scale + bounds.minY
+    const x = 200 - 100
+    const y = 150 - 50
+    const offsetX = (250 - 500 * 0.5) / 2
+    const offsetY = (200 - 400 * 0.5) / 2
+    const worldX = (x - offsetX) / 0.5 + 0
+    const worldY = (y - offsetY) / 0.5 + 0
 
     expect(centerViewOnMock).toHaveBeenLastCalledWith(worldX, worldY)
   })
@@ -162,7 +157,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -188,7 +183,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -200,7 +195,6 @@ describe('useMinimapInteraction', () => {
       canvasRef
     )
 
-    // Start dragging
     interaction.handlePointerDown(
       new PointerEvent('pointerdown', {
         clientX: 150,
@@ -219,7 +213,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -240,7 +234,6 @@ describe('useMinimapInteraction', () => {
 
     interaction.handleWheel(wheelEvent)
 
-    // Should update canvas scale (zoom in)
     expect(mockCanvas.ds.scale).toBeCloseTo(1.1)
     expect(centerViewOnMock).toHaveBeenCalled()
   })
@@ -249,7 +242,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -261,11 +254,10 @@ describe('useMinimapInteraction', () => {
       canvasRef
     )
 
-    // Set scale close to minimum
     mockCanvas.ds.scale = 0.11
 
     const wheelEvent = new WheelEvent('wheel', {
-      deltaY: 100, // Zoom out
+      deltaY: 100,
       clientX: 200,
       clientY: 150
     })
@@ -273,7 +265,6 @@ describe('useMinimapInteraction', () => {
 
     interaction.handleWheel(wheelEvent)
 
-    // Should not go below minimum scale
     expect(mockCanvas.ds.scale).toBe(0.11)
     expect(centerViewOnMock).not.toHaveBeenCalled()
   })
@@ -282,7 +273,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref<HTMLDivElement | null>(null)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef(mockCanvas)
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -294,18 +285,17 @@ describe('useMinimapInteraction', () => {
       canvasRef
     )
 
-    // Should not throw
     expect(() => interaction.updateContainerRect()).not.toThrow()
     expect(() =>
       interaction.handlePointerDown(new PointerEvent('pointerdown'))
     ).not.toThrow()
   })
 
-  it('should handle null canvas gracefully', () => {
+  it('should handle an absent canvas gracefully', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(null) as Ref<MinimapCanvas | null>
+    const canvasRef = shallowRef<MinimapCanvas>()
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -317,7 +307,6 @@ describe('useMinimapInteraction', () => {
       canvasRef
     )
 
-    // Should not throw
     expect(() =>
       interaction.handlePointerMove(new PointerEvent('pointermove'))
     ).not.toThrow()

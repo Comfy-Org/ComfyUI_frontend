@@ -16,8 +16,8 @@ import type {
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(
-  canvas: Ref<MinimapCanvas | null>,
-  graph: Ref<LGraph | null>,
+  canvas: Readonly<Ref<MinimapCanvas | undefined>>,
+  graph: Readonly<Ref<LGraph | undefined>>,
   width: number,
   height: number
 ) {

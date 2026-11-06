@@ -127,15 +127,12 @@ function computeLinkDigest(graph: LGraph): number {
 }
 
 export function useMinimapGraph(
-  graph: Ref<LGraph | null>,
+  graph: Readonly<Ref<LGraph | undefined>>,
   onGraphChanged: () => void
 ) {
-  // Null rather than a numeric sentinel: 0 is a digest these functions produce
-  // for an empty graph, so a numeric "no baseline" would be indistinguishable
-  // from a real first reading.
-  let geometryDigest: number | null = null
-  let visualDigest: number | null = null
-  let linkDigest: number | null = null
+  let geometryDigest: number | undefined
+  let visualDigest: number | undefined
+  let linkDigest: number | undefined
   const updateFlags = ref<UpdateFlags>({
     bounds: false,
     nodes: false,
@@ -143,8 +140,6 @@ export function useMinimapGraph(
     viewport: false
   })
 
-  // Cleanup restores originals only when our wrapper is still on top, and
-  // marks any buried wrapper inert via `entry.live` so it can't fire dead work.
   interface InstalledHooks {
     originals: GraphCallbacks
     wrappers: GraphCallbacks
@@ -172,9 +167,6 @@ export function useMinimapGraph(
       void handleGraphChangedThrottled()
     }
 
-    // A reload of the same workflow leaves the node count and every geometry
-    // string identical, so change detection alone cannot tell that `bounds` was
-    // last derived mid-configure, from a partially built graph.
     const onConfigured = () => {
       clearCache()
       void handleGraphChangedThrottled()
@@ -251,8 +243,6 @@ export function useMinimapGraph(
     visualDigest = visual
     linkDigest = links
 
-    // Only geometry moves the graph's extent; a recolour, group drag or
-    // execution transition repaints without recomputing bounds.
     if (geometryChanged) {
       updateFlags.value.bounds = true
     }
@@ -278,9 +268,9 @@ export function useMinimapGraph(
   }
 
   const clearCache = () => {
-    geometryDigest = null
-    visualDigest = null
-    linkDigest = null
+    geometryDigest = undefined
+    visualDigest = undefined
+    linkDigest = undefined
   }
 
   return {

@@ -6537,52 +6537,27 @@
   },
   "src/renderer/extensions/minimap/composables/useMinimap.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapGraph.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 36
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapGraph.ts": {
-    "typescript/no-restricted-types": {
       "count": 4
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapInteraction.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 11
+      "count": 1
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapInteraction.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 1
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapRenderer.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 2
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapRenderer.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapViewport.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 22
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapViewport.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/minimap/data/MinimapDataSource.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
+      "count": 1
     }
   },
   "src/renderer/extensions/minimap/minimapCanvasRenderer.ts": {
@@ -6592,7 +6567,7 @@
   },
   "src/renderer/extensions/minimap/types.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 1
     }
   },
   "src/renderer/extensions/painter/components/WidgetPainter.test.ts": {

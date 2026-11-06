@@ -13,7 +13,7 @@ import type {
 
 export function useMinimapRenderer(
   canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,
-  graph: Ref<LGraph | null>,
+  graph: Readonly<Ref<LGraph | undefined>>,
   bounds: Ref<MinBounds>,
   scale: Ref<number>,
   updateFlags: Ref<UpdateFlags>,

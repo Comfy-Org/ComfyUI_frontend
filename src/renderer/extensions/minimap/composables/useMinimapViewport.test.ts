@@ -1,7 +1,6 @@
 import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { shallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -54,8 +53,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should initialize with default bounds', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -83,8 +82,8 @@ describe('useMinimapViewport', () => {
 
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -100,10 +99,10 @@ describe('useMinimapViewport', () => {
   it('should handle empty graph', () => {
     vi.mocked(calculateNodeBounds).mockReturnValue(null)
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref({
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef({
       _nodes: []
-    } as Partial<LGraph> as LGraph) as Ref<LGraph | null>
+    } as Partial<LGraph> as LGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -120,8 +119,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should update canvas dimensions', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -146,39 +145,33 @@ describe('useMinimapViewport', () => {
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
     vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
-    // Set canvas transform
     mockCanvas.ds.scale = 2
     mockCanvas.ds.offset = [-100, -50]
 
-    // Update bounds and viewport
     viewport.updateBounds()
     viewport.updateCanvasDimensions()
     viewport.updateViewport()
 
     const transform = viewport.viewportTransform.value
 
-    // World coordinates
-    const worldX = -(-100) // -offset[0] = 100
-    const worldY = -(-50) // -offset[1] = 50
+    const worldX = -(-100)
+    const worldY = -(-50)
 
-    // Viewport size in world coordinates
-    const viewportWidth = 800 / 2 // canvasWidth / scale = 400
-    const viewportHeight = 600 / 2 // canvasHeight / scale = 300
+    const viewportWidth = 800 / 2
+    const viewportHeight = 600 / 2
 
-    // Center offsets
-    const centerOffsetX = (250 - 500 * 0.5) / 2 // (250 - 250) / 2 = 0
-    const centerOffsetY = (200 - 400 * 0.5) / 2 // (200 - 200) / 2 = 0
+    const centerOffsetX = (250 - 500 * 0.5) / 2
+    const centerOffsetY = (200 - 400 * 0.5) / 2
 
-    // Expected values based on implementation: (worldX - bounds.minX) * scale + centerOffsetX
-    expect(transform.x).toBeCloseTo((worldX - 0) * 0.5 + centerOffsetX) // (100 - 0) * 0.5 + 0 = 50
-    expect(transform.y).toBeCloseTo((worldY - 0) * 0.5 + centerOffsetY) // (50 - 0) * 0.5 + 0 = 25
-    expect(transform.width).toBeCloseTo(viewportWidth * 0.5) // 400 * 0.5 = 200
-    expect(transform.height).toBeCloseTo(viewportHeight * 0.5) // 300 * 0.5 = 150
+    expect(transform.x).toBeCloseTo((worldX - 0) * 0.5 + centerOffsetX)
+    expect(transform.y).toBeCloseTo((worldY - 0) * 0.5 + centerOffsetY)
+    expect(transform.width).toBeCloseTo(viewportWidth * 0.5)
+    expect(transform.height).toBeCloseTo(viewportHeight * 0.5)
   })
 
   it('should maintain strict reference equality for viewportTransform when canvas state is unchanged', () => {
@@ -194,8 +187,8 @@ describe('useMinimapViewport', () => {
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
     vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -222,8 +215,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should center view on world coordinates', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -232,9 +225,8 @@ describe('useMinimapViewport', () => {
 
     viewport.centerViewOn(300, 200)
 
-    // Should update canvas offset to center on the given world coordinates
-    const expectedOffsetX = -(300 - 800 / 2 / 2) // -(worldX - viewportWidth/2)
-    const expectedOffsetY = -(200 - 600 / 2 / 2) // -(worldY - viewportHeight/2)
+    const expectedOffsetX = -(300 - 800 / 2 / 2)
+    const expectedOffsetY = -(200 - 600 / 2 / 2)
 
     expect(mockCanvas.ds.offset[0]).toBe(expectedOffsetX)
     expect(mockCanvas.ds.offset[1]).toBe(expectedOffsetY)
@@ -250,8 +242,8 @@ describe('useMinimapViewport', () => {
       pause: stopSyncMock
     })
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -262,13 +254,12 @@ describe('useMinimapViewport', () => {
     expect(stopSyncMock).toHaveBeenCalled()
   })
 
-  it('should handle null canvas gracefully', () => {
-    const canvasRef = ref(null) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+  it('should handle an absent canvas gracefully', () => {
+    const canvasRef = shallowRef<MinimapCanvas>()
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
-    // Should not throw
     expect(() => viewport.updateCanvasDimensions()).not.toThrow()
     expect(() => viewport.updateViewport()).not.toThrow()
     expect(() => viewport.centerViewOn(100, 100)).not.toThrow()
@@ -288,8 +279,8 @@ describe('useMinimapViewport', () => {
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
     vi.mocked(calculateMinimapScale).mockReturnValue(0.4)
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -306,14 +297,13 @@ describe('useMinimapViewport', () => {
       configurable: true
     })
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const canvasRef = shallowRef(mockCanvas)
+    const graphRef = shallowRef(mockGraph)
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
     viewport.updateCanvasDimensions()
 
-    // Should use client dimensions or calculate from canvas dimensions / dpr
     expect(viewport.canvasDimensions.value.width).toBe(800)
     expect(viewport.canvasDimensions.value.height).toBe(600)
 

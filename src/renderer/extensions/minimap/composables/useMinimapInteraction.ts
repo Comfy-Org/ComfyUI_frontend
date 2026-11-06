@@ -11,7 +11,7 @@ export function useMinimapInteraction(
   width: number,
   height: number,
   centerViewOn: (worldX: number, worldY: number) => void,
-  canvas: Ref<MinimapCanvas | null>
+  canvas: Readonly<Ref<MinimapCanvas | undefined>>
 ) {
   const isDragging = ref(false)
   const containerRect = ref({
