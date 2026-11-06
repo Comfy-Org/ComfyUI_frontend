@@ -2,6 +2,9 @@
 
 The suite uses a real local ComfyUI backend and a deployed Cloud test or PR environment. Every compatibility response comes from the configured Cloud origin. The fixture permits the app's required external services and retains the shared network guard. It installs no response replacements, auth stubs, or workflow scenario switches.
 
+> [!NOTE]
+> The specs below land with the Open on Cloud feature PRs: `openOnCloud.spec.ts` in #23071, `openOnCloudLogin.spec.ts` in #23074 and `desktopWorkflowRelay.spec.ts` in #23075. Until those merge, the suites are unavailable on `main`.
+
 ## Prerequisites
 
 - Start a local ComfyUI backend.
