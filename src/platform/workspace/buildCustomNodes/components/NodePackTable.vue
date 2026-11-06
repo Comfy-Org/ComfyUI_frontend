@@ -1,5 +1,5 @@
 <template>
-  <Table class="max-h-[min(30rem,55dvh)] border-border">
+  <Table class="h-[min(30rem,55dvh)] border-border">
     <colgroup>
       <col />
       <col class="w-[18%]" />

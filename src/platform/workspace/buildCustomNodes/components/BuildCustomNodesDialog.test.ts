@@ -324,7 +324,7 @@ describe('BuildCustomNodesDialog', () => {
     await poll()
     expect(onDone).toHaveBeenCalled()
     expect(useToast().toasts.map((toast) => toast.title)).toContain(
-      'production now runs Studio Build v4'
+      'Now running Studio Build v4 on production'
     )
   })
 

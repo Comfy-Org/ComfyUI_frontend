@@ -104,6 +104,6 @@ const barPercent = computed(() =>
 const elapsedMinutes = computed(() =>
   startedAt === null
     ? null
-    : Math.floor((now.value.getTime() - startedAt) / MINUTE_MS)
+    : Math.max(0, Math.floor((now.value.getTime() - startedAt) / MINUTE_MS))
 )
 </script>
