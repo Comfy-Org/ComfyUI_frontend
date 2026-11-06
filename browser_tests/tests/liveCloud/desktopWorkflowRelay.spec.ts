@@ -57,7 +57,7 @@ test.describe(
       })
     })
 
-    for (const relayState of ['missing'] as const) {
+    for (const relayState of ['missing', 'expired'] as const) {
       test.describe(`${relayState} local transfer`, () => {
         test.use({ relayState })
 
