@@ -48,10 +48,6 @@
         />
       </div>
 
-      <p v-else-if="statusLine" role="status" class="m-0">
-        {{ statusLine }}
-      </p>
-
       <div v-else-if="state.status === 'done'" class="flex flex-col gap-2">
         <p class="m-0 font-bold text-foreground">
           {{ $t('assetBrowser.modelUploaded') }}
@@ -60,6 +56,16 @@
           {{ $t('assetBrowser.findInLibrary', { type: modelTypeLabel }) }}
         </p>
       </div>
+
+      <p v-if="state.status === 'uploading' && statusLine" class="m-0">
+        {{ statusLine }}
+      </p>
+      <p
+        role="status"
+        :class="cn('m-0', (state.status === 'uploading' || !statusLine) && 'sr-only')"
+      >
+        {{ state.status === 'uploading' ? '' : statusLine }}
+      </p>
     </div>
 
     <div class="flex w-full shrink-0 justify-end gap-2">
@@ -127,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -134,10 +141,7 @@ import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { ModelFileUpload } from '@/platform/workspace/composables/useUploadModelFile'
-import {
-  formatDuration,
-  formatSize
-} from '@comfyorg/shared-frontend-utils/formatUtil'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const { state, folders } = defineProps<{
   state: Exclude<ModelFileUpload, { status: 'idle' }>
@@ -153,7 +157,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { modelTypes, isLoading } = useModelTypes()
 
 const isTransferring = computed(
@@ -181,8 +185,8 @@ const statusLine = computed(() => {
   ) {
     return t('assetBrowser.fileUpload.transferEstimate', {
       rate: formatSize(Math.max(1, Math.round(state.bytesPerSecond))),
-      time: formatDuration(
-        Math.ceil((state.file.size - state.sent) / state.bytesPerSecond) * 1000
+      time: formatTimeLeft(
+        Math.ceil((state.file.size - state.sent) / state.bytesPerSecond)
       )
     })
   }
@@ -190,6 +194,24 @@ const statusLine = computed(() => {
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   return undefined
 })
+
+function formatTimeLeft(seconds: number) {
+  const units = [
+    { unit: 'hour', count: Math.floor(seconds / 3600) },
+    { unit: 'minute', count: Math.floor((seconds % 3600) / 60) },
+    { unit: 'second', count: seconds % 60 }
+  ]
+  return units
+    .filter(({ unit, count }) => count > 0 || (unit === 'second' && seconds === 0))
+    .map(({ unit, count }) =>
+      new Intl.NumberFormat(locale.value, {
+        style: 'unit',
+        unit,
+        unitDisplay: 'narrow'
+      }).format(count)
+    )
+    .join(' ')
+}
 
 const progressAttrs = computed(() =>
   isTransferring.value
