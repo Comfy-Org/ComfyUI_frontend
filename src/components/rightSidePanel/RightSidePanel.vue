@@ -61,7 +61,8 @@ const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
+const { hasAnyError, hasMissingError, allErrorExecutionIds } =
+  storeToRefs(executionErrorStore)
 
 const activeMissingNodeGraphIds = computed<Set<string>>(() => {
   if (!app.isGraphReady) return new Set()
@@ -244,7 +245,9 @@ const tabs = computed<RightSidePanelTabList>(() => {
               t(
                 hasBlockingError.value
                   ? 'rightSidePanel.severityErrorLabel'
-                  : 'rightSidePanel.severitySetupLabel'
+                  : hasMissingError.value
+                    ? 'rightSidePanel.severitySetupLabel'
+                    : 'rightSidePanel.severityWarningLabel'
               )
           }
         : undefined

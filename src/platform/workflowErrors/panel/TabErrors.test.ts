@@ -116,11 +116,16 @@ describe('TabErrors.vue', () => {
               'Resolve errors before running the workflow',
             setupRequired: 'Setup required',
             finishSetupBeforeRun: 'Finish setup before running the workflow',
+            warningsDetected: 'Warning detected | Warnings detected',
+            warningsFromRun: 'Nodes reported warnings during the run',
             severityCountsStatus: '{errors} blocking, {setup} setup required',
+            severityCountsWarningsStatus:
+              '{errors} blocking, {setup} warning | {errors} blocking, {setup} warnings',
             errorsFilter: '{count} Error | {count} Errors',
             errorsFilterActive:
               '{count} Error detected | {count} Errors detected',
             setupFilter: '{count} Setup required',
+            warningsFilter: '{count} Warning | {count} Warnings',
             setupSummary: '{count} item | {count} items',
             setupNodeSummary:
               '{nodes} node — {count} item | {nodes} node — {count} items',
@@ -131,6 +136,7 @@ describe('TabErrors.vue', () => {
             blockedLastRun: 'Blocked last run',
             severityErrorLabel: 'Blocking errors',
             severitySetupLabel: 'Setup required',
+            severityWarningLabel: 'Warnings',
             expand: 'Expand',
             collapse: 'Collapse',
             errorHelp: 'Error help',
@@ -213,6 +219,13 @@ describe('TabErrors.vue', () => {
       }
     })
     return { user }
+  }
+
+  function seedNodeWarning(pinia: Pinia, nodeId = '1') {
+    const store = useExecutionErrorStore(pinia)
+    const key = store.captureRunErrorKey()
+    if (key === null) throw new Error('Expected an active run error key')
+    store.recordNodeWarning(nodeId, 'Falling back to CPU', key)
   }
 
   function renderRightSidePanel(seed: (pinia: Pinia) => void) {
@@ -1607,6 +1620,45 @@ describe('TabErrors.vue', () => {
 
     const icon = screen.getByTestId('panel-tab-icon')
     expect(icon).toHaveAccessibleName('Setup required')
+  })
+
+  it('uses the warning accessible name for node warnings alone', () => {
+    renderRightSidePanel((pinia) => seedNodeWarning(pinia))
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Warnings')
+  })
+
+  it('describes node warnings alone as warnings, not setup', () => {
+    renderComponent((pinia) => seedNodeWarning(pinia))
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('Warning detected')).toBeInTheDocument()
+    expect(
+      within(hero).getByText('Nodes reported warnings during the run')
+    ).toBeInTheDocument()
+    expect(within(hero).queryByText('Setup required')).not.toBeInTheDocument()
+  })
+
+  it('labels node warnings beside errors as warnings', () => {
+    renderComponent((pinia) => {
+      seedNodeWarning(pinia, '1')
+      seedNodeWarning(pinia, '2')
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+    })
+
+    expect(
+      screen.getByTestId('errors-summary-filter-missing')
+    ).toHaveTextContent('2 Warnings')
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText(
+        '1 blocking, 2 warnings'
+      )
+    ).toBeInTheDocument()
   })
 
   it('uses error severity for an unabsorbed node validation error', () => {

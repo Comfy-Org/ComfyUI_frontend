@@ -226,12 +226,6 @@ export const useExecutionStore = defineStore('execution', () => {
     )
   }
 
-  function bufferPendingNodeWarning(warning: ExecutionWarningWsMessage) {
-    const jobId = warning.prompt_id
-    const pending = pendingNodeWarningsByJobId.get(jobId) ?? []
-    setPendingForJob(pendingNodeWarningsByJobId, jobId, [...pending, warning])
-  }
-
   function mutateStatus(
     mutator: (map: Map<ComfyWorkflow, WorkflowExecutionStatus>) => void
   ) {
@@ -717,8 +711,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionWarning(e: CustomEvent<ExecutionWarningWsMessage>) {
-    bufferPendingNodeWarning(e.detail)
-    flushPendingNodeWarnings(e.detail.prompt_id)
+    const jobId = e.detail.prompt_id
+    const pending = pendingNodeWarningsByJobId.get(jobId) ?? []
+    setPendingForJob(pendingNodeWarningsByJobId, jobId, [...pending, e.detail])
+    flushPendingNodeWarnings(jobId)
   }
 
   function flushPendingNodeWarnings(jobId: string) {
