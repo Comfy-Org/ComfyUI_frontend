@@ -238,10 +238,10 @@ describe('ModelInfoPanel', () => {
       await rerender({
         asset: {
           ...otherAsset,
-          user_metadata: { user_description: 'Other model edit' }
+          user_metadata: { user_description: 'Refreshed description' }
         }
       })
-      expect(description).toHaveValue('Other model edit')
+      expect(description).toHaveValue('Refreshed description')
     }
   )
 
