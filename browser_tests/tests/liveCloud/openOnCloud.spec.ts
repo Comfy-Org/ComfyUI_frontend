@@ -95,5 +95,59 @@ test.describe(
         })
       })
     })
+
+    test('lists the real missing model when local uploads are unavailable', async ({
+      comfyPage,
+      cloudOrigin
+    }) => {
+      await test.step('Load the workflow using the unavailable checkpoint', async () => {
+        await comfyPage.workflow.loadWorkflow(
+          'openOnCloud/03-missing-cloud-model'
+        )
+      })
+
+      await test.step('Read the missing model from the real Cloud server', async () => {
+        const responsePromise = comfyPage.page.waitForResponse(
+          (response) =>
+            response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
+            response.request().method() === 'POST'
+        )
+        await comfyPage.page.getByTestId('cloud-button').click()
+        const response = await responsePromise
+
+        expect(response.status()).toBe(200)
+        expect(await response.serverAddr()).not.toBeNull()
+        const compatibility = zCloudCompatibility.parse(await response.json())
+        expect(compatibility.cloud.missing_node_types).toEqual([])
+        expect(compatibility.cloud.missing_models).toEqual([
+          {
+            folder: 'checkpoints',
+            name: '3Guofeng3_v32Light.safetensors'
+          }
+        ])
+      })
+
+      await test.step('Identify the missing model and the upload limitation', async () => {
+        const dialog = comfyPage.page.getByRole('dialog')
+        await expect(
+          dialog.getByRole('heading', { name: 'Missing 1 model', exact: true })
+        ).toBeVisible()
+        await expect(
+          dialog.getByText('3Guofeng3_v32Light.safetensors', { exact: true })
+        ).toBeVisible()
+        await expect(
+          dialog.getByText(
+            'Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable.',
+            { exact: true }
+          )
+        ).toBeVisible()
+        await expect(
+          dialog.getByRole('button', { name: 'Upload', exact: true })
+        ).toHaveCount(0)
+        await comfyPage.attachScreenshot('missing-cloud-model.png', {
+          runInCI: true
+        })
+      })
+    })
   }
 )

@@ -4267,6 +4267,10 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+    },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
   },
   "selectionToolbox": {
