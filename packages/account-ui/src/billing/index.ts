@@ -67,7 +67,12 @@ export type {
 } from './tab/autoTopUpCardView'
 export { autoTopUpCardView, autoTopUpViewKey } from './tab/autoTopUpCardView'
 export { default as BillingAutoTopUpCard } from './tab/BillingAutoTopUpCard.vue'
-export type { AutoTopUpMemberBlockCopy } from './tab/BillingAutoTopUpMemberBlock.vue'
+export type {
+  AutoTopUpMemberBlockCopy,
+  AutoTopUpMemberBlockView,
+  AutoTopUpMemberView
+} from './tab/autoTopUpMemberView'
+export { autoTopUpMemberView } from './tab/autoTopUpMemberView'
 export { default as BillingAutoTopUpMemberBlock } from './tab/BillingAutoTopUpMemberBlock.vue'
 export type {
   BillingBannerAction,
