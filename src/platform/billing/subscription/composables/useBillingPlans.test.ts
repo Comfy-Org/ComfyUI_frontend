@@ -133,6 +133,47 @@ describe('useBillingPlans', () => {
       expect(teamCreditStops.value).toEqual(stops)
     })
 
+    it.for([
+      {
+        name: 'a recognized recovery',
+        recovery: { billing_op_id: 'op-signup', reason: 'payment_required' },
+        adopted: { billing_op_id: 'op-signup', reason: 'payment_required' }
+      },
+      {
+        name: 'an unrecognized recovery reason',
+        recovery: Object.assign(
+          { billing_op_id: 'op-signup', reason: 'payment_required' as const },
+          { reason: 'future_reason' }
+        ),
+        adopted: null
+      },
+      {
+        name: 'a recovery without an operation',
+        recovery: Object.assign(
+          { billing_op_id: 'op-signup', reason: 'payment_required' as const },
+          { billing_op_id: undefined }
+        ),
+        adopted: null
+      }
+    ] as const)(
+      'adopts only a valid signup payment recovery: $name',
+      async ({ recovery, adopted }) => {
+        const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+        vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+          plans: [buildPlan()],
+          subscription_payment_recovery: recovery
+        })
+
+        const { fetchPlans, plans, subscriptionPaymentRecovery } =
+          useBillingPlans()
+
+        await fetchPlans()
+
+        expect(subscriptionPaymentRecovery.value).toEqual(adopted)
+        expect(plans.value).toHaveLength(1)
+      }
+    )
+
     it('leaves teamCreditStops null when the response omits it', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({

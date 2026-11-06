@@ -284,6 +284,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
   const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const subscriptionPaymentRecovery = computed(
+    () => billingPlans.subscriptionPaymentRecovery.value
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
@@ -865,6 +868,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
