@@ -462,6 +462,10 @@ describe('historical workflow restoration', () => {
 
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenLastCalledWith(
+      new Error('The saved workflow sync failed'),
+      expect.objectContaining({ errorType: 'agent_workflow_restore_failed' })
+    )
   })
 
   it.for([
