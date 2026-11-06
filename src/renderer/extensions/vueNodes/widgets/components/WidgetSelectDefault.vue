@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField
     :widget
-    :input-id="inputId"
+    :input-id
     :value-text="selectedSummary"
     :root-class="rowCursor"
     has-leading-button

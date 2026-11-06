@@ -28,8 +28,8 @@ const { t } = useI18n()
     :class="className"
     :alpha
     :disabled
-    :accessible-label="accessibleLabel"
-    :trigger-id="triggerId"
+    :accessible-label
+    :trigger-id
     :align
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"

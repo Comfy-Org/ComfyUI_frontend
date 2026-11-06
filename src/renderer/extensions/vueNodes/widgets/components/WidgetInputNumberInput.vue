@@ -163,7 +163,7 @@ const inputAriaAttrs = computed(() => ({
   <WidgetLayoutField
     data-testid="widget-number-row"
     :widget
-    :input-id="inputId"
+    :input-id
     :activate-on-click="false"
     has-leading-button
     label-class="cursor-ew-resize touch-pan-y"
@@ -183,7 +183,7 @@ const inputAriaAttrs = computed(() => ({
             :display-value="formattedValue"
             :disabled="isDisabled"
             :hide-buttons="buttonsDisabled && !unifiedRows"
-            :buttons-disabled="buttonsDisabled"
+            :buttons-disabled
             :edge-buttons="unifiedRows"
             :parse-value="parseWidgetValue"
             :input-attrs="inputAriaAttrs"

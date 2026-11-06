@@ -161,16 +161,16 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget :input-id="inputId">
+  <WidgetLayoutField :widget :input-id>
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
-      :input-id="inputId"
+      :input-id
       :selected="selectedSet"
       :items="dropdownItems"
-      :display-items="displayItems"
+      :display-items
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable

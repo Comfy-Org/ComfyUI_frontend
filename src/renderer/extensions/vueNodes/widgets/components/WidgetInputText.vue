@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField
     :widget="layoutWidget"
-    :input-id="inputId"
+    :input-id
     :value-text="modelValue"
     full-width-control
     :root-class="

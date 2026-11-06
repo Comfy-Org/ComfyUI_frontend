@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget="widget" :input-id="inputId">
+  <WidgetLayoutField :widget :input-id>
     <AppColorPicker
       v-model="localValue"
       :trigger-id="inputId"

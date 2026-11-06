@@ -2,7 +2,7 @@
   <WidgetLayoutField
     v-slot="{ borderStyle }"
     :widget
-    :input-id="inputId"
+    :input-id
     :no-border="!hasLabels"
   >
     <ToggleGroup

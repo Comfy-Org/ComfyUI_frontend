@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget="widget" :input-id="inputId" fill-width>
+  <WidgetLayoutField :widget :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
