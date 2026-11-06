@@ -11,6 +11,11 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import type { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
+import type {
+  SubscriptionPaymentRecovery,
+  SubscriptionTier
+} from '@comfyorg/ingest-types'
 import type {
   BillingSubscriptionStatus,
   Plan
@@ -76,8 +81,27 @@ const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 const mockUpdatePayment = vi.hoisted(() => vi.fn())
 const mockRefreshCapabilities = vi.hoisted(() => vi.fn())
 const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
+const mockSignupPaymentRecovery = ref<SubscriptionPaymentRecovery | null>(null)
+const mockFinishPayment = vi.hoisted(() => vi.fn())
+const mockRecoveryPlanTier = ref<SubscriptionTier | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+
+vi.mock(
+  import('@/platform/billing/composables/useSubscriptionPaymentRecovery'),
+  () => ({
+    useSubscriptionPaymentRecovery: (): ReturnType<
+      typeof useSubscriptionPaymentRecovery
+    > => ({
+      subscriptionPaymentRecovery: computed(
+        () => mockSignupPaymentRecovery.value
+      ),
+      recoveryPlanTier: computed(() => mockRecoveryPlanTier.value),
+      isOpeningPayment: ref(false),
+      finishPayment: mockFinishPayment
+    })
+  })
+)
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
@@ -129,6 +153,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   mockApiPlans.value = []
   mockPaymentRecoveryLock.value = null
+  mockSignupPaymentRecovery.value = null
+  mockRecoveryPlanTier.value = null
   const billingContext = useBillingContext()
   billingContext.plans = computed(() => mockApiPlans.value)
   billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
@@ -1241,5 +1267,101 @@ describe('UnifiedPricingTable past-due notice', () => {
     renderComponent()
 
     expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable unpaid signup invoice notice', () => {
+  const IN_PROGRESS_COPY =
+    enMessages.subscription.planUnavailable.billingOperationInProgress
+  const RECOVERY = {
+    billing_op_id: 'op-signup',
+    reason: 'payment_required'
+  } as const
+
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = standardYearlyCatalog({ action: 'subscribe' }).map(
+      (plan) => ({
+        ...plan,
+        action: 'none',
+        denied_reason: 'billing_operation_in_progress'
+      })
+    )
+  })
+
+  it.for([
+    {
+      tier: 'CREATOR',
+      title: "Your Creator payment didn't go through."
+    },
+    { tier: null, title: "Your plan payment didn't go through." },
+    { tier: 'TEAM', title: "Your plan payment didn't go through." }
+  ] as const)(
+    'names the $tier plan whose payment did not go through',
+    ({ tier, title }) => {
+      mockSignupPaymentRecovery.value = RECOVERY
+      mockRecoveryPlanTier.value = tier
+
+      renderComponent()
+
+      const notice = screen.getByTestId('pricing-signup-payment-notice')
+      expect(notice.textContent).toContain(title)
+      expect(notice.textContent).toContain('Finish paying to start your plan.')
+    }
+  )
+
+  it('opens the payment page from Finish payment and links to support', async () => {
+    const user = userEvent.setup()
+    mockSignupPaymentRecovery.value = RECOVERY
+
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Finish payment' }))
+    expect(mockFinishPayment).toHaveBeenCalledOnce()
+    expect(
+      screen.getByRole('link', { name: 'Contact support' })
+    ).toHaveAttribute('href', 'https://comfy.org/contact/')
+  })
+
+  it('drops the will-be-available-shortly line from held plans', () => {
+    mockSignupPaymentRecovery.value = RECOVERY
+
+    renderComponent()
+
+    expect(screen.queryByText(IN_PROGRESS_COPY)).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Creator Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('keeps the in-progress copy when the server serves no recovery', () => {
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-signup-payment-notice')).toBeNull()
+    expect(screen.getAllByText(IN_PROGRESS_COPY)).toHaveLength(3)
+  })
+
+  it('shows instead of the past-due notice when both apply', () => {
+    mockPaymentRecoveryLock.value = 'owner'
+    mockSignupPaymentRecovery.value = RECOVERY
+
+    renderComponent()
+
+    expect(screen.getByTestId('pricing-signup-payment-notice')).toBeTruthy()
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+  })
+
+  it('stays hidden off Cloud', () => {
+    mockDistributionTypes.isCloud = false
+    mockSignupPaymentRecovery.value = RECOVERY
+
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-signup-payment-notice')).toBeNull()
   })
 })
