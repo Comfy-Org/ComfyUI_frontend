@@ -410,8 +410,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   store() {
-    const { ds } = useApp().canvas
-    this.ds = { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
+    const app = useApp()
+    const { ds } = app.canvas
+    const graph = this.workflow.graph
+    this.ds =
+      graph && app.hasPendingCamera(graph)
+        ? undefined
+        : { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)

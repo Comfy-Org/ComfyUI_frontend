@@ -84,6 +84,7 @@ const actions = vi.mockObject<
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -127,6 +128,7 @@ const actions = vi.mockObject<
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }

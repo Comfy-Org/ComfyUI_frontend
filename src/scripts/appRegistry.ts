@@ -5,6 +5,7 @@ import type { ComfyApp } from '@/types/comfy'
 interface InternalComfyApp extends ComfyApp {
   createRootGraph(): LGraph
   activateRootGraph(graph: LGraph): void
+  hasPendingCamera(graph: LGraph): boolean
   enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T>
 }
 

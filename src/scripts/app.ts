@@ -465,12 +465,12 @@ export class ComfyApp implements IComfyApp {
   }
 
   private configuringGraphLevel: number = 0
-  private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
   private fileLoadDiscoveryQueue: Promise<void> = Promise.resolve()
-  private pendingCamera:
-    | { id: number; workflow: string | null | ComfyWorkflow }
-    | undefined
+  private readonly pendingCameras = new WeakMap<
+    LGraph,
+    { workflow: string | null | ComfyWorkflow; fit: () => void }
+  >()
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -942,9 +942,38 @@ export class ComfyApp implements IComfyApp {
     if (previous) unregisterDomWidgets(previous)
     this.rootGraphInternal = graph
     registerDomWidgets(graph)
-    this.pendingCamera = undefined
     this.canvas.setGraph(graph)
+    this.scheduleCameraRestore(graph)
     if (previous && !isOwnedByWorkflow(previous)) previous.clear()
+  }
+
+  /** Whether `graph` still waits for the camera restore of its last load to run on a visible canvas. */
+  hasPendingCamera(graph: LGraph): boolean {
+    return this.pendingCameras.has(graph)
+  }
+
+  private scheduleCameraRestore(graph: LGraph): void {
+    const pending = this.pendingCameras.get(graph)
+    if (!pending) return
+    useCanvasScheduler().schedule({
+      key: 'graph-load-camera',
+      element: this.canvasEl,
+      isCurrent: () =>
+        this.rootGraphInternal === graph &&
+        this.pendingCameras.get(graph) === pending,
+      run: () => {
+        const viewport = measureViewportFromElement(this.canvasEl)
+        applyViewport(
+          viewport,
+          this.canvasEl,
+          this.canvas.bgcanvas,
+          this.canvas
+        )
+        pending.fit()
+        this.canvas.draw(true, true)
+        this.pendingCameras.delete(graph)
+      }
+    })
   }
 
   private rootGraphForLoad(
@@ -1273,8 +1302,6 @@ export class ComfyApp implements IComfyApp {
     if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
       return false
     }
-    const canvasScheduler = useCanvasScheduler()
-    const loadId = ++this.graphLoadSequence
 
     const {
       checkForRerouteMigration = false,
@@ -1535,32 +1562,13 @@ export class ComfyApp implements IComfyApp {
           const preservesPendingCamera =
             !restore_view &&
             workflow !== null &&
-            workflow === this.pendingCamera?.workflow
+            workflow === this.pendingCameras.get(graph)?.workflow
           if (!backgroundRestore && !preservesPendingCamera) {
-            canvasScheduler.cancel('graph-load-camera')
-            this.pendingCamera = restore_view
-              ? { id: loadId, workflow }
-              : undefined
+            useCanvasScheduler().cancel('graph-load-camera')
+            this.pendingCameras.delete(graph)
             if (restore_view) {
-              canvasScheduler.schedule({
-                key: 'graph-load-camera',
-                element: this.canvasEl,
-                isCurrent: () => this.pendingCamera?.id === loadId,
-                run: () => {
-                  const viewport = measureViewportFromElement(this.canvasEl)
-                  applyViewport(
-                    viewport,
-                    this.canvasEl,
-                    this.canvas.bgcanvas,
-                    this.canvas
-                  )
-                  fitView()
-                  this.canvas.draw(true, true)
-                  if (this.pendingCamera?.id === loadId) {
-                    this.pendingCamera = undefined
-                  }
-                }
-              })
+              this.pendingCameras.set(graph, { workflow, fit: fitView })
+              this.scheduleCameraRestore(graph)
             }
           }
         } catch (error) {

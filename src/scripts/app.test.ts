@@ -1863,6 +1863,25 @@ describe('ComfyApp', () => {
 
         expect(mockCanvas.draw).not.toHaveBeenCalled()
       })
+
+      it('runs once its own graph returns to the canvas after a tab round trip', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        const graph = app.rootGraph
+        workflow.adoptGraph(graph)
+        app.activateRootGraph(new LGraph())
+        expect(app.hasPendingCamera(graph)).toBe(true)
+        app.activateRootGraph(graph)
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        expect(app.hasPendingCamera(graph)).toBe(false)
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async ({

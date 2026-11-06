@@ -2343,6 +2343,21 @@ describe('ChangeTracker', () => {
       expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
     })
 
+    it('does not bring back a viewport stored while the graph still awaited its camera restore', () => {
+      const tracker = createTracker(createState(1))
+      app.canvas.ds.scale = 2
+      app.canvas.ds.offset = [40, 50]
+      vi.mocked(app.hasPendingCamera).mockReturnValue(true)
+      tracker.deactivate()
+      app.canvas.ds.scale = 1
+      app.canvas.ds.offset = [0, 0]
+
+      tracker.restore()
+
+      expect(app.canvas.ds.scale).toBe(1)
+      expect([...app.canvas.ds.offset]).toEqual([0, 0])
+    })
+
     it('returns to the root graph when the undone state removed every ancestor', () => {
       const tracker = deactivateWithNavigation(['outer', 'inner'])
       let restoredNavigation: string[] | undefined
