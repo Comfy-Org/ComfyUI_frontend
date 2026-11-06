@@ -4338,7 +4338,7 @@
     },
     "failed": {
       "title": "Release v{version} didn't build",
-      "body": "{deployment} still runs v{version}. Change the version of the node pack the message names, or remove it. Then build again.",
+      "body": "The build stopped, so {deployment} still runs v{version}. Change the version of the node pack the message names, or remove it. Then build again.",
       "messageHeading": "Message from the builder",
       "copyLabel": "Copy the builder's message",
       "openLog": "Open full log",
@@ -4348,18 +4348,18 @@
     },
     "moving": {
       "title": "Moving {deployment} to v{version}",
-      "body": "Release v{version} is built. {deployment} switches to it when its new copy is ready, usually in a few minutes.",
+      "body": "Release v{version} is built. The switch happens when the new copy of {deployment} is ready, usually in a few minutes.",
       "step": "Starting a new copy of {deployment}",
       "progressLabel": "Redeploy progress",
       "note": "New jobs run on v{version} until then. Jobs that already started finish on v{version}."
     },
     "moveFailed": {
-      "title": "{deployment} didn't move to v{version}",
+      "title": "Couldn't move {deployment} to v{version}",
       "body": "Release v{version} is built, but {deployment} still runs v{current}. Move it again, or change its Release on the Developer Platform.",
       "retry": "Move again"
     },
     "landed": {
-      "title": "{deployment} now runs {build} v{version}",
+      "title": "Now running {build} v{version} on {deployment}",
       "body": "Reload the editor to use the node pack you added. Your tabs stay open. | Reload the editor to use the {count} node packs you added. Your tabs stay open.",
       "later": "Later",
       "reload": "Reload"

@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "La versión v{version} no se compiló",
-      "body": "{deployment} sigue ejecutando la v{version}. Cambia la versión del paquete de nodos que indica el mensaje o quítalo. Después, vuelve a compilar.",
+      "body": "La compilación se detuvo, así que {deployment} sigue ejecutando la v{version}. Cambia la versión del paquete de nodos que indica el mensaje o quítalo. Después, vuelve a compilar.",
       "messageHeading": "Mensaje del servidor de compilación",
       "copyLabel": "Copiar el mensaje del servidor de compilación",
       "openLog": "Abrir registro completo",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "Trasladando {deployment} a la v{version}",
-      "body": "La versión v{version} está compilada. {deployment} cambia a ella cuando su nueva copia esté lista, normalmente en unos minutos.",
+      "body": "La versión v{version} está compilada. El cambio se hará cuando la nueva copia de {deployment} esté lista, normalmente en unos minutos.",
       "step": "Iniciando una nueva copia de {deployment}",
       "progressLabel": "Progreso del nuevo despliegue",
       "note": "Hasta entonces, los trabajos nuevos se ejecutan en la v{version}. Los trabajos que ya comenzaron terminan en la v{version}."
     },
     "moveFailed": {
-      "title": "{deployment} no se trasladó a la v{version}",
+      "title": "No se pudo trasladar {deployment} a la v{version}",
       "body": "La versión v{version} está compilada, pero {deployment} sigue ejecutando la v{current}. Vuelve a trasladarlo o cambia su versión en la Plataforma para desarrolladores.",
       "retry": "Volver a trasladar"
     },
     "landed": {
-      "title": "{deployment} ahora ejecuta {build} v{version}",
+      "title": "Ahora se ejecuta {build} v{version} en {deployment}",
       "body": "Recarga el editor para usar el paquete de nodos que añadiste. Tus pestañas permanecen abiertas. | Recarga el editor para usar los {count} paquetes de nodos que añadiste. Tus pestañas permanecen abiertas.",
       "later": "Más tarde",
       "reload": "Recargar"

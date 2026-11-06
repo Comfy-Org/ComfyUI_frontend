@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "릴리스 v{version}을(를) 빌드하지 못했습니다",
-      "body": "{deployment}은(는) 계속 v{version}에서 실행됩니다. 메시지에 나온 노드 팩의 버전을 바꾸거나 해당 노드 팩을 제거하세요. 그런 다음 다시 빌드하세요.",
+      "body": "빌드가 중지되어 {deployment}은(는) 계속 v{version}에서 실행됩니다. 메시지에 나온 노드 팩의 버전을 바꾸거나 해당 노드 팩을 제거하세요. 그런 다음 다시 빌드하세요.",
       "messageHeading": "빌더 메시지",
       "copyLabel": "빌더 메시지 복사",
       "openLog": "전체 로그 열기",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "{deployment}을(를) v{version}(으)로 옮기는 중",
-      "body": "릴리스 v{version} 빌드가 완료되었습니다. {deployment}의 새 사본이 준비되면 전환되며, 보통 몇 분 정도 걸립니다.",
+      "body": "릴리스 v{version} 빌드가 완료되었습니다. 전환은 {deployment}의 새 사본이 준비되면 이루어지며, 보통 몇 분 정도 걸립니다.",
       "step": "{deployment}의 새 사본 시작 중",
       "progressLabel": "재배포 진행률",
       "note": "그때까지 새 작업은 v{version}에서 실행됩니다. 이미 시작된 작업은 v{version}에서 완료됩니다."
     },
     "moveFailed": {
-      "title": "{deployment}을(를) v{version}(으)로 옮기지 못했습니다",
+      "title": "릴리스 v{version}(으)로 {deployment}을(를) 옮기지 못했습니다",
       "body": "릴리스 v{version}은(는) 빌드되었지만 {deployment}은(는) 여전히 v{current}에서 실행됩니다. 다시 옮기거나 Developer Platform에서 릴리스를 변경하세요.",
       "retry": "다시 옮기기"
     },
     "landed": {
-      "title": "{deployment}이(가) 이제 {build} v{version}에서 실행됩니다",
+      "title": "이제 {deployment}에서 {build} v{version}을(를) 실행 중입니다",
       "body": "추가한 노드 팩을 사용하려면 편집기를 다시 로드하세요. 탭은 열린 상태로 유지됩니다. | 추가한 노드 팩 {count}개를 사용하려면 편집기를 다시 로드하세요. 탭은 열린 상태로 유지됩니다.",
       "later": "나중에",
       "reload": "다시 로드"

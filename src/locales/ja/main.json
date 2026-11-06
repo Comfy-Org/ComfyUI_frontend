@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "リリース v{version} をビルドできませんでした",
-      "body": "{deployment} は引き続き v{version} で実行されています。メッセージに書かれているノードパックのバージョンを変更するか、削除してください。そのうえで、もう一度ビルドしてください。",
+      "body": "ビルドが停止したため、{deployment} は引き続き v{version} で実行されています。メッセージに書かれているノードパックのバージョンを変更するか、削除してください。そのうえで、もう一度ビルドしてください。",
       "messageHeading": "ビルダーからのメッセージ",
       "copyLabel": "ビルダーのメッセージをコピー",
       "openLog": "ログ全体を開く",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "{deployment} を v{version} に移行しています",
-      "body": "リリース v{version} のビルドが完了しました。{deployment} の新しいコピーの準備ができしだい切り替わります。通常は数分で完了します。",
+      "body": "リリース v{version} のビルドが完了しました。切り替えは {deployment} の新しいコピーの準備ができたときに行われます。通常は数分です。",
       "step": "{deployment} の新しいコピーを起動しています",
       "progressLabel": "再デプロイの進行状況",
       "note": "それまでは新しいジョブも v{version} で実行されます。すでに開始したジョブは v{version} で完了します。"
     },
     "moveFailed": {
-      "title": "{deployment} を v{version} に移行できませんでした",
+      "title": "リリース v{version} に {deployment} を移行できませんでした",
       "body": "リリース v{version} はビルドされましたが、{deployment} は引き続き v{current} で実行されています。もう一度移行するか、Developer Platform でリリースを変更してください。",
       "retry": "もう一度移行"
     },
     "landed": {
-      "title": "{deployment} は {build} v{version} で実行中です",
+      "title": "現在、{deployment} で {build} v{version} を実行しています",
       "body": "追加したノードパックを使うには、エディタを再読み込みしてください。タブは開いたままです。 | 追加した {count} 個のノードパックを使うには、エディタを再読み込みしてください。タブは開いたままです。",
       "later": "後で",
       "reload": "再読み込み"

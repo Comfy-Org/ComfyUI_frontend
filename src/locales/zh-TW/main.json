@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "版本 v{version} 建置失敗",
-      "body": "{deployment} 仍在執行 v{version}。請變更訊息中提到的節點套件版本，或將其移除，然後再建置一次。",
+      "body": "建置已停止，因此 {deployment} 仍在執行 v{version}。請變更訊息中提到的節點套件版本，或將其移除，然後再建置一次。",
       "messageHeading": "建置器的訊息",
       "copyLabel": "複製建置器的訊息",
       "openLog": "開啟完整記錄",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "正在將 {deployment} 移至 v{version}",
-      "body": "版本 v{version} 已建置完成。{deployment} 的新副本準備就緒後就會切換過去，通常只需幾分鐘。",
+      "body": "版本 v{version} 已建置完成。待 {deployment} 的新副本準備就緒後就會切換，通常只需幾分鐘。",
       "step": "正在啟動 {deployment} 的新副本",
       "progressLabel": "重新部署進度",
       "note": "在此之前，新工作仍會在 v{version} 上執行。已開始的工作會在 v{version} 上完成。"
     },
     "moveFailed": {
-      "title": "{deployment} 未能移至 v{version}",
+      "title": "無法將 {deployment} 移至 v{version}",
       "body": "版本 v{version} 已建置完成，但 {deployment} 仍在執行 v{current}。請再移動一次，或在開發者平台上變更其版本。",
       "retry": "再移動一次"
     },
     "landed": {
-      "title": "{deployment} 現在執行的是 {build} v{version}",
+      "title": "現在 {deployment} 上執行的是 {build} v{version}",
       "body": "重新載入編輯器即可使用您加入的節點套件。您的分頁會保持開啟。 | 重新載入編輯器即可使用您加入的 {count} 個節點套件。您的分頁會保持開啟。",
       "later": "稍後",
       "reload": "重新載入"

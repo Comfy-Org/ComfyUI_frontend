@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "A versão v{version} não foi compilada",
-      "body": "{deployment} continua executando a v{version}. Altere a versão do pacote de nós citado na mensagem ou remova-o. Depois, compile novamente.",
+      "body": "A compilação parou, então {deployment} continua executando a v{version}. Altere a versão do pacote de nós citado na mensagem ou remova-o. Depois, compile novamente.",
       "messageHeading": "Mensagem do servidor de compilação",
       "copyLabel": "Copiar a mensagem do servidor de compilação",
       "openLog": "Abrir log completo",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "Movendo {deployment} para a v{version}",
-      "body": "A versão v{version} foi compilada. {deployment} passa para ela quando sua nova cópia estiver pronta, geralmente em alguns minutos.",
+      "body": "A versão v{version} foi compilada. A troca acontece quando a nova cópia de {deployment} estiver pronta, geralmente em alguns minutos.",
       "step": "Iniciando uma nova cópia de {deployment}",
       "progressLabel": "Progresso da reimplantação",
       "note": "Até lá, as novas tarefas são executadas na v{version}. As tarefas já iniciadas terminam na v{version}."
     },
     "moveFailed": {
-      "title": "{deployment} não foi movida para a v{version}",
+      "title": "Não foi possível mover {deployment} para a v{version}",
       "body": "A versão v{version} foi compilada, mas {deployment} continua executando a v{current}. Mova-a novamente ou altere a versão dela na Plataforma do Desenvolvedor.",
       "retry": "Mover novamente"
     },
     "landed": {
-      "title": "{deployment} agora executa {build} v{version}",
+      "title": "Agora {build} v{version} está em execução em {deployment}",
       "body": "Recarregue o editor para usar o pacote de nós que você adicionou. Suas abas permanecem abertas. | Recarregue o editor para usar os {count} pacotes de nós que você adicionou. Suas abas permanecem abertas.",
       "later": "Mais tarde",
       "reload": "Recarregar"

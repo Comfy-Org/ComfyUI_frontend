@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "版本 v{version} 构建失败",
-      "body": "{deployment} 仍在运行 v{version}。请更改消息中提到的节点包的版本，或将其移除，然后重新构建。",
+      "body": "构建已停止，因此 {deployment} 仍在运行 v{version}。请更改消息中提到的节点包的版本，或将其移除，然后重新构建。",
       "messageHeading": "构建器消息",
       "copyLabel": "复制构建器消息",
       "openLog": "打开完整日志",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "正在将 {deployment} 迁移到 v{version}",
-      "body": "版本 v{version} 已构建完成。{deployment} 的新副本就绪后便会切换过去，通常需要几分钟。",
+      "body": "版本 v{version} 已构建完成。待 {deployment} 的新副本就绪后即会切换，通常需要几分钟。",
       "step": "正在启动 {deployment} 的新副本",
       "progressLabel": "重新部署进度",
       "note": "在此之前，新作业仍在 v{version} 上运行。已开始的作业会在 v{version} 上完成。"
     },
     "moveFailed": {
-      "title": "{deployment} 未能迁移到 v{version}",
+      "title": "无法将 {deployment} 迁移到 v{version}",
       "body": "版本 v{version} 已构建完成，但 {deployment} 仍在运行 v{current}。请重新迁移，或在开发者平台上更改其版本。",
       "retry": "重新迁移"
     },
     "landed": {
-      "title": "{deployment} 现在运行的是 {build} v{version}",
+      "title": "现在 {deployment} 上运行的是 {build} v{version}",
       "body": "重新加载编辑器即可使用你添加的节点包。你的标签页将保持打开。 | 重新加载编辑器即可使用你添加的 {count} 个节点包。你的标签页将保持打开。",
       "later": "稍后",
       "reload": "重新加载"

@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "Release v{version} konnte nicht gebaut werden",
-      "body": "{deployment} läuft weiterhin auf v{version}. Ändern Sie die Version des Node-Pakets, das in der Meldung genannt wird, oder entfernen Sie es. Starten Sie den Build dann erneut.",
+      "body": "Der Build wurde abgebrochen, daher läuft {deployment} weiterhin auf v{version}. Ändern Sie die Version des Node-Pakets, das in der Meldung genannt wird, oder entfernen Sie es. Starten Sie den Build dann erneut.",
       "messageHeading": "Meldung des Build-Servers",
       "copyLabel": "Meldung des Build-Servers kopieren",
       "openLog": "Vollständiges Log öffnen",
@@ -1693,19 +1693,19 @@
       "retry": "Erneut bauen"
     },
     "moving": {
-      "title": "{deployment} wird auf v{version} verschoben",
-      "body": "Release v{version} ist gebaut. {deployment} wechselt darauf, sobald seine neue Instanz bereit ist, in der Regel in wenigen Minuten.",
+      "title": "Verschieben von {deployment} auf v{version}",
+      "body": "Release v{version} ist gebaut. Der Wechsel erfolgt, sobald die neue Instanz von {deployment} bereit ist, in der Regel in wenigen Minuten.",
       "step": "Neue Instanz von {deployment} wird gestartet",
       "progressLabel": "Redeploy-Fortschritt",
       "note": "Bis dahin laufen neue Jobs auf v{version}. Bereits gestartete Jobs werden auf v{version} abgeschlossen."
     },
     "moveFailed": {
-      "title": "{deployment} wurde nicht auf v{version} verschoben",
+      "title": "Das Verschieben von {deployment} auf v{version} ist fehlgeschlagen",
       "body": "Release v{version} ist gebaut, aber {deployment} läuft weiterhin auf v{current}. Verschieben Sie es erneut, oder ändern Sie sein Release auf der Developer Platform.",
       "retry": "Erneut verschieben"
     },
     "landed": {
-      "title": "{deployment} läuft jetzt auf {build} v{version}",
+      "title": "Jetzt läuft {build} v{version} auf {deployment}",
       "body": "Laden Sie den Editor neu, um das hinzugefügte Node-Paket zu verwenden. Ihre Tabs bleiben geöffnet. | Laden Sie den Editor neu, um die {count} hinzugefügten Node-Pakete zu verwenden. Ihre Tabs bleiben geöffnet.",
       "later": "Später",
       "reload": "Neu laden"

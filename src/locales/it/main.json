@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "La build della Release v{version} non è riuscita",
-      "body": "{deployment} esegue ancora la v{version}. Cambia la versione del pacchetto di nodi indicato nel messaggio, oppure rimuovilo. Poi avvia di nuovo la build.",
+      "body": "La build si è interrotta, quindi {deployment} esegue ancora la v{version}. Cambia la versione del pacchetto di nodi indicato nel messaggio, oppure rimuovilo. Poi avvia di nuovo la build.",
       "messageHeading": "Messaggio del server di build",
       "copyLabel": "Copia il messaggio del server di build",
       "openLog": "Apri il log completo",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "Spostamento di {deployment} sulla v{version}",
-      "body": "La Release v{version} è stata creata. {deployment} passa a questa Release quando la sua nuova copia è pronta, di solito in pochi minuti.",
+      "body": "La Release v{version} è stata creata. Il passaggio avviene quando la nuova copia di {deployment} è pronta, di solito in pochi minuti.",
       "step": "Avvio di una nuova copia di {deployment}",
       "progressLabel": "Avanzamento della ridistribuzione",
       "note": "Fino ad allora, i nuovi processi vengono eseguiti sulla v{version}. I processi già avviati terminano sulla v{version}."
     },
     "moveFailed": {
-      "title": "{deployment} non è stato spostato sulla v{version}",
+      "title": "Impossibile spostare {deployment} sulla v{version}",
       "body": "La Release v{version} è stata creata, ma {deployment} esegue ancora la v{current}. Spostalo di nuovo, oppure cambia la sua Release sulla Developer Platform.",
       "retry": "Sposta di nuovo"
     },
     "landed": {
-      "title": "{deployment} ora esegue {build} v{version}",
+      "title": "Ora {build} v{version} è in esecuzione su {deployment}",
       "body": "Ricarica l'editor per usare il pacchetto di nodi che hai aggiunto. Le tue schede rimangono aperte. | Ricarica l'editor per usare i {count} pacchetti di nodi che hai aggiunto. Le tue schede rimangono aperte.",
       "later": "Più tardi",
       "reload": "Ricarica"

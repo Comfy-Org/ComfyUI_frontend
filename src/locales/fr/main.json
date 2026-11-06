@@ -1684,7 +1684,7 @@
     },
     "failed": {
       "title": "La compilation de la version v{version} a échoué",
-      "body": "{deployment} exécute toujours la v{version}. Changez la version du pack de nœuds cité dans le message, ou retirez-le. Puis relancez la compilation.",
+      "body": "La compilation s'est arrêtée, donc {deployment} exécute toujours la v{version}. Changez la version du pack de nœuds cité dans le message, ou retirez-le. Puis relancez la compilation.",
       "messageHeading": "Message de la machine de compilation",
       "copyLabel": "Copier le message de la machine de compilation",
       "openLog": "Ouvrir le journal complet",
@@ -1694,18 +1694,18 @@
     },
     "moving": {
       "title": "Déplacement de {deployment} vers la v{version}",
-      "body": "La version v{version} est compilée. {deployment} y passe dès que sa nouvelle copie est prête, généralement en quelques minutes.",
+      "body": "La version v{version} est compilée. Le basculement a lieu dès que la nouvelle copie de {deployment} est prête, généralement en quelques minutes.",
       "step": "Démarrage d'une nouvelle copie de {deployment}",
       "progressLabel": "Progression du redéploiement",
       "note": "D'ici là, les nouvelles tâches s'exécutent sur la v{version}. Les tâches déjà lancées se terminent sur la v{version}."
     },
     "moveFailed": {
-      "title": "{deployment} n'a pas été déplacé vers la v{version}",
+      "title": "Impossible de déplacer {deployment} vers la v{version}",
       "body": "La version v{version} est compilée, mais {deployment} exécute toujours la v{current}. Déplacez-le à nouveau, ou changez sa version sur la Developer Platform.",
       "retry": "Déplacer à nouveau"
     },
     "landed": {
-      "title": "{deployment} exécute désormais {build} v{version}",
+      "title": "Désormais, {build} v{version} s'exécute sur {deployment}",
       "body": "Rechargez l'éditeur pour utiliser le pack de nœuds ajouté. Vos onglets restent ouverts. | Rechargez l'éditeur pour utiliser les {count} packs de nœuds ajoutés. Vos onglets restent ouverts.",
       "later": "Plus tard",
       "reload": "Recharger"

@@ -1680,11 +1680,11 @@
       "hideLog": "Derleme günlüğünü gizle",
       "logLabel": "Derleme günlüğü",
       "logEmpty": "Derleme sunucusu henüz günlüğe bir şey yazmadı.",
-      "note": "Bu pencereyi kapatabilirsiniz. {deployment} dağıtımının yeni Release'e geçebilmesi için bu sekmeyi açık tutun."
+      "note": "Bu pencereyi kapatabilirsiniz. Bu sekmeyi açık tutun ki {deployment} dağıtımı yeni Release'e geçebilsin."
     },
     "failed": {
       "title": "Release v{version} derlenemedi",
-      "body": "{deployment} hâlâ v{version} çalıştırıyor. Mesajda adı geçen düğüm paketinin sürümünü değiştirin veya paketi kaldırın. Ardından yeniden derleyin.",
+      "body": "Derleme durdu, bu nedenle {deployment} hâlâ v{version} çalıştırıyor. Mesajda adı geçen düğüm paketinin sürümünü değiştirin veya paketi kaldırın. Ardından yeniden derleyin.",
       "messageHeading": "Derleme sunucusunun mesajı",
       "copyLabel": "Derleme sunucusunun mesajını kopyala",
       "openLog": "Tam günlüğü aç",
@@ -1693,19 +1693,19 @@
       "retry": "Yeniden derle"
     },
     "moving": {
-      "title": "{deployment} dağıtımı v{version} sürümüne taşınıyor",
-      "body": "Release v{version} derlendi. {deployment}, yeni kopyası hazır olduğunda bu sürüme geçer; bu genellikle birkaç dakika sürer.",
-      "step": "{deployment} dağıtımının yeni bir kopyası başlatılıyor",
+      "title": "Release v{version} için {deployment} taşınıyor",
+      "body": "Release v{version} derlendi. Geçiş, {deployment} dağıtımının yeni kopyası hazır olduğunda gerçekleşir; bu genellikle birkaç dakika sürer.",
+      "step": "Yeni bir {deployment} kopyası başlatılıyor",
       "progressLabel": "Yeniden dağıtım ilerlemesi",
       "note": "O zamana kadar yeni işler v{version} üzerinde çalışır. Başlamış olan işler v{version} üzerinde tamamlanır."
     },
     "moveFailed": {
-      "title": "{deployment} dağıtımı v{version} sürümüne taşınamadı",
+      "title": "Release v{version} için {deployment} taşınamadı",
       "body": "Release v{version} derlendi, ancak {deployment} hâlâ v{current} çalıştırıyor. Yeniden taşıyın veya Geliştirici Platformu'nda Release'ini değiştirin.",
       "retry": "Yeniden taşı"
     },
     "landed": {
-      "title": "{deployment} artık {build} v{version} çalıştırıyor",
+      "title": "Artık {deployment} üzerinde {build} v{version} çalışıyor",
       "body": "Eklediğiniz düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır. | Eklediğiniz {count} düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır.",
       "later": "Daha sonra",
       "reload": "Yeniden yükle"
