@@ -189,7 +189,14 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  ref,
+  shallowReactive,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
@@ -241,7 +248,12 @@ const assetsStore = useAssetsStore()
 const { flags } = useFeatureFlags()
 const { modelTypes } = useModelTypes()
 
-const pendingUpdates = ref<AssetUserMetadata>({})
+const metadataDrafts = shallowReactive(
+  new Map<string, ReturnType<typeof createMetadataDraft>>()
+)
+const pendingUpdates = computed(
+  () => metadataDrafts.get(asset.id)?.updates.value ?? {}
+)
 const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
@@ -269,53 +281,65 @@ const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 
 watch(
-  () => asset.id,
-  () => {
-    pendingUpdates.value = {}
-  }
-)
-
-watch(
   () => asset.tags,
   () => {
     pendingModelType.value = undefined
   }
 )
 
-let metadataSavePending = false
+function createMetadataDraft(initialAsset: AssetDisplayItem) {
+  const updates = ref<AssetUserMetadata>({})
+  let targetAsset = initialAsset
+  let targetCacheKey = cacheKey
+  let saving = false
 
-const debouncedFlushMetadata = useDebounceFn(async () => {
-  if (
-    metadataSavePending ||
-    isImmutable.value ||
-    Object.keys(pendingUpdates.value).length === 0
-  )
-    return
-  const updates = pendingUpdates.value
-  const assetId = asset.id
-  metadataSavePending = true
-  const saved = await assetsStore.updateAssetMetadata(
-    asset,
-    { ...asset.user_metadata, ...updates },
-    cacheKey
-  )
-  metadataSavePending = false
-  const hasNewerEdits = pendingUpdates.value !== updates
-  if (saved && asset.id === assetId) {
-    const confirmed = new Map(Object.entries(updates))
-    pendingUpdates.value = Object.fromEntries(
-      Object.entries(pendingUpdates.value).filter(
-        ([key, value]) => !confirmed.has(key) || value !== confirmed.get(key)
-      )
+  const flush = useDebounceFn(async () => {
+    if (saving || targetAsset.is_immutable !== false) return
+    const submitted = updates.value
+    if (Object.keys(submitted).length === 0) return
+    const metadata = { ...targetAsset.user_metadata, ...submitted }
+    saving = true
+    const saved = await assetsStore.updateAssetMetadata(
+      targetAsset,
+      metadata,
+      targetCacheKey
     )
+    saving = false
+    const hasNewerEdits = updates.value !== submitted
+    if (saved) {
+      targetAsset = { ...targetAsset, user_metadata: metadata }
+      const confirmed = new Map(Object.entries(submitted))
+      updates.value = Object.fromEntries(
+        Object.entries(updates.value).filter(
+          ([key, value]) => !confirmed.has(key) || value !== confirmed.get(key)
+        )
+      )
+    }
+    if ((saved || hasNewerEdits) && Object.keys(updates.value).length > 0)
+      flush()
+  }, 500)
+
+  function queue(
+    newUpdates: AssetUserMetadata,
+    currentAsset: AssetDisplayItem,
+    currentCacheKey?: string
+  ) {
+    targetAsset = currentAsset
+    targetCacheKey = currentCacheKey
+    updates.value = { ...updates.value, ...newUpdates }
+    flush()
   }
-  if ((saved || hasNewerEdits) && Object.keys(pendingUpdates.value).length > 0)
-    debouncedFlushMetadata()
-}, 500)
+
+  return { updates, queue }
+}
 
 function queueMetadataUpdate(updates: AssetUserMetadata) {
-  pendingUpdates.value = { ...pendingUpdates.value, ...updates }
-  debouncedFlushMetadata()
+  let draft = metadataDrafts.get(asset.id)
+  if (!draft) {
+    draft = createMetadataDraft(asset)
+    metadataDrafts.set(asset.id, draft)
+  }
+  draft.queue(updates, asset, cacheKey)
 }
 
 function handleDisplayNameEdit(newName: string) {
