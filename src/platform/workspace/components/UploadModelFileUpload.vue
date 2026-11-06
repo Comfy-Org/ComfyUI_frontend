@@ -57,11 +57,9 @@
         </p>
       </div>
 
-      <p v-if="state.status === 'uploading' && statusLine" class="m-0">
+      <p v-if="transferEstimate" class="m-0">{{ transferEstimate }}</p>
+      <p role="status" :class="cn('m-0', !statusLine && 'sr-only')">
         {{ statusLine }}
-      </p>
-      <p role="status" :class="cn('m-0', !liveStatus && 'sr-only')">
-        {{ liveStatus }}
       </p>
     </div>
 
@@ -172,9 +170,7 @@ const canCancel = computed(
   () => isTransferring.value || state.status === 'stopping'
 )
 
-const statusLine = computed(() => {
-  if (state.status === 'reconnecting')
-    return t('assetBrowser.fileUpload.reconnecting')
+const transferEstimate = computed(() => {
   if (
     state.status === 'uploading' &&
     state.bytesPerSecond &&
@@ -187,14 +183,16 @@ const statusLine = computed(() => {
       )
     })
   }
+  return undefined
+})
+
+const statusLine = computed(() => {
+  if (state.status === 'reconnecting')
+    return t('assetBrowser.fileUpload.reconnecting')
   if (state.status === 'saving') return t('assetBrowser.fileUpload.saving')
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   return undefined
 })
-
-const liveStatus = computed(() =>
-  state.status === 'uploading' ? '' : statusLine.value
-)
 
 function formatTimeLeft(seconds: number) {
   const units = [
