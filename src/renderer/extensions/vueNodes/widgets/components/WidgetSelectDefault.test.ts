@@ -203,33 +203,20 @@ describe('WidgetSelectDefault', () => {
     expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
   })
 
-  it.for([
-    {
-      first: 'studio/models/portrait.safetensors',
-      second: 'archive/models/portrait.safetensors',
-      unifiedRows: false
-    },
-    {
-      first: '/studio/models/portrait.safetensors',
-      second: 'studio/models/portrait.safetensors',
-      unifiedRows: true
-    }
-  ])(
-    'distinguishes $first from $second and emits the raw path',
-    async ({ first, second, unifiedRows }) => {
-      const { user, onUpdate } = renderComponent(
-        createWidget([first, second]),
-        first,
-        undefined,
-        true,
-        unifiedRows
-      )
-      await openDropdown(user)
-      expect(screen.getByRole('option', { name: first })).toBeVisible()
-      await user.click(screen.getByRole('option', { name: second }))
-      expect(onUpdate).toHaveBeenCalledWith(second)
-    }
-  )
+  it('distinguishes raw paths with the same normalized directory', async () => {
+    const first = '/studio/models/portrait.safetensors'
+    const second = 'studio/models/portrait.safetensors'
+    const { user, onUpdate } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    expect(screen.getByRole('option', { name: first })).toBeVisible()
+    await user.click(screen.getByRole('option', { name: second }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+  })
 
   it.for([
     { path: 'studio/models/portrait.safetensors' },
@@ -243,7 +230,6 @@ describe('WidgetSelectDefault', () => {
         createWidget(['None', path, 'other/portrait.safetensors']),
         'None',
         undefined,
-        true,
         true
       )
       await openDropdown(user)
@@ -282,7 +268,6 @@ describe('WidgetSelectDefault', () => {
       createWidget(['None', path, 'archive/portrait.safetensors']),
       path,
       undefined,
-      true,
       true
     )
     await openDropdown(user)
@@ -305,7 +290,6 @@ describe('WidgetSelectDefault', () => {
       ]),
       'None',
       undefined,
-      true,
       true
     )
     await openDropdown(user)
@@ -339,7 +323,6 @@ describe('WidgetSelectDefault', () => {
       createWidget(['studio/models/portrait.safetensors']),
       '',
       undefined,
-      true,
       true
     )
     await openDropdown(user)
@@ -362,30 +345,21 @@ describe('WidgetSelectDefault', () => {
     {
       values: ['schedule/custom', 'N/A'],
       options: {},
-      unifiedRows: true,
       labels: ['schedule/custom', 'N/A']
     },
     {
       values: ['studio/portrait.safetensors'],
       options: { getOptionLabel: () => 'Studio / approved' },
-      unifiedRows: true,
       labels: ['Studio / approved']
-    },
-    {
-      values: ['studio/portrait.safetensors'],
-      options: {},
-      unifiedRows: false,
-      labels: ['studio/portrait.safetensors']
     }
   ])(
-    'retains flat labels $labels outside unlabeled Nodes 2.0 file paths',
-    async ({ values, options, unifiedRows, labels }) => {
+    'retains flat labels $labels for non-file values and custom labelers',
+    async ({ values, options, labels }) => {
       const { user } = renderComponent(
         createWidget(values, options),
         values[0],
         undefined,
-        false,
-        unifiedRows
+        false
       )
       await openDropdown(user)
       expect(optionLabels()).toEqual(labels)
