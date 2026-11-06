@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -11,9 +12,15 @@ import {
   askResolved,
   askUserQuestionFrame,
   singleChoiceQuestionFrame,
+  toolCall,
   unknownKindAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+async function top(locator: Locator): Promise<number> {
+  const box = await locator.boundingBox()
+  return box?.y ?? Number.NaN
+}
 
 test.describe(
   'Agent ask_user question',
@@ -63,6 +70,30 @@ test.describe(
         )
         await expectElementScreenshot(card, 'agent-ask-user-card-answered.png')
       })
+    })
+
+    test('steps taken after the answer are drawn below the answered card', async ({
+      startAskTurn
+    }) => {
+      const askId = askIdFor('call-order')
+      const { panel, send, questionCard, answer } = await startAskTurn(
+        'Paint it.',
+        'auto'
+      )
+      const card = questionCard('Which first?')
+      const step = (label: string) =>
+        panel.getByRole('listitem').filter({ hasText: label })
+
+      send(toolCall('list_slots', 'success'))
+      await expect(step('List slots')).toBeVisible()
+      send(singleChoiceQuestionFrame(askId, 'Which first?'))
+      await answer('Which first?', 'Oil painting')
+      send(askResolved(['oil'], askId))
+      send(toolCall('set_widget', 'success'))
+      await expect(step('Set widget')).toBeVisible()
+
+      expect(await top(step('List slots'))).toBeLessThan(await top(card))
+      expect(await top(card)).toBeLessThan(await top(step('Set widget')))
     })
 
     test('a radio, in-flight, closed, refused and unconfirmed question and an unrenderable ask each show their own card', async ({

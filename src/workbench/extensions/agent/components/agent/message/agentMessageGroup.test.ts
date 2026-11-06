@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type {
   AskUserPart,
+  DeleteApprovalPart,
   MessagePart,
-  RunApprovalPart,
   ToolPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
@@ -24,10 +24,13 @@ const ask: AskUserPart = {
   resolution: { status: 'answered', selected: ['sdxl'] }
 }
 
-const approval: RunApprovalPart = {
-  type: 'runApproval',
+const deleteApproval: DeleteApprovalPart = {
+  type: 'deleteApproval',
   askId: 'turn-1:call-2',
-  workflowName: 'Draft'
+  prompt: 'Delete the node you added?',
+  nodes: [{ id: '12', name: 'KSampler' }],
+  hiddenNodeCount: 0,
+  resolution: { status: 'answered', selected: ['delete'] }
 }
 
 function shape(parts: MessagePart[]) {
@@ -58,24 +61,34 @@ describe('groupMessageParts', () => {
     ])
   })
 
-  it('starts a new trace after each run approval', () => {
+  it('starts a new trace after each answered card', () => {
     expect(
       shape([
         tool('a'),
-        approval,
-        { type: 'thinking', text: 'Running', state: 'done' },
+        deleteApproval,
+        { type: 'thinking', text: 'Deleting', state: 'done' },
         ask,
         tool('b'),
         { type: 'text', text: 'Done', state: 'done' }
       ])
     ).toEqual([
       'trace(a)',
-      'runApproval',
+      'deleteApproval',
       'trace(thinking)',
       'askUser',
       'trace(b)',
       'text'
     ])
+  })
+
+  it('starts a new trace after a card that could not be shown', () => {
+    expect(
+      shape([
+        tool('a'),
+        { type: 'askUnavailable', askId: 'turn-1:call-3' },
+        tool('b')
+      ])
+    ).toEqual(['trace(a)', 'notice', 'trace(b)'])
   })
 
   it('does not split the trace at an informational notice', () => {

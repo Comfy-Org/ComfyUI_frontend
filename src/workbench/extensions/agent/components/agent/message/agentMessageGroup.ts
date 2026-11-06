@@ -31,9 +31,8 @@ type TraceGroup = Extract<AgentMessageGroup, { kind: 'trace' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
 /**
- * Tool and thinking parts gather into one trace at the position of the first,
- * across text, until a card the user answers. Steps after that card start a new
- * trace below it, so the card stays where it was asked.
+ * Tool and thinking parts gather into one trace across text; any ask card
+ * (a part with an `askId`) closes it, so later steps start a new trace below.
  */
 export function groupMessageParts(
   parts: readonly MessagePart[]

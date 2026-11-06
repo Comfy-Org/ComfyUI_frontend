@@ -587,9 +587,10 @@ describe('AgentMessage thinking narration', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('draws steps taken after an answered question below its card', () => {
+  function answeredQuestionTurn(streaming: boolean): AssistantMessage {
     const message = thinkingMessage()
     message.thinking = false
+    message.streaming = streaming
     message.parts = [
       {
         type: 'tool',
@@ -616,8 +617,12 @@ describe('AgentMessage thinking narration', () => {
         ok: true
       }
     ]
+    return message
+  }
+
+  it('draws steps taken after an answered question below its card', () => {
     render(AgentMessage, {
-      props: { message },
+      props: { message: answeredQuestionTurn(true) },
       global: { plugins: [i18n] }
     })
 
@@ -629,6 +634,32 @@ describe('AgentMessage thinking narration', () => {
     ).toBeTruthy()
     expect(
       card.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('summarizes the steps on each side of an answered question once the turn ends', async () => {
+    render(AgentMessage, {
+      props: { message: answeredQuestionTurn(false) },
+      global: { plugins: [i18n] }
+    })
+
+    const [above, below] = screen.getAllByRole('button', { name: /^worked/i })
+    const card = screen.getByText('Which model should I use?')
+    expect(
+      above.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      card.compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+
+    await userEvent.click(below)
+    expect(screen.getByText('Set widget')).toBeVisible()
+    expect(screen.queryByText('List slots')).not.toBeInTheDocument()
+
+    await userEvent.click(above)
+    const listSlots = screen.getByText('List slots')
+    expect(
+      listSlots.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 
