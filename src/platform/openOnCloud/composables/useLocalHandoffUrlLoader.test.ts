@@ -1,0 +1,319 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
+import { app } from '@/scripts/app'
+import { defaultGraph } from '@/scripts/defaultGraph'
+import {
+  captureDesktopWorkflowHandoff,
+  DESKTOP_HANDOFF_LIFETIME_MS,
+  desktopWorkflowUrl
+} from '@/platform/openOnCloud/desktopWorkflowHandoff'
+
+vi.mock(import('vue-router'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
+
+function linkWithNonce(): string {
+  const nonce = crypto.randomUUID()
+  useRoute().query.from_local = nonce
+  return nonce
+}
+
+function handOff(
+  data: unknown,
+  {
+    source = window,
+    origin = 'http://127.0.0.1:8188'
+  }: { source?: MessageEventSource | null; origin?: string } = {}
+): void {
+  window.dispatchEvent(new MessageEvent('message', { data, source, origin }))
+}
+
+function workflowMessage(nonce: string, workflow: unknown = defaultGraph) {
+  return {
+    type: 'comfy-local-handoff:workflow',
+    nonce,
+    filename: 'portrait',
+    workflow
+  }
+}
+
+async function loadWithOpener(opener: Window | null = window) {
+  const { loadLocalHandoffFromUrl } = useLocalHandoffUrlLoader(() => opener)
+  await loadLocalHandoffFromUrl()
+}
+
+describe(useLocalHandoffUrlLoader, () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    vi.mocked(app.loadGraphData).mockResolvedValue(true)
+    vi.spyOn(window, 'postMessage')
+  })
+
+  it('does nothing without a from_local param', async () => {
+    await loadWithOpener()
+
+    expect(useRouter().replace).not.toHaveBeenCalled()
+    expect(window.postMessage).not.toHaveBeenCalled()
+  })
+
+  it('imports the Desktop workflow after sign-in without an opener window', async () => {
+    const nonce = linkWithNonce()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'desktop-portrait',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    await captureDesktopWorkflowHandoff(new URL(destination))
+
+    await loadWithOpener(null)
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({ nodes: expect.any(Array) }),
+      true,
+      true,
+      'desktop-portrait'
+    )
+    expect(window.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
+  })
+
+  it('strips the param and asks the opener for the workflow with its nonce', async () => {
+    const nonce = linkWithNonce()
+    useRoute().query.other = 'kept'
+
+    await loadWithOpener()
+
+    expect(useRouter().replace).toHaveBeenCalledWith({
+      query: { other: 'kept' }
+    })
+    expect(window.postMessage).toHaveBeenCalledExactlyOnceWith(
+      { type: 'comfy-local-handoff:ready', nonce },
+      '*'
+    )
+  })
+
+  it('asks for the workflow with a nonce preserved through sign-in, then forgets it', async () => {
+    const nonce = crypto.randomUUID()
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF,
+      { from_local: nonce },
+      ['from_local']
+    )
+
+    await loadWithOpener()
+
+    expect(window.postMessage).toHaveBeenCalledExactlyOnceWith(
+      { type: 'comfy-local-handoff:ready', nonce },
+      '*'
+    )
+    expect(
+      sessionStorage.getItem('Comfy.PreservedQuery.local_handoff')
+    ).toBeNull()
+  })
+
+  it('opens the handed-over workflow and says where it came from', async () => {
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'info',
+          title: 'Opened from ComfyUI on your computer',
+          description:
+            "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready."
+        })
+      )
+    )
+    expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        nodes: expect.arrayContaining([
+          expect.objectContaining({ type: 'KSampler' })
+        ])
+      }),
+      true,
+      true,
+      'portrait'
+    )
+  })
+
+  it.for<{ name: string; source: Window | null; origin: string }>([
+    {
+      name: 'another window',
+      source: null,
+      origin: 'http://127.0.0.1:8188'
+    },
+    {
+      name: 'an opener that is not local',
+      source: window,
+      origin: 'https://evil.example'
+    }
+  ])('ignores a workflow from $name', async ({ source, origin }) => {
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce), { source, origin })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('ignores a workflow from the opener with another nonce', async () => {
+    linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(crypto.randomUUID()))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'the load fails', outcome: false },
+    { name: 'a newer load replaces it', outcome: undefined }
+  ])('does not claim the workflow opened when $name', async ({ outcome }) => {
+    vi.mocked(app.loadGraphData).mockResolvedValue(outcome)
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce))
+
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
+  })
+
+  it('reports a load that throws and says the workflow did not open', async () => {
+    vi.mocked(app.loadGraphData).mockRejectedValue(new Error('configure'))
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: "Couldn't open the workflow from ComfyUI on your computer"
+        })
+      )
+    )
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_loading_open_on_cloud_workflow'
+      })
+    )
+  })
+
+  it('refuses a handed-over workflow that fails validation', async () => {
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce, { nodes: 'not a workflow' }))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: "Couldn't open the workflow from ComfyUI on your computer"
+        })
+      )
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('waits a full minute, then explains how to retry when the local sender no longer answers', async () => {
+    const missing = expect.objectContaining({
+      title: "Your workflow didn't arrive"
+    })
+    linkWithNonce()
+    await loadWithOpener()
+
+    await vi.advanceTimersByTimeAsync(59_999)
+    expect(useToast().toasts).not.toContainEqual(missing)
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: "Your workflow didn't arrive",
+        description:
+          'ComfyUI stops waiting after 10 minutes. Click Open on Comfy Cloud in ComfyUI again.'
+      })
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('explains how to retry when the local tab is no longer available', async () => {
+    linkWithNonce()
+    await loadWithOpener(null)
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: "Your workflow didn't arrive"
+      })
+    )
+  })
+
+  it('discards a Desktop transfer without importing or notifying while the gate is off', async () => {
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = false
+    const nonce = linkWithNonce()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'desktop-portrait',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    await captureDesktopWorkflowHandoff(new URL(destination))
+    const stored = `Comfy.OpenOnCloud.Desktop.${nonce}`
+    expect(sessionStorage.getItem(stored)).not.toBeNull()
+
+    await loadWithOpener(window)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(window.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: "Your workflow didn't arrive" })
+    )
+    expect(sessionStorage.getItem(stored)).toBeNull()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it.for([
+    { name: 'the flag is off', flag: false, opener: window },
+    { name: 'no tab opened this one', flag: true, opener: null }
+  ])(
+    'cleans the query without messaging when $name',
+    async ({ flag, opener }) => {
+      vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = flag
+      linkWithNonce()
+
+      await loadWithOpener(opener)
+
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+      expect(window.postMessage).not.toHaveBeenCalled()
+    }
+  )
+})

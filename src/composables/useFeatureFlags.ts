@@ -207,6 +207,13 @@ export function useFeatureFlags() {
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        import.meta.env.DEV
+      )
+    },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
