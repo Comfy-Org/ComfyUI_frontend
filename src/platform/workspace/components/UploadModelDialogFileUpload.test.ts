@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import koMessages from '@/locales/ko/main.json' with { type: 'json' }
 import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import { taskService } from '@/platform/tasks/services/taskService'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
@@ -22,7 +23,7 @@ vi.mock(import('@/scripts/api'))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: enMessages },
+  messages: { en: enMessages, ko: koMessages },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -272,14 +273,16 @@ describe('UploadModelDialog file upload', () => {
     it('shows the rate and time left, then reconnecting with Cancel available', async () => {
       const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
       const { sends, user } = await startUpload()
+      const status = screen.getByRole('status')
+      expect(status).toBeEmptyDOMElement()
       clock.mockReturnValue(1000)
       sends[0].options.onProgress(5)
-      expect(await screen.findByRole('status')).toHaveTextContent(
-        '5 B/s · 1s left'
-      )
+      expect(await screen.findByText('5 B/s · 1s left')).toBeInTheDocument()
+      expect(status).toBeEmptyDOMElement()
 
       sends[0].options.onReconnecting?.(true)
-      expect(await screen.findByText('Reconnecting...')).toBeInTheDocument()
+      await vi.waitFor(() => expect(status).toHaveTextContent('Reconnecting...'))
+      expect(screen.getByRole('status')).toBe(status)
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
         '50'
@@ -291,6 +294,20 @@ describe('UploadModelDialog file upload', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         'Upload canceled.'
       )
+    })
+
+    it('translates the time-left unit when the active locale changes', async () => {
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+      const { sends } = await startUpload()
+      onTestFinished(() => {
+        i18n.global.locale.value = 'en'
+        sends[0].finish({ ok: false, reason: 'cancelled' })
+      })
+      i18n.global.locale.value = 'ko'
+      clock.mockReturnValue(1000)
+      sends[0].options.onProgress(5)
+
+      expect(await screen.findByText(/1초/)).toBeInTheDocument()
     })
 
     it('offers a new upload after the storage session expires', async () => {
