@@ -451,20 +451,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
             existingWorkflow.size = file.size
           }
 
-          // Never unload the active workflow - it may contain unsaved in-memory edits.
           if (isActiveWorkflow) {
             return
           }
 
-          // If nothing changed, keep any loaded content cached.
           if (isMetadataUnchanged) {
             return
           }
 
           existingWorkflow.unload()
         },
-        /* exclude */ (workflow) => workflow.isTemporary,
-        /* beforeDelete */ (workflow, path) => {
+        (workflow) => workflow.isTemporary,
+        (workflow, path) => {
           if (isActive(workflow)) return false
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path

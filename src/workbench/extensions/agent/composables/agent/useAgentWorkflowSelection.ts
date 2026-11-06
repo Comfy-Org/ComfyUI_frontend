@@ -258,11 +258,6 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  /**
-   * A complete listing that omits the id is conclusive only when nothing local
-   * owns it. With a local owner, `GET /api/workflows/{id}` decides, because the
-   * listing hides version-less drafts.
-   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean

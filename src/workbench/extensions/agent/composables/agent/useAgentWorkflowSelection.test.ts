@@ -391,14 +391,20 @@ describe('historical workflow restoration', () => {
         { id: 'wf-current', name: 'current' }
       ])
     )
-    for (const path of ['workflows/saved.json', 'workflows/a/saved.json'])
-      workflows.attachWorkflow(
-        createMockLoadedWorkflow({
-          path,
-          filename: 'saved',
-          isTemporary: false
-        })
-      )
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/a/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
       true
