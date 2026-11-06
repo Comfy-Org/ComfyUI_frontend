@@ -269,7 +269,7 @@ const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 
 watch(
-  () => asset.user_metadata,
+  () => asset.id,
   () => {
     pendingUpdates.value = {}
   }
@@ -283,10 +283,13 @@ watch(
 )
 
 const debouncedFlushMetadata = useDebounceFn(() => {
-  if (isImmutable.value) return
+  if (isImmutable.value || Object.keys(pendingUpdates.value).length === 0)
+    return
+  const updates = pendingUpdates.value
+  pendingUpdates.value = {}
   assetsStore.updateAssetMetadata(
     asset,
-    { ...asset.user_metadata, ...pendingUpdates.value },
+    { ...asset.user_metadata, ...updates },
     cacheKey
   )
 }, 500)

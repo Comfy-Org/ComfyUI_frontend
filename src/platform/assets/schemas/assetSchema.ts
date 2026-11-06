@@ -104,7 +104,10 @@ export type AssetId = string
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
-export type ModelBrowserAsset = AssetItem & { isWorkspaceLibrary?: boolean }
+export type ModelBrowserAsset = AssetItem & {
+  isWorkspaceLibrary?: boolean
+  browserCategories?: string[]
+}
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>

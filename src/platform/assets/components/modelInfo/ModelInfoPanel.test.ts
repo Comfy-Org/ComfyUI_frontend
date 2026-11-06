@@ -2,7 +2,9 @@ import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type * as DistributionTypes from '@/platform/distribution/types'
@@ -71,6 +73,46 @@ describe('ModelInfoPanel', () => {
       }
     })
   }
+
+  it('preserves description edits made while an earlier save is pending', async () => {
+    vi.useFakeTimers()
+    const asset = createMockAsset({
+      is_immutable: false,
+      user_metadata: { user_description: 'Original description' }
+    })
+    let resolveSave!: (saved: boolean) => void
+    const save = vi
+      .spyOn(useAssetsStore(), 'updateAssetMetadata')
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      .mockResolvedValue(true)
+    const { rerender } = renderPanel(asset)
+    const description = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    await fireEvent.update(description, 'First edit')
+    await vi.advanceTimersByTimeAsync(500)
+    const savedAsset = {
+      ...asset,
+      user_metadata: { user_description: 'First edit' }
+    }
+    await rerender({ asset: savedAsset })
+    await fireEvent.update(description, 'Newer edit')
+    resolveSave(true)
+    await rerender({
+      asset: { ...savedAsset, user_metadata: { ...savedAsset.user_metadata } }
+    })
+    expect(description).toHaveValue('Newer edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: asset.id }),
+      { user_description: 'Newer edit' },
+      undefined
+    )
+  })
 
   describe('Basic Info Section', () => {
     it('renders basic info section', () => {

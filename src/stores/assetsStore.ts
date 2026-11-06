@@ -464,42 +464,47 @@ export const useAssetsStore = defineStore('assets', () => {
           Date.parse(b.created_at) - Date.parse(a.created_at) ||
           (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
       )
-      const keysFor = (asset: AssetItem) =>
-        getAssetCategories(asset, flags.supportsModelTypeTags).map((category) =>
-          JSON.stringify([
-            category,
-            asset.loader_path ?? getAssetFilename(asset)
-          ])
+      const keyFor = (category: string, asset: AssetItem) =>
+        JSON.stringify([category, asset.loader_path ?? getAssetFilename(asset)])
+      const releaseKeys = new Set(
+        release.flatMap((asset) =>
+          getAssetCategories(asset, flags.supportsModelTypeTags).map(
+            (category) => keyFor(category, asset)
+          )
         )
-      const releaseKeys = new Set(release.flatMap(keysFor))
+      )
       const releaseIds = new Set(release.map((asset) => asset.id))
       const libraryKeys = new Set<string>()
-      return [
-        ...release,
-        ...library
-          .filter((asset) => {
-            const categories = getAssetCategories(
-              asset,
-              flags.supportsModelTypeTags
-            )
-            const filename = asset.loader_path ?? getAssetFilename(asset)
-            if (
-              !categories.some((category) =>
-                deploymentDownloads(category, filename)
-              )
-            )
-              return false
-            const keys = keysFor(asset)
-            if (
-              releaseIds.has(asset.id) ||
-              keys.some((key) => releaseKeys.has(key) || libraryKeys.has(key))
-            )
-              return false
-            keys.forEach((key) => libraryKeys.add(key))
-            return true
-          })
-          .map((asset) => ({ ...asset, isWorkspaceLibrary: true }))
-      ]
+      const visibleLibrary = library.flatMap((asset): ModelBrowserAsset[] => {
+        if (releaseIds.has(asset.id)) return []
+        const filename = asset.loader_path ?? getAssetFilename(asset)
+        const categories = getAssetCategories(
+          asset,
+          flags.supportsModelTypeTags
+        )
+        const browserCategories = categories.filter((category) => {
+          const key = keyFor(category, asset)
+          return (
+            deploymentDownloads(category, filename) &&
+            !releaseKeys.has(key) &&
+            !libraryKeys.has(key)
+          )
+        })
+        if (browserCategories.length === 0) return []
+        browserCategories.forEach((category) =>
+          libraryKeys.add(keyFor(category, asset))
+        )
+        return [
+          {
+            ...asset,
+            isWorkspaceLibrary: true,
+            ...(browserCategories.length < categories.length
+              ? { browserCategories }
+              : {})
+          }
+        ]
+      })
+      return [...release, ...visibleLibrary]
     })
 
     const assetsArrayCache = new Map<

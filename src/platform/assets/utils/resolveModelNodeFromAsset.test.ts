@@ -2,7 +2,10 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
@@ -63,6 +66,24 @@ describe('resolveModelNodeFromAsset', () => {
     ).toMatchObject({
       success: false,
       error: { code: 'INVALID_ASSET' }
+    })
+  })
+
+  it('selects the loader for the unshadowed category of a shared model', () => {
+    const provider = createMockNodeProvider({
+      nodeDef: { name: 'VAELoader', display_name: 'Load VAE' },
+      key: 'vae_name'
+    })
+    mockGetNodeProvider.mockImplementation((category) =>
+      category === 'vae' ? provider : createMockNodeProvider()
+    )
+    const asset: ModelBrowserAsset = {
+      ...createMockAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    expect(resolveModelNodeFromAsset(asset)).toMatchObject({
+      success: true,
+      value: { provider }
     })
   })
 

@@ -9,6 +9,7 @@ import { nextTick, ref, toValue, watch } from 'vue'
 
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { getAssetCategories } from '@/platform/assets/utils/assetMetadataUtils'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
@@ -1918,6 +1919,51 @@ describe('deployment Model Library', () => {
       'other'
     ])
   })
+
+  it.for([
+    { modelTypeMode: false, source: 'library' },
+    { modelTypeMode: true, source: 'library' },
+    { modelTypeMode: true, source: 'release' }
+  ])(
+    'keeps unshadowed memberships after a $source collision in type mode $modelTypeMode',
+    async ({ modelTypeMode, source }) => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = modelTypeMode
+      const older = {
+        ...asset('older', 'loras', 'style.safetensors'),
+        created_at: '2026-11-01T00:00:00Z',
+        tags: modelTypeMode
+          ? ['models', 'model_type:loras', 'model_type:vae']
+          : ['models', 'loras', 'vae']
+      }
+      const newer = {
+        ...asset('newer', 'loras', 'style.safetensors'),
+        tags: modelTypeMode
+          ? ['models', 'model_type:loras']
+          : ['models', 'loras']
+      }
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        page(source === 'release' ? [newer] : [])
+      )
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+        page(source === 'release' ? [older] : [older, newer])
+      )
+      const store = useAssetsStore()
+      await store.updateModelsForTag('models')
+      const cards = store.getAssets('tag:models')
+      expect(
+        cards.map((card) => ({
+          id: card.id,
+          categories: getAssetCategories(card, modelTypeMode)
+        }))
+      ).toEqual([
+        { id: 'newer', categories: ['loras'] },
+        { id: 'older', categories: ['vae'] }
+      ])
+      expect(cards.find((card) => card.id === 'older')?.tags).toEqual(
+        older.tags
+      )
+    }
+  )
 
   it.for([
     { category: 'loras', name: 'legacy.ckpt' },

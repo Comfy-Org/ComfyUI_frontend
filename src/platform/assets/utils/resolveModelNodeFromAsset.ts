@@ -2,7 +2,7 @@ import {
   assetItemSchema,
   assetFilenameSchema
 } from '@/platform/assets/schemas/assetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { ModelBrowserAsset } from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
   MODELS_TAG
@@ -37,7 +37,7 @@ type Result<T, E> = { success: true; value: T } | { success: false; error: E }
  * throwing, so callers can degrade gracefully in UI contexts.
  */
 export function resolveModelNodeFromAsset(
-  asset: AssetItem
+  asset: ModelBrowserAsset
 ): Result<ResolvedModelNode, ResolveModelNodeError> {
   const validatedAsset = assetItemSchema.safeParse(asset)
 
@@ -93,7 +93,7 @@ export function resolveModelNodeFromAsset(
 
   const { flags } = useFeatureFlags()
   const candidates = getAssetNodeCategoryCandidates(
-    validAsset,
+    { ...validAsset, browserCategories: asset.browserCategories },
     flags.supportsModelTypeTags
   )
   if (candidates.length === 0) {

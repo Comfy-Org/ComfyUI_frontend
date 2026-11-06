@@ -4702,7 +4702,7 @@
       "loadingAsset": "Loading asset"
     },
     "modelInfo": {
-      "saveFailed": "Couldn't save model details. You can only edit models you uploaded. Try again if this is your model.",
+      "saveFailed": "Couldn't save model details. Try again.",
       "title": "Model Info",
       "selectModelPrompt": "Select a model to see its information",
       "basicInfo": "Basic Info",

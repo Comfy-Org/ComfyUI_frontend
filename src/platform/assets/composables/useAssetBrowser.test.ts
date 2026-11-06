@@ -81,6 +81,20 @@ describe('useAssetBrowser', () => {
     })
   })
 
+  it('filters a shared model by its unshadowed browser categories', () => {
+    const shared: ModelBrowserAsset = {
+      ...createApiAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    const { filteredAssets, selectedNavItem } = useAssetBrowser(ref([shared]))
+    selectedNavItem.value = 'loras'
+    expect(filteredAssets.value).toEqual([])
+    selectedNavItem.value = 'vae'
+    expect(
+      filteredAssets.value.map(({ id, badges }) => ({ id, badges }))
+    ).toEqual([{ id: 'test-id', badges: [{ label: 'vae', type: 'type' }] }])
+  })
+
   it('keeps uploaded model origin and loader values in All Models and Imported', () => {
     const upload: ModelBrowserAsset = createApiAsset({
       id: 'upload',
