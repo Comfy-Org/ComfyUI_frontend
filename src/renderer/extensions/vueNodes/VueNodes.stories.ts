@@ -5,6 +5,7 @@ import { computed, onScopeDispose, ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -19,7 +20,6 @@ import {
 } from '@/stores/modelToNodeStore'
 import { CONTROL_OPTIONS, isControlOption } from '@/types/simplifiedWidget'
 import type { ControlOptions, SimplifiedWidget } from '@/types/simplifiedWidget'
-import { zeroUuid } from '@/utils/uuid'
 
 import NodeHeader from './components/NodeHeader.vue'
 import SlotConnectionDot from './components/SlotConnectionDot.vue'

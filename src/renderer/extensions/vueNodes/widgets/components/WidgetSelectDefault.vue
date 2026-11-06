@@ -48,7 +48,7 @@
           "
         >
           <ComboboxTrigger as-child>
-            <button
+            <Button
               :id="inputId"
               type="button"
               role="combobox"
@@ -59,12 +59,14 @@
               :disabled
               tabindex="0"
               data-testid="widget-select-default-trigger"
-              class="flex h-full min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none not-disabled:hover:bg-muted disabled:cursor-default"
+              variant="textonly"
+              size="unset"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 text-xs font-normal disabled:cursor-default"
             >
               <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
-            </button>
+            </Button>
           </ComboboxTrigger>
           <slot />
           <Button
