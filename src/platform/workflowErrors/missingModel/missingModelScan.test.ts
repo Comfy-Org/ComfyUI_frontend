@@ -23,9 +23,10 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-type TestNode = Omit<LGraphNode, 'constructor'> & {
-  _testExecutionId?: string
-}
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
@@ -67,62 +68,61 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   }
 })
 
-/** Helper: create a combo widget mock */
 function makeComboWidget(
   name: string,
   value: string | number,
   options: string[] = []
 ): IComboWidget {
-  return fromAny<IComboWidget, unknown>({
+  return {
     type: 'combo',
     name,
     value,
+    y: 0,
     options: { values: options }
-  })
+  }
 }
 
-/** Helper: create an asset widget mock (Cloud combo replacement) */
-function makeAssetWidget(name: string, value: unknown): IBaseWidget {
-  return fromAny<IBaseWidget, unknown>({
+function makeAssetWidget(
+  name: string,
+  value: IBaseWidget['value']
+): IBaseWidget {
+  return {
     type: 'asset',
     name,
     value,
+    y: 0,
     options: {}
-  })
+  }
 }
 
-/** Helper: create a non-combo widget mock */
-function makeOtherWidget(name: string, value: unknown): IBaseWidget {
-  return fromAny<IBaseWidget, unknown>({
+function makeOtherWidget(name: string, value: number): IBaseWidget {
+  return {
     type: 'number',
     name,
     value,
+    y: 0,
     options: {}
-  })
+  }
 }
 
-/** Mocks read connectivity from their own input mock data. */
 function stampInputConnectivity(node: LGraphNode): LGraphNode {
   return Object.assign(node, {
     isInputConnected: (slot: number) => node.inputs[slot].link != null
   })
 }
 
-/** Helper: create a mock LGraphNode with configured widgets */
 function makeNode(
   id: number,
   type: string,
   widgets: IBaseWidget[] = [],
   executionId?: string
 ): LGraphNode {
-  return stampInputConnectivity(
-    fromAny<LGraphNode, Partial<TestNode>>({
-      id: toNodeId(id),
-      type,
-      widgets,
-      _testExecutionId: executionId
-    })
-  )
+  const graph = createTestRootGraph()
+  graph.state.lastNodeId = id - 1
+  const node = createTestNode(graph)
+  node.type = type
+  node.widgets = widgets
+  return Object.assign(node, { _testExecutionId: executionId })
 }
 
 /** Helper: create a mock LGraph containing given nodes */
@@ -147,10 +147,10 @@ function makeNestedPromotedModelGraph({
   sourceOptions?: string[]
   sourceValue?: string
 } = {}): LGraph {
-  const outerLinkId = 12
-  const innerLinkId = 13
+  const outerLinkId = toLinkId(12)
+  const innerLinkId = toLinkId(13)
   const sourceWidget = makeComboWidget('ckpt_name', sourceValue, sourceOptions)
-  const sourceInput = fromAny<INodeInputSlot, unknown>({
+  const sourceInput = createMockNodeInputSlot({
     name: 'ckpt_name',
     link: innerLinkId
   })
@@ -164,14 +164,15 @@ function makeNestedPromotedModelGraph({
     _testActiveExecutionIds: leafActiveExecutionIds,
     inputs: [sourceInput],
     isSubgraphNode: () => false,
+    isInputConnected: (slot: number) => slot === 0,
     getSlotFromWidget: (widget: IBaseWidget | undefined) =>
-      widget?.name === sourceWidget.name ? sourceInput : undefined,
+      widget?.name === sourceWidget.name ? leafNode.inputs[0] : undefined,
     getWidgetFromSlot: (input: INodeInputSlot | undefined) =>
-      input === sourceInput ? sourceWidget : undefined
+      input === leafNode.inputs[0] ? sourceWidget : undefined
   })
 
   const innerWidgetId = widgetId('graph', toNodeId(77), 'inner_ckpt')
-  const innerInput = fromAny<INodeInputSlot, unknown>({
+  const innerInput = createMockNodeInputSlot({
     name: 'inner_ckpt',
     link: outerLinkId,
     widget: { name: 'inner_ckpt' },
@@ -215,7 +216,7 @@ function makeNestedPromotedModelGraph({
     options: {},
     label: 'Outer checkpoint'
   })
-  const outerInput = fromAny<INodeInputSlot, unknown>({
+  const outerInput = createMockNodeInputSlot({
     name: 'outer_ckpt',
     link: null,
     widget: { name: 'outer_ckpt' },
@@ -339,32 +340,23 @@ describe('scanNodeModelCandidates', () => {
   })
 
   it('enriches candidates with url/hash/directory from node.properties.models', () => {
-    // Regression: bypass/un-bypass cycle previously lost url metadata
-    // because realtime scan only reads widget values. Per-node embedded
-    // metadata in `properties.models` persists across mode toggles, so
-    // the scan now enriches candidates from that source.
     const graph = makeGraph([])
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'CheckpointLoaderSimple',
-      widgets: [
-        makeComboWidget('ckpt_name', 'missing_model.safetensors', [
-          'other_model.safetensors'
-        ])
-      ],
-      properties: {
-        models: [
-          {
-            name: 'missing_model.safetensors',
-            url: 'https://example.com/missing_model',
-            directory: 'checkpoints',
-            hash: 'abc123',
-            hash_type: 'sha256'
-          }
-        ]
-      }
-    })
-    stampInputConnectivity(node)
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+        'other_model.safetensors'
+      ])
+    ])
+    node.properties = {
+      models: [
+        {
+          name: 'missing_model.safetensors',
+          url: 'https://example.com/missing_model',
+          directory: 'checkpoints',
+          hash: 'abc123',
+          hash_type: 'sha256'
+        }
+      ]
+    }
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -377,21 +369,18 @@ describe('scanNodeModelCandidates', () => {
 
   it('preserves existing candidate fields when enriching (no overwrite)', () => {
     const graph = makeGraph([])
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'CheckpointLoaderSimple',
-      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
-      properties: {
-        models: [
-          {
-            name: 'missing_model.safetensors',
-            url: 'https://example.com/new_url',
-            directory: 'checkpoints'
-          }
-        ]
-      }
-    })
-    stampInputConnectivity(node)
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [])
+    ])
+    node.properties = {
+      models: [
+        {
+          name: 'missing_model.safetensors',
+          url: 'https://example.com/new_url',
+          directory: 'checkpoints'
+        }
+      ]
+    }
 
     const result = scanNodeModelCandidates(
       graph,
@@ -401,37 +390,24 @@ describe('scanNodeModelCandidates', () => {
     )
 
     expect(result).toHaveLength(1)
-    // scanComboWidget already sets directory via getDirectory; enrichment
-    // does not overwrite it.
     expect(result[0].directory).toBe('checkpoints')
-    // url was not set by scan, so enrichment fills it in.
     expect(result[0].url).toBe('https://example.com/new_url')
   })
 
   it('skips enrichment when candidate and embedded model directories differ', () => {
-    // A node can list the same model name under multiple directories
-    // (e.g. a LoRA present in both `loras` and `loras/subdir`). Name-only
-    // matching would stamp the wrong url/hash onto the candidate, so
-    // enrichment must agree on directory when the candidate already has
-    // one.
     const graph = makeGraph([])
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'CheckpointLoaderSimple',
-      widgets: [
-        makeComboWidget('ckpt_name', 'collision_model.safetensors', [])
-      ],
-      properties: {
-        models: [
-          {
-            name: 'collision_model.safetensors',
-            url: 'https://example.com/wrong_dir_url',
-            directory: 'wrong_dir'
-          }
-        ]
-      }
-    })
-    stampInputConnectivity(node)
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'collision_model.safetensors', [])
+    ])
+    node.properties = {
+      models: [
+        {
+          name: 'collision_model.safetensors',
+          url: 'https://example.com/wrong_dir_url',
+          directory: 'wrong_dir'
+        }
+      ]
+    }
 
     const result = scanNodeModelCandidates(
       graph,
@@ -442,27 +418,23 @@ describe('scanNodeModelCandidates', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].directory).toBe('checkpoints')
-    // Directory mismatch — enrichment should not stamp the wrong url.
     expect(result[0].url).toBeUndefined()
   })
 
   it('does not enrich candidates with mismatched model names', () => {
     const graph = makeGraph([])
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'CheckpointLoaderSimple',
-      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
-      properties: {
-        models: [
-          {
-            name: 'different_model.safetensors',
-            url: 'https://example.com/different',
-            directory: 'checkpoints'
-          }
-        ]
-      }
-    })
-    stampInputConnectivity(node)
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [])
+    ])
+    node.properties = {
+      models: [
+        {
+          name: 'different_model.safetensors',
+          url: 'https://example.com/different',
+          directory: 'checkpoints'
+        }
+      ]
+    }
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -761,16 +733,10 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('skips muted nodes (mode === NEVER)', () => {
-    const mutedNode = fromAny<LGraphNode, unknown>({
-      id: 10,
-      type: 'CheckpointLoaderSimple',
-      widgets: [
-        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
-      ],
-      mode: 2, // LGraphEventMode.NEVER
-      _testExecutionId: '10'
-    })
-    stampInputConnectivity(mutedNode)
+    const mutedNode = makeNode(10, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+    ])
+    mutedNode.mode = 2
 
     const graph = makeGraph([mutedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -779,16 +745,10 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('skips bypassed nodes (mode === BYPASS)', () => {
-    const bypassedNode = fromAny<LGraphNode, unknown>({
-      id: 11,
-      type: 'CheckpointLoaderSimple',
-      widgets: [
-        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
-      ],
-      mode: 4, // LGraphEventMode.BYPASS
-      _testExecutionId: '11'
-    })
-    stampInputConnectivity(bypassedNode)
+    const bypassedNode = makeNode(11, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+    ])
+    bypassedNode.mode = 4
 
     const graph = makeGraph([bypassedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -797,16 +757,10 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('includes active nodes (mode === ALWAYS)', () => {
-    const activeNode = fromAny<LGraphNode, unknown>({
-      id: 12,
-      type: 'CheckpointLoaderSimple',
-      widgets: [
-        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
-      ],
-      mode: 0, // LGraphEventMode.ALWAYS
-      _testExecutionId: '12'
-    })
-    stampInputConnectivity(activeNode)
+    const activeNode = makeNode(12, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+    ])
+    activeNode.mode = 0
 
     const graph = makeGraph([activeNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -816,13 +770,16 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('scans unlinked promoted subgraph widgets using host identity and source metadata', () => {
-    const linkId = 12
+    const linkId = toLinkId(12)
     const sourceWidget = makeComboWidget(
       'ckpt_name',
       'stale_model.safetensors',
       ['existing_model.safetensors']
     )
-    const sourceInput = fromAny({ name: 'ckpt_name', link: linkId })
+    const sourceInput = createMockNodeInputSlot({
+      name: 'ckpt_name',
+      link: linkId
+    })
     const interiorNode = makeNode(
       42,
       'CheckpointLoaderSimple',
@@ -832,8 +789,9 @@ describe('scanAllModelCandidates', () => {
     Object.assign(interiorNode, {
       inputs: [sourceInput],
       isSubgraphNode: () => false,
+      isInputConnected: (slot: number) => slot === 0,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>
-        widget?.name === sourceWidget.name ? sourceInput : undefined,
+        widget?.name === sourceWidget.name ? interiorNode.inputs[0] : undefined,
       getWidgetFromSlot: () => sourceWidget,
       properties: {
         models: [
@@ -853,7 +811,7 @@ describe('scanAllModelCandidates', () => {
       options: {},
       label: 'Promoted checkpoint'
     })
-    const hostInput = fromAny<INodeInputSlot, unknown>({
+    const hostInput = createMockNodeInputSlot({
       name: 'promoted_ckpt',
       link: null,
       widget: { name: 'promoted_ckpt' },
@@ -911,9 +869,12 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('skips promoted subgraph widgets whose concrete source node is inactive', () => {
-    const linkId = 12
+    const linkId = toLinkId(12)
     const sourceWidget = makeComboWidget('ckpt_name', 'stale_model.safetensors')
-    const sourceInput = fromAny({ name: 'ckpt_name', link: linkId })
+    const sourceInput = createMockNodeInputSlot({
+      name: 'ckpt_name',
+      link: linkId
+    })
     const interiorNode = makeNode(
       42,
       'CheckpointLoaderSimple',
@@ -924,8 +885,9 @@ describe('scanAllModelCandidates', () => {
     Object.assign(interiorNode, {
       inputs: [sourceInput],
       isSubgraphNode: () => false,
+      isInputConnected: (slot: number) => slot === 0,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>
-        widget?.name === sourceWidget.name ? sourceInput : undefined,
+        widget?.name === sourceWidget.name ? interiorNode.inputs[0] : undefined,
       getWidgetFromSlot: () => sourceWidget
     })
 
@@ -936,7 +898,7 @@ describe('scanAllModelCandidates', () => {
       options: {},
       label: 'Promoted checkpoint'
     })
-    const hostInput = fromAny<INodeInputSlot, unknown>({
+    const hostInput = createMockNodeInputSlot({
       name: 'promoted_ckpt',
       link: null,
       widget: { name: 'promoted_ckpt' },
@@ -981,14 +943,14 @@ describe('scanAllModelCandidates', () => {
   })
 
   it('scans nested promoted subgraph widgets through the outer host identity', () => {
-    const outerLinkId = 12
-    const innerLinkId = 13
+    const outerLinkId = toLinkId(12)
+    const innerLinkId = toLinkId(13)
     const sourceWidget = makeComboWidget(
       'ckpt_name',
       'stale_model.safetensors',
       ['existing_model.safetensors']
     )
-    const sourceInput = fromAny<INodeInputSlot, unknown>({
+    const sourceInput = createMockNodeInputSlot({
       name: 'ckpt_name',
       link: innerLinkId
     })
@@ -1001,10 +963,11 @@ describe('scanAllModelCandidates', () => {
     Object.assign(leafNode, {
       inputs: [sourceInput],
       isSubgraphNode: () => false,
+      isInputConnected: (slot: number) => slot === 0,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>
-        widget?.name === sourceWidget.name ? sourceInput : undefined,
+        widget?.name === sourceWidget.name ? leafNode.inputs[0] : undefined,
       getWidgetFromSlot: (input: INodeInputSlot | undefined) =>
-        input === sourceInput ? sourceWidget : undefined,
+        input === leafNode.inputs[0] ? sourceWidget : undefined,
       properties: {
         models: [
           {
@@ -1017,7 +980,7 @@ describe('scanAllModelCandidates', () => {
     })
 
     const innerWidgetId = widgetId('graph', toNodeId(77), 'inner_ckpt')
-    const innerInput = fromAny<INodeInputSlot, unknown>({
+    const innerInput = createMockNodeInputSlot({
       name: 'inner_ckpt',
       link: outerLinkId,
       widget: { name: 'inner_ckpt' },
@@ -1060,7 +1023,7 @@ describe('scanAllModelCandidates', () => {
       options: {},
       label: 'Outer checkpoint'
     })
-    const outerInput = fromAny<INodeInputSlot, unknown>({
+    const outerInput = createMockNodeInputSlot({
       name: 'outer_ckpt',
       link: null,
       widget: { name: 'outer_ckpt' },
