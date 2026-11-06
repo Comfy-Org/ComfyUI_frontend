@@ -273,7 +273,10 @@ async function startFileUpload(
   const response = await postJson(UPLOADS_ENDPOINT, body, options.signal)
   if (response.status !== 403 || file.size > 2 ** 31) return response
   const refusal = zErrorResponse.safeParse(
-    await response.clone().json().catch(() => null)
+    await response
+      .clone()
+      .json()
+      .catch(() => null)
   )
   if (!refusal.success || refusal.data.code !== 'FEATURE_DISABLED')
     return response
