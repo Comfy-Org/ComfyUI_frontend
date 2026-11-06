@@ -466,22 +466,23 @@ function insertResolvedAsks(
   rowCallIds: string[],
   rowStart: number
 ): Set<string> {
-  const inserted = new Set<string>()
-  if (!Array.isArray(raw)) return inserted
+  const resolved = new Set<string>()
+  if (!Array.isArray(raw)) return resolved
   const parts = [...message.parts]
   for (const entry of raw) {
     const ask = zAgentResolvedAsk.safeParse(entry).data
-    const part = ask && toResolvedAskPart(ask)
+    if (!ask) continue
+    resolved.add(ask.ask_id)
+    const part = toResolvedAskPart(ask)
     if (!part) continue
     parts.splice(
       resolvedAskIndex(parts, rowCallIds, ask.after_tool_calls, rowStart),
       0,
       part
     )
-    inserted.add(part.askId)
   }
   message.parts = parts
-  return inserted
+  return resolved
 }
 
 function applyAssistantRow(
@@ -494,7 +495,7 @@ function applyAssistantRow(
   const rowStart = message.parts.length
   const toolCalls = parseToolCalls(row.content, isLive)
   appendAssistantContent(message, row, text, toolCalls)
-  const restored = insertResolvedAsks(
+  const resolved = insertResolvedAsks(
     message,
     row.resolved_asks,
     (toolCalls ?? []).map(({ part }) => part.callId),
@@ -503,7 +504,7 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  if (row.pending_ask && !restored.has(row.pending_ask.ask_id))
+  if (row.pending_ask && !resolved.has(row.pending_ask.ask_id))
     message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }

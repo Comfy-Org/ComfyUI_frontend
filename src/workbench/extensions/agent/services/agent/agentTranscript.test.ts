@@ -834,6 +834,29 @@ describe('normalizeAgentTranscript', () => {
       ])
     })
 
+    it('drops an open run card the row also lists as finished', () => {
+      const runCard = {
+        ...askUser,
+        kind: 'run_approval',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ]
+      }
+      const [live] = finished(
+        [{ ...runCard, status: 'answered', selected: ['run'] }],
+        'streaming'
+      )
+      live.pending_ask = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
+          pending_ask: runCard
+        }
+      ])[0].pending_ask
+
+      expect(shape([live])).toEqual(['call-1', 'call-2', 'text'])
+    })
+
     it("keeps a later row's card after the earlier row's text when the later row has no tool calls", () => {
       const history = zAgentMessages.parse([
         {
