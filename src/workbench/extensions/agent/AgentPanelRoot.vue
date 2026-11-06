@@ -1071,7 +1071,7 @@ const {
     },
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
-    activeTab: (data) => enqueueActiveTab(data, 'agent'),
+    activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
   }
 })
@@ -1398,10 +1398,7 @@ watch(
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
-function enqueueActiveTab(
-  data: AgentActiveTabData,
-  initiator: 'agent' | 'approval'
-): Promise<boolean> {
+function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
   const turnId =
     data.message_id === undefined
@@ -1410,7 +1407,7 @@ function enqueueActiveTab(
   const tracking = toRaw(agentPanelStore.targetTracking)
   const takeTarget = (tab: ComfyWorkflow) => {
     if (
-      initiator === 'agent' &&
+      tracking.mode === 'retained' &&
       data.thread_id === threadId.value &&
       toRaw(agentPanelStore.targetTracking) === tracking
     )
@@ -1429,12 +1426,7 @@ async function onOpenApprovalWorkflow(
   workflowName?: string
 ): Promise<void> {
   const decidedAt = Date.now()
-  if (
-    await enqueueActiveTab(
-      { workflow_id: workflowId, name: workflowName },
-      'approval'
-    )
-  )
+  if (await enqueueActiveTab({ workflow_id: workflowId, name: workflowName }))
     trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
