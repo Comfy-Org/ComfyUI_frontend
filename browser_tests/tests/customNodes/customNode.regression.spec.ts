@@ -16,7 +16,7 @@ import {
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
-  customExtensionStartupErrors,
+  customNodeStartupErrors,
   isForeignExecutionNoise,
   staleRequiredStartupErrorRulesForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
@@ -99,7 +99,7 @@ const installedManifestPacks = manifestEntries.map((entry) => entry.pack)
 test('Pack startup/load: custom extensions import without unallowlisted errors @custom-nodes', async ({
   comfyPage
 }) => {
-  const startupErrors = customExtensionStartupErrors(
+  const startupErrors = customNodeStartupErrors(
     startupConsoleErrors(comfyPage.page)
   )
   expect(
@@ -158,7 +158,7 @@ for (const entry of manifestEntries) {
             const registered = await comfyPage.page.evaluate(() =>
               window.app!.extensions.map((extension) => extension.name)
             )
-            const servedExtensionPaths =
+            const servedCustomNodePaths =
               webDirectory !== undefined ||
               ownedAutogrowCases.some(
                 ({ extensionName }) =>
@@ -175,7 +175,7 @@ for (const entry of manifestEntries) {
               ).toContain(name)
             if (webDirectory !== undefined) {
               const servesAssets = servesFrontendAssetsForPack(
-                servedExtensionPaths,
+                servedCustomNodePaths,
                 entry.pack
               )
               if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
@@ -198,7 +198,7 @@ for (const entry of manifestEntries) {
                 expectedExtensions: expectedExtensionsFor(entry)
               },
               registered,
-              servedExtensionPaths
+              servedCustomNodePaths
             )
             expect(
               staleAutogrowApplicability,

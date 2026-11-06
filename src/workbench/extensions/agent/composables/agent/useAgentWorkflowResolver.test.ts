@@ -3,7 +3,7 @@ import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -40,8 +40,8 @@ function setup(
     }
   })
   const bindings = useAgentWorkflowTabBindingStore()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowListing> => listing(cloud)
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing(cloud)
   )
   const getCloudWorkflow = vi.fn(
     async (workflowId: string): Promise<WorkflowResponse> =>

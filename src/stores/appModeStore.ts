@@ -28,7 +28,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { ViewMode } from '@/utils/appMode'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -245,15 +245,14 @@ export const useAppModeStore = defineStore('appMode', () => {
       const graph = useApp().rootGraph
       const extra = graph.extra
       extra.linearData = {
-        inputs: data.inputs.map(
-          ([id, name, config]): LinearInput =>
-            config
-              ? [
-                  id,
-                  name,
-                  JSON.parse(JSON.stringify(config)) as InputWidgetConfig
-                ]
-              : [id, name]
+        inputs: data.inputs.map(([id, name, config]): LinearInput =>
+          config
+            ? [
+                id,
+                name,
+                JSON.parse(JSON.stringify(config)) as InputWidgetConfig
+              ]
+            : [id, name]
         ),
         outputs: [...data.outputs]
       }

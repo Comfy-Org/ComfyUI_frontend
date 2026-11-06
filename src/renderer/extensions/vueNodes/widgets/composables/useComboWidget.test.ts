@@ -18,7 +18,7 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -57,7 +57,8 @@ vi.mock(import('@/i18n'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseWidgetAssetPicker: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false),
+    onAssetsChanged: vi.fn(() => () => {})
   }
 }))
 

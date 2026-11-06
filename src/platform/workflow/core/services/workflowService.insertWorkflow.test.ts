@@ -40,7 +40,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 

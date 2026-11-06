@@ -28,6 +28,11 @@
       </DialogTitle>
     </div>
 
+    <CreditsLockedNotice
+      v-if="creditsLocked && checkoutStep === 'pricing'"
+      class="text-center"
+    />
+
     <div
       v-if="reason === 'out_of_credits'"
       class="text-center text-muted-foreground"
@@ -119,11 +124,12 @@ import { computed, onMounted } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
+import CreditsLockedNotice from './CreditsLockedNotice.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
@@ -133,12 +139,14 @@ const {
   onClose,
   reason,
   paymentIntentSource,
+  creditsLocked,
   initialPlanMode,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
+  creditsLocked?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
 }>()

@@ -4,6 +4,7 @@
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
+        :label="$t('auth.login.userAvatar')"
         class="mb-1"
         :photo-url="userPhotoUrl"
         icon-class="size-6"
@@ -53,7 +54,7 @@
               </span>
             </div>
             <i
-              class="icon-[lucide--chevron-down] size-3.5 scale-150 text-muted-foreground"
+              class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
             />
           </Button>
         </PopoverTrigger>
@@ -94,26 +95,26 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="canTopUp"
+        v-if="addCredits.kind !== 'hidden'"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
+        :disabled="addCredits.kind === 'disabled'"
+        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
       </Button>
       <Button
-        v-else-if="paymentRecoveryAvailable"
+        v-if="paymentRecoveryAvailable"
         variant="secondary"
         size="sm"
-        data-testid="add-credits-button"
-        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
-        @click="handleTopUp"
+        :loading="isUpdatingPayment"
+        @click="updatePayment"
       >
-        {{ $t('subscription.addCredits') }}
+        {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
-      <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
         v-if="showSubscribeAction && isPersonalWorkspace"
         :fluid="false"
@@ -138,6 +139,14 @@
         }}
       </Button>
     </div>
+
+    <p
+      v-if="!accountActionsOnly && refusalReason"
+      :id="refusalReasonId"
+      class="m-0 px-4 pb-2 text-xs text-muted-foreground"
+    >
+      {{ refusalReason }}
+    </p>
 
     <p
       v-if="processingPayment"
@@ -249,11 +258,11 @@
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -267,12 +276,15 @@ import {
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { addCreditsAvailability } from '@comfyorg/account-core/billing'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -293,8 +305,22 @@ const activeWorkspaceSummary = computed(() =>
   activeWorkspace.value ? billingState.getSummary(activeWorkspace.value) : null
 )
 const { permissions, canReactivatePlan, canOpenPricingSurface } = useAccountUI()
-const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  canSubscribeSelfServe,
+  paymentRecoveryAvailable
+} = useBillingCapabilities()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const addCredits = computed(() =>
+  addCreditsAvailability({
+    resolved: hasResolvedCapabilities.value,
+    canTopUp: canTopUp.value,
+    denial: topUpDenial.value
+  })
+)
+const refusalReasonId = useId()
 
 const emit = defineEmits<{
   close: []
@@ -335,7 +361,10 @@ const {
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const refusalReason = computed(() =>
+  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+)
 const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {
@@ -449,6 +478,6 @@ const handleCreateWorkspace = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) void fetchBalance()
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

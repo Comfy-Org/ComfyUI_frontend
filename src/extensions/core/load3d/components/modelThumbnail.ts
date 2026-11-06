@@ -5,8 +5,8 @@ import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
-import { reportError } from '@/platform/telemetry/reportError'
-import { redactTelemetryError } from '@/platform/telemetry/redactTelemetryUrls'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { redactTelemetryError } from '@comfyorg/telemetry/redactTelemetryUrls'
 import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 
 let queue: Promise<unknown> = Promise.resolve()

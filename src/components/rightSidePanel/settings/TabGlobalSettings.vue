@@ -15,9 +15,9 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import FieldSwitch from './FieldSwitch.vue'
-import LayoutField from './LayoutField.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()

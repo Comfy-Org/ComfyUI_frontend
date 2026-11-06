@@ -111,7 +111,7 @@ vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 

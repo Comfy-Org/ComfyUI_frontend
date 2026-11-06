@@ -1,5 +1,5 @@
 import type { LLink } from '@comfyorg/graph-model/entityRegistry'
-import { textOnColor } from '@/utils/colorUtil'
+import { textOnColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import type {
   HasBoundingRect,

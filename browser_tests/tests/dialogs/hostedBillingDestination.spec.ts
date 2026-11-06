@@ -47,8 +47,10 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   plan_slug: 'pro-monthly',
@@ -129,9 +131,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
     return r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
   })
   await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
-  await page.route('**/customers/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
   await page.route('**/api/billing/plans', (r) =>

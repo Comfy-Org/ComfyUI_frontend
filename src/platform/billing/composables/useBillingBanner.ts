@@ -6,6 +6,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -33,6 +34,7 @@ export interface BillingBannerInputs {
   hasFunds: boolean | null
   isCancelled: boolean
   endDate: string | null
+  withinEnterpriseEndingNotice: boolean
   canManage: boolean
   isPlanEnded: boolean
   isPlanTerminal: boolean
@@ -54,14 +56,13 @@ export interface BillingBannerInputs {
 // Decision recorded on FE-2035. Enterprise payment and credit lifecycles
 // are handled by sales, so outOfCredits never applies.
 function deriveEnterpriseBanner(
-  inputs: BillingBannerInputs,
-  now: number
+  inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
-  const withinEndingNotice =
-    inputs.isCancelled && isWithinEnterpriseEndingNotice(inputs.endDate, now)
-  return withinEndingNotice ? 'ending' : null
+  return inputs.isCancelled && inputs.withinEnterpriseEndingNotice
+    ? 'ending'
+    : null
 }
 
 const PERSONAL_TIERS: ReadonlySet<SubscriptionTier> = new Set([
@@ -145,8 +146,7 @@ function hasPlanEnded(
 }
 
 export function deriveBillingBanner(
-  inputs: BillingBannerInputs,
-  now: number = Date.now()
+  inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (inputs.billingStatus === 'paused') return 'paused'
   if (!inputs.isLoaded) return null
@@ -154,7 +154,7 @@ export function deriveBillingBanner(
   if (hasPlanEnded(inputs, audience)) {
     return inputs.planEndedDismissed ? null : 'planEnded'
   }
-  if (inputs.isEnterprise) return deriveEnterpriseBanner(inputs, now)
+  if (inputs.isEnterprise) return deriveEnterpriseBanner(inputs)
   return audience ? deriveNoticeBanner(inputs, audience) : null
 }
 
@@ -162,8 +162,11 @@ function classifyTier(
   tier: SubscriptionTier | null | undefined
 ): Pick<BillingBannerInputs, 'isEnterprise' | 'isKnownPersonalTier'> {
   return {
-    isEnterprise: tier === 'ENTERPRISE',
-    isKnownPersonalTier: tier != null && PERSONAL_TIERS.has(tier)
+    isEnterprise: pendingServerFact('BE-25244', tier === 'ENTERPRISE'),
+    isKnownPersonalTier: pendingServerFact(
+      'BE-25244',
+      tier != null && PERSONAL_TIERS.has(tier)
+    )
   }
 }
 
@@ -209,7 +212,7 @@ function useBillingBannerInternal() {
 
   const bannerInputs = computed<BillingBannerInputs>(() => ({
     billingControlEnabled: flags.billingControlEnabled,
-    isTeamPlan: isTeamPlan.value,
+    isTeamPlan: pendingServerFact('BE-25244', isTeamPlan.value),
     billingStatus: billingStatus.value,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     canManage: permissions.value.canManageSubscription,
@@ -222,11 +225,27 @@ function useBillingBannerInternal() {
     runDeniedPastDue: runDeniedPaymentPastDue.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     isActive: subscription.value?.isActive === true,
+    withinEnterpriseEndingNotice: pendingServerFact(
+      'BE-25244',
+      isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+    ),
     ...readSubscriptionInputs(subscription.value)
   }))
 
   const kind = computed<BillingBannerKind | null>(() =>
-    isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
+    isCloud ? deriveBillingBanner(bannerInputs.value) : null
+  )
+  const lifecycleKind = computed<BillingBannerKind | null>(() =>
+    isCloud
+      ? deriveBillingBanner({
+          ...bannerInputs.value,
+          hasFunds: true,
+          topUpDeniedPastDue: false,
+          runDeniedPastDue: false,
+          planEndedDismissed: false,
+          planChangeDismissed: false
+        })
+      : null
   )
   const audience = computed(() => billingBannerAudience(bannerInputs.value))
 
@@ -243,7 +262,7 @@ function useBillingBannerInternal() {
     if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
-  return { kind, audience, dismiss }
+  return { kind, lifecycleKind, audience, dismiss }
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)

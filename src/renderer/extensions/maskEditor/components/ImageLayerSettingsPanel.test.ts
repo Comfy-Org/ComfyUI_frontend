@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import { MaskBlendMode } from '@comfyorg/mask-editor/types'
@@ -24,7 +24,7 @@ vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

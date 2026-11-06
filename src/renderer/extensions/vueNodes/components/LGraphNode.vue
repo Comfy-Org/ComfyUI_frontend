@@ -41,6 +41,12 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full"
+      :style="badgesStyle"
+    />
     <NodeBloodDrips
       v-if="
         !isRerouteNode &&
@@ -112,7 +118,9 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -185,12 +193,6 @@
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
-          />
-          <NodeBadges
-            v-if="!isTransparentHeaderless"
-            v-bind="badges"
-            :pricing="undefined"
-            class="mt-auto"
           />
         </div>
       </template>
@@ -269,7 +271,7 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -314,7 +316,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -727,6 +729,10 @@ const nodeMedia = computed(() => {
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+
+const badgesStyle = computed(() => ({
+  marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
+}))
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()

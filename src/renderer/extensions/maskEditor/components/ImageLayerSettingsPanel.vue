@@ -144,7 +144,7 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
@@ -178,13 +178,11 @@ const baseImageSrc = computed(() => store.image?.src ?? '')
 
 const maskOpacityPercent = computed(() => Math.round(store.maskOpacity * 100))
 
-const blendModeLabels = computed(
-  (): Record<MaskBlendMode, string> => ({
-    [MaskBlendMode.Black]: t('maskEditor.black'),
-    [MaskBlendMode.White]: t('maskEditor.white'),
-    [MaskBlendMode.Negative]: t('maskEditor.negative')
-  })
-)
+const blendModeLabels = computed((): Record<MaskBlendMode, string> => ({
+  [MaskBlendMode.Black]: t('maskEditor.black'),
+  [MaskBlendMode.White]: t('maskEditor.white'),
+  [MaskBlendMode.Negative]: t('maskEditor.negative')
+}))
 
 const blendModeMenuItems = computed<MenuItem[]>(() =>
   (Object.values(MaskBlendMode) as MaskBlendMode[]).map((mode) => ({

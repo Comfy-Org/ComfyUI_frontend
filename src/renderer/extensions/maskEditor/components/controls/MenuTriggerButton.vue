@@ -1,12 +1,18 @@
+<script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+</script>
+
 <template>
-  <button
+  <Button
     type="button"
-    class="flex h-8 items-center gap-1 rounded-lg border-none bg-secondary px-2 text-sm transition-colors duration-100 hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+    variant="secondary"
+    size="unset"
+    class="flex h-8 items-center gap-1 rounded-lg border-none px-2 text-sm font-normal whitespace-normal transition-colors duration-100 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
   >
     <slot />
     <i
       class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
       aria-hidden="true"
     />
-  </button>
+  </Button>
 </template>

@@ -224,6 +224,7 @@ function confirmDeletion() {
       promptText
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(

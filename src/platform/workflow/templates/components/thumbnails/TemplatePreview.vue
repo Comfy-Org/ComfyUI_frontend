@@ -6,7 +6,7 @@ import CompareSliderThumbnail from '@/platform/workflow/templates/components/thu
 import DefaultThumbnail from '@/platform/workflow/templates/components/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/platform/workflow/templates/components/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/platform/workflow/templates/components/thumbnails/LogoOverlay.vue'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
 
 const {
   template,

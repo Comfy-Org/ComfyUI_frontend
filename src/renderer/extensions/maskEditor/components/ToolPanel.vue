@@ -1,5 +1,5 @@
 <template>
-  <div class="z-8888 flex h-full flex-col bg-background">
+  <div class="flex h-full flex-col bg-background">
     <div class="flex flex-col">
       <button
         v-for="tool in allTools"
@@ -12,9 +12,7 @@
         :class="
           cn(
             'maskEditor_toolPanelContainer',
-            currentTool === tool
-              ? 'maskEditor_toolPanelContainerSelected'
-              : 'hover:bg-accent'
+            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
           )
         "
         @click="onToolSelect(tool)"
@@ -40,9 +38,10 @@
         </div>
       </div>
 
-      <button
-        type="button"
-        class="mb-2 flex size-12 cursor-pointer flex-col items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors duration-200 hover:bg-accent"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="mb-2 flex size-12 flex-col items-center justify-center gap-0 rounded-md border-none font-normal whitespace-normal text-muted-foreground transition-colors duration-200"
         @click="onResetZoom"
       >
         <span class="sr-only">{{ t('maskEditor.clickToResetZoom') }}</span>
@@ -52,7 +51,7 @@
         <span data-testid="zoom-dimensions" class="text-xs">{{
           dimensionsText
         }}</span>
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -66,6 +65,7 @@ import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { Tools as ToolName } from '@comfyorg/mask-editor/types'
 import { Tools, allTools } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { toolManager } = defineProps<{
@@ -76,15 +76,13 @@ const { t } = useI18n()
 const store = useMaskEditorStore()
 const colorInputRef = useTemplateRef<HTMLInputElement>('colorInputRef')
 
-const tooltips = computed(
-  (): Record<ToolName, string> => ({
-    [Tools.MaskPen]: t('maskEditor.toolPen'),
-    [Tools.PaintPen]: t('maskEditor.toolPaintPen'),
-    [Tools.Eraser]: t('maskEditor.toolEraser'),
-    [Tools.MaskBucket]: t('maskEditor.toolPaintBucket'),
-    [Tools.MaskColorFill]: t('maskEditor.toolColorSelect')
-  })
-)
+const tooltips = computed((): Record<ToolName, string> => ({
+  [Tools.MaskPen]: t('maskEditor.toolPen'),
+  [Tools.PaintPen]: t('maskEditor.toolPaintPen'),
+  [Tools.Eraser]: t('maskEditor.toolEraser'),
+  [Tools.MaskBucket]: t('maskEditor.toolPaintBucket'),
+  [Tools.MaskColorFill]: t('maskEditor.toolColorSelect')
+}))
 
 function onToolSelect(tool: ToolName) {
   toolManager.switchTool(tool)

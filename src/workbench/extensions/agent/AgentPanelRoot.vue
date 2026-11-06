@@ -18,15 +18,16 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
+  AgentCoachReleaseReason,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
@@ -47,6 +48,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
@@ -98,9 +100,9 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
-import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -131,6 +133,7 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import { useAgentTabSignals } from './composables/agent/useAgentTabSignals'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
@@ -142,12 +145,17 @@ import {
   useAgentSession
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { useAgentSendGates } from './composables/agent/useAgentSendGates'
+import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
+} from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -163,6 +171,7 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
@@ -186,6 +195,7 @@ import {
   resolveDebugPanelEnabled,
   startCrdtDebugGate
 } from './crdt/crdtDebugGate'
+import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -273,13 +283,35 @@ onBeforeUnmount(() => agentIdentity.stop())
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
-const agentAccountId = computed(
-  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const agentSocketIdentity = computed(() => [
+  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+  teamWorkspaceStore.activeWorkspaceId ?? null,
+  desktopHostUser.value?.workspaceId ?? null
+])
+watch(
+  agentSocketIdentity,
+  (
+    [account, workspace, hostWorkspace],
+    [wasAccount, wasWorkspace, wasHostWorkspace]
+  ) => {
+    if (
+      account === wasAccount &&
+      workspace === wasWorkspace &&
+      hostWorkspace === wasHostWorkspace
+    )
+      return
+    if (
+      workspace === null &&
+      account === wasAccount &&
+      account !== null &&
+      hostWorkspace === null
+    )
+      return
+    events.reconnect()
+    agentIdentity.reset()
+  }
 )
-watch(agentAccountId, () => {
-  events.reconnect()
-  agentIdentity.reset()
-})
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -316,15 +348,18 @@ watch(
     // click is still reported, so the funnel saw CTAs with no impression.
     capabilityReadSettled.value
       ? conversationMessages.value
-          .filter((message) =>
-            message.parts.some((part) => part.type === 'paywall')
-          )
-          .map((message) => message.id)
+          .filter((message) => message.parts.some(isCreditsStopPart))
+          .map((message) => ({
+            id: message.id,
+            surface: message.parts.some((part) => part.type === 'paywall')
+              ? ('refused_send' as const)
+              : ('credits_exhausted' as const)
+          }))
       : [],
-  (paywallMessageIds) => {
+  (creditsStops) => {
     const telemetry = useTelemetry()
     if (!telemetry) return
-    for (const id of paywallMessageIds) {
+    for (const { id, surface } of creditsStops) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
         // An unavailable read leaves `canTopUp` guessing true for an owner, so
@@ -333,7 +368,7 @@ watch(
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
           : 'unknown',
-        surface: 'refused_send'
+        surface
       })
     }
   },
@@ -399,7 +434,7 @@ const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (
     latestEntry?.role === 'assistant' &&
-    latestEntry.parts.some((part) => part.type === 'paywall')
+    latestEntry.parts.some(isCreditsStopPart)
   )
 })
 const threadHasUserMessage = computed(() =>
@@ -641,7 +676,7 @@ onBeforeUnmount(() =>
   })
 )
 const { withConsent } = useAgentConsent()
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
     resolvedUserInfo.value?.id,
@@ -668,24 +703,62 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
+const sendGates = useAgentSendGates(
+  () => threadId.value,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  }
+)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
-function releaseCoachCompletionWaiters(proceed = true): void {
+let coachReleaseRevoked = false
+function releaseCoachCompletionWaiters(
+  holdEnd: CoachHoldEnd,
+  proceed = true
+): void {
+  sendGates.end({ gate: 'coach', ...holdEnd })
   for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
+}
+const coachReleaseReasons = {
+  finish: 'finished',
+  skip: 'skipped',
+  elsewhere: 'elsewhere'
+} as const satisfies Record<string, AgentCoachReleaseReason>
+
+function onCoachFinished(action: keyof typeof coachReleaseReasons): void {
+  releaseCoachCompletionWaiters({
+    outcome: 'released',
+    reason: coachReleaseReasons[action]
+  })
 }
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy, consentIdentity],
   ([accepted, key, reason, identity], previous) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
-    if (!accepted || reason !== null || identity !== previous[3])
-      releaseCoachCompletionWaiters()
+    if (!accepted)
+      releaseCoachCompletionWaiters({
+        outcome: 'dropped',
+        reason: 'consent_cleared'
+      })
+    else if (identity !== previous[3])
+      releaseCoachCompletionWaiters({
+        outcome: 'dropped',
+        reason: 'identity_changed'
+      })
+    else if (reason !== null)
+      releaseCoachCompletionWaiters({
+        outcome: 'released',
+        reason: `deferred_${reason}`
+      })
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
 const sendHeldByCoach = ref(false)
 
-async function waitForCoachCompletion(): Promise<boolean> {
+async function waitForCoachCompletion(
+  clientMessageId: string
+): Promise<boolean> {
   const key = onboardingKey.value
   if (!key || hasSeenCoach(key)) return true
   await nextTick()
@@ -697,10 +770,12 @@ async function waitForCoachCompletion(): Promise<boolean> {
   )
     return true
   sendHeldByCoach.value = true
+  sendGates.hold('coach', clientMessageId)
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -770,6 +845,33 @@ const {
   }
 })
 
+watch(
+  selectionTags,
+  (tags, previousTags) => {
+    const stagedKeys = new Set(tags.map(selectedNodeKey))
+    const nextKeys = new Set(
+      [...composerStore.selectionModeNodeKeys].filter((key) =>
+        stagedKeys.has(key)
+      )
+    )
+    if (canvasStore.isPickingNodes) {
+      const previousKeys = new Set(previousTags.map(selectedNodeKey))
+      const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      for (const tag of tags) {
+        const key = selectedNodeKey(tag)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+      }
+    }
+    composerStore.setSelectionModeNodeKeys(nextKeys)
+  },
+  { deep: true, flush: 'sync' }
+)
+const hasNodeSelectionModeAddition = computed(() =>
+  selectionTags.value.some((tag) =>
+    composerStore.selectionModeNodeKeys.has(selectedNodeKey(tag))
+  )
+)
+
 let nodeReferenceWorkflow = selectionTags.value.length
   ? selectedTarget.value
   : null
@@ -832,10 +934,31 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (canvasMissedDocumentFrames(cloudIdFor(target))) return undefined
+  const documentId = cloudIdFor(target)
+  if (canvasMissedDocumentFrames(documentId)) {
+    if (target.activeState) reportWithheldDraft(documentId)
+    return undefined
+  }
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function reportWithheldDraft(workflowId: string | undefined): void {
+  const errorType = 'agent_canvas_draft_withheld_stale'
+  reportError(new Error('agent canvas draft withheld: canvas may be stale'), {
+    surface: 'agent',
+    errorType,
+    level: 'warning',
+    fingerprint: [errorType],
+    tags: {
+      failure_kind: 'bad_state',
+      feature_area: 'agent',
+      operation: 'send',
+      outcome: 'withheld'
+    },
+    context: { workflowId }
+  })
 }
 
 function canvasMissedDocumentFrames(documentId: string | undefined): boolean {
@@ -907,10 +1030,21 @@ async function onWorkflowRestoredAndBound(
     isCurrent
   )
   if (committedWorkflowId === null || !isCurrent()) return ready
-  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
-  if (boundWorkflowId.value !== committedWorkflowId)
-    bindWorkflow(committedWorkflowId)
+  bindRestoredWorkflow(committedWorkflowId)
   return ready
+}
+
+function bindRestoredWorkflow(workflowId: string): void {
+  if (hasUnsyncedHumanOps(workflowId)) return
+  if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
+}
+
+function adoptFollowedWorkflow(
+  workflow: ComfyWorkflow,
+  workflowId: string
+): void {
+  adoptWorkflowTarget(workflow, workflowId)
+  bindRestoredWorkflow(workflowId)
 }
 
 function warnWorkflowUnavailable(): void {
@@ -1064,6 +1198,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  noteUnboundLocalIntent,
   retrySubscription,
   docInputNames,
   docWidgetValue,
@@ -1136,9 +1271,18 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
+function noteUnboundVisibleIntent(): void {
+  const visible = workflowStore.activeWorkflow
+  const workflowId = visible
+    ? bindingStore.workflowIdFor(visible.path)
+    : undefined
+  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  onUnboundLocalIntent: noteUnboundLocalIntent,
+  onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -1149,6 +1293,8 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
+const isChangeTrackerRestoring = () =>
+  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
@@ -1158,8 +1304,11 @@ const restoreOpMinter = attachRestoreOpMinter({
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
+  isRestoringState: isChangeTrackerRestoring
+})
+const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
+  isEnabled: () => agentPanelStore.enabled,
+  isRestoringState: isChangeTrackerRestoring
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -1236,17 +1385,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
-watch(
-  () => conversationStore.turnTabs,
-  (tabs) => tabActivity.setAgentTurnTabs(tabs),
-  { immediate: true, flush: 'sync' }
-)
-watch(
-  () => conversationStore.awaitingApproval,
-  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
-  { immediate: true, flush: 'sync' }
-)
+const { clearTurnSignals } = useAgentTabSignals()
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1288,8 +1427,7 @@ const canvasEmptyAfterTurn = computed(
     boundCanvasNodeCount.value === 0
 )
 
-function refreshBillingAfterTurn(): void {
-  if (billingType.value !== 'workspace') return
+function refreshAgentBillingStatus(): void {
   void refreshBillingStatus().catch((error: unknown) => {
     reportError(error, {
       surface: 'agent',
@@ -1318,7 +1456,7 @@ watch(
     }
     if (completedTurn) {
       graphActivity.finishTurn()
-      refreshBillingAfterTurn()
+      if (billingType.value === 'workspace') refreshAgentBillingStatus()
     }
   },
   { immediate: true, flush: 'sync' }
@@ -1599,23 +1737,42 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters(
-        coachDeferredBy.value !== null && agentPanelStore.isVisible
-      )
+      const deferredBy = coachDeferredBy.value
+      if (deferredBy !== null && agentPanelStore.isVisible)
+        releaseCoachCompletionWaiters({
+          outcome: 'released',
+          reason: `deferred_${deferredBy}`
+        })
+      else {
+        coachReleaseRevoked = true
+        releaseCoachCompletionWaiters(
+          { outcome: 'dropped', reason: 'panel_closed' },
+          false
+        )
+      }
     },
     invalidateConsentHeldSubmission: () => {
       if (
         !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
         composerStore.submission?.id === consentHeldSubmissionId
-      )
+      ) {
+        sendGates.end({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'panel_closed'
+        })
         composerStore.invalidateSubmission()
+      }
     },
     detachDocOpMinter: () => {
       docOpMinter.detach()
     },
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
+    },
+    detachAgentWriteOverwriteWatch: () => {
+      agentWriteOverwriteWatch.detach()
     },
     exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
@@ -1625,8 +1782,7 @@ onBeforeUnmount(() => {
       ++activeTabGeneration
     },
     clearAgentTurnTabs: () => {
-      tabActivity.setAgentTurnTabs([])
-      tabActivity.setAgentAwaitingApproval(false)
+      clearTurnSignals()
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1645,21 +1801,12 @@ const { copy } = useClipboard({ legacy: true })
 // DES-1221. Read while the panel is on screen, so the experiment's denominator
 // is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
-  useFreeUsePlacement()
-const {
-  assignment: starterPromptAssignment,
-  attributeExperiment: attributeStarterPromptExperiment,
-  expose: exposeStarterPromptSet
-} = useStarterPromptSet()
+  useFreeUsePlacement(isCloud)
 
-/**
- * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
- * is the whole gate: an absent field, an unsettled read and a rail that reports
- * no scoped balance all fail closed without a separate branch.
- */
 const freeUseGrantActive = computed(
-  () => subscription.value?.agentScopedHasFunds === true
+  () =>
+    subscription.value?.agentScopedHasFundsAuthoritative === true &&
+    subscription.value.agentScopedHasFunds === true
 )
 
 const freeUsePlacement = computed(() =>
@@ -1708,7 +1855,12 @@ function warnIncompleteHistory(reason: string, announce: boolean): void {
   )
 }
 
-const { refreshHistory } = useAgentChatHistoryRefresh({
+const hostFenceMessage = ref<string>()
+const hostFenced = computed(() => hostFenceMessage.value !== undefined)
+let startedRefreshes = 0
+let fencedAtRefresh = 0
+
+const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
@@ -1728,17 +1880,39 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         diagnostics
       )
     })
-    if (uiTreatment === 'error_overlay')
+    const loopbackOnly = isLoopbackOnlyRefusal(error)
+    if (loopbackOnly) {
+      hostFenceMessage.value = error.message
+      fencedAtRefresh = startedRefreshes
+    } else if (uiTreatment === 'error_overlay')
       surfaceAgentError(
         'agent_api_failed',
         error instanceof Error ? error.message : String(error)
       )
-    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable: isRetryableRequestFailure(error, false),
-      diagnostics
-    })
+    trackAgentError(
+      'thread_list_load_failed',
+      'pre_acceptance',
+      loopbackOnly ? 'inline_notice' : uiTreatment,
+      {
+        retryable: isRetryableRequestFailure(error, false),
+        diagnostics
+      }
+    )
   }
 })
+
+async function refreshHistory(
+  ...args: Parameters<typeof runHistoryRefresh>
+): ReturnType<typeof runHistoryRefresh> {
+  const refresh = ++startedRefreshes
+  const outcome = await runHistoryRefresh(...args)
+  if (
+    (outcome === 'complete' || outcome === 'incomplete') &&
+    refresh >= fencedAtRefresh
+  )
+    hostFenceMessage.value = undefined
+  return outcome
+}
 
 const provisionalTitle = ref<string>()
 
@@ -1777,7 +1951,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
-  adoptWorkflowTarget,
+  adoptWorkflowTarget: adoptFollowedWorkflow,
   adoptRestoredWorkflowTab
 })
 
@@ -1880,25 +2054,21 @@ function onCopyMarkdown(id: string): void {
 
 const coachSteps = computed<CoachStep[]>(() => [
   {
+    card: 'intro',
     target: '#agent-panel-root',
     placement: 'left-center',
     title: t('agent.coachTitle'),
     body: t('agent.coachBody')
   },
   {
+    card: 'workflow',
     target: '#agent-composer',
     placement: 'left-end',
     title: t('agent.coachWorkflowTitle'),
     body: t('agent.coachWorkflowBody')
   },
   {
-    target: '.graph-canvas-panel',
-    placement: 'graph-bottom',
-    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
-    title: t('agent.coachGraphTitle'),
-    body: t('agent.coachGraphBody')
-  },
-  {
+    card: 'history',
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
@@ -1908,19 +2078,55 @@ const coachSteps = computed<CoachStep[]>(() => [
 ])
 
 let consentHeldSubmissionId: number | undefined
+async function holdSendForConsent(
+  clientMessageId: string,
+  onAccept: () => void
+): Promise<void> {
+  let accepted = false
+  let exit: 'declined' | 'dismissed' | undefined
+  sendGates.hold('consent', clientMessageId)
+  try {
+    await withConsent(
+      'first_message',
+      () => {
+        accepted = true
+        onAccept()
+      },
+      {
+        onExit: (consentExit) => {
+          exit = consentExit
+        }
+      }
+    )
+  } finally {
+    sendGates.end(
+      accepted
+        ? { gate: 'consent', outcome: 'released', reason: 'accepted' }
+        : {
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: exit ?? 'not_completed'
+          },
+      clientMessageId
+    )
+  }
+}
+
 async function consentAllowsSubmission(
-  submissionId: number | undefined
+  submissionId: number | undefined,
+  clientMessageId: string
 ): Promise<boolean> {
   let hasConsent = false
   let coachReleased = false
   let acceptedIdentity: string | null = null
   consentHeldSubmissionId = submissionId
   try {
-    await withConsent('first_message', () => {
+    await holdSendForConsent(clientMessageId, () => {
       hasConsent = true
       acceptedIdentity = consentIdentity.value
     })
-    if (hasConsent) coachReleased = await waitForCoachCompletion()
+    if (hasConsent)
+      coachReleased = await waitForCoachCompletion(clientMessageId)
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -1937,6 +2143,7 @@ async function consentAllowsSubmission(
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
+  onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -1951,7 +2158,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId))
+      !(await consentAllowsSubmission(submissionId, meta.clientMessageId))
     )
       return false
     if (!hasAgentCredential()) {
@@ -1975,12 +2182,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-        ...(meta.starterPrompt?.assignment
-          ? {
-              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
-            }
-          : {})
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -2028,17 +2230,25 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
-function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' | 'history_delete'
+): void {
   retireFollow()
+  if (source === 'history_back') {
+    newChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
   provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  composerStore.setWorkflowReferences([])
-  composerStore.resetPromptHistory()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
+  composerStore.clearDraft()
   newChat(source)
-  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
-  else agentPanelStore.startFollowingVisibleWorkflow()
+  agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const fileInput = ref<HTMLInputElement>()
@@ -2071,6 +2281,10 @@ start({
     agentPanelStore.view.screen === 'chat' ||
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
+})
+watch(threadId, composerStore.trackDraftThread, {
+  immediate: true,
+  flush: 'sync'
 })
 
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
@@ -2236,6 +2450,7 @@ function clearAssetDrag(): void {
 }
 
 function onPanelDragEnter(event: DragEvent): void {
+  if (hostFenced.value) return
   if (!isAttachableDrag(event)) return
   assetDragDepth += 1
   assetDragActive.value = true
@@ -2316,6 +2531,11 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
+  if (hostFenced.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
@@ -2376,6 +2596,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         provisionalTitle
       "
       :selection-tags="selectionTags"
+      :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
       :saving-reference="savingReference"
@@ -2393,14 +2614,12 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :blocked="hostFenced"
       :sync-retry-available="
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
       "
       :free-use-placement="freeUsePlacement"
-      :starter-prompt-assignment="starterPromptAssignment"
-      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
-      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
@@ -2422,7 +2641,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
       @retry-sync="retrySubscription"
-      @new-chat="onNewChat('new_chat_button')"
+      @new-chat="onNewChat"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
@@ -2432,6 +2651,13 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
+      <template #panelNotice>
+        <AgentHostFenceNotice
+          v-if="hostFenceMessage"
+          :message="hostFenceMessage"
+          class="mx-4 mt-3"
+        />
+      </template>
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
@@ -2468,8 +2694,13 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :steps="coachSteps"
       :storage-key="onboardingKey"
       :hold-notice="sendHeldByCoach ? t('agent.coachHoldNotice') : undefined"
-      @finished="releaseCoachCompletionWaiters"
-      @stalled="releaseCoachCompletionWaiters"
+      @finished="onCoachFinished"
+      @stalled="
+        releaseCoachCompletionWaiters({
+          outcome: 'released',
+          reason: 'stalled'
+        })
+      "
     />
   </div>
 </template>

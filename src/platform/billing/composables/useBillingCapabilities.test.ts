@@ -1,5 +1,5 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -31,7 +31,7 @@ const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/billing/api/billingApi'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -61,6 +61,7 @@ function capabilitiesResponse(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId
@@ -410,6 +411,30 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
+  it.for(['unspecified', 'billing_operation_in_progress'])(
+    'drops the off-contract top-up denial %s',
+    async (reason) => {
+      const response = capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_top_up: false
+        }
+      )
+      response.denied_reasons = { can_top_up: reason as never }
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    }
+  )
+
   it.for([
     { served: true, expected: true },
     { served: false, expected: false },
@@ -426,6 +451,24 @@ describe('useBillingCapabilities', () => {
       await billingCapabilities.initialize()
 
       expect(billingCapabilities.paymentRecoveryAvailable.value).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false }
+  ])(
+    'renders auto_top_up_enabled $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.auto_top_up_enabled = served
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.autoTopUpEnabled.value).toBe(expected)
     }
   )
 
@@ -1565,6 +1608,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
       expect(billingCapabilities.runWorkflowsDenial.value).toBe(denial)
     }
   )
+
+  it.for([
+    { denial: 'not_workspace_owner' },
+    { denial: 'not_a_member' },
+    { denial: undefined }
+  ])(
+    'exposes a can_manage_auto_top_up denial of $denial as the server sent it',
+    async ({ denial }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_manage_auto_top_up: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.manageAutoTopUpDenial.value).toBe(denial)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {
@@ -1609,6 +1673,35 @@ describe('useBillingCapabilities capability gates', () => {
         }
       }))
   }
+
+  it.for([
+    { manage: true, topUp: true, shown: true },
+    { manage: true, topUp: false, shown: false },
+    { manage: false, topUp: true, shown: false },
+    { manage: false, topUp: false, shown: false }
+  ])(
+    'grants the auto top-up card only for can_manage_auto_top_up $manage with can_top_up $topUp',
+    async ({ manage, topUp, shown }) => {
+      response.capabilities.can_manage_auto_top_up = manage
+      response.capabilities.can_top_up = topUp
+
+      const billingCapabilities = await mount()
+
+      expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(shown)
+    }
+  )
+
+  it('keeps the auto top-up card independent of the local member role', async () => {
+    response.capabilities.can_manage_auto_top_up = true
+    response.capabilities.can_top_up = true
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    })
+
+    const billingCapabilities = await mount()
+
+    expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(true)
+  })
 
   describe.for([
     ['can_top_up', 'canTopUp'],

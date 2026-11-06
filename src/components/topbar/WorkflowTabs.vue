@@ -83,7 +83,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'

@@ -2,7 +2,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string
@@ -17,25 +18,31 @@ const lightboxOpen = ref(false)
   <div
     class="absolute top-2 right-5 z-10 flex gap-1 text-background opacity-0 transition-opacity duration-200 group-focus-within/dropzone:opacity-100 group-hover/dropzone:opacity-100"
   >
-    <button
+    <Button
       v-if="onMaskEdit"
-      type="button"
+      variant="inverted"
+      size="icon"
       :aria-label="t('maskEditor.openMaskEditor')"
       :title="t('maskEditor.openMaskEditor')"
-      class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="onMaskEdit()"
     >
       <i class="icon-[comfy--mask]" />
-    </button>
-    <button
-      type="button"
+    </Button>
+    <Button
+      variant="inverted"
+      size="icon"
       :aria-label="t('mediaAsset.actions.zoom')"
       :title="t('mediaAsset.actions.zoom')"
-      class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="lightboxOpen = true"
     >
       <i class="icon-[lucide--zoom-in]" />
-    </button>
+    </Button>
   </div>
-  <ImageLightbox v-model="lightboxOpen" :src="mediaUrl" :alt="label ?? ''" />
+  <ImageLightbox
+    v-model="lightboxOpen"
+    :src="mediaUrl"
+    :alt="label ?? ''"
+    :fallback-title="$t('g.imageLightbox')"
+    :close-label="$t('g.close')"
+  />
 </template>

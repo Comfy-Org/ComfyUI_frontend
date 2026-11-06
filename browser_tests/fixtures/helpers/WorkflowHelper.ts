@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -286,6 +286,16 @@ export class WorkflowHelper {
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
     await this.waitForWorkflowIdle()
+  }
+
+  /** A saved workflow's tab, opened and confirmed unmodified with no `*` title. */
+  async expectTabOpensAsSaved(tabName: string): Promise<void> {
+    await this.switchToTab(tabName)
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName())
+      .toBe(tabName)
+    await expect.poll(() => this.isCurrentWorkflowModified()).toBe(false)
+    await expect.poll(() => this.comfyPage.page.title()).not.toMatch(/^\*/)
   }
 
   /** Node ids on the live graph, read from LiteGraph rather than the DOM. */

@@ -4,14 +4,14 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentConsentNotOfferedReason,
   AgentConsentOfferExit,
   AgentConsentOfferStage
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
@@ -27,7 +27,7 @@ import {
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,

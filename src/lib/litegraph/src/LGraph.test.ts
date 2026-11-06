@@ -66,7 +66,7 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -922,8 +922,17 @@ describe('Store-driven serialization parity', () => {
   test('falls back safely when a stored node has no live adapter', ({
     expect
   }) => {
-    const graph = createGraph(new DummyNode())
+    const stranded = new DummyNode()
+    const rootGraph = new LGraph()
+    const graph = createTestSubgraph({ rootGraph })
+    graph.add(stranded)
+    const strandedId = stranded.id
+    stranded._state.graphId = 'stored-state-graph-id'
     graph._nodes = []
+
+    expect(
+      new Set([graph.id, rootGraph.id, stranded._state.graphId]).size
+    ).toBe(3)
 
     expect(graph.asSerialisable().nodes).toEqual([])
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
@@ -933,9 +942,14 @@ describe('Store-driven serialization parity', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
-          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+          rootGraphId: rootGraph.id,
+          mismatch: `stored node ${strandedId} has no live adapter`,
+          mismatchKind: 'stored_without_live_adapter',
+          nodeId: strandedId,
+          stateGraphId: 'stored-state-graph-id'
         }
       }
     )

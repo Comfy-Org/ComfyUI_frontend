@@ -147,7 +147,7 @@ import {
 } from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   onProfileCreated,

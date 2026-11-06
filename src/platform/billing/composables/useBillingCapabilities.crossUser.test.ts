@@ -14,7 +14,7 @@ import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -36,6 +36,7 @@ function capabilitiesFor(
   isOwner: boolean
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: canonicalUserId,
       workspace_id: TEAM_WORKSPACE_ID

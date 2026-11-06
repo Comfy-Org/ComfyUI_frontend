@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import type { ColorPickerProps } from '@/components/ui/color-picker/types'
+import ColorPicker from '@comfyorg/design-system/color-picker/ColorPicker'
+import type { ColorPickerProps } from '@comfyorg/design-system/lib/color-picker/types'
 
 const {
   class: className,

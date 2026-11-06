@@ -2,7 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
