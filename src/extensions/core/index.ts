@@ -21,6 +21,7 @@ import { imageCompositorExtension } from './imageCompositor'
 import { imageCropExtension } from './imageCrop'
 import { layerEditorExtension } from './layerEditor'
 import { load3dLazyExtension } from './load3d/load3dLazy'
+import { localDeploymentAgentExtension } from './localDeploymentAgent'
 import { maskEditorExtension } from './maskeditor'
 import { noteNodeExtension } from './noteNode'
 import { painterExtension } from './painter'
@@ -55,6 +56,7 @@ const baseCoreExtensions: ComfyExtension[] = [
   imageCropExtension,
   layerEditorExtension,
   load3dLazyExtension,
+  localDeploymentAgentExtension,
   maskEditorExtension,
   noteNodeExtension,
   painterExtension,

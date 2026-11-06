@@ -4,6 +4,8 @@ import type {
   NodePack
 } from '@/platform/workflow/deploy/utils/buildInputs'
 
+export type AgentHandoffGoal = 'build' | 'local-deployment'
+
 function isControlCharacter(character: string): boolean {
   const code = character.charCodeAt(0)
   return code < 0x20 || code === 0x7f
@@ -50,7 +52,14 @@ function bulletList(items: readonly string[]): string {
   return items.map((item) => `- ${codeSpan(item)}`).join('\n')
 }
 
-function intro(inputs: BuildInputs): string {
+function intro(inputs: BuildInputs, goal: AgentHandoffGoal): string {
+  if (goal === 'local-deployment')
+    return workflowText`# Deploy ${inputs.workflowName} to Comfy Cloud
+
+Deploy the ComfyUI installation that hosts this agent to Comfy Cloud, including
+the custom nodes and models this workflow needs. Create a Build and a deployable
+release, then create the deployment. This request includes running this workflow
+on that deployment to verify it works.`
   return workflowText`# Turn ${inputs.workflowName} into a Comfy API Build
 
 Create a **Build** on the Comfy developer platform from this ComfyUI workflow. A
@@ -187,19 +196,42 @@ Report the Build name, its id and the release id, and whether the release is
 deployable. Deploying it is a separate decision — do not deploy without being
 asked.`
 
+const LOCAL_DEPLOYMENT_PATH = `## Your path: deploy this local installation
+
+This agent runs alongside the ComfyUI installation to deploy. Inspect that
+installation with the recipe's tools. Read the current workflow through your
+workflow tools; no browser download is required. Use the installation's actual
+custom node repositories, versions and model files.`
+
+const LOCAL_DEPLOYMENT_CONSENT = `## Where the user decides
+
+Before the first cut, go through the recipe's "Before you cut" with the user,
+and wait for a yes. Ask for any required deployment choices the user has not
+provided. After approval, follow the recipe to create the deployment.`
+
+const LOCAL_DEPLOYMENT_CLOSING = `## When you are done
+
+Verify the deployment is ready and run this workflow on it. Report the Build,
+release and deployment identifiers, the endpoint and the real run's result.
+Report an unavailable prerequisite or failed step explicitly; creating a Build
+alone does not complete this request.`
+
 export function buildAgentHandoffDocument({
   distribution,
-  inputs
+  inputs,
+  goal = 'build'
 }: {
   distribution: Distribution
   inputs: BuildInputs
+  goal?: AgentHandoffGoal
 }): string {
+  const deploy = goal === 'local-deployment'
   return [
-    intro(inputs),
+    intro(inputs, goal),
     BEFORE_YOU_START,
-    PATH_BY_DISTRIBUTION[distribution](inputs),
+    deploy ? LOCAL_DEPLOYMENT_PATH : PATH_BY_DISTRIBUTION[distribution](inputs),
     contents(inputs),
-    CONSENT,
-    CLOSING
+    deploy ? LOCAL_DEPLOYMENT_CONSENT : CONSENT,
+    deploy ? LOCAL_DEPLOYMENT_CLOSING : CLOSING
   ].join('\n\n')
 }

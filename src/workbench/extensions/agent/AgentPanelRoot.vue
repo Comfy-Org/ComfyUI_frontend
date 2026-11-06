@@ -181,6 +181,7 @@ import {
   withCurrentSessionTitle
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useDeploymentAgentSubmission } from './composables/agent/useDeploymentAgentSubmission'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -2173,6 +2174,18 @@ const { submit: onSend } = useAgentDraftSubmission({
       reportPendingSend()
     }
   }
+})
+
+useDeploymentAgentSubmission({
+  targetId: () => selectedTarget.value?.instanceId,
+  visible: () => agentPanelStore.isVisible,
+  ready: () =>
+    !isSending.value &&
+    !workflowSelecting.value &&
+    !hostFenced.value &&
+    status.value === 'idle' &&
+    (threadId.value === null || isTranscriptReady.value),
+  submit: (text) => onSend(text, [], [])
 })
 
 function onStop(method: AgentStopMethod): void {

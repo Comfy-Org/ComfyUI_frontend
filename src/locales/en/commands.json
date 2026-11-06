@@ -1,4 +1,7 @@
 {
+  "Comfy_Agent_DeployWorkflow": {
+    "label": "Deploy workflow with local agent"
+  },
   "Comfy-Desktop_CheckForUpdates": {
     "label": "Check for Updates"
   },
