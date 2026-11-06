@@ -78,9 +78,15 @@
                 variant="secondary"
                 size="icon"
                 :aria-label="t('menu.manageExtensions')"
+                :aria-busy="isBuildingCustomNodes || undefined"
                 @click="openCustomNodeManager"
               >
-                <i class="icon-[comfy--extensions-blocks]" />
+                <Spinner
+                  v-if="isBuildingCustomNodes"
+                  class="size-4"
+                  aria-hidden="true"
+                />
+                <i v-else class="icon-[comfy--extensions-blocks]" />
                 <span
                   v-if="shouldShowRedDot"
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
@@ -200,6 +206,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
+import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -207,6 +214,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useBuildCustomNodesStore } from '@/platform/workspace/buildCustomNodes/buildCustomNodesStore'
 import { openCloudExtensions } from '@/platform/workspace/openCloudExtensions'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -250,6 +258,10 @@ function openDeployInstallationDialog() {
   )
 }
 const executionErrorStore = useExecutionErrorStore()
+const buildCustomNodesStore = useBuildCustomNodesStore()
+const isBuildingCustomNodes = computed(
+  () => buildCustomNodesStore.state.phase === 'building'
+)
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
