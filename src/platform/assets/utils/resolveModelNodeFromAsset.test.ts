@@ -53,6 +53,19 @@ beforeEach(() => {
 
 describe('resolveModelNodeFromAsset', () => {
   describe('valid assets', () => {
+    it('uses the server loader path instead of the uploaded display filename', () => {
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          loader_path: 'artist/style.safetensors',
+          user_metadata: { filename: 'style.safetensors' }
+        })
+      )
+      expect(result.success && result.value.filename).toBe(
+        'artist/style.safetensors'
+      )
+    })
+
     it('resolves the provider for the asset category and the filename', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(createMockAsset())

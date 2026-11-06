@@ -4542,6 +4542,8 @@
   "cloudSurvey_steps_source": "How did you find us?",
   "cloudSurvey_steps_source_social": "Which platform?",
   "assetBrowser": {
+    "library": "Library",
+    "errorLoadingModels": "Some models couldn’t load. Reopen the Model Library to try again.",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",

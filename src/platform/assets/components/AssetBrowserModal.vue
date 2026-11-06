@@ -63,6 +63,9 @@
     </template>
 
     <template #content>
+      <p v-if="loadError" role="alert" class="px-4 text-destructive">
+        {{ $t('assetBrowser.errorLoadingModels') }}
+      </p>
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
@@ -135,6 +138,10 @@ const cacheKey = computed(() => {
 
 const fetchedAssets = computed(
   () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
+)
+
+const loadError = computed(() =>
+  props.overrideAssets ? undefined : assetStore.getError(cacheKey.value)
 )
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))

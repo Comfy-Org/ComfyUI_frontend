@@ -189,6 +189,19 @@ describe('AssetBrowserModal', () => {
     mockLoadingByKey.clear()
   })
 
+  it('shows a list error alongside the available Release cards', async () => {
+    mockAssetsByKey.set('tag:models', [
+      createTestAsset('release', 'Release model', 'loras')
+    ])
+    vi.mocked(useAssetsStore().getError).mockReturnValue(
+      new Error('library unavailable')
+    )
+    renderModal({ assetType: 'models' })
+    await flushPromises()
+    expect(screen.getByRole('alert')).toHaveTextContent('Some models')
+    expect(screen.getByTestId('asset-release')).toBeDefined()
+  })
+
   describe('Integration with useAssetBrowser', () => {
     it('passes filtered assets from composable to AssetGrid', async () => {
       const assets = [

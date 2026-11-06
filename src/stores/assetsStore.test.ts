@@ -1,3 +1,6 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue, watch } from 'vue'
@@ -15,6 +18,10 @@ import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 beforeEach(() => {
   vi.mocked(api.internalURL).mockImplementation(
@@ -1746,4 +1753,237 @@ describe('assetsStore - assets.seed.completed', () => {
       }))
     ).toEqual([calls, calls])
   })
+})
+
+describe('deployment Model Library', () => {
+  function asset(
+    id: string,
+    category = 'loras',
+    loaderPath = `${id}.safetensors`
+  ): AssetItem {
+    return {
+      id,
+      name: 'uploaded.safetensors',
+      loader_path: loaderPath,
+      tags: ['models', category],
+      created_at: '2026-11-06T00:00:00Z',
+      updated_at: '2026-11-06T00:00:00Z',
+      is_immutable: false,
+      user_metadata: { filename: 'uploaded.safetensors' }
+    }
+  }
+
+  function page(assets: AssetItem[], next_cursor?: string): AssetResponse {
+    return {
+      assets,
+      total: assets.length,
+      has_more: next_cursor !== undefined,
+      next_cursor
+    }
+  }
+
+  beforeEach(() => {
+    mockIsCloud.value = true
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'deployment-1',
+      release_id: 'release-1',
+      status: 'ready',
+      can_start: false,
+      created_at: '2026-11-06T00:00:00Z'
+    }
+    return () => {
+      mockIsCloud.value = false
+    }
+  })
+
+  it.for([false, true])(
+    'walks both sources and keeps Release collisions in model type mode %s',
+    async (modelTypeMode) => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = modelTypeMode
+      const release = {
+        ...asset('release', 'loras', 'shared.safetensors'),
+        is_immutable: true
+      }
+      const collision = asset('collision', 'loras', 'shared.safetensors')
+      const otherCategory = asset(
+        'other-category',
+        'checkpoints',
+        'shared.safetensors'
+      )
+      const upload = asset('upload', 'loras', 'artist/style.safetensors')
+      const releaseLast = asset('release-last')
+      const withTypes = (row: AssetItem) =>
+        modelTypeMode
+          ? {
+              ...row,
+              tags: [
+                ...row.tags,
+                ...row.tags
+                  .filter((tag) => tag !== 'models')
+                  .map((tag) => `model_type:${tag}`)
+              ]
+            }
+          : row
+      vi.mocked(assetService.getAssetsPageByTag).mockImplementation(
+        async (_tag, _public, options) =>
+          options?.after === 'release-next'
+            ? page([withTypes(releaseLast)])
+            : page([withTypes(release)], 'release-next')
+      )
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockImplementation(
+        async (options) =>
+          options?.after === 'library-next'
+            ? page([withTypes(upload)])
+            : page(
+                [withTypes(collision), withTypes(otherCategory)],
+                'library-next'
+              )
+      )
+      const store = useAssetsStore()
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models')).toEqual([
+        withTypes(release),
+        withTypes(releaseLast),
+        { ...withTypes(otherCategory), isWorkspaceLibrary: true },
+        { ...withTypes(upload), isWorkspaceLibrary: true }
+      ])
+      expect(store.hasMore('tag:models')).toBe(false)
+    }
+  )
+
+  it('keeps Release cards and reports a failed library read', async () => {
+    const release = asset('release')
+    const error = new Error('library unavailable')
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      page([release])
+    )
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockRejectedValue(
+      error
+    )
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    expect(store.getAssets('tag:models')).toEqual([release])
+    expect(store.getError('tag:models')).toBe(error)
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'error_loading_workspace_library_models'
+    })
+  })
+
+  it('ignores an older library response after a refresh replaces it', async () => {
+    let resolveOld!: (response: AssetResponse) => void
+    const old = new Promise<AssetResponse>((resolve) => {
+      resolveOld = resolve
+    })
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      page([asset('release')])
+    )
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage)
+      .mockReturnValueOnce(old)
+      .mockResolvedValue(page([asset('new-upload')]))
+    const store = useAssetsStore()
+    const first = store.updateModelsForTag('models')
+    await store.updateModelsForTag('models', { restart: true })
+    resolveOld(page([asset('old-upload')]))
+    await first
+    expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+      'release',
+      'new-upload'
+    ])
+  })
+
+  it('shows a completed upload without reopening the library', async () => {
+    const store = useAssetsStore()
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      page([asset('release')])
+    )
+    vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(page([]))
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+      page([])
+    )
+    await store.updateModelsForTag('models')
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+      page([asset('finished-upload')])
+    )
+    useAssetDownloadStore().lastCompletedDownload = {
+      taskId: 'finished-upload',
+      modelType: 'loras',
+      timestamp: Date.now()
+    }
+    await nextTick()
+    await vi.waitFor(() =>
+      expect(store.getAssets('tag:models').map((row) => row.id)).toEqual([
+        'release',
+        'finished-upload'
+      ])
+    )
+  })
+
+  it('drops a canceled library response after invalidation', async () => {
+    let resolveOld!: (response: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      page([asset('release')])
+    )
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockReturnValue(
+      new Promise((resolve) => {
+        resolveOld = resolve
+      })
+    )
+    const store = useAssetsStore()
+    const pending = store.updateModelsForTag('models')
+    store.invalidateCategory('tag:models')
+    resolveOld(page([asset('canceled-upload')]))
+    await pending
+    expect(store.getAssets('tag:models')).toEqual([])
+  })
+
+  it('updates library metadata and model type through the visible cache key and removes deleted cards on refresh', async () => {
+    const upload = asset('upload')
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(page([]))
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+      page([upload])
+    )
+    vi.mocked(assetService.updateAsset).mockResolvedValue({
+      ...upload,
+      user_metadata: { name: 'My model' }
+    })
+    vi.mocked(assetService.removeAssetTags).mockResolvedValue({
+      total_tags: ['models']
+    })
+    vi.mocked(assetService.addAssetTags).mockResolvedValue({
+      total_tags: ['models', 'checkpoints']
+    })
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    await store.updateAssetMetadata(upload, { name: 'My model' }, 'tag:models')
+    expect(store.getAssets('tag:models')[0].user_metadata).toEqual({
+      name: 'My model'
+    })
+    await store.updateAssetTags(upload, ['models', 'checkpoints'], 'tag:models')
+    expect(store.getAssets('tag:models')[0].tags).toEqual([
+      'models',
+      'checkpoints'
+    ])
+    vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockResolvedValue(
+      page([])
+    )
+    await store.updateModelsForTag('models')
+    expect(store.getAssets('tag:models')).toEqual([])
+  })
+
+  it.for(['cloud', 'local'])(
+    'keeps the existing list on %s without reading the library',
+    async (distribution) => {
+      if (distribution === 'cloud')
+        useDeploymentPickStore().bootDeployment = null
+      else mockIsCloud.value = false
+      const existing = asset('existing')
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        page([existing])
+      )
+      const store = useAssetsStore()
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models')).toEqual([existing])
+      expect(assetService.getWorkspaceLibraryAssetsPage).not.toHaveBeenCalled()
+    }
+  )
 })
