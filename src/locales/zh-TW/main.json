@@ -1628,7 +1628,6 @@
       "columnLicense": "授權條款",
       "columnInstall": "安裝",
       "installLabel": "將 {pack} 加入建置",
-      "inBuild": "已在建置中",
       "noVersion": "沒有已發佈的版本",
       "versionLabel": "選擇 {pack} 的版本。目前已選取 {version}。",
       "versionsOf": "{pack} 的版本",
@@ -1644,10 +1643,36 @@
       "noMatches": "沒有符合「{query}」的節點套件。",
       "inBuildCount": "{build} 中有 {count} 個節點套件 | {build} 中有 {count} 個節點套件",
       "pickedCount": "· 尚未選取 | · 已選取 {count} 個 | · 已選取 {count} 個",
-      "page": "第 {page} 頁",
       "previousPage": "上一頁",
       "nextPage": "下一頁",
-      "review": "檢閱變更 | 檢閱 {count} 個節點套件 | 檢閱 {count} 個節點套件"
+      "review": "檢閱變更 | 檢閱 {count} 個節點套件 | 檢閱 {count} 個節點套件",
+      "inBuildLabel": "{pack} 已在建置中",
+      "pageOf": "第 {page} 頁，共 {count} 頁",
+      "editOnPlatform": "在平台上編輯",
+      "editOnPlatformLabel": "在開發者平台上編輯 {build} 的自訂節點",
+      "statusMenuLabel": "依狀態篩選節點套件。目前顯示 {value}。",
+      "licenseMenuLabel": "依授權條款篩選節點套件。目前顯示 {value}。",
+      "sortMenuLabel": "排序節點套件。目前排序方式為 {value}。",
+      "status": {
+        "heading": "狀態",
+        "all": "所有套件",
+        "installed": "已安裝",
+        "notInstalled": "未安裝"
+      },
+      "license": {
+        "heading": "授權條款",
+        "any": "任何授權條款",
+        "count": "{count} 個授權條款 | {count} 個授權條款",
+        "unlisted": "未列出授權條款",
+        "clear": "清除授權條款篩選"
+      },
+      "sort": {
+        "heading": "排序",
+        "installs": "安裝次數最多",
+        "stars": "星號最多",
+        "nameAsc": "套件名稱，A 到 Z",
+        "nameDesc": "套件名稱，Z 到 A"
+      }
     },
     "review": {
       "title": "將 {count} 個節點套件加入 {build} | 將 {count} 個節點套件加入 {build}",

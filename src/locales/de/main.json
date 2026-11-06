@@ -1627,8 +1627,7 @@
       "columnVersion": "Version",
       "columnLicense": "Lizenz",
       "columnInstall": "Installieren",
-      "installLabel": "{pack} zum Build hinzufügen",
-      "inBuild": "Im Build",
+      "installLabel": "Paket {pack} zum Build hinzufügen",
       "noVersion": "Keine veröffentlichte Version",
       "versionLabel": "Wählen Sie eine Version von {pack}. Ausgewählt ist {version}.",
       "versionsOf": "Versionen von {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "Keine Node-Pakete entsprechen „{query}“.",
       "inBuildCount": "{count} Node-Paket in {build} | {count} Node-Pakete in {build}",
       "pickedCount": "· noch keine ausgewählt | · {count} ausgewählt | · {count} ausgewählt",
-      "page": "Seite {page}",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",
-      "review": "Änderungen prüfen | {count} Node-Paket prüfen | {count} Node-Pakete prüfen"
+      "review": "Änderungen prüfen | {count} Node-Paket prüfen | {count} Node-Pakete prüfen",
+      "inBuildLabel": "Das Paket {pack} ist bereits im Build",
+      "pageOf": "Seite {page} von {count}",
+      "editOnPlatform": "Auf der Platform bearbeiten",
+      "editOnPlatformLabel": "Benutzerdefinierte Nodes von {build} auf der Developer Platform bearbeiten",
+      "statusMenuLabel": "Node-Pakete nach Status filtern. Angezeigt wird {value}.",
+      "licenseMenuLabel": "Node-Pakete nach Lizenz filtern. Angezeigt wird {value}.",
+      "sortMenuLabel": "Node-Pakete sortieren. Sortiert nach {value}.",
+      "status": {
+        "heading": "Status",
+        "all": "Alle Pakete",
+        "installed": "Installiert",
+        "notInstalled": "Nicht installiert"
+      },
+      "license": {
+        "heading": "Lizenz",
+        "any": "Beliebige Lizenz",
+        "count": "{count} Lizenz | {count} Lizenzen",
+        "unlisted": "Keine Lizenz angegeben",
+        "clear": "Lizenzfilter zurücksetzen"
+      },
+      "sort": {
+        "heading": "Sortierung",
+        "installs": "Meiste Installationen",
+        "stars": "Meiste Sterne",
+        "nameAsc": "Paketname, A bis Z",
+        "nameDesc": "Paketname, Z bis A"
+      }
     },
     "review": {
       "title": "{count} Node-Paket zu {build} hinzufügen | {count} Node-Pakete zu {build} hinzufügen",

@@ -1628,7 +1628,6 @@
       "columnLicense": "Licenza",
       "columnInstall": "Installa",
       "installLabel": "Aggiungi {pack} alla build",
-      "inBuild": "Nella build",
       "noVersion": "Nessuna versione pubblicata",
       "versionLabel": "Scegli una versione di {pack}. Ora è selezionata {version}.",
       "versionsOf": "Versioni di {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "Nessun pacchetto di nodi corrisponde a «{query}».",
       "inBuildCount": "{count} pacchetto di nodi in {build} | {count} pacchetti di nodi in {build}",
       "pickedCount": "· nessuno selezionato | · {count} selezionato | · {count} selezionati",
-      "page": "Pagina {page}",
       "previousPage": "Pagina precedente",
       "nextPage": "Pagina successiva",
-      "review": "Rivedi le modifiche | Rivedi {count} pacchetto di nodi | Rivedi {count} pacchetti di nodi"
+      "review": "Rivedi le modifiche | Rivedi {count} pacchetto di nodi | Rivedi {count} pacchetti di nodi",
+      "inBuildLabel": "Il pacchetto {pack} è già nella build",
+      "pageOf": "Pagina {page} di {count}",
+      "editOnPlatform": "Modifica su Platform",
+      "editOnPlatformLabel": "Modifica i nodi personalizzati di {build} sulla Developer Platform",
+      "statusMenuLabel": "Filtra i pacchetti di nodi per stato. Stai visualizzando {value}.",
+      "licenseMenuLabel": "Filtra i pacchetti di nodi per licenza. Stai visualizzando {value}.",
+      "sortMenuLabel": "Ordina i pacchetti di nodi. Ordinati per {value}.",
+      "status": {
+        "heading": "Stato",
+        "all": "Tutti i pacchetti",
+        "installed": "Installati",
+        "notInstalled": "Non installati"
+      },
+      "license": {
+        "heading": "Licenza",
+        "any": "Qualsiasi licenza",
+        "count": "{count} licenza | {count} licenze",
+        "unlisted": "Nessuna licenza indicata",
+        "clear": "Cancella il filtro licenza"
+      },
+      "sort": {
+        "heading": "Ordinamento",
+        "installs": "Più installazioni",
+        "stars": "Più stelle",
+        "nameAsc": "Nome del pacchetto, dalla A alla Z",
+        "nameDesc": "Nome del pacchetto, dalla Z alla A"
+      }
     },
     "review": {
       "title": "Aggiungi {count} pacchetto di nodi a {build} | Aggiungi {count} pacchetti di nodi a {build}",

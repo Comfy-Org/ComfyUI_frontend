@@ -1628,7 +1628,6 @@
       "columnLicense": "ライセンス",
       "columnInstall": "インストール",
       "installLabel": "{pack} をビルドに追加",
-      "inBuild": "ビルドに追加済み",
       "noVersion": "公開バージョンなし",
       "versionLabel": "{pack} のバージョンを選んでください。現在は {version} が選ばれています。",
       "versionsOf": "{pack} のバージョン",
@@ -1644,10 +1643,36 @@
       "noMatches": "「{query}」に一致するノードパックはありません。",
       "inBuildCount": "{build} のノードパック {count} 個 | {build} のノードパック {count} 個",
       "pickedCount": "· まだ選択されていません | · {count} 個選択中 | · {count} 個選択中",
-      "page": "{page} ページ",
       "previousPage": "前のページ",
       "nextPage": "次のページ",
-      "review": "変更を確認 | {count} 個のノードパックを確認 | {count} 個のノードパックを確認"
+      "review": "変更を確認 | {count} 個のノードパックを確認 | {count} 個のノードパックを確認",
+      "inBuildLabel": "{pack} はすでにビルドに含まれています",
+      "pageOf": "{page} / {count} ページ",
+      "editOnPlatform": "Platform で編集",
+      "editOnPlatformLabel": "Developer Platform で {build} のカスタムノードを編集",
+      "statusMenuLabel": "ステータスでノードパックを絞り込みます。現在は {value} を表示しています。",
+      "licenseMenuLabel": "ライセンスでノードパックを絞り込みます。現在は {value} を表示しています。",
+      "sortMenuLabel": "ノードパックを並び替えます。現在は {value} で並んでいます。",
+      "status": {
+        "heading": "ステータス",
+        "all": "すべてのパック",
+        "installed": "インストール済み",
+        "notInstalled": "未インストール"
+      },
+      "license": {
+        "heading": "ライセンス",
+        "any": "すべてのライセンス",
+        "count": "{count} 件のライセンス | {count} 件のライセンス",
+        "unlisted": "ライセンスの記載なし",
+        "clear": "ライセンスの絞り込みをクリア"
+      },
+      "sort": {
+        "heading": "並び替え",
+        "installs": "インストール数が多い順",
+        "stars": "スターが多い順",
+        "nameAsc": "パック名（A→Z）",
+        "nameDesc": "パック名（Z→A）"
+      }
     },
     "review": {
       "title": "{build} に {count} 個のノードパックを追加 | {build} に {count} 個のノードパックを追加",

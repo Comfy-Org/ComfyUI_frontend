@@ -1628,7 +1628,6 @@
       "columnLicense": "许可证",
       "columnInstall": "安装",
       "installLabel": "将 {pack} 添加到构建",
-      "inBuild": "已在构建中",
       "noVersion": "没有已发布的版本",
       "versionLabel": "选择 {pack} 的版本。当前已选择 {version}。",
       "versionsOf": "{pack} 的版本",
@@ -1644,10 +1643,36 @@
       "noMatches": "没有与“{query}”匹配的节点包。",
       "inBuildCount": "{build} 中有 {count} 个节点包 | {build} 中有 {count} 个节点包",
       "pickedCount": "· 尚未选择 | · 已选择 {count} 个 | · 已选择 {count} 个",
-      "page": "第 {page} 页",
       "previousPage": "上一页",
       "nextPage": "下一页",
-      "review": "查看更改 | 查看 {count} 个节点包 | 查看 {count} 个节点包"
+      "review": "查看更改 | 查看 {count} 个节点包 | 查看 {count} 个节点包",
+      "inBuildLabel": "{pack} 已在构建中",
+      "pageOf": "第 {page} 页，共 {count} 页",
+      "editOnPlatform": "在平台上编辑",
+      "editOnPlatformLabel": "在开发者平台上编辑 {build} 的自定义节点",
+      "statusMenuLabel": "按状态筛选节点包。当前显示 {value}。",
+      "licenseMenuLabel": "按许可证筛选节点包。当前显示 {value}。",
+      "sortMenuLabel": "对节点包排序。当前排序方式为 {value}。",
+      "status": {
+        "heading": "状态",
+        "all": "全部节点包",
+        "installed": "已安装",
+        "notInstalled": "未安装"
+      },
+      "license": {
+        "heading": "许可证",
+        "any": "任意许可证",
+        "count": "{count} 个许可证 | {count} 个许可证",
+        "unlisted": "未注明许可证",
+        "clear": "清除许可证筛选"
+      },
+      "sort": {
+        "heading": "排序",
+        "installs": "安装量最多",
+        "stars": "星标最多",
+        "nameAsc": "节点包名称，A 到 Z",
+        "nameDesc": "节点包名称，Z 到 A"
+      }
     },
     "review": {
       "title": "向 {build} 添加 {count} 个节点包 | 向 {build} 添加 {count} 个节点包",

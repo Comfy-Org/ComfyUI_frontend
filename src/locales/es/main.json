@@ -1628,7 +1628,6 @@
       "columnLicense": "Licencia",
       "columnInstall": "Instalar",
       "installLabel": "Añadir {pack} a la compilación",
-      "inBuild": "En la compilación",
       "noVersion": "Sin versión publicada",
       "versionLabel": "Elige una versión de {pack}. Ahora está seleccionada {version}.",
       "versionsOf": "Versiones de {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "Ningún paquete de nodos coincide con «{query}».",
       "inBuildCount": "{count} paquete de nodos en {build} | {count} paquetes de nodos en {build}",
       "pickedCount": "· ninguno seleccionado aún | · {count} seleccionado | · {count} seleccionados",
-      "page": "Página {page}",
       "previousPage": "Página anterior",
       "nextPage": "Página siguiente",
-      "review": "Revisar cambios | Revisar {count} paquete de nodos | Revisar {count} paquetes de nodos"
+      "review": "Revisar cambios | Revisar {count} paquete de nodos | Revisar {count} paquetes de nodos",
+      "inBuildLabel": "El paquete {pack} ya está en la compilación",
+      "pageOf": "Página {page} de {count}",
+      "editOnPlatform": "Editar en Platform",
+      "editOnPlatformLabel": "Editar los nodos personalizados de {build} en la Plataforma para desarrolladores",
+      "statusMenuLabel": "Filtrar paquetes de nodos por estado. Mostrando {value}.",
+      "licenseMenuLabel": "Filtrar paquetes de nodos por licencia. Mostrando {value}.",
+      "sortMenuLabel": "Ordenar paquetes de nodos. Ordenados por {value}.",
+      "status": {
+        "heading": "Estado",
+        "all": "Todos los paquetes",
+        "installed": "Instalados",
+        "notInstalled": "No instalados"
+      },
+      "license": {
+        "heading": "Licencia",
+        "any": "Cualquier licencia",
+        "count": "{count} licencia | {count} licencias",
+        "unlisted": "Sin licencia indicada",
+        "clear": "Borrar filtro de licencia"
+      },
+      "sort": {
+        "heading": "Ordenar",
+        "installs": "Más instalaciones",
+        "stars": "Más estrellas",
+        "nameAsc": "Nombre del paquete, de la A a la Z",
+        "nameDesc": "Nombre del paquete, de la Z a la A"
+      }
     },
     "review": {
       "title": "Añadir {count} paquete de nodos a {build} | Añadir {count} paquetes de nodos a {build}",

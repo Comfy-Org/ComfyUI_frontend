@@ -1628,7 +1628,6 @@
       "columnLicense": "مجوز",
       "columnInstall": "نصب",
       "installLabel": "افزودن {pack} به Build",
-      "inBuild": "در Build",
       "noVersion": "نسخهٔ منتشرشده‌ای ندارد",
       "versionLabel": "نسخه‌ای از {pack} را انتخاب کنید. اکنون {version} انتخاب شده است.",
       "versionsOf": "نسخه‌های {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "هیچ بستهٔ nodeای با «{query}» مطابقت ندارد.",
       "inBuildCount": "{count} بستهٔ node در {build} | {count} بستهٔ node در {build}",
       "pickedCount": "· هنوز چیزی انتخاب نشده | · {count} مورد انتخاب شده | · {count} مورد انتخاب شده",
-      "page": "صفحهٔ {page}",
       "previousPage": "صفحهٔ قبل",
       "nextPage": "صفحهٔ بعد",
-      "review": "بررسی تغییرات | بررسی {count} بستهٔ node | بررسی {count} بستهٔ node"
+      "review": "بررسی تغییرات | بررسی {count} بستهٔ node | بررسی {count} بستهٔ node",
+      "inBuildLabel": "بستهٔ {pack} از قبل در Build است",
+      "pageOf": "صفحهٔ {page} از {count}",
+      "editOnPlatform": "ویرایش در پلتفرم",
+      "editOnPlatformLabel": "ویرایش nodeهای سفارشی {build} در پلتفرم توسعه‌دهندگان",
+      "statusMenuLabel": "فیلتر کردن بسته‌های node بر اساس وضعیت. اکنون {value} نمایش داده می‌شود.",
+      "licenseMenuLabel": "فیلتر کردن بسته‌های node بر اساس مجوز. اکنون {value} نمایش داده می‌شود.",
+      "sortMenuLabel": "مرتب‌سازی بسته‌های node. مرتب‌شده بر اساس {value}.",
+      "status": {
+        "heading": "وضعیت",
+        "all": "همهٔ بسته‌ها",
+        "installed": "نصب‌شده",
+        "notInstalled": "نصب‌نشده"
+      },
+      "license": {
+        "heading": "مجوز",
+        "any": "هر مجوزی",
+        "count": "{count} مجوز | {count} مجوز",
+        "unlisted": "مجوزی ذکر نشده",
+        "clear": "پاک کردن فیلتر مجوز"
+      },
+      "sort": {
+        "heading": "مرتب‌سازی",
+        "installs": "بیشترین نصب",
+        "stars": "بیشترین ستاره",
+        "nameAsc": "نام بسته، A تا Z",
+        "nameDesc": "نام بسته، Z تا A"
+      }
     },
     "review": {
       "title": "افزودن {count} بستهٔ node به {build} | افزودن {count} بستهٔ node به {build}",

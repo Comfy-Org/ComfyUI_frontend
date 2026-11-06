@@ -1628,7 +1628,6 @@
       "columnLicense": "Licença",
       "columnInstall": "Instalar",
       "installLabel": "Adicionar {pack} ao Build",
-      "inBuild": "No Build",
       "noVersion": "Nenhuma versão publicada",
       "versionLabel": "Escolha uma versão de {pack}. {version} está selecionada agora.",
       "versionsOf": "Versões de {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "Nenhum pacote de nós corresponde a \"{query}\".",
       "inBuildCount": "{count} pacote de nós em {build} | {count} pacotes de nós em {build}",
       "pickedCount": "· nenhum selecionado ainda | · {count} selecionado | · {count} selecionados",
-      "page": "Página {page}",
       "previousPage": "Página anterior",
       "nextPage": "Próxima página",
-      "review": "Revisar alterações | Revisar {count} pacote de nós | Revisar {count} pacotes de nós"
+      "review": "Revisar alterações | Revisar {count} pacote de nós | Revisar {count} pacotes de nós",
+      "inBuildLabel": "O pacote {pack} já está no Build",
+      "pageOf": "Página {page} de {count}",
+      "editOnPlatform": "Editar na Platform",
+      "editOnPlatformLabel": "Editar os nós personalizados de {build} na Plataforma do Desenvolvedor",
+      "statusMenuLabel": "Filtrar pacotes de nós por status. Mostrando {value}.",
+      "licenseMenuLabel": "Filtrar pacotes de nós por licença. Mostrando {value}.",
+      "sortMenuLabel": "Ordenar pacotes de nós. Ordenados por {value}.",
+      "status": {
+        "heading": "Status",
+        "all": "Todos os pacotes",
+        "installed": "Instalados",
+        "notInstalled": "Não instalados"
+      },
+      "license": {
+        "heading": "Licença",
+        "any": "Qualquer licença",
+        "count": "{count} licença | {count} licenças",
+        "unlisted": "Nenhuma licença informada",
+        "clear": "Limpar filtro de licença"
+      },
+      "sort": {
+        "heading": "Ordenar",
+        "installs": "Mais instalações",
+        "stars": "Mais estrelas",
+        "nameAsc": "Nome do pacote, de A a Z",
+        "nameDesc": "Nome do pacote, de Z a A"
+      }
     },
     "review": {
       "title": "Adicionar {count} pacote de nós a {build} | Adicionar {count} pacotes de nós a {build}",

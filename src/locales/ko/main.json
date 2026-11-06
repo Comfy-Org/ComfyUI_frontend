@@ -1628,7 +1628,6 @@
       "columnLicense": "라이선스",
       "columnInstall": "설치",
       "installLabel": "빌드에 {pack} 추가",
-      "inBuild": "빌드에 포함됨",
       "noVersion": "게시된 버전 없음",
       "versionLabel": "{pack}의 버전을 선택하세요. 현재 {version}이(가) 선택되어 있습니다.",
       "versionsOf": "{pack}의 버전",
@@ -1644,10 +1643,36 @@
       "noMatches": "'{query}'에 해당하는 노드 팩이 없습니다.",
       "inBuildCount": "{build}의 노드 팩 {count}개 | {build}의 노드 팩 {count}개",
       "pickedCount": "· 아직 선택하지 않음 | · {count}개 선택됨 | · {count}개 선택됨",
-      "page": "{page}페이지",
       "previousPage": "이전 페이지",
       "nextPage": "다음 페이지",
-      "review": "변경 사항 검토 | 노드 팩 {count}개 검토 | 노드 팩 {count}개 검토"
+      "review": "변경 사항 검토 | 노드 팩 {count}개 검토 | 노드 팩 {count}개 검토",
+      "inBuildLabel": "{pack}은(는) 이미 빌드에 있습니다",
+      "pageOf": "{count}페이지 중 {page}페이지",
+      "editOnPlatform": "Platform에서 편집",
+      "editOnPlatformLabel": "Developer Platform에서 {build}의 사용자 지정 노드 편집",
+      "statusMenuLabel": "상태별로 노드 팩을 필터링합니다. 현재 {value} 표시 중입니다.",
+      "licenseMenuLabel": "라이선스별로 노드 팩을 필터링합니다. 현재 {value} 표시 중입니다.",
+      "sortMenuLabel": "노드 팩을 정렬합니다. 현재 정렬 기준은 {value}입니다.",
+      "status": {
+        "heading": "상태",
+        "all": "모든 팩",
+        "installed": "설치됨",
+        "notInstalled": "미설치"
+      },
+      "license": {
+        "heading": "라이선스",
+        "any": "모든 라이선스",
+        "count": "라이선스 {count}개 | 라이선스 {count}개",
+        "unlisted": "라이선스 정보 없음",
+        "clear": "라이선스 필터 지우기"
+      },
+      "sort": {
+        "heading": "정렬",
+        "installs": "설치 수 많은 순",
+        "stars": "별 많은 순",
+        "nameAsc": "팩 이름 (A→Z)",
+        "nameDesc": "팩 이름 (Z→A)"
+      }
     },
     "review": {
       "title": "{build}에 노드 팩 {count}개 추가 | {build}에 노드 팩 {count}개 추가",

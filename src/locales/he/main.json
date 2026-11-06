@@ -1628,7 +1628,6 @@
       "columnLicense": "רישיון",
       "columnInstall": "התקנה",
       "installLabel": "הוספת {pack} ל-Build",
-      "inBuild": "ב-Build",
       "noVersion": "אין גרסה שפורסמה",
       "versionLabel": "בחרו גרסה של {pack}. כרגע נבחרה {version}.",
       "versionsOf": "הגרסאות של {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "אין חבילות צמתים שתואמות ל-\"{query}\".",
       "inBuildCount": "{count} חבילת צמתים ב-{build} | {count} חבילות צמתים ב-{build}",
       "pickedCount": "· עדיין לא נבחר דבר | · {count} נבחרה | · {count} נבחרו",
-      "page": "עמוד {page}",
       "previousPage": "העמוד הקודם",
       "nextPage": "העמוד הבא",
-      "review": "סקירת השינויים | סקירת {count} חבילת צמתים | סקירת {count} חבילות צמתים"
+      "review": "סקירת השינויים | סקירת {count} חבילת צמתים | סקירת {count} חבילות צמתים",
+      "inBuildLabel": "החבילה {pack} כבר נמצאת ב-Build",
+      "pageOf": "עמוד {page} מתוך {count}",
+      "editOnPlatform": "עריכה ב-Platform",
+      "editOnPlatformLabel": "עריכת הצמתים המותאמים אישית של {build} ב-Developer Platform",
+      "statusMenuLabel": "סינון חבילות צמתים לפי סטטוס. מוצג כעת {value}.",
+      "licenseMenuLabel": "סינון חבילות צמתים לפי רישיון. מוצג כעת {value}.",
+      "sortMenuLabel": "מיון חבילות צמתים. ממוין כעת לפי {value}.",
+      "status": {
+        "heading": "סטטוס",
+        "all": "כל החבילות",
+        "installed": "מותקנות",
+        "notInstalled": "לא מותקנות"
+      },
+      "license": {
+        "heading": "רישיון",
+        "any": "כל רישיון",
+        "count": "{count} רישיון | {count} רישיונות",
+        "unlisted": "לא צוין רישיון",
+        "clear": "ניקוי מסנן הרישיון"
+      },
+      "sort": {
+        "heading": "מיון",
+        "installs": "הכי הרבה התקנות",
+        "stars": "הכי הרבה כוכבים",
+        "nameAsc": "שם החבילה, A עד Z",
+        "nameDesc": "שם החבילה, Z עד A"
+      }
     },
     "review": {
       "title": "הוספת {count} חבילת צמתים ל-{build} | הוספת {count} חבילות צמתים ל-{build}",

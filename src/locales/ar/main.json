@@ -1628,7 +1628,6 @@
       "columnLicense": "الرخصة",
       "columnInstall": "تثبيت",
       "installLabel": "أضف {pack} إلى البناء",
-      "inBuild": "في البناء",
       "noVersion": "لا يوجد إصدار منشور",
       "versionLabel": "اختر إصدارًا من {pack}. الإصدار المحدد الآن هو {version}.",
       "versionsOf": "إصدارات {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "لا توجد حزم عقد تطابق «{query}».",
       "inBuildCount": "{count} حزمة عقد في {build} | {count} حزم عقد في {build}",
       "pickedCount": "· لم يتم اختيار أي حزمة بعد | · تم اختيار {count} | · تم اختيار {count}",
-      "page": "الصفحة {page}",
       "previousPage": "الصفحة السابقة",
       "nextPage": "الصفحة التالية",
-      "review": "راجع التغييرات | راجع {count} حزمة عقد | راجع {count} حزم عقد"
+      "review": "راجع التغييرات | راجع {count} حزمة عقد | راجع {count} حزم عقد",
+      "inBuildLabel": "الحزمة {pack} موجودة بالفعل في البناء",
+      "pageOf": "الصفحة {page} من {count}",
+      "editOnPlatform": "تعديل على المنصة",
+      "editOnPlatformLabel": "عدّل العقد المخصصة لـ {build} على منصة المطورين",
+      "statusMenuLabel": "صفِّ حزم العقد حسب الحالة. يُعرض الآن {value}.",
+      "licenseMenuLabel": "صفِّ حزم العقد حسب الرخصة. يُعرض الآن {value}.",
+      "sortMenuLabel": "رتّب حزم العقد. الترتيب الحالي حسب {value}.",
+      "status": {
+        "heading": "الحالة",
+        "all": "كل الحزم",
+        "installed": "مثبتة",
+        "notInstalled": "غير مثبتة"
+      },
+      "license": {
+        "heading": "الرخصة",
+        "any": "أي رخصة",
+        "count": "{count} رخصة | {count} رخص",
+        "unlisted": "لا توجد رخصة مذكورة",
+        "clear": "مسح عامل تصفية الرخصة"
+      },
+      "sort": {
+        "heading": "الفرز",
+        "installs": "الأكثر تثبيتًا",
+        "stars": "الأكثر نجومًا",
+        "nameAsc": "اسم الحزمة، من A إلى Z",
+        "nameDesc": "اسم الحزمة، من Z إلى A"
+      }
     },
     "review": {
       "title": "أضف {count} حزمة عقد إلى {build} | أضف {count} حزم عقد إلى {build}",

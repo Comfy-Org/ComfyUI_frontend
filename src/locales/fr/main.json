@@ -1628,7 +1628,6 @@
       "columnLicense": "Licence",
       "columnInstall": "Installer",
       "installLabel": "Ajouter {pack} au Build",
-      "inBuild": "Dans le Build",
       "noVersion": "Aucune version publiée",
       "versionLabel": "Choisissez une version de {pack}. {version} est sélectionnée pour l'instant.",
       "versionsOf": "Versions de {pack}",
@@ -1644,10 +1643,36 @@
       "noMatches": "Aucun pack de nœuds ne correspond à « {query} ».",
       "inBuildCount": "{count} pack de nœuds dans {build} | {count} packs de nœuds dans {build}",
       "pickedCount": "· aucun sélectionné pour l'instant | · {count} sélectionné | · {count} sélectionnés",
-      "page": "Page {page}",
       "previousPage": "Page précédente",
       "nextPage": "Page suivante",
-      "review": "Vérifier les modifications | Vérifier {count} pack de nœuds | Vérifier {count} packs de nœuds"
+      "review": "Vérifier les modifications | Vérifier {count} pack de nœuds | Vérifier {count} packs de nœuds",
+      "inBuildLabel": "Le pack {pack} est déjà dans le Build",
+      "pageOf": "Page {page} sur {count}",
+      "editOnPlatform": "Modifier sur la Platform",
+      "editOnPlatformLabel": "Modifier les nœuds personnalisés de {build} sur la Developer Platform",
+      "statusMenuLabel": "Filtrer les packs de nœuds par statut. Le filtre actuel est {value}.",
+      "licenseMenuLabel": "Filtrer les packs de nœuds par licence. Le filtre actuel est {value}.",
+      "sortMenuLabel": "Trier les packs de nœuds. Le tri actuel est {value}.",
+      "status": {
+        "heading": "Statut",
+        "all": "Tous les packs",
+        "installed": "Installés",
+        "notInstalled": "Non installés"
+      },
+      "license": {
+        "heading": "Licence",
+        "any": "Toute licence",
+        "count": "{count} licence | {count} licences",
+        "unlisted": "Aucune licence indiquée",
+        "clear": "Effacer le filtre de licence"
+      },
+      "sort": {
+        "heading": "Tri",
+        "installs": "Plus d'installations",
+        "stars": "Plus d'étoiles",
+        "nameAsc": "Nom du pack, de A à Z",
+        "nameDesc": "Nom du pack, de Z à A"
+      }
     },
     "review": {
       "title": "Ajouter {count} pack de nœuds à {build} | Ajouter {count} packs de nœuds à {build}",

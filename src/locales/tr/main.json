@@ -1616,7 +1616,7 @@
       "title": "Derlemenin özel düğümleri yüklenemedi"
     },
     "picker": {
-      "title": "{build} Derlemesine özel düğüm ekleyin",
+      "title": "Özel düğümleri {build} Derlemesine ekleyin",
       "body": "Eklenecek düğüm paketlerini seçin. Comfy Cloud, {build} Derlemesinin yeni bir Release'ini oluşturur ve ardından {deployment} dağıtımını bu Release'e taşır.",
       "search": "Düğüm paketlerinde ara",
       "clearSearch": "Aramayı temizle",
@@ -1627,30 +1627,55 @@
       "columnVersion": "Sürüm",
       "columnLicense": "Lisans",
       "columnInstall": "Yükle",
-      "installLabel": "{pack} paketini Derlemeye ekle",
-      "inBuild": "Derlemede",
+      "installLabel": "Derlemeye {pack} paketini ekle",
       "noVersion": "Yayımlanmış sürüm yok",
-      "versionLabel": "{pack} için bir sürüm seçin. Şu anda {version} seçili.",
-      "versionsOf": "{pack} sürümleri",
+      "versionLabel": "Bir {pack} sürümü seçin. Şu anda {version} seçili.",
+      "versionsOf": "Tüm {pack} sürümleri",
       "latest": "En son",
       "loadingVersions": "Sürümler yükleniyor",
       "pinCommit": "Commit hash'ine sabitle",
-      "pinCommitLabel": "{pack} için commit hash'ine sabitle",
+      "pinCommitLabel": "Commit hash'i ile {pack} paketini sabitle",
       "commitField": "Commit hash'i",
       "pin": "Sabitle",
       "notCommit": "7 ile 40 arasında harf ve rakamdan oluşan bir commit hash'i girin.",
       "loading": "Düğüm paketleri yükleniyor",
       "searchFailed": "Comfy Kayıt Defteri'ne ulaşılamadı. Tekrar deneyin.",
       "noMatches": "\"{query}\" ile eşleşen düğüm paketi yok.",
-      "inBuildCount": "{build} içinde {count} düğüm paketi | {build} içinde {count} düğüm paketi",
+      "inBuildCount": "Derleme {build} içinde {count} düğüm paketi | Derleme {build} içinde {count} düğüm paketi",
       "pickedCount": "· henüz seçim yok | · {count} seçildi | · {count} seçildi",
-      "page": "Sayfa {page}",
       "previousPage": "Önceki sayfa",
       "nextPage": "Sonraki sayfa",
-      "review": "Değişiklikleri incele | {count} düğüm paketini incele | {count} düğüm paketini incele"
+      "review": "Değişiklikleri incele | {count} düğüm paketini incele | {count} düğüm paketini incele",
+      "inBuildLabel": "Derlemede zaten {pack} paketi var",
+      "pageOf": "Sayfa {page} / {count}",
+      "editOnPlatform": "Platform'da düzenle",
+      "editOnPlatformLabel": "Geliştirici Platformu'nda {build} Derlemesinin özel düğümlerini düzenleyin",
+      "statusMenuLabel": "Düğüm paketlerini duruma göre filtreleyin. Şu anda {value} gösteriliyor.",
+      "licenseMenuLabel": "Düğüm paketlerini lisansa göre filtreleyin. Şu anda {value} gösteriliyor.",
+      "sortMenuLabel": "Düğüm paketlerini sıralayın. Geçerli sıralama {value}.",
+      "status": {
+        "heading": "Durum",
+        "all": "Tüm paketler",
+        "installed": "Yüklü",
+        "notInstalled": "Yüklü değil"
+      },
+      "license": {
+        "heading": "Lisans",
+        "any": "Herhangi bir lisans",
+        "count": "{count} lisans | {count} lisans",
+        "unlisted": "Lisans belirtilmemiş",
+        "clear": "Lisans filtresini temizle"
+      },
+      "sort": {
+        "heading": "Sıralama",
+        "installs": "En çok kurulan",
+        "stars": "En çok yıldız alan",
+        "nameAsc": "Paket adı, A'dan Z'ye",
+        "nameDesc": "Paket adı, Z'den A'ya"
+      }
     },
     "review": {
-      "title": "{build} Derlemesine {count} düğüm paketi ekleyin | {build} Derlemesine {count} düğüm paketi ekleyin",
+      "title": "{count} düğüm paketini {build} Derlemesine ekleyin | {count} düğüm paketini {build} Derlemesine ekleyin",
       "body": "Comfy Cloud bunlarla {build} Derlemesinin yeni bir Release'ini oluşturur, ardından {deployment} dağıtımını bu Release'e taşır. Bu işlem genellikle 10–15 dakika sürer.",
       "listLabel": "Eklenecek düğüm paketleri",
       "note": "Şu anda çalışan işler v{version} üzerinde tamamlanır. Yeni Release hazır olduğunda yeni düğümleri kullanmak için düzenleyiciyi yeniden yükleyin.",
@@ -1658,14 +1683,14 @@
       "submit": "Ekle ve yeniden dağıt"
     },
     "readOnly": {
-      "title": "{build} içindeki özel düğümler",
+      "title": "Derleme {build} içindeki özel düğümler",
       "body": "Bu Derlemeye düğüm paketi ekleyemezsiniz. Derlemeyi yöneten kişiden bunları sizin için eklemesini isteyin.",
-      "listLabel": "{build} içindeki düğüm paketleri"
+      "listLabel": "Derleme {build} içindeki düğüm paketleri"
     },
     "building": {
       "titleStarting": "Derleme başlatılıyor",
       "title": "Release v{version} derleniyor",
-      "body": "{build} içine {count} düğüm paketi kuruluyor. Derlemeler genellikle 10–15 dakika sürer. | {build} içine {count} düğüm paketi kuruluyor. Derlemeler genellikle 10–15 dakika sürer.",
+      "body": "{count} düğüm paketi {build} içine kuruluyor. Derlemeler genellikle 10–15 dakika sürer. | {count} düğüm paketi {build} içine kuruluyor. Derlemeler genellikle 10–15 dakika sürer.",
       "step": {
         "queued": "Bir derleme sunucusu bekleniyor",
         "resolving": "Düğüm paketi sürümleri belirleniyor",
