@@ -60,6 +60,7 @@ describe(useLocalHandoffUrlLoader, () => {
   beforeEach(() => {
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
     vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    vi.mocked(app.loadGraphData).mockResolvedValue(true)
     vi.spyOn(window, 'postMessage')
   })
 
@@ -176,6 +177,23 @@ describe(useLocalHandoffUrlLoader, () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'the load fails', outcome: false },
+    { name: 'a newer load replaces it', outcome: undefined }
+  ])('does not claim the workflow opened when $name', async ({ outcome }) => {
+    vi.mocked(app.loadGraphData).mockResolvedValue(outcome)
+    const nonce = linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(nonce))
+
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
   })
 
   it('refuses a handed-over workflow that fails validation', async () => {
