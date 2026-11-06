@@ -15,6 +15,7 @@ import type {
   AskUserResolution,
   AssistantMessage,
   DeleteApprovalPart,
+  MessagePart,
   RunApprovalPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
@@ -661,6 +662,29 @@ describe('AgentMessage thinking narration', () => {
     expect(
       listSlots.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+  })
+
+  it('keeps the streaming reply mounted when a step lands before it', async () => {
+    const message = answeredQuestionTurn(true)
+    const [listSlots, question, setWidget] = message.parts
+    const reply: MessagePart = {
+      type: 'text',
+      text: 'Drafting the reply',
+      state: 'streaming'
+    }
+    message.parts = [listSlots, question, reply]
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+    const before = screen.getByText('Drafting the reply')
+
+    await rerender({
+      message: { ...message, parts: [listSlots, question, setWidget, reply] }
+    })
+
+    expect(screen.getByText('Set widget')).toBeVisible()
+    expect(screen.getByText('Drafting the reply')).toBe(before)
   })
 
   it('gathers text-separated tool runs into the one summary', async () => {

@@ -91,6 +91,30 @@ describe('groupMessageParts', () => {
     ).toEqual(['trace(a)', 'notice', 'trace(b)'])
   })
 
+  it.for<[string, MessagePart]>([
+    [
+      'runApproval',
+      { type: 'runApproval', askId: 'turn-1:call-4', workflowName: 'Draft' }
+    ],
+    [
+      'paused',
+      {
+        type: 'paused',
+        askId: 'turn-1:call-5',
+        prompt: 'Add credits to continue',
+        message: 'Out of credits',
+        reason: 'no_funds',
+        recheckAfterSeconds: 30
+      }
+    ]
+  ])('starts a new trace after a %s card', ([kind, card]) => {
+    expect(shape([tool('a'), card, tool('b')])).toEqual([
+      'trace(a)',
+      kind,
+      'trace(b)'
+    ])
+  })
+
   it('does not split the trace at an informational notice', () => {
     expect(
       shape([
