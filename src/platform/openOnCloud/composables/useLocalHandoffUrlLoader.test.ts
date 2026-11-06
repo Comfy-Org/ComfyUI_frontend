@@ -267,6 +267,34 @@ describe(useLocalHandoffUrlLoader, () => {
     )
   })
 
+  it('discards a Desktop transfer without importing or notifying while the gate is off', async () => {
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = false
+    const nonce = linkWithNonce()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'desktop-portrait',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    await captureDesktopWorkflowHandoff(new URL(destination))
+    const stored = `Comfy.OpenOnCloud.Desktop.${nonce}`
+    expect(sessionStorage.getItem(stored)).not.toBeNull()
+
+    await loadWithOpener(window)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(window.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: 'Opened from ComfyUI on your computer' })
+    )
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ title: "Your workflow didn't arrive" })
+    )
+    expect(sessionStorage.getItem(stored)).toBeNull()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
   it.for([
     { name: 'the flag is off', flag: false, opener: window },
     { name: 'no tab opened this one', flag: true, opener: null }

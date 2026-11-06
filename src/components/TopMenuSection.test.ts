@@ -765,6 +765,29 @@ describe('TopMenuSection', () => {
         )
       }
     )
+
+    it.for([
+      { openOnCloudEnabled: false, cloud: 0, deploy: 1 },
+      { openOnCloudEnabled: true, cloud: 1, deploy: 0 }
+    ])(
+      'renders $cloud Cloud and $deploy deploy buttons when the Open on Cloud gate is $openOnCloudEnabled',
+      ({ openOnCloudEnabled, cloud, deploy }) => {
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, {
+          openOnCloudEnabled,
+          deployToCloud: true
+        })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
+          cloud
+        )
+        expect(
+          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+        ).toHaveLength(deploy)
+      }
+    )
   })
 
   describe('Deploy to Comfy API button', () => {

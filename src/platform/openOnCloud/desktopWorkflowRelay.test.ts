@@ -10,6 +10,7 @@ import {
 } from 'vitest'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import * as distributionTypes from '@/platform/distribution/types'
 import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
@@ -65,6 +66,36 @@ describe(handleDesktopWorkflowHandoff, () => {
   it('lets the editor boot when the URL carries no relay', async () => {
     await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
   })
+
+  it.for([
+    { isCloud: false, url: 'http://127.0.0.1:8000/?workflow=a#graph' },
+    { isCloud: true, url: 'https://cloud.comfy.org/?workflow=a#graph' }
+  ])(
+    'leaves an ordinary boot untouched on isCloud=$isCloud',
+    async ({ isCloud, url }) => {
+      vi.mocked(distributionTypes).isCloud = isCloud
+      onTestFinished(() => {
+        vi.mocked(distributionTypes).isCloud = false
+      })
+      openAt(url)
+      const splash = showSplash()
+      splash.textContent = 'Loading'
+      const replace = relayed()
+      const replaceState = vi.spyOn(window.history, 'replaceState')
+      sessionStorage.clear()
+
+      await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+
+      expect(api.getUserData).not.toHaveBeenCalled()
+      expect(api.deleteUserData).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(replace).not.toHaveBeenCalled()
+      expect(replaceState).not.toHaveBeenCalled()
+      expect(sessionStorage).toHaveLength(0)
+      expect(window.location.href).toBe(url)
+      expect(splash.textContent).toBe('Loading')
+    }
+  )
 
   it('consumes the staged transfer once and forwards to Comfy Cloud', async () => {
     const { relay, record } = await stagedRelay()
