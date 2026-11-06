@@ -19,6 +19,7 @@ export type CloudWorkflowCheckState =
   | { phase: 'answered'; verdict: CloudWorkflowVerdict }
 
 export type CloudWorkflowCheckEvent =
+  | { type: 'invalidated' }
   | { type: 'started'; run: number }
   | { type: 'failed'; run: number }
   | { type: 'answered'; run: number; verdict: CloudWorkflowVerdict }
@@ -28,6 +29,8 @@ export function reduceCloudWorkflowCheck(
   event: CloudWorkflowCheckEvent
 ): CloudWorkflowCheckState {
   switch (event.type) {
+    case 'invalidated':
+      return { phase: 'idle' }
     case 'started':
       return { phase: 'checking', run: event.run }
     case 'failed':

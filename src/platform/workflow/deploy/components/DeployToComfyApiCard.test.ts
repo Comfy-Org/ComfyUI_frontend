@@ -36,11 +36,8 @@ vi.mock(
       workflowName: 'portrait-upscale'
     } satisfies BuildInputs
     return {
-      useAgentHandoff: () => ({
-        buildBrief: () => 'Setup brief',
-        captureInputs: () => inputs,
-        copyBrief
-      })
+      useAgentHandoff: () =>
+        fromPartial({ captureInputs: () => inputs, copyBrief })
     }
   }
 )

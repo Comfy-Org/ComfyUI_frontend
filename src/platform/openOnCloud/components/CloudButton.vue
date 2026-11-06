@@ -60,6 +60,10 @@ function showModal() {
 }
 
 function openModal() {
+  if (check.value.phase === 'answered') {
+    showModal()
+    return
+  }
   opensWhenAnswered.value = true
   checkWorkflow()
 }
@@ -67,6 +71,11 @@ function openModal() {
 watch(
   () => check.value.phase,
   (phase) => {
+    if (phase === 'idle') {
+      opensWhenAnswered.value = false
+      closeRunOnCloudDialog()
+      return
+    }
     if (phase === 'checking') {
       if (closeRunOnCloudDialog()) opensWhenAnswered.value = true
       return
