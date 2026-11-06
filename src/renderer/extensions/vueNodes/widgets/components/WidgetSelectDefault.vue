@@ -132,8 +132,7 @@
             data-testid="widget-select-default-viewport"
             role="listbox"
             :aria-label="widgetLabel"
-            class="min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
-            :style="viewportStyle"
+            class="max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
             <div
@@ -150,10 +149,54 @@
               :estimate-size="32"
               :text-content="(option) => option.label"
             >
-              <WidgetSelectOption
-                :option
+              <ComboboxItem
+                :value="option"
+                :text-value="option.label"
+                :aria-label="
+                  option.kind === 'folder'
+                    ? $t(
+                        'widgets.selectFolder',
+                        { name: option.label },
+                        { escapeParameter: false }
+                      )
+                    : option.kind === 'back'
+                      ? $t(
+                          'widgets.backFromFolder',
+                          { name: option.label },
+                          { escapeParameter: false }
+                        )
+                      : option.label
+                "
+                class="flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none hover:bg-secondary data-highlighted:bg-secondary data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30"
                 @select="handleOptionSelect($event, option)"
-              />
+              >
+                <i
+                  v-if="option.kind !== 'value'"
+                  :class="
+                    cn(
+                      'text-muted-foreground',
+                      option.kind === 'back'
+                        ? 'icon-[lucide--arrow-left]'
+                        : 'icon-[lucide--folder]'
+                    )
+                  "
+                  aria-hidden="true"
+                />
+                <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
+                <i
+                  v-if="option.kind === 'folder'"
+                  class="icon-[lucide--chevron-right] text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <ComboboxItemIndicator
+                  class="flex shrink-0 items-center justify-center"
+                >
+                  <i
+                    class="icon-[lucide--check] size-3.5 text-foreground"
+                    aria-hidden="true"
+                  />
+                </ComboboxItemIndicator>
+              </ComboboxItem>
             </ComboboxVirtualizer>
           </div>
           <div
@@ -177,12 +220,13 @@ import {
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
 import { computed, nextTick, ref, useId, useTemplateRef } from 'vue'
-import type { CSSProperties } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -195,7 +239,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
-import WidgetSelectOption from './WidgetSelectOption.vue'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
@@ -399,12 +442,6 @@ const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
     )
   ]
 })
-
-const viewportStyle = computed<CSSProperties>(() => ({
-  maxHeight:
-    'min(30.5rem, max(2rem, calc(var(--reka-combobox-content-available-height, 100dvh) - 3rem)))',
-  scrollbarGutter: 'stable'
-}))
 
 const activeDescendant = computed((): string | undefined =>
   browseOptions.value.length

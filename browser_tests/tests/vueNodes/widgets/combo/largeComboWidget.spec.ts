@@ -22,8 +22,14 @@ test.describe(
     test('renders only a window of the options, also while searching', async ({
       comfyPage
     }) => {
-      const combo = loraCombo(comfyPage, 'LoRA first')
+      const combo = loraCombo(comfyPage, 'LoRA deep')
       await combo.open()
+      await expect
+        .poll(async () =>
+          Number(await combo.options.first().getAttribute('aria-setsize'))
+        )
+        .toBeGreaterThan(700)
+      await expect.poll(() => combo.options.count()).toBeLessThan(100)
       await combo.searchInput.fill('.safetensors')
 
       await expect(combo.options.first()).toHaveAttribute(

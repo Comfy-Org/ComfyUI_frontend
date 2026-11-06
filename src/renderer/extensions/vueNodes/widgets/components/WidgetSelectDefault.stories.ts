@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { provide, ref } from 'vue'
-
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
+import { ref } from 'vue'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -32,7 +30,6 @@ const meta: Meta<typeof WidgetSelectDefault> = {
   render: (args) => ({
     components: { WidgetSelectDefault },
     setup() {
-      provide(UnifiedWidgetRowsKey, true)
       const value = ref(args.modelValue)
       return { args, value }
     },
@@ -204,6 +201,7 @@ export const SelectedFolder: Story = {
 }
 
 export const ManyOptions: Story = {
+  parameters: { layout: 'fullscreen' },
   args: {
     modelValue: 'model_00.safetensors',
     widget: {
@@ -220,10 +218,14 @@ export const ManyOptions: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('combobox', { name: 'ckpt_name' }))
-    await expect(
-      within(canvasElement.ownerDocument.body).getByRole('option', {
-        name: 'model_14.safetensors'
-      })
-    ).toBeVisible()
+    const popup = within(canvasElement.ownerDocument.body)
+    await waitFor(async () => {
+      const viewport = popup.getByRole('listbox').getBoundingClientRect()
+      const option = popup
+        .getByRole('option', { name: 'model_14.safetensors' })
+        .getBoundingClientRect()
+      await expect(option.top).toBeGreaterThanOrEqual(viewport.top)
+      await expect(option.bottom).toBeLessThanOrEqual(viewport.bottom)
+    })
   }
 }
