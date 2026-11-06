@@ -41,7 +41,6 @@ async function openHandedOffWorkflow(
     return
   }
   try {
-    // false: the load already showed its failure. undefined: a newer load replaced it.
     const outcome = await app.loadGraphData(workflow, true, true, filename)
     if (outcome === false || outcome === undefined) return
   } catch (error) {
