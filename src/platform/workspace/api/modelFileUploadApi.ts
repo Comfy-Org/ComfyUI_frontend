@@ -1,10 +1,12 @@
 import type { z } from 'zod'
 
-import {
+import type {
   zCompleteModelUploadBody,
+  zStartModelUploadBody
+} from '@comfyorg/ingest-types/zod'
+import {
   zCompleteModelUploadResponse,
   zErrorResponse,
-  zStartModelUploadBody,
   zStartModelUploadResponse
 } from '@comfyorg/ingest-types/zod'
 
