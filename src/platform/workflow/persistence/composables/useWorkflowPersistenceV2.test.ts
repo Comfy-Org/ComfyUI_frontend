@@ -114,7 +114,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -825,6 +829,15 @@ describe('useWorkflowPersistenceV2', () => {
       [
         'template intent preserved across /user-select redirect',
         () => (preservedQueryMocks.payloads.template = { template: 'id' })
+      ],
+      [
+        'local handoff param in URL',
+        () => (routeMocks.query = { from_local: 'nonce' })
+      ],
+      [
+        'local handoff preserved across the sign-in redirect',
+        () =>
+          (preservedQueryMocks.payloads.local_handoff = { from_local: 'nonce' })
       ]
     ] as const)(
       'reports url-intent, not fresh, with %s',
