@@ -6865,6 +6865,25 @@ export type PreviewSubscribeResponse = {
    */
   renewal_at?: string
   /**
+   * Whether the checkout must collect explicit consent to today's
+   * charge (a consent checkbox) before confirming this reactivation.
+   * True when requires_reactivation_confirmation is true, current_plan
+   * is present, transition_type is upgrade or duration_change, and
+   * today's charge (amount_due_cents, or cost_today_cents when
+   * amount_due_cents is absent) exceeds the current plan's monthly
+   * price: current_plan.seat_summary.total_cost_cents (the whole
+   * subscription, every seat), divided by 12 when current_plan.duration
+   * is ANNUAL. False otherwise, including every downgrade (nothing is
+   * charged today) and every new_subscription. Present exactly when
+   * requires_reactivation_confirmation is present, and absent when it is
+   * absent.
+   * Not whether the change is a reactivation (that is
+   * requires_reactivation_confirmation) and not an authorization:
+   * subscribe enforces reactivation consent on its own.
+   *
+   */
+  requires_reactivation_charge_confirmation?: boolean
+  /**
    * Whether this previewed change requires explicit reactivation
    * consent. Computed from the persisted subscription and a short-lived
    * cache of Stripe lifecycle state. The subscribe enforcement path
