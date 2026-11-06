@@ -1341,6 +1341,15 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    if (this.graph) {
+      useWidgetValueStore().restoreNodeFolderLocks(
+        graphId,
+        this.id,
+        info.properties?.widget_folder_locks
+      )
+    }
+    if (this.graph || info.properties?.widget_folder_locks === undefined)
+      delete this.properties.widget_folder_locks
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1418,7 +1427,6 @@ export class LGraphNode
   }
 
   serializeFromStoreState(state: NodeState): ISerialisedNode {
-    // create serialization object
     const o: ISerialisedNode = {
       id: serializeNodeId(state.id),
       type: state.type,
@@ -1430,7 +1438,6 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
-    // special case for when there were errors
     if (this.constructor === LGraphNode && state.lastSerialization)
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
@@ -1449,6 +1456,14 @@ export class LGraphNode
       o.title = state.title
 
     o.properties = LiteGraph.cloneObject(state.properties)
+    if (this.graph) {
+      const folderLocks = useWidgetValueStore().serializeNodeFolderLocks(
+        this.graph.rootGraph.id,
+        state.id
+      )
+      if (folderLocks) o.properties.widget_folder_locks = folderLocks
+      else delete o.properties.widget_folder_locks
+    }
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
