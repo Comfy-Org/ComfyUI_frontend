@@ -14,7 +14,7 @@ describe('Desktop workflow transfer through the external browser', () => {
     expect(
       await desktopWorkflowUrl(crypto.randomUUID(), {
         filename: 'oversized',
-        workflow: { data: 'x'.repeat(8 * 1024 * 1024) },
+        workflow: { data: 'x'.repeat(2 * 1024 * 1024) },
         expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
       })
     ).toBeUndefined()
