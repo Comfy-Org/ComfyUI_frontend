@@ -126,6 +126,7 @@ import type {
   BillingAuthenticationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
+import { pendingServerFact } from '@comfyorg/account-core/billing'
 
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
@@ -248,10 +249,14 @@ const isCancelled = computed(
   () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
 )
 
+const servedChargeConsent = computed(
+  () => previewData.requires_reactivation_charge_confirmation
+)
+
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
 >(() => {
-  if (!isCancelled.value) return null
+  if (!isCancelled.value && servedChargeConsent.value !== true) return null
   switch (previewData.transition_type) {
     case 'upgrade':
       return 'upgrade'
@@ -272,19 +277,32 @@ const cancelAt = computed(
 
 const isReactivating = computed(
   () =>
-    isCancelled.value &&
-    reactivationVariant.value !== null &&
-    !!cancelAt.value &&
-    !!previewData.current_plan
+    servedChargeConsent.value === true ||
+    (isCancelled.value &&
+      reactivationVariant.value !== null &&
+      !!cancelAt.value &&
+      !!previewData.current_plan)
 )
+
+const currentMonthlyPriceCents = computed(() => {
+  const current = previewData.current_plan
+  if (!current) return 0
+  const totalCents = current.seat_summary.total_cost_cents
+  return isAnnualDuration(current.duration) ? totalCents / 12 : totalCents
+})
 
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
 const requiresChargeConsent = computed(
   () =>
-    isReactivating.value &&
-    previewData.requires_reactivation_charge_confirmation === true
+    servedChargeConsent.value ??
+    pendingServerFact(
+      'BE-25331',
+      isReactivating.value &&
+        reactivationVariant.value !== 'downgrade' &&
+        chargeCents.value > currentMonthlyPriceCents.value
+    )
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`

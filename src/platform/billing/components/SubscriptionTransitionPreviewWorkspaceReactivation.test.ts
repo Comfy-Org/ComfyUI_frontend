@@ -394,11 +394,11 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
 
   describe('charge consent', () => {
     it.for([
-      { served: false, case: 'served false' },
-      { served: undefined, case: 'absent' }
+      { served: false, checkbox: false, case: 'served false' },
+      { served: undefined, checkbox: true, case: 'absent (interim rule)' }
     ])(
-      'shows no checkbox and an enabled confirm when the preview consent is $case, even for a large charge',
-      ({ served }) => {
+      'reads the checkbox for a large charge when the preview consent is $case',
+      ({ served, checkbox }) => {
         mockSubscription.value = {
           isCancelled: true,
           endDate: '2026-08-15T00:00:00Z'
@@ -411,12 +411,12 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           })
         )
 
-        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+        expect(screen.queryAllByRole('checkbox')).toHaveLength(checkbox ? 1 : 0)
         expect(
           screen.getByRole('button', {
             name: 'Confirm & reactivate — $999.00 today'
           })
-        ).toBeEnabled()
+        ).toHaveProperty('disabled', checkbox)
       }
     )
 
