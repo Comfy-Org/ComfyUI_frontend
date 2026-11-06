@@ -21,8 +21,7 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
 const uploadButtonStyle = cn(
-  'ml-auto h-8 rounded-lg bg-foreground text-background',
-  'flex items-center justify-center gap-2 p-2',
+  'ml-auto flex',
   'transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 )
 </script>
@@ -50,7 +49,7 @@ const uploadButtonStyle = cn(
     </button>
     <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="showUploadDialog"
@@ -61,7 +60,7 @@ const uploadButtonStyle = cn(
     <Button
       v-else-if="uploadable"
       :title="$t('g.upload')"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="emit('show-picker')"
