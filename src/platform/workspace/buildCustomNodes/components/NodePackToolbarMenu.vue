@@ -1,7 +1,7 @@
 <template>
   <PopoverRoot>
     <PopoverTrigger as-child>
-      <Button variant="secondary" size="lg" :aria-label="label">
+      <Button variant="secondary" size="md" :aria-label="label">
         <i :class="icon" aria-hidden="true" />
         {{ text }}
         <i class="icon-[lucide--chevron-down]" aria-hidden="true" />

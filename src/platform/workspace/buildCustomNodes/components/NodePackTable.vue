@@ -11,7 +11,9 @@
     </colgroup>
     <TableHeader class="sticky top-0 z-10 bg-background">
       <TableRow class="hover:bg-transparent">
-        <TableHead>{{ $t('buildCustomNodes.picker.columnName') }}</TableHead>
+        <TableHead class="pl-4">
+          {{ $t('buildCustomNodes.picker.columnName') }}
+        </TableHead>
         <TableHead>{{
           $t('buildCustomNodes.picker.columnPublisher')
         }}</TableHead>

@@ -8,42 +8,46 @@
       class="max-w-96 min-w-60 flex-1"
       @search="query = $event.trim()"
     />
-    <NodePackToolbarMenu
-      icon="icon-[lucide--list-filter]"
-      :text="statusText"
-      :label="
-        $t('buildCustomNodes.picker.statusMenuLabel', { value: statusText })
-      "
-      :heading="$t('buildCustomNodes.picker.status.heading')"
-    >
-      <NodePackRadioMenu
-        v-model="status"
-        :label="$t('buildCustomNodes.picker.status.heading')"
-        :options="statusOptions"
-      />
-    </NodePackToolbarMenu>
-    <NodePackToolbarMenu
-      icon="icon-[lucide--scale]"
-      :text="licenseText"
-      :label="
-        $t('buildCustomNodes.picker.licenseMenuLabel', { value: licenseText })
-      "
-      :heading="$t('buildCustomNodes.picker.license.heading')"
-    >
-      <NodePackLicenseMenu v-model="licenses" :licenses="licenseChoices" />
-    </NodePackToolbarMenu>
-    <NodePackToolbarMenu
-      icon="icon-[lucide--arrow-up-down]"
-      :text="sortText"
-      :label="$t('buildCustomNodes.picker.sortMenuLabel', { value: sortText })"
-      :heading="$t('buildCustomNodes.picker.sort.heading')"
-    >
-      <NodePackRadioMenu
-        v-model="sort"
-        :label="$t('buildCustomNodes.picker.sort.heading')"
-        :options="sortOptions"
-      />
-    </NodePackToolbarMenu>
+    <div class="ml-auto flex items-center gap-2">
+      <NodePackToolbarMenu
+        icon="icon-[lucide--list-filter]"
+        :text="statusText"
+        :label="
+          $t('buildCustomNodes.picker.statusMenuLabel', { value: statusText })
+        "
+        :heading="$t('buildCustomNodes.picker.status.heading')"
+      >
+        <NodePackRadioMenu
+          v-model="status"
+          :label="$t('buildCustomNodes.picker.status.heading')"
+          :options="statusOptions"
+        />
+      </NodePackToolbarMenu>
+      <NodePackToolbarMenu
+        icon="icon-[lucide--scale]"
+        :text="licenseText"
+        :label="
+          $t('buildCustomNodes.picker.licenseMenuLabel', { value: licenseText })
+        "
+        :heading="$t('buildCustomNodes.picker.license.heading')"
+      >
+        <NodePackLicenseMenu v-model="licenses" :licenses="licenseChoices" />
+      </NodePackToolbarMenu>
+      <NodePackToolbarMenu
+        icon="icon-[lucide--arrow-up-down]"
+        :text="sortText"
+        :label="
+          $t('buildCustomNodes.picker.sortMenuLabel', { value: sortText })
+        "
+        :heading="$t('buildCustomNodes.picker.sort.heading')"
+      >
+        <NodePackRadioMenu
+          v-model="sort"
+          :label="$t('buildCustomNodes.picker.sort.heading')"
+          :options="sortOptions"
+        />
+      </NodePackToolbarMenu>
+    </div>
   </div>
 </template>
 
