@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -93,7 +94,21 @@ describe('account-ui BillingAutoTopUpMemberBlock parity with the app member card
       case: 'turned off',
       view: { ...on, status: 'failed', disabled_reason: 'consecutive_declines' }
     },
-    { case: 'on hold', view: { ...on, status: 'on_hold' } }
+    { case: 'on hold', view: { ...on, status: 'on_hold' } },
+    {
+      case: 'a raw legacy view without a target',
+      view: fromAny<AutoTopUpMemberView, unknown>({
+        ...on,
+        target_credits: undefined
+      })
+    },
+    {
+      case: 'a raw legacy view with fractional credits',
+      view: fromAny<AutoTopUpMemberView, unknown>({
+        ...on,
+        threshold_credits: 999.5
+      })
+    }
   ])('renders the same status, line and no actions for $case', ({ view }) => {
     vi.mocked(useBillingCapabilities)().autoTopUpMemberView =
       autoTopUpMemberViewFact(view)
@@ -105,4 +120,25 @@ describe('account-ui BillingAutoTopUpMemberBlock parity with the app member card
 
     expect(readBlock()).toEqual(appBlock)
   })
+
+  it.for([
+    { case: 'without a target', patch: { target_credits: undefined } },
+    { case: 'with fractional credits', patch: { threshold_credits: 999.5 } }
+  ])(
+    'falls back to the static notice for a raw legacy view $case',
+    ({ patch }) => {
+      vi.mocked(useBillingCapabilities)().autoTopUpMemberView =
+        autoTopUpMemberViewFact(
+          fromAny<AutoTopUpMemberView, unknown>({ ...on, ...patch })
+        )
+      render(AppMemberCard, { global: { plugins: [i18n] } })
+
+      expect(readBlock()).toMatchObject({
+        status: null,
+        text: expect.stringContaining(
+          'Credits can top up automatically when they run low.'
+        )
+      })
+    }
+  )
 })

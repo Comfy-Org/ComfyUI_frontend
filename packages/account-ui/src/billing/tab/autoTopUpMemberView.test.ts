@@ -83,6 +83,22 @@ describe('autoTopUpMemberView', () => {
       }
     },
     {
+      case: 'a raw legacy payload without a target',
+      view: fromAny<AutoTopUpMemberView, unknown>({
+        ...memberView({ status: 'on' }),
+        target_credits: undefined
+      }),
+      expected: null
+    },
+    {
+      case: 'a raw legacy payload with fractional credits',
+      view: fromAny<AutoTopUpMemberView, unknown>({
+        ...memberView({ status: 'on' }),
+        threshold_credits: 999.5
+      }),
+      expected: null
+    },
+    {
       case: 'a decline reason on a view that is on',
       view: memberView({
         status: 'on',

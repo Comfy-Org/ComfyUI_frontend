@@ -73,9 +73,13 @@ function budgetLine(
     : dated(formatPlanDate(resetsAt, locale, 'monthly'))
 }
 
+function isWholeCredits(value: unknown): value is number {
+  return Number.isSafeInteger(value)
+}
+
 function ruleLine({ view, copy, locale }: LineContext): string | null {
   const { target_credits: target, threshold_credits: threshold } = view
-  if (target === null || threshold === null) return null
+  if (!isWholeCredits(target) || !isWholeCredits(threshold)) return null
   const credits = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
   return copy.on(credits.format(target), credits.format(threshold))
 }
