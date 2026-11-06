@@ -2764,11 +2764,6 @@
       "count": 1
     }
   },
-  "src/composables/useUrlActionLoaders.ts": {
-    "typescript/no-restricted-types": {
-      "count": 10
-    }
-  },
   "src/composables/useWaveAudioPlayer.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
