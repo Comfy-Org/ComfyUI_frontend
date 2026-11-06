@@ -7008,7 +7008,7 @@
   },
   "src/renderer/glsl/useGLSLPreview.ts": {
     "typescript/no-restricted-types": {
-      "count": 13
+      "count": 3
     }
   },
   "src/renderer/glsl/useGLSLRenderer.ts": {
@@ -7019,19 +7019,9 @@
       "count": 4
     }
   },
-  "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
   "src/renderer/glsl/useGLSLUniforms.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/renderer/glsl/useGLSLUniforms.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
     }
   },
   "src/renderer/hdr/hdrStats.ts": {

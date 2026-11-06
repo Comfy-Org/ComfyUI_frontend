@@ -129,8 +129,8 @@ export function toNumber(v: unknown): number {
 export function useGLSLUniforms(
   graphId: ComputedRef<UUID | undefined>,
   nodeId: ComputedRef<NodeId | undefined>,
-  nodeRef: ComputedRef<LGraphNode | null>,
-  uniformSources: ComputedRef<UniformSources | null>,
+  nodeRef: ComputedRef<LGraphNode | undefined>,
+  uniformSources: ComputedRef<UniformSources | undefined>,
   rendererConfig: ComputedRef<GLSLRendererConfig>
 ) {
   const widgetValueStore = useWidgetValueStore()
