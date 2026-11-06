@@ -16,6 +16,8 @@ import { defineComponent, nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -38,12 +40,18 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  nodeError,
+  runtimeError,
+  validationError
+} from '@/utils/__tests__/nodeErrorHelpers'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
@@ -250,6 +258,29 @@ describe('ErrorGroupList selection emphasis', () => {
       callback(0)
       return 0
     })
+  })
+
+  it('opens cloud deployment from a reported out-of-memory issue', async () => {
+    const pinia = getActivePinia()!
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    useExecutionErrorStore(pinia).recordExecutionError({
+      ...runtimeError('1'),
+      exception_type: 'torch.OutOfMemoryError',
+      exception_message: 'CUDA out of memory'
+    })
+    const { user } = renderList(pinia)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Deploy your setup to Comfy Cloud'
+      })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore(pinia).isDialogOpen('global-run-on-comfy-cloud')
+      ).toBe(true)
+    )
   })
 
   it('opens only the group named by view details', async () => {
