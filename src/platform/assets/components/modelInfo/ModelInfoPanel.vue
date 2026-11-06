@@ -282,16 +282,35 @@ watch(
   }
 )
 
-const debouncedFlushMetadata = useDebounceFn(() => {
-  if (isImmutable.value || Object.keys(pendingUpdates.value).length === 0)
+let metadataSavePending = false
+
+const debouncedFlushMetadata = useDebounceFn(async () => {
+  if (
+    metadataSavePending ||
+    isImmutable.value ||
+    Object.keys(pendingUpdates.value).length === 0
+  )
     return
   const updates = pendingUpdates.value
-  pendingUpdates.value = {}
-  assetsStore.updateAssetMetadata(
+  const assetId = asset.id
+  metadataSavePending = true
+  const saved = await assetsStore.updateAssetMetadata(
     asset,
     { ...asset.user_metadata, ...updates },
     cacheKey
   )
+  metadataSavePending = false
+  const hasNewerEdits = pendingUpdates.value !== updates
+  if (saved && asset.id === assetId) {
+    const confirmed = new Map(Object.entries(updates))
+    pendingUpdates.value = Object.fromEntries(
+      Object.entries(pendingUpdates.value).filter(
+        ([key, value]) => !confirmed.has(key) || value !== confirmed.get(key)
+      )
+    )
+  }
+  if ((saved || hasNewerEdits) && Object.keys(pendingUpdates.value).length > 0)
+    debouncedFlushMetadata()
 }, 500)
 
 function queueMetadataUpdate(updates: AssetUserMetadata) {

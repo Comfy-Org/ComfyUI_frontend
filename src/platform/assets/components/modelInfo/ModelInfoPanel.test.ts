@@ -114,6 +114,78 @@ describe('ModelInfoPanel', () => {
     )
   })
 
+  it('retains a failed description save for the next edit to retry', async () => {
+    vi.useFakeTimers()
+    const asset = createMockAsset({
+      is_immutable: false,
+      user_metadata: { user_description: 'Original description' }
+    })
+    const save = vi
+      .spyOn(useAssetsStore(), 'updateAssetMetadata')
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true)
+    renderPanel(asset)
+    const description = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    await fireEvent.update(description, 'Unsaved edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(description).toHaveValue('Unsaved edit')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(save).toHaveBeenCalledTimes(1)
+    await fireEvent.update(description, 'Retry edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenLastCalledWith(
+      asset,
+      { user_description: 'Retry edit' },
+      undefined
+    )
+  })
+
+  it.for([true, false])(
+    'serializes newer edits while the earlier save completes with %s',
+    async (saved) => {
+      vi.useFakeTimers()
+      const asset = createMockAsset({
+        is_immutable: false,
+        user_metadata: { user_description: 'Original description' }
+      })
+      let resolveSave!: (saved: boolean) => void
+      const save = vi
+        .spyOn(useAssetsStore(), 'updateAssetMetadata')
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveSave = resolve
+          })
+        )
+        .mockResolvedValue(true)
+      const { rerender } = renderPanel(asset)
+      const description = screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      )
+      await fireEvent.update(description, 'First edit')
+      await vi.advanceTimersByTimeAsync(500)
+      await fireEvent.update(description, 'Newer edit')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenCalledTimes(1)
+      resolveSave(saved)
+      await rerender({
+        asset: {
+          ...asset,
+          user_metadata: { user_description: 'First edit' }
+        }
+      })
+      expect(description).toHaveValue('Newer edit')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenCalledTimes(2)
+      expect(save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: asset.id }),
+        { user_description: 'Newer edit' },
+        undefined
+      )
+    }
+  )
+
   describe('Basic Info Section', () => {
     it('renders basic info section', () => {
       renderPanel(createMockAsset())

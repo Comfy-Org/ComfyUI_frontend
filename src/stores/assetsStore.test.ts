@@ -1890,13 +1890,24 @@ describe('deployment Model Library', () => {
       workspace.value = nextWorkspace
       identity.value = nextIdentity
       expect(store.getAssets('tag:models')).toEqual([])
+      let resolveNew!: (response: AssetResponse) => void
+      vi.mocked(assetService.getWorkspaceLibraryAssetsPage).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveNew = resolve
+        })
+      )
+      const current = store.updateModelsForTag('models')
       resolveOld(page([asset('stale-private')]))
       await pending
-      vi.mocked(
-        assetService.getWorkspaceLibraryAssetsPage
-      ).mockRejectedValueOnce(new Error('unavailable'))
-      await store.updateModelsForTag('models')
+      expect(store.isModelLoading('tag:models')).toBe(true)
+      expect(store.getError('tag:models')).toBeUndefined()
       expect(store.getAssets('tag:models')).toEqual([])
+      resolveNew(page([asset('current-private')]))
+      await current
+      expect(store.getAssets('tag:models')).toEqual([
+        { ...asset('current-private'), isWorkspaceLibrary: true }
+      ])
+      expect(store.isModelLoading('tag:models')).toBe(false)
     }
   )
 
