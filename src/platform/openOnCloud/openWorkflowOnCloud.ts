@@ -101,6 +101,9 @@ function armHandoff(
   }, TAB_CLOSED_POLL_MS)
   const deadline = setTimeout(stop, HANDOFF_DEADLINE_MS)
   window.addEventListener('message', onMessage)
+  void prepared.then((workflow) => {
+    if (!workflow) stop()
+  })
 }
 
 async function openFromDesktop(

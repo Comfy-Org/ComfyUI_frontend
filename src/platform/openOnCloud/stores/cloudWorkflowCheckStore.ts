@@ -41,7 +41,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
     watch(isLoggedIn, () => {
-      if (lastRun) void check()
+      if (state.value.phase !== 'idle') void check()
     })
 
     return { state, check }

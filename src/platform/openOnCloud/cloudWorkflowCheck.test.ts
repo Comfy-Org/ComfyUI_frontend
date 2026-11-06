@@ -49,4 +49,10 @@ describe(reduceCloudWorkflowCheck, () => {
       reduceCloudWorkflowCheck({ phase: 'checking', run: 2 }, event)
     ).toEqual(next)
   })
+
+  it('keeps the same idle state when an edit lands while idle', () => {
+    const idle: CloudWorkflowCheckState = { phase: 'idle' }
+
+    expect(reduceCloudWorkflowCheck(idle, { type: 'invalidated' })).toBe(idle)
+  })
 })

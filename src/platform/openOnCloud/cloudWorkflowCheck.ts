@@ -30,7 +30,7 @@ export function reduceCloudWorkflowCheck(
 ): CloudWorkflowCheckState {
   switch (event.type) {
     case 'invalidated':
-      return { phase: 'idle' }
+      return state.phase === 'idle' ? state : { phase: 'idle' }
     case 'started':
       return { phase: 'checking', run: event.run }
     case 'failed':
