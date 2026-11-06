@@ -4275,6 +4275,11 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
+    "agentMenu": {
+      "openInClaude": "Open in Claude desktop",
+      "openInChatGpt": "Open in ChatGPT desktop",
+      "copyPrompt": "Copy prompt"
+    },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."

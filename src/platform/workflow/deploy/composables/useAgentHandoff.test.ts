@@ -7,6 +7,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -24,6 +25,10 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
+}))
+
+vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
+  openAgentApp: vi.fn()
 }))
 
 const GRAPH = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
@@ -115,6 +120,49 @@ describe('useAgentHandoff', () => {
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
+
+  it.for([
+    { app: 'claude', distribution: 'localhost', downloads: 1 },
+    { app: 'chatGpt', distribution: 'desktop', downloads: 0 }
+  ] as const)(
+    'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
+    ({ app, distribution, downloads }) => {
+      setActiveWorkflow()
+
+      useAgentHandoff(distribution).openBriefIn(app)
+
+      expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
+        app,
+        expect.stringContaining(
+          '# Turn `portrait-upscale` into a Comfy API Build'
+        )
+      )
+      expect(downloadBlob).toHaveBeenCalledTimes(downloads)
+    }
+  )
+
+  it('downloads the workflow before it opens the app, and opens nothing when the download fails', () => {
+    setActiveWorkflow()
+    const order: string[] = []
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      order.push('download')
+    })
+    vi.mocked(openAgentApp).mockImplementationOnce(() => {
+      order.push('open')
+    })
+
+    useAgentHandoff().openBriefIn('claude')
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      throw new Error('download blocked')
+    })
+    useAgentHandoff().openBriefIn('claude')
+
+    expect(order).toEqual(['download', 'open'])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_opening_deploy_agent_brief',
+      surface: 'platform'
+    })
+  })
 
   it('lists the model a known loader loads, and not prompt text ending in .pt', async () => {
     useNodeDefStore().nodeDefsByName = {

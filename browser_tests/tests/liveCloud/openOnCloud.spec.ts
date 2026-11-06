@@ -83,10 +83,31 @@ test.describe(
         expect(compatibility.cloud.missing_models).toEqual([])
       })
 
-      await test.step('Offer the deployment', async () => {
+      await test.step('Offer the deployment and desktop agent choices', async () => {
         await expect(
           comfyPage.page.getByRole('heading', {
             name: 'Deploy your setup to Comfy Cloud',
+            exact: true
+          })
+        ).toBeVisible()
+        await comfyPage.page
+          .getByRole('button', { name: 'Build with your agent', exact: true })
+          .click()
+        await expect(
+          comfyPage.page.getByRole('menuitem', {
+            name: 'Open in Claude desktop',
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByRole('menuitem', {
+            name: 'Open in ChatGPT desktop',
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByRole('menuitem', {
+            name: 'Copy prompt',
             exact: true
           })
         ).toBeVisible()
