@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import {
   DESKTOP_HANDOFF_HASH,
@@ -98,6 +99,10 @@ async function relayWorkflow(url: URL): Promise<boolean> {
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
-  await relayWorkflow(url).catch(() => false)
+  const relayed = await relayWorkflow(url).catch(() => false)
+  if (!relayed) {
+    const splash = document.getElementById('splash-loader')
+    if (splash) splash.textContent = t('openOnCloud.desktopTransferFailed')
+  }
   return true
 }

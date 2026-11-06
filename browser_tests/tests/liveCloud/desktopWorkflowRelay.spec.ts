@@ -56,5 +56,38 @@ test.describe(
         })
       })
     })
+
+    for (const relayState of ['missing'] as const) {
+      test.describe(`${relayState} local transfer`, () => {
+        test.use({ relayState })
+
+        test('shows the transfer failure instead of navigating to Cloud', async ({
+          comfyPage,
+          relayTransfer
+        }) => {
+          await test.step('Open the stale external-browser relay link', async () => {
+            await comfyPage.page.goto(relayTransfer.url, {
+              waitUntil: 'domcontentloaded'
+            })
+          })
+
+          await test.step('Explain that Desktop must start the transfer again', async () => {
+            await expect(
+              comfyPage.page.getByText(
+                'Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.',
+                { exact: true }
+              )
+            ).toBeVisible()
+            expect(new URL(comfyPage.page.url()).origin).toBe(
+              new URL(comfyPage.url).origin
+            )
+            await comfyPage.attachScreenshot(
+              `desktop-relay-${relayState}.png`,
+              { runInCI: true }
+            )
+          })
+        })
+      })
+    }
   }
 )
