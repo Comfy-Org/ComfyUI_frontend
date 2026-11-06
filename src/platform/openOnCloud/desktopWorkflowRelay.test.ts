@@ -182,6 +182,8 @@ describe(handleDesktopWorkflowHandoff, () => {
     await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(replace).not.toHaveBeenCalled()
-    expect(splash.textContent).not.toBe('')
+    expect(splash).toHaveTextContent(
+      'Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.'
+    )
   })
 })

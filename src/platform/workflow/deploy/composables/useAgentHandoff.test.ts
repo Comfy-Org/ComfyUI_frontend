@@ -141,7 +141,7 @@ describe('useAgentHandoff', () => {
     }
   )
 
-  it('downloads the workflow before it opens the app, and opens nothing when the download fails', () => {
+  it('downloads the workflow before it opens the app', () => {
     setActiveWorkflow()
     const order: string[] = []
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
@@ -152,12 +152,19 @@ describe('useAgentHandoff', () => {
     })
 
     useAgentHandoff().openBriefIn('claude')
+
+    expect(order).toEqual(['download', 'open'])
+  })
+
+  it('opens no app and reports the failure when the download fails', () => {
+    setActiveWorkflow()
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
       throw new Error('download blocked')
     })
+
     useAgentHandoff().openBriefIn('claude')
 
-    expect(order).toEqual(['download', 'open'])
+    expect(openAgentApp).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'error_opening_deploy_agent_brief',
       surface: 'platform'

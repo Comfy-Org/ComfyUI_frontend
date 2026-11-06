@@ -47,17 +47,15 @@ export const liveOpenOnCloudFixture = base.extend<{
   },
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+    // A completed tutorial keeps the first-run templates dialog from opening
+    // over the editor, so no test races its arrival.
+    const tutorial = await request.post(
+      new URL('/api/settings/Comfy.TutorialCompleted', comfyPage.url).href,
+      { headers: { 'Comfy-User': 'default' }, data: true }
+    )
+    expect(tutorial.status()).toBe(200)
     await comfyPage.goto()
     await comfyPage.waitForAppReady()
-    const templates = page.getByRole('dialog', {
-      name: 'Get Started with a Template',
-      exact: true
-    })
-    if (await templates.isVisible()) {
-      await templates
-        .getByRole('button', { name: 'Close dialog', exact: true })
-        .press('Escape')
-    }
     await expect(comfyPage.canvas).toBeVisible()
     await use(comfyPage)
   }

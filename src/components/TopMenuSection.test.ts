@@ -758,11 +758,9 @@ describe('TopMenuSection', () => {
         servedFrom(origin)
         Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
 
-        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
-          count
-        )
+        expect(screen.queryAllByTestId('cloud-button')).toHaveLength(count)
       }
     )
 
@@ -778,11 +776,9 @@ describe('TopMenuSection', () => {
           deployToCloud: true
         })
 
-        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
-          cloud
-        )
+        expect(screen.queryAllByTestId('cloud-button')).toHaveLength(cloud)
         expect(
           screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
         ).toHaveLength(deploy)

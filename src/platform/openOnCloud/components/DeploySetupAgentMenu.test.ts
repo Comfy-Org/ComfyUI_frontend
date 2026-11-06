@@ -18,7 +18,7 @@ vi.mock(
 
 function renderMenu() {
   render(DeploySetupAgentMenu, { global: { plugins: [testI18n] } })
-  return userEvent.setup({ pointerEventsCheck: 0 })
+  return userEvent.setup()
 }
 
 async function pickRow(user: ReturnType<typeof userEvent.setup>, name: string) {

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { app } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -13,16 +15,6 @@ import {
   desktopWorkflowUrl
 } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 
-const preservedQueryMocks = vi.hoisted(() => ({
-  clearPreservedQuery: vi.fn(),
-  hydratePreservedQuery: vi.fn(),
-  mergePreservedQueryIntoQuery: vi.fn()
-}))
-
-vi.mock(
-  import('@/platform/navigation/preservedQueryManager'),
-  () => preservedQueryMocks
-)
 vi.mock(import('vue-router'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
@@ -60,7 +52,6 @@ async function loadWithOpener(opener: Window | null = window) {
 
 describe(useLocalHandoffUrlLoader, () => {
   beforeEach(() => {
-    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
     vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
     vi.spyOn(window, 'postMessage')
@@ -107,13 +98,29 @@ describe(useLocalHandoffUrlLoader, () => {
     expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'kept' }
     })
-    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-      'local_handoff'
-    )
     expect(window.postMessage).toHaveBeenCalledExactlyOnceWith(
       { type: 'comfy-local-handoff:ready', nonce },
       '*'
     )
+  })
+
+  it('asks for the workflow with a nonce preserved through sign-in, then forgets it', async () => {
+    const nonce = crypto.randomUUID()
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF,
+      { from_local: nonce },
+      ['from_local']
+    )
+
+    await loadWithOpener()
+
+    expect(window.postMessage).toHaveBeenCalledExactlyOnceWith(
+      { type: 'comfy-local-handoff:ready', nonce },
+      '*'
+    )
+    expect(
+      sessionStorage.getItem('Comfy.PreservedQuery.local_handoff')
+    ).toBeNull()
   })
 
   it('opens the handed-over workflow and says where it came from', async () => {
@@ -144,38 +151,32 @@ describe(useLocalHandoffUrlLoader, () => {
     )
   })
 
-  it.for<{
-    name: string
-    sameNonce: boolean
-    source: Window | null
-    origin: string
-  }>([
+  it.for<{ name: string; source: Window | null; origin: string }>([
     {
       name: 'another window',
-      sameNonce: true,
       source: null,
       origin: 'http://127.0.0.1:8188'
     },
     {
-      name: 'the opener with another nonce',
-      sameNonce: false,
-      source: window,
-      origin: 'http://127.0.0.1:8188'
-    },
-    {
       name: 'an opener that is not local',
-      sameNonce: true,
       source: window,
       origin: 'https://evil.example'
     }
-  ])('ignores a workflow from $name', async ({ sameNonce, source, origin }) => {
+  ])('ignores a workflow from $name', async ({ source, origin }) => {
     const nonce = linkWithNonce()
     await loadWithOpener()
 
-    handOff(workflowMessage(sameNonce ? nonce : crypto.randomUUID()), {
-      source,
-      origin
-    })
+    handOff(workflowMessage(nonce), { source, origin })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('ignores a workflow from the opener with another nonce', async () => {
+    linkWithNonce()
+    await loadWithOpener()
+
+    handOff(workflowMessage(crypto.randomUUID()))
     await vi.advanceTimersByTimeAsync(0)
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -238,11 +239,16 @@ describe(useLocalHandoffUrlLoader, () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('explains how to retry when the local sender no longer answers', async () => {
+  it('waits a full minute, then explains how to retry when the local sender no longer answers', async () => {
+    const missing = expect.objectContaining({
+      title: "Your workflow didn't arrive"
+    })
     linkWithNonce()
     await loadWithOpener()
 
-    await vi.advanceTimersByTimeAsync(60_000)
+    await vi.advanceTimersByTimeAsync(59_999)
+    expect(useToast().toasts).not.toContainEqual(missing)
+    await vi.advanceTimersByTimeAsync(1)
 
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({

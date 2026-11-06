@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,9 +13,10 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
-function cloudAnswers(response: Response | Error) {
-  if (response instanceof Error) vi.mocked(fetch).mockRejectedValue(response)
-  else vi.mocked(fetch).mockResolvedValue(response)
+const COMPATIBILITY = /\/api\/cloud\/compatibility$/
+
+function cloudAnswers(answer: () => Response | Promise<Response>) {
+  respondToFetch({ method: 'POST', url: COMPATIBILITY }, answer)
 }
 
 describe(checkCloudCompatibility, () => {
@@ -29,7 +31,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('opens a workflow when Cloud omits the optional missing models', async () => {
-    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+    cloudAnswers(() => Response.json({ cloud: { missing_node_types: [] } }))
 
     await expect(checkCloudCompatibility()).resolves.toEqual({
       kind: 'canOpen'
@@ -37,7 +39,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('lists the node packs Cloud is missing', async () => {
-    cloudAnswers(
+    cloudAnswers(() =>
       Response.json({ cloud: { missing_node_types: ['ImpactWildcard'] } })
     )
 
@@ -76,7 +78,7 @@ describe(checkCloudCompatibility, () => {
     vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
       Authorization: 'Bearer token'
     })
-    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+    cloudAnswers(() => Response.json({ cloud: { missing_node_types: [] } }))
 
     await checkCloudCompatibility()
 
@@ -89,7 +91,10 @@ describe(checkCloudCompatibility, () => {
   })
 
   it.for([
-    { name: 'a network failure', response: () => new TypeError('offline') },
+    {
+      name: 'a network failure',
+      response: () => Promise.reject(new TypeError('offline'))
+    },
     {
       name: 'a failed response',
       response: () => new Response(null, { status: 503 })
@@ -99,7 +104,7 @@ describe(checkCloudCompatibility, () => {
       response: () => Response.json({ cloud: { missing_node_types: 'none' } })
     }
   ])('reports $name and returns no verdict', async ({ response }) => {
-    cloudAnswers(response())
+    cloudAnswers(response)
 
     await expect(checkCloudCompatibility()).resolves.toBeNull()
     expect(reportError).toHaveBeenCalledExactlyOnceWith(

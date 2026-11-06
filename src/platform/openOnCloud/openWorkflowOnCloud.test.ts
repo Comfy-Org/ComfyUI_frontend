@@ -146,10 +146,8 @@ describe('openWorkflowOnCloud in a browser', () => {
 
   it('sends nothing and says so when the graph cannot be serialized', async () => {
     vi.mocked(serializeRootGraph).mockReturnValueOnce(null)
-    const removeListener = vi.spyOn(window, 'removeEventListener')
     const { tab, tabs } = fakeTabs()
     await openWorkflowOnCloud(tabs)
-    expect(removeListener).toHaveBeenCalledWith('message', expect.any(Function))
 
     sendFromTab({ type: 'comfy-local-handoff:ready', nonce: openedNonce(tabs) })
     await vi.advanceTimersByTimeAsync(0)
