@@ -132,6 +132,7 @@ function buildUrlActionSteps(
       run: () => loader.loadPricingTableFromUrl()
     })
   }
+  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     steps.push({
@@ -262,6 +263,10 @@ export function useUrlActionLoaders() {
 
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
+    // A switch reload is already in flight: activeWorkspaceId and its auth
+    // context are already stale, so starting recovery here could adopt or
+    // poll the old workspace's pending checkout. The next boot, once the
+    // reload lands, gets a clean pass at it.
     if (reloading) return
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }

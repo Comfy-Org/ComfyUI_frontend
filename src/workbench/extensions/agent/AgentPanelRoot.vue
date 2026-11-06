@@ -2175,6 +2175,8 @@ const { submit: onSend } = useAgentDraftSubmission({
   }
 })
 
+// The session owns the acknowledgement boundary: a stop that lands before the
+// POST acks is remembered there and committed at ack (see stopPendingAck).
 function onStop(method: AgentStopMethod): void {
   void stopTurn(method)
 }
