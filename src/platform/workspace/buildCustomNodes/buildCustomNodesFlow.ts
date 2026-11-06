@@ -65,6 +65,11 @@ export type BuildCustomNodesEvent =
   | { type: 'moveLanded' }
   | { type: 'dismissed' }
 
+type StateIn<Phase extends BuildCustomNodesState['phase']> = Extract<
+  BuildCustomNodesState,
+  { phase: Phase }
+>
+
 const RUNNING_PHASES = new Set<BuildCustomNodesState['phase']>([
   'submitting',
   'building',
@@ -119,7 +124,7 @@ function withUpdatedAt(session: BuildSession, updatedAt: string): BuildSession {
 }
 
 function progressed(
-  state: Extract<BuildCustomNodesState, { phase: 'building' }>,
+  state: StateIn<'building'>,
   release: ReleaseBuild
 ): BuildCustomNodesState {
   if (state.release?.release_id !== release.release_id) return state
@@ -145,7 +150,7 @@ function loadedState(
 }
 
 function reducePicking(
-  state: Extract<BuildCustomNodesState, { phase: 'picking' }>,
+  state: StateIn<'picking'>,
   event: BuildCustomNodesEvent
 ): BuildCustomNodesState {
   switch (event.type) {
@@ -163,15 +168,13 @@ function reducePicking(
       return state.session.picks.length > 0
         ? { phase: 'reviewing', session: state.session, refusal: null }
         : state
-    case 'dismissed':
-      return { phase: 'idle' }
     default:
       return state
   }
 }
 
 function reduceBuilding(
-  state: Extract<BuildCustomNodesState, { phase: 'building' }>,
+  state: StateIn<'building'>,
   event: BuildCustomNodesEvent
 ): BuildCustomNodesState {
   switch (event.type) {
@@ -190,85 +193,127 @@ function reduceBuilding(
   }
 }
 
+function startedBuilding(session: BuildSession): BuildCustomNodesState {
+  return {
+    phase: 'building',
+    session,
+    release: null,
+    progress: null,
+    startedAt: null
+  }
+}
+
+function reduceLoading(
+  state: StateIn<'loading'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'loaded') return loadedState(state, event.build)
+  if (event.type !== 'loadFailed') return state
+  return {
+    phase: 'loadFailed',
+    deploymentId: state.deploymentId,
+    deploymentName: state.deploymentName,
+    message: event.message
+  }
+}
+
+function reduceReviewing(
+  state: StateIn<'reviewing'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'backToPicking')
+    return { phase: 'picking', session: state.session }
+  if (event.type === 'submitted')
+    return { phase: 'submitting', session: state.session }
+  return state
+}
+
+function reduceSubmitting(
+  state: StateIn<'submitting'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'saved')
+    return startedBuilding(withUpdatedAt(state.session, event.updatedAt))
+  if (event.type === 'refused')
+    return {
+      phase: 'reviewing',
+      session: state.session,
+      refusal: event.message
+    }
+  return state
+}
+
+function reduceBuildFailed(
+  state: StateIn<'buildFailed'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'backToPicking')
+    return { phase: 'picking', session: state.session }
+  if (event.type === 'retried') return startedBuilding(state.session)
+  return state
+}
+
+function reduceRedeploying(
+  state: StateIn<'redeploying'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'moveRefused')
+    return { ...state, phase: 'moveFailed', message: event.message }
+  if (event.type === 'moveLanded') return { phase: 'idle' }
+  return state
+}
+
+function reduceMoveFailed(
+  state: StateIn<'moveFailed'>,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  if (event.type === 'moveRefused') return { ...state, message: event.message }
+  if (event.type !== 'moveRetried') return state
+  return {
+    phase: 'redeploying',
+    session: { ...state.session, build: event.build },
+    release: state.release
+  }
+}
+
+function reducePhase(
+  state: BuildCustomNodesState,
+  event: BuildCustomNodesEvent
+): BuildCustomNodesState {
+  switch (state.phase) {
+    case 'loading':
+      return reduceLoading(state, event)
+    case 'picking':
+      return reducePicking(state, event)
+    case 'reviewing':
+      return reduceReviewing(state, event)
+    case 'submitting':
+      return reduceSubmitting(state, event)
+    case 'building':
+      return reduceBuilding(state, event)
+    case 'buildFailed':
+      return reduceBuildFailed(state, event)
+    case 'redeploying':
+      return reduceRedeploying(state, event)
+    case 'moveFailed':
+      return reduceMoveFailed(state, event)
+    default:
+      return state
+  }
+}
+
 /** The next state of the Extensions node picker after `event`. */
 export function reduceBuildCustomNodes(
   state: BuildCustomNodesState,
   event: BuildCustomNodesEvent
 ): BuildCustomNodesState {
+  if (isRunning(state)) return reducePhase(state, event)
   if (event.type === 'opened')
-    return isRunning(state)
-      ? state
-      : {
-          phase: 'loading',
-          deploymentId: event.deploymentId,
-          deploymentName: event.deploymentName
-        }
-  if (event.type === 'dismissed' && !isRunning(state)) return { phase: 'idle' }
-  switch (state.phase) {
-    case 'loading':
-      if (event.type === 'loaded') return loadedState(state, event.build)
-      if (event.type === 'loadFailed')
-        return {
-          phase: 'loadFailed',
-          deploymentId: state.deploymentId,
-          deploymentName: state.deploymentName,
-          message: event.message
-        }
-      return state
-    case 'picking':
-      return reducePicking(state, event)
-    case 'reviewing':
-      if (event.type === 'backToPicking')
-        return { phase: 'picking', session: state.session }
-      if (event.type === 'submitted')
-        return { phase: 'submitting', session: state.session }
-      return state
-    case 'submitting':
-      if (event.type === 'saved')
-        return {
-          phase: 'building',
-          session: withUpdatedAt(state.session, event.updatedAt),
-          release: null,
-          progress: null,
-          startedAt: null
-        }
-      if (event.type === 'refused')
-        return {
-          phase: 'reviewing',
-          session: state.session,
-          refusal: event.message
-        }
-      return state
-    case 'building':
-      return reduceBuilding(state, event)
-    case 'buildFailed':
-      if (event.type === 'backToPicking')
-        return { phase: 'picking', session: state.session }
-      if (event.type === 'retried')
-        return {
-          phase: 'building',
-          session: state.session,
-          release: null,
-          progress: null,
-          startedAt: null
-        }
-      return state
-    case 'redeploying':
-      if (event.type === 'moveRefused')
-        return { ...state, phase: 'moveFailed', message: event.message }
-      if (event.type === 'moveLanded') return { phase: 'idle' }
-      return state
-    case 'moveFailed':
-      if (event.type === 'moveRefused')
-        return { ...state, message: event.message }
-      if (event.type === 'moveRetried')
-        return {
-          phase: 'redeploying',
-          session: { ...state.session, build: event.build },
-          release: state.release
-        }
-      return state
-    default:
-      return state
-  }
+    return {
+      phase: 'loading',
+      deploymentId: event.deploymentId,
+      deploymentName: event.deploymentName
+    }
+  if (event.type === 'dismissed') return { phase: 'idle' }
+  return reducePhase(state, event)
 }
