@@ -189,14 +189,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import {
-  computed,
-  ref,
-  shallowReactive,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
@@ -213,7 +206,7 @@ import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'
-import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
+import { useAssetMetadataStore } from '@/platform/assets/stores/assetMetadataStore'
 import {
   getAssetAdditionalTags,
   getAssetBaseModels,
@@ -245,15 +238,11 @@ const { asset, cacheKey } = defineProps<{
 }>()
 
 const assetsStore = useAssetsStore()
+const metadataStore = useAssetMetadataStore()
 const { flags } = useFeatureFlags()
 const { modelTypes } = useModelTypes()
 
-const metadataDrafts = shallowReactive(
-  new Map<string, ReturnType<typeof createMetadataDraft>>()
-)
-const pendingUpdates = computed(
-  () => metadataDrafts.get(asset.id)?.updates.value ?? {}
-)
+const pendingUpdates = computed(() => metadataStore.getPendingUpdates(asset.id))
 const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
@@ -287,65 +276,10 @@ watch(
   }
 )
 
-function createMetadataDraft(initialAsset: AssetDisplayItem) {
-  const updates = ref<AssetUserMetadata>({})
-  let targetAsset = initialAsset
-  let targetCacheKey = cacheKey
-  let saving = false
-
-  const flush = useDebounceFn(async () => {
-    if (saving || targetAsset.is_immutable !== false) return
-    const submitted = updates.value
-    if (Object.keys(submitted).length === 0) return
-    const metadata = { ...targetAsset.user_metadata, ...submitted }
-    saving = true
-    const saved = await assetsStore.updateAssetMetadata(
-      targetAsset,
-      metadata,
-      targetCacheKey
-    )
-    saving = false
-    const hasNewerEdits = updates.value !== submitted
-    if (saved) {
-      targetAsset = { ...targetAsset, user_metadata: metadata }
-      const confirmed = new Map(Object.entries(submitted))
-      updates.value = Object.fromEntries(
-        Object.entries(updates.value).filter(
-          ([key, value]) => !confirmed.has(key) || value !== confirmed.get(key)
-        )
-      )
-    }
-    if ((saved || hasNewerEdits) && Object.keys(updates.value).length > 0)
-      flush()
-  }, 500)
-
-  function queue(
-    newUpdates: AssetUserMetadata,
-    currentAsset: AssetDisplayItem,
-    currentCacheKey?: string
-  ) {
-    targetAsset = currentAsset
-    targetCacheKey = currentCacheKey
-    updates.value = { ...updates.value, ...newUpdates }
-    flush()
-  }
-
-  return { updates, queue }
-}
-
-function queueMetadataUpdate(updates: AssetUserMetadata) {
-  let draft = metadataDrafts.get(asset.id)
-  if (!draft) {
-    draft = createMetadataDraft(asset)
-    metadataDrafts.set(asset.id, draft)
-  }
-  draft.queue(updates, asset, cacheKey)
-}
-
 function handleDisplayNameEdit(newName: string) {
   isEditingDisplayName.value = false
   if (newName && newName !== displayName.value) {
-    queueMetadataUpdate({ name: newName })
+    metadataStore.queueUpdate(asset, { name: newName }, cacheKey)
   }
 }
 
@@ -361,19 +295,22 @@ const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
 
 const baseModels = computed({
   get: () => pendingUpdates.value.base_model ?? getAssetBaseModels(asset),
-  set: (value: string[]) => queueMetadataUpdate({ base_model: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { base_model: value }, cacheKey)
 })
 
 const additionalTags = computed({
   get: () =>
     pendingUpdates.value.additional_tags ?? getAssetAdditionalTags(asset),
-  set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { additional_tags: value }, cacheKey)
 })
 
 const userDescription = computed({
   get: () =>
     pendingUpdates.value.user_description ?? getAssetUserDescription(asset),
-  set: (value: string) => queueMetadataUpdate({ user_description: value })
+  set: (value: string) =>
+    metadataStore.queueUpdate(asset, { user_description: value }, cacheKey)
 })
 
 const selectedModelType = computed({
