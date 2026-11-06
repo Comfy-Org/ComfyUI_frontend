@@ -60,11 +60,8 @@
       <p v-if="state.status === 'uploading' && statusLine" class="m-0">
         {{ statusLine }}
       </p>
-      <p
-        role="status"
-        :class="cn('m-0', (state.status === 'uploading' || !statusLine) && 'sr-only')"
-      >
-        {{ state.status === 'uploading' ? '' : statusLine }}
+      <p role="status" :class="cn('m-0', !liveStatus && 'sr-only')">
+        {{ liveStatus }}
       </p>
     </div>
 
@@ -194,6 +191,10 @@ const statusLine = computed(() => {
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   return undefined
 })
+
+const liveStatus = computed(() =>
+  state.status === 'uploading' ? '' : statusLine.value
+)
 
 function formatTimeLeft(seconds: number) {
   const units = [
