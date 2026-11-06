@@ -282,7 +282,9 @@ describe('UploadModelDialog file upload', () => {
       expect(status).toBeEmptyDOMElement()
 
       sends[0].options.onReconnecting?.(true)
-      await vi.waitFor(() => expect(status).toHaveTextContent('Reconnecting...'))
+      await vi.waitFor(() =>
+        expect(status).toHaveTextContent('Reconnecting...')
+      )
       expect(screen.getByRole('status')).toBe(status)
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
