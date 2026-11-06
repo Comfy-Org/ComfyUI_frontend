@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
-const meta: Meta<typeof WidgetSelectDefault> = {
+const meta = {
   title: 'Widgets/WidgetSelectDefault',
   component: WidgetSelectDefault,
   tags: ['autodocs'],
@@ -40,7 +40,7 @@ const meta: Meta<typeof WidgetSelectDefault> = {
       </div>
     `
   })
-}
+} satisfies Meta<typeof WidgetSelectDefault>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -113,11 +113,8 @@ export const EmptySearch: Story = {
 
 export const WindowsPaths: Story = {
   args: {
-    modelValue: 'None',
     widget: {
-      name: 'ckpt_name',
-      type: 'combo',
-      value: 'None',
+      ...meta.args.widget,
       options: {
         values: [
           'None',
@@ -172,8 +169,7 @@ export const SelectedFolder: Story = {
   args: {
     modelValue: 'studio/models/model_0999.safetensors',
     widget: {
-      name: 'ckpt_name',
-      type: 'combo',
+      ...meta.args.widget,
       value: 'studio/models/model_0999.safetensors',
       options: {
         values: Array.from(
@@ -205,8 +201,7 @@ export const ManyOptions: Story = {
   args: {
     modelValue: 'model_00.safetensors',
     widget: {
-      name: 'ckpt_name',
-      type: 'combo',
+      ...meta.args.widget,
       value: 'model_00.safetensors',
       options: {
         values: Array.from(
