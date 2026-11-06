@@ -1,10 +1,11 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { createDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -26,9 +27,9 @@ describe('useNodeVideo', () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
       'http://video/1.mp4'
     ])
-    const node = createMockMediaNode({
+    const node = createDOMWidgetNode({
       size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: new LGraph()
     })
 
     const createdVideos: HTMLVideoElement[] = []
@@ -36,7 +37,7 @@ describe('useNodeVideo', () => {
     vi.spyOn(document, 'createElement').mockImplementation(
       (tag: string, opts?: ElementCreationOptions) => {
         const el = realCreateElement(tag, opts)
-        if (tag === 'video') createdVideos.push(el as HTMLVideoElement)
+        if (el instanceof HTMLVideoElement) createdVideos.push(el)
         return el
       }
     )
@@ -44,15 +45,9 @@ describe('useNodeVideo', () => {
     const { showPreview } = useNodeVideo(node)
     showPreview()
 
-    // happy-dom does not auto-fire onloadeddata for src assignment, so we
-    // manually trigger it, then drain the resulting promise chain.
     const video = createdVideos[0]
     video.onloadeddata?.(new Event('loadeddata'))
     await vi.runAllTimersAsync()
-
-    onTestFinished(() => {
-      node.widgets[0]?.onRemove?.()
-    })
 
     return { node, video }
   }
@@ -60,7 +55,7 @@ describe('useNodeVideo', () => {
   it('creates a video-preview widget and forwards canvas events while alive', async () => {
     const { node, video } = await setup()
 
-    expect(node.widgets[0]?.name).toBe('video-preview')
+    expect(node.widgets?.[0]?.name).toBe('video-preview')
 
     video.dispatchEvent(new WheelEvent('wheel', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
@@ -74,7 +69,7 @@ describe('useNodeVideo', () => {
   it('detaches every listener when the widget is removed', async () => {
     const { node, video } = await setup()
 
-    node.widgets[0]?.onRemove?.()
+    node.widgets?.[0]?.onRemove?.()
 
     video.dispatchEvent(new WheelEvent('wheel', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
@@ -91,18 +86,10 @@ describe('canvas node media failure telemetry', () => {
     const created: HTMLImageElement[] = []
     vi.stubGlobal(
       'Image',
-      class {
-        onload: (() => void) | null = null
-        onerror: (() => void) | null = null
-        private srcValue = ''
-        get src() {
-          return this.srcValue
-        }
-        // Setting `src` is what starts a load in the real DOM, so recording the
-        // instance here is what lets a case fire onload/onerror per attempt.
-        set src(value: string) {
-          this.srcValue = value
-          created.push(this as unknown as HTMLImageElement)
+      class extends Image {
+        constructor() {
+          super()
+          created.push(this)
         }
       }
     )
@@ -118,9 +105,9 @@ describe('canvas node media failure telemetry', () => {
       '/api/view?filename=gone.png&type=output'
     ])
     const created = stubImages()
-    const node = createMockMediaNode({
+    const node = createDOMWidgetNode({
       size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: new LGraph()
     })
 
     const { showPreview } = useNodeImage(node)
@@ -132,7 +119,7 @@ describe('canvas node media failure telemetry', () => {
     created[1].onerror?.(new Event('error'))
     await flush()
 
-    expect(created.length).toBe(2) // initial attempt + one retry
+    expect(created.length).toBe(2)
     expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledTimes(1)
     expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -148,14 +135,13 @@ describe('canvas node media failure telemetry', () => {
       '/api/view?filename=slow.png&type=output'
     ])
     stubImages()
-    const node = createMockMediaNode({
+    const node = createDOMWidgetNode({
       size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: new LGraph()
     })
 
     const { showPreview } = useNodeImage(node)
     showPreview()
-    // Never fire onerror — let the media timeout win both attempts.
     await vi.runAllTimersAsync()
 
     expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
@@ -168,9 +154,9 @@ describe('canvas node media failure telemetry', () => {
       '/api/view?filename=ok.png&type=output'
     ])
     const created = stubImages()
-    const node = createMockMediaNode({
+    const node = createDOMWidgetNode({
       size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: new LGraph()
     })
 
     const { showPreview } = useNodeImage(node)
