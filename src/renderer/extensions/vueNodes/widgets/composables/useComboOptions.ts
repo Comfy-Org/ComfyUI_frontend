@@ -2,6 +2,7 @@ import { countBy } from 'es-toolkit'
 import { computed, ref, toRef } from 'vue'
 import type { Ref } from 'vue'
 
+import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
@@ -28,6 +29,7 @@ export function useComboOptions(
   config: {
     filenameSummary: () => boolean
     lockedDirectory: Ref<string[] | undefined>
+    onSelect: (option: ComboOption) => void
   }
 ) {
   const options = toRef(getOptions)
@@ -86,13 +88,13 @@ export function useComboOptions(
       ? normalized.value.filter((option) => isInDirectory(option.value, lock))
       : normalized.value
   })
-  const adjacentOptions = computed(() => {
-    const selected = selection.value.option
-    const index = selected ? scoped.value.indexOf(selected) : -1
-    return {
-      [-1]: scoped.value[(index < 0 ? scoped.value.length : index) - 1],
-      [1]: scoped.value[index + 1]
-    }
+  const { isStepDisabled, stepOption } = useComboStepping({
+    options: scoped,
+    selectedOption: () => selection.value.option,
+    disabled: () => Boolean(options.value?.disabled),
+    dynamicOptions,
+    refreshOptions,
+    onSelect: config.onSelect
   })
   const openingDirectory = computed(() => {
     const selected = selection.value.option?.value ?? ''
@@ -122,15 +124,16 @@ export function useComboOptions(
   function refreshOptions() {
     revision.value++
   }
+
   return {
     searchQuery,
     directory,
-    dynamicOptions,
     hasFolders,
     isFilterable,
     selection,
     longestLabel,
-    adjacentOptions,
+    isStepDisabled,
+    stepOption,
     openingDirectory,
     browseOptions,
     refreshOptions
