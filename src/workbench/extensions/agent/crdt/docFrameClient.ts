@@ -144,23 +144,21 @@ interface WireData {
   lineage_seq?: unknown
 }
 
-function decodeBase64(value: string): Uint8Array | null {
-  if (value === '' || value.length % 4 !== 0) return null
+function decodeBase64(value: string): Uint8Array | undefined {
+  if (value === '' || value.length % 4 !== 0) return undefined
   const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
-  if (value.length > MAX_DOC_UPDATE_B64_LENGTH) return null
+  if (value.length > MAX_DOC_UPDATE_B64_LENGTH) return undefined
 
-  // `atob` is permissive about missing padding, so require canonical standard
-  // base64 before decoding the untrusted wire value.
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return null
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return undefined
 
-  if (padding === 2 && !BASE64_DOUBLE_PADDING_END.test(value)) return null
-  if (padding === 1 && !BASE64_SINGLE_PADDING_END.test(value)) return null
+  if (padding === 2 && !BASE64_DOUBLE_PADDING_END.test(value)) return undefined
+  if (padding === 1 && !BASE64_SINGLE_PADDING_END.test(value)) return undefined
 
   try {
     const binary = atob(value)
     return Uint8Array.from(binary, (character) => character.charCodeAt(0))
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -170,14 +168,14 @@ export function encodeBase64(value: Uint8Array): string {
   return btoa(binary)
 }
 
-function parseWireData(value: unknown): WireData | null {
-  return typeof value === 'object' && value !== null ? value : null
+function parseWireData(value: unknown): WireData | undefined {
+  return typeof value === 'object' && value !== null ? value : undefined
 }
 
-function parseRecord(value: unknown): Record<string, unknown> | null {
+function parseRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value))
-    : null
+    : undefined
 }
 
 function isAbsent(value: unknown): value is null | undefined {
@@ -220,7 +218,7 @@ function isSequence(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
-function parseSequence(value: unknown): number | null {
+function parseSequence(value: unknown): number | undefined {
   if (isSequence(value)) return value
   if (
     typeof value === 'bigint' &&
@@ -228,7 +226,7 @@ function parseSequence(value: unknown): number | null {
     value <= BigInt(Number.MAX_SAFE_INTEGER)
   )
     return Number(value)
-  return null
+  return undefined
 }
 
 function isValidOpId(value: unknown): value is string {
@@ -262,15 +260,15 @@ function parseBoundedString(
  * arrives as an absent field. Absent means empty; present-but-malformed is a
  * protocol violation.
  */
-function parseOptionalStringArray(value: unknown): string[] | null {
+function parseOptionalStringArray(value: unknown): string[] | undefined {
   if (isAbsent(value)) return []
-  return isStringArray(value) ? value : null
+  return isStringArray(value) ? value : undefined
 }
 
-function parseDocOpFailure(value: unknown): DocOpFailure | null {
+function parseDocOpFailure(value: unknown): DocOpFailure | undefined {
   const failure = parseWireData(value)
   if (
-    failure === null ||
+    failure === undefined ||
     !isSequence(failure.index) ||
     (!isAbsent(failure.op_id) && !isValidOpId(failure.op_id)) ||
     typeof failure.code !== 'string' ||
@@ -278,7 +276,7 @@ function parseDocOpFailure(value: unknown): DocOpFailure | null {
     typeof failure.message !== 'string' ||
     !hasBoundedUtf8Length(failure.message, MAX_ERROR_MESSAGE_LENGTH)
   )
-    return null
+    return undefined
 
   return {
     index: failure.index,
@@ -291,13 +289,13 @@ function parseDocOpFailure(value: unknown): DocOpFailure | null {
 // Defence in depth behind the server's identical cap. The counts are not
 // byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
 // server always counts >= this and is the stricter of the two.
-function encodedJsonSize(value: Record<string, unknown>): number | null {
+function encodedJsonSize(value: Record<string, unknown>): number | undefined {
   try {
     const encoded = JSON.stringify(value)
     if (encoded.length > MAX_AWARENESS_STATE_BYTES) return encoded.length
     return utf8.encode(encoded).length
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -322,9 +320,9 @@ function parseDocReseedResult(
 // The generated contract defines an accepted ack's omitted lineage_seq as
 // lineage 0, which is what the host's omitempty encoding sends for a
 // document whose lineage began at 0.
-function parseSubscribedLineage(value: unknown): number | null {
+function parseSubscribedLineage(value: unknown): number | undefined {
   const parsed = zDocSubscribedData.shape.lineage_seq.safeParse(value)
-  if (!parsed.success) return null
+  if (!parsed.success) return undefined
   return parsed.data === undefined ? 0 : parseSequence(parsed.data)
 }
 
@@ -332,9 +330,9 @@ function parseDocSubscribed(
   workflowId: string,
   ok: boolean,
   data: WireData
-): DocSubscribed | null {
+): DocSubscribed | undefined {
   const lineageSeq = ok ? parseSubscribedLineage(data.lineage_seq) : undefined
-  if (lineageSeq === null) return null
+  if (ok && lineageSeq === undefined) return undefined
   const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
   const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
   return {
@@ -352,7 +350,7 @@ type ServerFrameParsers = {
   [K in ServerDocFrame['type']]: (
     workflowId: string,
     data: WireData
-  ) => Extract<ServerDocFrame, { type: K }> | null
+  ) => Extract<ServerDocFrame, { type: K }> | undefined
 }
 
 function parseResultMetadata(data: WireData) {
@@ -360,7 +358,7 @@ function parseResultMetadata(data: WireData) {
   const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
   const seq = parseSequence(data.seq)
   return {
-    ...(seq !== null && { seq }),
+    ...(seq !== undefined && { seq }),
     ...(code !== undefined && { code }),
     ...(message !== undefined && { message })
   }
@@ -368,7 +366,7 @@ function parseResultMetadata(data: WireData) {
 
 function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
   const stateSize = encodedJsonSize(state)
-  return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
+  return stateSize !== undefined && stateSize <= MAX_AWARENESS_STATE_BYTES
 }
 
 type AwarenessStateResult =
@@ -379,28 +377,30 @@ type AwarenessStateResult =
 function parseAwarenessState(value: unknown): AwarenessStateResult {
   if (isAbsent(value)) return { kind: 'absent' }
   const state = parseRecord(value)
-  if (state === null || !fitsAwarenessBudget(state)) return { kind: 'invalid' }
+  if (state === undefined || !fitsAwarenessBudget(state))
+    return { kind: 'invalid' }
   return { kind: 'present', state }
 }
 
-function parseDocUpdateLineage(value: unknown): number | null {
+function parseDocUpdateLineage(value: unknown): number | undefined {
   const parsed = zDocUpdateData.shape.lineage_seq.safeParse(value)
-  return parsed.success ? parseSequence(parsed.data) : null
+  return parsed.success ? parseSequence(parsed.data) : undefined
 }
 
-function parseDocUpdateBytes(value: unknown): Uint8Array | null {
-  return typeof value === 'string' ? decodeBase64(value) : null
+function parseDocUpdateBytes(value: unknown): Uint8Array | undefined {
+  return typeof value === 'string' ? decodeBase64(value) : undefined
 }
 
 function parseDocUpdateFrame(
   workflowId: string,
   data: WireData
-): Extract<ServerDocFrame, { type: 'doc_update' }> | null {
+): Extract<ServerDocFrame, { type: 'doc_update' }> | undefined {
   const seq = parseSequence(data.seq)
   const lineageSeq = parseDocUpdateLineage(data.lineage_seq)
   const update = parseDocUpdateBytes(data.update_b64)
-  if (seq === null || lineageSeq === null || update === null) return null
-  if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
+  if (seq === undefined || lineageSeq === undefined || update === undefined)
+    return undefined
+  if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return undefined
   const actor = parseAdvisoryActor(data.actor)
   return {
     type: 'doc_update',
@@ -418,16 +418,16 @@ function parseDocUpdateFrame(
 const serverFrameParsers: ServerFrameParsers = {
   doc_update: parseDocUpdateFrame,
   doc_subscribed: (workflowId, data) => {
-    if (typeof data.ok !== 'boolean') return null
+    if (typeof data.ok !== 'boolean') return undefined
     const subscribed = parseDocSubscribed(workflowId, data.ok, data)
     return subscribed && { type: 'doc_subscribed', data: subscribed }
   },
   doc_ops_result: (workflowId, data) => {
-    if (typeof data.ok !== 'boolean') return null
+    if (typeof data.ok !== 'boolean') return undefined
     const applied = parseOptionalStringArray(data.applied)
     const skipped = parseOptionalStringArray(data.skipped)
-    if (applied === null || skipped === null) return null
-    const failed = parseDocOpFailure(data.failed) ?? undefined
+    if (applied === undefined || skipped === undefined) return undefined
+    const failed = parseDocOpFailure(data.failed)
     return {
       type: 'doc_ops_result',
       data: {
@@ -444,7 +444,7 @@ const serverFrameParsers: ServerFrameParsers = {
     const reset: Partial<Record<keyof DocResetData, unknown>> = data
     const seq = parseSequence(reset.seq)
     const lineageSeq = parseSequence(reset.lineage_seq)
-    if (seq === null || lineageSeq === null) return null
+    if (seq === undefined || lineageSeq === undefined) return undefined
     const actor = parseAdvisoryActor(reset.actor)
     return {
       type: 'doc_reset',
@@ -462,12 +462,14 @@ const serverFrameParsers: ServerFrameParsers = {
           type: 'doc_reseed_result',
           data: parseDocReseedResult(workflowId, data.ok, data)
         }
-      : null,
+      : undefined,
   awareness: (workflowId, data) => {
-    if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
+    if (typeof data.actor !== 'string' || !isValidActor(data.actor))
+      return undefined
     const parsed = parseAwarenessState(data.state)
-    if (parsed.kind === 'invalid') return null
-    if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
+    if (parsed.kind === 'invalid') return undefined
+    if (!isAbsent(data.expires_at) && !isSequence(data.expires_at))
+      return undefined
     return {
       type: 'awareness',
       data: {
@@ -485,7 +487,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   const frame = value as { type?: unknown; data?: unknown }
   const data = parseWireData(frame.data)
   if (
-    data === null ||
+    data === undefined ||
     data.v !== DOC_PROTOCOL_VERSION ||
     typeof data.workflow_id !== 'string' ||
     !isValidWorkflowId(data.workflow_id)
@@ -494,7 +496,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
   if (typeof frame.type !== 'string' || !isServerFrameType(frame.type))
     return null
-  return serverFrameParsers[frame.type](data.workflow_id, data)
+  return serverFrameParsers[frame.type](data.workflow_id, data) ?? null
 }
 
 function isServerFrameType(type: string): type is ServerDocFrame['type'] {

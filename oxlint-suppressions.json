@@ -8034,7 +8034,7 @@
   },
   "src/workbench/extensions/agent/crdt/docFrameClient.ts": {
     "typescript/no-restricted-types": {
-      "count": 15
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/docOpMinter.ts": {
