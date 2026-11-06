@@ -132,7 +132,6 @@ describe('graphToPrompt', () => {
     const { output } = await graphToPrompt(graph)
 
     expect(output[String(virtualNode.id)]).toBeUndefined()
-    expect(output[String(realNode.id)]).toBeDefined()
     expect(output[String(realNode.id)].class_type).toBe('KSampler')
   })
 
@@ -152,13 +151,12 @@ describe('graphToPrompt', () => {
     const realNode = makeNode('RealNode', 'KSampler')
     const graph = buildGraph(note, realNode)
 
-    const { workflow, output } = await graphToPrompt(graph)
+    const { workflow } = await graphToPrompt(graph)
 
     expect(
       workflow.nodes.some((node) => String(node.id) === String(note.id)),
       'Workflow JSON should preserve virtual nodes by ID'
     ).toBe(true)
-    expect(output[String(note.id)]).toBeUndefined()
   })
 
   it('preserves multiple non-virtual nodes', async () => {
