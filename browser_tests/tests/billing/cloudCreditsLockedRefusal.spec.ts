@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
 
 import {
   cloudAppFixture as test,
@@ -12,7 +11,7 @@ import {
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -59,38 +58,13 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     )
   })
 
-  test(
-    'says why bought credits did not unlock the run',
-    { tag: '@screenshot' },
-    async ({ page }) => {
-      await runAndGetRefused(page, true)
-
-      const notice = page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-      await expect(notice).toBeVisible({ timeout: 30_000 })
-      await expect(notice).toHaveText(
-        "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+  for (const creditsLocked of [true, false]) {
+    test(`hands a refused run to the platform Plans page (credits_locked: ${creditsLocked})`, async ({
+      page
+    }) => {
+      await expectPlatformPlansOpened(page, () =>
+        runAndGetRefused(page, creditsLocked)
       )
-      await expectRegionScreenshot(
-        page,
-        [
-          page
-            .getByRole('dialog')
-            .getByRole('heading', { name: 'Choose a Plan' }),
-          notice
-        ],
-        'credits-locked-subscribe-dialog.png'
-      )
-    }
-  )
-
-  test('stays out of the dialog for an account with no credits', async ({
-    page
-  }) => {
-    await runAndGetRefused(page, false)
-
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
-    await expect(
-      page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-    ).toHaveCount(0)
-  })
+    })
+  }
 })
