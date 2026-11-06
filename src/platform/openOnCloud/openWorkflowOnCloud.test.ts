@@ -77,6 +77,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     expect(url.origin).toBe(cloudOrigin)
     expect(url.searchParams.get('from_local')).toMatch(/^[\w-]{24}$/)
     expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(useToast().toasts).not.toContainEqual(PREPARE_FAILED_TOAST)
   })
 
   it('answers the ready message with the workflow, sent to Comfy Cloud only', async () => {
