@@ -281,8 +281,8 @@ describe('WidgetSelectDefault', () => {
     expect(onUpdate).not.toHaveBeenCalled()
   })
 
-  it('searches every directory and preserves duplicate filename identities', async () => {
-    const { user, onUpdate } = renderComponent(
+  it('keeps empty-search status and focus outside the option list', async () => {
+    const { user } = renderComponent(
       createWidget([
         'None',
         'studio/portrait.safetensors',
@@ -303,7 +303,21 @@ describe('WidgetSelectDefault', () => {
     expect(listbox).not.toContainElement(screen.getByRole('status'))
     expect(search).not.toHaveAttribute('aria-activedescendant')
     expect(search).toHaveFocus()
-    await user.clear(search)
+  })
+
+  it('searches every directory and preserves duplicate filename identities', async () => {
+    const { user, onUpdate } = renderComponent(
+      createWidget([
+        'None',
+        'studio/portrait.safetensors',
+        'archive/portrait.safetensors'
+      ]),
+      'None',
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
     await user.type(
       screen.getByRole('combobox', { name: 'Search' }),
       'PORTRAIT'
