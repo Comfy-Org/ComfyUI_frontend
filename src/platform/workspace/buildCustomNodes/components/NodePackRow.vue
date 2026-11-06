@@ -1,6 +1,6 @@
 <template>
   <TableRow>
-    <TableCell class="truncate pl-4 font-medium" :title="row.pack.name">
+    <TableCell class="truncate pl-4" :title="row.pack.name">
       <a
         v-if="repositoryUrl"
         :href="repositoryUrl"
