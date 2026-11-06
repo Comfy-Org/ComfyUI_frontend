@@ -17,6 +17,7 @@ import type {
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { openPlatformPlans } from '@/platform/billing/openPlatformPlans'
 import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -111,6 +112,11 @@ export const useSubscriptionDialog = () => {
     if (!isCloud) return
     const paymentIntentSource = paymentIntentSourceOf(options)
     if (showInactiveMemberDialog(paymentIntentSource)) return
+
+    if (!options?.resumingCheckout && openPlatformPlans()) {
+      trackPaywallShown(paymentIntentSource)
+      return
+    }
 
     trackModalOpened(options?.reason)
     trackPaywallShown(paymentIntentSource)
@@ -324,6 +330,7 @@ export const useSubscriptionDialog = () => {
     const initialCheckout = await restoreCheckoutSelection(pending)
     showPricingTable({
       planMode: pending.selection.planMode,
+      resumingCheckout: true,
       ...(initialCheckout && { initialCheckout })
     })
   }

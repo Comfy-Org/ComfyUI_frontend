@@ -13,6 +13,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -142,6 +143,8 @@ async function changeToStandardYearly(page: Page) {
 }
 
 test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('opens the custom-domain portal session the server mints', async ({
     page
   }) => {
