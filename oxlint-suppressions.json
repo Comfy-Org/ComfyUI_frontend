@@ -7001,11 +7001,6 @@
       "count": 1
     }
   },
-  "src/renderer/glsl/sharedGLContext.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
   "src/renderer/glsl/useGLSLPreview.test.ts": {
     "typescript/no-restricted-types": {
       "count": 7
@@ -7021,7 +7016,7 @@
       "count": 10
     },
     "typescript/no-restricted-types": {
-      "count": 18
+      "count": 4
     }
   },
   "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts": {

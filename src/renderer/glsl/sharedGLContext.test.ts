@@ -51,7 +51,7 @@ describe('acquireSharedGL', () => {
     const a = acquireSharedGL()
     const b = acquireSharedGL()
 
-    expect(a).not.toBeNull()
+    expect(a).toBeDefined()
     expect(b?.gl).toBe(a?.gl)
     expect(b?.canvas).toBe(a?.canvas)
     expect(getContextCalls).toBe(1)
@@ -88,7 +88,7 @@ describe('acquireSharedGL', () => {
     a?.release()
 
     const b = acquireSharedGL()
-    expect(b).not.toBeNull()
+    expect(b).toBeDefined()
     expect(getContextCalls).toBe(2)
 
     b?.release()
@@ -103,7 +103,7 @@ describe('acquireSharedGL', () => {
     mockGL = freshGL
     const b = acquireSharedGL()
 
-    expect(b).not.toBeNull()
+    expect(b).toBeDefined()
     expect(b?.gl).not.toBe(staleGL)
     expect(getContextCalls).toBe(2)
 
@@ -111,18 +111,18 @@ describe('acquireSharedGL', () => {
     b?.release()
   })
 
-  it('returns null when webgl2 is unavailable', () => {
+  it('returns undefined when webgl2 is unavailable', () => {
     const savedGL = mockGL
     mockGL = null as unknown as MockGL
-    expect(acquireSharedGL()).toBeNull()
+    expect(acquireSharedGL()).toBeUndefined()
     mockGL = savedGL
   })
 
-  it('loses the context and returns null when EXT_color_buffer_float is missing', () => {
+  it('loses the context and returns undefined when EXT_color_buffer_float is missing', () => {
     mockGL.getExtension = vi.fn((name: string) =>
       name === 'WEBGL_lose_context' ? { loseContext } : null
     )
-    expect(acquireSharedGL()).toBeNull()
+    expect(acquireSharedGL()).toBeUndefined()
     expect(loseContext).toHaveBeenCalledTimes(1)
   })
 

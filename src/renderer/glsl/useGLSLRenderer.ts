@@ -87,25 +87,31 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     ...Array.from({ length: maxCurves }, (_, i) => `u_curve${i}`)
   ]
 
-  let sharedGL: SharedGLHandle | null = null
-  let canvas: OffscreenCanvas | null = null
-  let gl: WebGL2RenderingContext | null = null
-  let vertexShader: WebGLShader | null = null
-  let program: WebGLProgram | null = null
-  let fragmentShader: WebGLShader | null = null
-  let pingPongFBOs: [WebGLFramebuffer, WebGLFramebuffer] | null = null
-  let pingPongTextures: [WebGLTexture, WebGLTexture] | null = null
-  let fallbackTexture: WebGLTexture | null = null
-  const inputTextures: (WebGLTexture | null)[] = Array.from<null>({
-    length: maxInputs
-  }).fill(null)
-  const curveTextures: (WebGLTexture | null)[] = Array.from<null>({
-    length: maxCurves
-  }).fill(null)
+  let sharedGL: SharedGLHandle | undefined
+  let canvas: OffscreenCanvas | undefined
+  let gl: WebGL2RenderingContext | undefined
+  let vertexShader: WebGLShader | undefined
+  let program: WebGLProgram | undefined
+  let fragmentShader: WebGLShader | undefined
+  let pingPongFBOs: [WebGLFramebuffer, WebGLFramebuffer] | undefined
+  let pingPongTextures: [WebGLTexture, WebGLTexture] | undefined
+  let fallbackTexture: WebGLTexture | undefined
+  const inputTextures: (WebGLTexture | undefined)[] = Array.from(
+    {
+      length: maxInputs
+    },
+    () => undefined
+  )
+  const curveTextures: (WebGLTexture | undefined)[] = Array.from(
+    {
+      length: maxCurves
+    },
+    () => undefined
+  )
   const uniformLocations = new Map<string, WebGLUniformLocation | null>()
   let passCount = 1
   let disposed = false
-  let lastCompiledSource: string | null = null
+  let lastCompiledSource: string | undefined
   let fboWidth = 0
   let fboHeight = 0
 
@@ -174,11 +180,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (!gl) return
     if (pingPongFBOs) {
       for (const fbo of pingPongFBOs) gl.deleteFramebuffer(fbo)
-      pingPongFBOs = null
+      pingPongFBOs = undefined
     }
     if (pingPongTextures) {
       for (const tex of pingPongTextures) gl.deleteTexture(tex)
-      pingPongTextures = null
+      pingPongTextures = undefined
     }
   }
 
@@ -248,11 +254,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     if (fragmentShader) {
       gl.deleteShader(fragmentShader)
-      fragmentShader = null
+      fragmentShader = undefined
     }
     if (program) {
       gl.deleteProgram(program)
-      program = null
+      program = undefined
     }
     uniformLocations.clear()
 
@@ -329,7 +335,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     if (curveTextures[index]) {
       gl.deleteTexture(curveTextures[index])
-      curveTextures[index] = null
+      curveTextures[index] = undefined
     }
 
     const texture = createTexture(gl)
@@ -372,7 +378,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     if (inputTextures[index]) {
       gl.deleteTexture(inputTextures[index])
-      inputTextures[index] = null
+      inputTextures[index] = undefined
     }
 
     const texture = createTexture(gl)
@@ -395,7 +401,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     const texture = inputTextures[index]
     if (texture) {
       gl.deleteTexture(texture)
-      inputTextures[index] = null
+      inputTextures[index] = undefined
     }
   }
 
@@ -431,10 +437,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     for (let i = 0; i < maxCurves; i++) {
       const loc = uniformLocations.get(`u_curve${i}`)
-      if (loc != null && curveTextures[i]) {
+      const texture = curveTextures[i]
+      if (loc != null && texture) {
         const unit = maxInputs + i
         gl.activeTexture(gl.TEXTURE0 + unit)
-        gl.bindTexture(gl.TEXTURE_2D, curveTextures[i])
+        gl.bindTexture(gl.TEXTURE_2D, texture)
         gl.uniform1i(loc, unit)
       }
     }
@@ -454,9 +461,6 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         gl.drawBuffers([gl.COLOR_ATTACHMENT0])
       }
 
-      // Match backend behavior: pass > 0 binds previous pass output to
-      // texture unit 0, overriding u_image0 so shaders read the previous
-      // pass result via the same sampler.
       if (pass > 0) {
         const sourceTexture = pingPongTextures![(pass - 1) % 2]
         gl.activeTexture(gl.TEXTURE0)
@@ -494,40 +498,40 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     for (const tex of inputTextures) {
       if (tex) gl.deleteTexture(tex)
     }
-    inputTextures.fill(null)
+    inputTextures.fill(undefined)
 
     for (const tex of curveTextures) {
       if (tex) gl.deleteTexture(tex)
     }
-    curveTextures.fill(null)
+    curveTextures.fill(undefined)
 
     if (fallbackTexture) {
       gl.deleteTexture(fallbackTexture)
-      fallbackTexture = null
+      fallbackTexture = undefined
     }
 
     destroyPingPongFBOs()
 
     if (fragmentShader) {
       gl.deleteShader(fragmentShader)
-      fragmentShader = null
+      fragmentShader = undefined
     }
     if (vertexShader) {
       gl.deleteShader(vertexShader)
-      vertexShader = null
+      vertexShader = undefined
     }
 
     if (program) {
       gl.deleteProgram(program)
-      program = null
+      program = undefined
     }
 
     uniformLocations.clear()
 
     sharedGL?.release()
-    sharedGL = null
-    gl = null
-    canvas = null
+    sharedGL = undefined
+    gl = undefined
+    canvas = undefined
   }
 
   return {
