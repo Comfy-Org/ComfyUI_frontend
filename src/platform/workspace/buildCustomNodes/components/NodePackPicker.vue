@@ -13,67 +13,69 @@
         }}
       </p>
     </div>
-    <NodePackToolbar
-      :query="view.query"
-      :status="view.status"
-      :licenses="view.licenses"
-      :sort="view.sort"
-      :license-choices="licenseChoices"
-      @update:query="setView({ query: $event })"
-      @update:status="setView({ status: $event })"
-      @update:licenses="setView({ licenses: $event })"
-      @update:sort="setView({ sort: $event })"
-    />
-    <div class="flex flex-col gap-2">
-      <NodePackTable
-        :rows
-        :status="searchStatus"
+    <div class="flex flex-col gap-3">
+      <NodePackToolbar
         :query="view.query"
-        @toggle="(pack, choice) => emit('toggle', pack, choice)"
-        @choose="(pack, choice) => emit('choose', pack, choice)"
-        @retry="retry"
+        :status="view.status"
+        :licenses="view.licenses"
+        :sort="view.sort"
+        :license-choices="licenseChoices"
+        @update:query="setView({ query: $event })"
+        @update:status="setView({ status: $event })"
+        @update:licenses="setView({ licenses: $event })"
+        @update:sort="setView({ sort: $event })"
       />
-      <div class="flex items-center justify-between gap-3 text-sm">
-        <span>
-          {{
-            $t(
-              'buildCustomNodes.picker.inBuildCount',
-              { count: buildCount, build: buildName },
-              buildCount
-            )
-          }}
-          <span class="text-muted-foreground">
-            {{ $t('buildCustomNodes.picker.pickedCount', pickCount) }}
-          </span>
-        </span>
-        <span class="flex items-center gap-2">
-          <Button
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('buildCustomNodes.picker.previousPage')"
-            :disabled="page === 0"
-            @click="page--"
-          >
-            <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
-          </Button>
-          <span class="text-muted-foreground tabular-nums">
+      <div class="flex flex-col gap-2">
+        <NodePackTable
+          :rows
+          :status="searchStatus"
+          :query="view.query"
+          @toggle="(pack, choice) => emit('toggle', pack, choice)"
+          @choose="(pack, choice) => emit('choose', pack, choice)"
+          @retry="retry"
+        />
+        <div class="flex items-center justify-between gap-3 text-sm">
+          <span>
             {{
-              $t('buildCustomNodes.picker.pageOf', {
-                page: page + 1,
-                count: pageCount
-              })
+              $t(
+                'buildCustomNodes.picker.inBuildCount',
+                { count: buildCount, build: buildName },
+                buildCount
+              )
             }}
+            <span class="text-muted-foreground">
+              {{ $t('buildCustomNodes.picker.pickedCount', pickCount) }}
+            </span>
           </span>
-          <Button
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('buildCustomNodes.picker.nextPage')"
-            :disabled="page + 1 >= pageCount"
-            @click="page++"
-          >
-            <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
-          </Button>
-        </span>
+          <span class="flex items-center gap-2">
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('buildCustomNodes.picker.previousPage')"
+              :disabled="page === 0"
+              @click="page--"
+            >
+              <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
+            </Button>
+            <span class="text-muted-foreground tabular-nums">
+              {{
+                $t('buildCustomNodes.picker.pageOf', {
+                  page: page + 1,
+                  count: pageCount
+                })
+              }}
+            </span>
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('buildCustomNodes.picker.nextPage')"
+              :disabled="page + 1 >= pageCount"
+              @click="page++"
+            >
+              <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
+            </Button>
+          </span>
+        </div>
       </div>
     </div>
     <div class="flex items-center justify-end gap-2">
