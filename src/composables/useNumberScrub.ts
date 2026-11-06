@@ -41,6 +41,7 @@ export function useNumberScrub(
     },
     onSwipe: () => {
       if (toValue(disabled) || editingControl) return
+      if (!dragged && !['left', 'right'].includes(swipe.direction.value)) return
       dragged = true
       const increment = toValue(step)
       const delta = -swipe.distanceX.value * unitsPerPixel

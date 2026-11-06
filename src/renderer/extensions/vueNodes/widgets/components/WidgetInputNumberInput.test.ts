@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import en from '@/locales/en/main.json'
@@ -115,6 +115,41 @@ describe('WidgetInputNumberInput Value Binding', () => {
       ])
 
       expect(screen.getByRole('spinbutton')).toHaveValue(String(expected))
+    }
+  )
+
+  it.for([
+    { clientX: 21, clientY: 14 },
+    { clientX: 24, clientY: 22 }
+  ])(
+    'preserves the value during vertical touch scrolling to $clientX,$clientY',
+    async ({ clientX, clientY }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(37, 'int', { step2: 2 }),
+        37
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const row = screen.getByTestId('widget-number-row')
+
+      await user.pointer([
+        {
+          keys: '[TouchA>]',
+          target: row,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { pointerName: 'TouchA', target: row, coords: { clientX, clientY } }
+      ])
+      await fireEvent.pointerCancel(row, {
+        pointerId: 2,
+        pointerType: 'touch',
+        buttons: 0
+      })
+
+      expect(screen.getByRole('spinbutton')).toHaveValue('37')
     }
   )
 
