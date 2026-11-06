@@ -375,22 +375,8 @@ describe('historical workflow restoration', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('opens the chat with its workflow unavailable when two saved workflows share its name', async () => {
-    const {
-      selection,
-      workflows,
-      panel,
-      current,
-      listCloudWorkflows,
-      warnRestoreFailed
-    } = setup()
-    listCloudWorkflows.mockImplementation(async () =>
-      listing([
-        { id: 'wf-saved', name: 'saved' },
-        { id: 'wf-other', name: 'saved' },
-        { id: 'wf-current', name: 'current' }
-      ])
-    )
+  it('opens the chat with its workflow unavailable when two saved files share its name', async () => {
+    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
     workflows.attachWorkflow(
       createMockLoadedWorkflow({
         path: 'workflows/saved.json',
@@ -427,6 +413,43 @@ describe('historical workflow restoration', () => {
 
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('fails and stays retryable when the listing fails after an earlier one named the workflow', async () => {
+    const {
+      selection,
+      resolver,
+      panel,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    await resolver.refreshCloudWorkflowIds()
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('fails and stays retryable when startup has not restored tabs for a listed workflow', async () => {
+    vi.useFakeTimers()
+    try {
+      const { selection, panel, warnRestoreFailed } = setup({
+        tabsRestored: false
+      })
+      const restoration = selection.restoreTarget('wf-saved', () => true)
+
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect((await restoration).ready).toBe(false)
+      expect(panel.targetUnavailable).toBe(false)
+      expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('fails and stays retryable when the sync for a listed workflow fails', async () => {

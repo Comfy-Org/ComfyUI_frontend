@@ -23,7 +23,7 @@ import type {
 } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null; listed: boolean }
+  | { outcome: 'open'; target: ComfyWorkflow | null; confirmedListed: boolean }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -52,7 +52,7 @@ function restorationOutcomeFor(
       return { outcome: 'deleted' }
     case 'live':
     case 'unknown':
-      return { outcome: 'open', target, listed: false }
+      return { outcome: 'open', target, confirmedListed: false }
   }
 }
 
@@ -274,7 +274,7 @@ export function useAgentWorkflowSelection({
       return {
         outcome: 'open',
         target,
-        listed: listed && completeCloudListingIncludes(workflowId)
+        confirmedListed: listed && completeCloudListingIncludes(workflowId)
       }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
@@ -313,7 +313,7 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, workflowId, isCurrent, false)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
@@ -324,7 +324,7 @@ export function useAgentWorkflowSelection({
       resolved.target,
       workflowId,
       isCurrent,
-      resolved.listed
+      resolved.confirmedListed
     )
   }
 
@@ -332,7 +332,7 @@ export function useAgentWorkflowSelection({
     target: ComfyWorkflow | null,
     workflowId: string,
     isCurrent: () => boolean,
-    listed = false
+    confirmedListed: boolean
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
@@ -340,7 +340,7 @@ export function useAgentWorkflowSelection({
         if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
         if (target === null)
-          return restoreUnresolved(workflowId, listed, synced)
+          return restoreUnresolved(workflowId, confirmedListed, synced)
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
@@ -360,10 +360,10 @@ export function useAgentWorkflowSelection({
 
   function restoreUnresolved(
     workflowId: string,
-    listed: boolean,
+    confirmedListed: boolean,
     synced: boolean
   ): WorkflowRestoration {
-    if (!listed || !synced)
+    if (!confirmedListed || !synced || !workflowStore.tabsRestored)
       return abandonRestore(
         workflowId,
         'No saved workflow resolves to the chat target'
