@@ -15,12 +15,14 @@ import {
   AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID,
+  AGENT_SUBGRAPH_CLIP_SOURCE_ID,
   AGENT_SUBGRAPH_EDITED_SEED,
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
   AGENT_SUBGRAPH_INITIAL_TEXT,
   AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
   AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
+  AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS,
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_REUSED_HOST_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
@@ -494,6 +496,115 @@ test.describe(
         )
       })
     })
+
+    test(
+      'shows an interior edit while the user is inside the subgraph',
+      {
+        tag: '@vue-nodes'
+      },
+      async ({ page, getAgentSocket }) => {
+        const nodes = new VueNodeHelpers(page)
+        const interiorSteps = nodes
+          .getNodeByTitle('KSampler')
+          .getByLabel('steps', { exact: true })
+          .getByRole('spinbutton')
+
+        await test.step('open the agent-enabled workflow', async () => {
+          await page.setViewportSize({ width: 1920, height: 1280 })
+          await bootAgentApp(page, true, {
+            onboardingCompleted: true,
+            objectInfo: agentSubgraphNodeDefs,
+            beforeNavigate: async (page) => {
+              await mockAgentTurnApi(page, {
+                message_id: '0f2b7c1d-5e4a-4f3b-9a6c-7d8e9f0a1b2c',
+                thread_id: '6c5b4a39-2817-4635-8d4e-3f2a1b0c9d8e',
+                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+              })
+              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+            }
+          })
+        })
+
+        const outboundFrames: string[] = []
+
+        const socket = await test.step('open the agent panel', async () => {
+          await loadSeedIntoActiveTab(page, subgraphWorkflow)
+          const agentPanel = new AgentPanel(page)
+          await agentPanel.open()
+          const opened = await getAgentSocket()
+          opened.onMessage((message) => outboundFrames.push(String(message)))
+          return opened
+        })
+
+        await test.step('select the workflow and send an agent turn', async () => {
+          const agentPanel = new AgentPanel(page)
+          await agentPanel.selectWorkflow()
+          await agentPanel.sendMessage('Edit inside the subgraph')
+          await expect
+            .poll(() => outboundFrames, { timeout: 15_000 })
+            .toContainEqual(
+              expect.stringMatching(
+                new RegExp(
+                  `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+                )
+              )
+            )
+        })
+
+        const frames = agentSubgraphInteriorFrames()
+
+        await test.step('materialize the host and its subgraph', async () => {
+          for (const frame of frames.initial) socket.send(JSON.stringify(frame))
+          await expect(
+            nodes.getNodeLocator(String(AGENT_SUBGRAPH_CLIP_SOURCE_ID))
+          ).toBeVisible()
+          await expect
+            .poll(() =>
+              page.evaluate(
+                (linkId) =>
+                  [...window.app!.graph.links.keys()]
+                    .map(Number)
+                    .includes(linkId),
+                AGENT_SUBGRAPH_LINK_ID
+              )
+            )
+            .toBe(true)
+        })
+
+        await test.step('the user opens the subgraph', async () => {
+          await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
+          await nextFrame(page)
+          await expect(interiorSteps).toHaveValue(
+            String(AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS)
+          )
+        })
+
+        const outboundBeforeEdit =
+          await test.step('the agent edit lands on the open subgraph view', async () => {
+            const sentBeforeEdit = outboundFrames.length
+            socket.send(JSON.stringify(frames.stepsEdit))
+
+            await expect(interiorSteps).toHaveValue(
+              String(AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS)
+            )
+            return sentBeforeEdit
+          })
+
+        await test.step('the follower stayed read-only', async () => {
+          const quietWindowStartedAt = Date.now()
+          await expect(() => {
+            expect(
+              outboundFrames
+                .slice(outboundBeforeEdit)
+                .some((frame) => frame.includes('doc_ops'))
+            ).toBe(false)
+            expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(
+              500
+            )
+          }).toPass({ timeout: 1_000, intervals: [50, 100, 150, 200] })
+        })
+      }
+    )
 
     test('keeps dependency-inverted subgraph definitions navigable', async ({
       page,

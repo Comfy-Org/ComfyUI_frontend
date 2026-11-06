@@ -153,3 +153,47 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Opening a workflow whose stored content is null',
+  { tag: '@workflow' },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'broken-null.json': 'null-content.txt'
+      })
+      await comfyPage.workflow.reloadAndWaitForApp()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test('tells the user it cannot be opened and offers to delete it', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      const pageErrors: string[] = []
+      page.on('pageerror', (error) => pageErrors.push(error.message))
+
+      const { workflowsTab } = comfyPage.menu
+      await workflowsTab.open()
+      await workflowsTab.getPersistedItem('broken-null').click()
+
+      const toast = comfyPage.toast.withText("Can't open this workflow")
+      await expect(toast).toBeVisible()
+      await expect(toast).toContainText('broken-null.json')
+      expect(pageErrors).toEqual([])
+      await test.info().attach('unreadable-workflow-toast', {
+        body: await toast.screenshot(),
+        contentType: 'image/png'
+      })
+
+      await toast.getByRole('button', { name: 'Delete' }).click()
+      await comfyPage.confirmDialog.delete.click()
+      await expect
+        .poll(() => workflowsTab.getTopLevelSavedWorkflowNames())
+        .not.toContain('broken-null')
+    })
+  }
+)
