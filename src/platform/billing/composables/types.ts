@@ -52,6 +52,8 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+  /** Reopens the in-app table to restore a failed checkout instead of handing off to the platform Plans page. */
+  resumingCheckout?: boolean
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature

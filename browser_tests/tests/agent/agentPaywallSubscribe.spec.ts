@@ -10,6 +10,7 @@ import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -108,7 +109,7 @@ agentTest.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     agentTest(
-      'opens the subscription dialog once the config gate is open',
+      'opens the platform Plans page once the config gate is open',
       async ({ page, agentPanel }, testInfo) => {
         await reconfigureBilling(page, { subscriptionRequired: true })
 
@@ -121,15 +122,7 @@ agentTest.describe(
           contentType: 'image/png'
         })
 
-        await subscribeButton.click()
-
-        const dialog = page.locator(DIALOG_SELECTOR)
-        await expect(dialog).toBeVisible()
-
-        await testInfo.attach('subscription-dialog-opened', {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png'
-        })
+        await expectPlatformPlansOpened(page, () => subscribeButton.click())
       }
     )
 
