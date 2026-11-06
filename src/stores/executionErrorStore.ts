@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw, watch } from 'vue'
 import { whenever } from '@vueuse/core'
@@ -77,6 +78,7 @@ interface RunErrorState {
   nodeErrors: Record<string, NodeError> | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
+  nodeWarnings: Record<string, string> | null
 }
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
@@ -111,6 +113,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = computed(
     () => activeRunErrors.value?.promptError ?? null
   )
+  const lastNodeWarnings = computed(
+    () => activeRunErrors.value?.nodeWarnings ?? null
+  )
 
   function updateRunErrors(patch: Partial<RunErrorState>, key: string | null) {
     if (key === null) return
@@ -120,11 +125,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       nodeErrors: null,
       executionError: null,
       promptError: null,
+      nodeWarnings: null,
       ...runErrorsByWorkflow.value.get(key),
       ...patch
     }
 
-    if (!next.nodeErrors && !next.executionError && !next.promptError) {
+    if (
+      !next.nodeErrors &&
+      !next.executionError &&
+      !next.promptError &&
+      !next.nodeWarnings
+    ) {
       runErrorsByWorkflow.value.delete(key)
     } else {
       runErrorsByWorkflow.value.set(key, next)
@@ -481,6 +492,29 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     updateRunErrors({ promptError }, key)
   }
 
+  function recordNodeWarning(
+    executionId: string,
+    message: string,
+    key: string
+  ) {
+    const nodeWarnings = {
+      ...runErrorsByWorkflow.value.get(key)?.nodeWarnings,
+      [executionId]: message
+    }
+    updateRunErrors({ nodeWarnings }, key)
+  }
+
+  function clearNodeWarning(executionId: string, key: string | null) {
+    if (key === null) return
+    const nodeWarnings = runErrorsByWorkflow.value.get(key)?.nodeWarnings
+    if (!nodeWarnings || !(executionId in nodeWarnings)) return
+    const remaining = omit(nodeWarnings, [executionId])
+    updateRunErrors(
+      { nodeWarnings: Object.keys(remaining).length > 0 ? remaining : null },
+      key
+    )
+  }
+
   function showErrorOverlay() {
     isErrorOverlayOpen.value = true
   }
@@ -493,9 +527,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    *  loaded graph rather than the run, so only replacing or discarding the
    *  graph invalidates it. */
   function clearRunErrors() {
-    if (activeRunErrorKey.value !== null) {
-      runErrorsByWorkflow.value.delete(activeRunErrorKey.value)
-    }
+    updateRunErrors(
+      {
+        absorbedValidationErrors: new WeakMap(),
+        nodeErrors: null,
+        executionError: null,
+        promptError: null
+      },
+      activeRunErrorKey.value
+    )
     isErrorOverlayOpen.value = false
   }
 
@@ -852,6 +892,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
+      lastNodeWarnings.value !== null ||
       hasMissingError.value
   )
 
@@ -866,6 +907,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         ids.push(String(nodeId))
       }
     }
+    ids.push(...Object.keys(lastNodeWarnings.value ?? {}))
     return ids
   })
 
@@ -875,21 +917,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return ids
 
-    // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? rootGraph
 
-    if (surfacedNodeErrors.value) {
-      for (const executionId of Object.keys(surfacedNodeErrors.value)) {
-        const graphNode = getNodeByExecutionId(rootGraph, executionId)
-        if (graphNode?.graph === activeGraph) {
-          ids.add(String(graphNode.id))
-        }
-      }
-    }
-
-    if (lastExecutionError.value) {
-      const execNodeId = String(lastExecutionError.value.node_id)
-      const graphNode = getNodeByExecutionId(rootGraph, execNodeId)
+    for (const executionId of allErrorExecutionIds.value) {
+      const graphNode = getNodeByExecutionId(rootGraph, executionId)
       if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
       }
@@ -976,11 +1007,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastNodeErrors,
     lastExecutionError,
     lastPromptError,
+    lastNodeWarnings,
 
     // Recording
     recordNodeErrors,
     recordExecutionError,
     recordPromptError,
+    recordNodeWarning,
 
     // Workflow scoping
     captureRunErrorKey,
@@ -992,6 +1025,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
+    clearNodeWarning,
     retireResolvedMissingNodePromptError,
     retireResolvedMissingResourceErrors,
 

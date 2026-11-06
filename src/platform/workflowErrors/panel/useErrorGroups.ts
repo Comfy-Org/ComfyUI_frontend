@@ -24,6 +24,7 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
+import { t } from '@/i18n'
 import { shouldRenderExecutionItemList } from './executionItemList'
 import { someNodeTypeInSelection } from './selectionEmphasis'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -763,6 +764,31 @@ export function useErrorGroups(
     )
   })
 
+  function buildNodeWarningGroups(filterBySelection = false): ErrorGroup[] {
+    const cards = Object.entries(executionErrorStore.lastNodeWarnings ?? {})
+      .flatMap(([rawNodeId, message]) => {
+        const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
+        if (!nodeId) return []
+        if (filterBySelection && !isErrorInSelection(nodeId)) return []
+        const card = createErrorCard(nodeId, rawNodeId, 'warning')
+        return [{ ...card, errors: [{ message }] }]
+      })
+      .sort(compareNodeId)
+    if (!cards.length) return []
+    return [
+      {
+        type: 'execution' as const,
+        severity: 'missing' as const,
+        groupKey: 'execution:node_warning',
+        displayTitle: t('rightSidePanel.nodeWarningsTitle'),
+        count: cards.length,
+        cards,
+        priority: 4,
+        blockedLastRun: false
+      }
+    ]
+  }
+
   function buildMissingModelGroups(blockedLastRun: boolean): ErrorGroup[] {
     if (!missingModelGroups.value.length) return []
     const count = countMissingModels(missingModelGroups.value)
@@ -935,7 +961,8 @@ export function useErrorGroups(
       ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(promptErrorAbsorbed),
       ...buildMissingModelGroups(blockedMissingGroups.has('missing_model')),
-      ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media'))
+      ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media')),
+      ...buildNodeWarningGroups()
     ]
   })
 
@@ -953,16 +980,14 @@ export function useErrorGroups(
     void processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
-    // Selection groups drive emphasis only; blockedLastRun cannot be computed
-    // selection-accurately here (absorption is a graph-wide fact), so it is
-    // uniformly false rather than a graph-wide flag masquerading as scoped.
     return [
       ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(false, (nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
       ...buildMissingModelGroupsForSelection(false),
-      ...buildMissingMediaGroupsForSelection(false)
+      ...buildMissingMediaGroupsForSelection(false),
+      ...buildNodeWarningGroups(true)
     ]
   })
 

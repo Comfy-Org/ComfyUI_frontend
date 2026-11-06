@@ -41,6 +41,7 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
+  ExecutionWarningWsMessage,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
@@ -203,6 +204,7 @@ interface BackendApiCalls {
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
+  execution_warning: ExecutionWarningWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
   logs: LogsWsMessage
@@ -1144,6 +1146,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'execution_start':
             case 'execution_error':
+            case 'execution_warning':
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':

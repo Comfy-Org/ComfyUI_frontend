@@ -25,6 +25,7 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
+  ExecutionWarningWsMessage,
   JobId,
   NodeProgressState,
   NotificationWsMessage,
@@ -183,6 +184,24 @@ export const useExecutionStore = defineStore('execution', () => {
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
+  const pendingNodeWarningsByJobId = new Map<
+    string,
+    ExecutionWarningWsMessage[]
+  >()
+
+  function setPendingForJob<T>(
+    pending: Map<string, T>,
+    jobId: string,
+    value: T
+  ) {
+    pending.delete(jobId)
+    pending.set(jobId, value)
+    while (pending.size > MAX_PROGRESS_JOBS) {
+      const oldest = pending.keys().next().value
+      if (oldest === undefined) break
+      pending.delete(oldest)
+    }
+  }
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -193,27 +212,24 @@ export const useExecutionStore = defineStore('execution', () => {
       update.executionStartedAt ??
       queuedJobs.value[jobId]?.executionStartedAt ??
       existing?.executionStartedAt
-    pendingWorkflowStatusByJobId.delete(jobId)
-    pendingWorkflowStatusByJobId.set(jobId, {
+    setPendingForJob(pendingWorkflowStatusByJobId, jobId, {
       ...update,
       ...(executionStartedAt !== undefined && { executionStartedAt })
     })
-    while (pendingWorkflowStatusByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingWorkflowStatusByJobId.keys().next().value
-      if (oldest === undefined) break
-      pendingWorkflowStatusByJobId.delete(oldest)
-    }
   }
 
   function bufferPendingExecutionError(error: PendingExecutionError) {
-    const jobId = error.detail.prompt_id
-    pendingExecutionErrorsByJobId.delete(jobId)
-    pendingExecutionErrorsByJobId.set(jobId, error)
-    while (pendingExecutionErrorsByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingExecutionErrorsByJobId.keys().next().value
-      if (oldest === undefined) break
-      pendingExecutionErrorsByJobId.delete(oldest)
-    }
+    setPendingForJob(
+      pendingExecutionErrorsByJobId,
+      error.detail.prompt_id,
+      error
+    )
+  }
+
+  function bufferPendingNodeWarning(warning: ExecutionWarningWsMessage) {
+    const jobId = warning.prompt_id
+    const pending = pendingNodeWarningsByJobId.get(jobId) ?? []
+    setPendingForJob(pendingNodeWarningsByJobId, jobId, [...pending, warning])
   }
 
   function mutateStatus(
@@ -457,6 +473,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('executing', handleExecuting)
     api.addEventListener('progress', handleProgress)
     api.addEventListener('progress_state', handleProgressState)
+    api.addEventListener('execution_warning', handleExecutionWarning)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
   }
@@ -471,12 +488,14 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('executing', handleExecuting)
     api.removeEventListener('progress', handleProgress)
     api.removeEventListener('progress_state', handleProgressState)
+    api.removeEventListener('execution_warning', handleExecutionWarning)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
+    pendingNodeWarningsByJobId.clear()
     jobIdToWorkflow.clear()
     jobIdToStampedWorkflowId.clear()
 
@@ -689,6 +708,29 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (e.detail == null) {
       activeJobId.value = null
+    } else if (activeJobId.value) {
+      executionErrorStore.clearNodeWarning(
+        String(e.detail),
+        runErrorKeyForJob(activeJobId.value)
+      )
+    }
+  }
+
+  function handleExecutionWarning(e: CustomEvent<ExecutionWarningWsMessage>) {
+    bufferPendingNodeWarning(e.detail)
+    flushPendingNodeWarnings(e.detail.prompt_id)
+  }
+
+  function flushPendingNodeWarnings(jobId: string) {
+    const pending = pendingNodeWarningsByJobId.get(jobId)
+    if (!pending) return
+
+    const runErrorKey = runErrorKeyForJob(jobId)
+    if (runErrorKey === null) return
+
+    pendingNodeWarningsByJobId.delete(jobId)
+    for (const { node, text } of pending) {
+      executionErrorStore.recordNodeWarning(String(node), text, runErrorKey)
     }
   }
 
@@ -1152,6 +1194,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
+    flushPendingNodeWarnings(id)
     if (queuedJob.executionStartedAt !== undefined) adoptActiveWorkflowJob()
   }
 
@@ -1235,6 +1278,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!jobId || !workflowId) return
     jobIdToWorkflowId.value.set(jobId, workflowId)
     flushPendingExecutionError(jobId)
+    flushPendingNodeWarnings(jobId)
   }
 
   /**

@@ -5194,6 +5194,7 @@
     "hideAdvancedShort": "Hide advanced",
     "errors": "Issues",
     "missingResourcesWarning": "Missing resources",
+    "nodeWarningsTitle": "Node warnings",
     "noErrors": "No issues",
     "errorsDetected": "Error detected | Errors detected",
     "selectedNodeErrors": "{node} — {count} issue | {node} — {count} issues",

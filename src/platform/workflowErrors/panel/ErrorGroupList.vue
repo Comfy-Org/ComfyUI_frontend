@@ -680,21 +680,24 @@ const selectionEmphasisSignature = computed(() =>
 )
 
 /** Issue identity per severity — membership, so same-count replacements are visible. */
-const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
-  () => ({
-    error: new Set(
-      allErrorGroups.value
-        .filter((group) => group.type === 'execution')
-        .flatMap((group) =>
-          group.cards.flatMap((card) =>
-            card.errors.map(
-              (error, index) =>
-                `${group.groupKey}|${card.id}|${error.message}#${index}`
-            )
+function executionIssueKeys(severity: ErrorGroupSeverity): string[] {
+  return allErrorGroups.value.flatMap((group) =>
+    group.type === 'execution' && group.severity === severity
+      ? group.cards.flatMap((card) =>
+          card.errors.map(
+            (error, index) =>
+              `${group.groupKey}|${card.id}|${error.message}#${index}`
           )
         )
-    ),
+      : []
+  )
+}
+
+const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
+  () => ({
+    error: new Set(executionIssueKeys('error')),
     missing: new Set([
+      ...executionIssueKeys('missing'),
       ...missingPackGroups.value.flatMap((pack) =>
         pack.nodeTypes.map(
           (nodeType) =>
