@@ -4432,7 +4432,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('lists deprecated nodes when replacements arrive after the workflow loaded', async () => {
+    it('offers replacements that arrive after the workflow loaded', async () => {
       useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
       LiteGraph.registerNodeType(
         'BatchImagesNode',
@@ -4444,6 +4444,19 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       graph.add(new ImageBatch('ImageBatch', 'ImageBatch'))
       Reflect.set(app, 'rootGraphInternal', graph)
+      useMissingNodesErrorStore().setMissingNodeTypes([
+        { type: 'LegacyResize', nodeId: '4', isReplaceable: false }
+      ])
+      const backgroundWorkflow =
+        useWorkflowStore().createTemporary('background.json')
+      backgroundWorkflow.pendingWarnings = {
+        missingNodeTypes: [
+          { type: 'LegacyResize', nodeId: '7', isReplaceable: false }
+        ]
+      }
+      useWorkflowStore().openWorkflowsInBackground({
+        right: [backgroundWorkflow.path]
+      })
       const replacementStore = useNodeReplacementStore()
       let finishLoading = () => {}
       vi.spyOn(replacementStore, 'load').mockReturnValue(
@@ -4464,6 +4477,13 @@ describe('ComfyApp', () => {
       )?.[1] as EventListener | undefined
 
       const handled = featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      const resizeReplacement = {
+        new_node_id: 'ImageScale',
+        old_node_id: 'LegacyResize',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
       replacementStore.replacements = {
         ImageBatch: [
           {
@@ -4473,7 +4493,8 @@ describe('ComfyApp', () => {
             input_mapping: null,
             output_mapping: null
           }
-        ]
+        ],
+        LegacyResize: [resizeReplacement]
       }
       finishLoading()
       await handled
@@ -4483,6 +4504,22 @@ describe('ComfyApp', () => {
           typeof nodeType === 'string' ? nodeType : nodeType.type
         )
       ).toEqual(['ImageBatch'])
+      expect(useMissingNodesErrorStore().missingNodesError?.nodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '4',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
+      expect(backgroundWorkflow.pendingWarnings.missingNodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '7',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
     })
   })
 

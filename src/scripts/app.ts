@@ -155,7 +155,10 @@ import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -832,6 +835,7 @@ export class ComfyApp implements IComfyApp {
     api.addEventListener('feature_flags', async () => {
       await useNodeReplacementStore().load()
       useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
+      refreshMissingNodeReplacements()
     })
 
     useJobModelDownloadStore()
