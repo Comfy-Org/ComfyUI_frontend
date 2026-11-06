@@ -4289,6 +4289,11 @@
     "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
     "selectFolder": "Folder: {name}",
     "backFromFolder": "Back: {name}",
+    "lockFolder": "Lock folder: {name}",
+    "unlockFolder": "Unlock folder: {name}",
+    "folderLocked": "Locked to folder: {name}",
+    "browseToLockFolder": "Open a folder to lock it",
+    "allFolders": "All folders",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
