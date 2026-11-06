@@ -3,9 +3,12 @@ import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { testI18n } from '@/utils/__tests__/testI18n'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
@@ -27,7 +30,7 @@ async function pickRow(user: ReturnType<typeof userEvent.setup>, name: string) {
 }
 
 describe('DeploySetupAgentMenu', () => {
-  it('offers the two desktop apps and Copy prompt, without Use local agent', async () => {
+  it('offers desktop apps and Copy prompt when the local agent is unavailable', async () => {
     const user = renderMenu()
 
     await user.click(screen.getByTestId('deploy-setup-agent'))
@@ -37,6 +40,24 @@ describe('DeploySetupAgentMenu', () => {
         row.textContent.trim()
       )
     ).toEqual([
+      'Open in Claude desktop',
+      'Open in ChatGPT desktop',
+      'Copy prompt'
+    ])
+  })
+
+  it('offers the local agent alongside the desktop apps when it is ready', async () => {
+    vi.mocked(useFeatureFlags().flags).agent = { state: 'ready' }
+    const user = renderMenu()
+
+    await user.click(screen.getByTestId('deploy-setup-agent'))
+
+    expect(
+      (await screen.findAllByRole('menuitem')).map((row) =>
+        row.textContent.trim()
+      )
+    ).toEqual([
+      'Use local agent',
       'Open in Claude desktop',
       'Open in ChatGPT desktop',
       'Copy prompt'

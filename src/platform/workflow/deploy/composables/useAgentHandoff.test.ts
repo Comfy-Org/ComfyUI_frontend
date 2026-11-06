@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -45,6 +46,14 @@ function setActiveWorkflow(
 }
 
 describe('useAgentHandoff', () => {
+  it('names the configured platform in a local deployment request', () => {
+    setActiveWorkflow()
+
+    const brief = useAgentHandoff().buildBrief('local-deployment')
+
+    expect(brief).toContain(`Target platform: ${getComfyPlatformBaseUrl()}`)
+  })
+
   it('copies the brief for the workflow open at the click, then downloads that same graph under the name the brief gives', async () => {
     setActiveWorkflow('draft.json', { nodes: [] })
     const handoff = useAgentHandoff()

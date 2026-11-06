@@ -53,6 +53,7 @@
         "browser_tests/global{Setup,Teardown}.ts",
         "packages/design-system/tests/{consumer,css-consumer}/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
+        "playwright.local-deployment-agent.config.ts",
         "{src,packages}/**/__mocks__/**/*.ts"
       ],
       "entryPointRole": "test"

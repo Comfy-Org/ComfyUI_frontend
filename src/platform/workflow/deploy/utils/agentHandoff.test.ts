@@ -23,6 +23,26 @@ function countFenceLines(text: string) {
 }
 
 describe('buildAgentHandoffDocument', () => {
+  it('asks the local agent to deploy the hosting installation and verify this workflow', () => {
+    const document = normalizeWhitespaceRuns(
+      buildAgentHandoffDocument({
+        distribution: 'localhost',
+        inputs,
+        goal: 'local-deployment'
+      })
+    )
+
+    expect(document).toContain(
+      'Deploy the ComfyUI installation that hosts this agent'
+    )
+    expect(document).toContain(
+      'Verify the deployment is ready and run this workflow on it'
+    )
+    expect(document).not.toContain('The browser downloaded the workflow')
+    expect(document).not.toContain('stop at the green release')
+    expect(document).not.toContain('Deploying it is a separate decision')
+  })
+
   it('hands the agent the comfy-build recipe before its path', () => {
     const document = buildAgentHandoffDocument({
       distribution: 'cloud',
