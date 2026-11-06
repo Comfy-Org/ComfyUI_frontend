@@ -7,7 +7,7 @@ import type {
   ToolPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
-import { groupMessageParts } from './agentMessageGroup'
+import { groupKeys, groupMessageParts } from './agentMessageGroup'
 
 function tool(callId: string): ToolPart {
   return { type: 'tool', callId, name: 'add_node', state: 'done', ok: true }
@@ -99,5 +99,30 @@ describe('groupMessageParts', () => {
         tool('b')
       ])
     ).toEqual(['trace(a,b)', 'notice'])
+  })
+})
+
+describe('groupKeys', () => {
+  it('keeps the streaming text key when a trace lands before it', () => {
+    const reply: MessagePart = {
+      type: 'text',
+      text: 'Drafting',
+      state: 'streaming'
+    }
+    const keysOf = (parts: MessagePart[]) => groupKeys(groupMessageParts(parts))
+
+    expect(keysOf([tool('a'), ask, reply])).toEqual([
+      'trace:0',
+      `ask:${ask.askId}`,
+      'text:0'
+    ])
+    expect(
+      keysOf([
+        tool('a'),
+        ask,
+        { type: 'thinking', text: 'Checking', state: 'streaming' },
+        reply
+      ])
+    ).toEqual(['trace:0', `ask:${ask.askId}`, 'trace:1', 'text:0'])
   })
 })

@@ -61,6 +61,21 @@ export function groupMessageParts(
   return out
 }
 
+/**
+ * A stable render key per group: an ask card keys on its `askId`, any other
+ * group on its kind and how many groups of that kind come before it.
+ */
+export function groupKeys(groups: readonly AgentMessageGroup[]): string[] {
+  const seen = new Map<AgentMessageGroup['kind'], number>()
+  return groups.map((group) => {
+    const askId = 'part' in group ? askIdOf(group.part) : undefined
+    if (askId !== undefined) return `ask:${askId}`
+    const ordinal = seen.get(group.kind) ?? 0
+    seen.set(group.kind, ordinal + 1)
+    return `${group.kind}:${ordinal}`
+  })
+}
+
 function appendText(
   out: AgentMessageGroup[],
   openTextGroup: TextGroup | null,
