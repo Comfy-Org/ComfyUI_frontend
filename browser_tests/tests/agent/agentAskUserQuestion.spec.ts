@@ -92,8 +92,14 @@ test.describe(
       send(toolCall('set_widget', 'success'))
       await expect(step('Set widget')).toBeVisible()
 
-      expect(await top(step('List slots'))).toBeLessThan(await top(card))
-      expect(await top(card)).toBeLessThan(await top(step('Set widget')))
+      await expect
+        .poll(async () => {
+          const [first, middle, last] = await Promise.all(
+            [step('List slots'), card, step('Set widget')].map(top)
+          )
+          return first < middle && middle < last
+        })
+        .toBe(true)
     })
 
     test('a radio, in-flight, closed, refused and unconfirmed question and an unrenderable ask each show their own card', async ({
