@@ -70,10 +70,12 @@
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'pointer-events-none absolute z-0 border-3 outline-none',
+          'pointer-events-none absolute z-0 border-3 outline-offset-2 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isEmphasized ? 'border-foreground' : 'border-primary'
+          isEmphasized
+            ? 'border-foreground group-focus-visible/node:[outline-style:auto]'
+            : 'border-primary'
         )
       "
     />
