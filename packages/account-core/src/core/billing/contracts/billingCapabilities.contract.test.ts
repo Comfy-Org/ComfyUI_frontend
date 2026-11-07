@@ -76,6 +76,7 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'has_parked_billing_operation'
   | 'payment_recovery_available'
   | 'plan_kind'
+  | 'primary_billing_action'
   | 'recovery_route'
   | 'resolved_for'
   | 'revision'
