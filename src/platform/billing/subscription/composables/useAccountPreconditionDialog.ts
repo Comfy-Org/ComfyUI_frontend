@@ -13,6 +13,17 @@ interface AccountPreconditionContext {
   runRefused?: boolean
 }
 
+function subscriptionDialogOptions(context: AccountPreconditionContext) {
+  return {
+    reason: context.source ?? 'subscription_required',
+    ...(context.creditsLocked !== undefined && {
+      creditsLocked: context.creditsLocked
+    }),
+    ...(context.refusalType && { refusalType: context.refusalType }),
+    ...(context.runRefused && { runRefused: true })
+  }
+}
+
 export function useAccountPreconditionDialog() {
   const { showApiNodesSignInDialog } = useAuthDialogs()
   const { showSubscriptionRequiredDialog, showTopUpCreditsDialog } =
@@ -29,14 +40,9 @@ export function useAccountPreconditionDialog() {
         )
         return true
       case 'subscription':
-        return showSubscriptionRequiredDialog({
-          reason: context.source ?? 'subscription_required',
-          ...(context.creditsLocked !== undefined && {
-            creditsLocked: context.creditsLocked
-          }),
-          ...(context.refusalType && { refusalType: context.refusalType }),
-          ...(context.runRefused && { runRefused: true })
-        })
+        return showSubscriptionRequiredDialog(
+          subscriptionDialogOptions(context)
+        )
       case 'credits': {
         const { fetchStatus, fetchBalance } = useBillingContext()
         void Promise.allSettled([fetchStatus(), fetchBalance()])
