@@ -7,7 +7,14 @@ on:
         description: 'Package to bump'
         required: true
         type: 'choice'
-        options: [account-core, account-ui, billing-contract, ingest-types]
+        options:
+          [
+            account-core,
+            account-ui,
+            billing-contract,
+            ingest-types,
+            code-quality
+          ]
       version_type:
         description: 'Version increment type'
         required: true
@@ -60,6 +67,7 @@ jobs:
             account-ui) NPM_NAME='@comfyorg/account-ui'; ALPHA_GATED=true ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract'; ALPHA_GATED=true ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types'; ALPHA_GATED=false ;;
+            code-quality) NPM_NAME='@comfyorg/code-quality'; ALPHA_GATED=false ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1
