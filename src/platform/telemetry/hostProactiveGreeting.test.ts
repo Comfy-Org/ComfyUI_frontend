@@ -3,18 +3,36 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 beforeEach(() => {
   remoteConfig.value = { enable_telemetry: true }
+  distribution.isCloud = true
 })
 
 import {
   canEnrollHostProactiveGreeting,
+  requiresHostProactiveGreetingAdmission,
   supportsHostProactiveGreeting
 } from './hostProactiveGreeting'
 
 afterEach(() => {
   delete window.__comfyDesktop2
 })
+
+it.for([
+  { cloud: true, bridge: undefined, required: false },
+  { cloud: false, bridge: undefined, required: true },
+  { cloud: true, bridge: { Telemetry: { capture: vi.fn() } }, required: true },
+  { cloud: false, bridge: { Telemetry: { capture: vi.fn() } }, required: true }
+])(
+  'requires host admission for cloud=$cloud bridge=$bridge',
+  ({ cloud, bridge, required }) => {
+    distribution.isCloud = cloud
+    window.__comfyDesktop2 = bridge
+    expect(requiresHostProactiveGreetingAdmission()).toBe(required)
+  }
+)
 
 it('leaves ordinary browsers and old hosts outside the experiment', async () => {
   expect(supportsHostProactiveGreeting()).toBe(false)

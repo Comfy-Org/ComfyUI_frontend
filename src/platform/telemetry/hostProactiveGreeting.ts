@@ -1,6 +1,11 @@
 import type { ProactiveGreetingTelemetryContext } from '@comfyorg/telemetry/types'
+import { isCloud } from '@/platform/distribution/types'
 
 import { isHostTelemetryEnabled } from './hostTelemetryEnabled'
+
+export function requiresHostProactiveGreetingAdmission(): boolean {
+  return !isCloud || Boolean(window.__comfyDesktop2?.Telemetry)
+}
 
 export function supportsHostProactiveGreeting(): boolean {
   const telemetry = window.__comfyDesktop2?.Telemetry

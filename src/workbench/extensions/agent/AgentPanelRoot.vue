@@ -85,6 +85,7 @@ import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import {
   canEnrollHostProactiveGreeting,
+  requiresHostProactiveGreetingAdmission,
   supportsHostProactiveGreeting
 } from '@/platform/telemetry/hostProactiveGreeting'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
@@ -1409,8 +1410,7 @@ useEventListener(
 )
 const proactive = useProactiveGreeting({
   assignment: () =>
-    (isCloud && !window.__comfyDesktop2?.Telemetry) ||
-    supportsHostProactiveGreeting()
+    !requiresHostProactiveGreetingAdmission() || supportsHostProactiveGreeting()
       ? proactiveAssignment
       : undefined,
   identity: () => ({
@@ -1418,10 +1418,9 @@ const proactive = useProactiveGreeting({
     workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
   }),
   requireLocalInstallation: !isCloud,
-  canEnroll:
-    isCloud && !window.__comfyDesktop2?.Telemetry
-      ? undefined
-      : () => canEnrollHostProactiveGreeting(resolvedUserInfo.value?.id ?? ''),
+  canEnroll: !requiresHostProactiveGreetingAdmission()
+    ? undefined
+    : () => canEnrollHostProactiveGreeting(resolvedUserInfo.value?.id ?? ''),
   active: () =>
     agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
   canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),

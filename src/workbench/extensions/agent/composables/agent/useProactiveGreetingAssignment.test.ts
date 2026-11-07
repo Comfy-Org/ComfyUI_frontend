@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { setImmediate } from 'node:timers/promises'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -25,6 +26,7 @@ import {
 } from './useProactiveGreetingAssignment'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/remote/ingest/ingestApi'), { spy: true })
 vi.mock(import('@/platform/telemetry/hostProactiveGreeting'), { spy: true })
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
@@ -153,6 +155,66 @@ describe('Desktop remote assignment', () => {
     vi.mocked(requestAuth).mockResolvedValue({
       headers: { Authorization: 'Bearer scoped-token' }
     })
+  })
+
+  it.for([
+    {
+      stage: 'authentication',
+      fail: () =>
+        vi
+          .mocked(requestAuth)
+          .mockRejectedValue(new Error('private auth detail'))
+    },
+    {
+      stage: 'features',
+      fail: () =>
+        vi
+          .mocked(ingestApiClient.get)
+          .mockRejectedValue(new Error('private request detail'))
+    }
+  ])(
+    'reports $stage failures once without request or identity details',
+    async ({ fail }) => {
+      vi.mocked(canEnrollHostProactiveGreeting).mockResolvedValue(true)
+      vi.spyOn(ingestApiClient, 'get').mockResolvedValue({ data: {} })
+      fail()
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      const result = scope.run(useProactiveGreetingAssignment)!
+      await setImmediate()
+      expect(result.value).toBeUndefined()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        new Error('Failed to load proactive greeting assignment'),
+        {
+          surface: 'agent',
+          errorType: 'failure_loading_agent_proactive_assignment',
+          level: 'warning'
+        }
+      )
+      useAgentPanelStore().isOpen = false
+      useAgentPanelStore().isOpen = true
+      await setImmediate()
+      expect(result.value).toBeUndefined()
+      expect(reportError).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('does not report a request failure after its panel closes', async () => {
+    vi.mocked(canEnrollHostProactiveGreeting).mockResolvedValue(true)
+    let rejectRequest!: (reason: Error) => void
+    const request = new Promise<never>((_, reject) => {
+      rejectRequest = reject
+    })
+    const get = vi.spyOn(ingestApiClient, 'get').mockReturnValue(request)
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const result = scope.run(useProactiveGreetingAssignment)!
+    await vi.waitFor(() => expect(get).toHaveBeenCalledOnce())
+    useAgentPanelStore().isOpen = false
+    rejectRequest(new Error('aborted request'))
+    await setImmediate()
+    expect(result.value).toBeUndefined()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('reads remote authenticated features only after host admission and retries on reopen', async () => {

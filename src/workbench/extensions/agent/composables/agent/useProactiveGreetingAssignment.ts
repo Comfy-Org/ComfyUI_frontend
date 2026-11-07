@@ -1,4 +1,6 @@
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { once } from 'es-toolkit'
 import { computed, shallowRef, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -8,7 +10,10 @@ import {
 } from '@/platform/remote/ingest/ingestApi'
 import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
-import { canEnrollHostProactiveGreeting } from '@/platform/telemetry/hostProactiveGreeting'
+import {
+  canEnrollHostProactiveGreeting,
+  requiresHostProactiveGreetingAdmission
+} from '@/platform/telemetry/hostProactiveGreeting'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -101,8 +106,14 @@ export function useProactiveGreetingAssignment() {
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
   const panel = useAgentPanelStore()
-  const requiresHostAdmission =
-    !isCloud || Boolean(window.__comfyDesktop2?.Telemetry)
+  const requiresHostAdmission = requiresHostProactiveGreetingAdmission()
+  const reportAssignmentFailure = once(() =>
+    reportError(new Error('Failed to load proactive greeting assignment'), {
+      surface: 'agent',
+      errorType: 'failure_loading_agent_proactive_assignment',
+      level: 'warning'
+    })
+  )
   const hostAssignment = shallowRef<HostAssignment>()
   const identity = computed(() => ({
     userId: resolvedUserInfo.value?.id ?? null,
@@ -130,7 +141,9 @@ export function useProactiveGreetingAssignment() {
           )
           if (!isAborted()) hostAssignment.value = admitted
         } catch {
-          if (!isAborted()) hostAssignment.value = undefined
+          if (isAborted()) return
+          hostAssignment.value = undefined
+          reportAssignmentFailure()
         }
       },
       { immediate: true, flush: 'sync' }
