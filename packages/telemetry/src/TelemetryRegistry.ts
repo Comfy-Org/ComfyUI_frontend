@@ -147,7 +147,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
     this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
   }
@@ -238,12 +237,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
-  // fallow-ignore-next-line unused-class-member
   setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
     this.dispatch((provider) => provider.setWorkspaceContext?.(context))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
     this.dispatch((provider) =>
       provider.trackWorkspaceScopeMismatch?.(metadata)
@@ -283,7 +280,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
     this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
@@ -526,7 +522,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentError(metadata: AgentErrorMetadata): void {
     this.dispatch((provider) => provider.trackAgentError?.(metadata))
   }
