@@ -6,8 +6,14 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
+
+type MetadataLoadFailureHandler = (fileName: string, error: unknown) => void
+
+const logMetadataLoadFailure: MetadataLoadFailureHandler = (fileName, error) =>
+  console.error('Error loading model metadata', fileName, error)
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
@@ -68,7 +74,12 @@ export class ComfyModelDef {
   /** A string full of auto-computed lowercase-only searchable text for this model */
   searchable: string = ''
 
-  constructor(name: string, directory: string, pathIndex: number) {
+  constructor(
+    name: string,
+    directory: string,
+    pathIndex: number,
+    private readonly onMetadataLoadFailure: MetadataLoadFailureHandler = logMetadataLoadFailure
+  ) {
     this.path_index = pathIndex
     this.file_name = name
     this.normalized_file_name = name.replaceAll('\\', '/')
@@ -153,7 +164,7 @@ export class ComfyModelDef {
       this.has_loaded_metadata = true
       this.updateSearchable()
     } catch (error) {
-      console.error('Error loading model metadata', this.file_name, this, error)
+      this.onMetadataLoadFailure(this.file_name, error)
     }
   }
 }
@@ -241,7 +252,8 @@ export class ModelFolder {
   constructor(
     public directory: string,
     private getModelsFunc: (folder: string) => Promise<ModelFile[]>,
-    public readonly extensions: string[] = []
+    public readonly extensions: string[] = [],
+    private readonly onMetadataLoadFailure?: MetadataLoadFailureHandler
   ) {}
 
   get key(): string {
@@ -263,7 +275,8 @@ export class ModelFolder {
         this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
           model.name,
           this.directory,
-          model.pathIndex
+          model.pathIndex,
+          this.onMetadataLoadFailure
         )
       }
       this.state = ResourceState.Loaded
@@ -284,6 +297,19 @@ export const useModelStore = defineStore('models', () => {
   const useAssetModels = computed(
     () => flags.assetsEnabled && !deploymentPick?.bootDeployment
   )
+  let hasReportedMetadataLoadFailure = false
+  function reportMetadataLoadFailure(fileName: string, error: unknown) {
+    if (hasReportedMetadataLoadFailure) {
+      logMetadataLoadFailure(fileName, error)
+      return
+    }
+    hasReportedMetadataLoadFailure = true
+    reportError(error, {
+      errorType: 'model_metadata_load_failure',
+      surface: 'assets',
+      context: { fileName }
+    })
+  }
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -363,7 +389,8 @@ export const useModelStore = defineStore('models', () => {
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        useAssetModels.value ? effectiveModelExtensions(folder.extensions) : []
+        useAssetModels.value ? effectiveModelExtensions(folder.extensions) : [],
+        reportMetadataLoadFailure
       )
     }
     return {
@@ -459,7 +486,8 @@ export const useModelStore = defineStore('models', () => {
     const folder = new ModelFolder(
       folderName,
       createGetModelsFunc(),
-      priorFolder.extensions
+      priorFolder.extensions,
+      reportMetadataLoadFailure
     )
     await folder.load()
     // A full reload may have rebuilt the folder structure while this folder
@@ -518,7 +546,10 @@ export const useModelStore = defineStore('models', () => {
     try {
       await reloadModels()
     } catch (error) {
-      console.error('Failed to reload the model library', error)
+      reportError(error, {
+        errorType: 'model_library_reload_failure',
+        surface: 'assets'
+      })
     }
   }, MODEL_RELOAD_DEBOUNCE_MS)
 

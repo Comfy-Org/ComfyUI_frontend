@@ -11,6 +11,7 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@comfyorg/api-client/executionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
@@ -293,6 +294,25 @@ export const useQueueStore = defineStore('queue', () => {
   // of calls causes every response to be discarded by a stale-request guard).
   const updateState = { inFlight: false, dirty: false }
   const hasDirtyUpdate = () => updateState.dirty
+  const failingFetches = new Set<'queue' | 'history'>()
+  const recordFetchResult = (
+    source: 'queue' | 'history',
+    result: PromiseSettledResult<unknown>
+  ) => {
+    if (result.status === 'fulfilled') {
+      failingFetches.delete(source)
+      return
+    }
+    if (failingFetches.has(source)) {
+      console.error(`Failed to fetch ${source}:`, result.reason)
+      return
+    }
+    failingFetches.add(source)
+    reportError(result.reason, {
+      errorType: `queue_${source}_fetch_failure`,
+      surface: 'workspace'
+    })
+  }
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -342,8 +362,10 @@ export const useQueueStore = defineStore('queue', () => {
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getHistory(maxHistoryItems.value, { throwOnError: true })
       ])
+      recordFetchResult('queue', queueResult)
+      recordFetchResult('history', historyResult)
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
@@ -367,8 +389,6 @@ export const useQueueStore = defineStore('queue', () => {
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
         useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
-      } else {
-        console.error('Failed to fetch queue:', queueResult.reason)
       }
 
       if (historyResult.status === 'fulfilled') {
@@ -410,8 +430,6 @@ export const useQueueStore = defineStore('queue', () => {
           historyTasks.value = nextHistoryTasks
         }
         hasFetchedHistorySnapshot.value = true
-      } else {
-        console.error('Failed to fetch history:', historyResult.reason)
       }
     } finally {
       isLoading.value = false

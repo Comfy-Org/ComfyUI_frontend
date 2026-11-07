@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -66,6 +67,7 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/scripts/api'))
 
 describe('useQueuePendingTaskCountStore', () => {
@@ -1261,5 +1263,53 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0].jobId).toBe('hist-1')
       expect(store.isLoading).toBe(false)
     })
+
+    const queueDown = new Error('queue down')
+    const historyDown = new Error('history down')
+    const emptyQueue = { Running: [], Pending: [] }
+
+    it.for([
+      {
+        source: 'queue',
+        failure: queueDown,
+        failOnce: () => {
+          vi.mocked(api.getQueue).mockRejectedValueOnce(queueDown)
+          vi.mocked(api.getHistory).mockResolvedValueOnce([])
+        }
+      },
+      {
+        source: 'history',
+        failure: historyDown,
+        failOnce: () => {
+          vi.mocked(api.getQueue).mockResolvedValueOnce(emptyQueue)
+          vi.mocked(api.getHistory).mockRejectedValueOnce(historyDown)
+        }
+      }
+    ])(
+      'reports a $source fetch failure once per outage',
+      async ({ source, failure, failOnce }) => {
+        const expectedReport = [
+          failure,
+          { errorType: `queue_${source}_fetch_failure`, surface: 'workspace' }
+        ] as const
+
+        failOnce()
+        await store.update()
+        failOnce()
+        await store.update()
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(...expectedReport)
+        expect(api.getHistory).toHaveBeenCalledWith(expect.any(Number), {
+          throwOnError: true
+        })
+
+        vi.mocked(api.getQueue).mockResolvedValueOnce(emptyQueue)
+        vi.mocked(api.getHistory).mockResolvedValueOnce([])
+        await store.update()
+        failOnce()
+        await store.update()
+        expect(reportError).toHaveBeenCalledTimes(2)
+        expect(reportError).toHaveBeenLastCalledWith(...expectedReport)
+      }
+    )
   })
 })
