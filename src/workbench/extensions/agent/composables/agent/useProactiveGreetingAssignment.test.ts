@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setImmediate } from 'node:timers/promises'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -181,9 +182,12 @@ describe('Desktop remote assignment', () => {
     expect(result.value).toBeUndefined()
   })
 
-  it.for([true, false])(
-    'requires host admission for Cloud hosted inside Desktop: %s',
-    async (admitted) => {
+  it.for([
+    { admitted: true, expectedVariant: 'B' },
+    { admitted: false, expectedVariant: undefined }
+  ])(
+    'requires host admission for Cloud hosted inside Desktop: $admitted',
+    async ({ admitted, expectedVariant }) => {
       distribution.isCloud = true
       window.__comfyDesktop2 = {
         isRemote: () => true,
@@ -210,8 +214,8 @@ describe('Desktop remote assignment', () => {
       const result = scope.run(useProactiveGreetingAssignment)!
       expect(result.value).toBeUndefined()
       admission.resolve(admitted)
-      await nextTick()
-      expect(result.value?.variant).toBe(admitted ? 'B' : undefined)
+      await setImmediate()
+      expect(result.value?.variant).toBe(expectedVariant)
       expect(get).not.toHaveBeenCalled()
       remoteConfig.value = { ...remoteConfig.value, enable_telemetry: false }
       expect(result.value).toBeUndefined()

@@ -53,17 +53,57 @@ export function resolveProactiveGreetingAssignment(
   }
 }
 
+type HostAssignment = {
+  userId: string
+  workspaceId: string
+  assignment?: AgentGreetingAssignment
+}
+
+async function loadHostAssignment(
+  userId: string,
+  workspaceId: string,
+  signal: AbortSignal
+): Promise<HostAssignment | undefined> {
+  const isAborted = (): boolean => signal.aborted
+  if (!(await canEnrollHostProactiveGreeting(userId))) return
+  if (isAborted()) return
+  if (isCloud) return { userId, workspaceId }
+  const auth = await requestAuth()
+  if (isAborted()) return
+  const { data } = await ingestApiClient.get<unknown>(
+    ingestApiUrl('/features'),
+    { ...auth, signal, timeout: 10_000 }
+  )
+  return {
+    userId,
+    workspaceId,
+    assignment: resolveProactiveGreetingAssignment(data, {
+      userId,
+      workspaceId
+    })
+  }
+}
+
+function sameAssignment(
+  current: AgentGreetingAssignment | undefined,
+  previous: AgentGreetingAssignment | undefined
+): boolean {
+  if (!current || !previous) return false
+  return (
+    current.userId === previous.userId &&
+    current.workspaceId === previous.workspaceId &&
+    current.variant === previous.variant &&
+    current.telemetry?.group_key === previous.telemetry?.group_key
+  )
+}
+
 export function useProactiveGreetingAssignment() {
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
   const panel = useAgentPanelStore()
   const requiresHostAdmission =
     !isCloud || Boolean(window.__comfyDesktop2?.Telemetry)
-  const hostAssignment = shallowRef<{
-    userId: string
-    workspaceId: string
-    assignment?: AgentGreetingAssignment
-  }>()
+  const hostAssignment = shallowRef<HostAssignment>()
   const identity = computed(() => ({
     userId: resolvedUserInfo.value?.id ?? null,
     workspaceId: workspace.activeWorkspaceId ?? null
@@ -83,27 +123,12 @@ export function useProactiveGreetingAssignment() {
         const isAborted = (): boolean => controller.signal.aborted
         onCleanup(() => controller.abort())
         try {
-          if (!(await canEnrollHostProactiveGreeting(userId))) return
-          if (isAborted()) return
-          if (isCloud) {
-            hostAssignment.value = { userId, workspaceId }
-            return
-          }
-          const auth = await requestAuth()
-          if (isAborted()) return
-          const { data } = await ingestApiClient.get<unknown>(
-            ingestApiUrl('/features'),
-            { ...auth, signal: controller.signal, timeout: 10_000 }
-          )
-          if (isAborted()) return
-          hostAssignment.value = {
+          const admitted = await loadHostAssignment(
             userId,
             workspaceId,
-            assignment: resolveProactiveGreetingAssignment(data, {
-              userId,
-              workspaceId
-            })
-          }
+            controller.signal
+          )
+          if (!isAborted()) hostAssignment.value = admitted
         } catch {
           if (!isAborted()) hostAssignment.value = undefined
         }
@@ -111,7 +136,7 @@ export function useProactiveGreetingAssignment() {
       { immediate: true, flush: 'sync' }
     )
   }
-  return computed<AgentGreetingAssignment | undefined>((previous) => {
+  function currentAssignment(): AgentGreetingAssignment | undefined {
     const admitted = hostAssignment.value
     if (
       requiresHostAdmission &&
@@ -120,18 +145,16 @@ export function useProactiveGreetingAssignment() {
         admitted.workspaceId !== identity.value.workspaceId)
     )
       return
-    const assignment = isCloud
-      ? authenticatedRemoteConfigState.value === 'authenticated'
-        ? resolveProactiveGreetingAssignment(remoteConfig.value, identity.value)
-        : undefined
-      : admitted?.assignment
-    return assignment &&
-      previous &&
-      assignment.userId === previous.userId &&
-      assignment.workspaceId === previous.workspaceId &&
-      assignment.variant === previous.variant &&
-      assignment.telemetry?.group_key === previous.telemetry?.group_key
-      ? previous
-      : assignment
+    if (!isCloud) return admitted?.assignment
+    if (authenticatedRemoteConfigState.value !== 'authenticated') return
+    return resolveProactiveGreetingAssignment(
+      remoteConfig.value,
+      identity.value
+    )
+  }
+
+  return computed<AgentGreetingAssignment | undefined>((previous) => {
+    const assignment = currentAssignment()
+    return sameAssignment(assignment, previous) ? previous : assignment
   })
 }

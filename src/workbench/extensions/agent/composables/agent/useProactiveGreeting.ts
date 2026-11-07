@@ -84,24 +84,12 @@ export function useProactiveGreeting(options: Options) {
     try {
       const result = await options.getUsageStatus({ signal: request.signal })
       if (isStale()) return
-      if (
-        options.requireLocalInstallation &&
-        result.scope !== 'local_installation'
-      )
-        return
+      if (!matchesUsageScope(result)) return
       if (!result.has_used_agent && options.canEnroll) {
         if (!(await options.canEnroll())) return
         if (isStale()) return
       }
-      state.value = {
-        status: result.has_used_agent ? 'has-sent' : 'never-sent',
-        scope: currentScope
-      }
-      const telemetry = assignment.value?.telemetry
-      if (!result.has_used_agent && telemetry && options.onEnrolled) {
-        options.onEnrolled({ ...telemetry, canvas_state: options.canvas() })
-        enrollment.value = { scope: currentScope, telemetry: { ...telemetry } }
-      }
+      applyUsageStatus(result, currentScope)
     } catch (error) {
       if (isStale()) return
       state.value = { status: 'unknown' }
@@ -110,6 +98,27 @@ export function useProactiveGreeting(options: Options) {
         errorType: 'failure_loading_agent_usage_status',
         level: 'warning'
       })
+    }
+  }
+
+  function matchesUsageScope(result: AgentUsageStatusResponse): boolean {
+    return (
+      !options.requireLocalInstallation || result.scope === 'local_installation'
+    )
+  }
+
+  function applyUsageStatus(
+    result: AgentUsageStatusResponse,
+    currentScope: string
+  ): void {
+    state.value = {
+      status: result.has_used_agent ? 'has-sent' : 'never-sent',
+      scope: currentScope
+    }
+    const telemetry = assignment.value?.telemetry
+    if (!result.has_used_agent && telemetry && options.onEnrolled) {
+      options.onEnrolled({ ...telemetry, canvas_state: options.canvas() })
+      enrollment.value = { scope: currentScope, telemetry: { ...telemetry } }
     }
   }
 
