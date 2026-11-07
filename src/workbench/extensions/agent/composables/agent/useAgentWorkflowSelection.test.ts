@@ -434,6 +434,37 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
   })
 
+  it('fails and stays retryable when an incomplete listing replaces the index during the sync', async () => {
+    const {
+      selection,
+      workflows,
+      resolver,
+      panel,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
+      workflows.attachWorkflow(saved)
+      listCloudWorkflows.mockImplementationOnce(async () =>
+        listing([{ id: 'wf-current', name: 'current' }], false)
+      )
+      await resolver.refreshCloudWorkflowIds()
+      return true
+    })
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
   it('fails and stays retryable when startup has not restored tabs for a listed workflow', async () => {
     vi.useFakeTimers()
     try {

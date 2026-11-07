@@ -365,7 +365,11 @@ export function useAgentWorkflowSelection({
   ): WorkflowRestoration {
     if (!synced)
       return abandonRestore(workflowId, 'The saved workflow sync failed')
-    if (!confirmedListed || !workflowStore.tabsRestored)
+    if (
+      !confirmedListed ||
+      !completeCloudListingIncludes(workflowId) ||
+      !workflowStore.tabsRestored
+    )
       return abandonRestore(
         workflowId,
         'No saved workflow resolves to the chat target'
