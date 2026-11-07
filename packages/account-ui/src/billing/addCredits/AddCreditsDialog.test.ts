@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AddCreditsRefusal } from '@comfyorg/account-core/billing'
 
@@ -14,6 +14,8 @@ import type {
 } from './useAddCreditsDialog'
 
 const CHECKOUT_URL = 'https://billing.comfy.org/topup?session=cs_1'
+const AUTO_TOP_UP_SETUP_URL =
+  'https://platform.comfy.org/profile/billing?auto_top_up=setup'
 const SUPPORT_URL = 'https://support.example/billing'
 const CREDITS_PER_CENT = 2.11
 
@@ -42,6 +44,7 @@ class FakePorts implements AddCreditsPorts {
   checkoutHeld: ((answer: AddCreditsCheckoutResult) => void) | undefined
   landed: (() => void) | undefined
   watchStopped = false
+  autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
 
   quoteRejects = false
   checkoutRejects = false
@@ -497,5 +500,73 @@ describe('AddCreditsDialog pending bank check', () => {
     expect(within(summary()).getByText('$25.00 top-up')).toBeVisible()
     expect(within(summary()).getByText('Not verified')).toBeVisible()
     expect(screen.queryByText(/nothing was charged/i)).toBeNull()
+  })
+})
+
+describe('AddCreditsDialog auto top-up suggestion', () => {
+  const OFFER =
+    'Buy credits automatically when you run low, so workflows and API calls keep running.'
+
+  async function landPayment(
+    autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
+  ) {
+    const rendered = renderDialog()
+    rendered.ports.autoTopUpSetupUrl = autoTopUpSetupUrl
+    await rendered.user.click(continueButton())
+    rendered.ports.landed?.()
+    return rendered
+  }
+
+  it('suggests auto top-up instead of closing when the payment lands and it is offered', async () => {
+    const { emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+
+    expect(await screen.findByText(OFFER)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Not now' })).toBeVisible()
+    expect(emitted().close).toBeUndefined()
+  })
+
+  it('Set up opens Platform billing in a new tab and closes the dialog', async () => {
+    const { user, emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+
+    const setUp = await screen.findByRole('link', { name: 'Set up' })
+    expect(setUp).toHaveAttribute('href', AUTO_TOP_UP_SETUP_URL)
+    expect(setUp).toHaveAttribute('target', '_blank')
+    setUp.addEventListener('click', (event) => event.preventDefault())
+    await user.click(setUp)
+
+    expect(emitted().setUpAutoTopUp).toHaveLength(1)
+    expect(emitted().close).toHaveLength(1)
+  })
+
+  it.for([
+    { name: 'Not now', button: 'Not now' },
+    { name: 'the X', button: 'Close' }
+  ])('$name closes the suggestion', async ({ button }) => {
+    const { user, emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+    await screen.findByText(OFFER)
+
+    await user.click(screen.getByRole('button', { name: button }))
+
+    expect(emitted().close).toHaveLength(1)
+    expect(emitted().setUpAutoTopUp).toBeUndefined()
+  })
+
+  it.for([
+    { name: 'not offered', answer: () => Promise.resolve(null) },
+    {
+      name: 'the read fails',
+      answer: () => Promise.reject(new TypeError('Failed to fetch'))
+    }
+  ])('closes once the payment lands when $name', async ({ answer }) => {
+    const { emitted } = await landPayment(answer)
+
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
+    expect(screen.queryByText(OFFER)).not.toBeInTheDocument()
   })
 })

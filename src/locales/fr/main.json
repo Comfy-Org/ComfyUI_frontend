@@ -1274,10 +1274,6 @@
       "addMoreCredits": "Ajouter des crédits",
       "addMoreCreditsToRun": "Ajouter des crédits pour exécuter",
       "amountToPayLabel": "Montant à payer en dollars",
-      "autoTopUp": {
-        "prompt": "Vous manquez de crédits ? Activez la recharge automatique.",
-        "setUp": "Configurer"
-      },
       "awaitingBankApprovalBody": "Votre banque doit approuver ce paiement avant que vos crédits soient ajoutés. Vous pouvez finaliser l’opération depuis l’application de votre banque ou via le lien de paiement de cet achat. Vous ne pourrez pas commencer un nouveau rechargement tant que celui-ci n’est pas terminé ou expiré.",
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",

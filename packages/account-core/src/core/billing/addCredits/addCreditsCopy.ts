@@ -65,7 +65,11 @@ export const ADD_CREDITS_COPY = {
   'blocked.title': "Checkout didn't open",
   'blocked.body':
     'Your browser blocked the new tab. Open checkout to finish paying.',
-  'blocked.action': 'Open checkout'
+  'blocked.action': 'Open checkout',
+  'autoTopUpOffer.body':
+    'Buy credits automatically when you run low, so workflows and API calls keep running.',
+  'autoTopUpOffer.setUp': 'Set up',
+  'autoTopUpOffer.notNow': 'Not now'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

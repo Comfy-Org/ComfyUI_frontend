@@ -36,6 +36,7 @@ export type AddCreditsState =
       readonly amountCents: number
       readonly checkoutUrl: string
     }
+  | { readonly step: 'auto_top_up_offer'; readonly setupUrl: string }
   | { readonly step: 'landed' }
 
 export type AddCreditsEvent =
@@ -50,7 +51,11 @@ export type AddCreditsEvent =
   | { readonly type: 'checkout_refused'; readonly refusal: AddCreditsRefusal }
   | { readonly type: 'checkout_abandoned' }
   | { readonly type: 'blocked_link_followed' }
-  | { readonly type: 'payment_landed' }
+  | {
+      readonly type: 'payment_landed'
+      /** Platform's Turn on auto top-up link, when the served facts offer it. */
+      readonly autoTopUpSetupUrl?: string
+    }
 
 export function startAddCredits(amount: AddCreditsAmount): AddCreditsState {
   return { step: 'amount', amount }
@@ -127,10 +132,17 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             amountCents: state.amountCents
           }
         : state,
-    payment_landed: (state) =>
-      state.step === 'amount' || state.step === 'landed'
-        ? state
-        : { step: 'landed' }
+    payment_landed: (state, event) => {
+      if (
+        state.step === 'amount' ||
+        state.step === 'landed' ||
+        state.step === 'auto_top_up_offer'
+      )
+        return state
+      return event.autoTopUpSetupUrl === undefined
+        ? { step: 'landed' }
+        : { step: 'auto_top_up_offer', setupUrl: event.autoTopUpSetupUrl }
+    }
   }
 
 export function reduceAddCredits(
