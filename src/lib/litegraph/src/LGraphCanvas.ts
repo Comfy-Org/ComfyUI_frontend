@@ -1097,6 +1097,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   _mouseout_callback?(e: PointerEvent): void
   _mousecancel_callback?(e: PointerEvent): void
   _key_callback?(e: KeyboardEvent): void
+  _blur_callback?(): void
   bgctx?: CanvasRenderingContext2D | null
   is_rendering?: boolean
   /** @deprecated Panels */
@@ -2398,6 +2399,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // keyup event must be bound on the document
     document.addEventListener('keyup', this._key_callback, true)
 
+    // A blur (Alt+Tab, focus loss) ends a link drag: the pointerup lands in another window.
+    const onWindowBlur = this.processWindowBlur.bind(this)
+    this._blur_callback = onWindowBlur
+    this.getCanvasWindow().addEventListener('blur', onWindowBlur)
+
     canvas.addEventListener('dragover', this._doNothing, false)
     canvas.addEventListener('dragend', this._doNothing, false)
     canvas.addEventListener('dragenter', this._doReturnTrue, false)
@@ -2433,6 +2439,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       canvas.removeEventListener('wheel', this._mousewheel_callback!)
       canvas.removeEventListener('keydown', this._key_callback!, true)
       document.removeEventListener('keyup', this._key_callback!, true)
+      if (this._blur_callback) {
+        this.getCanvasWindow().removeEventListener('blur', this._blur_callback)
+        this._blur_callback = undefined
+      }
       canvas.removeEventListener('contextmenu', this._doNothing)
       canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
       canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -4280,6 +4290,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     console.warn('Pointer cancel!')
     this.pointer.reset()
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
+  }
+
+  /**
+   * Alt+Tab (or any window blur) swallows the pointerup, which would leave a
+   * link drag stuck to the cursor. Cancel it the same way Escape does.
+   */
+  processWindowBlur(): void {
+    if (this.linkConnector.isConnecting) this.linkConnector.reset()
   }
 
   /**
