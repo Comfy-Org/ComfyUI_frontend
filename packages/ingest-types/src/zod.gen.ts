@@ -7944,3 +7944,26 @@ export const zGetWebsocketQuery = z.object({
   workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
+
+export const zCompatibilityModel = z.object({
+  folder: z.string(),
+  name: z.string()
+})
+
+export const zCloudCompatibilityRequest = z.object({
+  models: z.array(zCompatibilityModel).optional(),
+  node_types: z.array(z.string())
+})
+
+export const zCloudWorkflowCompatibility = z.object({
+  missing_models: z.array(zCompatibilityModel).optional(),
+  missing_node_types: z.array(z.string())
+})
+
+export const zCloudCompatibility = z.object({
+  cloud: zCloudWorkflowCompatibility
+})
+
+export const zCheckCloudCompatibilityBody = zCloudCompatibilityRequest
+
+export const zCheckCloudCompatibilityResponse = zCloudCompatibility
