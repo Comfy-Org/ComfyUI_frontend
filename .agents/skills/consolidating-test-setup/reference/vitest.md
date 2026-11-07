@@ -11,6 +11,7 @@ overrides, and the repository's unit-test guidance. In this repository, inspect:
 - `vitest.setup.ts` and `vitest.timer.setup.ts`
 - package-level Vitest configuration and setup
 - `docs/guidance/vitest.md`
+- `docs/testing/vitest-patterns.md`
 
 Check behavior against the installed Vitest version. Defaults change, and setup
 files compose.
