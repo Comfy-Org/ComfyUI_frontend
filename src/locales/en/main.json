@@ -4249,6 +4249,23 @@
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
     "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
+  "openOnCloud": {
+    "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
+    "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
+    "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "cloudButton": {
+      "tooltip": "Run on Comfy Cloud",
+      "checking": "Checking Comfy Cloud…"
+    },
+    "runDialog": {
+      "title": "Run on Comfy Cloud",
+      "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
+      "openOnCloud": "Open on Comfy Cloud"
+    },
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "cannotRunYet": "Comfy Cloud is missing nodes or models this workflow uses."
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
