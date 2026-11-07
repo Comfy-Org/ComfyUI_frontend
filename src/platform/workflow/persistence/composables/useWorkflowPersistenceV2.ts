@@ -22,6 +22,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSavedFileUrlLoader } from '@/platform/workflow/management/composables/useSavedFileUrlLoader'
 import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -56,7 +57,8 @@ export function useWorkflowPersistenceV2() {
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
-  let openedFolderWorkflows = false
+  const savedFileUrlLoader = useSavedFileUrlLoader()
+  let openedLinkedWorkflow = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
@@ -292,7 +294,9 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
+  const resolveStartupOutcome = async (
+    savedFilePending = false
+  ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
       return 'restored'
@@ -301,7 +305,9 @@ export function useWorkflowPersistenceV2() {
     await useWorkflowService().loadBlankWorkflow()
     await nextTick()
     discardStartupBlankDraft()
-    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+    return savedFilePending ||
+      hasSharedWorkflowIntent() ||
+      hasTemplateUrlIntent()
       ? 'url-intent'
       : 'fresh'
   }
@@ -319,12 +325,16 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
-    openedFolderWorkflows =
-      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
-    if (openedFolderWorkflows) return 'restored'
+    const savedFileStatus = await savedFileUrlLoader.openSavedFileFromUrl()
+    const savedFilePending = savedFileStatus === 'pending'
+    openedLinkedWorkflow =
+      savedFileStatus === 'absent'
+        ? await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+        : savedFileStatus === 'opened'
+    if (openedLinkedWorkflow) return 'restored'
 
     if (!workflowPersistenceEnabled.value) {
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(savedFilePending)
     }
 
     const isRestoreCurrent = await waitForRestoreIdentity()
@@ -338,10 +348,12 @@ export function useWorkflowPersistenceV2() {
       if (!isRestoreCurrent()) return 'restored'
       const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
       if (!isRestoreCurrent()) return 'restored'
-      return restored ? 'restored' : await resolveStartupOutcome()
+      return restored
+        ? 'restored'
+        : await resolveStartupOutcome(savedFilePending)
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(savedFilePending)
     }
   }
 
@@ -491,7 +503,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
-    if (openedFolderWorkflows) return
+    if (openedLinkedWorkflow) return
 
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath

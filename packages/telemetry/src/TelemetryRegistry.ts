@@ -95,6 +95,7 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  SavedFileLinkOpenedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata,
@@ -330,6 +331,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.dispatch((provider) => provider.trackWorkflowOpened?.(metadata))
+  }
+
+  trackSavedFileLinkOpened(metadata: SavedFileLinkOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackSavedFileLinkOpened?.(metadata))
   }
 
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {

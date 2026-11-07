@@ -183,6 +183,24 @@ describe('PostHogTelemetryProvider', () => {
     setLocation('')
   })
 
+  it.for(['opened', 'not_found', 'error'] as const)(
+    'records the saved-file result %s with only the workspace',
+    async (outcome) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSavedFileLinkOpened({
+        outcome,
+        workspace_id: 'workspace-1'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:saved_file_link_opened',
+        { outcome, workspace_id: 'workspace-1' }
+      )
+    }
+  )
+
   describe('initialization', () => {
     it('disables itself when posthog_project_token is not provided', async () => {
       const provider = createProvider({ posthog_project_token: undefined })
