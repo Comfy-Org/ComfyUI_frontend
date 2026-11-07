@@ -1316,6 +1316,36 @@
       "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
+  "workspaceTemplates": {
+    "navLabel": "Workspace",
+    "addAsTemplate": "Add as template",
+    "addDialogTitle": "Add as template",
+    "editDialogTitle": "Edit template",
+    "title": "Title",
+    "description": "Description",
+    "descriptionPlaceholder": "Say what this template makes and when to use it",
+    "thumbnail": "Thumbnail",
+    "addTemplate": "Add template",
+    "editDetails": "Edit details",
+    "deleteTemplate": "Delete template",
+    "deleteConfirmTitle": "Delete template",
+    "deleteConfirmMessage": "Delete \"{title}\" from the Workspace section? Workflows already opened from it stay as they are.",
+    "templateActions": "Template actions",
+    "emptyState": "Open a workflow, then choose Add as template in its workflow menu",
+    "added": "Added \"{title}\" to the Workspace section",
+    "saved": "Template saved",
+    "deleted": "Template deleted",
+    "you": "You",
+    "errors": {
+      "workspace_templates_unavailable": "Workspace templates aren't available until a workspace loads. Try again.",
+      "forbidden": "Only the person who added this template can change it",
+      "not_found": "This template no longer exists",
+      "invalid_request": "Add a title of up to 120 characters and a thumbnail",
+      "noWorkflow": "Open a workflow first",
+      "thumbnail": "Couldn't read that file. Choose an image or a video.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
   "templateWidgets": {
     "sort": {
       "searchPlaceholder": "Search..."
