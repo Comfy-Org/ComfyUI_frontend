@@ -214,6 +214,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'My asset',
+        filename: 'asset.png',
         uri: 'http://localhost/api/view?x=1',
         ref: 'stored-asset.png',
         kind: 'image',
@@ -234,6 +235,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'asset.mp4',
+        filename: 'asset.mp4',
         uri: undefined,
         ref: 'stored-asset.mp4',
         kind: 'video',
