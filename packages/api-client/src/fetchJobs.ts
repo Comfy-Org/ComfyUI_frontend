@@ -35,10 +35,6 @@ interface FetchJobsRawResult {
 
 class JobsApiError extends Error {}
 
-interface FetchJobsOptions {
-  throwOnError?: boolean
-}
-
 export interface FetchHistoryPageResult {
   jobs: JobListItem[]
   total: number
@@ -55,28 +51,21 @@ async function fetchJobsRaw(
   fetchApi: (url: string) => Promise<Response>,
   statuses: JobStatus[],
   maxItems: number = 200,
-  offset: number = 0,
-  options?: FetchJobsOptions
+  offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
-  try {
-    const res = await fetchApi(url)
-    if (!res.ok) {
-      throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
-    }
-    const data = zJobsListResponse.parse(await res.json())
-    return {
-      jobs: data.jobs,
-      total: data.pagination.total,
-      offset: data.pagination.offset,
-      limit: data.pagination.limit,
-      hasMore: data.pagination.has_more
-    }
-  } catch (error) {
-    if (options?.throwOnError) throw error
-    console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+  const res = await fetchApi(url)
+  if (!res.ok) {
+    throw new JobsApiError(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+  }
+  const data = zJobsListResponse.parse(await res.json())
+  return {
+    jobs: data.jobs,
+    total: data.pagination.total,
+    offset: data.pagination.offset,
+    limit: data.pagination.limit,
+    hasMore: data.pagination.has_more
   }
 }
 
@@ -140,15 +129,13 @@ export async function fetchHistoryPage(
  * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
-  fetchApi: (url: string) => Promise<Response>,
-  options?: FetchJobsOptions
+  fetchApi: (url: string) => Promise<Response>
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
   const { jobs } = await fetchJobsRaw(
     fetchApi,
     ['in_progress', 'pending'],
     200,
-    0,
-    options
+    0
   )
 
   const running = jobs.filter((j) => j.status === 'in_progress')
