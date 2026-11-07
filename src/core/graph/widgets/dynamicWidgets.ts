@@ -35,6 +35,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'
+import { findLast, findLastIndex } from '@/utils/arrayUtil'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -518,7 +519,7 @@ function addAutogrowGroup(
     groupName,
     node
   ).name
-  const lastIndex = node.inputs.findLastIndex((inp) =>
+  const lastIndex = findLastIndex(node.inputs, (inp) =>
     inp.name.startsWith(targetName)
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
@@ -548,7 +549,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const lastInput = node.inputs.findLast((inp) =>
+  const lastInput = findLast(node.inputs, (inp) =>
     inp.name.startsWith(groupName + '.')
   )
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)

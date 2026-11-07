@@ -22,6 +22,7 @@ import {
   isOpenAskPart,
   toAskOrNoticePart
 } from './agentMessageParts'
+import { findLast } from '@/utils/arrayUtil'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -544,7 +545,7 @@ function keepAuthoritativeAsk(
   isAskRetired: (askId: string) => boolean
 ): void {
   const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
-  const priorAvailableAskId = message.parts.findLast((part) => {
+  const priorAvailableAskId = findLast(message.parts, (part) => {
     const askId = askIdOf(part)
     return (
       isOpenAskPart(part) &&
