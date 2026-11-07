@@ -7,6 +7,7 @@ vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 describe('LGraphCanvas window blur', () => {
   let canvas: LGraphCanvas
+  let canvasWindow: Window
 
   beforeEach(() => {
     const canvasElement = document.createElement('canvas')
@@ -31,9 +32,12 @@ describe('LGraphCanvas window blur', () => {
       skip_render: true,
       skip_events: true
     })
+    canvasWindow = canvas.getCanvasWindow()
   })
 
   afterEach(() => {
+    canvas.unbindEvents()
+    canvas.linkConnector.reset()
     canvas.pointer.finally?.()
   })
 
@@ -42,20 +46,38 @@ describe('LGraphCanvas window blur', () => {
     canvas['_linkConnectorDrop']()
   }
 
+  function dispatchWindowBlur() {
+    canvasWindow.dispatchEvent(new Event('blur'))
+  }
+
   it('cancels an in-flight link drag when the window loses focus', () => {
+    canvas.bindEvents()
     startLinkDrag()
     expect(canvas.linkConnector.isConnecting).toBe(true)
 
-    canvas.processWindowBlur()
+    dispatchWindowBlur()
 
     expect(canvas.linkConnector.isConnecting).toBe(false)
   })
 
+  it('stops cancelling once the canvas unbinds its events', () => {
+    canvas.bindEvents()
+    canvas.unbindEvents()
+    startLinkDrag()
+
+    dispatchWindowBlur()
+
+    expect(canvas.linkConnector.isConnecting).toBe(true)
+  })
+
   it('does nothing when no link drag is active', () => {
-    expect(canvas.linkConnector.isConnecting).toBe(false)
+    const onReset = vi.fn()
+    canvas.linkConnector.events.addEventListener('reset', onReset)
+    canvas.bindEvents()
 
-    canvas.processWindowBlur()
+    dispatchWindowBlur()
 
+    expect(onReset).not.toHaveBeenCalled()
     expect(canvas.linkConnector.isConnecting).toBe(false)
   })
 })
