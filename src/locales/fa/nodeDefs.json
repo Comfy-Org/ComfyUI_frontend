@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "ویدیوی نهایی ۱۰۸۰p یک پیش‌نویس Seedance 2.5 را رندر می‌کند. نسخهٔ نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و از prompt، مراجع، مدت‌زمان، نسبت ابعاد و تنظیم صوتی آن دوباره استفاده می‌کند.",
+    "description": "ویدیوی نهایی ۱۰۸۰p یا ۴k یک پیش‌نویس Seedance 2.5 را رندر می‌کند. نسخهٔ نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و پرامپت، مراجع، مدت‌زمان، نسبت تصویر و تنظیم صدای آن را دوباره به کار می‌گیرد.",
     "display_name": "تبدیل پیش‌نویس ByteDance Seedance 2.5 به ویدیوی نهایی",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "خروجی draft_task_id از اجرای یک node ‏Seedance 2.5 با مدل Seedance 2.5 Draft، یا شناسهٔ وظیفهٔ پیش‌نویسِ جای‌گذاری‌شده. کنترل seed آن node را روی fixed تنظیم کنید؛ در غیر این صورت اجرای بعدی به‌جای استفادهٔ مجدد از پیش‌نویسی که بررسی کرده‌اید، پیش‌نویس جدیدی ایجاد می‌کند. پیش‌نویس را تا ۷ روز پس از ایجاد آن می‌توان رندر کرد."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی نهایی. ۴k فقط برای حساب‌های سازمانی در دسترس است."
       },
       "watermark": {
         "name": "واترمارک",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، ۴k برای حساب‌های سازمانی و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p یا ۴k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p یا ۴k به node «Seedance 2.5 Draft to Final Video» وصل کنید."
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، ۴k برای حساب‌های سازمانی و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p یا ۴k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، ۴k برای حساب‌های سازمانی و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p یا ۴k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p یا ۴k به node «Seedance 2.5 Draft to Final Video» وصل کنید."
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، ۴k برای حساب‌های سازمانی و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p یا ۴k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p یا ۴k به node «Seedance 2.5 Draft to Final Video» وصل کنید."
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک prompt متنی ویدئویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدئوهای مرجع ارائه دهید تا نتیجه هدایت یا ویرایش شود. طول موردنظر (۳-۱۰ ثانیه) را مستقیماً در prompt شرح دهید.",
+    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک پرامپت متنی ویدیویی همراه با صدا تولید می‌کند. می‌توانید به‌صورت اختیاری تصاویر و/یا ویدیوهای مرجع ارائه کنید تا نتیجه هدایت یا ویرایش شود. طول موردنظر را مستقیماً در پرامپت شرح دهید (۳-۱۵s برای Omni Flash 1.2، ۳-۱۰s برای مدل‌های قدیمی‌تر).",
     "display_name": "Google Gemini Omni (ویدئو)",
     "inputs": {
       "control_after_generate": {
@@ -10320,6 +10324,9 @@
       "model_aspect_ratio": {
         "name": "نسبت ابعاد"
       },
+      "model_audio": {
+        "name": "صدا"
+      },
       "model_prompt": {
         "name": "پرامپت"
       },
@@ -10337,7 +10344,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "یک ویدیو همراه با صدا و با استفاده از حداکثر ۱۰ فریم کلیدی تولید کنید. فریم‌های میانی با فاصله یکنواخت قرار می‌گیرند؛ ویدیو نسبت ابعاد نخستین فریم کلیدی را می‌گیرد.",
+    "description": "با حداکثر ۱۰ فریم کلیدی در kling-4.0، یا از یک فریم نخست در kling-4.0-flash، ویدیویی همراه با صدا تولید می‌کند. فاصلهٔ فریم‌های میانی یکسان است؛ ویدیو نسبت تصویر نخستین فریم کلیدی را می‌گیرد.",
     "display_name": "Kling 4.0 تصویر به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18757,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra low-max، GPT-6 Sol/Luna و GPT-5.6 none-max (بدون minimal)، GPT-5.5 none-xhigh، GPT-5.5 Pro medium-xhigh، GPT-5 minimal-high، و o-series low-high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "سطوح پشتیبانی‌شده بر اساس مدل متفاوت هستند. یک سطح پشتیبانی‌نشده اجرا را متوقف می‌کند و موارد معتبر را فهرست می‌کند. «default» اجازه می‌دهد مدل انتخاب کند."
       },
       "truncation": {
         "name": "truncation",
@@ -18857,7 +18864,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "تصویر GPT OpenAI 2.6",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18867,6 +18874,9 @@
       },
       "model_background": {
         "name": "background"
+      },
+      "model_complexity": {
+        "name": "پیچیدگی"
       },
       "model_custom_height": {
         "name": "custom_height"
@@ -19010,6 +19020,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تبدیل متن به تصویر، یا در صورت وجود تصاویر، ویرایش image_1 با استفاده از سایر تصاویر به‌عنوان مرجع. پرامپت به آن‌ها با عنوان <Picture 1>، <Picture 2>، ... اشاره می‌کند. مدل به ModelSamplingMiniMaxH3 با مقدار 1.0/1.0 نیاز دارد.",
+    "display_name": "شرطی‌سازی p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "۰ از ارتفاع image_1 پس از مقیاس‌بندی استفاده می‌کند، یا در نبود تصویر از ۲۹۱۲."
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "با تصاویر، عبارت کوتاه با «Edit <Picture 1>. » در ابتدای آن دریافت می‌شود؛ عبارتی که با «Edit <Picture» آغاز شود و یک دستور ویرایش از upsampler پرامپت، بدون تغییر استفاده می‌شوند."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE مربوط به p-h3-image که هنگام اتصال تصاویر لازم است."
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "۰ از عرض image_1 پس از مقیاس‌بندی استفاده می‌کند، یا در نبود تصویر از ۲۹۱۲."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19708,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، نسخهٔ پس‌آموزش‌دیدهٔ MiniMax H3 از Pika. ویدیو را با صدای همگام‌سازی‌شده و با راهنمایی تصاویر، ویدیوها و صداهای مرجع تولید یا ویرایش می‌کند.",
+    "display_name": "Pika H3 Flex مرجع به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto از یک ویدیوی مرجع پیروی می‌کند و در غیر این صورت از پرامپت. تصاویر مرجع بر آن تأثیری ندارند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "طول خروجی از یک شبکهٔ فریم پیروی می‌کند: ۵ ثانیه ۱۲۴ فریم می‌دهد، یعنی حدود ۵٫۱۷ ثانیه."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "به مراجع با @Image1، @Video1، @Audio1، یا با <Picture 1>، <Video 1>، <Audio 1> اشاره کنید."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حداکثر ۳ کلیپ که در prompt با @Audio1..@Audio3 به آن‌ها اشاره می‌شود. هرکدام ۲-۱۵ ثانیه و در مجموع ۱۵ ثانیه. هنگام کپی‌شدن در خروجی، کلیپ‌ها به‌ترتیب اتصال و پیش از صدای ویدیوهای متصل پخش می‌شوند، فارغ از شماره‌ای که prompt ذکر می‌کند."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حداکثر ۹ تصویر که در prompt، به‌ترتیب اتصال، با @Image1..@Image9 به آن‌ها اشاره می‌شود. دست‌کم یک تصویر یا ویدیو لازم است."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "صدای ویدیوهای متصل‌شده در خروجی کپی می‌شود. برای فضای صوتی جدید یا انتقال حرکت با موسیقی جدید، این گزینه را خاموش کنید. در این صورت، یک چهرهٔ در حال صحبت که در پرامپت دیالوگی ندارد، گفتار ابداعی دریافت می‌کند."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حداکثر ۳ ویدیو که در prompt، به‌ترتیب اتصال، با @Video1..@Video3 به آن‌ها اشاره می‌شود. هرکدام ۲-۱۵ ثانیه و در مجموع ۱۵ ثانیه. هزینه به‌ازای هر ثانیه محاسبه می‌شود."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "۱۰۸۰p و بالاتر در ۷۶۸p رندر و یک‌بار بزرگ‌نمایی می‌شوند. seed یکسان در ۴۸۰p ویدیوی متفاوتی می‌دهد."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "ابتدا به Pika اجازه دهید prompt را گسترش دهد. در این صورت، seed یکسان در هر اجرا ویدیوی متفاوتی می‌دهد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با خاموش بودن rewrite_prompt، seed یکسان ویدیو را دقیقاً تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، مدل MiniMax H3 پس‌آموزش‌دیدهٔ Pika. از متن و فریم‌های اول و آخر اختیاری، ویدیو با صدای همگام تولید کنید.",
+    "display_name": "ویدیوی Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto از نخستین فریم متصل پیروی می‌کند؛ در غیر این صورت، از prompt."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت",
+        "tooltip": "طول خروجی از یک شبکهٔ فریم پیروی می‌کند: ۵ ثانیه ۱۲۴ فریم می‌دهد، یعنی حدود ۵٫۱۷ ثانیه."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ۱۰۸۰p و بالاتر با ۷۶۸p رندر شده و یک‌بار ارتقا می‌یابد. seed یکسان در ۴۸۰p ویدیوی متفاوتی می‌دهد."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "ابتدا به Pika اجازه دهید prompt را گسترش دهد. در این صورت، seed یکسان در هر اجرا ویدیوی متفاوتی می‌دهد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با خاموش بودن rewrite_prompt، seed یکسان ویدیو را دقیقاً تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "با Pika، از توضیح متنی و متن ترانهٔ اختیاری موسیقی تولید کنید یا یک ترانه را کاور کنید.",
+    "display_name": "موسیقی Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "mode_duration": {
+        "name": "مدت"
+      },
+      "mode_lyrics": {
+        "name": "متن ترانه"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "با Pika، از یک توضیح متنی افکت صوتی تولید کنید.",
+    "display_name": "افکت صوتی Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "با Pika یک موسیقی متن همگام برای ویدئو تولید کنید. تصویر و مدت‌زمان حفظ می‌شوند؛ فقط صدا جایگزین می‌شود.",
+    "display_name": "موسیقی متن Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "صدا باید چه باشد: جلوه‌های صوتی، صدای محیط، موسیقی یا سبک. برای استخراج آن از تصویر، خالی بگذارید."
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "video": {
+        "name": "ویدئو",
+        "tooltip": "تا ۱۰ دقیقه."
       }
     },
     "outputs": {
@@ -21713,8 +21937,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "شرطی‌سازی و latent خالی برای ارتقای وضوح ویدئوی RelayVSR؛ با ۱ گام و cfg ۱ نمونه‌برداری کنید. فقط هر ۱۵مین فریم از مدل عبور می‌کند و VSR Decode همهٔ آن‌ها را بازیابی می‌کند.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "ویدئوی کم‌کیفیت با وضوح اصلی خود؛ مدل ضریب ارتقای وضوح را تعیین می‌کند."
+      },
+      "model": {
+        "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "یک مش با مثلث‌بندی یکنواخت را از طریق میدان فاصلهٔ باند باریک + کانتورینگ دوگانه، روی دستگاه محاسباتی فعال دوباره استخراج می‌کند. توپولوژی نامرتب / غیرمنیفلد / خودمتقاطع را نرمال‌سازی می‌کند؛ برای رسیدن به تعداد دقیق وجه، پیش از Decimate Mesh اجرا کنید. خروجی جوش‌خورده باقی می‌ماند.",
+    "description": "یک مش با مثلث‌بندی یکنواخت را از طریق میدان فاصلهٔ باندباریک + Dual Contouring، روی دستگاه محاسباتی فعال، دوباره استخراج می‌کند. توپولوژی نامرتب / غیرمنیفلد / خودمتقاطع را نرمال‌سازی می‌کند؛ برای رسیدن به تعداد دقیق وجه، پیش از Decimate Mesh اجرا کنید. خروجی همچنان جوش‌خورده باقی می‌ماند. مش‌هایی که از ۰٫۵۱ فراتر می‌روند یا گستره‌ای کمتر از ۰٫۵ دارند، ابتدا در مکعب [-0.5,0.5] برازش داده شده و سپس بازنگاشت می‌شوند.",
     "display_name": "مش‌بندی مجدد مش (DC باند باریک)",
     "inputs": {
       "band": {
@@ -24973,6 +25220,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "با استفاده از Sonilo Music ۱٫۵، از یک اعلان متنی آهنگی با آواز خوانده‌شده تولید کنید.",
+    "display_name": "Sonilo Music ۱٫۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "'auto' طول آهنگ را با متن ترانه متناسب می‌کند. طول سفارشی، متن ترانه‌ای را که جا نمی‌شود قطع می‌کند و متن‌های کوتاه را تکرار می‌کند."
+      },
+      "prompt": {
+        "name": "اعلان",
+        "tooltip": "آهنگ را توصیف کنید: ژانر، حال‌وهوا، سازها و آواز. برای تعیین کلمات، یک بلوک 'Lyrics:' با برچسب‌های [Verse] / [Chorus] اضافه کنید؛ در غیر این صورت، مدل متن ترانهٔ خود را می‌نویسد. حداکثر: ۲۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "تولید موسیقی از یک پرامپت متنی با استفاده از مدل هوش مصنوعی Sonilo. مدت زمان را روی ۰ قرار دهید تا مدل آن را از پرامپت تشخیص دهد.",
     "display_name": "تبدیل متن به موسیقی با Sonilo",
@@ -25052,6 +25325,10 @@
         "name": "افزایش وضوح رنگ",
         "tooltip": "بافت رأس را شفاف‌تر می‌کند: ۱.۰ = ترکیب فیزیکی صحیح؛ مقادیر بالاتر رنگ هر وکسل را به سمت غالب‌ترین gaussian متمایل می‌کند به جای میانگین‌گیری همسایه‌ها (تارشدگی بافت را کاهش می‌دهد). فقط رنگ - هندسه تغییر نمی‌کند."
       },
+      "fill": {
+        "name": "پرکردن",
+        "tooltip": "فقط در حالت توپر. هزینهٔ بستن یک بازشدگی در مقایسه با دنبال‌کردن سطح. مقدار کمتر بازشدگی‌های بزرگ‌تر را می‌بندد: حدود ۳ اشیای توخالی را می‌بندد، اما روی فنجان‌ها و یقه‌ها نیز درپوش می‌گذارد."
+      },
       "kernel": {
         "name": "هسته",
         "tooltip": "حداکثر نیم‌عرض splat در وکسل‌ها. هر gaussian روی پنجره‌ای به اندازه ۳-سیگمای خودش rasterize می‌شود که اینجا محدود شده است - surfelهای کوچک ارزان باقی می‌مانند، بزرگ‌ها قطع نمی‌شوند. اگر splatهای پراکنده باعث ایجاد فاصله شدند، مقدار را افزایش دهید."
@@ -25075,6 +25352,10 @@
       "smooth": {
         "name": "نرمی",
         "tooltip": "تعداد تکرارهای صاف‌سازی مش Taubin. سطح را بدون کوچک کردن (حفظ حجم) صاف می‌کند، برخلاف محو کردن چگالی. ۰ = سطح خام."
+      },
+      "solid": {
+        "name": "توپر",
+        "tooltip": "فضای داخلی را بر اساس جهت‌گیری گاوسی‌ها پر می‌کند تا یک سطح بستهٔ واحد ایجاد شود. خاموش: کانتور چگالی خام که یک دیوارهٔ داخلی پنهان را پشت سطح حفظ می‌کند."
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26094,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "با مدل Hy4 شرکت Tencent پاسخ‌های متنی تولید کنید. یک اعلان متنی و، به‌صورت اختیاری، یک یا چند تصویر برای زمینه ارائه کنید.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "اعلان"
+      },
+      "model_reasoning": {
+        "name": "استدلال"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "دما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -26421,7 +26737,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "تولید متن",
+    "display_name": "تولید متن (منسوخ‌شده)",
     "inputs": {
       "audio": {
         "name": "صدا"
@@ -26480,7 +26796,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
+        "tooltip": "فریم‌های ویدئو به‌صورت دستهٔ تصویر. نرخ آن ۲۴ FPS فرض می‌شود؛ درون‌برنامه‌ای به نرخ فریم مدل نمونه‌برداری کاهشی می‌شود."
       }
     },
     "outputs": {
@@ -26554,7 +26870,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
+        "tooltip": "فریم‌های ویدیو به‌صورت دسته‌ای از تصاویر. نرخ فریم ۲۴ FPS فرض می‌شود؛ به‌طور داخلی تا نرخ فریم مدل زیرنمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -26564,6 +26880,79 @@
       },
       "1": {
         "name": "تفکر",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "تولید متن",
+    "inputs": {
+      "audios": {
+        "name": "audios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی حدسی با head پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP تأثیری ندارد. auto عمق و پهنای پیش‌نویس را با تطبیق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا سازگار می‌کند؛ 2-5 یک عمق ثابت برای پیش‌نویس تعیین می‌کند؛ حالت‌های درختی هم پهنا و هم عمق را ثابت می‌کنند. خروجی نمونه‌برداری‌شده توزیع درست خود را حفظ می‌کند، اما برای seed یکسان با خروجی غیر MTP متفاوت است."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "system prompt را در قالب گفت‌وگوی مدل جایگزین می‌کند. وقتی قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "اگر مدل از آن پشتیبانی می‌کند، در حالت تفکر عمل کنید."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "اگر مدل دارای system prompt/قالب داخلی است، از آن استفاده کنید."
+      },
+      "videos": {
+        "name": "videos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -29083,6 +29472,31 @@
       },
       "steps": {
         "name": "گام‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "latentهای RelayVSR را با رمزگشای RelayVSR Flash، که فریم‌های کم‌کیفیت را نیز می‌خواند، رمزگشایی می‌کند.",
+    "display_name": "رمزگشایی VSR",
+    "inputs": {
+      "detail": {
+        "name": "جزئیات",
+        "tooltip": "میزان جزئیاتی که رمزگشا به بزرگ‌نمایی دوخطی هر فریم می‌افزاید و حفظ می‌شود؛ ۱ برابر با خروجی کامل مدل است."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "همان ویدیوی کم‌کیفیتی که به node شرطی‌سازی داده شده است."
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

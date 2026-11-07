@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "輸出 Seedance 2.5 草稿的 1080p 最終影片。最終影片會保留草稿的場景與動作，並重複使用其提示詞、參考資料、時長、長寬比與音訊設定。",
+    "description": "將 Seedance 2.5 草稿算繪為 1080p 或 4k 最終影片。最終影片會保留草稿的場景與動作，並重複使用其提示詞、參考資料、時長、長寬比及音訊設定。",
     "display_name": "ByteDance Seedance 2.5 草稿轉最終影片",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "使用 Seedance 2.5 Draft 模型執行之 Seedance 2.5 節點輸出的 draft_task_id，或貼上的草稿任務 ID。將該節點的種子控制設為固定；否則下次執行會產生新的草稿，而非重複使用您審閱過的草稿。草稿建立後可在 7 天內輸出。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "最終影片的解析度。4k 僅供企業帳戶使用。"
       },
       "watermark": {
         "name": "浮水印",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，企業帳戶可使用 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速取得 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點，以算繪 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，企業帳戶可使用 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速取得 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，企業帳戶可使用 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速取得 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點，以算繪 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，企業帳戶可使用 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速取得 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點，以算繪 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "使用 Google Gemini Omni Flash 模型，根據文字提示生成含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（3-10 秒）。",
+    "description": "使用 Google 的 Gemini Omni Flash 模型，根據文字提示詞生成附帶音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需時長（Omni Flash 1.2 為 3-15 秒，較舊模型為 3-10 秒）。",
     "display_name": "Google Gemini Omni（影片）",
     "inputs": {
       "control_after_generate": {
@@ -10320,6 +10324,9 @@
       "model_aspect_ratio": {
         "name": "長寬比"
       },
+      "model_audio": {
+        "name": "音訊"
+      },
       "model_prompt": {
         "name": "提示詞"
       },
@@ -10337,7 +10344,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "透過最多 10 個關鍵影格生成附帶音訊的影片。中間影格會等距排列；影片會採用第一個關鍵影格的長寬比。",
+    "description": "透過 kling-4.0 上最多 10 個關鍵影格生成附帶音訊的影片，或從 kling-4.0-flash 的首影格生成。中間影格會等距排列；影片採用第一個關鍵影格的長寬比。",
     "display_name": "Kling 4.0 影像轉影片",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18757,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交給模型。支援的等級依模型而異：GPT-6 Astra 為 low-max，GPT-6 Sol/Luna 和 GPT-5.6 為 none-max（不含 minimal），GPT-5.5 為 none-xhigh，GPT-5.5 Pro 為 medium-xhigh，GPT-5 為 minimal-high，o-series 為 low-high；GPT-4.1 沒有推理功能。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "支援的等級因模型而異。不支援的等級會停止執行並列出有效等級。'default' 會讓模型自行選擇。"
       },
       "truncation": {
         "name": "truncation",
@@ -18857,7 +18864,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "OpenAI GPT Image 2.6",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -18867,6 +18874,9 @@
       },
       "model_background": {
         "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雜度"
       },
       "model_custom_height": {
         "name": "自訂高度"
@@ -19010,6 +19020,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "文字轉圖片；若提供圖片，則編輯 image_1，其他圖片作為參考。提示詞會將它們稱為 <Picture 1>、<Picture 2>、……。模型需要將 ModelSamplingMiniMaxH3 設為 1.0/1.0。",
+    "display_name": "p-h3-image 條件設定",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "0 會使用縮放後 image_1 的高度；若沒有圖片則使用 2912。"
+      },
+      "images": {
+        "name": "圖片"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "有圖片時，會在簡短指令前加上「Edit <Picture 1>. 」；以「Edit <Picture」開頭的指令，以及來自提示詞升採樣器的編輯摘要，會維持原樣使用。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "p-h3-image VAE；連接圖片時需要此項。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "0 會使用縮放後 image_1 的寬度；若沒有圖片則使用 2912。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19708,183 @@
       },
       "positive": {
         "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex 是 Pika 後訓練的 MiniMax H3。根據參考圖片、影片與音訊的引導，生成或編輯具有同步音訊的影片。",
+    "display_name": "Pika H3 Flex 參考資料轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "auto 會依循參考影片，否則依循提示詞。參考圖片不會影響此設定。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "輸出長度遵循影格網格：5 秒會產生 124 個影格，約為 5.17 秒。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "將參考資料稱為 @Image1、@Video1、@Audio1，或 <Picture 1>、<Video 1>、<Audio 1>。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "最多 3 段音訊片段，在提示詞中稱為 @Audio1..@Audio3。每段 2 至 15 秒，總計 15 秒。複製到輸出時，無論提示詞指定哪個編號，片段都會依連線順序播放，並在已連線影片的聲音之前播放。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最多 9 張圖片，依連線順序在提示詞中稱為 @Image1..@Image9。至少需要一張圖片或一部影片。"
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "已連接影片的聲音會複製到輸出。若要產生新的環境音，或以新音樂進行動作轉移，請關閉此選項。若提示詞中沒有對白，說話中的人像會因此產生虛構的語音。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "最多 3 部影片，依連線順序在提示詞中稱為 @Video1..@Video3。每部 2 至 15 秒，總計 15 秒。按秒計費。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "1080p 及更高解析度會先以 768p 算繪，再升頻一次。相同 seed 在 480p 時會產生不同影片。"
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "先讓 Pika 擴寫提示詞。之後相同的種子每次執行都會產生不同的影片。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "關閉 rewrite_prompt 時，相同的種子會完全重現影片。使用相同種子在本機執行會得到不同結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex，Pika 經過後訓練的 MiniMax H3。根據文字以及選用的起始與結束影格，生成音畫同步的影片。",
+    "display_name": "Pika H3 Flex 影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto 會依照第一個已連線影格，否則依照提示詞。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "持續時間",
+        "tooltip": "輸出長度遵循影格網格：5 秒會產生 124 個影格，約為 5.17 秒。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "1080p 及以上會以 768p 算圖後再放大一次。相同種子在 480p 時會產生不同影片。"
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "先讓 Pika 擴寫提示詞。之後相同的種子每次執行都會產生不同的影片。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "關閉 rewrite_prompt 時，相同的種子會完全重現影片。使用相同種子在本機執行會得到不同結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "使用 Pika 根據文字描述及選用的歌詞生成音樂，或翻唱歌曲。",
+    "display_name": "Pika 音樂",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "mode_duration": {
+        "name": "持續時間"
+      },
+      "mode_lyrics": {
+        "name": "歌詞"
+      },
+      "mode_prompt": {
+        "name": "提示詞"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "使用 Pika 根據文字描述生成音效。",
+    "display_name": "Pika 音效",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "持續時間"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "使用 Pika 為影片生成同步配樂。畫面和長度會保留；僅替換音訊。",
+    "display_name": "Pika 配樂",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "音訊應呈現的內容：音效、環境音、音樂或風格。留空可從畫面推導。"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "最長 10 分鐘。"
       }
     },
     "outputs": {
@@ -21713,8 +21937,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "用於 RelayVSR 影片放大的 conditioning 與空 latent，於 cfg 1 時以 1 個步驟取樣。只有每第 15 個影格會通過模型，VSR Decode 會還原所有影格。",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "原生解析度的低品質影片；模型會決定放大倍率。"
+      },
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "透過窄帶距離場 + Dual Contouring，在目前使用的運算裝置上重新擷取均勻鑲嵌的網格。可正規化雜亂／非流形／自相交的拓撲；在 Decimate Mesh 前執行，可達到精確的面數。輸出會維持焊接狀態。",
+    "description": "在目前的運算裝置上，透過窄頻距離場 + Dual Contouring 重新擷取均勻鑲嵌的網格。將雜亂／非流形／自相交的拓撲正規化；請在 Decimate Mesh 前執行，以達到精確的面數。輸出會保持焊接狀態。超出 0.51 或跨度小於 0.5 的網格，會先擬合至 [-0.5,0.5] 立方體，再映射回原處。",
     "display_name": "重新網格化網格（窄帶 DC）",
     "inputs": {
       "band": {
@@ -24973,6 +25220,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "使用 Sonilo Music 1.5，根據文字提示生成含有人聲演唱的歌曲。",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "持續時間",
+        "tooltip": "「auto」會使歌曲長度配合歌詞。自訂長度會截斷無法容納的歌詞，並重複過短的歌詞。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述歌曲：曲風、氛圍、樂器和人聲。若要設定歌詞，請加入含有 [Verse]／[Chorus] 標籤的「Lyrics:」區塊；若未加入，模型會自行撰寫歌詞。上限：2000 個字元。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "使用 Sonilo 的 AI 模型，根據文字提示產生音樂。將時長設為 0 可讓模型自動從提示中推斷時長。",
     "display_name": "Sonilo 文字轉音樂",
@@ -25052,6 +25325,10 @@
         "name": "顏色銳化",
         "tooltip": "使頂點紋理更清晰：1.0 = 物理正確混合；更高則使每個體素的顏色偏向其主導高斯而非鄰近平均（減少紋理模糊）。僅影響顏色，不改變幾何。"
       },
+      "fill": {
+        "name": "填補",
+        "tooltip": "僅適用於實心模式。封閉開口相對於沿著表面的成本。數值越低，會封閉越大的開口：約為 3 時可封住中空物體，但也會為杯子和套環加上蓋子。"
+      },
       "kernel": {
         "name": "核心",
         "tooltip": "最大 splat 半寬（以體素為單位）。每個高斯會在以自身 3-sigma 為大小的視窗內光柵化，最大值由此設定——小的 surfel 保持高效，大的則不會被截斷。如稀疏 splat 出現空隙可提高此值。"
@@ -25075,6 +25352,10 @@
       "smooth": {
         "name": "平滑",
         "tooltip": "Taubin 網格平滑迭代次數。可平滑表面但不會縮小體積（與模糊密度不同）。0 = 原始表面。"
+      },
+      "solid": {
+        "name": "實心",
+        "tooltip": "根據高斯點的方向填滿內部，以形成單一封閉表面。關閉：使用原始密度輪廓，會在表面後方保留隱藏的內壁。"
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26094,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "使用 Tencent 的 Hy4 模型生成文字回應。提供文字提示，並可選擇提供一張或多張影像作為脈絡。",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning": {
+        "name": "推理"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：圖片轉模型（專業版）",
     "inputs": {
@@ -26421,7 +26737,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "生成文字（已棄用）",
     "inputs": {
       "audio": {
         "name": "音訊"
@@ -26480,7 +26796,7 @@
       },
       "video": {
         "name": "影片",
-        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
+        "tooltip": "作為影像批次的影片影格。假設為 24 FPS；內部會降採樣至模型的影格率。"
       }
     },
     "outputs": {
@@ -26554,7 +26870,7 @@
       },
       "video": {
         "name": "影片",
-        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
+        "tooltip": "作為影像批次的影片影格。假設為 24 FPS；內部會降採樣至模型的影格率。"
       }
     },
     "outputs": {
@@ -26564,6 +26880,79 @@
       },
       "1": {
         "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "產生文字",
+    "inputs": {
+      "audios": {
+        "name": "audios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用 checkpoint 的多詞元預測頭進行推測式解碼。沒有 MTP 權重時無效果。auto 會依據觀察到的詞元匹配情況與執行成本，自動調整草稿深度與廣度；2-5 會固定草稿深度；樹狀模式會同時固定廣度與深度。取樣輸出仍會維持正確的分布，但相同 seed 下的結果會與非 MTP 輸出不同。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。不使用預設範本時會忽略此項。"
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "若模型支援，則以思考模式運作。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "若模型具有內建的系統提示詞／範本，則使用它。"
+      },
+      "videos": {
+        "name": "videos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -29083,6 +29472,31 @@
       },
       "steps": {
         "name": "步驟數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "使用 RelayVSR Flash 解碼器解碼 RelayVSR 潛在空間資料；此解碼器也會讀取低品質影格。",
+    "display_name": "VSR 解碼",
+    "inputs": {
+      "detail": {
+        "name": "detail",
+        "tooltip": "決定保留多少由解碼器加入至每個影格雙三次插值放大結果的細節；1 代表完整模型輸出。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "提供給條件節點的相同低品質影片。"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

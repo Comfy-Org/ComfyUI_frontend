@@ -11,6 +11,86 @@
     },
     "shareTooltip": "Compartir flujo de trabajo"
   },
+  "addCreditsDialog": {
+    "amountError": {
+      "above_max": "La recarga máxima es de {amount}. Añade más con otra recarga.",
+      "below_min": "El mínimo es {amount}.",
+      "whole_dollars": "Solo se permiten dólares enteros."
+    },
+    "blocked": {
+      "action": "Abrir el proceso de pago",
+      "body": "Tu navegador bloqueó la nueva pestaña. Abre el proceso de pago para completar el pago.",
+      "title": "El proceso de pago no se abrió"
+    },
+    "checkoutFailed": {
+      "body": "No se realizó ningún cargo. Inténtalo de nuevo.",
+      "title": "No se pudo abrir el proceso de pago"
+    },
+    "close": "Cerrar",
+    "continue": "Continuar",
+    "credits": "{credits} créditos",
+    "creditsUnavailable": "— créditos",
+    "customAmountLabel": "O introduce un importe",
+    "messageSupport": "enviar un mensaje a soporte",
+    "needsVerification": {
+      "action": "Verificar pago",
+      "body": "Tu banco está esperando que lo confirmes. Verifícalo para completar esta recarga.",
+      "footer": "{amount}, sin verificar",
+      "title": "Tu pago de {amount} necesita verificación",
+      "titleNoAmount": "Tu pago necesita verificación"
+    },
+    "negativeBalance": "Tu saldo es de −{credits} créditos. Esta recarga cubre eso primero.",
+    "notAllowed": {
+      "body": "Consulta la configuración de facturación para saber por qué.",
+      "title": "No puedes añadir créditos ahora mismo"
+    },
+    "notVerified": {
+      "action": "Contactar con soporte",
+      "body": "Tu banco no lo confirmó. Inténtalo de nuevo más tarde o contacta con soporte.",
+      "footer": "Sin verificar",
+      "footerTitle": "Recarga de {amount}",
+      "title": "Tu pago de {amount} no se verificó",
+      "titleNoAmount": "Tu pago no se verificó"
+    },
+    "opened": {
+      "amount": "Importe",
+      "body": "Los créditos se añaden a este espacio de trabajo en cuanto se procese tu pago.",
+      "credits": "Créditos",
+      "reopen": "Volver a abrir el proceso de pago",
+      "title": "El proceso de pago se abrió en una nueva pestaña",
+      "titleBrowser": "El proceso de pago se abrió en tu navegador"
+    },
+    "opening": "Abriendo…",
+    "paidAtCheckout": "{amount}, pagado al finalizar la compra",
+    "planLine": {
+      "ended": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "free_runs": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo cuando se agoten tus ejecuciones gratuitas.",
+      "no_plan": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud."
+    },
+    "processing": {
+      "body": "No es necesario pagar de nuevo.",
+      "title": "Un pago de {amount} aún se está procesando",
+      "titleNoAmount": "Un pago aún se está procesando"
+    },
+    "purchasesPaused": {
+      "body": "Inténtalo de nuevo más tarde o {support}.",
+      "title": "La compra de créditos no está disponible ahora mismo"
+    },
+    "rateLimited": {
+      "body": "Inténtalo de nuevo dentro de {wait} o {support}.",
+      "bodyNoWait": "Inténtalo de nuevo más tarde o {support}.",
+      "title": "Has alcanzado por ahora el límite de recargas"
+    },
+    "title": "Añadir créditos",
+    "wait": {
+      "day": "un día",
+      "days": "{count} días",
+      "hour": "una hora",
+      "hours": "{count} horas",
+      "minute": "un minuto",
+      "minutes": "{count} minutos"
+    }
+  },
   "agent": {
     "addFromAssets": "Arrastra un recurso desde el panel de recursos",
     "addNodesFromGraph": "Menciona nodos del grafo",
@@ -48,6 +128,7 @@
     "backToPreviousChat": "Volver al chat anterior",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Este lienzo está vacío; no se agregó nada. Aún no hay nada que ejecutar, guardar ni exportar.",
+    "canvasNotReadyForSend": "El lienzo de esta pestaña aún no está listo, por lo que no se envió tu mensaje. Inténtalo de nuevo en un momento.",
     "changeWorkflowForChat": "Cambia el flujo de trabajo que el agente puede editar",
     "chatOptions": "Opciones de chat",
     "chooseWorkflow": "Elige un flujo de trabajo",
@@ -114,12 +195,14 @@
     "editRejected": {
       "generic": "Tu edición fue rechazada y no se guardó. Recarga el flujo de trabajo si el lienzo aún la muestra.",
       "genericPartial": "Tu edición fue rechazada y no se guardó, aunque sí se guardaron algunas ediciones anteriores. Recarga el flujo de trabajo si el lienzo sigue mostrando la parte rechazada.",
+      "overwritten": "Tu edición entró en conflicto con un cambio más reciente y no se guardó. El flujo de trabajo se actualizó para mostrar la versión guardada.",
       "targets": {
         "clear": "borrado del flujo de trabajo",
         "link": "enlace {id}",
         "node": "nodo {id}",
         "nodeField": "nodo {id} {field}"
       },
+      "unconfirmed": "No se pudo confirmar que tu edición se hubiera guardado. El flujo de trabajo se actualizó para mostrar la versión guardada.",
       "widgetWrite": "Se rechazó la edición del widget y no se guardó. El flujo de trabajo conserva el valor anterior; recarga el flujo de trabajo si el lienzo sigue mostrando el valor que escribiste.",
       "widgetWritePartial": "Se rechazó la edición del widget y no se guardó, aunque sí se guardaron algunas ediciones anteriores. El flujo de trabajo conserva el valor anterior; recarga el flujo de trabajo si el lienzo sigue mostrando el valor que escribiste.",
       "withReason": "{notice} Rechazado: {target} ({code})",
@@ -132,6 +215,19 @@
     "entryFailedReason": "ComfyUI no pudo iniciar el agente: {reason}",
     "entryStarting": "Iniciando el agente…",
     "entryStartingReason": "ComfyUI está iniciando el agente: {reason}",
+    "errorContext": {
+      "allLabel": "Todos los problemas",
+      "draftBlocked": "Primero envía o borra tu mensaje actual y luego pregunta al agente sobre estos errores.",
+      "problemCount": "{count} problema | {count} problemas",
+      "remove": "Quitar problema adjunto",
+      "workflowChanged": "El flujo de trabajo con estos errores ya no está abierto, así que no se adjuntó nada."
+    },
+    "extensionChange": {
+      "disabled": "Se desactivó el paquete de nodos {pack}",
+      "enabled": "Se activó el paquete de nodos {pack}",
+      "removed": "Se eliminó el paquete de nodos {pack}",
+      "restartHint": "Esto surtirá efecto después de reiniciar ComfyUI. Recarga esta página después del reinicio."
+    },
     "feedbackCaption": "Comparte tus comentarios",
     "focusNode": "Mostrar en el lienzo",
     "focusNodeLabel": "Mostrar {node} en el lienzo",
@@ -297,6 +393,7 @@
     "targetWorkflowUnavailable": "El workflow de destino ya no está disponible.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
+    "toolFailed": "{tool} falló",
     "toolFailedSkill": "No se pudo cargar {skill}",
     "toolForgettingPreference": "Olvidando una preferencia",
     "toolForgotPreference": "Olvidó una preferencia",
@@ -305,9 +402,14 @@
     "toolNotConfirmedOnCanvas": "{tool} — no confirmado en tu lienzo",
     "toolOpenedNewTab": "Abrió una pestaña nueva",
     "toolOpeningNewTab": "Abriendo una nueva pestaña",
+    "toolOutcomeUnknown": "{tool} — resultado desconocido",
+    "toolRemovedNodePack": "Se eliminó un paquete de nodos",
+    "toolRemovingNodePack": "Eliminando un paquete de nodos",
     "toolSavedPreference": "Guardó una preferencia",
     "toolSavingPreference": "Guardando una preferencia",
+    "toolSwitchedNodePack": "Se cambió un paquete de nodos",
     "toolSwitchedTabs": "Cambió de pestaña",
+    "toolSwitchingNodePack": "Cambiando un paquete de nodos",
     "toolSwitchingTabs": "Cambiando de pestaña",
     "typeToSearch": "escribe para buscar",
     "unavailableWorkflowReference": "{name} (no disponible)",
@@ -399,6 +501,7 @@
     "errorInvalidHost": "No se pudo resolver el nombre de host de la URL de origen.",
     "errorInvalidUrl": "Por favor, proporciona una URL.",
     "errorInvalidUrlFormat": "El formato de la URL no es válido. Por favor, revisa e inténtalo de nuevo.",
+    "errorLoadingModels": "No se pudieron cargar algunos modelos. Vuelve a abrir la biblioteca de modelos para intentarlo de nuevo.",
     "errorMetadataFetchFailed": "No se pudo obtener la información del archivo desde la fuente.",
     "errorModelTypeNotSupported": "Este tipo de modelo no es compatible",
     "errorNetworkError": "Ocurrió un error de red. Por favor, revisa tu conexión e inténtalo de nuevo.",
@@ -451,6 +554,7 @@
     "invalidFilename": "Nombre de archivo no válido",
     "invalidFilenameDetail": "No se pudo determinar el nombre de archivo del recurso. Por favor, inténtalo de nuevo.",
     "jobId": "ID de tarea",
+    "library": "Biblioteca",
     "listView": "Vista de lista",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
@@ -486,6 +590,7 @@
       "modelTypeCoreReadonly": "El tipo de modelo no se puede cambiar en core, mover el archivo aún no es compatible.",
       "modelTypeImmutableReadonly": "El tipo de modelo no se puede cambiar para un modelo de solo lectura.",
       "noAdditionalTags": "Sin etiquetas adicionales",
+      "saveFailed": "No se pudieron guardar los detalles del modelo. Inténtalo de nuevo.",
       "selectModelPrompt": "Selecciona un modelo para ver su información",
       "selectModelType": "Selecciona el tipo de modelo...",
       "source": "Fuente",
@@ -798,6 +903,7 @@
     "y": "Y"
   },
   "boundingBoxes": {
+    "boxCount": "{current} de {max} cuadro | {current} de {max} cuadros",
     "clearAll": "Borrar todo",
     "clickRegionToEdit": "Haz clic en una región para editarla.",
     "colors": "paleta_de_colores",
@@ -1236,13 +1342,18 @@
   "credits": {
     "accountInitialized": "Cuenta inicializada",
     "activity": "Actividad",
+    "addCreditsRefusal": {
+      "paymentPastDue": "Actualiza tu método de pago para añadir créditos.",
+      "topupPurchasesPaused": "La compra de créditos no está disponible en este momento. Inténtalo de nuevo más tarde.",
+      "unavailable": "Añadir créditos no está disponible para este espacio de trabajo en este momento."
+    },
     "added": "Añadido",
     "additionalInfo": "Información adicional",
     "api": "API",
     "apiPricing": "Precios de la API",
     "charge": "Cobro",
-    "credits": "Créditos",
     "creditUnit": "Crédito | Créditos",
+    "credits": "Créditos",
     "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
@@ -1901,6 +2012,13 @@
         "toastMessage": "El servidor se detuvo mientras ejecutaba este flujo de trabajo. Intenta de nuevo.",
         "toastTitle": "El servidor falló"
       },
+      "server_out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Este flujo de trabajo agotó la memoria del servidor. Prueba con un video más corto, menor resolución o un lote más pequeño y vuelve a ejecutarlo.",
+        "title": "Memoria agotada",
+        "toastMessage": "Este flujo de trabajo agotó la memoria del servidor. Prueba con un video más corto, menor resolución o un lote más pequeño y vuelve a ejecutarlo.",
+        "toastTitle": "Memoria agotada"
+      },
       "sign_in_required": {
         "itemLabel": "{nodeName}",
         "message": "Los nodos de socios requieren una cuenta de Comfy. Inicia sesión para continuar.",
@@ -2089,6 +2207,7 @@
     "workspaceChangedDuringExecution": "Tu espacio de trabajo activo cambió mientras se preparaba esta ejecución. Vuelve a ejecutar el flujo de trabajo para usar el espacio de trabajo actual."
   },
   "errorOverlay": {
+    "askAgent": "Preguntar al agente",
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
@@ -3747,6 +3866,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3974,12 +4094,15 @@
       "loading": "Cargando solicitud de autorización…",
       "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
       "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
+      "notYou": "¿No eres tú?",
       "permissionsHeader": "Permisos",
       "redirectNotice": "Serás redirigido a",
       "resourceFallback": "esta aplicación",
       "sessionError": "No se pudo establecer la sesión. Por favor, inténtalo de nuevo.",
       "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
+      "signedInAs": "Sesión iniciada como",
       "subtitle": "Inicia sesión en {resource} para continuar",
+      "switchAccount": "Cambiar de cuenta",
       "title": "{client} quiere acceder",
       "unverifiedBadge": "Nombre no verificado",
       "unverifiedNotice": "Este nombre fue proporcionado por quien registró esta aplicación. Después de continuar, tu navegador será enviado a {host}; asegúrate de reconocerlo.",
@@ -4243,6 +4366,9 @@
     "addFavorite": "Favorito",
     "addToDeploymentBuild": "Añade estos a la compilación de {deployment} en la Plataforma y, después, despliega una nueva versión.",
     "advancedInputs": "ENTRADAS AVANZADAS",
+    "askAgent": "Preguntar al agente",
+    "askAgentAbout": "Preguntar al agente sobre {title}",
+    "askAgentAboutAll": "Preguntar al agente sobre {count} problema | Preguntar al agente sobre los {count} problemas",
     "blockedLastRun": "Bloqueado en la última ejecución",
     "bypass": "Omitir",
     "collapse": "Colapsar",
@@ -5365,6 +5491,14 @@
     "saveYearly": "Ahorra 20%",
     "saveYearlyUpTo": "Ahorra hasta un 20%",
     "scheduledChangeNotice": "Tu plan cambia a {plan} el {date}.",
+    "signupPaymentRecovery": {
+      "body": "Completa el pago para iniciar tu plan.",
+      "contactSupport": "Contactar con soporte",
+      "finishPayment": "Completar el pago",
+      "title": "No se pudo procesar el pago de tu plan {plan}.",
+      "titleNoPlan": "No se pudo procesar el pago de tu plan.",
+      "unavailable": "No pudimos abrir la página de pago. Inténtalo de nuevo o contacta con soporte."
+    },
     "subscribe": "Suscribirse",
     "subscribeFailed": "No se pudo suscribir",
     "subscribeForMore": "Mejorar",
@@ -5746,11 +5880,11 @@
   },
   "videoConcat": {
     "clipLabel": "Clip {position}",
+    "clipSize": "el clip {position} mide {width} × {height}",
     "clips": "Clips",
     "mixedDimensions": "Tamaños mixtos",
+    "mixedDimensionsWarning": "Todos los clips deben coincidir con el clip {position} ({width} × {height}) para concatenarse: {clips}.",
     "noClips": "Conecta videos para previsualizarlos y ordenarlos",
-    "previewClips": "Clips",
-    "previewResult": "Última ejecución",
     "reorderHint": "Arrastra los clips o pulsa Alt + las teclas de flecha para reordenarlos; haz clic para saltar"
   },
   "videoEdit": {
@@ -5874,7 +6008,11 @@
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
-    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
+    "unreadableWorkflowMessage": "El archivo guardado de {name} está vacío o dañado, por lo que no se puede abrir. Puedes eliminarlo de tus flujos de trabajo.",
+    "unreadableWorkflowTitle": "No se puede abrir este flujo de trabajo",
+    "unsavedChangesLost": "Los cambios sin guardar de {name} dejaron de estar disponibles, por lo que el archivo guardado se mantuvo como estaba.",
+    "unsavedChangesLostTitle": "No se guardaron los cambios sin guardar"
   },
   "workspace": {
     "addedToNamedWorkspace": "Se te ha añadido a {workspaceName}",
@@ -5934,6 +6072,7 @@
         "localBody": "Te queda {credits} crédito. Añade créditos para seguir ejecutando nodos asociados. | Te quedan {credits} créditos. Añade créditos para seguir ejecutando nodos asociados.",
         "memberBody": "A este espacio de trabajo le queda {credits} crédito. Pide al propietario del espacio de trabajo que añada créditos antes de que se agoten. | A este espacio de trabajo le quedan {credits} créditos. Pide al propietario del espacio de trabajo que añada créditos antes de que se agoten.",
         "ownerBody": "A este espacio de trabajo le queda {credits} crédito. Añade créditos antes de que se agoten. | A este espacio de trabajo le quedan {credits} créditos. Añade créditos antes de que se agoten.",
+        "pausedBody": "Te queda {credits} crédito. La compra de créditos no está disponible en este momento. | Te quedan {credits} créditos. La compra de créditos no está disponible en este momento.",
         "personalBody": "Te queda {credits} crédito. Añade créditos antes de que se agoten. | Te quedan {credits} créditos. Añade créditos antes de que se agoten.",
         "title": "Quedan pocos créditos"
       },
@@ -5947,8 +6086,14 @@
         "pastDueBody": "Tu equipo ha usado todos sus créditos. Actualiza tu método de pago para añadir más.",
         "pastDueMemberBody": "Tu equipo ha usado todos sus créditos. Pide al propietario de tu espacio de trabajo que actualice el método de pago.",
         "pastDuePersonalBody": "Has usado todos tus créditos. Actualiza tu método de pago para añadir más.",
+        "pausedBody": "Tu equipo ha usado todos sus créditos. La compra de créditos no está disponible en este momento. Los créditos se reponen el {date}.",
+        "pausedBodyNoDate": "Tu equipo ha usado todos sus créditos. La compra de créditos no está disponible en este momento. Inténtalo de nuevo más tarde o ponte en contacto con soporte.",
+        "pausedPersonalBody": "Has usado todos tus créditos. La compra de créditos no está disponible en este momento. Los créditos se reponen el {date}.",
+        "pausedPersonalBodyNoDate": "Has usado todos tus créditos. La compra de créditos no está disponible en este momento. Inténtalo de nuevo más tarde o ponte en contacto con soporte.",
         "personalBody": "Has usado todos tus créditos. Añade más créditos o espera hasta que se repongan el {date}.",
         "personalBodyNoDate": "Has usado todos tus créditos. Añade más créditos.",
+        "refusedBody": "Tu equipo ha usado todos sus créditos.",
+        "refusedPersonalBody": "Has usado todos tus créditos.",
         "title": "Sin créditos"
       },
       "parked": {
@@ -5993,6 +6138,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Añadir método de pago",
           "manage": "Gestionar",
           "turnOn": "Activar",
           "updatePayment": "Actualizar pago"
@@ -6003,8 +6149,20 @@
         "limitTooltipNoDate": "Solo cuenta los cobros de recarga automática.",
         "maximumReached": "Se alcanzó el máximo mensual. Se restablece el {date}.",
         "maximumReachedNoDate": "Se alcanzó el máximo mensual.",
-        "member": "Los créditos se pueden recargar automáticamente cuando se agotan. Contacta con un propietario del espacio de trabajo para gestionarlo.",
-        "off": "Recarga créditos cuando tu saldo es bajo",
+        "member": "Los créditos pueden recargarse automáticamente cuando quedan pocos. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+        "memberStatus": {
+          "failed": "No se pudo procesar la última recarga. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "limitReached": "Se alcanzó el límite mensual. Se restablece el {date}. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "limitReachedNoDate": "Se alcanzó el límite mensual. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "maximumReached": "Se alcanzó el máximo mensual. Se restablece el {date}. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "maximumReachedNoDate": "Se alcanzó el máximo mensual. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "on": "Recarga hasta {target} créditos cuando hay menos de {threshold} créditos. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "onHold": "Necesita un método de pago predeterminado. Contacta con un propietario del espacio de trabajo para gestionarlo.",
+          "turnedOff": "Se desactivó después de 3 cargos rechazados. Contacta con un propietario del espacio de trabajo para gestionarlo."
+        },
+        "noDefaultPaymentMethod": "La recarga automática necesita un método de pago predeterminado. Configura uno para activarla.",
+        "noPaymentMethod": "La recarga automática necesita un método de pago. Añade uno para activarla.",
+        "off": "Recarga créditos cuando tu saldo es bajo.",
         "onHold": "No hay un método de pago predeterminado. Configura uno para reanudar la recarga automática.",
         "paused": "Se alcanzó el límite mensual. Se reanuda el {date}.",
         "pausedByRemainder": "La próxima recarga superaría tu límite mensual. Se reanuda el {date}.",
@@ -6032,13 +6190,13 @@
         "overdrawn": "Tus ejecuciones usaron {count} crédito más del que tenías. | Tus ejecuciones usaron {count} créditos más de los que tenías.",
         "plan": "Plan",
         "planOfPool": "{remaining} de {total}",
-        "planTooltip": "Créditos incluidos con tu plan. Se reponen en cada período de facturación.",
+        "planTooltip": "Los créditos del plan se gastan antes que los créditos de recarga.",
         "planUsed": "{percent}% usado",
-        "rateInfo": "Acerca de los créditos",
-        "rateTooltip": "Los créditos pagan las ejecuciones. {credits} créditos = $1.",
         "title": "Créditos",
+        "tooltip": "Los créditos funcionan en Comfy Cloud, ComfyUI y Comfy API.",
+        "tooltipLabel": "Acerca de los créditos",
         "topUp": "Recarga",
-        "topUpTooltip": "Créditos que añadiste. Se usan una vez que se agotan los créditos del plan.",
+        "topUpTooltip": "Se usan después de que se agoten los créditos del plan.",
         "unavailable": "No se pudo cargar tu saldo."
       },
       "footer": {
@@ -6366,7 +6524,7 @@
     "createWorkspace": "Crear nuevo espacio de trabajo",
     "failedToSwitch": "No se pudo cambiar el espacio de trabajo",
     "managedByOrganization": "Tu organización administra tus espacios de trabajo, por lo que no puedes crear uno.",
-    "maxWorkspacesReached": "Solo puedes ser propietario de {max} espacios de trabajo. Elimina uno para crear uno nuevo.",
+    "maxWorkspacesReached": "Solo puedes tener {max} espacio de trabajo. Elimínalo para crear uno nuevo. | Solo puedes tener {max} espacios de trabajo. Elimina uno para crear uno nuevo.",
     "personal": "Personal",
     "roleMember": "Miembro",
     "roleOwner": "Propietario",
