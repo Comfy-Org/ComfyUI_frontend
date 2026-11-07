@@ -84,6 +84,7 @@ const actions = vi.mockObject<
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -127,6 +128,7 @@ const actions = vi.mockObject<
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }
@@ -272,6 +274,12 @@ export const app = {
   get isGraphReady() {
     return state().rootGraph.value !== undefined
   },
+  createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+  activateRootGraph: vi.fn((graph: LGraph) => {
+    state().rootGraph.value = graph
+    state().canvas.setGraph(graph)
+  }),
   get nodeOutputs() {
     return state().nodeOutputs
   },
