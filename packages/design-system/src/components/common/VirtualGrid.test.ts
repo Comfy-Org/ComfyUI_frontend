@@ -352,3 +352,146 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     expect(renderedNames().length).toBeGreaterThan(0)
   })
 })
+
+const FULL_PAGE_SCROLL_HEIGHT = 4_000
+const VIEWPORT_HEIGHT = 400
+
+function isGridScroller(element: HTMLElement): boolean {
+  return element.classList.contains('overflow-y-auto')
+}
+
+function visibleEntry(target: Element): IntersectionObserverEntry {
+  const bounds = target.getBoundingClientRect()
+  return {
+    boundingClientRect: bounds,
+    intersectionRatio: 1,
+    intersectionRect: bounds,
+    isIntersecting: true,
+    rootBounds: null,
+    target,
+    time: 0
+  }
+}
+
+class ImmediateVisibilityObserver implements IntersectionObserver {
+  readonly root: Element | Document | null = null
+  readonly rootMargin = ''
+  readonly scrollMargin = ''
+  readonly thresholds: readonly number[] = [0]
+
+  constructor(private readonly callback: IntersectionObserverCallback) {}
+
+  observe(target: Element): void {
+    this.callback([visibleEntry(target)], this)
+  }
+
+  unobserve(): void {}
+
+  disconnect(): void {}
+
+  takeRecords(): IntersectionObserverEntry[] {
+    return []
+  }
+}
+
+describe('VirtualGrid loading more when the rendered list shrinks', () => {
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '1rem'
+  }
+  let scrollHeight = FULL_PAGE_SCROLL_HEIGHT
+
+  beforeEach(() => {
+    scrollHeight = FULL_PAGE_SCROLL_HEIGHT
+    mockedWidth.value = VIEWPORT_HEIGHT
+    mockedHeight.value = VIEWPORT_HEIGHT
+    vi.stubGlobal('IntersectionObserver', ImmediateVisibilityObserver)
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return isGridScroller(this) ? VIEWPORT_HEIGHT : 0
+      }
+    )
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return isGridScroller(this) ? scrollHeight : 0
+      }
+    )
+  })
+
+  it.for([
+    {
+      behavior: 'requests the next page when a search leaves the grid empty',
+      canLoadMore: true,
+      nextCount: 0,
+      nextScrollHeight: 0,
+      calls: 1
+    },
+    {
+      behavior:
+        'requests the next page when one result no longer fills the grid',
+      canLoadMore: true,
+      nextCount: 1,
+      nextScrollHeight: 80,
+      calls: 1
+    },
+    {
+      behavior:
+        'does not request a page when the grid shrinks and nothing more exists',
+      canLoadMore: false,
+      nextCount: 0,
+      nextScrollHeight: 0,
+      calls: 0
+    },
+    {
+      behavior:
+        'does not request a page when the filtered grid still fills the viewport',
+      canLoadMore: true,
+      nextCount: 40,
+      nextScrollHeight: FULL_PAGE_SCROLL_HEIGHT,
+      calls: 0
+    },
+    {
+      behavior:
+        'requests the next page when multiple rows still do not fill the viewport',
+      canLoadMore: true,
+      nextCount: 6,
+      nextScrollHeight: 200,
+      calls: 1
+    }
+  ])(
+    '$behavior',
+    async ({ canLoadMore, nextCount, nextScrollHeight, calls }) => {
+      const onLoadMore = vi.fn()
+      const { rerender } = render(VirtualGrid, {
+        props: {
+          items: createItems(100),
+          gridStyle,
+          defaultItemHeight: 100,
+          defaultItemWidth: 100,
+          bufferRows: 0,
+          maxColumns: 4,
+          canLoadMore,
+          onLoadMore
+        },
+        slots: {
+          item: `<template #item="{ item }">
+            <div>{{ item.name }}</div>
+          </template>`
+        },
+        container: document.body.appendChild(document.createElement('div'))
+      })
+
+      await nextTick()
+      await nextTick()
+      expect(onLoadMore).not.toHaveBeenCalled()
+
+      scrollHeight = nextScrollHeight
+      await rerender({ items: createItems(nextCount) })
+      await nextTick()
+      await nextTick()
+
+      expect(onLoadMore).toHaveBeenCalledTimes(calls)
+    }
+  )
+})
