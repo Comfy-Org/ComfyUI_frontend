@@ -2,17 +2,23 @@ import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
+import { isSupportedModelFilename } from '@/extensions/core/load3d/supportedModelFile'
 import { t } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IStringWidget } from '@comfyorg/graph-model/widgets'
+import type { IComboWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { CustomInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { CustomComfyWidgetConstructor } from '@/types/comfy'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { addToComboValues } from '@/utils/litegraphUtil'
 import { CAMERA_ANGLE_VIEW_WIDGET_NAME } from '@comfyorg/viewport3d/cameraAngle/types'
 import type { CameraAngleViewMode } from '@comfyorg/viewport3d/cameraAngle/types'
 import {
@@ -43,21 +49,23 @@ const VIEWPORT_STATE_NODES = new Set([
   'SavePointCloud'
 ])
 
+function recordModelChange() {
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+}
+
 function resourceSubfolder(node: LGraphNode) {
   const resourceFolder = String(node.properties['Resource Folder'] ?? '').trim()
   return resourceFolder ? `3d/${resourceFolder}` : '3d'
 }
 
-async function handleModelUpload(files: FileList, node: LGraphNode) {
-  if (!files.length) return
-
+async function handleModelUpload(file: File, node: LGraphNode) {
   const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
     | IStringWidget
     | undefined
 
   try {
     const uploadPath = await Load3dUtils.uploadFile(
-      files[0],
+      file,
       resourceSubfolder(node)
     )
 
@@ -90,6 +98,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       }
 
       modelWidget.value = uploadPath
+      recordModelChange()
     }
 
     markLoad3dSceneDirty(node)
@@ -118,7 +127,10 @@ async function clearModel(node: LGraphNode) {
     const { markLoad3dSceneDirty } =
       await import('@/extensions/core/load3d/composables/useLoad3d')
     const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-    if (modelWidget) modelWidget.value = LOAD3D_NONE_MODEL
+    if (modelWidget) {
+      modelWidget.value = LOAD3D_NONE_MODEL
+      recordModelChange()
+    }
     markLoad3dSceneDirty(node)
   } catch (error) {
     reportError(error, {
@@ -126,6 +138,45 @@ async function clearModel(node: LGraphNode) {
       surface: 'graph'
     })
   }
+}
+
+async function selectModelAsset(item: ResultItem, node: LGraphNode) {
+  if (!isSupportedModelFilename(item.filename ?? '')) {
+    useToast().warning(t('load3d.unsupportedFileType'))
+    return
+  }
+
+  const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
+    | IComboWidget
+    | undefined
+  if (!modelWidget) return
+
+  const modelPath = createAnnotatedPath(item)
+  addToComboValues(modelWidget, modelPath)
+  modelWidget.value = modelPath
+  recordModelChange()
+
+  try {
+    const { markLoad3dSceneDirty } =
+      await import('@/extensions/core/load3d/composables/useLoad3d')
+    markLoad3dSceneDirty(node)
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_loading_3d_extensions',
+      surface: 'graph'
+    })
+  }
+}
+
+function addModelDragAndDrop(node: LGraphNode) {
+  useNodeDragAndDrop(node, {
+    fileFilter: (file) => isSupportedModelFilename(file.name),
+    onDrop: async ([file]) => {
+      await handleModelUpload(file, node)
+      return [file]
+    },
+    onResultItemDrop: (item) => selectModelAsset(item, node)
+  })
 }
 
 function createFileInput(accept: string, multiple: boolean): HTMLInputElement {
@@ -141,7 +192,8 @@ function addModelFileButtons(node: LGraphNode) {
   const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
   node.properties['Resource Folder'] = ''
   fileInput.onchange = async () => {
-    await handleModelUpload(fileInput.files!, node)
+    const file = fileInput.files?.item(0)
+    if (file) await handleModelUpload(file, node)
   }
   node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
     fileInput.click()
@@ -192,8 +244,10 @@ export const load3dWidgets: Record<string, CustomComfyWidgetConstructor> = {
       comfyClass && VIEWPORT_STATE_NODES.has(comfyClass)
         ? 'viewport_state'
         : 'image'
-    if (node.widgets?.some((w) => w.name === 'model_file'))
+    if (node.widgets?.some((w) => w.name === 'model_file')) {
       addModelFileButtons(node)
+      addModelDragAndDrop(node)
+    }
     return addViewportWidget(
       node,
       Load3D,
@@ -212,6 +266,7 @@ export const load3dWidgets: Record<string, CustomComfyWidgetConstructor> = {
   },
 
   LOAD_3D_ADVANCED(node) {
+    addModelDragAndDrop(node)
     return addViewportWidget(
       node,
       Load3DAdvanced,
