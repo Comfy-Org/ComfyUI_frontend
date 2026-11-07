@@ -188,6 +188,7 @@ const TELEMETRY_EVENT_SET = new Set<string>([
 interface QueuedEvent {
   eventName: TelemetryEventName
   properties?: TelemetryEventProperties
+  onRejected?: () => void
 }
 
 interface DesktopEntryProps {
@@ -330,14 +331,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
-        this.posthog.capture(event.eventName, event.properties || {})
+        if (!this.posthog.capture(event.eventName, event.properties || {}))
+          event.onRejected?.()
       } catch (error) {
+        event.onRejected?.()
         console.error('Failed to track queued PostHog event:', error)
       }
     }
   }
 
-  private enqueueEvent(event: QueuedEvent): void {
+  private enqueueEvent(event: QueuedEvent): boolean {
     if (this.eventQueue.length >= MAX_PRE_INIT_QUEUED_EVENTS) {
       if (!this.didWarnEventQueueFull) {
         console.warn(
@@ -345,10 +348,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         )
         this.didWarnEventQueueFull = true
       }
-      return
+      return false
     }
 
     this.eventQueue.push(event)
+    return true
   }
 
   private flushPendingFirstAuthAt(): void {
@@ -400,21 +404,24 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   private captureRaw(
     eventName: TelemetryEventName,
-    properties?: Record<string, unknown>
-  ): void {
-    if (!this.isEnabled) return
-    if (this.disabledEvents.has(eventName)) return
+    properties?: Record<string, unknown>,
+    onRejected?: () => void
+  ): boolean {
+    if (!this.isEnabled) return false
+    if (this.disabledEvents.has(eventName)) return false
 
     if (this.isInitialized && this.posthog) {
       try {
-        this.posthog.capture(eventName, properties || {})
+        return this.posthog.capture(eventName, properties || {}) !== undefined
       } catch (error) {
         console.error('Failed to track PostHog event:', error)
+        return false
       }
     } else {
-      this.enqueueEvent({
+      return this.enqueueEvent({
         eventName,
-        properties
+        properties,
+        onRejected
       })
     }
   }
@@ -927,14 +934,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       return
     const enrollment = JSON.stringify([metadata.group_key, metadata.variant])
     if (this.proactiveEnrollments.has(enrollment)) return
-    this.proactiveEnrollments.add(enrollment)
-    this.captureRaw(TelemetryEvents.EXPERIMENT_EXPOSURE, {
-      ...proactiveGreetingProperties(metadata),
-      $feature_flag: PROACTIVE_GREETING_FLAG,
-      $feature_flag_response: metadata.variant,
-      proactive_greeting_enrollment: true,
-      canvas_state: metadata.canvas_state
-    })
+    const accepted = this.captureRaw(
+      TelemetryEvents.EXPERIMENT_EXPOSURE,
+      {
+        ...proactiveGreetingProperties(metadata),
+        $feature_flag: PROACTIVE_GREETING_FLAG,
+        $feature_flag_response: metadata.variant,
+        proactive_greeting_enrollment: true,
+        canvas_state: metadata.canvas_state
+      },
+      () => this.proactiveEnrollments.delete(enrollment)
+    )
+    if (accepted) this.proactiveEnrollments.add(enrollment)
   }
 
   trackAgentStarterPromptClicked(

@@ -1,5 +1,8 @@
 import type { AgentUsageStatusResponse } from '@comfyorg/ingest-types'
-import type { ProactiveGreetingEnrolledMetadata } from '@comfyorg/telemetry/types'
+import type {
+  ProactiveGreetingEnrolledMetadata,
+  ProactiveGreetingTelemetryContext
+} from '@comfyorg/telemetry/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
@@ -28,6 +31,10 @@ interface Options {
 
 export function useProactiveGreeting(options: Options) {
   const state = shallowRef<UsageState>({ status: 'unknown' })
+  const enrollment = shallowRef<{
+    scope: string
+    telemetry: ProactiveGreetingTelemetryContext
+  }>()
   const scope = computed(() => {
     const identity = options.identity()
     return identity.userId && identity.workspaceId
@@ -91,8 +98,10 @@ export function useProactiveGreeting(options: Options) {
         scope: currentScope
       }
       const telemetry = assignment.value?.telemetry
-      if (!result.has_used_agent && telemetry)
-        options.onEnrolled?.({ ...telemetry, canvas_state: options.canvas() })
+      if (!result.has_used_agent && telemetry && options.onEnrolled) {
+        options.onEnrolled({ ...telemetry, canvas_state: options.canvas() })
+        enrollment.value = { scope: currentScope, telemetry: { ...telemetry } }
+      }
     } catch (error) {
       if (isStale()) return
       state.value = { status: 'unknown' }
@@ -128,6 +137,15 @@ export function useProactiveGreeting(options: Options) {
       return
     return { variant: assignment.value.variant, canvas: options.canvas() }
   })
-  const attribution = computed(() => assignment.value?.telemetry)
+  const attribution = computed(() => {
+    const enrolled = enrollment.value
+    const current = assignment.value?.telemetry
+    if (
+      enrolled?.scope === scope.value &&
+      current?.group_key === enrolled.telemetry.group_key &&
+      current.variant === enrolled.telemetry.variant
+    )
+      return enrolled.telemetry
+  })
   return { greeting, scope, attribution, refresh, accepted }
 }

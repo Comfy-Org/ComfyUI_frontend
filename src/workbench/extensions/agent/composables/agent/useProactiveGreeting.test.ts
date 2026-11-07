@@ -85,6 +85,7 @@ describe('first-use qualification', () => {
       state.getUsageStatus.mockReturnValue(pending.promise)
       state.assignment.value = { ...assigned, variant, telemetry }
       expect(state.onEnrolled).not.toHaveBeenCalled()
+      expect(state.attribution.value).toBeUndefined()
       pending.resolve({ has_used_agent: false })
       await nextTick()
       expect(state.onEnrolled).toHaveBeenCalledExactlyOnceWith({
@@ -92,6 +93,18 @@ describe('first-use qualification', () => {
         canvas_state: 'empty'
       })
       expect(state.attribution.value).toEqual(telemetry)
+      state.active.value = false
+      expect(state.attribution.value).toEqual(telemetry)
+      state.getUsageStatus.mockResolvedValue({ has_used_agent: true })
+      state.active.value = true
+      await nextTick()
+      expect(state.attribution.value).toEqual(telemetry)
+      state.accepted(state.scope.value)
+      await state.refresh()
+      state.active.value = false
+      expect(state.greeting.value).toBeUndefined()
+      expect(state.attribution.value).toEqual(telemetry)
+      expect(state.onEnrolled).toHaveBeenCalledTimes(1)
       state.identity.value = {
         userId: 'another-user',
         workspaceId: assigned.workspaceId
@@ -112,6 +125,7 @@ describe('first-use qualification', () => {
     state.assignment.value = { ...assigned, telemetry }
     await nextTick()
     expect(state.onEnrolled).not.toHaveBeenCalled()
+    expect(state.attribution.value).toBeUndefined()
     const pending = deferred<AgentUsageStatusResponse>()
     state.identity.value = {
       userId: assigned.userId,
@@ -132,6 +146,28 @@ describe('first-use qualification', () => {
     await nextTick()
     expect(state.onEnrolled).not.toHaveBeenCalled()
   })
+  it('does not carry prior enrollment attribution into a different arm on the same pair', async () => {
+    const state = setup()
+    const telemetry = {
+      user_id: assigned.userId,
+      workspace_id: assigned.workspaceId,
+      group_key: JSON.stringify([assigned.userId, assigned.workspaceId]),
+      variant: 'generic' as const
+    }
+    state.getUsageStatus.mockResolvedValue({ has_used_agent: false })
+    state.assignment.value = { ...assigned, telemetry }
+    await nextTick()
+    expect(state.attribution.value).toEqual(telemetry)
+    state.accepted(state.scope.value)
+    state.assignment.value = {
+      ...assigned,
+      variant: 'D',
+      telemetry: { ...telemetry, variant: 'canvas-only' }
+    }
+    expect(state.attribution.value).toBeUndefined()
+    expect(state.onEnrolled).toHaveBeenCalledTimes(1)
+  })
+
   it('stays inactive without a matching assignment and qualifies only after a successful query', async () => {
     const state = setup()
     expect(state.getUsageStatus).not.toHaveBeenCalled()
@@ -239,6 +275,7 @@ describe('first-use qualification', () => {
     expect(state.greeting.value).toBeUndefined()
     expect(state.getUsageStatus).toHaveBeenCalledTimes(1)
     expect(state.onEnrolled).not.toHaveBeenCalled()
+    expect(state.attribution.value).toBeUndefined()
   })
 
   it('discards a closed-panel response and queries again on reopening', async () => {
