@@ -2228,7 +2228,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (newGraph === graph) return
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
-    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+    this.cancelGhostPlacement()
 
     releaseCanvasSelection(this)
     clearLinkSelection(this)
@@ -4063,7 +4063,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
     // Cancel any in-flight ghost so we don't leak its listeners
-    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+    this.cancelGhostPlacement()
 
     this.emitBeforeChange()
     this.graph?.beforeChange()
@@ -4121,6 +4121,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Finalizes ghost placement mode.
    * @param cancelled If true, the node is removed; otherwise it's placed
    */
+  /** Cancels the in-flight ghost placement, if any. */
+  cancelGhostPlacement(): void {
+    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+  }
+
   finalizeGhostPlacement(cancelled: boolean): void {
     const ownedGhostState =
       this._ghostPointerHandler != null || this._ghostKeyHandler != null
