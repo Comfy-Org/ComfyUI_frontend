@@ -15,6 +15,7 @@ const workflowSchema = z.object({
       needs: z.union([z.string(), z.array(z.string())]).optional(),
       if: z.string().optional(),
       uses: z.string().optional(),
+      strategy: z.object({ matrix: z.unknown() }).optional(),
       steps: z
         .array(
           z.object({
@@ -339,6 +340,77 @@ describe('candidate prerequisites', () => {
           [job]: status
         })
       ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['a skipped chromium suite', 'false', {}, 1],
+    ['a skipped chromium suite', 'true', {}, 0],
+    ['a failing chromium suite', 'true', { SHARDED: 'failure' }, 1],
+    ['a failing cloud suite', 'true', { CLOUD: 'failure' }, 1],
+    ['a cancelled cloud suite', 'true', { CLOUD: 'cancelled' }, 1],
+    ['a skipped cloud suite', 'true', { CLOUD: 'skipped' }, 1],
+    ['a skipped browser matrix', 'true', { BROWSERS: 'skipped' }, 1]
+  ] satisfies [string, string, Record<string, string>, number][])(
+    'E2E status with %s (release push %s, %j) exits %s',
+    ([_name, releasePush, overrides, expected]) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          RELEASE_PUSH: releasePush,
+          SHARDED: 'skipped',
+          CLOUD: 'success',
+          BROWSERS: 'success',
+          ...overrides
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['playwright-tests-chromium-sharded', true],
+    ['upload-e2e-coverage', true],
+    ['playwright-tests', false],
+    ['playwright-tests-cloud-sharded', false],
+    ['merge-reports', false],
+    ['setup', false]
+  ] satisfies [string, boolean][])(
+    '%s is skipped on release pushes: %s',
+    ([job, skipped]) => {
+      const condition = pipeline.jobs[job].if ?? ''
+      expect(
+        condition.includes("needs.changes.outputs.is-release-push != 'true'")
+      ).toBe(skipped)
+      expect(condition.includes('is-release-push')).toBe(skipped)
+    }
+  )
+
+  it.for([
+    ['playwright-tests', 'browser', ['mobile-safari']],
+    ['merge-reports', 'project', ['cloud']]
+  ] satisfies [string, string, string[]][])(
+    '%s keeps only its cloud %s entries on release pushes',
+    ([job, key, cloudEntries]) => {
+      const matrix = z
+        .record(z.string(), z.unknown())
+        .parse(pipeline.jobs[job].strategy?.matrix)
+      const entries = z.array(z.string()).parse(matrix[key])
+      const exclude = z
+        .string()
+        .regex(
+          /^\$\{\{ fromJSON\(needs\.changes\.outputs\.is-release-push == 'true' && '(.*)' \|\| '\[\]'\) \}\}$/
+        )
+        .parse(matrix.exclude)
+        .match(/&& '(.*)' \|\|/)?.[1]
+      const excluded = z
+        .array(z.record(z.string(), z.string()))
+        .parse(JSON.parse(exclude ?? 'null'))
+        .map((entry) => entry[key])
+      expect(entries.filter((entry) => !excluded.includes(entry))).toEqual(
+        cloudEntries
+      )
     }
   )
 
