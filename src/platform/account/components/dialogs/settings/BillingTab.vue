@@ -106,9 +106,22 @@
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
-      <BillingAutoTopUpMemberCard
+      <BillingAutoTopUpCard
+        v-if="autoTopUpSection.kind === 'card'"
+        :state="autoTopUpCardState"
+        :off-view="autoTopUpOffView"
+        :setup="autoTopUpSetup"
+        :copy="autoTopUpCardCopy"
+        :locale
+        :action-href="autoTopUpHref"
+        @action="trackAutoTopUp"
+        @retry="retryAutoTopUp"
+      />
+      <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
+        :copy="autoTopUpMemberCopy"
+        :view="capabilities.autoTopUpMemberView.value"
+        :locale
       />
     </section>
 
@@ -208,8 +221,6 @@ import BillingPausedBanner from '@/platform/billing/components/billingTab/Billin
 import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
-import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
-import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   addCreditsAvailability,
@@ -221,6 +232,8 @@ import {
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
 import {
+  BillingAutoTopUpCard,
+  BillingAutoTopUpMemberBlock,
   BillingCreditsCard,
   BillingPlanRow,
   suppressesCreditBanners
@@ -235,6 +248,8 @@ import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupC
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
+import { useAutoTopUpCardSection } from '@/platform/billing/composables/useAutoTopUpCardSection'
+import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -301,6 +316,18 @@ const autoTopUpSection = computed(() =>
       capabilities.canViewAutoTopUpMemberNotice.value
   })
 )
+const {
+  state: autoTopUpCardState,
+  offView: autoTopUpOffView,
+  setup: autoTopUpSetup,
+  copy: autoTopUpCardCopy,
+  href: autoTopUpHref,
+  track: trackAutoTopUp,
+  retry: retryAutoTopUp
+} = useAutoTopUpCardSection(
+  () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
+)
+const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
