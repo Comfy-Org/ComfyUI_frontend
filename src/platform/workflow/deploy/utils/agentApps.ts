@@ -1,8 +1,8 @@
-export type AgentApp = 'claude' | 'chatGpt'
+export type AgentApp = 'claude' | 'codex'
 
 const AGENT_APP_LINKS: Record<AgentApp, (encodedPrompt: string) => string> = {
   claude: (encodedPrompt) => `claude://code/new?q=${encodedPrompt}`,
-  chatGpt: (encodedPrompt) => `codex://new?prompt=${encodedPrompt}`
+  codex: (encodedPrompt) => `codex://new?prompt=${encodedPrompt}`
 }
 
 const SURROGATES = /([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g

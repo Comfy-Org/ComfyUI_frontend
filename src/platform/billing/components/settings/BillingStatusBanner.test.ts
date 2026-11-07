@@ -3,7 +3,8 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canManageBillingFact,
-  runDeniedPaymentPastDueFact
+  runDeniedPaymentPastDueFact,
+  serveBillingNotices
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import userEvent from '@testing-library/user-event'
@@ -309,6 +310,11 @@ describe('BillingStatusBanner', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
+    useBillingCapabilities()
+    serveBillingNotices(() => ({
+      isTeamPlan: state.isTeamPlan,
+      ...state.subscription
+    }))
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'

@@ -2,7 +2,14 @@ import { onTestFinished, vi } from 'vitest'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import type { ServedNoticePlan } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import type { useBillingCapabilities as realUseBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
@@ -53,6 +60,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('auto_top_up_enabled', false)
   ),
   autoTopUpSetup: computed(() => null),
+  autoTopUpMemberView: autoTopUpMemberViewFact(null),
   canRunWorkflows: computed(() => false),
   planKind: computed(() => receiveServerFact('plan_kind', null)),
   paymentRecoveryAvailable: computed(() =>
@@ -61,6 +69,8 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   hasParkedBillingOperation: computed(() =>
     receiveServerFact('has_parked_billing_operation', false)
   ),
+  billingNoticeAudience: billingNoticeAudienceFact(null),
+  endingNoticeStartsAt: endingNoticeStartsAtFact(null),
   runWorkflowsDenial: runWorkflowsDenialFact(undefined),
   runDeniedPaymentPastDue: computed(() => false),
   isReady: computed(() => true),
@@ -84,11 +94,37 @@ export function autoTopUpEnabledFact(enabled: boolean) {
   return computed(() => receiveServerFact('auto_top_up_enabled', enabled))
 }
 
+export function autoTopUpMemberViewFact(
+  view: MaybeRefOrGetter<
+    BillingCapabilitiesRead['auto_top_up_member_view'] | null
+  >
+) {
+  return computed(() =>
+    receiveServerFact('auto_top_up_member_view', toValue(view) ?? null)
+  )
+}
+
 export function paymentRecoveryAvailableFact(
   available: MaybeRefOrGetter<boolean>
 ) {
   return computed(() =>
     receiveServerFact('payment_recovery_available', toValue(available))
+  )
+}
+
+export function billingNoticeAudienceFact(
+  audience: MaybeRefOrGetter<'none' | 'team' | 'personal' | null>
+) {
+  return computed(() =>
+    receiveServerFact('billing_notice_audience', toValue(audience))
+  )
+}
+
+export function endingNoticeStartsAtFact(
+  startsAt: MaybeRefOrGetter<string | null>
+) {
+  return computed(() =>
+    receiveServerFact('ending_notice_starts_at', toValue(startsAt))
   )
 }
 
@@ -104,6 +140,16 @@ export function runDeniedPaymentPastDueFact(
   deniedPastDue: MaybeRefOrGetter<boolean>
 ) {
   return computed(() => toValue(deniedPastDue))
+}
+
+/** Serves the billing notice facts the way billing-api answers for `plan`. */
+export function serveBillingNotices(plan: () => ServedNoticePlan) {
+  capabilities.billingNoticeAudience = billingNoticeAudienceFact(() =>
+    servedBillingNoticeAudience(plan())
+  )
+  capabilities.endingNoticeStartsAt = endingNoticeStartsAtFact(() =>
+    servedEndingNoticeStartsAt(plan())
+  )
 }
 
 export const useBillingCapabilities = vi.fn(() => {

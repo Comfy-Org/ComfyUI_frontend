@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
+import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import type {
-  CloudMissingModel,
   CloudWorkflowCheckState,
   CloudWorkflowGaps
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 
-const lora: CloudMissingModel = {
+const lora: CompatibilityModel = {
   name: 'add-detail-xl.safetensors',
   folder: 'loras'
 }
-const checkpoint: CloudMissingModel = {
+const checkpoint: CompatibilityModel = {
   name: 'juggernautXL_v9.safetensors',
   folder: 'checkpoints'
 }
