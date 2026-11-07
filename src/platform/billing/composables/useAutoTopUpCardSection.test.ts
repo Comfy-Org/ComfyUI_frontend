@@ -26,7 +26,7 @@ import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
-import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
+import { CreditBannerHarness } from '@/platform/billing/__tests__/CreditBannerHarness'
 
 import { useAutoTopUpCardSection } from './useAutoTopUpCardSection'
 
@@ -167,7 +167,7 @@ describe('useAutoTopUpCardSection', () => {
     })
     useBillingCapabilities().autoTopUpEnabled = autoTopUpEnabledFact(true)
     useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(true)
-    render(BillingLocalCreditBanner, i18nOptions())
+    render(CreditBannerHarness, i18nOptions())
     await vi.waitFor(() =>
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     )
