@@ -11,22 +11,21 @@ test.describe('Vue node focus', { tag: ['@vue-nodes', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await fitToViewInstant(comfyPage)
 
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
-    const selection = node.getByTestId('node-state-outline-overlay')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
-    await comfyPage.vueNodes.selectNode('3')
-    await expect(node).toBeFocused()
-    await expect(selection).toBeVisible()
-    await expect(node).toHaveCSS('outline-style', 'none')
+    await node.select()
+    await expect(node.root).toBeFocused()
+    await expect(node.stateOutline).toBeVisible()
+    await node.expectNoRootOutline()
 
     await comfyPage.page.keyboard.down('Shift')
 
-    await expect(node).toBeFocused()
-    await expect(node).toHaveCSS('outline-style', 'none')
-    await expect(selection).toBeVisible()
+    await expect(node.root).toBeFocused()
+    await node.expectNoRootOutline()
+    await expect(node.stateOutline).toBeVisible()
 
     await comfyPage.page.keyboard.up('Shift')
-    await expect(node).toHaveCSS('outline-style', 'none')
+    await node.expectNoRootOutline()
   })
 
   for (const forcedColors of ['none', 'active'] as const) {
@@ -37,25 +36,21 @@ test.describe('Vue node focus', { tag: ['@vue-nodes', '@node'] }, () => {
       await fitToViewInstant(comfyPage)
       await comfyPage.page.emulateMedia({ forcedColors })
 
-      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      const otherNode = comfyPage.vueNodes.getNodeByTitle('Empty Latent Image')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const otherNode =
+        await comfyPage.vueNodes.getFixtureByTitle('Empty Latent Image')
 
-      await comfyPage.vueNodes.selectNode('3')
+      await node.select()
       await comfyPage.page.keyboard.press('Control+a')
-      await node.press('Tab')
+      await node.root.press('Tab')
       await comfyPage.page.keyboard.press('Shift+Tab')
 
-      await expect(node).toBeFocused()
-      await expect(node).toHaveAttribute('data-emphasized', 'true')
-      await expect(otherNode).toHaveAttribute('data-emphasized', 'true')
-      await expect(node).toHaveCSS('outline-style', 'none')
-      await expect(node.getByTestId('node-state-outline-overlay')).toHaveCSS(
-        'outline-style',
-        'auto'
-      )
-      await expect(
-        otherNode.getByTestId('node-state-outline-overlay')
-      ).toHaveCSS('outline-style', 'none')
+      await expect(node.root).toBeFocused()
+      await expect(node.root).toHaveAttribute('data-emphasized', 'true')
+      await expect(otherNode.root).toHaveAttribute('data-emphasized', 'true')
+      await node.expectNoRootOutline()
+      await node.expectFocusOutline(true)
+      await otherNode.expectFocusOutline(false)
     })
   }
 })

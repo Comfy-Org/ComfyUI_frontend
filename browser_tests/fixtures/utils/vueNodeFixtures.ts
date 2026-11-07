@@ -20,6 +20,7 @@ export class VueNodeFixture {
   public readonly imageGrid: Locator
   public readonly content: Locator
   public readonly priceBadge: Locator
+  public readonly stateOutline: Locator
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -36,6 +37,7 @@ export class VueNodeFixture {
     this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
     this.priceBadge = locator.getByTestId('node-badge-group-credits')
+    this.stateOutline = locator.getByTestId('node-state-outline-overlay')
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }
@@ -52,6 +54,17 @@ export class VueNodeFixture {
 
   async select() {
     await this.header.click()
+  }
+
+  async expectNoRootOutline(): Promise<void> {
+    await expect(this.root).toHaveCSS('outline-style', 'none')
+  }
+
+  async expectFocusOutline(visible: boolean): Promise<void> {
+    await expect(this.stateOutline).toHaveCSS(
+      'outline-style',
+      visible ? 'auto' : 'none'
+    )
   }
 
   async waitForImageLoaded(filename: string): Promise<void> {
