@@ -107,16 +107,11 @@
         </span>
       </Button>
 
-      <Button
+      <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        variant="muted-textonly"
-        size="icon-sm"
-        class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-        :aria-label="locateNodeLabel"
-        @click="handleLocateNode(primaryLocatableNodeType)"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate]" />
-      </Button>
+        :label="locateNodeLabelFor(getLabel(primaryLocatableNodeType))"
+        @locate="handleLocateNode(primaryLocatableNodeType)"
+      />
     </div>
 
     <TransitionCollapse>
@@ -142,16 +137,13 @@
                 {{ getLabel(nodeType) }}
               </span>
             </span>
-            <Button
+            <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
-              variant="muted-textonly"
-              size="icon-sm"
-              class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-              :aria-label="locateNodeLabel"
-              @click="handleLocateNode(nodeType)"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate]" />
-            </Button>
+              :label="
+                locateNodeLabelFor(`${nodeType.type} #${nodeType.nodeId}`)
+              "
+              @locate="handleLocateNode(nodeType)"
+            />
           </div>
         </li>
       </ul>
@@ -167,6 +159,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
+import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
@@ -188,9 +181,6 @@ const expanded = ref(false)
 const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
 const replacementLabel = computed(
   () => group.newNodeId ?? t('nodeReplacement.unknownNode', 'Unknown')
-)
-const locateNodeLabel = computed(() =>
-  t('rightSidePanel.locateNode', 'Locate node on canvas')
 )
 const titleToggleAriaLabel = computed(
   () =>
@@ -225,6 +215,10 @@ function isLocatableNodeType(
   nodeType: MissingNodeType
 ): nodeType is Exclude<MissingNodeType, string> & { nodeId: string | number } {
   return typeof nodeType !== 'string' && nodeType.nodeId != null
+}
+
+function locateNodeLabelFor(item: string): string {
+  return t('rightSidePanel.locateNodeFor', { item }, { escapeParameter: false })
 }
 
 function handleLocateNode(nodeType: MissingNodeType) {

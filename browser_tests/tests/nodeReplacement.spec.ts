@@ -94,7 +94,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             await expect(rowLabel).toBeVisible()
             await expect(
               swapGroup.getByRole('button', {
-                name: 'Locate node on canvas',
+                name: 'Locate E2E_OldSampler',
                 exact: true
               })
             ).toBeVisible()
