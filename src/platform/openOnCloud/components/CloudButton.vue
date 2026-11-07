@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -38,6 +38,10 @@ const { state: check } = storeToRefs(checkStore)
 
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
+let isMounted = true
+onBeforeUnmount(() => {
+  isMounted = false
+})
 
 const tooltip = computed(() =>
   isChecking.value
@@ -59,7 +63,7 @@ function showModal() {
     toast.error(t('openOnCloud.cannotRunYet'))
     return
   }
-  void openRunOnCloudDialog(() => check.value === current)
+  void openRunOnCloudDialog(() => isMounted && check.value === current)
 }
 
 function openModal() {

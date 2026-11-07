@@ -194,4 +194,24 @@ describe('Cloud button compatibility checks', () => {
       false
     )
   })
+
+  it('opens nothing when the button unmounts while the dialog loads', async () => {
+    const response = deferredVerdict()
+    vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
+    const { unmount } = render(CloudButton, {
+      global: { plugins: [testI18n] }
+    })
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cloud-button'))
+
+    response.resolve({ kind: 'canOpen' })
+    await response.promise
+    await nextTick()
+    unmount()
+    await new Promise((settle) => setTimeout(settle, 0))
+
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
+    )
+  })
 })

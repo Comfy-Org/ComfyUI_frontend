@@ -3,6 +3,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
 import type { ModelFolder } from '@/stores/modelStore'
@@ -14,6 +19,28 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
+function node(
+  comfyClass: string,
+  inputs: Record<string, string> = {},
+  mode: LGraphEventMode = LGraphEventMode.ALWAYS
+): LGraphNode {
+  const graphNode = new LGraphNode(comfyClass)
+  graphNode.comfyClass = comfyClass
+  graphNode.mode = mode
+  for (const [name, value] of Object.entries(inputs))
+    graphNode.addWidget('text', name, value, () => {})
+  return graphNode
+}
+
+function workflowHas(...nodes: LGraphNode[]) {
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(fromPartial({ nodes }))
+}
+
+function requestBody() {
+  const [, init] = vi.mocked(fetch).mock.calls[0]
+  return JSON.parse(String(init?.body))
+}
+
 function cloudAnswers(response: Response | Error) {
   if (response instanceof Error) vi.mocked(fetch).mockRejectedValue(response)
   else vi.mocked(fetch).mockResolvedValue(response)
@@ -22,11 +49,7 @@ function cloudAnswers(response: Response | Error) {
 describe(checkCloudCompatibility, () => {
   beforeEach(() => {
     stubFirebaseAuthHarness()
-    vi.mocked(app.graphToPrompt).mockResolvedValue(
-      fromPartial({
-        output: { 1: { class_type: 'KSampler', inputs: {} } }
-      })
-    )
+    workflowHas(node('KSampler'))
     vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
   })
 
@@ -64,16 +87,9 @@ describe(checkCloudCompatibility, () => {
         input: { required: { ckpt_name: ['COMBO', { options: [] }] } }
       }
     ])
-    vi.mocked(app.graphToPrompt).mockResolvedValue(
-      fromPartial({
-        output: {
-          1: {
-            class_type: 'CheckpointLoaderSimple',
-            inputs: { ckpt_name: 'sdxl.safetensors' }
-          },
-          2: { class_type: 'KSampler', inputs: { model: ['1', 0] } }
-        }
-      })
+    workflowHas(
+      node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' }),
+      node('KSampler')
     )
     vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
       Authorization: 'Bearer token'
@@ -100,18 +116,11 @@ describe(checkCloudCompatibility, () => {
         }
       })
     ])
-    vi.mocked(app.graphToPrompt).mockResolvedValue(
-      fromPartial({
-        output: {
-          1: {
-            class_type: 'DualCLIPLoader',
-            inputs: {
-              clip_name1: 't5xxl_fp16.safetensors',
-              clip_name2: 'clip_l.safetensors',
-              type: 'flux'
-            }
-          }
-        }
+    workflowHas(
+      node('DualCLIPLoader', {
+        clip_name1: 't5xxl_fp16.safetensors',
+        clip_name2: 'clip_l.safetensors',
+        type: 'flux'
       })
     )
     cloudAnswers(
@@ -132,11 +141,54 @@ describe(checkCloudCompatibility, () => {
         models: [{ folder: 'text_encoders', name: 't5xxl_fp16.safetensors' }]
       }
     })
-    const [, init] = vi.mocked(fetch).mock.calls[0]
-    expect(JSON.parse(String(init?.body)).models).toEqual([
+    expect(requestBody().models).toEqual([
       { folder: 'text_encoders', name: 't5xxl_fp16.safetensors' },
       { folder: 'text_encoders', name: 'clip_l.safetensors' }
     ])
+  })
+
+  it('returns no verdict, without asking Cloud, when a loader model is not in the local library', async () => {
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({ directory: 'text_encoders', models: {} })
+    ])
+    workflowHas(
+      node('DualCLIPLoader', { clip_name1: 't5xxl_fp16.safetensors' })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reads widget values without running their serialize hooks', async () => {
+    const audio = node('LoadAudio', { audio: 'take.wav' })
+    const serializeValue = vi.fn()
+    audio.widgets![0].serializeValue = serializeValue
+    workflowHas(audio)
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await checkCloudCompatibility()
+
+    expect(serializeValue).not.toHaveBeenCalled()
+    expect(requestBody().node_types).toEqual(['LoadAudio'])
+  })
+
+  it('asks about nodes inside subgraphs and skips bypassed, muted and virtual nodes', async () => {
+    const subgraph = createTestSubgraph()
+    subgraph.add(node('KSampler'))
+    const reroute = node('Reroute')
+    reroute.isVirtualNode = true
+    workflowHas(
+      node('ImpactWildcard', {}, LGraphEventMode.BYPASS),
+      node('ImpactSwitch', {}, LGraphEventMode.NEVER),
+      reroute,
+      createTestSubgraphNode(subgraph)
+    )
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await checkCloudCompatibility()
+
+    expect(requestBody().node_types).toEqual(['KSampler'])
   })
 
   it.for([
