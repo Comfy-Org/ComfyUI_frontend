@@ -1,5 +1,10 @@
 import type { SubscriptionState } from '@comfyorg/ingest-types'
 
+export type TopUpPlanCreditLine =
+  | 'planRequiredFreeRuns'
+  | 'planRequiredSubscribe'
+  | 'planRequiredResubscribe'
+
 /** Add credits line on Cloud for a served `subscription_state` that has no plan. */
 export function topUpPlanCreditLine(facts: {
   isCloud: boolean
@@ -7,11 +12,7 @@ export function topUpPlanCreditLine(facts: {
   canTopUp: boolean
   subscriptionState: SubscriptionState | null
   freeRunsRemaining: number
-}):
-  | 'planRequiredFreeRuns'
-  | 'planRequiredSubscribe'
-  | 'planRequiredResubscribe'
-  | null {
+}): TopUpPlanCreditLine | null {
   if (!facts.isCloud) return null
   if (!facts.isBillingInitialized) return null
   if (!facts.canTopUp) return null

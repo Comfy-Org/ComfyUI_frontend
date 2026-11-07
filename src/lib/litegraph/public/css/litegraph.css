@@ -124,16 +124,6 @@
   min-height: 1.2em;
 }
 
-.litegraph .litemenu-entry .property_value {
-  display: inline-block;
-  background-color: rgba(0, 0, 0, 0.5);
-  text-align: right;
-  min-width: 80px;
-  min-height: 1.2em;
-  vertical-align: middle;
-  padding-right: 10px;
-}
-
 .litegraph.litesearchbox {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.5);
@@ -151,13 +141,6 @@
   padding-left: 10px;
   margin-right: 5px;
   max-width: 300px;
-}
-
-.litegraph.litesearchbox .name {
-  display: inline-block;
-  min-width: 60px;
-  min-height: 1.5em;
-  padding-left: 10px;
 }
 
 .litegraph.litesearchbox .helper {

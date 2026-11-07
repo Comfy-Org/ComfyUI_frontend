@@ -1242,7 +1242,7 @@
     "apiPricing": "API-Preise",
     "charge": "Abbuchung",
     "credits": "Credits",
-    "creditUnit": "Credits",
+    "creditUnit": "Credit | Credits",
     "creditsAvailable": "Verfügbare Credits",
     "details": "Details",
     "eventType": "Ereignistyp",

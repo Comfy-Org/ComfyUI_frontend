@@ -8,6 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { PausedPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { NO_FUNDS_PAUSE_REASON } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import AgentPaywallPlanNote from '@/workbench/extensions/agent/components/agent/message/AgentPaywallPlanNote.vue'
 import type {
   AgentPaywallPresentation,
   AgentPaywallRemediation
@@ -75,6 +76,7 @@ const body = computed(() => part.message || part.prompt)
         <p class="m-0 wrap-break-word text-muted-foreground">
           {{ body }}
         </p>
+        <AgentPaywallPlanNote v-if="outOfCredits" :presentation />
         <p
           v-if="part.recheckAfterSeconds > 0"
           class="m-0 text-muted-foreground"
