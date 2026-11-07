@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -27,6 +28,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
 }
 
 const decision = computed(() => {
+  if (part.dismissed) return t('agent.askDismissed')
   const resolution = part.resolution
   if (!resolution) return undefined
   if (resolution.status === 'answered') {
@@ -44,7 +46,12 @@ const decision = computed(() => {
   <div
     role="group"
     :aria-label="t('agent.deleteApproval.card')"
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
+    :class="
+      cn(
+        'flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md',
+        part.dismissed && 'opacity-50 shadow-none'
+      )
+    "
   >
     <p
       class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-foreground"

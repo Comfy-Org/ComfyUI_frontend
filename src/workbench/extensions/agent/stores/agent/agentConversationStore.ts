@@ -21,6 +21,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
+  AskMark,
   AskUserResolution,
   AssistantMessage,
   ToolPart
@@ -29,6 +30,8 @@ import {
   askIdOf,
   askKindOf,
   createAssistantMessage,
+  markAskParts,
+  isDismissibleAskPart,
   isOpenAskPart,
   isPendingAskPart,
   retireAskParts,
@@ -671,6 +674,33 @@ export const useAgentConversationStore = defineStore(
       clearAskResolutionWatchdog(askId)
       submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
+    }
+
+    function markActiveAsks(mark: AskMark): void {
+      const slot = activeSlot.value
+      if (!slot) return
+      const current = messages.value[slot.index].parts
+      const parts = markAskParts(current, mark)
+      if (parts === current) return
+      messages.value = messages.value.map((message, index) =>
+        index === slot.index ? { ...message, parts } : message
+      )
+      slot.transport.markAsks(mark)
+    }
+
+    function dismissActiveAsks(): string[] {
+      const askIds = dismissibleAskIds.value
+      markActiveAsks({ askIds, dismissed: true })
+      return askIds
+    }
+
+    function restoreActiveAsks(askIds: readonly string[]): void {
+      markActiveAsks({ askIds, dismissed: false })
+      const retired = retiredAsksFor()
+      for (const askId of askIds) {
+        const resolution = retired.get(askId)
+        if (resolution) retireAsk(askId, resolution)
+      }
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1741,6 +1771,13 @@ export const useAgentConversationStore = defineStore(
 
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
+    const dismissibleAskIds = computed(
+      () =>
+        activeMessage.value?.parts.flatMap((part) =>
+          isDismissibleAskPart(part, answeringAskIds.value) ? [part.askId] : []
+        ) ?? []
+    )
+    const activeAskOpen = computed(() => dismissibleAskIds.value.length > 0)
 
     function awaitsAnswer(pendingAskIds: readonly string[]): boolean {
       return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
@@ -1804,6 +1841,7 @@ export const useAgentConversationStore = defineStore(
       adoptThreadTab,
       threadId,
       isStreaming,
+      activeAskOpen,
       status,
       latestWorkflowId,
       recordApprovalShown,
@@ -1827,6 +1865,9 @@ export const useAgentConversationStore = defineStore(
       askKind,
       commitAsk,
       retireAsk,
+      dismissActiveAsks,
+      restoreActiveAsks,
+      activeTurnOwnsAsk,
       isAskRetired,
       confirmAskPending,
       reconcileApprovalParts,
