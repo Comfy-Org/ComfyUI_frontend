@@ -7,9 +7,9 @@
     :aria-label="tooltip"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
-    @pointerenter="checkWorkflow"
-    @keydown.enter="checkWorkflow"
-    @keydown.space="checkWorkflow"
+    @pointerenter="prefetch"
+    @keydown.enter="prefetch"
+    @keydown.space="prefetch"
     @click="openModal"
   >
     <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -38,6 +38,10 @@ const { state: check } = storeToRefs(checkStore)
 
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
+let isMounted = true
+onBeforeUnmount(() => {
+  isMounted = false
+})
 
 const tooltip = computed(() =>
   isChecking.value
@@ -45,26 +49,27 @@ const tooltip = computed(() =>
     : t('openOnCloud.cloudButton.tooltip')
 )
 
-function checkWorkflow() {
-  const { phase } = check.value
-  if (phase === 'idle' || phase === 'failed') void checkStore.check()
+function prefetch() {
+  if (check.value.phase === 'idle') void checkStore.check()
 }
 
 function showModal() {
-  if (check.value.phase === 'failed') {
+  const current = check.value
+  if (current.phase === 'failed') {
     toast.error(t('openOnCloud.checkFailed'))
     return
   }
-  void openRunOnCloudDialog()
+  void openRunOnCloudDialog(() => isMounted && check.value === current)
 }
 
 function openModal() {
-  if (check.value.phase === 'answered') {
+  const { phase } = check.value
+  if (phase === 'answered') {
     showModal()
     return
   }
   opensWhenAnswered.value = true
-  checkWorkflow()
+  if (phase === 'idle' || phase === 'failed') void checkStore.check()
 }
 
 watch(

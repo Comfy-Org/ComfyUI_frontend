@@ -4,7 +4,11 @@ import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import {
+  billingNoticeAudienceFact,
+  endingNoticeStartsAtFact,
+  runDeniedPaymentPastDueFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@comfyorg/billing-core'
@@ -40,7 +44,8 @@ describe('useBillingBanner', () => {
   function setupBilling() {
     const billing = {
       canAccessSubscriptionFeatures: ref(true),
-      isTeamPlan: ref(true),
+      audience: ref<'none' | 'team' | 'personal' | null>('team'),
+      endingNoticeStartsAt: ref<string | null>(null),
       billingStatus: ref<BillingStatus | null>('paid'),
       tier: ref<SubscriptionInfo['tier']>(null),
       subscription: ref<
@@ -55,7 +60,6 @@ describe('useBillingBanner', () => {
     billingContext.canAccessSubscriptionFeatures = computed(
       () => billing.canAccessSubscriptionFeatures.value
     )
-    billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
     billingContext.subscription = computed(() =>
       billing.subscription.value &&
@@ -75,6 +79,13 @@ describe('useBillingBanner', () => {
         : null
     )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    const capabilities = useBillingCapabilities()
+    capabilities.billingNoticeAudience = billingNoticeAudienceFact(
+      billing.audience
+    )
+    capabilities.endingNoticeStartsAt = endingNoticeStartsAtFact(
+      billing.endingNoticeStartsAt
+    )
     return billing
   }
 
@@ -183,20 +194,17 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBe('outOfCredits')
   })
   it.for([
-    { tier: 'PRO', isTeamPlan: false, audience: 'personal' },
-    { tier: 'FOUNDERS_EDITION', isTeamPlan: false, audience: 'personal' },
-    { tier: null, isTeamPlan: true, audience: 'team' },
-    { tier: 'ENTERPRISE', isTeamPlan: false, audience: null },
-    { tier: 'ENTERPRISE', isTeamPlan: true, audience: null },
-    { tier: null, isTeamPlan: false, audience: null }
+    { served: 'personal', audience: 'personal' },
+    { served: 'team', audience: 'team' },
+    { served: 'none', audience: null },
+    { served: null, audience: null }
   ] as const)(
-    'reads the $tier tier with team plan $isTeamPlan as the $audience audience',
-    async ({ tier, isTeamPlan, audience }) => {
+    'reads a served $served audience as $audience',
+    async ({ served, audience }) => {
       const billing = setupBilling()
       const banner = useBillingBanner()
 
-      billing.tier.value = tier
-      billing.isTeamPlan.value = isTeamPlan
+      billing.audience.value = served
       await nextTick()
 
       expect(banner.audience.value).toBe(audience)
@@ -205,27 +213,30 @@ describe('useBillingBanner', () => {
 
   describe('the Enterprise ending notice', () => {
     const NOW = new Date('2026-09-03T12:00:00Z').getTime()
+    const DAY = 24 * 60 * 60 * 1000
 
     beforeEach(() => {
       vi.useFakeTimers({ now: NOW })
     })
 
     it.for([
-      { days: 30, kind: null },
-      { days: 14, kind: 'ending' },
-      { days: 10, kind: 'ending' }
+      { startsInDays: 1, kind: null },
+      { startsInDays: 0, kind: 'ending' },
+      { startsInDays: -4, kind: 'ending' }
     ])(
-      'shows $kind for a cancellation $days days out',
-      async ({ days, kind: expected }) => {
+      'shows $kind when the served start is $startsInDays days out',
+      async ({ startsInDays, kind: expected }) => {
         const billing = setupBilling()
         const { kind } = useBillingBanner()
 
-        billing.tier.value = 'ENTERPRISE'
-        billing.isTeamPlan.value = false
+        billing.audience.value = 'none'
+        billing.endingNoticeStartsAt.value = new Date(
+          NOW + startsInDays * DAY
+        ).toISOString()
         billing.subscription.value = {
           hasFunds: true,
           isCancelled: true,
-          endDate: new Date(NOW + days * 24 * 60 * 60 * 1000).toISOString()
+          endDate: new Date(NOW + 14 * DAY).toISOString()
         }
         await nextTick()
 

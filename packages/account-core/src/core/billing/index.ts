@@ -409,3 +409,5 @@ export {
 } from './billingTab/addCreditsAvailability'
 export type { TopUpBound } from './topUpBounds'
 export { servedTopUpBound } from './topUpBounds'
+export type { BackendTicket } from './pendingServerFact'
+export { pendingServerFact } from './pendingServerFact'

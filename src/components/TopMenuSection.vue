@@ -183,7 +183,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -194,6 +194,8 @@ import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBan
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -217,6 +219,7 @@ import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { handsPopupsToSystemBrowser } from '@/platform/billing/billingTab'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -245,7 +248,11 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
-  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+  () =>
+    !isCloud &&
+    !handsPopupsToSystemBrowser() &&
+    flags.openOnCloudEnabled &&
+    canHandOffToCloud()
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
@@ -321,6 +328,7 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')

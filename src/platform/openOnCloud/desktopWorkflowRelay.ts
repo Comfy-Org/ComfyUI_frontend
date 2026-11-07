@@ -75,7 +75,6 @@ function relayNonce(url: URL): string | undefined {
   return z.uuid().safeParse(url.searchParams.get(DESKTOP_RELAY_PARAM)).data
 }
 
-/** Reads and removes the staged transfer, so a relay link works once. */
 async function takeRelayDestination(
   nonce: string
 ): Promise<string | undefined> {

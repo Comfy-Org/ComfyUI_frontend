@@ -114,7 +114,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -154,6 +158,7 @@ type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  openWorkflowMock.mockResolvedValue(true)
 })
 
 describe('useWorkflowPersistenceV2', () => {
@@ -355,6 +360,26 @@ describe('useWorkflowPersistenceV2', () => {
       })
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the latest draft when the session workflow does not open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('Unreadable.json')
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValue(false)
+      const draftStore = useWorkflowDraftStoreV2()
+      const fallback = vi
+        .spyOn(draftStore, 'loadPersistedWorkflow')
+        .mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const outcome = await initializeWorkflow()
+
+      expect(fallback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackToLatestDraft: true })
+      )
+      expect(outcome).not.toBe('restored')
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {
@@ -804,6 +829,15 @@ describe('useWorkflowPersistenceV2', () => {
       [
         'template intent preserved across /user-select redirect',
         () => (preservedQueryMocks.payloads.template = { template: 'id' })
+      ],
+      [
+        'local handoff param in URL',
+        () => (routeMocks.query = { from_local: 'nonce' })
+      ],
+      [
+        'local handoff preserved across the sign-in redirect',
+        () =>
+          (preservedQueryMocks.payloads.local_handoff = { from_local: 'nonce' })
       ]
     ] as const)(
       'reports url-intent, not fresh, with %s',

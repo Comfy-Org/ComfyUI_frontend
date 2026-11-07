@@ -42,7 +42,6 @@ async function openHandedOffWorkflow(
     return
   }
   try {
-    // false: the load already showed its failure. undefined: a newer load replaced it.
     const outcome = await app.loadGraphData(workflow, true, true, filename)
     if (outcome === false || outcome === undefined) return
   } catch (error) {
@@ -87,7 +86,6 @@ export function useLocalHandoffUrlLoader(
   const { flags } = useFeatureFlags()
 
   async function receiveHandoff(nonce: string) {
-    // Taken even when the flag is off, so a stale Desktop handoff is cleared.
     const desktop = takeDesktopWorkflowHandoff(nonce)
     if (!flags.openOnCloudEnabled) return
     if (desktop)

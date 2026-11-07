@@ -30,6 +30,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
+import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
@@ -91,6 +92,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const {
     canAccessSubscriptionFeatures,
     subscription,
+    subscriptionState,
     isInitialized,
     initialize,
     type: billingType
@@ -108,7 +110,12 @@ export function useCoreCommands(): ComfyCommand[] {
         duration: 5000
       })
     } else {
-      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+      showSubscriptionDialog(
+        subscribeToRunDialogOptions({
+          subscriptionState: subscriptionState.value,
+          hasFunds: subscription.value?.hasFunds
+        })
+      )
     }
     return true
   }
