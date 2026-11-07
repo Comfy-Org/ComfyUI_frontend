@@ -87,7 +87,7 @@ describe('useWorkflowPacks', () => {
       fromPartial<NodePack>({ id: 'pack-1', name: 'Pack 1' })
     ])
     expect(mockListAllPacks).toHaveBeenCalledWith(
-      { node_id: ['pack-1'] },
+      { node_id: ['pack-1'], limit: 1, page: 1 },
       expect.anything()
     )
   })
@@ -136,7 +136,7 @@ describe('useWorkflowPacks', () => {
       fromPartial<NodePack>({ id: 'pack-1', name: 'Pack 1' })
     ])
     expect(mockListAllPacks).toHaveBeenCalledWith(
-      { node_id: ['pack-1'] },
+      { node_id: ['pack-1'], limit: 1, page: 1 },
       expect.anything()
     )
   })
