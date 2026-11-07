@@ -25325,6 +25325,10 @@
         "name": "enfocar_color",
         "tooltip": "Acentúa la textura de los vértices: 1.0 = mezcla físicamente correcta; valores mayores sesgan el color de cada vóxel hacia su gaussiana dominante en vez de promediar vecinos (reduce el difuminado de la textura). Solo color: la geometría no cambia."
       },
+      "fill": {
+        "name": "rellenar",
+        "tooltip": "Solo sólido. Coste de cerrar una abertura en comparación con seguir la superficie. Un valor menor cierra aberturas más grandes: alrededor de 3 sella objetos huecos, pero también coloca tapas en tazas y cuellos."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "Ancho máximo de splat a la mitad en vóxeles. Cada gaussiana se rasteriza sobre una ventana del tamaño de su propio 3-sigma, limitado aquí: los surfels pequeños siguen siendo económicos, los grandes no se truncan. Aumenta si los splats dispersos dejan huecos."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "suavizar",
         "tooltip": "Iteraciones de suavizado de malla Taubin. Suaviza la superficie sin encogerla (conserva el volumen), a diferencia de difuminar la densidad. 0 = superficie sin procesar."
+      },
+      "solid": {
+        "name": "sólido",
+        "tooltip": "Rellena el interior basándose en la orientación de las gaussianas, para una única superficie cerrada. Desactivado: el contorno de densidad sin procesar, que mantiene una pared interior oculta detrás de la superficie."
       },
       "splat": {
         "name": "splat"

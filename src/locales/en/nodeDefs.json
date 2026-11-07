@@ -25230,6 +25230,14 @@
       "color_sharpen": {
         "name": "color_sharpen",
         "tooltip": "Crisp up the vertex texture: 1.0 = physically-correct blend; higher biases each voxel's colour toward its dominant gaussian instead of averaging neighbours (de-smears the texture). Colour only - geometry is unchanged."
+      },
+      "solid": {
+        "name": "solid",
+        "tooltip": "Fill the inside from the gaussians' orientation, for a single closed surface. Off: the raw density contour, which keeps a hidden inner wall behind the surface."
+      },
+      "fill": {
+        "name": "fill",
+        "tooltip": "Solid only. Cost of closing an opening relative to following the surface. Lower closes larger openings: around 3 seals hollow objects, but also puts lids on cups and collars."
       }
     },
     "outputs": {

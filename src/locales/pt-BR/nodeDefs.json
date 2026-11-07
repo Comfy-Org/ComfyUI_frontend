@@ -25325,6 +25325,10 @@
         "name": "nitidez_cor",
         "tooltip": "Deixa a textura dos vértices mais nítida: 1.0 = mistura fisicamente correta; valores maiores tendem a cor de cada voxel para sua gaussiana dominante ao invés de fazer média com vizinhos (reduz borrão da textura). Apenas cor - geometria não é alterada."
       },
+      "fill": {
+        "name": "preencher",
+        "tooltip": "Apenas sólido. Custo de fechar uma abertura em relação a seguir a superfície. Valores menores fecham aberturas maiores: cerca de 3 veda objetos ocos, mas também coloca tampas em copos e golas."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "Largura máxima do splat em voxels (meia-largura). Cada gaussiana é rasterizada em uma janela do seu próprio 3-sigma, limitada aqui - surfels pequenos permanecem leves, grandes não são truncados. Aumente se splats esparsos deixarem lacunas."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "suavizar",
         "tooltip": "Iterações de suavização de malha Taubin. Suaviza a superfície sem encolhê-la (preserva o volume), diferente do desfoque da densidade. 0 = superfície bruta."
+      },
+      "solid": {
+        "name": "sólido",
+        "tooltip": "Preenche o interior a partir da orientação das gaussianas, para uma única superfície fechada. Desativado: o contorno de densidade bruto, que mantém uma parede interna oculta atrás da superfície."
       },
       "splat": {
         "name": "splat"

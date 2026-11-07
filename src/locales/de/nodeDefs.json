@@ -25325,6 +25325,10 @@
         "name": "color_sharpen",
         "tooltip": "Vertex-Textur schärfen: 1.0 = physikalisch korrekte Mischung; höhere Werte verschieben die Farbe jedes Voxels zur dominanten Gaußschen, statt Nachbarn zu mitteln (entfernt Verschmierungen aus der Textur). Nur Farbe – die Geometrie bleibt unverändert."
       },
+      "fill": {
+        "name": "Füllung",
+        "tooltip": "Nur für Festkörper. Kosten für das Schließen einer Öffnung im Verhältnis zum Folgen der Oberfläche. Niedrigere Werte schließen größere Öffnungen: Werte um 3 versiegeln hohle Objekte, setzen aber auch Deckel auf Tassen und Kragen."
+      },
       "kernel": {
         "name": "Kernel",
         "tooltip": "Maximale halbe Splat-Breite in Voxeln. Jede Gaußsche wird über ein Fenster rasterisiert, dessen Größe ihrem eigenen 3-Sigma-Bereich entspricht und das hier begrenzt wird – kleine Surfels bleiben günstig, große werden nicht abgeschnitten. Erhöhen Sie den Wert, wenn spärliche Splats Lücken hinterlassen."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "smooth",
         "tooltip": "Taubin-Mesh-Glättungsiterationen. Glättet die Oberfläche ohne Schrumpfung (volumenerhaltend), anders als das Weichzeichnen der Dichte. 0 = rohe Oberfläche."
+      },
+      "solid": {
+        "name": "Festkörper",
+        "tooltip": "Füllt das Innere anhand der Ausrichtung der Gaussians, um eine einzelne geschlossene Oberfläche zu erzeugen. Aus: die rohe Dichtekontur, die eine verborgene innere Wand hinter der Oberfläche beibehält."
       },
       "splat": {
         "name": "Splat"

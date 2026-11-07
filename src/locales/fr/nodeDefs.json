@@ -25325,6 +25325,10 @@
         "name": "accentuation_couleur",
         "tooltip": "Affûte la texture des sommets : 1.0 = mélange physiquement correct ; plus élevé rapproche la couleur de chaque voxel de sa gaussienne dominante au lieu de faire la moyenne des voisines (désembue la texture). Couleur uniquement – la géométrie ne change pas."
       },
+      "fill": {
+        "name": "remplissage",
+        "tooltip": "Uniquement en mode plein. Coût de la fermeture d’une ouverture par rapport au suivi de la surface. Une valeur plus basse ferme des ouvertures plus grandes : autour de 3, les objets creux sont scellés, mais cela ajoute aussi des couvercles aux tasses et aux collerettes."
+      },
       "kernel": {
         "name": "noyau",
         "tooltip": "Largeur maximale du demi-splat en voxels. Chaque gaussienne est rasterisée sur une fenêtre dimensionnée à son propre 3-sigma, plafonnée ici – les petits surfels restent peu coûteux, les grands ne sont pas tronqués. Augmentez si les splats clairsemés laissent des trous."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "lissage",
         "tooltip": "Itérations de lissage de maillage Taubin. Lisse la surface sans la rétrécir (préserve le volume), contrairement au flou de densité. 0 = surface brute."
+      },
+      "solid": {
+        "name": "plein",
+        "tooltip": "Remplit l’intérieur en fonction de l’orientation des gaussiennes, pour une seule surface fermée. Désactivé : le contour brut de densité, qui conserve une paroi interne cachée derrière la surface."
       },
       "splat": {
         "name": "splat"

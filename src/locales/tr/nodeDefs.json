@@ -25325,6 +25325,10 @@
         "name": "renk_keskinleştirme",
         "tooltip": "Vertex dokusunu netleştir: 1.0 = fiziksel olarak doğru karışım; daha yüksek değer, her voxel'in rengini komşuların ortalaması yerine baskın gaussian'a yaklaştırır (dokuyu bulanıklıktan arındırır). Sadece renk - geometri değişmez."
       },
+      "fill": {
+        "name": "dolgu",
+        "tooltip": "Yalnızca katı modda. Yüzeyi takip etmeye kıyasla bir açıklığı kapatmanın maliyeti. Daha düşük değerler daha büyük açıklıkları kapatır: yaklaşık 3, içi boş nesneleri kapatır ancak bardaklara ve yakalara da kapak koyar."
+      },
       "kernel": {
         "name": "çekirdek",
         "tooltip": "Maksimum splat yarı genişliği (voxel cinsinden). Her gaussian, kendi 3-sigma penceresi kadar rasterize edilir, burada sınırlandırılır - küçük surfeller ucuz kalır, büyükler kesilmez. Seyrek splat'lar boşluk bırakıyorsa artırın."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "yumuşatma",
         "tooltip": "Taubin mesh-yumuşatma iterasyonları. Yüzeyi küçültmeden (hacmi koruyarak) yumuşatır, yoğunluğu bulanıklaştırmanın aksine. 0 = ham yüzey."
+      },
+      "solid": {
+        "name": "katı",
+        "tooltip": "Tek, kapalı bir yüzey için Gauss'ların yöneliminden iç kısmı doldurur. Kapalı: yüzeyin arkasındaki gizli iç duvarı koruyan ham yoğunluk konturu."
       },
       "splat": {
         "name": "splat"

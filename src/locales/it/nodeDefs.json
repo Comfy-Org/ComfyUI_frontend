@@ -25325,6 +25325,10 @@
         "name": "affila_colore",
         "tooltip": "Rende più nitida la texture dei vertici: 1.0 = fusione fisicamente corretta; valori più alti spostano il colore di ogni voxel verso la sua gaussiana dominante invece di fare la media con i vicini (riduce la sfocatura della texture). Solo colore - la geometria non cambia."
       },
+      "fill": {
+        "name": "riempi",
+        "tooltip": "Solo solido. Costo della chiusura di un'apertura rispetto al seguire la superficie. Un valore più basso chiude aperture più grandi: circa 3 sigilla gli oggetti cavi, ma mette anche coperchi su tazze e collari."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "Massima semi-larghezza dello splat in voxel. Ogni gaussiana viene rasterizzata su una finestra dimensionata in base al suo 3-sigma, limitata qui - i surfel piccoli restano economici, quelli grandi non vengono troncati. Aumenta se gli splat sparsi lasciano dei vuoti."
@@ -25348,6 +25352,10 @@
       "smooth": {
         "name": "smussa",
         "tooltip": "Iterazioni di smoothing mesh Taubin. Leviga la superficie senza ridurla (preserva il volume), a differenza della sfocatura della densità. 0 = superficie grezza."
+      },
+      "solid": {
+        "name": "solido",
+        "tooltip": "Riempie l'interno in base all'orientamento delle gaussiane, per una singola superficie chiusa. Disattivato: il contorno di densità grezzo, che mantiene una parete interna nascosta dietro la superficie."
       },
       "splat": {
         "name": "splat"
