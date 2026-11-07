@@ -56,6 +56,10 @@
     "classification": "live-defect"
   },
   {
+    "id": "vitest:src/components/sidebar/tabs/AssetsSidebarTab.test.ts:stops showing an output deleted from inside an open folder:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },

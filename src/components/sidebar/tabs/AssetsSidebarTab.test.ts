@@ -128,6 +128,9 @@ const assetsGridStub = {
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
       <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
+      <ul aria-label="Shown assets">
+        <li v-for="asset in assets" :key="asset.id">{{ asset.name }}</li>
+      </ul>
     </div>
   `
 }
@@ -197,6 +200,64 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+
+  const siblingOutput = {
+    ...folderAsset,
+    id: 'multi-output-b',
+    name: 'multi-output-b.png'
+  }
+
+  function shownAssetNames() {
+    return within(screen.getByRole('list', { name: 'Shown assets' }))
+      .queryAllByRole('listitem')
+      .map((item) => item.textContent.trim())
+  }
+
+  async function deleteFirstOutputInsideFolder() {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([
+      folderAsset,
+      siblingOutput
+    ])
+    vi.mocked(useMediaAssetActions().deleteAssets).mockImplementation(
+      async () => {
+        useAssetsStore().outputAssets.items = [siblingOutput]
+        return true
+      }
+    )
+    renderTab()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await waitFor(() =>
+      expect(shownAssetNames()).toEqual([
+        'multi-output.png',
+        'multi-output-b.png'
+      ])
+    )
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'mediaAsset.actions.delete' })
+    )
+  }
+
+  it('deletes the chosen output from inside an open folder', async () => {
+    await deleteFirstOutputInsideFolder()
+
+    expect(useMediaAssetActions().deleteAssets).toHaveBeenCalledExactlyOnceWith(
+      folderAsset
+    )
+  })
+
+  it.fails('stops showing an output deleted from inside an open folder', async () => {
+    await deleteFirstOutputInsideFolder()
+
+    await waitFor(() =>
+      expect(shownAssetNames()).toEqual(['multi-output-b.png'])
+    )
   })
 })
 
