@@ -11,6 +11,86 @@
     },
     "shareTooltip": "Workflow teilen"
   },
+  "addCreditsDialog": {
+    "amountError": {
+      "above_max": "Der maximale Aufladebetrag beträgt {amount}. Fügen Sie mit einer weiteren Aufladung mehr hinzu.",
+      "below_min": "Der Mindestbetrag beträgt {amount}.",
+      "whole_dollars": "Nur ganze Dollarbeträge."
+    },
+    "blocked": {
+      "action": "Checkout öffnen",
+      "body": "Ihr Browser hat den neuen Tab blockiert. Öffnen Sie den Checkout, um die Zahlung abzuschließen.",
+      "title": "Checkout wurde nicht geöffnet"
+    },
+    "checkoutFailed": {
+      "body": "Es wurde nichts abgebucht. Versuchen Sie es erneut.",
+      "title": "Checkout konnte nicht geöffnet werden"
+    },
+    "close": "Schließen",
+    "continue": "Weiter",
+    "credits": "{credits} Credits",
+    "creditsUnavailable": "— Credits",
+    "customAmountLabel": "Oder geben Sie einen Betrag ein",
+    "messageSupport": "den Support kontaktieren",
+    "needsVerification": {
+      "action": "Zahlung verifizieren",
+      "body": "Ihre Bank wartet darauf, dass Sie sie bestätigen. Verifizieren Sie sie, um diese Aufladung abzuschließen.",
+      "footer": "{amount}, nicht verifiziert",
+      "title": "Ihre Zahlung über {amount} muss verifiziert werden",
+      "titleNoAmount": "Ihre Zahlung muss verifiziert werden"
+    },
+    "negativeBalance": "Ihr Kontostand beträgt −{credits} Credits. Diese Aufladung gleicht ihn zuerst aus.",
+    "notAllowed": {
+      "body": "Prüfen Sie die Abrechnungseinstellungen, um zu erfahren, warum.",
+      "title": "Sie können derzeit keine Credits hinzufügen"
+    },
+    "notVerified": {
+      "action": "Support kontaktieren",
+      "body": "Ihre Bank hat sie nicht bestätigt. Versuchen Sie es später erneut oder kontaktieren Sie den Support.",
+      "footer": "Nicht verifiziert",
+      "footerTitle": "Aufladung über {amount}",
+      "title": "Ihre Zahlung über {amount} wurde nicht verifiziert",
+      "titleNoAmount": "Ihre Zahlung wurde nicht verifiziert"
+    },
+    "opened": {
+      "amount": "Betrag",
+      "body": "Credits werden diesem Workspace hinzugefügt, sobald Ihre Zahlung eingegangen ist.",
+      "credits": "Credits",
+      "reopen": "Checkout erneut öffnen",
+      "title": "Checkout wurde in einem neuen Tab geöffnet",
+      "titleBrowser": "Checkout wurde in Ihrem Browser geöffnet"
+    },
+    "opening": "Wird geöffnet…",
+    "paidAtCheckout": "{amount}, beim Checkout bezahlt",
+    "planLine": {
+      "ended": "Durch den Kauf von Credits starten Sie Ihr Cloud-Abonnement nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
+      "free_runs": "Durch den Kauf von Credits starten Sie kein Cloud-Abonnement. Abonnieren Sie, um Workflows weiterhin auszuführen, sobald Ihre kostenlosen Durchläufe aufgebraucht sind.",
+      "no_plan": "Durch den Kauf von Credits starten Sie kein Cloud-Abonnement. Abonnieren Sie, um Workflows in der Cloud auszuführen."
+    },
+    "processing": {
+      "body": "Sie müssen nicht erneut zahlen.",
+      "title": "Eine Zahlung über {amount} wird noch verarbeitet",
+      "titleNoAmount": "Eine Zahlung wird noch verarbeitet"
+    },
+    "purchasesPaused": {
+      "body": "Versuchen Sie es später erneut oder {support}.",
+      "title": "Der Kauf von Credits ist derzeit nicht verfügbar"
+    },
+    "rateLimited": {
+      "body": "Versuchen Sie es in {wait} erneut oder {support}.",
+      "bodyNoWait": "Versuchen Sie es später erneut oder {support}.",
+      "title": "Sie haben vorerst das Aufladelimit erreicht"
+    },
+    "title": "Credits hinzufügen",
+    "wait": {
+      "day": "einem Tag",
+      "days": "{count} Tagen",
+      "hour": "einer Stunde",
+      "hours": "{count} Stunden",
+      "minute": "einer Minute",
+      "minutes": "{count} Minuten"
+    }
+  },
   "agent": {
     "addFromAssets": "Ziehen Sie ein Asset aus dem Asset-Panel hinein",
     "addNodesFromGraph": "Erwähnen Sie Nodes aus dem Graphen",
@@ -48,6 +128,7 @@
     "backToPreviousChat": "Zum vorherigen Chat zurück",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Dieses Canvas ist leer — es wurde nichts hinzugefügt. Es gibt noch nichts zum Ausführen, Speichern oder Exportieren.",
+    "canvasNotReadyForSend": "Der Canvas dieses Tabs ist noch nicht bereit, daher wurde Ihre Nachricht nicht gesendet. Versuchen Sie es gleich noch einmal.",
     "changeWorkflowForChat": "Ändern Sie den Workflow, den der Agent bearbeiten kann",
     "chatOptions": "Chatoptionen",
     "chooseWorkflow": "Workflow auswählen",
@@ -114,12 +195,14 @@
     "editRejected": {
       "generic": "Ihre Änderung wurde abgelehnt und nicht gespeichert. Laden Sie den Workflow neu, wenn Ihr Canvas sie weiterhin anzeigt.",
       "genericPartial": "Ihre Änderung wurde abgelehnt und nicht gespeichert, obwohl einige vorherige Änderungen übernommen wurden. Laden Sie den Workflow neu, wenn Ihr Canvas weiterhin den abgelehnten Teil anzeigt.",
+      "overwritten": "Ihre Bearbeitung stand im Konflikt mit einer neueren Änderung und wurde nicht gespeichert. Der Workflow wurde aktualisiert, um die gespeicherte Version anzuzeigen.",
       "targets": {
         "clear": "das Löschen des Workflows",
         "link": "Verbindung {id}",
         "node": "Node {id}",
         "nodeField": "Node {id} {field}"
       },
+      "unconfirmed": "Es konnte nicht bestätigt werden, dass Ihre Bearbeitung gespeichert wurde. Der Workflow wurde aktualisiert, um die gespeicherte Version anzuzeigen.",
       "widgetWrite": "Die Widget-Änderung wurde abgelehnt und nicht gespeichert. Der Workflow behält den vorherigen Wert bei; laden Sie den Workflow neu, wenn Ihr Canvas weiterhin Ihren eingegebenen Wert anzeigt.",
       "widgetWritePartial": "Die Widget-Änderung wurde abgelehnt und nicht gespeichert, obwohl einige vorherige Änderungen übernommen wurden. Der Workflow behält den vorherigen Wert bei; laden Sie den Workflow neu, wenn Ihr Canvas weiterhin Ihren eingegebenen Wert anzeigt.",
       "withReason": "{notice} Abgelehnt: {target} ({code})",
@@ -132,6 +215,19 @@
     "entryFailedReason": "ComfyUI konnte den Agenten nicht starten: {reason}",
     "entryStarting": "Agent wird gestartet…",
     "entryStartingReason": "ComfyUI startet den Agenten: {reason}",
+    "errorContext": {
+      "allLabel": "Alle Probleme",
+      "draftBlocked": "Senden oder löschen Sie zuerst Ihre aktuelle Nachricht und fragen Sie dann den Agenten zu diesen Fehlern.",
+      "problemCount": "{count} Problem | {count} Probleme",
+      "remove": "Angehängtes Problem entfernen",
+      "workflowChanged": "Der Workflow mit diesen Fehlern ist nicht mehr geöffnet, daher wurde nichts angehängt."
+    },
+    "extensionChange": {
+      "disabled": "Node-Paket {pack} deaktiviert",
+      "enabled": "Node-Paket {pack} aktiviert",
+      "removed": "Node-Paket {pack} entfernt",
+      "restartHint": "Dies wird nach dem Neustart von ComfyUI wirksam. Laden Sie diese Seite nach dem Neustart neu."
+    },
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
@@ -297,6 +393,7 @@
     "targetWorkflowUnavailable": "Der Ziel-Workflow ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
     "title": "Comfy Agent",
+    "toolFailed": "{tool} fehlgeschlagen",
     "toolFailedSkill": "{skill} konnte nicht geladen werden",
     "toolForgettingPreference": "Vergisst eine Einstellung",
     "toolForgotPreference": "Eine Einstellung vergessen",
@@ -305,9 +402,14 @@
     "toolNotConfirmedOnCanvas": "{tool} — nicht auf Ihrem Canvas bestätigt",
     "toolOpenedNewTab": "Einen neuen Tab geöffnet",
     "toolOpeningNewTab": "Öffnet einen neuen Tab",
+    "toolOutcomeUnknown": "{tool} — Ergebnis unbekannt",
+    "toolRemovedNodePack": "Ein Node-Paket entfernt",
+    "toolRemovingNodePack": "Ein Node-Paket wird entfernt",
     "toolSavedPreference": "Eine Einstellung gespeichert",
     "toolSavingPreference": "Speichert eine Einstellung",
+    "toolSwitchedNodePack": "Ein Node-Paket gewechselt",
     "toolSwitchedTabs": "Tabs gewechselt",
+    "toolSwitchingNodePack": "Ein Node-Paket wird gewechselt",
     "toolSwitchingTabs": "Wechselt Tabs",
     "typeToSearch": "Zum Suchen tippen",
     "unavailableWorkflowReference": "{name} (nicht verfügbar)",
@@ -399,6 +501,7 @@
     "errorInvalidHost": "Der Hostname der Quell-URL konnte nicht aufgelöst werden.",
     "errorInvalidUrl": "Bitte geben Sie eine URL an.",
     "errorInvalidUrlFormat": "Das URL-Format ist ungültig. Bitte prüfen Sie es und versuchen Sie es erneut.",
+    "errorLoadingModels": "Einige Modelle konnten nicht geladen werden. Öffnen Sie die Modellbibliothek erneut, um es noch einmal zu versuchen.",
     "errorMetadataFetchFailed": "Dateiinformationen konnten nicht von der Quelle abgerufen werden.",
     "errorModelTypeNotSupported": "Dieser Modelltyp wird nicht unterstützt.",
     "errorNetworkError": "Ein Netzwerkfehler ist aufgetreten. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
@@ -451,6 +554,7 @@
     "invalidFilename": "Ungültiger Dateiname",
     "invalidFilenameDetail": "Der Dateiname des Assets konnte nicht ermittelt werden. Bitte versuchen Sie es erneut.",
     "jobId": "Job-ID",
+    "library": "Bibliothek",
     "listView": "Listenansicht",
     "loadingModels": "{type} wird geladen...",
     "maxFileSize": "Maximale Dateigröße: {size}",
@@ -486,6 +590,7 @@
       "modelTypeCoreReadonly": "Der Modelltyp kann im Core nicht geändert werden; das Verschieben der Datei wird noch nicht unterstützt.",
       "modelTypeImmutableReadonly": "Der Modelltyp kann für ein schreibgeschütztes Modell nicht geändert werden.",
       "noAdditionalTags": "Keine zusätzlichen Tags",
+      "saveFailed": "Modelldetails konnten nicht gespeichert werden. Versuchen Sie es erneut.",
       "selectModelPrompt": "Wählen Sie ein Modell aus, um dessen Informationen anzuzeigen",
       "selectModelType": "Modelltyp auswählen...",
       "source": "Quelle",
@@ -798,6 +903,7 @@
     "y": "Y"
   },
   "boundingBoxes": {
+    "boxCount": "{current} von {max} Box | {current} von {max} Boxen",
     "clearAll": "Alle löschen",
     "clickRegionToEdit": "Klicken Sie auf eine Region, um sie zu bearbeiten.",
     "colors": "color_palette",
@@ -1236,13 +1342,18 @@
   "credits": {
     "accountInitialized": "Konto initialisiert",
     "activity": "Aktivität",
+    "addCreditsRefusal": {
+      "paymentPastDue": "Aktualisieren Sie Ihre Zahlungsmethode, um Credits hinzuzufügen.",
+      "topupPurchasesPaused": "Der Kauf von Credits ist derzeit nicht verfügbar. Versuchen Sie es später erneut.",
+      "unavailable": "Das Hinzufügen von Credits ist für diesen Workspace derzeit nicht verfügbar."
+    },
     "added": "Hinzugefügt",
     "additionalInfo": "Zusätzliche Informationen",
     "api": "API",
     "apiPricing": "API-Preise",
     "charge": "Abbuchung",
-    "credits": "Credits",
     "creditUnit": "Credit | Credits",
+    "credits": "Credits",
     "creditsAvailable": "Verfügbare Credits",
     "details": "Details",
     "eventType": "Ereignistyp",
@@ -1901,6 +2012,13 @@
         "toastMessage": "Der Server wurde während der Ausführung dieses Workflows beendet. Versuchen Sie es erneut.",
         "toastTitle": "Server abgestürzt"
       },
+      "server_out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Dieser Workflow hat auf dem Server nicht genügend Speicher. Versuchen Sie es mit einem kürzeren Video, einer niedrigeren Auflösung oder einem kleineren Batch und führen Sie ihn dann erneut aus.",
+        "title": "Nicht genügend Speicher",
+        "toastMessage": "Dieser Workflow hat auf dem Server nicht genügend Speicher. Versuchen Sie es mit einem kürzeren Video, einer niedrigeren Auflösung oder einem kleineren Batch und führen Sie ihn dann erneut aus.",
+        "toastTitle": "Nicht genügend Speicher"
+      },
       "sign_in_required": {
         "itemLabel": "{nodeName}",
         "message": "Partner-Nodes erfordern ein Comfy-Konto. Melden Sie sich an, um fortzufahren.",
@@ -2089,6 +2207,7 @@
     "workspaceChangedDuringExecution": "Ihr aktiver Workspace wurde während der Vorbereitung dieser Ausführung geändert. Führen Sie den Workflow erneut aus, um den aktuellen Workspace zu verwenden."
   },
   "errorOverlay": {
+    "askAgent": "Agent fragen",
     "missingMedia": "Bei einigen Nodes fehlen erforderliche Eingaben",
     "missingModels": "{count} erforderliches Modell fehlt | {count} erforderliche Modelle fehlen",
     "missingNodes": "Einige Nodes fehlen und müssen installiert werden",
@@ -3747,6 +3866,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3974,12 +4094,15 @@
       "loading": "Autorisierungsanfrage wird geladen …",
       "missingRequest": "Diese Autorisierungsanfrage fehlt. Bitte starten Sie die Client-App erneut.",
       "noWorkspaces": "Für diese Anfrage sind keine geeigneten Workspaces verfügbar.",
+      "notYou": "Nicht Sie?",
       "permissionsHeader": "Berechtigungen",
       "redirectNotice": "Sie werden weitergeleitet zu",
       "resourceFallback": "diese App",
       "sessionError": "Sitzung konnte nicht eingerichtet werden. Bitte versuchen Sie es erneut.",
       "sessionErrorToastSummary": "OAuth-Anmeldung konnte nicht fortgesetzt werden",
+      "signedInAs": "Angemeldet als",
       "subtitle": "Melden Sie sich bei {resource} an, um fortzufahren",
+      "switchAccount": "Konto wechseln",
       "title": "{client} möchte Zugriff",
       "unverifiedBadge": "Name nicht verifiziert",
       "unverifiedNotice": "Dieser Name wurde von der Person angegeben, die diese App registriert hat. Wenn Sie fortfahren, wird Ihr Browser zu {host} weitergeleitet – stellen Sie sicher, dass Sie die Adresse erkennen.",
@@ -4243,6 +4366,9 @@
     "addFavorite": "Favorit",
     "addToDeploymentBuild": "Fügen Sie diese zum Build von {deployment} auf Platform hinzu und stellen Sie dann ein neues Release bereit.",
     "advancedInputs": "ERWEITERTE EINGÄNGE",
+    "askAgent": "Agent fragen",
+    "askAgentAbout": "Agent zu {title} fragen",
+    "askAgentAboutAll": "Agent zu {count} Problem fragen | Agent zu allen {count} Problemen fragen",
     "blockedLastRun": "Letzte Ausführung blockiert",
     "bypass": "Bypass",
     "collapse": "Einklappen",
@@ -5365,6 +5491,14 @@
     "saveYearly": "20 % sparen",
     "saveYearlyUpTo": "Bis zu 20 % sparen",
     "scheduledChangeNotice": "Ihr Tarif wechselt am {date} zu {plan}.",
+    "signupPaymentRecovery": {
+      "body": "Schließen Sie die Zahlung ab, um Ihren Plan zu starten.",
+      "contactSupport": "Support kontaktieren",
+      "finishPayment": "Zahlung abschließen",
+      "title": "Ihre Zahlung für {plan} ist fehlgeschlagen.",
+      "titleNoPlan": "Die Zahlung für Ihren Plan ist fehlgeschlagen.",
+      "unavailable": "Die Zahlungsseite konnte nicht geöffnet werden. Versuchen Sie es erneut oder kontaktieren Sie den Support."
+    },
     "subscribe": "Abonnieren",
     "subscribeFailed": "Abonnement konnte nicht abgeschlossen werden",
     "subscribeForMore": "Upgraden",
@@ -5746,11 +5880,11 @@
   },
   "videoConcat": {
     "clipLabel": "Clip {position}",
+    "clipSize": "Clip {position} ist {width} × {height}",
     "clips": "Clips",
     "mixedDimensions": "Gemischte Größen",
+    "mixedDimensionsWarning": "Alle Clips müssen für die Verkettung mit Clip {position} ({width} × {height}) übereinstimmen: {clips}.",
     "noClips": "Verbinden Sie Videos, um sie in der Vorschau anzuzeigen und anzuordnen",
-    "previewClips": "Clips",
-    "previewResult": "Letzter Durchlauf",
     "reorderHint": "Ziehen Sie Clips oder drücken Sie Alt + Pfeiltasten, um sie neu anzuordnen; klicken Sie, um zu springen"
   },
   "videoEdit": {
@@ -5874,7 +6008,11 @@
     "exportWorkflow": "Workflow exportieren",
     "saveWorkflow": "Workflow speichern",
     "savedAsApp": "In App-Workflow umgewandelt",
-    "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt"
+    "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt",
+    "unreadableWorkflowMessage": "Die gespeicherte Datei für {name} ist leer oder beschädigt und kann daher nicht geöffnet werden. Sie können sie aus Ihren Workflows löschen.",
+    "unreadableWorkflowTitle": "Dieser Workflow kann nicht geöffnet werden",
+    "unsavedChangesLost": "Die nicht gespeicherten Änderungen an {name} waren nicht mehr verfügbar, daher blieb die gespeicherte Datei unverändert.",
+    "unsavedChangesLostTitle": "Nicht gespeicherte Änderungen wurden nicht gespeichert"
   },
   "workspace": {
     "addedToNamedWorkspace": "Sie wurden zu {workspaceName} hinzugefügt",
@@ -5934,6 +6072,7 @@
         "localBody": "Sie haben noch {credits} Credit. Fügen Sie Credits hinzu, um Partner-Nodes weiterhin nutzen zu können. | Sie haben noch {credits} Credits. Fügen Sie Credits hinzu, um Partner-Nodes weiterhin nutzen zu können.",
         "memberBody": "Dieser Workspace hat noch {credits} Credit. Bitten Sie den Eigentümer des Workspace, Credits hinzuzufügen, bevor sie aufgebraucht sind. | Dieser Workspace hat noch {credits} Credits. Bitten Sie den Eigentümer des Workspace, Credits hinzuzufügen, bevor sie aufgebraucht sind.",
         "ownerBody": "Dieser Workspace hat noch {credits} Credit. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind. | Dieser Workspace hat noch {credits} Credits. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind.",
+        "pausedBody": "Sie haben noch {credits} Credit. Der Kauf von Credits ist derzeit nicht verfügbar. | Sie haben noch {credits} Credits. Der Kauf von Credits ist derzeit nicht verfügbar.",
         "personalBody": "Sie haben noch {credits} Credit. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind. | Sie haben noch {credits} Credits. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind.",
         "title": "Wenig Credits verfügbar"
       },
@@ -5947,8 +6086,14 @@
         "pastDueBody": "Ihr Team hat alle Credits verbraucht. Aktualisieren Sie Ihre Zahlungsmethode, um weitere hinzuzufügen.",
         "pastDueMemberBody": "Ihr Team hat alle Credits verbraucht. Bitten Sie den Besitzer Ihres Workspace, die Zahlungsmethode zu aktualisieren.",
         "pastDuePersonalBody": "Sie haben alle Ihre Credits verbraucht. Aktualisieren Sie Ihre Zahlungsmethode, um weitere hinzuzufügen.",
+        "pausedBody": "Ihr Team hat alle Credits verbraucht. Der Kauf von Credits ist derzeit nicht verfügbar. Die Credits werden am {date} aufgefüllt.",
+        "pausedBodyNoDate": "Ihr Team hat alle Credits verbraucht. Der Kauf von Credits ist derzeit nicht verfügbar. Versuchen Sie es später erneut oder kontaktieren Sie den Support.",
+        "pausedPersonalBody": "Sie haben alle Ihre Credits verbraucht. Der Kauf von Credits ist derzeit nicht verfügbar. Die Credits werden am {date} aufgefüllt.",
+        "pausedPersonalBodyNoDate": "Sie haben alle Ihre Credits verbraucht. Der Kauf von Credits ist derzeit nicht verfügbar. Versuchen Sie es später erneut oder kontaktieren Sie den Support.",
         "personalBody": "Sie haben alle Ihre Credits verbraucht. Fügen Sie weitere Credits hinzu oder warten Sie, bis die Credits am {date} aufgefüllt werden.",
         "personalBodyNoDate": "Sie haben alle Ihre Credits verbraucht. Fügen Sie weitere Credits hinzu.",
+        "refusedBody": "Ihr Team hat alle Credits verbraucht.",
+        "refusedPersonalBody": "Sie haben alle Ihre Credits verbraucht.",
         "title": "Keine Credits mehr"
       },
       "parked": {
@@ -5993,6 +6138,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Zahlungsmethode hinzufügen",
           "manage": "Verwalten",
           "turnOn": "Aktivieren",
           "updatePayment": "Zahlungsmethode aktualisieren"
@@ -6003,8 +6149,20 @@
         "limitTooltipNoDate": "Berücksichtigt nur Abbuchungen für automatische Aufladungen.",
         "maximumReached": "Monatliches Maximum erreicht. Wird am {date} zurückgesetzt.",
         "maximumReachedNoDate": "Monatliches Maximum erreicht.",
-        "member": "Credits können automatisch aufgeladen werden, wenn sie zur Neige gehen. Wenden Sie sich an einen Workspace-Inhaber, um dies zu verwalten.",
-        "off": "Füllt Credits auf, wenn Ihr Guthaben zur Neige geht",
+        "member": "Credits können automatisch aufgeladen werden, wenn sie knapp werden. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+        "memberStatus": {
+          "failed": "Die letzte Aufladung ist fehlgeschlagen. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "limitReached": "Monatliches Limit erreicht. Wird am {date} zurückgesetzt. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "limitReachedNoDate": "Monatliches Limit erreicht. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "maximumReached": "Monatliches Maximum erreicht. Wird am {date} zurückgesetzt. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "maximumReachedNoDate": "Monatliches Maximum erreicht. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "on": "Füllt auf {target} Credits auf, wenn das Guthaben unter {threshold} Credits fällt. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "onHold": "Eine Standardzahlungsmethode ist erforderlich. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten.",
+          "turnedOff": "Nach 3 abgelehnten Belastungen deaktiviert. Kontaktieren Sie einen Workspace-Inhaber, um dies zu verwalten."
+        },
+        "noDefaultPaymentMethod": "Für das automatische Aufladen ist eine Standardzahlungsmethode erforderlich. Legen Sie eine fest, um es zu aktivieren.",
+        "noPaymentMethod": "Für das automatische Aufladen ist eine Zahlungsmethode erforderlich. Fügen Sie eine hinzu, um es zu aktivieren.",
+        "off": "Füllt Credits auf, wenn Ihr Guthaben niedrig ist.",
         "onHold": "Keine Standardzahlungsmethode. Legen Sie eine fest, um die automatische Aufladung fortzusetzen.",
         "paused": "Monatliches Limit erreicht. Wird am {date} fortgesetzt.",
         "pausedByRemainder": "Die nächste Aufladung würde Ihr monatliches Limit überschreiten. Wird am {date} fortgesetzt.",
@@ -6032,13 +6190,13 @@
         "overdrawn": "Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten. | Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten.",
         "plan": "Plan",
         "planOfPool": "{remaining} von {total}",
-        "planTooltip": "In Ihrem Plan enthaltenes Guthaben. Es wird in jedem Abrechnungszeitraum aufgefüllt.",
+        "planTooltip": "Plan-Credits werden vor Auflade-Credits verwendet.",
         "planUsed": "{percent}% verwendet",
-        "rateInfo": "Über Guthaben",
-        "rateTooltip": "Guthaben bezahlt Ausführungen. {credits} Guthaben = 1 $.",
         "title": "Guthaben",
+        "tooltip": "Credits funktionieren in Comfy Cloud, ComfyUI und Comfy API.",
+        "tooltipLabel": "Über Credits",
         "topUp": "Aufladen",
-        "topUpTooltip": "Von Ihnen hinzugefügtes Guthaben. Es wird verwendet, sobald das Planguthaben aufgebraucht ist.",
+        "topUpTooltip": "Wird verwendet, nachdem die Plan-Credits aufgebraucht sind.",
         "unavailable": "Ihr Guthaben konnte nicht geladen werden."
       },
       "footer": {
@@ -6366,7 +6524,7 @@
     "createWorkspace": "Arbeitsbereich erstellen",
     "failedToSwitch": "Arbeitsbereich konnte nicht gewechselt werden",
     "managedByOrganization": "Ihre Organisation verwaltet Ihre Workspaces, daher können Sie keinen erstellen.",
-    "maxWorkspacesReached": "Sie können nur {max} Arbeitsbereiche besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
+    "maxWorkspacesReached": "Sie können nur {max} Workspace besitzen. Löschen Sie ihn, um einen neuen zu erstellen. | Sie können nur {max} Workspaces besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
     "personal": "Persönlich",
     "roleMember": "Mitglied",
     "roleOwner": "Inhaber",

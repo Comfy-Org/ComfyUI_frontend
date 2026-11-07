@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "עבד את הסרטון הסופי ב־1080p של טיוטת Seedance 2.5. הסרטון הסופי שומר על הסצנה והתנועה של הטיוטה, ועושה שימוש חוזר בפרומפט, בהפניות, במשך, ביחס הממדים ובהגדרת השמע שלה.",
+    "description": "עבד את הווידאו הסופי ב־1080p או ב־4k של טיוטת Seedance 2.5. הגרסה הסופית שומרת על הסצנה והתנועה של הטיוטה, ומשתמשת מחדש בפרומפט, בהפניות, במשך, ביחס הממדים ובהגדרת השמע שלה.",
     "display_name": "ByteDance Seedance 2.5 מטיוטה לסרטון סופי",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "פלט ה־draft_task_id של צומת Seedance 2.5 שהורץ עם מודל Seedance 2.5 Draft, או מזהה משימת טיוטה שהודבק. הגדר את בקרת ה־seed של צומת זה לקבוע, אחרת ההרצה הבאה תיצור טיוטה חדשה במקום להשתמש מחדש בזו שבדקת. ניתן לעבד טיוטה במשך 7 ימים לאחר יצירתה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית הווידאו הסופי. 4k זמין לחשבונות ארגוניים בלבד."
       },
       "watermark": {
         "name": "סימן מים",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות, 4k לחשבונות ארגוניים ופלט mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או ב־4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p או ב־4k."
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות, 4k לחשבונות ארגוניים ופלט mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או ב־4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות, 4k לחשבונות ארגוניים ופלט mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או ב־4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p או ב־4k."
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות, 4k לחשבונות ארגוניים ופלט mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או ב־4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p או ב־4k."
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "צרו וידאו עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק תמונות ייחוס ו/או סרטונים כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי (3-10 שניות) ישירות בפרומפט.",
+    "description": "צור וידאו עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק באופן אופציונלי תמונות ו/או סרטוני וידאו להפניה כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי ישירות בפרומפט (3-15s עבור Omni Flash 1.2, 3-10s עבור מודלים ישנים יותר).",
     "display_name": "Google Gemini Omni (וידאו)",
     "inputs": {
       "control_after_generate": {
@@ -10320,6 +10324,9 @@
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "model_audio": {
+        "name": "שמע"
+      },
       "model_prompt": {
         "name": "פרומפט"
       },
@@ -10337,7 +10344,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "יצירת וידאו עם שמע באמצעות עד 10 פריימי מפתח. פריימי הביניים מרווחים באופן אחיד; יחס הרוחב-גובה של הסרטון נקבע לפי פריים המפתח הראשון.",
+    "description": "צור וידאו עם שמע באמצעות עד 10 פריימים מרכזיים ב־kling-4.0, או מפריים ראשון ב־kling-4.0-flash. פריימים אמצעיים מרווחים באופן שווה; הווידאו מקבל את יחס הממדים של הפריים המרכזי הראשון.",
     "display_name": "Kling 4.0 תמונה לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18757,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההנמקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-6 Sol/Luna ו-GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, סדרת o low-high; ל-GPT-4.1 אין הנמקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "הרמות הנתמכות משתנות בין מודלים. רמה שאינה נתמכת עוצרת את ההרצה ומציגה את הרמות התקפות. 'default' מאפשר למודל לבחור."
       },
       "truncation": {
         "name": "truncation",
@@ -18857,7 +18864,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "יוצר תמונות דרך נקודת הקצה של OpenAI GPT Image.",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "OpenAI GPT Image 2.6",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18867,6 +18874,9 @@
       },
       "model_background": {
         "name": "background"
+      },
+      "model_complexity": {
+        "name": "מורכבות"
       },
       "model_custom_height": {
         "name": "custom_height"
@@ -19010,6 +19020,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "טקסט לתמונה, או עם תמונות — עריכה של image_1 כשהאחרות משמשות כהפניות. הפרומפט מתייחס אליהן כאל <Picture 1>, <Picture 2>, ... המודל זקוק ל־ModelSamplingMiniMaxH3 ב־1.0/1.0.",
+    "display_name": "התניית תמונה p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "0 משתמש בגובה של image_1 לאחר שינוי קנה מידה, או ב־2912 ללא תמונות."
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "עם תמונות, להנחיה קצרה מתווסף בתחילתה \"Edit <Picture 1>. \"; נעשה שימוש כפי שהן בהנחיה שמתחילה ב־\"Edit <Picture\" ובתיאור עריכה ממגדיל הפרומפט."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ה־VAE של p-h3-image, נדרש כאשר מחוברות תמונות."
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "0 משתמש ברוחב של image_1 לאחר שינוי קנה מידה, או ב־2912 ללא תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19708,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, MiniMax H3 של Pika שאומן לאחר מכן. צור או ערוך וידאו עם שמע מסונכרן בהנחיית תמונות, סרטונים ושמע להפניה.",
+    "display_name": "Pika H3 Flex מהפניות לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס ממדים",
+        "tooltip": "auto פועל לפי סרטון וידאו להפניה, או לפי הפרומפט אם אין כזה. תמונות להפניה אינן משפיעות עליו."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט פועל לפי רשת פריימים: 5 שניות מניבות 124 פריימים, כ־5.17 שניות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "התייחסו להפניות כאל @Image1, @Video1, @Audio1, או כאל <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "שמעי_ייחוס",
+        "tooltip": "עד 3 קטעים, שאליהם מתייחסים בפרומפט כ-@Audio1..@Audio3. 2–15 שניות לכל קטע, עד 15 שניות בסך הכול. כאשר הקטעים מועתקים לפלט, הם מתנגנים לפי סדר החיבור, לפני השמע של הסרטונים המחוברים, ללא קשר למספר שמצוין בפרומפט."
+      },
+      "reference_images": {
+        "name": "תמונות_ייחוס",
+        "tooltip": "עד 9 תמונות, שאליהן מתייחסים בפרומפט כ-@Image1..@Image9 לפי סדר החיבור. נדרשת לפחות תמונה או סרטון אחד."
+      },
+      "reference_video_audio": {
+        "name": "שמע של סרטון ייחוס",
+        "tooltip": "השמע של סרטונים מחוברים מועתק לפלט. השביתו אפשרות זו כדי ליצור אווירת רקע חדשה או להעביר תנועה עם מוזיקה חדשה. ראש מדבר ללא דיאלוג בפרומפט יקבל אז דיבור מומצא."
+      },
+      "reference_videos": {
+        "name": "סרטוני_ייחוס",
+        "tooltip": "עד 3 סרטונים, שאליהם מתייחסים בפרומפט כ-@Video1..@Video3 לפי סדר החיבור. 2–15 שניות לכל סרטון, עד 15 שניות בסך הכול. החיוב הוא לפי שנייה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p ומעלה מעובדים ב־768p ומוגדלים פעם אחת. אותו seed ב־480p יפיק וידאו שונה."
+      },
+      "rewrite_prompt": {
+        "name": "שכתוב_פרומפט",
+        "tooltip": "אפשרו ל-Pika להרחיב תחילה את הפרומפט. אותו seed יפיק אז סרטון שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הסרטון בדיוק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, ה-MiniMax H3 שעבר אימון המשך של Pika. יצירת סרטון עם שמע מסונכרן מטקסט ומפריים ראשון ואחרון אופציונליים.",
+    "display_name": "סרטון Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_גובה-רוחב",
+        "tooltip": "auto פועל לפי הפריים המחובר הראשון, אחרת לפי הפרומפט."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט פועל לפי רשת פריימים: 5 שניות מניבות 124 פריימים, כ־5.17 שניות."
+      },
+      "first_frame": {
+        "name": "פריים_ראשון"
+      },
+      "last_frame": {
+        "name": "פריים_אחרון"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p ומעלה מרונדרים ב-768p ומוגדלים פעם אחת. אותו seed ב-480p מפיק סרטון שונה."
+      },
+      "rewrite_prompt": {
+        "name": "שכתוב_פרומפט",
+        "tooltip": "אפשרו ל-Pika להרחיב תחילה את הפרומפט. אותו seed יפיק אז סרטון שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הסרטון בדיוק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "יצירת מוזיקה מתיאור טקסט וממילות שיר אופציונליות, או יצירת קאבר לשיר, באמצעות Pika.",
+    "display_name": "מוזיקת Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב"
+      },
+      "mode_duration": {
+        "name": "משך"
+      },
+      "mode_lyrics": {
+        "name": "מילות שיר"
+      },
+      "mode_prompt": {
+        "name": "פרומפט"
+      },
+      "mode_rewrite_prompt": {
+        "name": "שכתוב_פרומפט"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "יצירת אפקט קול מתיאור טקסט באמצעות Pika.",
+    "display_name": "אפקטי קול של Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "יצירת פסקול מסונכרן לסרטון באמצעות Pika. התמונה והאורך נשמרים; רק השמע מוחלף.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "instruction": {
+        "name": "הוראה",
+        "tooltip": "מה צריך להיות השמע: אפקטים קוליים, אווירת רקע, מוזיקה או סגנון. השאירו ריק כדי לגזור אותו מהתמונה."
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "עד 10 דקות."
       }
     },
     "outputs": {
@@ -21713,8 +21937,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "התניה ו-latent ריק להגדלת רזולוציית וידאו באמצעות RelayVSR; יש לדגום בצעד אחד עם cfg 1. רק כל פריים 15 עובר דרך המודל, ו-VSR Decode משחזר את כולם.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "הווידאו באיכות נמוכה ברזולוציה המקורית שלו; המודל קובע את גורם ההגדלה."
+      },
+      "model": {
+        "name": "מודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "מחלץ מחדש רשת בעלת טסלציה אחידה באמצעות שדה מרחק ברצועה צרה + Dual Contouring, בהתקן החישוב הפעיל. מנרמל טופולוגיה מבולגנת / לא־מניפולדית / בעלת חיתוכים עצמיים; יש להפעיל לפני Decimate Mesh כדי להגיע למספר פנים מדויק. הפלט נשאר מאוחה.",
+    "description": "מחלץ מחדש רשת בעלת טסלציה אחידה באמצעות שדה מרחק צר-פס + Dual Contouring, בהתקן החישוב הפעיל. מנרמל טופולוגיה מבולגנת / non-manifold / בעלת חיתוך עצמי; הפעילו לפני Decimate Mesh כדי להגיע למספר פאות מדויק. הפלט נשאר מרותך. רשתות החורגות מעבר ל-0.51 או שמשתרעות על פחות מ-0.5 מותאמות תחילה לקובייה [-0.5,0.5] וממופות בחזרה.",
     "display_name": "יצירת רשת מחדש (DC ברצועה צרה)",
     "inputs": {
       "band": {
@@ -24973,6 +25220,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "יצירת שיר עם שירה באמצעות פרומפט טקסט בעזרת Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "'auto' מתאים את אורך השיר למילות השיר. אורך מותאם אישית חותך מילים שאינן מתאימות וחוזר על מילים קצרות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תארו את השיר: סוגה, אווירה, כלים ושירה. כדי לקבוע את המילים, הוסיפו בלוק 'Lyrics:' עם תגיות [Verse] / [Chorus]; בלעדיו, המודל יכתוב את מילות השיר בעצמו. מקסימום: 2000 תווים."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם יש להפעיל את הצומת מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "יצירת מוזיקה מתוך הנחיה טקסטואלית באמצעות מודל הבינה המלאכותית של Sonilo.",
     "display_name": "Sonilo טקסט למוזיקה",
@@ -25813,6 +26086,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "יצירת תגובות טקסט באמצעות מודל Hy4 של Tencent. ספקו פרומפט טקסט, ובאופן אופציונלי תמונה אחת או יותר להקשר.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_reasoning": {
+        "name": "הנמקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: תמונה(ות) למודל",
     "inputs": {
@@ -26421,7 +26729,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "יצירת טקסט",
+    "display_name": "יצירת טקסט (הוצא משימוש)",
     "inputs": {
       "audio": {
         "name": "אודיו"
@@ -26480,7 +26788,7 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "פריימים של וידאו כאצוות תמונות. מניח 24 פריימים לשנייה; מדוגם פנימית ל-1 פריים לשנייה."
+        "tooltip": "פריימי וידאו כאצוות תמונות. ההנחה היא של-24 FPS; הם נדגמים בתת-דגימה לקצב הפריימים של המודל באופן פנימי."
       }
     },
     "outputs": {
@@ -26554,7 +26862,7 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "פריימים של וידאו כאצוות תמונות. מניח 24 פריימים לשנייה; מדוגם פנימית ל-1 פריים לשנייה."
+        "tooltip": "פריימי וידאו כאצוות תמונות. ההנחה היא 24 FPS; דגימת משנה לקצב הפריימים של המודל מתבצעת באופן פנימי."
       }
     },
     "outputs": {
@@ -26564,6 +26872,79 @@
       },
       "1": {
         "name": "thinking",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "יצירת טקסט",
+    "inputs": {
+      "audios": {
+        "name": "שמע"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "max_length": {
+        "name": "אורך מרבי"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי ריבוי־האסימונים של נקודת הביקורת. אין השפעה ללא משקלי MTP. auto מתאים את עומק ורוחב הטיוטה להתאמות אסימונים שנצפו ולעלות הביצוע; 2-5 מקבע עומק טיוטה קבוע; מצבי עץ מקבעים הן את הרוחב והן את העומק. הפלט שנדגם נשאר מפולג כראוי, אך שונה מפלט ללא MTP עבור אותו seed."
+      },
+      "prompt": {
+        "name": "הנחיה"
+      },
+      "sampling_mode": {
+        "name": "מצב דגימה"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "קנס נוכחות"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "קנס חזרה"
+      },
+      "sampling_mode_seed": {
+        "name": "זרע"
+      },
+      "sampling_mode_temperature": {
+        "name": "טמפרטורה"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "הנחיית מערכת",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. המערכת מתעלמת מכך כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
+      "thinking": {
+        "name": "חשיבה",
+        "tooltip": "הפעל מצב חשיבה אם המודל תומך בו."
+      },
+      "use_default_template": {
+        "name": "שימוש בתבנית ברירת המחדל",
+        "tooltip": "השתמש בהנחיית/תבנית המערכת המובנית, אם קיימת במודל."
+      },
+      "videos": {
+        "name": "סרטונים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }
@@ -29083,6 +29464,31 @@
       },
       "steps": {
         "name": "steps"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "פענוח ה-latents של RelayVSR באמצעות מפענח RelayVSR Flash, שקורא גם את המסגרות באיכות נמוכה.",
+    "display_name": "פענוח VSR",
+    "inputs": {
+      "detail": {
+        "name": "פירוט",
+        "tooltip": "קובע כמה מהפרטים שהמפענח מוסיף להגדלה הדו־קובייתית של כל מסגרת יישמרו; 1 הוא הפלט המלא של המודל."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "אותו סרטון באיכות נמוכה שניתן לצומת ההתניה."
+      },
+      "samples": {
+        "name": "דגימות"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

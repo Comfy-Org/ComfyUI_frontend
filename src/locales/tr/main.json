@@ -11,6 +11,86 @@
     },
     "shareTooltip": "İş akışını paylaş"
   },
+  "addCreditsDialog": {
+    "amountError": {
+      "above_max": "En yüksek yükleme tutarı {amount}. Başka bir yüklemeyle daha fazla ekleyin.",
+      "below_min": "Minimum tutar {amount}.",
+      "whole_dollars": "Yalnızca tam dolar tutarları."
+    },
+    "blocked": {
+      "action": "Ödeme sayfasını aç",
+      "body": "Tarayıcınız yeni sekmeyi engelledi. Ödemeyi tamamlamak için ödeme sayfasını açın.",
+      "title": "Ödeme sayfası açılmadı"
+    },
+    "checkoutFailed": {
+      "body": "Herhangi bir ücret alınmadı. Tekrar deneyin.",
+      "title": "Ödeme sayfası açılamadı"
+    },
+    "close": "Kapat",
+    "continue": "Devam et",
+    "credits": "{credits} kredi",
+    "creditsUnavailable": "— kredi",
+    "customAmountLabel": "Veya bir tutar girin",
+    "messageSupport": "desteğe mesaj gönderin",
+    "needsVerification": {
+      "action": "Ödemeyi doğrula",
+      "body": "Bankanız bunu onaylamanızı bekliyor. Bu yüklemeyi tamamlamak için doğrulayın.",
+      "footer": "{amount}, doğrulanmadı",
+      "title": "{amount} tutarındaki ödemenizin doğrulanması gerekiyor",
+      "titleNoAmount": "Ödemenizin doğrulanması gerekiyor"
+    },
+    "negativeBalance": "Bakiyeniz −{credits} kredi. Bu yükleme önce bunu karşılar.",
+    "notAllowed": {
+      "body": "Nedenini görmek için Faturalandırma ayarlarını kontrol edin.",
+      "title": "Şu anda kredi ekleyemezsiniz"
+    },
+    "notVerified": {
+      "action": "Destekle iletişime geçin",
+      "body": "Bankanız bunu onaylamadı. Daha sonra tekrar deneyin veya destekle iletişime geçin.",
+      "footer": "Doğrulanmadı",
+      "footerTitle": "{amount} yükleme",
+      "title": "{amount} tutarındaki ödemeniz doğrulanmadı",
+      "titleNoAmount": "Ödemeniz doğrulanmadı"
+    },
+    "opened": {
+      "amount": "Tutar",
+      "body": "Ödemeniz gerçekleşir gerçekleşmez krediler bu çalışma alanına eklenir.",
+      "credits": "Krediler",
+      "reopen": "Ödeme sayfasını yeniden aç",
+      "title": "Ödeme sayfası yeni bir sekmede açıldı",
+      "titleBrowser": "Ödeme sayfası tarayıcınızda açıldı"
+    },
+    "opening": "Açılıyor…",
+    "paidAtCheckout": "{amount}, ödeme sırasında tahsil edilir",
+    "planLine": {
+      "ended": "Kredi satın almak Cloud planınızı yeniden başlatmaz. Cloud'da iş akışlarını çalıştırmak için yeniden abone olun.",
+      "free_runs": "Kredi satın almak bir Cloud planı başlatmaz. Ücretsiz çalıştırma haklarınız tükendiğinde iş akışlarını çalıştırmaya devam etmek için abone olun.",
+      "no_plan": "Kredi satın almak bir Cloud planı başlatmaz. Cloud'da iş akışlarını çalıştırmak için abone olun."
+    },
+    "processing": {
+      "body": "Tekrar ödeme yapmanıza gerek yok.",
+      "title": "{amount} tutarındaki bir ödeme hâlâ işleniyor",
+      "titleNoAmount": "Bir ödeme hâlâ işleniyor"
+    },
+    "purchasesPaused": {
+      "body": "Daha sonra tekrar deneyin veya {support}.",
+      "title": "Kredi satın alma şu anda kullanılamıyor"
+    },
+    "rateLimited": {
+      "body": "{wait} sonra tekrar deneyin veya {support}.",
+      "bodyNoWait": "Daha sonra tekrar deneyin veya {support}.",
+      "title": "Şimdilik yükleme sınırına ulaştınız"
+    },
+    "title": "Kredi ekle",
+    "wait": {
+      "day": "bir gün",
+      "days": "{count} gün",
+      "hour": "bir saat",
+      "hours": "{count} saat",
+      "minute": "bir dakika",
+      "minutes": "{count} dakika"
+    }
+  },
   "agent": {
     "addFromAssets": "Varlık panelinden varlık sürükleyip bırakın",
     "addNodesFromGraph": "Graftaki düğümlerden bahsedin",
@@ -48,6 +128,7 @@
     "backToPreviousChat": "Önceki sohbete dön",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Bu tuval boş — buna hiçbir şey eklenmedi. Burada henüz çalıştırılacak, kaydedilecek veya dışa aktarılacak bir şey yok.",
+    "canvasNotReadyForSend": "Bu sekmenin tuvali henüz hazır değil, bu nedenle mesajınız gönderilmedi. Biraz sonra tekrar deneyin.",
     "changeWorkflowForChat": "Ajanın düzenleyebileceği iş akışını değiştirin",
     "chatOptions": "Sohbet seçenekleri",
     "chooseWorkflow": "Bir iş akışı seçin",
@@ -114,12 +195,14 @@
     "editRejected": {
       "generic": "Düzenlemeniz reddedildi ve kaydedilmedi. Tuval hâlâ bunu gösteriyorsa iş akışını yeniden yükleyin.",
       "genericPartial": "Düzenlemeniz reddedildi ve kaydedilmedi, ancak önceki bazı düzenlemeler kaydedildi. Tuval hâlâ reddedilen kısmı gösteriyorsa iş akışını yeniden yükleyin.",
+      "overwritten": "Düzenlemeniz daha yeni bir değişiklikle çakıştı ve kaydedilmedi. İş akışı, kaydedilen sürümü göstermek için yenilendi.",
       "targets": {
         "clear": "iş akışını temizleme",
         "link": "bağlantı {id}",
         "node": "düğüm {id}",
         "nodeField": "düğüm {id} {field}"
       },
+      "unconfirmed": "Düzenlemenizin kaydedildiği doğrulanamadı. İş akışı, kaydedilen sürümü göstermek için yenilendi.",
       "widgetWrite": "Widget düzenlemesi reddedildi ve kaydedilmedi. İş akışı önceki değeri korur; tuval hâlâ yazdığınız değeri gösteriyorsa iş akışını yeniden yükleyin.",
       "widgetWritePartial": "Widget düzenlemesi reddedildi ve kaydedilmedi, ancak önceki bazı düzenlemeler kaydedildi. İş akışı önceki değeri korur; tuval hâlâ yazdığınız değeri gösteriyorsa iş akışını yeniden yükleyin.",
       "withReason": "{notice} Reddedildi: {target} ({code})",
@@ -132,6 +215,19 @@
     "entryFailedReason": "ComfyUI ajanı başlatamadı: {reason}",
     "entryStarting": "Ajan başlatılıyor…",
     "entryStartingReason": "ComfyUI ajanı başlatıyor: {reason}",
+    "errorContext": {
+      "allLabel": "Tüm sorunlar",
+      "draftBlocked": "Önce mevcut mesajınızı gönderin veya temizleyin, ardından ajana bu hataları sorun.",
+      "problemCount": "{count} sorun | {count} sorun",
+      "remove": "Ekli sorunu kaldır",
+      "workflowChanged": "Bu hataları içeren iş akışı artık açık değil, bu nedenle hiçbir şey eklenmedi."
+    },
+    "extensionChange": {
+      "disabled": "Node paketi {pack} kapatıldı",
+      "enabled": "Node paketi {pack} açıldı",
+      "removed": "Node paketi {pack} kaldırıldı",
+      "restartHint": "Bu, ComfyUI yeniden başlatıldıktan sonra geçerli olur. Yeniden başlatmanın ardından bu sayfayı yenileyin."
+    },
     "feedbackCaption": "Geri bildirim paylaşın",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
@@ -297,6 +393,7 @@
     "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "title": "Comfy Agent",
+    "toolFailed": "{tool} başarısız oldu",
     "toolFailedSkill": "{skill} yüklenemedi",
     "toolForgettingPreference": "Bir tercih unutuluyor",
     "toolForgotPreference": "Bir tercih unutuldu",
@@ -305,9 +402,14 @@
     "toolNotConfirmedOnCanvas": "{tool} — tuvalinizde onaylanmadı",
     "toolOpenedNewTab": "Yeni bir sekme açıldı",
     "toolOpeningNewTab": "Yeni bir sekme açılıyor",
+    "toolOutcomeUnknown": "{tool} — sonuç bilinmiyor",
+    "toolRemovedNodePack": "Bir node paketi kaldırıldı",
+    "toolRemovingNodePack": "Bir node paketi kaldırılıyor",
     "toolSavedPreference": "Bir tercih kaydedildi",
     "toolSavingPreference": "Bir tercih kaydediliyor",
+    "toolSwitchedNodePack": "Bir node paketi değiştirildi",
     "toolSwitchedTabs": "Sekmeler değiştirildi",
+    "toolSwitchingNodePack": "Bir node paketi değiştiriliyor",
     "toolSwitchingTabs": "Sekmeler arasında geçiş yapılıyor",
     "typeToSearch": "aramak için yazın",
     "unavailableWorkflowReference": "{name} (kullanılamıyor)",
@@ -399,6 +501,7 @@
     "errorInvalidHost": "Kaynak URL ana bilgisayarı çözümlenemedi.",
     "errorInvalidUrl": "Lütfen bir URL girin.",
     "errorInvalidUrlFormat": "URL formatı geçersiz. Lütfen kontrol edip tekrar deneyin.",
+    "errorLoadingModels": "Bazı modeller yüklenemedi. Tekrar denemek için Model Kitaplığı'nı yeniden açın.",
     "errorMetadataFetchFailed": "Kaynaktan dosya bilgisi alınamadı.",
     "errorModelTypeNotSupported": "Bu model türü desteklenmiyor",
     "errorNetworkError": "Bir ağ hatası oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
@@ -451,6 +554,7 @@
     "invalidFilename": "Geçersiz Dosya Adı",
     "invalidFilenameDetail": "Varlık dosya adı belirlenemedi. Lütfen tekrar deneyin.",
     "jobId": "İş ID",
+    "library": "Kitaplık",
     "listView": "Liste görünümü",
     "loadingModels": "{type} yükleniyor...",
     "maxFileSize": "Maksimum dosya boyutu: {size}",
@@ -486,6 +590,7 @@
       "modelTypeCoreReadonly": "Çekirdekte model türü değiştirilemez, dosya taşıma henüz desteklenmiyor.",
       "modelTypeImmutableReadonly": "Salt okunur bir model için model türü değiştirilemez.",
       "noAdditionalTags": "Ek etiket yok",
+      "saveFailed": "Model ayrıntıları kaydedilemedi. Tekrar deneyin.",
       "selectModelPrompt": "Bilgilerini görmek için bir model seçin",
       "selectModelType": "Model türü seç...",
       "source": "Kaynak",
@@ -798,6 +903,7 @@
     "y": "Y"
   },
   "boundingBoxes": {
+    "boxCount": "{current} / {max} kutu | {current} / {max} kutu",
     "clearAll": "Tümünü temizle",
     "clickRegionToEdit": "Düzenlemek için bir bölgeye tıklayın.",
     "colors": "renk_paleti",
@@ -1236,13 +1342,18 @@
   "credits": {
     "accountInitialized": "Hesap başlatıldı",
     "activity": "Aktivite",
+    "addCreditsRefusal": {
+      "paymentPastDue": "Kredi eklemek için ödeme yönteminizi güncelleyin.",
+      "topupPurchasesPaused": "Şu anda kredi satın alınamıyor. Daha sonra tekrar deneyin.",
+      "unavailable": "Bu çalışma alanı için şu anda kredi ekleme kullanılamıyor."
+    },
     "added": "Eklendi",
     "additionalInfo": "Ek Bilgi",
     "api": "API",
     "apiPricing": "API Fiyatlandırması",
     "charge": "Ücretlendirme",
+    "creditUnit": "Kredi | Krediler",
     "credits": "Krediler",
-    "creditUnit": "Kredi",
     "creditsAvailable": "Mevcut kredi",
     "details": "Detaylar",
     "eventType": "Etkinlik Türü",
@@ -1901,6 +2012,13 @@
         "toastMessage": "Sunucu bu iş akışını çalıştırırken durdu. Tekrar deneyin.",
         "toastTitle": "Sunucu çöktü"
       },
+      "server_out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışında sunucudaki bellek tükendi. Daha kısa bir video, daha düşük çözünürlük veya daha küçük bir batch deneyin, ardından tekrar çalıştırın.",
+        "title": "Bellek tükendi",
+        "toastMessage": "Bu iş akışında sunucudaki bellek tükendi. Daha kısa bir video, daha düşük çözünürlük veya daha küçük bir batch deneyin, ardından tekrar çalıştırın.",
+        "toastTitle": "Bellek tükendi"
+      },
       "sign_in_required": {
         "itemLabel": "{nodeName}",
         "message": "Ortak düğümler için Comfy hesabı gereklidir. Devam etmek için giriş yapın.",
@@ -2089,6 +2207,7 @@
     "workspaceChangedDuringExecution": "Bu çalıştırma hazırlanırken etkin çalışma alanınız değişti. Geçerli çalışma alanını kullanmak için iş akışını yeniden çalıştırın."
   },
   "errorOverlay": {
+    "askAgent": "Ajana sor",
     "missingMedia": "Bazı düğümler gerekli girdilerden yoksun",
     "missingModels": "{count} gerekli model eksik | {count} gerekli model eksik",
     "missingNodes": "Bazı düğümler eksik ve yüklenmesi gerekiyor",
@@ -3747,6 +3866,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3974,12 +4094,15 @@
       "loading": "Yetkilendirme isteği yükleniyor…",
       "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
       "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "notYou": "Siz değil misiniz?",
       "permissionsHeader": "İzinler",
       "redirectNotice": "Yönlendirileceksiniz:",
       "resourceFallback": "bu uygulama",
       "sessionError": "Oturum başlatılamadı. Lütfen tekrar deneyin.",
       "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
+      "signedInAs": "Şu hesapla oturum açıldı",
       "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
+      "switchAccount": "Hesap değiştir",
       "title": "{client} erişim istiyor",
       "unverifiedBadge": "Ad doğrulanmadı",
       "unverifiedNotice": "Bu ad, bu uygulamayı kaydeden kişi tarafından sağlandı. Devam ettikten sonra tarayıcınız {host} adresine yönlendirilecektir — bu adresi tanıdığınızdan emin olun.",
@@ -4243,6 +4366,9 @@
     "addFavorite": "Favorilere Ekle",
     "addToDeploymentBuild": "Bunları Platform'da {deployment}'ın derlemesine ekleyin, ardından yeni bir sürüm dağıtın.",
     "advancedInputs": "GELİŞMİŞ GİRDİLER",
+    "askAgent": "Ajana sor",
+    "askAgentAbout": "Ajana {title} hakkında sor",
+    "askAgentAboutAll": "Ajana {count} sorun hakkında sor | Ajana {count} sorunun tümü hakkında sor",
     "blockedLastRun": "Son çalıştırma engellendi",
     "bypass": "Atla",
     "collapse": "Daralt",
@@ -5365,6 +5491,14 @@
     "saveYearly": "%20 tasarruf",
     "saveYearlyUpTo": "%20'ye kadar tasarruf edin",
     "scheduledChangeNotice": "Planınız {date} tarihinde {plan} olarak değişecek.",
+    "signupPaymentRecovery": {
+      "body": "Planınızı başlatmak için ödemeyi tamamlayın.",
+      "contactSupport": "Destek ile iletişime geçin",
+      "finishPayment": "Ödemeyi tamamla",
+      "title": "{plan} planınızın ödemesi gerçekleşmedi.",
+      "titleNoPlan": "Planınızın ödemesi gerçekleşmedi.",
+      "unavailable": "Ödeme sayfasını açamadık. Tekrar deneyin veya destek ile iletişime geçin."
+    },
     "subscribe": "Abone ol",
     "subscribeFailed": "Abonelik başarısız oldu",
     "subscribeForMore": "Yükselt",
@@ -5746,11 +5880,11 @@
   },
   "videoConcat": {
     "clipLabel": "Klip {position}",
+    "clipSize": "clip {position}: {width} × {height}",
     "clips": "Klipler",
     "mixedDimensions": "Karışık boyutlar",
+    "mixedDimensionsWarning": "Birleştirmek için tüm clip'ler, clip {position} ({width} × {height}) ile aynı boyutta olmalıdır: {clips}.",
     "noClips": "Önizlemek ve sıralamak için videoları bağlayın",
-    "previewClips": "Klipler",
-    "previewResult": "Son çalıştırma",
     "reorderHint": "Yeniden sıralamak için klipleri sürükleyin veya Alt + ok tuşlarına basın; atlamak için tıklayın"
   },
   "videoEdit": {
@@ -5874,7 +6008,11 @@
     "exportWorkflow": "İş Akışını Dışa Aktar",
     "saveWorkflow": "İş akışını kaydet",
     "savedAsApp": "Uygulama iş akışına dönüştürüldü",
-    "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü"
+    "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü",
+    "unreadableWorkflowMessage": "{name} için kaydedilen dosya boş veya hasarlı olduğundan açılamıyor. İş akışlarınızdan silebilirsiniz.",
+    "unreadableWorkflowTitle": "Bu iş akışı açılamıyor",
+    "unsavedChangesLost": "{name} üzerindeki kaydedilmemiş değişiklikler artık mevcut değildi; bu nedenle kaydedilen dosya olduğu gibi bırakıldı.",
+    "unsavedChangesLostTitle": "Kaydedilmemiş değişiklikler kaydedilemedi"
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName} çalışma alanına eklendiniz",
@@ -5934,6 +6072,7 @@
         "localBody": "Kalan {credits} krediniz var. Partner Nodes'u çalıştırmaya devam etmek için kredi ekleyin. | Kalan {credits} krediniz var. Partner Nodes'u çalıştırmaya devam etmek için kredi ekleyin.",
         "memberBody": "Bu çalışma alanında {credits} kredi kaldı. Krediniz bitmeden önce çalışma alanı sahibinden kredi eklemesini isteyin. | Bu çalışma alanında {credits} kredi kaldı. Krediniz bitmeden önce çalışma alanı sahibinden kredi eklemesini isteyin.",
         "ownerBody": "Bu çalışma alanında {credits} kredi kaldı. Krediniz bitmeden önce kredi ekleyin. | Bu çalışma alanında {credits} kredi kaldı. Krediniz bitmeden önce kredi ekleyin.",
+        "pausedBody": "{credits} krediniz kaldı. Şu anda kredi satın alma seçeneği kullanılamıyor. | {credits} krediniz kaldı. Şu anda kredi satın alma seçeneği kullanılamıyor.",
         "personalBody": "Kalan {credits} krediniz var. Krediniz bitmeden önce kredi ekleyin. | Kalan {credits} krediniz var. Krediniz bitmeden önce kredi ekleyin.",
         "title": "Krediler azalıyor"
       },
@@ -5947,8 +6086,14 @@
         "pastDueBody": "Ekibiniz tüm kredilerini kullandı. Daha fazla eklemek için ödeme yönteminizi güncelleyin.",
         "pastDueMemberBody": "Ekibiniz tüm kredilerini kullandı. Ödeme yöntemini güncellemesi için çalışma alanı sahibinizden isteyin.",
         "pastDuePersonalBody": "Tüm kredilerinizi kullandınız. Daha fazla eklemek için ödeme yönteminizi güncelleyin.",
+        "pausedBody": "Ekibiniz tüm kredilerini kullandı. Şu anda kredi satın alma seçeneği kullanılamıyor. Krediler {date} tarihinde yenilenecek.",
+        "pausedBodyNoDate": "Ekibiniz tüm kredilerini kullandı. Şu anda kredi satın alma seçeneği kullanılamıyor. Daha sonra tekrar deneyin veya desteğe mesaj gönderin.",
+        "pausedPersonalBody": "Tüm kredilerinizi kullandınız. Şu anda kredi satın alma seçeneği kullanılamıyor. Krediler {date} tarihinde yenilenecek.",
+        "pausedPersonalBodyNoDate": "Tüm kredilerinizi kullandınız. Şu anda kredi satın alma seçeneği kullanılamıyor. Daha sonra tekrar deneyin veya desteğe mesaj gönderin.",
         "personalBody": "Tüm kredilerinizi kullandınız. Daha fazla kredi ekleyin veya kredilerinizin {date} tarihinde yenilenmesini bekleyin.",
         "personalBodyNoDate": "Tüm kredilerinizi kullandınız. Daha fazla kredi ekleyin.",
+        "refusedBody": "Ekibiniz tüm kredilerini kullandı.",
+        "refusedPersonalBody": "Tüm kredilerinizi kullandınız.",
         "title": "Kredi kalmadı"
       },
       "parked": {
@@ -5993,6 +6138,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Ödeme yöntemi ekle",
           "manage": "Yönet",
           "turnOn": "Aç",
           "updatePayment": "Ödemeyi güncelle"
@@ -6004,7 +6150,19 @@
         "maximumReached": "Aylık maksimuma ulaşıldı. {date} tarihinde sıfırlanır.",
         "maximumReachedNoDate": "Aylık maksimuma ulaşıldı.",
         "member": "Krediler azaldığında otomatik olarak yüklenebilir. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
-        "off": "Bakiyeniz azaldığında kredileri yeniden yükler",
+        "memberStatus": {
+          "failed": "Son yükleme gerçekleşmedi. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "limitReached": "Aylık sınıra ulaşıldı. {date} tarihinde sıfırlanır. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "limitReachedNoDate": "Aylık sınıra ulaşıldı. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "maximumReached": "Aylık maksimuma ulaşıldı. {date} tarihinde sıfırlanır. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "maximumReachedNoDate": "Aylık maksimuma ulaşıldı. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "on": "Kredi miktarı {threshold} altına düştüğünde {target} krediye tamamlar. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "onHold": "Varsayılan bir ödeme yöntemi gerekir. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
+          "turnedOff": "3 ödeme reddedildikten sonra kapatıldı. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin."
+        },
+        "noDefaultPaymentMethod": "Otomatik yükleme için varsayılan bir ödeme yöntemi gerekir. Açmak için bir yöntem belirleyin.",
+        "noPaymentMethod": "Otomatik yükleme için bir ödeme yöntemi gerekir. Açmak için bir yöntem ekleyin.",
+        "off": "Bakiyeniz azaldığında kredileri yeniden yükler.",
         "onHold": "Varsayılan ödeme yöntemi yok. Otomatik kredi yüklemeyi sürdürmek için bir tane ayarlayın.",
         "paused": "Aylık sınıra ulaşıldı. {date} tarihinde devam eder.",
         "pausedByRemainder": "Sonraki kredi yüklemesi aylık limitinizi aşar. {date} tarihinde devam eder.",
@@ -6032,13 +6190,13 @@
         "overdrawn": "Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı. | Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı.",
         "plan": "Plan",
         "planOfPool": "{total} kredinin {remaining}'i",
-        "planTooltip": "Planınıza dahil olan krediler. Her faturalandırma döneminde yenilenirler.",
+        "planTooltip": "Plan kredileri, yüklenen kredilerden önce harcanır.",
         "planUsed": "%{percent} kullanıldı",
-        "rateInfo": "Krediler hakkında",
-        "rateTooltip": "Krediler çalıştırmalar için ödeme yapar. {credits} kredi = $1.",
         "title": "Krediler",
+        "tooltip": "Krediler Comfy Cloud, ComfyUI ve Comfy API genelinde kullanılabilir.",
+        "tooltipLabel": "Krediler hakkında",
         "topUp": "Bakiye yükle",
-        "topUpTooltip": "Eklediğiniz krediler. Plan kredileri tükendiğinde kullanılırlar.",
+        "topUpTooltip": "Plan kredileri tükendikten sonra kullanılır.",
         "unavailable": "Bakiyeniz yüklenemedi."
       },
       "footer": {
@@ -6366,7 +6524,7 @@
     "createWorkspace": "Yeni çalışma alanı oluştur",
     "failedToSwitch": "Çalışma alanı değiştirilemedi",
     "managedByOrganization": "Kuruluşunuz çalışma alanlarınızı yönettiği için çalışma alanı oluşturamazsınız.",
-    "maxWorkspacesReached": "Yalnızca {max} çalışma alanına sahip olabilirsiniz. Yeni bir tane oluşturmak için birini silin.",
+    "maxWorkspacesReached": "Yalnızca {max} çalışma alanına sahip olabilirsiniz. Yeni bir çalışma alanı oluşturmak için bunu silin. | Yalnızca {max} çalışma alanına sahip olabilirsiniz. Yeni bir çalışma alanı oluşturmak için birini silin.",
     "personal": "Kişisel",
     "roleMember": "Üye",
     "roleOwner": "Sahip",

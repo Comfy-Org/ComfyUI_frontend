@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "Bir Seedance 2.5 Taslağının 1080p son videosunu oluşturur. Son video, taslağın sahnesini ve hareketini korur; istemini, referanslarını, süresini, en-boy oranını ve ses ayarını yeniden kullanır.",
+    "description": "Bir Seedance 2.5 Taslağının 1080p veya 4k nihai videosunu oluşturun. Nihai video, taslağın sahnesini ve hareketini korur; istemini, referanslarını, süresini, en-boy oranını ve ses ayarını yeniden kullanır.",
     "display_name": "ByteDance Seedance 2.5 Taslaktan Son Videoya",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "Seedance 2.5 Draft modeliyle çalıştırılan bir Seedance 2.5 düğümünün draft_task_id çıktısı veya yapıştırılmış bir taslak görev kimliği. İncelediğiniz taslağı yeniden kullanmak için bu düğümün seed denetimini sabit olarak ayarlayın; aksi takdirde sonraki çalıştırma yeni bir taslak oluşturur. Bir taslak, oluşturulduktan sonra 7 gün boyunca işlenebilir."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Nihai videonun çözünürlüğü. 4k yalnızca kurumsal hesaplarda kullanılabilir."
       },
       "watermark": {
         "name": "watermark",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; draft_task_id'si Seedance 2.5 Draft to Final Video düğümünde 1080p son videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar, kurumsal hesaplar için 4k ve mp4/mov çıktısı için Seedance 2.5; taslak_task_id'si Seedance 2.5 Taslaktan Nihai Videoya düğümünde 1080p veya 4k nihai videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
       },
       "model_duration": {
         "name": "süre"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p son videoyu oluşturmak için bunu Seedance 2.5 Draft to Final Video düğümüne bağlayın."
+        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p veya 4k nihai videoyu oluşturmak için bunu Seedance 2.5 Taslaktan Nihai Videoya düğümüne bağlayın."
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; draft_task_id'si Seedance 2.5 Draft to Final Video düğümünde 1080p son videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar, kurumsal hesaplar için 4k ve mp4/mov çıktısı için Seedance 2.5; taslak_task_id'si Seedance 2.5 Taslaktan Nihai Videoya düğümünde 1080p veya 4k nihai videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
       },
       "model_auto_downscale": {
         "name": "otomatik_küçültme"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; draft_task_id'si Seedance 2.5 Draft to Final Video düğümünde 1080p son videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar, kurumsal hesaplar için 4k ve mp4/mov çıktısı için Seedance 2.5; taslak_task_id'si Seedance 2.5 Taslaktan Nihai Videoya düğümünde 1080p veya 4k nihai videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p son videoyu oluşturmak için bunu Seedance 2.5 Draft to Final Video düğümüne bağlayın."
+        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p veya 4k nihai videoyu oluşturmak için bunu Seedance 2.5 Taslaktan Nihai Videoya düğümüne bağlayın."
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; draft_task_id'si Seedance 2.5 Draft to Final Video düğümünde 1080p son videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar, kurumsal hesaplar için 4k ve mp4/mov çıktısı için Seedance 2.5; taslak_task_id'si Seedance 2.5 Taslaktan Nihai Videoya düğümünde 1080p veya 4k nihai videoyu oluşturan hızlı bir 480p önizleme için Seedance 2.5 Draft; en yüksek kalite ve 4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı ve en düşük maliyetli üretim için Mini."
       },
       "model_duration": {
         "name": "süre"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p son videoyu oluşturmak için bunu Seedance 2.5 Draft to Final Video düğümüne bağlayın."
+        "tooltip": "Bir Seedance 2.5 Draft çalıştırmasının görev kimliği. 1080p veya 4k nihai videoyu oluşturmak için bunu Seedance 2.5 Taslaktan Nihai Videoya düğümüne bağlayın."
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "Google'ın Gemini Omni Flash modellerini kullanarak bir metin isteminden sesli video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstenen uzunluğu (3-10 sn.) doğrudan istemde belirtin.",
+    "description": "Google'ın Gemini Omni Flash modellerini kullanarak metin isteminden sesli bir video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstenen uzunluğu doğrudan istemde belirtin (Omni Flash 1.2 için 3-15 sn., eski modeller için 3-10 sn.).",
     "display_name": "Google Gemini Omni (Video)",
     "inputs": {
       "control_after_generate": {
@@ -10320,6 +10324,9 @@
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "model_audio": {
+        "name": "ses"
+      },
       "model_prompt": {
         "name": "istem"
       },
@@ -10337,7 +10344,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "En fazla 10 ana kareyle ses içeren bir video oluşturun. Ara kareler eşit aralıklarla yerleştirilir; video, ilk ana karenin en-boy oranını alır.",
+    "description": "kling-4.0 üzerinde en fazla 10 anahtar kareyle veya kling-4.0-flash üzerinde bir ilk kareden sesli video oluşturun. Ara kareler eşit aralıklarla yerleştirilir; video ilk anahtar karenin en-boy oranını alır.",
     "display_name": "Kling 4.0 Görüntüden Videoya",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18757,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin yanıtlamadan önce ne kadar akıl yürüttüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre değişir: GPT-6 Astra low-max, GPT-6 Sol/Luna ve GPT-5.6 none-max (minimal yok), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1’de akıl yürütme yoktur. Desteklenmeyen düzeyler istek gönderilmeden önce reddedilir."
+        "tooltip": "Desteklenen seviyeler modele göre değişir. Desteklenmeyen bir seviye çalıştırmayı durdurur ve geçerli olanları listeler. 'default', modelin seçmesine izin verir."
       },
       "truncation": {
         "name": "kırpma",
@@ -18857,7 +18864,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAI'nin GPT Görüntü uç noktası ile görüntüler oluşturur.",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "OpenAI GPT Image 2.6",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -18867,6 +18874,9 @@
       },
       "model_background": {
         "name": "arka_plan"
+      },
+      "model_complexity": {
+        "name": "karmaşıklık"
       },
       "model_custom_height": {
         "name": "özel_yükseklik"
@@ -19010,6 +19020,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Metinden görsele veya görsellerle birlikte, diğerleri referans olarak kullanılarak image_1'in düzenlenmesi. İstem bunlara <Picture 1>, <Picture 2>, ... olarak başvurur. Modelin 1.0/1.0'da ModelSamplingMiniMaxH3'e ihtiyacı vardır.",
+    "display_name": "p-h3-image Koşullandırma",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "0, ölçeklendirmeden sonra image_1'in yüksekliğini veya görsel yoksa 2912'yi kullanır."
+      },
+      "images": {
+        "name": "görseller"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görsellerle birlikte kısa bir talimatın başına \"Edit <Picture 1>. \" eklenir; \"Edit <Picture\" ile başlayan bir talimat ve istem yükselticiden gelen düzenleme özeti olduğu gibi kullanılır."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Görseller bağlandığında gerekli olan p-h3-image VAE'si."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "0, ölçeklendirmeden sonra image_1'in genişliğini veya görsel yoksa 2912'yi kullanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19708,183 @@
       },
       "positive": {
         "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika'nın sonradan eğitilmiş MiniMax H3 modeli olan Pika H3 Flex. Referans görseller, videolar ve ses tarafından yönlendirilen senkronize sesli video oluşturun veya düzenleyin.",
+    "display_name": "Pika H3 Flex Referanstan Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, bir referans videoyu; aksi hâlde istemi izler. Referans görseller bunu etkilemez."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "Çıktı uzunluğu bir kare ızgarasını izler: 5 saniye, yaklaşık 5,17 saniye olan 124 kare verir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Referanslara @Image1, @Video1, @Audio1 ya da <Picture 1>, <Video 1>, <Audio 1> olarak başvurun."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "İstemde @Audio1..@Audio3 olarak anılan en fazla 3 klip. Her biri 2-15 saniye, toplamda 15 saniye. Çıktıya kopyalandığında klipler, istem hangi numarayı belirtirse belirtsin, bağlantı sırasıyla ve bağlı videoların sesinden önce oynatılır."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Bağlantı sırasına göre istemde @Image1..@Image9 olarak anılan en fazla 9 görüntü. En az bir görüntü veya video gereklidir."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "Bağlı videoların sesi çıktıya kopyalanır. Yeni ambiyans veya yeni müzikle hareket aktarımı için bunu kapatın. İstemde diyalog bulunmayan bir konuşan kafa için bu durumda uydurulmuş konuşma eklenir."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Bağlantı sırasına göre istemde @Video1..@Video3 olarak anılan en fazla 3 video. Her biri 2-15 saniye, toplamda 15 saniye. Saniye başına ücretlendirilir."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p ve üzeri, 768p olarak oluşturulur ve bir kez büyütülür. 480p'de aynı seed farklı bir video verir."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Önce Pika'nın istemi genişletmesine izin verin. Aynı seed, her çalıştırmada farklı bir video üretir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "rewrite_prompt kapalıyken, aynı seed videoyu tam olarak tekrarlar. Aynı seed ile yapılan yerel çalıştırma farklı bir sonuç verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika'nın sonradan eğitilmiş MiniMax H3 modeli Pika H3 Flex. Metinden ve isteğe bağlı ilk ve son karelerden senkronize sesli video oluşturun.",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, bağlı ilk kareyi; aksi hâlde istemi izler."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "Çıktı uzunluğu bir kare ızgarasını izler: 5 saniye, yaklaşık 5,17 saniye olan 124 kare verir."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p ve üzeri 768p'de işlenir ve bir kez yükseltilir. 480p'de aynı seed farklı bir video üretir."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Önce Pika'nın istemi genişletmesine izin verin. Aynı seed, her çalıştırmada farklı bir video üretir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "rewrite_prompt kapalıyken, aynı seed videoyu tam olarak tekrarlar. Aynı seed ile yapılan yerel çalıştırma farklı bir sonuç verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Pika ile metin açıklamasından ve isteğe bağlı şarkı sözlerinden müzik oluşturun veya bir şarkıya cover yapın.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "mode": {
+        "name": "mod"
+      },
+      "mode_duration": {
+        "name": "süre"
+      },
+      "mode_lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "mode_prompt": {
+        "name": "istem"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Pika ile metin açıklamasından bir ses efekti oluşturun.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Pika ile bir video için senkronize bir ses parçası oluşturun. Görüntü ve süre korunur; yalnızca ses değiştirilir.",
+    "display_name": "Pika Ses Parçası",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "instruction": {
+        "name": "talimat",
+        "tooltip": "Sesin nasıl olması gerektiği: ses efektleri, ortam sesi, müzik veya stil. Görüntüden türetmek için boş bırakın."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "En fazla 10 dakika."
       }
     },
     "outputs": {
@@ -21713,8 +21937,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "RelayVSR video yükseltme için koşullandırma ve boş latent; cfg 1 ile 1 adımda örnekleyin. Yalnızca her 15. kare modelden geçer, VSR Decode hepsini geri yükler.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Yerel çözünürlüğündeki düşük kaliteli video; yükseltme katsayısını model belirler."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "Etkin işlem cihazında, dar bantlı mesafe alanı + Dual Contouring aracılığıyla düzgün üçgenlenmiş bir mesh'i yeniden çıkarır. Dağınık / manifold olmayan / kendiyle kesişen topolojiyi normalleştirir; tam bir yüz sayısına ulaşmak için Decimate Mesh'ten önce çalıştırın. Çıktı birleşik kalır.",
+    "description": "Etkin hesaplama cihazında, dar bantlı bir mesafe alanı + Dual Contouring aracılığıyla eşit biçimde mozaiklenmiş bir mesh'i yeniden çıkarır. Dağınık / manifold olmayan / kendi kendisiyle kesişen topolojiyi normalleştirir; tam bir yüz sayısına ulaşmak için Decimate Mesh'ten önce çalıştırın. Çıktı birleşik kalır. 0.51'in ötesine ulaşan veya 0.5'in altında kalan mesh'ler önce [-0.5,0.5] küpüne sığdırılır ve ardından geri eşlenir.",
     "display_name": "Mesh'i Yeniden Oluştur (Dar Bant DC)",
     "inputs": {
       "band": {
@@ -24973,6 +25220,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Sonilo Music 1.5 kullanarak bir metin isteminden söylenen vokallere sahip bir şarkı oluşturun.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "'auto', şarkı süresini sözlere uydurur. Özel bir süre, sığmayan sözleri keser ve kısa olanları tekrarlar."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Şarkıyı tanımlayın: tür, ruh hâli, enstrümanlar ve vokaller. Sözleri ayarlamak için [Verse] / [Chorus] etiketleriyle bir 'Lyrics:' bloğu ekleyin; eklemezseniz model kendi sözlerini yazar. En fazla: 2000 karakter."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalışıp çalışmayacağını denetler; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Sonilo'nun yapay zeka modeliyle bir metin isteminden müzik oluşturun. Süreyi 0 olarak bırakın, model süreyi istemden çıkarsın.",
     "display_name": "Sonilo Metinden Müzik Üret",
@@ -25813,6 +26086,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Tencent'in Hy4 modeliyle metin yanıtları oluşturun. Bir metin istemi ve isteğe bağlı olarak bağlam için bir veya daha fazla görüntü sağlayın.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reasoning": {
+        "name": "akıl yürütme"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -26421,7 +26729,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Metin Oluştur (KULLANIMDAN KALDIRILDI)",
     "inputs": {
       "audio": {
         "name": "ses"
@@ -26480,7 +26788,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
+        "tooltip": "Görüntü topluluğu olarak video kareleri. 24 FPS olduğu varsayılır; dahili olarak modelin kare hızına alt örneklenir."
       }
     },
     "outputs": {
@@ -26554,7 +26862,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
+        "tooltip": "Video kareleri görüntü grubu olarak. 24 FPS olduğu varsayılır; modelin kare hızına dahili olarak alt örneklenir."
       }
     },
     "outputs": {
@@ -26564,6 +26872,79 @@
       },
       "1": {
         "name": "düşünme",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Metin Oluştur",
+    "inputs": {
+      "audios": {
+        "name": "audios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini ve genişliğini gözlemlenen belirteç eşleşmelerine ve yürütme maliyetine göre uyarlar; 2-5 sabit bir taslak derinliği belirler; tree modları hem genişliği hem de derinliği sabitler. Örneklenen çıktı doğru dağılımını korur, ancak aynı seed için MTP kullanılmayan çıktıdan farklıdır."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem isteminin yerine geçer. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Model destekliyorsa düşünme modunda çalışın."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde varsa yerleşik sistem istemini/şablonunu kullanın."
+      },
+      "videos": {
+        "name": "videos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -29083,6 +29464,31 @@
       },
       "steps": {
         "name": "adımlar"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "Düşük kaliteli kareleri de okuyan RelayVSR Flash kod çözücüsüyle RelayVSR latent'lerini çözün.",
+    "display_name": "VSR Kod Çözme",
+    "inputs": {
+      "detail": {
+        "name": "detail",
+        "tooltip": "Kod çözücünün her karenin bikübik büyütmesine eklediği ayrıntının ne kadarının korunduğu; 1, modelin tam çıktısıdır."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Koşullandırma düğümüne verilen aynı düşük kaliteli video."
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
