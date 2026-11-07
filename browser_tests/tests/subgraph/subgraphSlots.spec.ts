@@ -99,6 +99,40 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         .toBe(initialCount - 1)
     })
 
+    test.describe('Input wired to several inner slots', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/subgraph-input-fanout')
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNode.navigateIntoSubgraph()
+      })
+
+      test('Removing an input slot disconnects every link it has', async ({
+        comfyPage
+      }) => {
+        expect(await comfyPage.subgraph.getSlotCount('input')).toBe(1)
+        expect(await comfyPage.subgraph.getInteriorLinkCounts()).toEqual({
+          ioLinks: 3,
+          connectedInputs: 3
+        })
+
+        await comfyPage.subgraph.removeSlot('input')
+        await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+        await comfyPage.nextFrame()
+
+        await expect
+          .poll(() => comfyPage.subgraph.getSlotCount('input'))
+          .toBe(0)
+        expect(await comfyPage.subgraph.getInteriorLinkCounts()).toEqual({
+          ioLinks: 0,
+          connectedInputs: 0
+        })
+
+        await expect(
+          comfyPage.page.evaluate(() => window.app!.graphToPrompt())
+        ).resolves.toBeTruthy()
+      })
+    })
+
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
