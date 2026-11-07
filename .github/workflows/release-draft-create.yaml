@@ -8,6 +8,9 @@ on:
     paths:
       - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -100,6 +103,9 @@ jobs:
 
   publish_types:
     needs: build
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/release-npm-types.yaml
     with:
       version: ${{ needs.build.outputs.version }}

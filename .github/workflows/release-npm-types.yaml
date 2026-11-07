@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Validate inputs
         shell: bash
@@ -74,6 +75,7 @@ jobs:
         with:
           ref: ${{ steps.resolve_ref.outputs.ref }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
@@ -86,9 +88,12 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Build workspace packages
+        run: pnpm build:packages
 
       - name: Build types
         run: pnpm build:types
@@ -152,7 +157,7 @@ jobs:
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts
         working-directory: dist
         env:
           DIST_TAG: ${{ steps.dist_tag.outputs.tag }}
