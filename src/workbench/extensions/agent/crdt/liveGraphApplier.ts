@@ -2089,7 +2089,9 @@ export class LiveGraphApplier {
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
     const createdSet = new Set(created)
-    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
+    // Groups only: a group's `pos`/`size` are a view onto its `_bounding`, so
+    // this already is its rendered box. A node's is not — see toPlacementRect.
+    const rect = (item: LGraphGroup): PlacementRect => ({
       x: item.pos[0],
       y: item.pos[1],
       width: item.size[0],
@@ -2114,11 +2116,16 @@ export class LiveGraphApplier {
     const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...existingNodes,
-        ...graph.groups.filter((group) => !placedGroups.includes(group))
-      ].map(rect),
+        ...existingBounds.map(toPlacementRect),
+        ...graph.groups
+          .filter((group) => !placedGroups.includes(group))
+          .map(rect)
+      ],
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect),
+      incoming: [
+        ...createdBounds.map(toPlacementRect),
+        ...placedGroups.map(rect)
+      ],
       moveCollisions
     })
     if (!offset) return
@@ -2126,6 +2133,20 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+/**
+ * A measured node box as a placement rect.
+ *
+ * `pos` is the top-left of a node's *body*; its title bar is drawn above that,
+ * so `measure()` reports `pos[1] - NODE_TITLE_HEIGHT` as the top and adds the
+ * title to the height. A rect built from `pos`/`size` is therefore short by the
+ * title height, and a vertical gap smaller than it reads as clear while the
+ * incoming node's title covers the node below. Placement uses the same measured
+ * bounds as the group-framing decision above so both see the rendered box.
+ */
+function toPlacementRect([x, y, width, height]: ReadOnlyRect): PlacementRect {
+  return { x, y, width, height }
 }
 
 /** True once a frame has measured the node; until then its bounds are zero. */
