@@ -256,7 +256,7 @@
     "check:pack": "tsx scripts/checkPublishable.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
-    "lint": "oxlint src --type-aware && eslint src",
+    "lint": "pnpm --workspace-root exec oxlint packages/account-core/src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit && tsx ../../scripts/vue-tsc-native.ts -p scripts/tsconfig.json"
