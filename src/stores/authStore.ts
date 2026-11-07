@@ -348,14 +348,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Unified Cloud JWT header, falling back to the Firebase token when minting
-   * failed. See getAuthHeader for the full priority order.
+   * Unified Cloud JWT header, falling back to the Firebase token, or the stored
+   * API key when not signed in. See getAuthHeader for the full priority order.
    */
   const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
     if (token) return { Authorization: `Bearer ${token}` }
-    return await getFirebaseAuthHeader()
+    return await getUserAuthHeader()
   }
 
   /**
@@ -363,7 +363,7 @@ export const useAuthStore = defineStore('auth', () => {
    *
    * When unified_cloud_auth is enabled, awaits any in-flight login mint and
    * returns the single Cloud JWT; if minting failed, falls back to the
-   * Firebase token rather than reporting an authenticated user as logged out.
+   * Firebase token, or the stored API key when not signed in.
    * Otherwise checks for authentication in the following order:
    * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
