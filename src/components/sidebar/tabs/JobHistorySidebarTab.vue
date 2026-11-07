@@ -141,8 +141,8 @@ const {
 const visibleJobTabs = computed(() => getVisibleJobTabs(hasFailedJobs.value))
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
-const runningCount = computed(() => queueStore.runningTasks.length)
-const queuedCount = computed(() => queueStore.pendingTasks.length)
+const runningCount = computed(() => queueStore.runningJobsCount)
+const queuedCount = computed(() => queueStore.pendingJobsCount)
 
 const runningJobsLabel = computed(() =>
   t('sideToolbar.queueProgressOverlay.runningJobsLabel', {

@@ -47,6 +47,13 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
+export interface FetchQueuePageResult {
+  Running: JobListItem[]
+  Pending: JobListItem[]
+  runningTotal: number
+  pendingTotal: number
+}
+
 /**
  * Fetches raw jobs from /jobs endpoint
  * @internal
@@ -135,6 +142,8 @@ export async function fetchHistoryPage(
   }
 }
 
+const QUEUE_PAGE_SIZE = 200
+
 /**
  * Fetches queue (in_progress + pending jobs)
  * Pending jobs get highest priority, then running jobs.
@@ -143,25 +152,37 @@ export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>,
   options?: FetchJobsOptions
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
-  const { jobs } = await fetchJobsRaw(
-    fetchApi,
-    ['in_progress', 'pending'],
-    200,
-    0,
-    options
-  )
+  const { Running, Pending } = await fetchQueuePage(fetchApi, options)
+  return { Running, Pending }
+}
 
-  const running = jobs.filter((j) => j.status === 'in_progress')
-  const pending = jobs.filter((j) => j.status === 'pending')
+/**
+ * Fetches the first page of in_progress jobs and of pending jobs, each with its
+ * server total. Pending jobs get highest priority, then running jobs.
+ */
+export async function fetchQueuePage(
+  fetchApi: (url: string) => Promise<Response>,
+  options?: FetchJobsOptions
+): Promise<FetchQueuePageResult> {
+  const [running, pending] = await Promise.all([
+    fetchJobsRaw(fetchApi, ['in_progress'], QUEUE_PAGE_SIZE, 0, options),
+    fetchJobsRaw(fetchApi, ['pending'], QUEUE_PAGE_SIZE, 0, options)
+  ])
 
-  // Pending gets highest priority, then running
-  // Both are above any history job due to QUEUE_PRIORITY_BASE
+  const runningIds = new Set(running.jobs.map((job) => job.id))
+  const pendingJobs = pending.jobs.filter((job) => !runningIds.has(job.id))
+
   return {
-    Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
+    Running: assignPriority(
+      running.jobs,
+      QUEUE_PRIORITY_BASE + running.jobs.length
+    ),
     Pending: assignPriority(
-      pending,
-      QUEUE_PRIORITY_BASE + running.length + pending.length
-    )
+      pendingJobs,
+      QUEUE_PRIORITY_BASE + running.jobs.length + pendingJobs.length
+    ),
+    runningTotal: running.total,
+    pendingTotal: pending.total
   }
 }
 

@@ -326,6 +326,7 @@ describe('OutputHistory', () => {
     it('selects pending slot on click', async () => {
       mayBeActiveWorkflowPendingRef.value = true
       useQueueStore().runningTasks = fromPartial([{ jobId: 'j1' }])
+      useQueueStore().runningJobsCount = 1
 
       mountComponent()
       await nextTick()

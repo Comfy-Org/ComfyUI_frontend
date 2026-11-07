@@ -21,7 +21,8 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const KSAMPLER_NODE = '3'
 const EXECUTING_CLASS = /outline-primary/
 
-const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
+const RUNNING_ROUTE = /\/api\/jobs\?[^/]*status=in_progress(?:&|$)/
+const PENDING_ROUTE = /\/api\/jobs\?[^/]*status=pending(?:&|$)/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
 
 function jobsResponse(jobs: RawJobListItem[]): JobsListResponse {
@@ -88,9 +89,10 @@ async function triggerReconnect(
   jobId: string
 ): Promise<void> {
   await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+  await mockJobsRoute(comfyPage, PENDING_ROUTE, emptyJobsBody)
   const queueFetches = await mockJobsRoute(
     comfyPage,
-    QUEUE_ROUTE,
+    RUNNING_ROUTE,
     scenario.queueBody(jobId)
   )
   const fetchesBeforeClose = queueFetches()
@@ -237,12 +239,13 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
       await expect(firstSkeleton).toBeVisible()
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+      await mockJobsRoute(comfyPage, PENDING_ROUTE, emptyJobsBody)
 
       // Prime queueStore.runningTasks with the active job — a WS status
       // event drives GraphView.onStatus -> queueStore.update().
       const primer = await mockJobsRoute(
         comfyPage,
-        QUEUE_ROUTE,
+        RUNNING_ROUTE,
         JSON.stringify(
           jobsResponse([
             { id: jobId, status: 'in_progress', create_time: Date.now() }
@@ -255,8 +258,8 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
       // Swap to a failing handler so the reconnect-driven fetch 500s.
       // The fix should preserve runningTasks from the priming call rather
       // than overwriting it with empty/error state.
-      await comfyPage.page.unroute(QUEUE_ROUTE)
-      const failed = await mockJobsRoute(comfyPage, QUEUE_ROUTE, '{}', 500)
+      await comfyPage.page.unroute(RUNNING_ROUTE)
+      const failed = await mockJobsRoute(comfyPage, RUNNING_ROUTE, '{}', 500)
 
       const before = failed()
       await ws.close()

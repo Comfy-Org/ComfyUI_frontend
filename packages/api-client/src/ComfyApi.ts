@@ -82,8 +82,10 @@ import {
   fetchHistory,
   fetchJobAssets,
   fetchJobDetail,
-  fetchQueue
+  fetchQueue,
+  fetchQueuePage
 } from './fetchJobs'
+import type { FetchQueuePageResult } from './fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
@@ -1505,6 +1507,21 @@ export class ComfyApi extends EventTarget {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
+    }
+  }
+
+  /**
+   * Gets the first page of running and of queued items, each with its server total
+   */
+  async getQueuePage(options?: {
+    throwOnError?: boolean
+  }): Promise<FetchQueuePageResult> {
+    try {
+      return await fetchQueuePage(this.fetchApi.bind(this), options)
+    } catch (error) {
+      if (options?.throwOnError) throw error
+      console.error('Failed to fetch queue:', error)
+      return { Running: [], Pending: [], runningTotal: 0, pendingTotal: 0 }
     }
   }
 

@@ -264,11 +264,8 @@ describe('TopMenuSection', () => {
   it('shows the active jobs label with the current count', async () => {
     createWrapper()
     const queueStore = useQueueStore()
-    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
-    queueStore.runningTasks = [
-      createTask('running-1', 'in_progress'),
-      createTask('running-2', 'in_progress')
-    ]
+    queueStore.runningJobsCount = 2
+    queueStore.pendingJobsCount = 1
 
     await nextTick()
 
