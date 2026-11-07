@@ -29,7 +29,7 @@ test.describe('Vue node focus', { tag: ['@vue-nodes', '@node'] }, () => {
   })
 
   for (const forcedColors of ['none', 'active'] as const) {
-    test(`keyboard focus distinguishes a selected node with forced colors ${forcedColors}`, async ({
+    test(`keyboard focus is bounded for selected and unselected nodes with forced colors ${forcedColors}`, async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('default')
@@ -39,6 +39,18 @@ test.describe('Vue node focus', { tag: ['@vue-nodes', '@node'] }, () => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       const otherNode =
         await comfyPage.vueNodes.getFixtureByTitle('Empty Latent Image')
+
+      await node.root.press('Tab')
+      await comfyPage.page.keyboard.press('Shift+Tab')
+
+      await expect(node.root).toBeFocused()
+      await expect(node.root).not.toHaveAttribute('data-emphasized')
+      await node.expectNoRootOutline()
+      await node.expectFocusOutline(true)
+      await expect(node.stateOutline).toHaveCSS('border-top-width', '0px')
+
+      await node.root.press('Tab')
+      await expect(node.stateOutline).toBeHidden()
 
       await node.select()
       await comfyPage.page.keyboard.press('Control+a')

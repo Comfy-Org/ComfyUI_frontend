@@ -13,13 +13,11 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg',
+        'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isEmphasized && 'outline-none',
-        executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -66,16 +64,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'pointer-events-none absolute z-0 border-3 outline-offset-2 outline-none',
+          'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isEmphasized
-            ? 'border-foreground group-focus-visible/node:[outline-style:auto]'
-            : 'border-primary'
+          isEmphasized || executing ? 'block border-3' : 'hidden',
+          isEmphasized ? 'border-foreground' : executing && 'border-primary'
         )
       "
     />

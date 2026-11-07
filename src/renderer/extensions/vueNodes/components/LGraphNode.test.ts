@@ -456,10 +456,7 @@ describe('LGraphNode', () => {
   it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
-    const { container } = renderLGraphNode({ nodeData: mockNodeData })
-    const root = getNodeRoot(container)
-
-    expect(root).toHaveClass('outline-primary')
+    renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
