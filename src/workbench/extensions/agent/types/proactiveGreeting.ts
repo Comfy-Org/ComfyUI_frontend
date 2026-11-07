@@ -1,3 +1,5 @@
+import type { ProactiveGreetingTelemetryContext } from '@comfyorg/telemetry/types'
+
 type AgentGreetingVariant = 'A' | 'B' | 'C' | 'D'
 
 export interface AgentGreeting {
@@ -9,4 +11,5 @@ export interface AgentGreetingAssignment {
   userId: string
   workspaceId: string
   variant: AgentGreetingVariant
+  telemetry?: ProactiveGreetingTelemetryContext
 }

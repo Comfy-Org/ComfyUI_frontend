@@ -83,6 +83,11 @@ import {
 } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  canEnrollHostProactiveGreeting,
+  requiresHostProactiveGreetingAdmission,
+  supportsHostProactiveGreeting
+} from '@/platform/telemetry/hostProactiveGreeting'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -1404,15 +1409,24 @@ useEventListener(
   }
 )
 const proactive = useProactiveGreeting({
-  assignment: () => (isCloud ? proactiveAssignment : undefined),
+  assignment: () =>
+    !requiresHostProactiveGreetingAdmission() || supportsHostProactiveGreeting()
+      ? proactiveAssignment
+      : undefined,
   identity: () => ({
-    userId: authStore.userId ?? null,
+    userId: resolvedUserInfo.value?.id ?? null,
     workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
   }),
+  requireLocalInstallation: !isCloud,
+  canEnroll: !requiresHostProactiveGreetingAdmission()
+    ? undefined
+    : () => canEnrollHostProactiveGreeting(resolvedUserInfo.value?.id ?? ''),
   active: () =>
     agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
   canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
-  getUsageStatus: (options) => rest.getUsageStatus(options)
+  getUsageStatus: (options) => rest.getUsageStatus(options),
+  onEnrolled: (metadata) =>
+    useTelemetry()?.trackProactiveGreetingEnrolled(metadata)
 })
 
 const completedTurnClaimedCanvasContent = ref(false)
@@ -2239,7 +2253,10 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
+        ...(proactive.attribution.value && {
+          proactive_greeting: { ...proactive.attribution.value }
+        })
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }

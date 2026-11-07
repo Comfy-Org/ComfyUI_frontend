@@ -1,4 +1,8 @@
 import type { AgentUsageStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  ProactiveGreetingEnrolledMetadata,
+  ProactiveGreetingTelemetryContext
+} from '@comfyorg/telemetry/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
@@ -20,10 +24,17 @@ interface Options {
   getUsageStatus: (options: {
     signal: AbortSignal
   }) => Promise<AgentUsageStatusResponse>
+  requireLocalInstallation?: boolean
+  canEnroll?: () => Promise<boolean>
+  onEnrolled?: (metadata: ProactiveGreetingEnrolledMetadata) => void
 }
 
 export function useProactiveGreeting(options: Options) {
   const state = shallowRef<UsageState>({ status: 'unknown' })
+  const enrollment = shallowRef<{
+    scope: string
+    telemetry: ProactiveGreetingTelemetryContext
+  }>()
   const scope = computed(() => {
     const identity = options.identity()
     return identity.userId && identity.workspaceId
@@ -66,31 +77,48 @@ export function useProactiveGreeting(options: Options) {
     const request = new AbortController()
     controller = request
     const currentGeneration = generation
+    const isStale = (): boolean =>
+      request.signal.aborted ||
+      currentGeneration !== generation ||
+      currentScope !== scope.value
     try {
       const result = await options.getUsageStatus({ signal: request.signal })
-      if (
-        request.signal.aborted ||
-        currentGeneration !== generation ||
-        currentScope !== scope.value
-      )
-        return
-      state.value = {
-        status: result.has_used_agent ? 'has-sent' : 'never-sent',
-        scope: currentScope
+      if (isStale()) return
+      if (!matchesUsageScope(result)) return
+      if (!result.has_used_agent && options.canEnroll) {
+        if (!(await options.canEnroll())) return
+        if (isStale()) return
       }
+      applyUsageStatus(result, currentScope)
     } catch (error) {
-      if (
-        request.signal.aborted ||
-        currentGeneration !== generation ||
-        currentScope !== scope.value
-      )
-        return
+      if (isStale()) return
       state.value = { status: 'unknown' }
       reportError(error, {
         surface: 'agent',
         errorType: 'failure_loading_agent_usage_status',
         level: 'warning'
       })
+    }
+  }
+
+  function matchesUsageScope(result: AgentUsageStatusResponse): boolean {
+    return (
+      !options.requireLocalInstallation || result.scope === 'local_installation'
+    )
+  }
+
+  function applyUsageStatus(
+    result: AgentUsageStatusResponse,
+    currentScope: string
+  ): void {
+    state.value = {
+      status: result.has_used_agent ? 'has-sent' : 'never-sent',
+      scope: currentScope
+    }
+    const telemetry = assignment.value?.telemetry
+    if (!result.has_used_agent && telemetry && options.onEnrolled) {
+      options.onEnrolled({ ...telemetry, canvas_state: options.canvas() })
+      enrollment.value = { scope: currentScope, telemetry: { ...telemetry } }
     }
   }
 
@@ -118,5 +146,15 @@ export function useProactiveGreeting(options: Options) {
       return
     return { variant: assignment.value.variant, canvas: options.canvas() }
   })
-  return { greeting, scope, refresh, accepted }
+  const attribution = computed(() => {
+    const enrolled = enrollment.value
+    const current = assignment.value?.telemetry
+    if (
+      enrolled?.scope === scope.value &&
+      current?.group_key === enrolled.telemetry.group_key &&
+      current.variant === enrolled.telemetry.variant
+    )
+      return enrolled.telemetry
+  })
+  return { greeting, scope, attribution, refresh, accepted }
 }

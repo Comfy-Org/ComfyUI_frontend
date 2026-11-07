@@ -1075,7 +1075,19 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    */
   draft_was_empty: boolean
 }
+export interface ProactiveGreetingTelemetryContext {
+  user_id: string
+  workspace_id: string
+  group_key: string
+  variant: 'control' | 'generic' | 'canvas-prefill' | 'canvas-only'
+}
+
+export interface ProactiveGreetingEnrolledMetadata extends ProactiveGreetingTelemetryContext {
+  canvas_state: 'empty' | 'workflow'
+}
+
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  proactive_greeting?: ProactiveGreetingTelemetryContext
   attachment_count: number
   node_tag_count: number
   /**
@@ -1698,6 +1710,9 @@ export interface TelemetryProvider {
   trackAgentOnboardingShown?(): void
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackProactiveGreetingEnrolled?(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): void
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
@@ -1893,6 +1908,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  EXPERIMENT_EXPOSURE: '$experiment_exposure',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
