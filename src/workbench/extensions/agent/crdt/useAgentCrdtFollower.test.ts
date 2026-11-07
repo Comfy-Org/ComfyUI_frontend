@@ -9,7 +9,7 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import { mint, SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { render } from '@testing-library/vue'
@@ -70,7 +70,10 @@ const bridgeState = (() => {
       updatesApplied: 0,
       doc: {
         share: new Map(),
-        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+        getMap: () => ({
+          toJSON: () => ({}),
+          get: (_key: string): unknown => undefined
+        })
       }
     }
   }
@@ -3194,6 +3197,12 @@ describe('useAgentCrdtFollower', () => {
     const { enqueue, unmount } = mountFollower(workflowId)
     bridge().subscribedWorkflowId = workflowId
     bridge().lastSequence = Number.MAX_SAFE_INTEGER
+    const doc = mint({ nodes: [], links: [] }, { types: {} })
+    onTestFinished(() => doc.destroy())
+    doc
+      .getMap('__stamps')
+      .set('node:1', [Number.MAX_SAFE_INTEGER - 1, 'agent:turn', 'op-1'])
+    bridge().follower = { updatesApplied: 1, doc }
 
     enqueue([
       { op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 },
