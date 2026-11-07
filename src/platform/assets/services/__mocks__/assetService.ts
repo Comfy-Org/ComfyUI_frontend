@@ -5,6 +5,7 @@ import type { assetService as RealAssetService } from '@/platform/assets/service
 export const assetService: Partial<typeof RealAssetService> = {
   addAssetTags: vi.fn(),
   createAssetExport: vi.fn(),
+  getWorkspaceLibraryAssetsPage: vi.fn(),
   getAllAssetsByTag: vi.fn(),
   getAssetsPageByTag: vi.fn(),
   getAssetsPageForNodeType: vi.fn(),

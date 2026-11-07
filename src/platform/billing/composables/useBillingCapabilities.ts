@@ -219,6 +219,12 @@ function useBillingCapabilitiesInternal() {
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
   )
+  const autoTopUpMemberView = computed(() =>
+    receiveServerFact(
+      'auto_top_up_member_view',
+      resolvedResponse.value?.auto_top_up_member_view ?? null
+    )
+  )
   const canRunWorkflows = computed(
     () => capabilities.value?.can_run_workflows ?? false
   )
@@ -235,6 +241,18 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'has_parked_billing_operation',
       resolvedResponse.value?.has_parked_billing_operation === true
+    )
+  )
+  const billingNoticeAudience = computed(() =>
+    receiveServerFact(
+      'billing_notice_audience',
+      resolvedResponse.value?.billing_notice_audience ?? null
+    )
+  )
+  const endingNoticeStartsAt = computed(() =>
+    receiveServerFact(
+      'ending_notice_starts_at',
+      resolvedResponse.value?.ending_notice_starts_at ?? null
     )
   )
   const runWorkflowsDenial = computed(() =>
@@ -593,11 +611,14 @@ function useBillingCapabilitiesInternal() {
     canViewAutoTopUpMemberNotice,
     autoTopUpEnabled,
     autoTopUpSetup,
+    autoTopUpMemberView,
     canRunWorkflows,
     planKind,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
     hasParkedBillingOperation,
+    billingNoticeAudience,
+    endingNoticeStartsAt,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,
