@@ -80,7 +80,10 @@ import {
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
+  CANVAS_CLIPBOARD_KEY,
+  discardClipboardId,
+  discardClipboardStorage,
+  isExpectedStorageError
 } from './canvas/clipboardStorage'
 
 import { createCursorCache } from './cursorCache'
@@ -4486,19 +4489,29 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
+    const report = (error: unknown) => {
+      if (isExpectedStorageError(error)) return
+      reportError(error, {
+        errorType: 'error_writing_clipboard_storage',
+        surface: 'graph'
+      })
+    }
+
     try {
       localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+    } catch (error) {
+      // The previous copy must not survive: the paste paths that read storage
+      // directly would paste it instead of this one.
+      discardClipboardStorage()
+      report(error)
+      return serializedData
+    }
+    try {
       localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
     } catch (error) {
-      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
-      if (
-        !(error instanceof DOMException && error.name === 'QuotaExceededError')
-      ) {
-        reportError(error, {
-          errorType: 'error_writing_clipboard_storage',
-          surface: 'graph'
-        })
-      }
+      // The payload is current, so paste still works; only the stamp is lost.
+      discardClipboardId()
+      report(error)
     }
     return serializedData
   }
