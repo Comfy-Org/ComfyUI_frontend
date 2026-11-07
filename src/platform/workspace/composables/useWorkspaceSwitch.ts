@@ -4,16 +4,15 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 export function useWorkspaceSwitch() {
   const workspaceStore = useTeamWorkspaceStore()
-  const { activeWorkspace } = storeToRefs(workspaceStore)
+  const { activeWorkspace, isSwitching } = storeToRefs(workspaceStore)
 
   async function switchWorkspace(workspaceId: string): Promise<boolean> {
-    if (activeWorkspace.value?.id === workspaceId) {
+    if (!isSwitching.value && activeWorkspace.value?.id === workspaceId) {
       return true
     }
 
     try {
-      await workspaceStore.switchWorkspace(workspaceId)
-      return true
+      return await workspaceStore.switchWorkspace(workspaceId)
     } catch {
       return false
     }
