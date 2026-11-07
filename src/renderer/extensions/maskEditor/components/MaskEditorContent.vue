@@ -15,6 +15,7 @@
     >
       <canvas
         ref="imgCanvasRef"
+        data-testid="mask-editor-image-canvas"
         class="absolute top-0 left-0 size-full"
         @contextmenu.prevent
       />
@@ -25,6 +26,7 @@
       />
       <canvas
         ref="maskCanvasRef"
+        data-testid="mask-editor-mask-canvas"
         class="absolute top-0 left-0 z-30 size-full"
         @contextmenu.prevent
       />
@@ -37,6 +39,22 @@
         }"
       />
       <div ref="canvasBackgroundRef" class="size-full" />
+      <svg
+        v-if="extensionPoints.length"
+        data-testid="mask-editor-tool-overlay"
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 z-50 size-full"
+        :viewBox="`0 0 ${store.canvasHistory.dimensions?.width ?? 0} ${store.canvasHistory.dimensions?.height ?? 0}`"
+      >
+        <circle
+          v-for="point in extensionPoints"
+          :key="point.id"
+          :cx="point.x"
+          :cy="point.y"
+          :r="point.radius"
+          :fill="point.color"
+        />
+      </svg>
     </div>
 
     <LoadingOverlay :loading="!initialized" size="sm" />
@@ -50,6 +68,7 @@
           v-if="initialized"
           ref="toolPanelRef"
           :tool-manager="toolManager!"
+          :extension-tools
         />
 
         <PointerZone
@@ -62,6 +81,7 @@
           v-if="initialized"
           ref="sidePanelRef"
           :tool-manager="toolManager!"
+          :extension-tools
         />
       </div>
     </div>
@@ -84,6 +104,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useMaskEditorExtensionTools } from '@/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools'
 
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 
@@ -121,13 +142,20 @@ const panZoom = usePanAndZoom()
 const settingStore = useSettingStore()
 const brushPersistence = useBrushPersistence()
 brushPersistence.loadAndApply()
+const extensionTools = useMaskEditorExtensionTools()
+const { points: extensionPoints } = extensionTools
 
-const toolManager = useToolManager(keyboard, panZoom, {
-  useDominantAxis: settingStore.get('Comfy.MaskEditor.UseDominantAxis'),
-  brushAdjustmentSpeed: settingStore.get(
-    'Comfy.MaskEditor.BrushAdjustmentSpeed'
-  )
-})
+const toolManager = useToolManager(
+  keyboard,
+  panZoom,
+  {
+    useDominantAxis: settingStore.get('Comfy.MaskEditor.UseDominantAxis'),
+    brushAdjustmentSpeed: settingStore.get(
+      'Comfy.MaskEditor.BrushAdjustmentSpeed'
+    )
+  },
+  extensionTools
+)
 
 let resizeObserver: ResizeObserver | null = null
 
@@ -212,6 +240,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  extensionTools.deactivate()
   brushPersistence.save()
 
   keyboard?.removeListeners()

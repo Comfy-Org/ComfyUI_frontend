@@ -76,9 +76,13 @@
       ]
     },
     {
-      "name": "External tool registration validates descriptors and releases registrations",
+      "name": "External tool sessions preserve native history, image pixels, and widget serialization",
       "checks": [
-        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts"
+        "src/renderer/extensions/maskEditor/composables/maskEditorToolSession.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools.test.ts",
+        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-tools.spec.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-drag.spec.ts"
       ]
     }
   ],
