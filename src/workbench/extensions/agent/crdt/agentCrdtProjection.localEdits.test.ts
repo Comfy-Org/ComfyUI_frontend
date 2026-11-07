@@ -111,10 +111,7 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     deliver(Y.encodeStateAsUpdate(host, before), applied)
   }
   /** The host refuses the ops; the projection reverts what they claimed. */
-  const hostRejects = (ops: Op[]) => {
-    projection.settleLocalWrites(ops)
-    return projection.revertRejected(WORKFLOW_ID, ops)
-  }
+  const hostRejects = (ops: Op[]) => projection.revertRejected(WORKFLOW_ID, ops)
   /**
    * The host applies this tab's own ops and echoes them; the follower drops
    * the echo, as `useAgentCrdtFollower` does for its own actor.
@@ -439,6 +436,54 @@ describe('AgentCrdtProjection with a local widget write in flight', () => {
 
     hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
     expect(steps.value).toBe(40)
+    destroy()
+  })
+
+  it('shows one canvas value through an edit, a conflicting host frame, and its rejection', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+    const canvasSteps = () => ({
+      live: steps.value,
+      serialized: graph.serialize().nodes[0].widgets_values
+    })
+
+    const localWrite = setStepsOp(source, 25)
+    steps.value = 25
+    projection.noteLocalWrites([localWrite])
+    expect(canvasSteps()).toEqual({ live: 25, serialized: [25] })
+
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    expect(canvasSteps()).toEqual({ live: 25, serialized: [25] })
+
+    hostRejects([localWrite])
+    expect(canvasSteps()).toEqual({ live: 40, serialized: [40] })
+    destroy()
+  })
+
+  it('keeps a newer local write on the canvas when an older one is rejected', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+    const olderWrite = setStepsOp(source, 25)
+
+    steps.value = 25
+    projection.noteLocalWrites([olderWrite])
+    steps.value = 30
+    projection.noteLocalWrites([setStepsOp(source, 30)])
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    hostRejects([olderWrite])
+
+    expect({
+      live: steps.value,
+      serialized: graph.serialize().nodes[0].widgets_values
+    }).toEqual({ live: 30, serialized: [30] })
     destroy()
   })
 
