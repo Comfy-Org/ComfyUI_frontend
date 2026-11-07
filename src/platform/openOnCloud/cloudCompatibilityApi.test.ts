@@ -252,6 +252,40 @@ describe(checkCloudCompatibility, () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('returns no verdict when a loader takes its model from another node', async () => {
+    registerCheckpointLoader()
+    const selector = node('ModelNameSelector')
+    selector.addOutput('ckpt_name', 'COMBO')
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'stale.safetensors'
+    })
+    loader.addInput('ckpt_name', 'COMBO').widget = { name: 'ckpt_name' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+
+    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('still asks Cloud when only non-model inputs are connected', async () => {
+    registerCheckpointLoader()
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'sdxl.safetensors'
+    })
+    loader.addOutput('MODEL', 'MODEL')
+    const sampler = node('KSampler')
+    sampler.addInput('model', 'MODEL')
+    workflowHas(loader, sampler)
+    loader.connect(0, sampler, 0)
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await checkCloudCompatibility()
+
+    expect(requestBody().models).toEqual([
+      { folder: 'checkpoints', name: 'sdxl.safetensors' }
+    ])
+  })
+
   it('asks about the model chosen on a subgraph host, not the interior default', async () => {
     registerCheckpointLoader()
     const subgraph = createTestSubgraph({

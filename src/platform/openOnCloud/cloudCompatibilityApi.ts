@@ -20,6 +20,8 @@ import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingM
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 
+const LINKED = Symbol('linked')
+
 type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
@@ -59,8 +61,11 @@ function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
     widgets.map((widget) => [widget.name, widget.value])
   )
   for (const [slot, input] of node.inputs.entries()) {
-    const promoted = node.resolveInput(slot)?.widgetInfo
-    if (promoted) inputs[input.name] = promoted.value
+    const resolved = node.resolveInput(slot)
+    if (!resolved) continue
+    inputs[input.name] = resolved.widgetInfo
+      ? resolved.widgetInfo.value
+      : LINKED
   }
   return inputs
 }
@@ -133,25 +138,41 @@ function loaderFolders(
     .map(([folder]) => folder)
 }
 
-function scanModelInputs(nodes: CheckedNode[]) {
-  const inputsByType = modelInputsByNodeType()
-  const mapped: CompatibilityModel[] = []
-  const unmapped: string[] = []
-  for (const node of nodes) {
-    const loaderInputs = inputsByType.get(node.class_type) ?? []
-    for (const [input, name] of Object.entries(node.inputs)) {
-      if (typeof name !== 'string') continue
-      const folders = loaderFolders(loaderInputs, input)
-      mapped.push(...folders.map((folder) => ({ folder, name })))
-      if (
-        !folders.length &&
-        node.pickerInputs.has(input) &&
-        isModelFileName(name)
-      )
-        unmapped.push(name)
+type ModelScan = {
+  mapped: CompatibilityModel[]
+  unmapped: string[]
+  hasLinkedModelInput: boolean
+}
+
+function scanNode(
+  node: CheckedNode,
+  loaderInputs: [folder: string, key: string | RegExp][],
+  scan: ModelScan
+) {
+  for (const [input, value] of Object.entries(node.inputs)) {
+    const folders = loaderFolders(loaderInputs, input)
+    const isModelInput = folders.length > 0 || node.pickerInputs.has(input)
+    if (value === LINKED) {
+      if (isModelInput) scan.hasLinkedModelInput = true
+      continue
     }
+    if (typeof value !== 'string') continue
+    scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
+    if (!folders.length && isModelInput && isModelFileName(value))
+      scan.unmapped.push(value)
   }
-  return { mapped, unmapped }
+}
+
+function scanModelInputs(nodes: CheckedNode[]): ModelScan {
+  const inputsByType = modelInputsByNodeType()
+  const scan: ModelScan = {
+    mapped: [],
+    unmapped: [],
+    hasLinkedModelInput: false
+  }
+  for (const node of nodes)
+    scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
+  return scan
 }
 
 async function resolveUnmapped(
@@ -172,7 +193,8 @@ async function collectModels(
   nodes: CheckedNode[]
 ): Promise<CompatibilityModel[] | null> {
   if (nodes.some((node) => node.hasUnreadableModels)) return null
-  const { mapped, unmapped } = scanModelInputs(nodes)
+  const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
+  if (hasLinkedModelInput) return null
   const resolved = await resolveUnmapped(unmapped)
   if (!resolved) return null
   const models = new Map<string, CompatibilityModel>()
