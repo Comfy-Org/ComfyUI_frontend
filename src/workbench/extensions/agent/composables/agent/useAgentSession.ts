@@ -23,6 +23,7 @@ import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createUuidv4 } from '@/utils/uuid'
 import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
@@ -92,6 +93,7 @@ type SentAttachment = Pick<
 
 interface SentTag {
   id: string
+  locatorId?: NodeLocatorId
   title: string
 }
 
@@ -1284,7 +1286,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ) {
     if (tags === undefined || tags.length === 0) return undefined
     return {
-      node_ids: tags.map((tag) => tag.id),
+      node_ids: tags.map((tag) => tag.locatorId ?? tag.id),
       ...(selectedWorkflowId !== undefined
         ? { workflow_id: selectedWorkflowId }
         : {})
