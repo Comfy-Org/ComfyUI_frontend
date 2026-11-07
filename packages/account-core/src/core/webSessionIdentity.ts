@@ -435,6 +435,7 @@ export interface WebSessionIdentity {
 
 const HEARTBEAT_KEY = '@comfyorg/account-core web-session heartbeat'
 const HEARTBEAT_INTERVAL_MS = 10 * 60 * 1000
+const PROOF_TIMEOUT_MS = 15_000
 
 const zSharedResult = z.discriminatedUnion('status', [
   z.object({
@@ -532,7 +533,7 @@ function createAccountIdentity(
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
-  let restoring = { epoch, settled: Promise.resolve() }
+  let restoring = { epoch, settled: Promise.resolve(), inFlight: false }
 
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
@@ -651,14 +652,27 @@ function createAccountIdentity(
     ]
   }
 
+  function proofWithinTimeout(): Promise<{ value: string | null } | undefined> {
+    return new Promise((resolve) => {
+      const cancel = schedule(() => resolve(undefined), PROOF_TIMEOUT_MS)
+      login.getProof().then(
+        (value) => {
+          cancel()
+          resolve({ value })
+        },
+        () => {
+          cancel()
+          resolve(undefined)
+        }
+      )
+    })
+  }
+
   async function restore(
     started: number,
     expectedUserId: string
   ): Promise<void> {
-    const proof = await login.getProof().then(
-      (value) => ({ value }),
-      () => undefined
-    )
+    const proof = await proofWithinTimeout()
     if (started !== epoch) return
     if (proof === undefined) return dispatch({ type: 'proof_errored' })
     const { value } = proof
@@ -675,9 +689,16 @@ function createAccountIdentity(
           readWebSession(options.session)
         )
         return
-      case 'restore':
-        restoring = { epoch, settled: restore(epoch, effect.expectedUserId) }
+      case 'restore': {
+        if (restoring.inFlight && restoring.epoch === epoch) return
+        const settled = restore(epoch, effect.expectedUserId).finally(() => {
+          if (restoring.settled === settled) {
+            restoring = { ...restoring, inFlight: false }
+          }
+        })
+        restoring = { epoch, settled, inFlight: true }
         return
+      }
       case 'schedule_retry':
         cancelRetry = schedule(
           () => {

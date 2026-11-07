@@ -134,6 +134,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
+  web_session_lapse_recovery_enabled?: boolean
   sso_enabled?: boolean
   local_web_sso?: boolean
   billing_sdk_topup_enabled?: boolean

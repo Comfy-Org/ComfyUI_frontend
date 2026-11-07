@@ -1,7 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
@@ -15,6 +18,7 @@ import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabi
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -1166,6 +1170,96 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+  })
+
+  describe('a read denied because the web session lapsed', () => {
+    const LAPSE_RECOVERY_FLAG = 'ff:web_session_lapse_recovery_enabled'
+    const sessionFor = (id: string) =>
+      fromPartial<WebSession>({ user: { id, email: `${id}@example.com` } })
+
+    async function denyThenRestoreSession() {
+      const webSession = useCloudWebSessionStore()
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('authentication required', 401)
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      await vi.advanceTimersByTimeAsync(0)
+    }
+
+    afterEach(() => {
+      localStorage.removeItem(LAPSE_RECOVERY_FLAG)
+      remoteConfig.value = {}
+    })
+
+    it('stays denied after the session is restored with the flag off', async () => {
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('reads again once the session is restored with the flag on', async () => {
+      localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads again when the flag arrives after the session is restored', async () => {
+      await denyThenRestoreSession()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads again when the flag arrives while the denied read is in flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectRead = reject
+          })
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      const initialized = billingCapabilities.initialize()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
   })
 
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
