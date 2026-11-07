@@ -35,6 +35,33 @@ const EXTENSION_ERROR_MESSAGES = [
 const ERROR_MESSAGE_PREFIX =
   /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/
 
+const FAILED_IMAGE_LOAD_EVENT =
+  /^Uncaught \{.*"target":"\[?HTMLImageElement\]?"/
+
+/**
+ * Browser/environment error messages that carry zero engineering signal.
+ * Keep this list small and explicit — one predicate per line with a comment so
+ * every future addition is a deliberate, auditable choice.
+ */
+const RUM_NOISE_MESSAGE_MATCHERS: readonly ((message: string) => boolean)[] = [
+  // Benign Chrome interventions, e.g. "Ignored attempt to cancel a touchmove
+  // event" and "Blocked attempt to create a WebMediaPlayer".
+  (message) => message.startsWith('intervention:'),
+  // Benign layout warning ("ResizeObserver loop completed with undelivered
+  // notifications") with no actionable stack.
+  (message) => message.includes('ResizeObserver loop'),
+  // A failed <img> load rejected as its Event, which the RUM SDK serializes as
+  // `Uncaught {…,"target":"[HTMLImageElement]"}`. Anchored to that envelope so
+  // errors that merely name the interface (drawImage/texImage2D TypeErrors,
+  // `Uncaught Error: …HTMLImageElement…`) are still reported.
+  (message) => FAILED_IMAGE_LOAD_EVENT.test(message),
+  // PostHog's client-side rate-limit notice — analytics plumbing, not an error.
+  (message) =>
+    message.includes(
+      '[PostHog.js] This capture call is ignored due to client rate limiting'
+    )
+]
+
 const RUM_NOISE_HOSTS = [
   'facebook.com',
   'px.ads.linkedin.com',
@@ -61,8 +88,8 @@ export function isRumErrorNoise(error: {
   if (error.source === 'console' && message.startsWith(REPORTED_ERROR_PREFIX))
     return true
   if (isThirdPartyErrorNoise(message)) return true
-  if (message.startsWith('intervention:')) return true
-  if (message.includes('ResizeObserver loop')) return true
+  if (RUM_NOISE_MESSAGE_MATCHERS.some((matches) => matches(message)))
+    return true
 
   const isNetworkNoise =
     message.includes('csp_violation') || message.includes('Failed to fetch')
