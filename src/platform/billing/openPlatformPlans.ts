@@ -52,9 +52,10 @@ export function openPlatformPlans(): boolean {
   return true
 }
 
-/** Leaves the app for the platform Plans page of the active workspace in this tab. */
+/** Leaves the app for the platform Plans page of the active workspace in this tab, and re-reads billing if a back navigation restores this page. */
 export function navigateToPlatformPlans(): void {
   const correlationId = createJourneyId()
   trackHandoff(correlationId)
+  refreshOnReturn()
   window.location.assign(platformLink('/profile/billing/plans', correlationId))
 }
