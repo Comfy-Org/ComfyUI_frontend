@@ -52,6 +52,10 @@
     "classification": "live-defect"
   },
   {
+    "id": "playwright:browser_tests/tests/sidebar/assetsSidebarTab.spec.ts:keeps selection actions inside the selection bar when translated:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
     "classification": "live-defect"
   },
