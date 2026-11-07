@@ -254,6 +254,59 @@ describe('Dynamic Combos', () => {
     expect(node.widgets[1].value).toBe('1')
     expect(node.widgets[2].value).toBe(7)
   })
+  describe('An option holding only sockets (#20068)', () => {
+    type MockInputs = Parameters<typeof addDynamicCombo>[1]
+    const socketOnlyOpens: {
+      combo: string
+      sockets: string[]
+      spec: MockInputs
+    }[] = [
+      {
+        combo: 'top-level',
+        sockets: ['0.0.0.0', '0'],
+        spec: [['IMAGE']]
+      },
+      {
+        combo: 'nested',
+        sockets: ['0.0.0.0.0.1.0', '0.0.0.0', '0'],
+        spec: [[[['IMAGE']]]]
+      }
+    ]
+    test.for(socketOnlyOpens)(
+      'creates every socket when a $combo combo opens on it',
+      ({ sockets, spec }) => {
+        const node = testNode()
+
+        addDynamicCombo(node, spec)
+
+        expect(node.inputs.map((input) => input.name)).toEqual(sockets)
+      }
+    )
+    test.for([
+      { restore: 'positional', namedValuesRestore: false },
+      { restore: 'named', namedValuesRestore: true }
+    ])(
+      'restores every socket from $restore values',
+      ({ namedValuesRestore }) => {
+        LiteGraph.namedValuesRestore = namedValuesRestore
+        const saved = testNode()
+        saved.serialize_widgets = true
+        addDynamicCombo(saved, [['INT'], [[['IMAGE']]]])
+        saved.widgets[0].value = '1'
+
+        const reloaded = testNode()
+        addDynamicCombo(reloaded, [['INT'], [[['IMAGE']]]])
+
+        reloaded.configure(saved.serialize())
+
+        expect(reloaded.inputs.map((input) => input.name)).toEqual([
+          '0',
+          '0.0.0.0',
+          '0.0.0.0.0.1.0'
+        ])
+      }
+    )
+  })
 })
 describe('Autogrow', () => {
   const inputsSpec = { required: { image: ['IMAGE', {}] } }
