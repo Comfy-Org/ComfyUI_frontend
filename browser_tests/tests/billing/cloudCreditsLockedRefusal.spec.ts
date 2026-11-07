@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import {
   cloudAppFixture as test,
@@ -45,27 +46,54 @@ async function runAndGetRefused(page: Page, creditsLocked: boolean) {
   await page.getByTestId(TestIds.topbar.queueButton).click()
 }
 
-test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
-  test.beforeEach(async ({ page }) => {
-    await new CloudWorkspaceMockHelper(page).setup(
-      DEFAULT_TEAM_MEMBERS,
-      workspace('personal', 'owner'),
-      FREE_ACCOUNT_WITH_CREDITS,
-      { can_run_workflows: true }
-    )
-    await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute({ subscription_required: true }))
-    )
-  })
+test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
+  const ROWS = [
+    {
+      subscriptionState: 'never_subscribed',
+      body: 'Running workflows on Cloud needs a plan.'
+    },
+    {
+      subscriptionState: 'ended',
+      body: 'Your plan has ended. Resubscribe to keep running workflows on Cloud.'
+    }
+  ] as const
 
-  for (const creditsLocked of [true, false]) {
-    test(`hands a refused run to the platform Plans page (credits_locked: ${creditsLocked})`, async ({
-      page
-    }) => {
-      await expectPlatformPlansOpened(page, () =>
-        runAndGetRefused(page, creditsLocked)
-      )
-    })
+  for (const { subscriptionState, body } of ROWS) {
+    for (const creditsLocked of [true, false]) {
+      test(`explains the refused run and links to the Plans page (${subscriptionState}, credits_locked: ${creditsLocked})`, async ({
+        page
+      }) => {
+        await new CloudWorkspaceMockHelper(page).setup(
+          DEFAULT_TEAM_MEMBERS,
+          workspace('personal', 'owner'),
+          {
+            ...FREE_ACCOUNT_WITH_CREDITS,
+            subscription_state: subscriptionState
+          },
+          { can_run_workflows: true }
+        )
+        await page.route('**/api/features', (route) =>
+          route.fulfill(jsonRoute({ subscription_required: true }))
+        )
+        const tabsBeforeRun = page.context().pages().length
+
+        await runAndGetRefused(page, creditsLocked)
+
+        const dialog = page.getByTestId('platform-plans-link-dialog')
+        await expect(dialog).toBeVisible()
+        await expect(dialog.getByText("Your workflow didn't run")).toBeVisible()
+        await expect(dialog.getByText(body)).toBeVisible()
+        expect(
+          page.context().pages(),
+          'the refusal opens no tab on its own'
+        ).toHaveLength(tabsBeforeRun)
+
+        await expectPlatformPlansOpened(page, () =>
+          dialog.getByRole('link', { name: 'Choose a plan' }).click()
+        )
+        await expect(dialog).toBeHidden()
+      })
+    }
   }
 })
 

@@ -3364,6 +3364,16 @@
       "runLabel": "Run",
       "badge": "Inactive"
     },
+    "plansLink": {
+      "blockedTitle": "Plans page didn't open",
+      "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
+      "openPlansPage": "Open Plans page",
+      "runRefusedTitle": "Your workflow didn't run",
+      "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
+      "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
+      "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "choosePlan": "Choose a plan"
+    },
     "paymentRecovery": {
       "title": "Subscription paused",
       "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
