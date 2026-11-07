@@ -374,6 +374,12 @@ export function useAgentWorkflowSelection({
         workflowId,
         'No saved workflow resolves to the chat target'
       )
+    reportError(new Error('A listed workflow has no saved file to open'), {
+      surface: 'agent',
+      errorType: 'agent_workflow_target_unavailable',
+      level: 'warning',
+      context: { workflowId }
+    })
     panelStore.markWorkflowTargetUnavailable()
     return NOT_RESTORED
   }

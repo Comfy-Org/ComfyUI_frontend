@@ -372,7 +372,15 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(true)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
-    expect(reportError).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('A listed workflow has no saved file to open'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_target_unavailable',
+        level: 'warning',
+        context: { workflowId: 'wf-saved' }
+      }
+    )
   })
 
   it('opens the chat with its workflow unavailable when two saved files share its name', async () => {
