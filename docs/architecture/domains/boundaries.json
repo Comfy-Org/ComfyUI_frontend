@@ -79,7 +79,9 @@
           "src/scripts/clipspace.ts",
           "packages/mask-editor/src/brushUtils.ts",
           "packages/mask-editor/src/maskEditorStore.ts",
-          "packages/mask-editor/src/StrokeProcessor.ts"
+          "packages/mask-editor/src/StrokeProcessor.ts",
+          "packages/mask-editor/src/extensionTypes.ts",
+          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
         ]
       },
       {
