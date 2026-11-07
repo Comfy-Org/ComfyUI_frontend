@@ -150,7 +150,24 @@ function planReplacementTopology(
   return { error, updates: [...updates.values()], removals }
 }
 
-/** Uses old_widget_ids as name→index lookup into widgets_values. */
+function readOldWidgetValue(
+  serialized: ISerialisedNode,
+  oldWidgetIds: string[] | null,
+  oldInputName: string
+): TWidgetValue | undefined {
+  const named = serialized.widgets_values_named
+  if (named) {
+    return Object.hasOwn(named, oldInputName) ? named[oldInputName] : undefined
+  }
+
+  if (!oldWidgetIds || !serialized.widgets_values) return undefined
+
+  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
+  if (oldWidgetIdx === -1) return undefined
+
+  return serialized.widgets_values[oldWidgetIdx]
+}
+
 function transferWidgetValue(
   serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
@@ -158,12 +175,7 @@ function transferWidgetValue(
   newNode: LGraphNode,
   newInputName: string
 ): void {
-  if (!oldWidgetIds || !serialized.widgets_values) return
-
-  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
-  if (oldWidgetIdx === -1) return
-
-  const oldValue = serialized.widgets_values[oldWidgetIdx]
+  const oldValue = readOldWidgetValue(serialized, oldWidgetIds, oldInputName)
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
