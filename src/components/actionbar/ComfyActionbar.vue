@@ -2,7 +2,16 @@
   <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
-      :class="actionbarClass"
+      :class="
+        cn(
+          'w-[200px] border-dashed border-blue-500 opacity-80',
+          'm-1.5 flex items-center justify-center self-stretch',
+          'rounded-md before:-ml-50 before:h-full before:w-50',
+          'pointer-events-auto',
+          isMouseOverDropZone &&
+            'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
+        )
+      "
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
     >
@@ -12,7 +21,13 @@
     <div
       ref="panelRef"
       :style
-      :class="panelClass"
+      :class="
+        cn(
+          'actionbar pointer-events-auto',
+          isDragging && 'pointer-events-none select-none',
+          !isDocked && 'fixed z-1 floating-panel'
+        )
+      "
       data-testid="actionbar-panel"
     >
       <div class="relative flex items-center gap-2 select-none">
@@ -427,22 +442,4 @@ const handleClearQueue = async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
   executionStore.clearInitializationByJobIds(pendingJobIds)
 }
-
-const actionbarClass = computed(() =>
-  cn(
-    'w-[200px] border-dashed border-blue-500 opacity-80',
-    'm-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:-ml-50 before:h-full before:w-50',
-    'pointer-events-auto',
-    isMouseOverDropZone.value &&
-      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
-  )
-)
-const panelClass = computed(() =>
-  cn(
-    'actionbar pointer-events-auto',
-    isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-1 floating-panel'
-  )
-)
 </script>

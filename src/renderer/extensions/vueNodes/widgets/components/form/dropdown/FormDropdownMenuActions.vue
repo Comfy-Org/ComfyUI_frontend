@@ -52,7 +52,7 @@ const actionPopoverClass = cn(
 )
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
+  'size-6 flex rounded-sm transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
 const isSortPopoverOpen = ref(false)
@@ -140,7 +140,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -166,7 +166,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.name"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="handleSortSelected(item)"
           >
             <span>{{ item.name }}</span>
@@ -190,7 +190,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -216,7 +216,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.value"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="handleOwnershipSelected(item)"
           >
             <span>{{ item.name }}</span>
@@ -243,7 +243,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -269,7 +269,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.value"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="toggleBaseModelSelection(item)"
           >
             <span>{{ item.name }}</span>
@@ -282,7 +282,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <Button
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="baseModelSelected = new Set()"
           >
             {{ t('g.clearFilters') }}
