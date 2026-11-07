@@ -65,6 +65,7 @@ function capabilitiesBody(
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_enabled'
+  | 'auto_top_up_member_view'
   | 'auto_top_up_setup'
   | 'billing_notice_audience'
   | 'capabilities'

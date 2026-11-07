@@ -7,7 +7,8 @@ import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 import {
   setBillingCapabilitiesMock,
   setCanSubscribeSelfServeMock,
-  setCanTopUpMock
+  setCanTopUpMock,
+  setBillingNoticePlanMock
 } from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useBillingUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useBillingUI'
@@ -93,6 +94,10 @@ function story(
     beforeEach() {
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
+      setBillingNoticePlanMock({
+        isTeamPlan: billing.isTeamPlan ?? true,
+        ...billing.subscription
+      })
       setWorkspaceUIMock(workspace)
       setBillingCapabilitiesMock({
         canManageSubscription,

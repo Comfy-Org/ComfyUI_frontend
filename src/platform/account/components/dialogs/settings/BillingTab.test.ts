@@ -12,6 +12,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { selectBillingBanners } from '@comfyorg/account-ui/billing'
 import type {
+  AutoTopUpMemberView,
   BillingBannerKind,
   BillingBannerView
 } from '@comfyorg/account-ui/billing'
@@ -26,6 +27,10 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -102,6 +107,7 @@ interface Scenario {
   canManageAutoTopUp?: boolean
   canViewAutoTopUp?: boolean
   canViewAutoTopUpMemberNotice?: boolean
+  autoTopUpMemberView?: AutoTopUpMemberView
   canTopUp?: boolean
   topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
@@ -167,6 +173,14 @@ function arrange(scenario: Scenario = {}) {
       resubscribe
     })
   )
+  function servedNoticePlan() {
+    return {
+      isTeamPlan: false,
+      ...(scenario.subscription === undefined
+        ? activeSubscription
+        : scenario.subscription)
+    }
+  }
   vi.mocked(useBillingCapabilities).mockReturnValue(
     fromPartial({
       canSubscribeSelfServe: computed(
@@ -206,6 +220,18 @@ function arrange(scenario: Scenario = {}) {
       runDeniedPaymentPastDue: computed(() =>
         receiveServerFact('denied_reasons.can_run_workflows', false)
       ),
+      billingNoticeAudience: computed(() =>
+        receiveServerFact(
+          'billing_notice_audience',
+          servedBillingNoticeAudience(servedNoticePlan())
+        )
+      ),
+      endingNoticeStartsAt: computed(() =>
+        receiveServerFact(
+          'ending_notice_starts_at',
+          servedEndingNoticeStartsAt(servedNoticePlan())
+        )
+      ),
       canTopUp: computed(() => scenario.canTopUp ?? true),
       topUpDenial: computed(() => scenario.topUpDenial),
       canManageAutoTopUp: computed(() =>
@@ -233,6 +259,12 @@ function arrange(scenario: Scenario = {}) {
         )
       ),
       autoTopUpSetup: computed(() => null),
+      autoTopUpMemberView: computed(() =>
+        receiveServerFact(
+          'auto_top_up_member_view',
+          scenario.autoTopUpMemberView ?? null
+        )
+      ),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
         () => scenario.capabilitiesResolved ?? true
@@ -2058,6 +2090,30 @@ describe('BillingTab', () => {
             { name: 'Add credits' }
           )
         ).not.toBeInTheDocument()
+        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
+      })
+
+      it('shows a member the served auto top-up status, still without an action or a settings read', () => {
+        arrange({
+          ...member,
+          autoTopUpMemberView: {
+            status: 'paused_by_budget',
+            threshold_credits: 1000,
+            target_credits: 6275,
+            cycle_resets_at: null,
+            monthly_budget_is_default: true
+          }
+        })
+
+        const block = screen.getByTestId('billing-auto-top-up-member-card')
+        expect(
+          within(block).getByTestId('billing-auto-top-up-status')
+        ).toHaveTextContent('Maximum reached')
+        expect(block).toHaveTextContent(
+          'Monthly maximum reached. Contact a workspace owner to manage this.'
+        )
+        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
+        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
         expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
       })
 

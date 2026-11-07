@@ -373,6 +373,7 @@
           "src/extensions/core/electronAdapter.test.ts",
           "src/i18n.ts",
           "src/i18n.catalog.test.ts",
+          "src/i18n.creditUnit.test.ts",
           "src/i18n.literalMessages.test.ts",
           "src/i18n.safeTranslation.test.ts",
           "src/i18n.test.ts",

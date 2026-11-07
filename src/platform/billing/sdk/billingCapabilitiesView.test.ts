@@ -73,6 +73,21 @@ describe('projectBillingCapabilities', () => {
     }
   )
 
+  it('passes auto_top_up_member_view through to the capabilities read', () => {
+    const served = {
+      status: 'on',
+      threshold_credits: 1000,
+      target_credits: 6275,
+      cycle_resets_at: null,
+      monthly_budget_is_default: false
+    } as const
+
+    expect(
+      projectBillingCapabilities({ ...SNAPSHOT, autoTopUpMemberView: served })
+        .auto_top_up_member_view
+    ).toStrictEqual(served)
+  })
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,

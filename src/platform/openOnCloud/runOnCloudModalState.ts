@@ -1,13 +1,12 @@
-import type {
-  CloudMissingModel,
-  CloudWorkflowCheckState
-} from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type { CompatibilityModel } from '@comfyorg/ingest-types'
+
+import type { CloudWorkflowCheckState } from '@/platform/openOnCloud/cloudWorkflowCheck'
 
 export type RunOnCloudModalState =
   | { kind: 'checking' }
   | { kind: 'ready'; asksToSignIn: boolean }
   | { kind: 'deploySetup' }
-  | { kind: 'missingModels'; models: CloudMissingModel[] }
+  | { kind: 'missingModels'; models: CompatibilityModel[] }
 
 export function runOnCloudModalState(
   check: CloudWorkflowCheckState,
