@@ -768,18 +768,38 @@ describe('TopMenuSection', () => {
       }
     )
 
-    it('renders no Cloud button on Desktop until its relay ships', () => {
-      distribution.isDesktop = true
-      onTestFinished(() => {
-        distribution.isDesktop = false
-      })
-      servedFrom('http://127.0.0.1:8188')
-      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+    it.for([
+      {
+        host: 'the Desktop distribution',
+        enter: () => {
+          distribution.isDesktop = true
+        },
+        leave: () => {
+          distribution.isDesktop = false
+        }
+      },
+      {
+        host: 'a Desktop 2 host serving a localhost build',
+        enter: () => {
+          window.__comfyDesktop2 = {}
+        },
+        leave: () => {
+          delete window.__comfyDesktop2
+        }
+      }
+    ])(
+      'renders no Cloud button on $host until its relay ships',
+      ({ enter, leave }) => {
+        enter()
+        onTestFinished(leave)
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
 
-      createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
 
-      expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
-    })
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+      }
+    )
 
     it.for([
       { openOnCloudEnabled: false, cloud: 0, deploy: 1 },
