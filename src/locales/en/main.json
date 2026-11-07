@@ -4269,6 +4269,13 @@
     "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
   "openOnCloud": {
+    "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "pointNodes": "Bring your custom nodes and models"
+    },
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
@@ -4282,8 +4289,11 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
-    "cannotRunYet": "Comfy Cloud is missing nodes or models this workflow uses."
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+    },
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
   },
   "selectionToolbox": {
     "executeButton": {
