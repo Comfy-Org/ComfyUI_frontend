@@ -80,8 +80,10 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
-import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
+import {
+  deriveLocalCreditBanner,
+  isMemberTopUpDenial
+} from '@comfyorg/account-core/billing'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog

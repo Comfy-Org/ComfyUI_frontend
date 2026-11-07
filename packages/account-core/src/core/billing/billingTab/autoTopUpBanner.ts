@@ -1,4 +1,4 @@
-import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import type { AutoReloadSettings } from '@comfyorg/ingest-types'
 
 export type AutoTopUpBannerKind = 'autoTopUpFailed' | 'autoTopUpOff'
 
@@ -11,6 +11,7 @@ export interface AutoTopUpBannerInput {
   disabledReason: string | null
 }
 
+/** The auto top-up banner for a served failed auto top-up, shown only to who can manage it on an active plan. */
 export function deriveAutoTopUpBanner(
   input: AutoTopUpBannerInput
 ): AutoTopUpBannerKind | null {

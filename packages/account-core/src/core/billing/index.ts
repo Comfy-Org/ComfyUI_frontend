@@ -400,6 +400,23 @@ export {
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
 export type {
+  AutoTopUpBannerInput,
+  AutoTopUpBannerKind
+} from './billingTab/autoTopUpBanner'
+export { deriveAutoTopUpBanner } from './billingTab/autoTopUpBanner'
+export type {
+  LocalCreditBannerInput,
+  LocalCreditBannerKind
+} from './billingTab/creditBanner'
+export { deriveLocalCreditBanner } from './billingTab/creditBanner'
+export type {
+  BillingStatusBannerAudience,
+  BillingStatusBannerFacts,
+  BillingStatusBannerKind,
+  EnterpriseEndingNotice
+} from './billingTab/billingStatusBanner'
+export { deriveBillingStatusBanner } from './billingTab/billingStatusBanner'
+export type {
   AddCreditsAvailability,
   BillingTopUpDenial
 } from './billingTab/addCreditsAvailability'

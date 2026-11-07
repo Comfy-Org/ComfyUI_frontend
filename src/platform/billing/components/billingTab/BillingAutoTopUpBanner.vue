@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { AutoTopUpBannerKind } from '@/platform/billing/composables/deriveAutoTopUpBanner'
+import type { AutoTopUpBannerKind } from '@comfyorg/account-core/billing'
 
 const { kind } = defineProps<{
   kind: AutoTopUpBannerKind

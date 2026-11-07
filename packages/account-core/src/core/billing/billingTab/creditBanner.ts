@@ -1,4 +1,4 @@
-import type { AutoTopUpBannerKind } from '@/platform/billing/composables/deriveAutoTopUpBanner'
+import type { AutoTopUpBannerKind } from './autoTopUpBanner'
 
 export type LocalCreditBannerKind =
   | 'outOfCredits'
@@ -16,6 +16,7 @@ export interface LocalCreditBannerInput {
   autoTopUp: AutoTopUpBannerKind | null
 }
 
+/** The credit banner: a served auto top-up banner first, then out of credits, then low credits, each until dismissed. */
 export function deriveLocalCreditBanner(
   input: LocalCreditBannerInput
 ): LocalCreditBannerKind | null {

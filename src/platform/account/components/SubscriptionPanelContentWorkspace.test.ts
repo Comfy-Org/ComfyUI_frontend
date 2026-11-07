@@ -32,7 +32,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
-import type { BillingBannerKind } from '@/platform/billing/composables/useBillingBanner'
+import type { BillingStatusBannerKind } from '@comfyorg/account-core/billing'
 
 import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
@@ -40,7 +40,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 const mockBillingBanner = vi.hoisted(() => ({
-  kind: null as BillingBannerKind | null
+  kind: null as BillingStatusBannerKind | null
 }))
 
 vi.mock<unknown>(

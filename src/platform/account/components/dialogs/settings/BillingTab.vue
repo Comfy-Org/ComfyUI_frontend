@@ -195,6 +195,7 @@ import {
   deriveBillingTabLoad,
   planRowAction
 } from '@comfyorg/account-core/billing'
+import { suppressesCreditBanners } from '@comfyorg/account-ui/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -213,11 +214,12 @@ const planCheckout = usePlanCheckoutBanner()
 const topupCheckout = useTopupCheckoutBanner(
   () => capabilities.canManageBilling.value
 )
-const suppressCreditBanner = computed(
-  () =>
-    isPaused.value ||
-    planCheckout.banner.value != null ||
-    topupCheckout.banner.value != null
+const suppressCreditBanner = computed(() =>
+  suppressesCreditBanners([
+    ...(isPaused.value ? (['paused'] as const) : []),
+    ...(planCheckout.banner.value ? (['planCheckout'] as const) : []),
+    ...(topupCheckout.banner.value ? (['topupCheckout'] as const) : [])
+  ])
 )
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
