@@ -92,13 +92,18 @@ function modelInputsByNodeType() {
   return inputs
 }
 
-async function localModelFolders(): Promise<Map<string, string>> {
+async function localModelFolders(): Promise<Map<string, string | null>> {
   const folders = await useModelStore().loadModels()
-  const folderByName = new Map<string, string>()
+  const folderByName = new Map<string, string | null>()
   for (const folder of folders) {
     for (const model of Object.values(folder.models)) {
-      if (!folderByName.has(model.file_name))
-        folderByName.set(model.file_name, folder.directory)
+      const known = folderByName.get(model.file_name)
+      folderByName.set(
+        model.file_name,
+        known === undefined || known === folder.directory
+          ? folder.directory
+          : null
+      )
     }
   }
   return folderByName

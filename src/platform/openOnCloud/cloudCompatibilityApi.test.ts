@@ -169,6 +169,23 @@ describe(checkCloudCompatibility, () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('returns no verdict when a loader model name exists in more than one local folder', async () => {
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({
+        directory: 'clip_vision',
+        models: { '0/model.safetensors': { file_name: 'model.safetensors' } }
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'text_encoders',
+        models: { '0/model.safetensors': { file_name: 'model.safetensors' } }
+      })
+    ])
+    workflowHas(node('DualCLIPLoader', { clip_name1: 'model.safetensors' }))
+
+    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('treats only picker widgets as possible model files', async () => {
     const prompt = node('CLIPTextEncode')
     prompt.addWidget('text', 'text', 'portrait.safetensors', () => {})
