@@ -34,7 +34,11 @@
       >
         <div class="size-full overflow-hidden rounded-lg border">
           <AgentPanelLoadError v-if="mountFailed" :on-retry="retryMount" />
-          <AgentPanelRoot v-else :key="mountAttempt" />
+          <AgentPanelRoot
+            v-else
+            :key="mountAttempt"
+            :proactive-assignment="proactiveAssignment"
+          />
         </div>
       </div>
     </div>
@@ -63,6 +67,9 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useProactiveGreetingAssignment } from '@/workbench/extensions/agent/composables/agent/useProactiveGreetingAssignment'
+
+const proactiveAssignment = useProactiveGreetingAssignment()
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',

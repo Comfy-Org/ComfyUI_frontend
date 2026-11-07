@@ -2096,6 +2096,114 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('before_send', () => {
+    it('drops unqualified proactive flag reads but preserves other experiment exposures', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+      for (const event of ['$feature_flag_called', '$experiment_exposure']) {
+        expect(
+          runBeforeSend({
+            uuid: 'auto',
+            event,
+            properties: {
+              $feature_flag: 'agent-proactive-greeting-v1',
+              $feature_flag_response: 'generic'
+            }
+          })
+        ).toBeNull()
+      }
+      expect(
+        runBeforeSend({
+          uuid: 'other',
+          event: '$experiment_exposure',
+          properties: { $feature_flag: 'another-experiment' }
+        })
+      ).not.toBeNull()
+      const send = runBeforeSend({
+        uuid: 'ordinary',
+        event: 'app:agent_message_sent',
+        properties: { '$feature/agent-proactive-greeting-v1': 'generic' }
+      })
+      expect(send?.properties).not.toHaveProperty(
+        '$feature/agent-proactive-greeting-v1'
+      )
+    })
+
+    it('enrolls each pair once and pins delayed sends to the originating user', async () => {
+      const provider = createProvider()
+      const context = {
+        user_id: 'user-before',
+        workspace_id: 'workspace-a',
+        group_key: '["user-before","workspace-a"]',
+        variant: 'generic' as const
+      }
+      provider.trackProactiveGreetingEnrolled({
+        ...context,
+        canvas_state: 'empty'
+      })
+      await vi.dynamicImportSettled()
+      provider.trackProactiveGreetingEnrolled({
+        ...context,
+        canvas_state: 'workflow'
+      })
+      const exposures = hoisted.mockCapture.mock.calls.filter(
+        ([event]) => event === TelemetryEvents.EXPERIMENT_EXPOSURE
+      )
+      expect(exposures).toHaveLength(1)
+      expect(exposures[0][1]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'user-before',
+          $feature_flag: 'agent-proactive-greeting-v1',
+          $feature_flag_response: 'generic',
+          $groups: { user_workspace: context.group_key },
+          canvas_state: 'empty'
+        })
+      )
+      expect(
+        runBeforeSend({
+          uuid: 'enrolled',
+          event: exposures[0][0],
+          properties: exposures[0][1]
+        })
+      ).not.toBeNull()
+      const onResolved = vi
+        .mocked(useCurrentUser().onUserResolved)
+        .mock.calls.at(-1)?.[0]
+      assert.exists(onResolved)
+      onResolved({ id: 'user-after' })
+      expect(hoisted.mockIdentify).toHaveBeenLastCalledWith('user-after')
+      provider.trackAgentMessageSent({
+        attachment_count: 0,
+        node_tag_count: 0,
+        thread_id: null,
+        workflow_id: null,
+        client_message_id: 'send-before',
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null,
+        proactive_greeting: context
+      })
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.AGENT_MESSAGE_SENT,
+        expect.objectContaining({
+          distinct_id: 'user-before',
+          workspace_id: 'workspace-a',
+          $groups: { user_workspace: context.group_key },
+          '$feature/agent-proactive-greeting-v1': 'generic'
+        })
+      )
+      expect(hoisted.mockIdentify).toHaveBeenLastCalledWith('user-after')
+      provider.trackProactiveGreetingEnrolled({
+        ...context,
+        workspace_id: 'workspace-b',
+        group_key: '["user-before","workspace-b"]',
+        canvas_state: 'workflow'
+      })
+      expect(
+        hoisted.mockCapture.mock.calls.filter(
+          ([event]) => event === TelemetryEvents.EXPERIMENT_EXPOSURE
+        )
+      ).toHaveLength(2)
+    })
     it('preserves dropped events through the callback chain', async () => {
       createProvider()
       await vi.dynamicImportSettled()

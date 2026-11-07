@@ -21,10 +21,16 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-function setup() {
+function setup(
+  options: {
+    requireLocalInstallation?: boolean
+    canEnroll?: () => Promise<boolean>
+  } = {}
+) {
   const identity = ref({ userId: 'user-a', workspaceId: 'workspace-a' })
   const assignment = ref<AgentGreetingAssignment>()
   const active = ref(true)
+  const onEnrolled = vi.fn()
   const getUsageStatus =
     vi.fn<
       (options: { signal: AbortSignal }) => Promise<AgentUsageStatusResponse>
@@ -36,7 +42,9 @@ function setup() {
       assignment: () => assignment.value,
       active: () => active.value,
       canvas: () => 'empty',
-      getUsageStatus
+      getUsageStatus,
+      onEnrolled,
+      ...options
     })
   )!
   cleanups.push(() => scope.stop())
@@ -44,6 +52,7 @@ function setup() {
     identity,
     assignment,
     active,
+    onEnrolled,
     getUsageStatus,
     dispose: () => scope.stop(),
     ...result
@@ -57,6 +66,72 @@ const assigned: AgentGreetingAssignment = {
 }
 
 describe('first-use qualification', () => {
+  it.for([
+    ['A', 'control'],
+    ['B', 'generic'],
+    ['C', 'canvas-prefill'],
+    ['D', 'canvas-only']
+  ] as const)(
+    'enrolls qualified %s with pair attribution, independently of rendering',
+    async ([variant, arm]) => {
+      const state = setup()
+      const telemetry = {
+        user_id: assigned.userId,
+        workspace_id: assigned.workspaceId,
+        group_key: JSON.stringify([assigned.userId, assigned.workspaceId]),
+        variant: arm
+      }
+      const pending = deferred<AgentUsageStatusResponse>()
+      state.getUsageStatus.mockReturnValue(pending.promise)
+      state.assignment.value = { ...assigned, variant, telemetry }
+      expect(state.onEnrolled).not.toHaveBeenCalled()
+      pending.resolve({ has_used_agent: false })
+      await nextTick()
+      expect(state.onEnrolled).toHaveBeenCalledExactlyOnceWith({
+        ...telemetry,
+        canvas_state: 'empty'
+      })
+      expect(state.attribution.value).toEqual(telemetry)
+      state.identity.value = {
+        userId: 'another-user',
+        workspaceId: assigned.workspaceId
+      }
+      expect(state.attribution.value).toBeUndefined()
+    }
+  )
+
+  it('does not enroll a used pair or a stale usage response', async () => {
+    const state = setup()
+    const telemetry = {
+      user_id: assigned.userId,
+      workspace_id: assigned.workspaceId,
+      group_key: JSON.stringify([assigned.userId, assigned.workspaceId]),
+      variant: 'generic' as const
+    }
+    state.getUsageStatus.mockResolvedValue({ has_used_agent: true })
+    state.assignment.value = { ...assigned, telemetry }
+    await nextTick()
+    expect(state.onEnrolled).not.toHaveBeenCalled()
+    const pending = deferred<AgentUsageStatusResponse>()
+    state.identity.value = {
+      userId: assigned.userId,
+      workspaceId: 'workspace-b'
+    }
+    state.getUsageStatus.mockReturnValue(pending.promise)
+    state.assignment.value = {
+      ...assigned,
+      workspaceId: 'workspace-b',
+      telemetry: {
+        ...telemetry,
+        workspace_id: 'workspace-b',
+        group_key: JSON.stringify([assigned.userId, 'workspace-b'])
+      }
+    }
+    state.active.value = false
+    pending.resolve({ has_used_agent: false })
+    await nextTick()
+    expect(state.onEnrolled).not.toHaveBeenCalled()
+  })
   it('stays inactive without a matching assignment and qualifies only after a successful query', async () => {
     const state = setup()
     expect(state.getUsageStatus).not.toHaveBeenCalled()
@@ -148,13 +223,22 @@ describe('first-use qualification', () => {
     const state = setup()
     const pending = deferred<AgentUsageStatusResponse>()
     state.getUsageStatus.mockReturnValue(pending.promise)
-    state.assignment.value = assigned
+    state.assignment.value = {
+      ...assigned,
+      telemetry: {
+        user_id: assigned.userId,
+        workspace_id: assigned.workspaceId,
+        group_key: JSON.stringify([assigned.userId, assigned.workspaceId]),
+        variant: 'generic'
+      }
+    }
     state.accepted(state.scope.value)
     pending.resolve({ has_used_agent: false })
     await nextTick()
     await state.refresh()
     expect(state.greeting.value).toBeUndefined()
     expect(state.getUsageStatus).toHaveBeenCalledTimes(1)
+    expect(state.onEnrolled).not.toHaveBeenCalled()
   })
 
   it('discards a closed-panel response and queries again on reopening', async () => {
@@ -188,4 +272,63 @@ it('does not restart usage work when an outstanding send settles after disposal'
   await state.refresh()
   expect(state.getUsageStatus).toHaveBeenCalledTimes(1)
   expect(state.greeting.value).toBeUndefined()
+})
+
+describe('Desktop local history qualification', () => {
+  it.for([
+    { response: { has_used_agent: false }, eligible: false },
+    {
+      response: { has_used_agent: true, scope: 'local_installation' as const },
+      eligible: false
+    },
+    {
+      response: { has_used_agent: false, scope: 'local_installation' as const },
+      eligible: true
+    }
+  ])(
+    'requires unused installation-scoped history: $eligible',
+    async ({ response, eligible }) => {
+      const state = setup({
+        requireLocalInstallation: true,
+        canEnroll: async () => true
+      })
+      state.getUsageStatus.mockResolvedValue(response)
+      state.assignment.value = assigned
+      await state.refresh()
+      expect(state.greeting.value !== undefined).toBe(eligible)
+    }
+  )
+
+  it('requires host admission again after history qualification and ignores a stale admission', async () => {
+    const admission = deferred<boolean>()
+    const canEnroll = vi.fn().mockReturnValue(admission.promise)
+    const state = setup({ requireLocalInstallation: true, canEnroll })
+    state.getUsageStatus.mockResolvedValue({
+      has_used_agent: false,
+      scope: 'local_installation'
+    })
+    state.assignment.value = assigned
+    await vi.waitFor(() => expect(canEnroll).toHaveBeenCalledOnce())
+    expect(state.greeting.value).toBeUndefined()
+    state.active.value = false
+    admission.resolve(true)
+    await nextTick()
+    expect(state.greeting.value).toBeUndefined()
+    expect(state.onEnrolled).not.toHaveBeenCalled()
+  })
+
+  it('does not show a treatment or enroll when host admission is denied', async () => {
+    const state = setup({
+      requireLocalInstallation: true,
+      canEnroll: async () => false
+    })
+    state.getUsageStatus.mockResolvedValue({
+      has_used_agent: false,
+      scope: 'local_installation'
+    })
+    state.assignment.value = assigned
+    await state.refresh()
+    expect(state.greeting.value).toBeUndefined()
+    expect(state.onEnrolled).not.toHaveBeenCalled()
+  })
 })

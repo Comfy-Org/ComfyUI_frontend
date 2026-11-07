@@ -48,6 +48,8 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
+  ProactiveGreetingEnrolledMetadata,
+  ProactiveGreetingTelemetryContext,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
@@ -128,6 +130,37 @@ import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNorma
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
 const MAX_PRE_INIT_QUEUED_EVENTS = 100
+const PROACTIVE_GREETING_FLAG = 'agent-proactive-greeting-v1'
+
+function proactiveGreetingProperties(
+  context: ProactiveGreetingTelemetryContext
+) {
+  return {
+    distinct_id: context.user_id,
+    $user_id: context.user_id,
+    user_id: context.user_id,
+    workspace_id: context.workspace_id,
+    proactive_greeting_attribution: true,
+    $groups: { user_workspace: context.group_key },
+    [`$feature/${PROACTIVE_GREETING_FLAG}`]: context.variant
+  }
+}
+
+function filterProactiveGreetingExposure(
+  event: CaptureResult | null
+): CaptureResult | null {
+  if (!event) return null
+  if (event.properties.proactive_greeting_attribution !== true)
+    delete event.properties[`$feature/${PROACTIVE_GREETING_FLAG}`]
+  if (
+    (event.event === '$feature_flag_called' ||
+      event.event === '$experiment_exposure') &&
+    event.properties.$feature_flag === PROACTIVE_GREETING_FLAG &&
+    event.properties.proactive_greeting_enrollment !== true
+  )
+    return null
+  return event
+}
 
 const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
   shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
@@ -216,6 +249,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private didWarnEventQueueFull = false
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
+  private proactiveEnrollments = new Set<string>()
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryAttribution: DesktopEntryAttribution | null = null
@@ -246,13 +280,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               ...COMFY_POSTHOG_OPTIONS,
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
-              // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
-              // automatically when persistence includes 'cookie' (the default).
-              // Explicit override interacts badly with posthog-js#3578 where reset() fails
-              // to clear localStorage on other subdomains, causing identity bleed on logout.
               before_send: [
                 stampPlatformAxes,
                 stripRetiredStarterPromptFlag,
+                filterProactiveGreetingExposure,
                 createPostHogBeforeSend()
               ]
             })
@@ -272,15 +303,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
                 this.setSubscriptionProperties()
               }
             })
-            // Anchored to session state rather than the logout button so it
-            // also covers token revocation, account deletion, and cross-tab
-            // sign-out (browserLocalPersistence). A logout that lands during
-            // the posthog-js dynamic-import window will not be observed here:
-            // events buffered pre-init are intentionally NOT queue-cleared on
-            // logout, which leaves a narrow race where a logout + different
-            // login both inside the import window would flush pre-init events
-            // under the new identity. Accepted as a known edge — re-adding
-            // pre-init logout handling would defeat the simplification.
             currentUser.onUserLogout(() => {
               this.posthog?.reset(true)
               this.registerDesktopEntryProps()
@@ -888,7 +910,31 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
-    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+    const { proactive_greeting: context, ...properties } = metadata
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, {
+      ...properties,
+      ...(context && proactiveGreetingProperties(context))
+    })
+  }
+
+  trackProactiveGreetingEnrolled(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): void {
+    if (
+      !this.isEnabled ||
+      this.disabledEvents.has(TelemetryEvents.EXPERIMENT_EXPOSURE)
+    )
+      return
+    const enrollment = JSON.stringify([metadata.group_key, metadata.variant])
+    if (this.proactiveEnrollments.has(enrollment)) return
+    this.proactiveEnrollments.add(enrollment)
+    this.captureRaw(TelemetryEvents.EXPERIMENT_EXPOSURE, {
+      ...proactiveGreetingProperties(metadata),
+      $feature_flag: PROACTIVE_GREETING_FLAG,
+      $feature_flag_response: metadata.variant,
+      proactive_greeting_enrollment: true,
+      canvas_state: metadata.canvas_state
+    })
   }
 
   trackAgentStarterPromptClicked(

@@ -22,6 +22,7 @@ import type {
   AgentGraphProjectionMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  ProactiveGreetingEnrolledMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
@@ -83,6 +84,10 @@ import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
+import {
+  hostProactiveGreetingProperties,
+  supportsHostProactiveGreeting
+} from '@/platform/telemetry/hostProactiveGreeting'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -384,7 +389,23 @@ export class HostTelemetrySink implements TelemetryProvider {
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
-    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+    const { proactive_greeting: context, ...properties } = metadata
+    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, {
+      ...properties,
+      ...(context &&
+        supportsHostProactiveGreeting() &&
+        hostProactiveGreetingProperties(context))
+    })
+  }
+
+  trackProactiveGreetingEnrolled(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): void {
+    if (!supportsHostProactiveGreeting()) return
+    this.capture(TelemetryEvents.EXPERIMENT_EXPOSURE, {
+      ...hostProactiveGreetingProperties(metadata),
+      canvas_state: metadata.canvas_state
+    })
   }
 
   trackAgentStarterPromptClicked(

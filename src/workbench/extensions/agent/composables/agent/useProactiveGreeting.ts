@@ -1,4 +1,5 @@
 import type { AgentUsageStatusResponse } from '@comfyorg/ingest-types'
+import type { ProactiveGreetingEnrolledMetadata } from '@comfyorg/telemetry/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
@@ -20,6 +21,9 @@ interface Options {
   getUsageStatus: (options: {
     signal: AbortSignal
   }) => Promise<AgentUsageStatusResponse>
+  requireLocalInstallation?: boolean
+  canEnroll?: () => Promise<boolean>
+  onEnrolled?: (metadata: ProactiveGreetingEnrolledMetadata) => void
 }
 
 export function useProactiveGreeting(options: Options) {
@@ -66,25 +70,31 @@ export function useProactiveGreeting(options: Options) {
     const request = new AbortController()
     controller = request
     const currentGeneration = generation
+    const isStale = (): boolean =>
+      request.signal.aborted ||
+      currentGeneration !== generation ||
+      currentScope !== scope.value
     try {
       const result = await options.getUsageStatus({ signal: request.signal })
+      if (isStale()) return
       if (
-        request.signal.aborted ||
-        currentGeneration !== generation ||
-        currentScope !== scope.value
+        options.requireLocalInstallation &&
+        result.scope !== 'local_installation'
       )
         return
+      if (!result.has_used_agent && options.canEnroll) {
+        if (!(await options.canEnroll())) return
+        if (isStale()) return
+      }
       state.value = {
         status: result.has_used_agent ? 'has-sent' : 'never-sent',
         scope: currentScope
       }
+      const telemetry = assignment.value?.telemetry
+      if (!result.has_used_agent && telemetry)
+        options.onEnrolled?.({ ...telemetry, canvas_state: options.canvas() })
     } catch (error) {
-      if (
-        request.signal.aborted ||
-        currentGeneration !== generation ||
-        currentScope !== scope.value
-      )
-        return
+      if (isStale()) return
       state.value = { status: 'unknown' }
       reportError(error, {
         surface: 'agent',
@@ -118,5 +128,6 @@ export function useProactiveGreeting(options: Options) {
       return
     return { variant: assignment.value.variant, canvas: options.canvas() }
   })
-  return { greeting, scope, refresh, accepted }
+  const attribution = computed(() => assignment.value?.telemetry)
+  return { greeting, scope, attribution, refresh, accepted }
 }

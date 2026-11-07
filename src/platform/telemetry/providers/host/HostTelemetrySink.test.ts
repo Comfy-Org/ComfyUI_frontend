@@ -610,3 +610,101 @@ describe('HostTelemetrySink', () => {
     expect(state.capture).not.toHaveBeenCalled()
   })
 })
+
+describe('proactive greeting host delivery', () => {
+  afterEach(() => {
+    delete window.__comfyDesktop2
+  })
+
+  it('sends flat originating pair data and leaves exposure dedup to the host', () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      Telemetry: Object.assign(
+        { capture },
+        {
+          proactiveGreetingExperimentVersion: 1,
+          canEnrollProactiveGreeting: async () => true
+        }
+      )
+    }
+    const provider = new HostTelemetrySink()
+    const context = {
+      user_id: 'user-a',
+      workspace_id: 'workspace-a',
+      group_key: '["user-a","workspace-a"]',
+      variant: 'control' as const
+    }
+    provider.trackProactiveGreetingEnrolled({
+      ...context,
+      canvas_state: 'empty'
+    })
+    provider.trackProactiveGreetingEnrolled({
+      ...context,
+      canvas_state: 'empty'
+    })
+    provider.trackAgentMessageSent({
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null,
+      proactive_greeting: context
+    })
+    expect(capture.mock.calls).toEqual([
+      [
+        '$experiment_exposure',
+        {
+          proactive_greeting_user_id: 'user-a',
+          proactive_greeting_workspace_id: 'workspace-a',
+          proactive_greeting_group_key: '["user-a","workspace-a"]',
+          proactive_greeting_variant: 'control',
+          canvas_state: 'empty'
+        }
+      ],
+      [
+        '$experiment_exposure',
+        {
+          proactive_greeting_user_id: 'user-a',
+          proactive_greeting_workspace_id: 'workspace-a',
+          proactive_greeting_group_key: '["user-a","workspace-a"]',
+          proactive_greeting_variant: 'control',
+          canvas_state: 'empty'
+        }
+      ],
+      [
+        'app:agent_message_sent',
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: null,
+          client_message_id: 'message-a',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null,
+          proactive_greeting_user_id: 'user-a',
+          proactive_greeting_workspace_id: 'workspace-a',
+          proactive_greeting_group_key: '["user-a","workspace-a"]',
+          proactive_greeting_variant: 'control'
+        }
+      ]
+    ])
+  })
+
+  it('does not send experiment exposure to an old host', () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = { isRemote: () => false, Telemetry: { capture } }
+    new HostTelemetrySink().trackProactiveGreetingEnrolled({
+      user_id: 'user-a',
+      workspace_id: 'workspace-a',
+      group_key: '["user-a","workspace-a"]',
+      variant: 'generic',
+      canvas_state: 'workflow'
+    })
+    expect(capture).not.toHaveBeenCalled()
+  })
+})
