@@ -19,7 +19,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
+const invokeExtensions = vi.fn()
+provideExtensionService(() => ({ invokeExtensions }))
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,
@@ -98,6 +99,18 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
     expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-job-id')
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
+  })
+
+  it('does not apply job outputs when the workflow load fails', async () => {
+    const task = new TaskItemImpl(createHistoryJob('test-job-id'))
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      mockJobDetail as JobDetail
+    )
+    vi.mocked(mockApp.loadGraphData).mockResolvedValue(false)
+
+    await task.loadWorkflow(mockApp)
+
+    expect(invokeExtensions).not.toHaveBeenCalled()
   })
 
   it('should not load workflow when fetch returns undefined', async () => {

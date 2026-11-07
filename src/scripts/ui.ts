@@ -258,7 +258,12 @@ class ComfyList {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
                     const workflow = await extractWorkflow(job)
-                    await this.app.loadGraphData(workflow, true, false)
+                    const loaded = await this.app.loadGraphData(
+                      workflow,
+                      true,
+                      false
+                    )
+                    if (loaded === false) return
                     if ('outputs' in job && job.outputs) {
                       this.host.restoreOutputs(job.outputs)
                     }

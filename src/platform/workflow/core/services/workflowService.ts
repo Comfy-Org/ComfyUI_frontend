@@ -109,6 +109,9 @@ function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
 let workflowLoadTail: Promise<unknown> = Promise.resolve()
 let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
+const activationRecoveries = new Set<ComfyWorkflow | null>()
+
+type GraphLoader = ReturnType<typeof useApp>['loadGraphData']
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 
@@ -513,17 +516,73 @@ export const useWorkflowService = () => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
-    await useApp().loadGraphData(
-      toRaw(retained.activeState) as ComfyWorkflowJSON,
+    await repaintWorkflow(retained)
+  }
+
+  const repaintWorkflow = async (
+    workflow: ComfyWorkflow,
+    load: GraphLoader = (...args) => useApp().loadGraphData(...args)
+  ) => {
+    const loaded = await load(
+      toRaw(workflow.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
       /* restore_view=*/ true,
-      retained,
+      workflow,
       {
         checkForRerouteMigration: false,
         deferWarnings: true,
         skipAssetScans: true
       }
     )
+    return loaded !== false
+  }
+
+  const repaintAfterFailedActivation = async (
+    retained: ComfyWorkflow | null
+  ) => {
+    const key = retained && toRaw(retained)
+    if (activationRecoveries.has(key)) return
+    activationRecoveries.add(key)
+    try {
+      const loadWithinActivation: GraphLoader = (...args) =>
+        useApp().loadGraphDataWithinLoad(...args)
+      if (
+        retained?.isLoaded &&
+        (await repaintWorkflow(retained, loadWithinActivation))
+      )
+        return
+      if ((await loadWithinActivation(blankGraph)) !== false) return
+      reportError(
+        new Error('Neither the retained workflow nor a blank graph loaded'),
+        { surface: 'graph', errorType: 'workflow_load_recovery_failure' }
+      )
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_recovery_failure'
+      })
+    } finally {
+      activationRecoveries.delete(key)
+    }
+  }
+
+  const dropPhantomTab = async (opened: ComfyWorkflow) => {
+    const workflowStore = useWorkspaceStore().workflow
+    if (
+      opened.isLoaded ||
+      !workflowStore.isOpen(opened) ||
+      workflowStore.isActive(opened) ||
+      workflowDraftStore.getDraft(opened.path)
+    )
+      return
+    try {
+      await workflowStore.closeWorkflow(opened)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_recovery_failure'
+      })
+    }
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
@@ -935,18 +994,35 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
+    const workflowStore = useWorkspaceStore().workflow
+    const activeBefore = workflowStore.activeWorkflow
+    let openedTab: ComfyWorkflow | undefined
     const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(value, workflowData, shareId)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
-    useNodeOutputStore().restorePreviewsForWorkflow(
-      useWorkspaceStore().workflow.activeWorkflow?.path
-    )
+    const isSuperseded = () =>
+      graphState !== useApp().rootGraphOrUndefined?.state
+    try {
+      await activateLoadedWorkflow(value, workflowData, shareId, (workflow) => {
+        if (!workflowStore.isOpen(workflow)) openedTab = workflow
+      })
+      if (isSuperseded()) return
+      useNodeOutputStore().restorePreviewsForWorkflow(
+        workflowStore.activeWorkflow?.path
+      )
+    } catch (error) {
+      if (isSuperseded()) return
+      const active = workflowStore.activeWorkflow
+      if (!active || toRaw(active) === toRaw(activeBefore))
+        await repaintAfterFailedActivation(active)
+      if (openedTab) await dropPhantomTab(openedTab)
+      throw error
+    }
   }
 
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    onOpen?: (workflow: ComfyWorkflow) => void
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
@@ -969,6 +1045,7 @@ export const useWorkflowService = () => {
     }
 
     async function bindToCanvas(workflow: ComfyWorkflow) {
+      onOpen?.(workflow)
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
       bindCanvasTracker(loadedWorkflow.changeTracker)

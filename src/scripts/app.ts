@@ -452,6 +452,7 @@ export class ComfyApp implements IComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
+  private activatingGraphLoads = 0
   private fileLoadDiscoveryQueue: Promise<void> = Promise.resolve()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
@@ -1183,6 +1184,31 @@ export class ComfyApp implements IComfyApp {
     return failure
   }
 
+  private async activateBuiltGraph(fileName: string) {
+    ChangeTracker.isLoadingGraph = true
+    try {
+      await this.activateGraph(fileName)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  }
+
+  private async activateGraph(
+    workflow: string | null | ComfyWorkflow,
+    shareId?: string
+  ) {
+    this.activatingGraphLoads++
+    try {
+      await useWorkflowService().afterLoadNewGraph(
+        workflow,
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        shareId
+      )
+    } finally {
+      this.activatingGraphLoads--
+    }
+  }
+
   private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.graphLoadQueue.then(operation)
     this.graphLoadQueue = result.then(
@@ -1204,6 +1230,20 @@ export class ComfyApp implements IComfyApp {
     )
   }
 
+  loadGraphDataWithinLoad(
+    ...args: Parameters<ComfyApp['loadGraphData']>
+  ): ReturnType<ComfyApp['loadGraphData']> {
+    if (this.activatingGraphLoads === 0) return this.loadGraphData(...args)
+    const [graphData, clean = true, restore_view = true, workflow = null] = args
+    return this.loadGraphDataNow(
+      graphData,
+      clean,
+      restore_view,
+      workflow,
+      args[4] ?? {}
+    )
+  }
+
   private async loadGraphDataNow(
     graphData: ComfyWorkflowJSON | undefined,
     clean: boolean,
@@ -1212,6 +1252,7 @@ export class ComfyApp implements IComfyApp {
     options: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
+    const wasLoadingGraph = ChangeTracker.isLoadingGraph
     const loadId = ++this.graphLoadSequence
 
     const {
@@ -1400,7 +1441,7 @@ export class ComfyApp implements IComfyApp {
       try {
         await this.reportGraphLoadFailure(error)
       } finally {
-        ChangeTracker.isLoadingGraph = false
+        ChangeTracker.isLoadingGraph = wasLoadingGraph
       }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1596,13 +1637,14 @@ export class ComfyApp implements IComfyApp {
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       try {
-        await useWorkflowService().afterLoadNewGraph(
-          workflow,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          effectiveShareId
-        )
+        await this.activateGraph(workflow, effectiveShareId)
       } catch (error) {
-        if (isCurrentGraphLoad()) throw error
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.loadWorkflowTitle'),
+          reportType: 'loadWorkflowError'
+        })
+        console.error(error)
+        return false
       }
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
@@ -1613,7 +1655,7 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
-      ChangeTracker.isLoadingGraph = false
+      ChangeTracker.isLoadingGraph = wasLoadingGraph
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1681,7 +1723,7 @@ export class ComfyApp implements IComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      ChangeTracker.isLoadingGraph = wasLoadingGraph
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
@@ -2311,10 +2353,7 @@ export class ComfyApp implements IComfyApp {
               []
             )
           )
-          await useWorkflowService().afterLoadNewGraph(
-            fileName,
-            this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-          )
+          await this.activateBuiltGraph(fileName)
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
           return
         } catch (error) {
@@ -2672,10 +2711,7 @@ export class ComfyApp implements IComfyApp {
           missingNodeTypes
         )
       )
-      await useWorkflowService().afterLoadNewGraph(
-        fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-      )
+      await this.activateBuiltGraph(fileName)
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
