@@ -1,5 +1,6 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
@@ -22,7 +23,8 @@ vi.mock(
   }
 )
 
-it('declines the refusal takeover without opening an empty dialog when the Plans tab is blocked and pricing cannot load', async () => {
+it('declines the refusal takeover without opening an empty dialog when the pricing table fallback is on, the Plans tab is blocked and pricing cannot load', async () => {
+  vi.mocked(useFeatureFlags().flags).pricingTableFallback = true
   vi.spyOn(window, 'open').mockReturnValue(null)
   const originalConfig = window.__CONFIG__
   window.__CONFIG__ = { subscription_required: true }
