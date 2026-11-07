@@ -39,6 +39,16 @@ export class AppModeWidgetHelper {
     return new WidgetSelectDropdownFixture(this.getWidgetItem(key))
   }
 
+  /** Scroll only the widget list so the widget's row sits at the list's top edge. */
+  async scrollWidgetToListTop(key: string) {
+    await this.container.evaluate((list, selector) => {
+      const item = list.querySelector(selector)
+      if (!item) throw new Error(`Missing widget ${selector}`)
+      list.scrollTop +=
+        item.getBoundingClientRect().top - list.getBoundingClientRect().top
+    }, `[data-widget-key$=":${key}"]`)
+  }
+
   /** Fill a textarea widget (e.g. CLIP Text Encode prompt). */
   async fillTextarea(key: string, value: string) {
     const widget = this.getWidgetItem(key)
