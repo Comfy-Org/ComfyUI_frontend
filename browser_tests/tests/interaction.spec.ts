@@ -781,12 +781,13 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     })
     await expectElementScreenshot(comfyPage.canvas, 'legacy-wheel-zoom-in.png')
 
-    const zoomed = await comfyPage.canvasOps.snapshotNavigation()
     await comfyPage.canvas.focus()
     await comfyPage.page.keyboard.down('Space')
     await comfyPage.canvasOps.dragAndDrop({ x: 50, y: 50 }, { x: 187, y: 133 })
     await comfyPage.page.keyboard.up('Space')
-    await comfyPage.canvasOps.expectNavigationTransform(zoomed, {
+    await comfyPage.canvasOps.expectNavigationTransform(before, {
+      ratio: 1.1,
+      anchor: [400, 300],
       pan: [137, 83]
     })
   })

@@ -143,7 +143,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     const node = await emptyLatentNode(comfyPage)
-    expect(await node.isBypassed()).toBe(true)
+    await expect.poll(() => node.isBypassed()).toBe(true)
     await expectRegionScreenshot(
       comfyPage.page,
       [node],
@@ -158,16 +158,16 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await latentNode.clickContextMenuOption('Pin')
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
-    expect(await latentNode.isPinned()).toBe(true)
+    await expect.poll(() => latentNode.isPinned()).toBe(true)
     const titlePos = await latentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 16, y: 16 })
     await comfyPage.nextFrame()
-    expect(await latentNode.getPosition()).toEqual(originalPosition)
+    await expect.poll(() => latentNode.getPosition()).toEqual(originalPosition)
     await latentNode.click('title', { button: 'right' })
     await comfyPage.contextMenu.menuItems.filter({ hasText: /^Unpin$/ }).click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
-    expect(await latentNode.isPinned()).toBe(false)
+    await expect.poll(() => latentNode.isPinned()).toBe(false)
 
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
     await expect
@@ -200,10 +200,13 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
-    expect(
-      await Promise.all(pinTargets.map((node) => node.isPinned()))
-    ).toEqual([true, true, true])
-    expect(await unselectedNode.isPinned()).toBe(false)
+    await expect
+      .poll(() =>
+        Promise.all(
+          [...pinTargets, unselectedNode].map((node) => node.isPinned())
+        )
+      )
+      .toEqual([true, true, true, false])
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
@@ -213,10 +216,13 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.contextMenu.menuItems.filter({ hasText: /^Unpin$/ }).click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
-    expect(
-      await Promise.all(pinTargets.map((node) => node.isPinned()))
-    ).toEqual([false, false, false])
-    expect(await unselectedNode.isPinned()).toBe(false)
+    await expect
+      .poll(() =>
+        Promise.all(
+          [...pinTargets, unselectedNode].map((node) => node.isPinned())
+        )
+      )
+      .toEqual([false, false, false, false])
   })
 
   test('Can clone pinned nodes', async ({ comfyPage }) => {

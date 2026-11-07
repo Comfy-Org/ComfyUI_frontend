@@ -45,6 +45,8 @@ describe('useLitegraphSettings', () => {
     it.for([
       {
         from: 'legacy',
+        fromLeft: 'panning',
+        fromWheel: 'zoom',
         to: 'standard',
         left: 'select',
         wheel: 'panning',
@@ -53,6 +55,8 @@ describe('useLitegraphSettings', () => {
       },
       {
         from: 'standard',
+        fromLeft: 'select',
+        fromWheel: 'panning',
         to: 'legacy',
         left: 'panning',
         wheel: 'zoom',
@@ -61,13 +65,20 @@ describe('useLitegraphSettings', () => {
       }
     ] as const)(
       'applies the $to preset to the live canvas',
-      async ({ from, to, left, wheel, overriddenWheel, trackpad }) => {
+      async ({
+        from,
+        fromLeft,
+        fromWheel,
+        to,
+        left,
+        wheel,
+        overriddenWheel,
+        trackpad
+      }) => {
         const store = useSettingStore()
         store.settingValues['Comfy.Canvas.NavigationMode'] = from
-        store.settingValues['Comfy.Canvas.LeftMouseClickBehavior'] =
-          from === 'standard' ? 'select' : 'panning'
-        store.settingValues['Comfy.Canvas.MouseWheelScroll'] =
-          from === 'standard' ? 'panning' : 'zoom'
+        store.settingValues['Comfy.Canvas.LeftMouseClickBehavior'] = fromLeft
+        store.settingValues['Comfy.Canvas.MouseWheelScroll'] = fromWheel
         useCanvasStore().canvas = createCanvas(vi.fn())
         scope.run(useLitegraphSettings)
 

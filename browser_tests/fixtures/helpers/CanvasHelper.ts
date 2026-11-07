@@ -338,7 +338,7 @@ export class CanvasHelper {
       ).toBeCloseTo(
         before.offset[0] +
           ((anchor[0] - before.left) / before.scale) * (1 / ratio - 1) +
-          pan[0] / before.scale,
+          pan[0] / (before.scale * ratio),
         4
       )
       expect(
@@ -347,7 +347,7 @@ export class CanvasHelper {
       ).toBeCloseTo(
         before.offset[1] +
           ((anchor[1] - before.top) / before.scale) * (1 / ratio - 1) +
-          pan[1] / before.scale,
+          pan[1] / (before.scale * ratio),
         4
       )
       expect(after.nodes, 'Navigation must not move or resize nodes').toEqual(
