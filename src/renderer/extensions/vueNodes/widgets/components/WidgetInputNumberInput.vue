@@ -182,7 +182,7 @@ const inputAriaAttrs = computed(() => ({
               class="pointer-events-none absolute size-full overflow-clip rounded-md"
             >
               <div
-                class="size-full bg-primary/15"
+                class="size-full bg-foreground/10"
                 :style="{ width: `${sliderWidth}%` }"
               />
             </div>
