@@ -5346,7 +5346,7 @@
       "percentOff": "{percent}% הנחה",
       "pricePerMonth": "{price}/חודש",
       "refreshFailed": "ההנחה שלך הוחלה. רענן את הדף כדי לראות את התוכנית המעודכנת שלך.",
-      "renewsAt": "יתחדש במחיר {regular} ב-{date}.",
+      "renewsAfterOffer": "לאחר סיום ההצעה, התוכנית שלך תתחדש במחיר {regular} לחודש.",
       "savings": "תחסוך {savings} בתשלום זה. | תחסוך {savings} על פני {months} התשלומים האלה.",
       "stayOnPlan": "הישאר עם {plan}",
       "subtitle": "הנה הצעה בזמן שאתה מחליט",
