@@ -15,6 +15,7 @@ import type {
   AskUserResolution,
   AssistantMessage,
   DeleteApprovalPart,
+  MessagePart,
   RunApprovalPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
@@ -585,6 +586,105 @@ describe('AgentMessage thinking narration', () => {
     expect(
       screen.queryByRole('button', { name: /^worked/i })
     ).not.toBeInTheDocument()
+  })
+
+  function answeredQuestionTurn(streaming: boolean): AssistantMessage {
+    const message = thinkingMessage()
+    message.thinking = false
+    message.streaming = streaming
+    message.parts = [
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'list_slots',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'askUser',
+        askId: 'turn-1:call-1',
+        prompt: 'Which model should I use?',
+        options: [{ id: 'sdxl', label: 'SDXL' }],
+        minSelections: 1,
+        maxSelections: 1,
+        allowOther: false,
+        resolution: { status: 'answered', selected: ['sdxl'] }
+      },
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      }
+    ]
+    return message
+  }
+
+  it('draws steps taken after an answered question below its card', () => {
+    render(AgentMessage, {
+      props: { message: answeredQuestionTurn(true) },
+      global: { plugins: [i18n] }
+    })
+
+    const before = screen.getByText('List slots')
+    const card = screen.getByText('Which model should I use?')
+    const after = screen.getByText('Set widget')
+    expect(
+      before.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      card.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('summarizes the steps on each side of an answered question once the turn ends', async () => {
+    render(AgentMessage, {
+      props: { message: answeredQuestionTurn(false) },
+      global: { plugins: [i18n] }
+    })
+
+    const [above, below] = screen.getAllByRole('button', { name: /^worked/i })
+    const card = screen.getByText('Which model should I use?')
+    expect(
+      above.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      card.compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+
+    await userEvent.click(below)
+    expect(screen.getByText('Set widget')).toBeVisible()
+    expect(screen.queryByText('List slots')).not.toBeInTheDocument()
+
+    await userEvent.click(above)
+    const listSlots = screen.getByText('List slots')
+    expect(
+      listSlots.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('keeps the streaming reply mounted when a step lands before it', async () => {
+    const message = answeredQuestionTurn(true)
+    const [listSlots, question, setWidget] = message.parts
+    const reply: MessagePart = {
+      type: 'text',
+      text: 'Drafting the reply',
+      state: 'streaming'
+    }
+    message.parts = [listSlots, question, reply]
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+    const before = screen.getByText('Drafting the reply')
+
+    await rerender({
+      message: { ...message, parts: [listSlots, question, setWidget, reply] }
+    })
+
+    expect(screen.getByText('Set widget')).toBeVisible()
+    expect(screen.getByText('Drafting the reply')).toBe(before)
   })
 
   it('gathers text-separated tool runs into the one summary', async () => {

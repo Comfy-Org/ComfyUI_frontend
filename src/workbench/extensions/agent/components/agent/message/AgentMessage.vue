@@ -10,17 +10,14 @@ import type {
   AssistantMessage,
   TextPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import {
-  askIdOf,
-  isOpenAskPart
-} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { isOpenAskPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import type { AgentMessageGroup as Group } from './agentMessageGroup'
-import { groupMessageParts } from './agentMessageGroup'
+import { groupKeys, groupMessageParts } from './agentMessageGroup'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -46,8 +43,6 @@ const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
-// Every thinking and tool part of the turn reads as one trace, wherever they fall
-// between the reply's text parts, so the completed turn folds into a single summary.
 const activityParts = computed<readonly ActivityPart[]>(() =>
   message.parts.filter(
     (part): part is ActivityPart =>
@@ -57,10 +52,7 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
 
 const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
-function groupKey(group: Group, index: number): string {
-  const askId = 'part' in group ? askIdOf(group.part) : undefined
-  return askId === undefined ? `group:${index}` : `ask:${askId}`
-}
+const keys = computed(() => groupKeys(groups.value))
 
 const markdown = computed(() =>
   message.parts
@@ -136,11 +128,10 @@ const status = computed(() => {
 
 <template>
   <div class="space-y-2 pb-4">
-    <template v-for="(group, index) in groups" :key="groupKey(group, index)">
+    <template v-for="(group, index) in groups" :key="keys[index]">
       <AgentMessageGroup
         :group
         :streaming="message.streaming"
-        :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
         @answer="(askId, answer) => emit('answerAsk', askId, answer)"
