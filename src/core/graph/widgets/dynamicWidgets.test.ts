@@ -125,6 +125,26 @@ describe('Dynamic Combos', () => {
     node.widgets[1].value = '1'
     expect(node.widgets.length).toBe(3)
   })
+  test('a nested combo removed by switching options is not rebuilt after configure', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[[], ['STRING']]], ['INT']])
+    node.widgets[0].value = '1'
+    const widgetNames = node.widgets.map((w) => w.name)
+
+    expect(() => node.onAfterGraphConfigured?.()).not.toThrow()
+    expect(node.widgets.map((w) => w.name)).toEqual(widgetNames)
+  })
+  test('rejects a link to the combo input from a node output', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addDynamicCombo(node, [['INT'], ['STRING']])
+
+    const comboSlot = node.inputs.findIndex((i) => i.name === '0')
+
+    expect(() => connectInput(node, comboSlot, graph)).toThrow()
+    expect(node.isInputConnected(comboSlot)).toBe(false)
+  })
   test('Can add input', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['IMAGE']])
