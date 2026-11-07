@@ -202,6 +202,10 @@ export interface ComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ): Promise<void | false>
+  handleFileDrop(
+    event: DragEvent,
+    options?: { skipNodeRouting?: boolean }
+  ): Promise<void>
   handleFileList(fileList: File[]): Promise<void>
   handleAudioFileList(fileList: File[]): Promise<void>
   handleVideoFileList(fileList: File[]): Promise<void>
