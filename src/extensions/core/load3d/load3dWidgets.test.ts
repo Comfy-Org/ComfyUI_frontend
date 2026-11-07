@@ -239,7 +239,6 @@ describe('load3dWidgets model drop onto the node', () => {
       expect(
         node.widgets?.find(({ name }) => name === 'model_file')?.options.values
       ).toContain('3d/mesh.glb [output]')
-      expect(markLoad3dSceneDirty).toHaveBeenCalledWith(node)
     }
   )
 

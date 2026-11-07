@@ -140,7 +140,7 @@ async function clearModel(node: LGraphNode) {
   }
 }
 
-async function selectModelAsset(item: ResultItem, node: LGraphNode) {
+function selectModelAsset(item: ResultItem, node: LGraphNode) {
   if (!isSupportedModelFilename(item.filename ?? '')) {
     useToast().warning(t('load3d.unsupportedFileType'))
     return
@@ -155,17 +155,6 @@ async function selectModelAsset(item: ResultItem, node: LGraphNode) {
   addToComboValues(modelWidget, modelPath)
   modelWidget.value = modelPath
   recordModelChange()
-
-  try {
-    const { markLoad3dSceneDirty } =
-      await import('@/extensions/core/load3d/composables/useLoad3d')
-    markLoad3dSceneDirty(node)
-  } catch (error) {
-    reportError(error, {
-      errorType: 'error_loading_3d_extensions',
-      surface: 'graph'
-    })
-  }
 }
 
 function addModelDragAndDrop(node: LGraphNode) {

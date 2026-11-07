@@ -231,6 +231,7 @@ describe('useLoad3dDrag', () => {
         await drag[handler](event)
 
         expect(event.defaultPrevented).toBe(false)
+        expect(event.cancelBubble).toBe(false)
         expect(drag.isDragging.value).toBe(false)
         expect(mockOnModelDrop).not.toHaveBeenCalled()
       }
@@ -253,6 +254,7 @@ describe('useLoad3dDrag', () => {
         await drag[handler](event)
 
         expect(event.defaultPrevented).toBe(true)
+        expect(event.cancelBubble).toBe(true)
       }
     )
 
