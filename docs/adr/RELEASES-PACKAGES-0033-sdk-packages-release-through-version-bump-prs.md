@@ -79,6 +79,7 @@ Four workflows carry it:
 | `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
 | `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
 | `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
+| `sdk-release-pr.yaml`           | `push` to `main` on package sources    | Opens or refreshes one `Release`-labelled bump PR for every package whose published contents changed since its last release          |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
@@ -244,17 +245,29 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 
 ### Follow-ups
 
-- **`ingest-types` regeneration does not bump the version.** The generator
-  lives in the Cloud repository, not here; the bot opens
-  `[chore] Update Ingest API types from cloud@<sha>` PRs on the
-  `update-ingest-types` branch. The change needed there is one step in the
-  generating job, after the types are written and before the PR is opened:
-  `pnpm -C packages/ingest-types version <patch|minor|major> --no-git-tag-version`,
-  with the `Release` label added to the PR it opens. Until that lands, a
-  regeneration ships to npm only if someone runs the bump workflow afterwards.
-  Picking the increment is the human judgement described under Versioning
-  policy, so the safe default for the bot is `patch` with a reviewer free to
-  raise it on the PR.
+> **Amended (2026-10-31):** `sdk-release-pr.yaml` closes the regeneration gap
+> from this repository instead of the Cloud bot. On a push to `main` it runs
+> `scripts/sdk-release-plan.ts`, which compares each package with the commit
+> that set its current version. `ingest-types` is bumped (patch) only when a
+> schema an SDK package imports, or one it is built from, changed; endpoints
+> no SDK package reads ship nothing. The hand-written packages get an `alpha`
+> prerelease bump when their published source or any published manifest field
+> (everything but `version`, `scripts` and `devDependencies`, so
+> `dependencies`, `peerDependencies`, `exports` and `publishConfig.exports`
+> among them, with `catalog:` ranges resolved through `pnpm-workspace.yaml`)
+> changed. The
+> bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
+> every push, so a release is still a reviewed merge. The on-merge publish now
+> runs its matrix one package at a time in dependency order (`ingest-types`
+> first) and stops at the first failure, so one PR can carry a package and a
+> dependent that needs it. Platform's own direct imports of `ingest-types`
+> are outside the gate.
+
+- **Picking the `ingest-types` increment stays a human judgement.** The
+  planner always proposes `patch` for a regeneration; a reviewer raises it on
+  the release PR when the schema change warrants `minor` or `major`, per the
+  Versioning policy. A later push to `main` regenerates the PR from `main`
+  and resets it to `patch`, so the reviewer raises it again before merging.
 - **Pre-merge snapshots ship separately.** A `pull_request` run executes the
   workflow definition from the pull request's own merge ref, so a publish step
   triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
@@ -269,8 +282,8 @@ and an exact pin is the lockfile conflict this ADR rejects below.
   range against the registry, so an unpublished `ingest-types` change can only
   be tested when the same PR touches both.
 - **`account-ui` has no version of its own on npm yet.** It is registered in
-  the tables and the latch is off, but nothing is published until someone runs
-  the bump workflow for it. Until then the export map
+  the tables and the latch is off, but nothing is published until the first
+  `sdk-release/auto` PR that bumps it merges. Until then the export map
   [ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md)
   governs is an external contract only in intent.
 

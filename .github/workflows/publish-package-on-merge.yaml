@@ -45,7 +45,8 @@ jobs:
           set -euo pipefail
           INCLUDE='[]'
           SUMMARY=''
-          for PACKAGE in account-core account-ui billing-contract ingest-types; do
+          # Dependency order: each package resolves the ones before it from npm.
+          for PACKAGE in ingest-types billing-contract account-core account-ui; do
             PACKAGE_JSON="packages/$PACKAGE/package.json"
             if ! git diff --quiet HEAD^1 HEAD -- "$PACKAGE_JSON"; then
               PREV_JSON=$(git show "HEAD^1:$PACKAGE_JSON" 2>/dev/null || true)
@@ -86,8 +87,11 @@ jobs:
     name: Publish ${{ matrix.package }} to npm
     needs: resolve
     if: needs.resolve.outputs.released != '0'
+    # One at a time, in resolve order, so a dependent never publishes before
+    # (or without) the release it resolves.
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
     permissions:
       contents: read
