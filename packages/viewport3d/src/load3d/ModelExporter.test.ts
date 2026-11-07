@@ -357,7 +357,8 @@ describe('ModelExporter', () => {
     it.for([
       { source: 'model.glb' },
       { source: 'model.obj' },
-      { source: 'model.stl' }
+      { source: 'model.stl' },
+      { source: 'model.unknown' }
     ])('scales $source to FBX centimetres', async ({ source }) => {
       fbxParseAsyncMock.mockResolvedValue(new Uint8Array([1]))
 
