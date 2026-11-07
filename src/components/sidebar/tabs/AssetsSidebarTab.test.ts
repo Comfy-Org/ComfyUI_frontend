@@ -13,6 +13,7 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
@@ -209,6 +210,25 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
   await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
 
   expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
+  expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+})
+
+it('opens a 3D output in the dedicated viewer rather than the lightbox', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'mesh-asset', name: 'mesh.glb' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(useDialogStore().showDialog).toHaveBeenCalledWith(
+    expect.objectContaining({
+      key: 'asset-3d-viewer',
+      title: 'mesh.glb',
+      props: { modelUrl: expect.stringContaining('/view?filename=mesh.glb') }
+    })
+  )
+  expect(screen.getByTestId('lightbox-url')).toBeEmptyDOMElement()
 })
 
 it.for([
