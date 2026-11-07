@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "ComfyUI server API TypeScript types, generated from a pinned core OpenAPI spec",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": {

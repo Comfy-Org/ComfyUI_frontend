@@ -57,38 +57,45 @@ describe('deriveAutoTopUpCard', () => {
 describe('deriveAutoTopUpSection', () => {
   const owner: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: true,
-    canTopUp: true,
-    manageAutoTopUpDenial: undefined
+    canViewAutoTopUpCard: true,
+    canViewAutoTopUpMemberNotice: false
   }
   const member: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: false,
-    canTopUp: false,
-    manageAutoTopUpDenial: 'not_workspace_owner'
+    canViewAutoTopUpCard: false,
+    canViewAutoTopUpMemberNotice: true
   }
 
   it.for<{ case: string; facts: AutoTopUpSectionFacts; kind: string }>([
-    { case: 'an owner who can top up', facts: owner, kind: 'card' },
+    { case: 'a granted card', facts: owner, kind: 'card' },
     {
-      case: 'an owner who cannot top up',
-      facts: { ...owner, canTopUp: false },
+      case: 'a withheld card',
+      facts: { ...owner, canViewAutoTopUpCard: false },
       kind: 'hidden'
     },
-    { case: 'a member', facts: member, kind: 'memberBlock' },
+    {
+      case: 'a granted card beside a granted member notice',
+      facts: { ...owner, canViewAutoTopUpMemberNotice: true },
+      kind: 'card'
+    },
+    {
+      case: 'a member on a healthy workspace',
+      facts: member,
+      kind: 'memberBlock'
+    },
+    {
+      case: 'a member on a paused workspace',
+      facts: { ...member, canViewAutoTopUpMemberNotice: false },
+      kind: 'hidden'
+    },
     {
       case: 'a member with the flag off',
       facts: { ...member, autoTopUpEnabled: false },
       kind: 'hidden'
     },
     {
-      case: 'a not_a_member denial',
-      facts: { ...member, manageAutoTopUpDenial: 'not_a_member' },
-      kind: 'hidden'
-    },
-    {
-      case: 'no served denial',
-      facts: { ...member, manageAutoTopUpDenial: undefined },
+      case: 'an owner with the flag off',
+      facts: { ...owner, autoTopUpEnabled: false },
       kind: 'hidden'
     }
   ])('shows $kind for $case', ({ facts, kind }) => {

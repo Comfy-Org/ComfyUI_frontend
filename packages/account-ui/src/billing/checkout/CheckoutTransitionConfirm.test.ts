@@ -213,11 +213,14 @@ describe('CheckoutTransitionConfirm', () => {
       expect(screen.getByText(/Renews at .* on Oct 25, 2026/)).toBeTruthy()
     })
 
-    it('requires the charge to be acknowledged when it exceeds the current monthly price', async () => {
+    it('requires the charge to be acknowledged when the preview serves it', async () => {
       const onConfirm = vi.fn()
       renderTransition({
         forceReactivation: true,
-        previewData: upgrade({ amount_due_cents: 4500 }),
+        previewData: upgrade({
+          amount_due_cents: 4500,
+          requires_reactivation_charge_confirmation: true
+        }),
         onConfirm
       })
       const confirm = confirmButton('Confirm & reactivate — $45.00 today')
@@ -233,14 +236,64 @@ describe('CheckoutTransitionConfirm', () => {
     })
 
     it('drops the acknowledgement when a replacement quote arrives', async () => {
+      const consentQuote = () =>
+        upgrade({
+          amount_due_cents: 4500,
+          requires_reactivation_charge_confirmation: true
+        })
       const { rerender } = renderTransition({
         forceReactivation: true,
-        previewData: upgrade({ amount_due_cents: 4500 })
+        previewData: consentQuote()
       })
       await userEvent.click(screen.getByRole('checkbox'))
-      await rerender({ previewData: upgrade({ amount_due_cents: 4500 }) })
+      await rerender({ previewData: consentQuote() })
       expect(screen.getByRole('checkbox')).toHaveProperty('checked', false)
       expect(confirmButton(/Confirm & reactivate/).disabled).toBe(true)
+    })
+
+    it('asks for no acknowledgement when the preview serves false, whatever the charge', () => {
+      renderTransition({
+        forceReactivation: true,
+        previewData: upgrade({
+          amount_due_cents: 99_900,
+          requires_reactivation_charge_confirmation: false
+        })
+      })
+      expect(screen.queryByRole('checkbox')).toBeNull()
+      expect(
+        confirmButton('Confirm & reactivate — $999.00 today').disabled
+      ).toBe(false)
+    })
+
+    it('keeps the interim charge rule when the preview omits the fact', () => {
+      renderTransition({
+        forceReactivation: true,
+        previewData: upgrade({ amount_due_cents: 99_900 })
+      })
+      expect(
+        screen.getByRole('checkbox', {
+          name: "I understand I'll be charged $999.00 today"
+        })
+      ).toBeTruthy()
+      expect(
+        confirmButton('Confirm & reactivate — $999.00 today').disabled
+      ).toBe(true)
+    })
+
+    it('requires acknowledgement for a served true even when the client sees no cancellation', async () => {
+      const onConfirm = vi.fn()
+      renderTransition({
+        previewData: upgrade({
+          amount_due_cents: 500,
+          requires_reactivation_charge_confirmation: true
+        }),
+        onConfirm
+      })
+      const confirm = confirmButton(/Confirm & reactivate/)
+      expect(confirm.disabled).toBe(true)
+      await userEvent.click(screen.getByRole('checkbox'))
+      await userEvent.click(confirm)
+      expect(onConfirm).toHaveBeenCalledWith(true)
     })
 
     it('never asks a downgrade to acknowledge a charge', () => {

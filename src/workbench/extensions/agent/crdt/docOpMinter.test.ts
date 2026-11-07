@@ -728,10 +728,7 @@ describe('attachDocOpMinter', () => {
     ).not.toHaveProperty('ghost')
   })
 
-  // Note, PrimitiveNode, Get/Set nodes and blueprint hosts have no catalog
-  // entry: the applier rejects a name-keyed record for them and stores a
-  // positional array opaquely.
-  it('keeps add_node widgets_values positional for a frontend-only node, and the applier takes it', async () => {
+  it('declares a frontend-only node own widget form, so the applier takes a later widget write', async () => {
     const note = new TestNote()
     graph.add(note)
     await afterFlush()
@@ -740,7 +737,10 @@ describe('attachDocOpMinter', () => {
       expect.objectContaining({
         op: 'add_node',
         class_type: 'TestNote',
-        node: expect.objectContaining({ widgets_values: ['a note'] })
+        node: expect.objectContaining({
+          widgets_values: { text: 'a note' },
+          widgets_values_form: { order: ['text'] }
+        })
       })
     ])
     const doc = mint({ nodes: [], links: [] }, CATALOG)
@@ -750,6 +750,22 @@ describe('attachDocOpMinter', () => {
       CATALOG
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+
+    expect(
+      applyOutcomes(
+        doc,
+        [
+          {
+            op: 'set_widget',
+            node_id: note.id,
+            widget: 'text',
+            value: 'edited'
+          }
+        ],
+        CATALOG,
+        2
+      )
+    ).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
   })
 

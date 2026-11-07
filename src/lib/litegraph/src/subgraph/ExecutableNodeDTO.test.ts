@@ -1,12 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import {
   ExecutableNodeDTO,
   LGraph,
   LGraphEventMode,
-  LGraphNode
+  LGraphNode,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { ExecutableLGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createNestedSubgraphs,
@@ -323,6 +333,127 @@ describe('Muted node output resolution', () => {
 
     const resolved = downstreamDto.resolveInput(0)
     expect(resolved).toBeUndefined()
+  })
+})
+
+describe('Subgraph output whose inner link has no origin node', () => {
+  function subgraphNodeWithInnerLink(originId: NodeId) {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'in', type: 'IMAGE' }],
+      outputs: [{ name: 'images', type: 'IMAGE' }],
+      nodeCount: 1
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const innerLink = new LLink(
+      toLinkId(9),
+      'IMAGE',
+      originId,
+      0,
+      SUBGRAPH_OUTPUT_ID,
+      0
+    )
+    vi.spyOn(subgraphNode, 'resolveSubgraphOutputLink').mockReturnValue(
+      innerLink.resolve(subgraph)
+    )
+    return subgraphNode
+  }
+
+  it('resolves to nothing with a warning instead of throwing', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(toNodeId(632))
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+    expect(console.warn).toHaveBeenCalled()
+  })
+
+  it('skips a pass-through link whose subgraph node input is missing', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    subgraphNode.removeInput(0)
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+  })
+
+  it('forwards a pass-through link to the subgraph node input', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const parentGraph = subgraphNode.graph!
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'IMAGE')
+    parentGraph.add(source)
+    parentGraph.add(subgraphNode)
+    source.connect(0, subgraphNode, 0)
+
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const sourceDto = new ExecutableNodeDTO(
+      source,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(sourceDto.id, sourceDto)
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toMatchObject({
+      node: sourceDto,
+      origin_slot: 0
+    })
+  })
+  it('returns the promoted widget value for an unlinked pass-through input', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, 'in')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    subgraphNode.inputs[0].widgetId = id
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toMatchObject({
+      origin_slot: -1,
+      widgetInfo: { value: 7 }
+    })
+  })
+
+  it('resolves to nothing for an unlinked pass-through input with no widget', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
   })
 })
 

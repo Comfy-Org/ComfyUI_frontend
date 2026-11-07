@@ -87,10 +87,6 @@ vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
   )
 }))
 
-vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
-  createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
-}))
-
 vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: fromAny({
     splitFilePath: vi.fn((p: string) => ['', p]),
@@ -493,7 +489,8 @@ describe('getNodeMenuItems', () => {
     })
 
     expect(preview3DExtension.getNodeMenuItems!(node)).toEqual([
-      { content: 'Export' }
+      null,
+      expect.objectContaining({ content: 'Save' })
     ])
   })
 })
@@ -967,7 +964,8 @@ describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
     })
 
     expect(preview3DAdvancedExtension.getNodeMenuItems!(node)).toEqual([
-      { content: 'Export' }
+      null,
+      expect.objectContaining({ content: 'Save' })
     ])
   })
 })

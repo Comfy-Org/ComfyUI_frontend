@@ -98,10 +98,15 @@ export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
     )
 }
 
+/** Whether the workflow deployment dialog is open. */
+export function isWorkflowNeedsDeploymentDialogOpen(): boolean {
+  return useDialogStore().isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)
+}
+
 /** Opens the workflow deployment dialog, replacing an earlier one. */
 export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   const dialogStore = useDialogStore()
-  if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {
+  if (isWorkflowNeedsDeploymentDialogOpen()) {
     dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
     await nextTick()
   }

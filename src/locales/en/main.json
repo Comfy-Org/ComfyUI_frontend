@@ -1364,7 +1364,11 @@
     "enterFilenamePrompt": "Enter the filename:",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
-    "savedAsWorkflow": "Converted to node graph only workflow"
+    "savedAsWorkflow": "Converted to node graph only workflow",
+    "unreadableWorkflowTitle": "Can't open this workflow",
+    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
+    "unsavedChangesLostTitle": "Unsaved changes were not saved",
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2607,10 +2611,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
-    "previewClips": "Clips",
-    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes"
+    "mixedDimensions": "Mixed sizes",
+    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
+    "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
@@ -3400,6 +3404,14 @@
     "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
     "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
+    "signupPaymentRecovery": {
+      "title": "Your {plan} payment didn't go through.",
+      "titleNoPlan": "Your plan payment didn't go through.",
+      "body": "Finish paying to start your plan.",
+      "contactSupport": "Contact support",
+      "finishPayment": "Finish payment",
+      "unavailable": "We couldn't open the payment page. Try again, or contact support."
+    },
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
@@ -3670,6 +3682,16 @@
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
         "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
+        "memberStatus": {
+          "on": "Tops up to {target} credits when below {threshold} credits. Contact a workspace owner to manage this.",
+          "limitReached": "Monthly limit reached. Resets {date}. Contact a workspace owner to manage this.",
+          "limitReachedNoDate": "Monthly limit reached. Contact a workspace owner to manage this.",
+          "maximumReached": "Monthly maximum reached. Resets {date}. Contact a workspace owner to manage this.",
+          "maximumReachedNoDate": "Monthly maximum reached. Contact a workspace owner to manage this.",
+          "failed": "The last top-up didn't go through. Contact a workspace owner to manage this.",
+          "turnedOff": "Turned off after 3 declined charges. Contact a workspace owner to manage this.",
+          "onHold": "Needs a default payment method. Contact a workspace owner to manage this."
+        },
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
@@ -4520,6 +4542,8 @@
   "cloudSurvey_steps_source": "How did you find us?",
   "cloudSurvey_steps_source_social": "Which platform?",
   "assetBrowser": {
+    "library": "Library",
+    "errorLoadingModels": "Some models couldn’t load. Reopen the Model Library to try again.",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",
@@ -4678,6 +4702,7 @@
       "loadingAsset": "Loading asset"
     },
     "modelInfo": {
+      "saveFailed": "Couldn't save model details. Try again.",
       "title": "Model Info",
       "selectModelPrompt": "Select a model to see its information",
       "basicInfo": "Basic Info",
@@ -5216,6 +5241,9 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
+    "askAgent": "Ask agent",
+    "askAgentAbout": "Ask agent about {title}",
+    "askAgentAboutAll": "Ask agent about {count} issue | Ask agent about all {count} issues",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {
@@ -5269,6 +5297,7 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "askAgent": "Ask agent",
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
@@ -5485,6 +5514,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Generation failed",
         "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
+      },
+      "server_out_of_memory": {
+        "title": "Ran out of memory",
+        "message": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Ran out of memory",
+        "toastMessage": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again."
       },
       "content_blocked": {
         "title": "Content blocked",
@@ -6148,6 +6184,13 @@
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
+    "errorContext": {
+      "remove": "Remove attached issue",
+      "problemCount": "{count} problem | {count} problems",
+      "allLabel": "All issues",
+      "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+    },
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",
@@ -6314,6 +6357,8 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
+      "overwritten": "Your edit conflicted with a newer change and was not saved. The workflow was refreshed to show the saved version.",
+      "unconfirmed": "Your edit could not be confirmed as saved. The workflow was refreshed to show the saved version.",
       "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
