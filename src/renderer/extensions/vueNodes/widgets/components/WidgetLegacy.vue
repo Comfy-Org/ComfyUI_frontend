@@ -6,6 +6,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
@@ -27,6 +28,8 @@ const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+let ownsWidgetWidth = false
+let widthBeforeVueNodes: number | undefined
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -39,8 +42,23 @@ function findLegacyWidget():
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
+function releaseWidget() {
+  if (!widgetInstance) return
+  widgetInstance.triggerDraw = () => {}
+  if (ownsWidgetWidth) widgetInstance.width = widthBeforeVueNodes
+  ownsWidgetWidth = false
+}
+
+function assignVueNodesWidth(widget: IBaseWidget, width: number) {
+  if (!ownsWidgetWidth) {
+    widthBeforeVueNodes = widget.width
+    ownsWidgetWidth = true
+  }
+  widget.width = width
+}
+
 function bindWidget() {
-  if (widgetInstance) widgetInstance.triggerDraw = () => {}
+  releaseWidget()
 
   const resolved = findLegacyWidget()
   if (!resolved) {
@@ -69,9 +87,7 @@ onMounted(() => {
   watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
-onBeforeUnmount(() => {
-  if (widgetInstance) widgetInstance.triggerDraw = () => {}
-})
+onBeforeUnmount(releaseWidget)
 
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
@@ -99,7 +115,7 @@ function draw() {
   containerHeight.value = height
   node.canvasHeight = height
   widgetInstance.y = 0
-  widgetInstance.width = width
+  if (LiteGraph.vueNodesMode) assignVueNodesWidth(widgetInstance, width)
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value.getContext('2d')
