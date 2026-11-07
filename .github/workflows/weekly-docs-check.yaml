@@ -28,62 +28,40 @@ jobs:
           fetch-depth: 50
           ref: main
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies for analysis tools
-        run: |
-          # Check if packages are already available locally
-          if ! pnpm list -g typescript @vue/compiler-sfc >/dev/null 2>&1; then
-            echo "Installing TypeScript and Vue compiler globally..."
-            pnpm add -g typescript @vue/compiler-sfc
-          else
-            echo "TypeScript and Vue compiler already available globally"
-          fi
+          node_cache: 'false'
 
       - name: Run Claude Documentation Review
         uses: anthropics/claude-code-action@239e3a730883eeb5c53db12b0fc9573b3024b126 # v1.0.191
         with:
           prompt: |
-            Is all documentation still 100% accurate?
+            Verify the repository's markdown against the current code and remove what has gone stale.
+            Prefer deleting or trimming over rewriting. Do not add new documentation.
 
             INSTRUCTIONS:
-            1. Fact-check all documentation against the current codebase
-            2. Look for:
-               - Outdated API references
-               - Deprecated functions or components still documented
-               - Missing documentation for new features
-               - Incorrect code examples
-               - Broken internal references
-               - Configuration examples that no longer work
-               - Documentation that contradicts actual implementation
-            3. Update any inaccurate or outdated documentation
-            4. Add documentation for significant undocumented features
-            5. Ensure all code examples are valid and tested against current code
+            1. Run `pnpm markdown-references:check`. For each reported path or pnpm command, point the
+               reference at the file or script that clearly replaced it; otherwise delete the stale
+               sentence, list item, table row, or section.
+            2. Fact-check docs/**/*.md, AGENTS.md and README.md files, and the skills, commands, and
+               checks under .claude/ and .agents/ against the code. Look for:
+               - Removed or renamed APIs, components, stores, settings, and configuration
+               - Code examples that no longer match the code they describe
+               - Instructions that contradict the implementation or the root AGENTS.md
+            3. Fix each verified inaccuracy with the smallest edit that makes it true.
+            4. Delete content that restates what the code already says or that goes stale quickly:
+               file inventories, directory trees, counts, line numbers, and lists of components
+               or exports.
+            5. Do not document undocumented features, add sections, or create files. Do not modify
+               source code.
+            6. Leave anything you cannot verify unchanged and list it in the PR body.
+            7. Run `pnpm markdown-references:check` again. No finding may remain in a file you edited.
 
-            Focus on these key areas:
-            - docs/**/*.md (all documentation files)
-            - AGENTS.md (project guidelines)
-            - README.md files throughout the repository
-            - .claude/commands/*.md (Claude command documentation)
-
-            Make changes directly to the documentation files as needed.
-            DO NOT modify any source code files unless absolutely necessary for documentation accuracy.
-
-            After making all changes, create a comprehensive PR message summary:
-            1. Write a detailed PR body to /tmp/pr-body-${{ github.run_id }}.md in markdown format
-            2. Include:
-               - ## Summary section with bullet points of what was changed
-               - ## Changes Made section with details organized by category
-               - ## Review Notes section with any important context
-            3. Be specific about which files were updated and why
-            4. If no changes were needed, write a brief message stating documentation is up to date
+            After making all changes, write a PR body to /tmp/pr-body-${{ github.run_id }}.md:
+            - ## Summary: bullet points of what was trimmed, deleted, or corrected, and why each was stale
+            - ## Unverified: claims you could not confirm and left unchanged
+            If no changes were needed, write a brief message stating documentation is up to date.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 256 --allowedTools 'Bash(git status),Bash(git diff),Bash(git log),Bash(pnpm:*),Bash(npm:*),Bash(node:*),Bash(tsc:*),Bash(echo:*),Read,Write,Edit,Glob,Grep'"
         continue-on-error: false
@@ -111,15 +89,15 @@ jobs:
           This PR contains documentation updates identified by the weekly automated review.
 
           ### Review Process
-          - Automated fact-checking against current codebase
-          - Verification of code examples and API references
-          - Detection of outdated or missing documentation
+          - `pnpm markdown-references:check` over all markdown
+          - Fact-checking against the current codebase
+          - Trimming or deleting stale content instead of adding new documentation
 
           ### What was checked
           - All markdown documentation in `docs/`
           - Project guidelines in `AGENTS.md`
           - README files throughout the repository
-          - Claude command documentation in `.claude/commands/`
+          - Skills, commands, and checks under `.claude/` and `.agents/`
 
           **Note**: This is an automated PR. Please review all changes carefully before merging.
 
