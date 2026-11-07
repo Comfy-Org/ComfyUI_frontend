@@ -3,12 +3,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import '@/platform/assets/components/MediaAudioTop.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
+import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -90,9 +93,7 @@ const historyImage: AssetItem = fromPartial({
   preview_url: '/api/view?filename=a.png&type=output&subfolder='
 })
 
-function renderCard(
-  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
-) {
+function cardGlobalConfig() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -100,14 +101,20 @@ function renderCard(
     missingWarn: false,
     fallbackWarn: false
   })
+  return {
+    plugins: [i18n],
+    stubs: {
+      MediaTitle: true
+    }
+  }
+}
+
+function renderCard(
+  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
+) {
   return render(MediaAssetCard, {
     props: { asset, loading: true, ...props },
-    global: {
-      plugins: [i18n],
-      stubs: {
-        MediaTitle: true
-      }
-    }
+    global: cardGlobalConfig()
   })
 }
 
@@ -386,6 +393,161 @@ describe('MediaAssetCard', () => {
     } finally {
       release()
     }
+  })
+
+  describe('audio player strip', () => {
+    const audioAsset: AssetItem = { ...asset, name: 'track.mp3' }
+    const waveformWidth = 100
+    const selectionModifiers = [
+      { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+      { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+      { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+    ]
+
+    async function prepareAudioStrip() {
+      const audio = await screen.findByTestId('wave-audio-media')
+      assert.instanceOf(audio, HTMLAudioElement)
+      Object.defineProperty(audio, 'duration', {
+        value: 10,
+        configurable: true
+      })
+      await fireEvent(audio, new Event('durationchange'))
+      const waveform = screen.getByTestId('wave-audio-waveform')
+      waveform.getBoundingClientRect = () =>
+        new DOMRect(0, 0, waveformWidth, 32)
+      return {
+        waveform,
+        playButton: screen.getByRole('button', { name: 'g.play' }),
+        playSpy: vi.spyOn(audio, 'play').mockResolvedValue()
+      }
+    }
+
+    async function renderAudioCard() {
+      const rendered = renderCard({ loading: false, asset: audioAsset })
+      return { ...rendered, ...(await prepareAudioStrip()) }
+    }
+
+    async function renderAudioCardInSelectionGrid() {
+      const SelectionGrid = defineComponent({
+        components: { MediaAssetCard },
+        setup() {
+          const gridRef = ref<HTMLElement>()
+          const { marqueeStyle } = useAssetGridSelection({
+            marqueeContainerRef: gridRef,
+            hoverTargetRef: gridRef,
+            getAssets: () => [audioAsset],
+            getSelectedIds: () => [],
+            setSelectedIds: vi.fn(),
+            selectAll: vi.fn()
+          })
+          return { gridRef, marqueeStyle, audioAsset }
+        },
+        template: `
+          <div ref="gridRef">
+            <MediaAssetCard :asset="audioAsset" :loading="false" />
+            <div v-if="marqueeStyle" data-testid="marquee" :style="marqueeStyle" />
+          </div>
+        `
+      })
+      render(SelectionGrid, { global: cardGlobalConfig() })
+      return prepareAudioStrip()
+    }
+
+    async function dragAcross(
+      user: ReturnType<typeof userEvent.setup>,
+      target: HTMLElement
+    ) {
+      await user.pointer([
+        { keys: '[MouseLeft>]', target, coords: { clientX: 10, clientY: 10 } },
+        { target, coords: { clientX: 30, clientY: 20 } }
+      ])
+    }
+
+    it.for(selectionModifiers)(
+      '$modifier-clicks the waveform to select without seeking',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { emitted, waveform, playSpy } = await renderAudioCard()
+
+        await user.keyboard(keyDown)
+        await user.pointer({
+          keys: '[MouseLeft]',
+          target: waveform,
+          coords: { clientX: waveformWidth / 2, clientY: 16 }
+        })
+        await user.keyboard(keyUp)
+
+        expect(emitted().select).toHaveLength(1)
+        expect(playSpy).not.toHaveBeenCalled()
+        expect(screen.getByText('0:00 / 0:10')).toBeInTheDocument()
+      }
+    )
+
+    it.for(selectionModifiers.filter(({ modifier }) => modifier !== 'Shift'))(
+      'starts a marquee from a $modifier drag on the waveform',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { waveform } = await renderAudioCardInSelectionGrid()
+
+        await user.keyboard(keyDown)
+        await dragAcross(user, waveform)
+
+        expect(screen.getByTestId('marquee')).toBeInTheDocument()
+
+        await user.pointer({ keys: '[/MouseLeft]', target: waveform })
+        await user.keyboard(keyUp)
+      }
+    )
+
+    it('does not start a marquee from a plain drag on the waveform', async () => {
+      const user = userEvent.setup()
+      const { waveform } = await renderAudioCardInSelectionGrid()
+
+      await dragAcross(user, waveform)
+
+      expect(screen.queryByTestId('marquee')).not.toBeInTheDocument()
+    })
+
+    it('seeks without selecting from a plain click on the waveform', async () => {
+      const user = userEvent.setup()
+      const { emitted, waveform, playSpy } = await renderAudioCard()
+
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: waveform,
+        coords: { clientX: waveformWidth / 2, clientY: 16 }
+      })
+
+      expect(screen.getByText('0:05 / 0:10')).toBeInTheDocument()
+      expect(playSpy).toHaveBeenCalled()
+      expect(emitted().select).toBeUndefined()
+      expect(emitted()['toggle-selection']).toBeUndefined()
+    })
+
+    it('toggles playback without selecting from a plain click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.click(playButton)
+
+      expect(playSpy).toHaveBeenCalledTimes(1)
+      expect(emitted().select).toBeUndefined()
+    })
+
+    it.for(selectionModifiers)(
+      '$modifier-clicks play to select without toggling playback',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { emitted, playButton, playSpy } = await renderAudioCard()
+
+        await user.keyboard(keyDown)
+        await user.click(playButton)
+        await user.keyboard(keyUp)
+
+        expect(emitted().select).toHaveLength(1)
+        expect(playSpy).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('disables native controls for compact video cards', async () => {
