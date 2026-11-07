@@ -2655,6 +2655,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._highlight_input = undefined
         this._highlight_pos = undefined
         this.linkConnector.overWidget = undefined
+        this.linkConnector.overInput = undefined
 
         // Hover transitions
         // TODO: Implement single lerp ease factor for current progress on hover in/out.
@@ -3736,15 +3737,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           ? autogrowDropRow.groupName
           : undefined
       const autogrowGroupInput = node?.inputs.find(
-        (input) => input.name === autogrowGroupName
+        (input) =>
+          input.name === autogrowGroupName &&
+          linkConnector.isInputValidDrop(node, input)
       )
-      const autogrowGroupWidget =
-        node &&
-        autogrowGroupInput &&
-        linkConnector.isInputValidDrop(node, autogrowGroupInput)
-          ? node.widgets?.find((w) => w.name === autogrowGroupName)
-          : undefined
-      setHoveredAutogrowGroup(autogrowGroupWidget ? autogrowDropRow : null)
+      setHoveredAutogrowGroup(autogrowGroupInput ? autogrowDropRow : null)
 
       // mouse over a node
       if (node) {
@@ -3776,8 +3773,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           inputId = isOverNodeInput(node, x, y, pos)
           outputId = isOverNodeOutput(node, x, y, pos)
         }
-        const overWidget =
-          autogrowGroupWidget ?? node.getWidgetOnPos(x, y, true) ?? undefined
+        if (autogrowGroupInput)
+          inputId = node.inputs.indexOf(autogrowGroupInput)
+        const overWidget = node.getWidgetOnPos(x, y, true) ?? undefined
 
         if (!node.mouseOver) {
           // mouse enter
@@ -3808,6 +3806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // State reset
           linkConnector.overWidget = undefined
+          linkConnector.overInput = undefined
 
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
           if (linkConnector.isConnecting) {
@@ -3818,14 +3817,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (!firstLink || !linkConnector.isNodeValidDrop(node)) {
               // No link, or none of the dragged links may be dropped here
             } else if (linkConnector.state.connectingTo === 'input') {
-              if (autogrowGroupWidget && autogrowDropRow) {
+              if (autogrowGroupInput && autogrowDropRow) {
                 const rect = this.canvas.getBoundingClientRect()
                 const [clientX, clientY] = autogrowDropRow.dotClientPos
                 highlightPos = this.convertCanvasToOffset([
                   clientX - rect.left,
                   clientY - rect.top
                 ])
-                linkConnector.overWidget = autogrowGroupWidget
+                linkConnector.overInput = autogrowGroupInput
               } else if (overWidget) {
                 // Check widgets first - inputId is only valid if over the input socket
                 const slot = node.getSlotFromWidget(overWidget)
@@ -3846,7 +3845,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               }
 
               // Not over a valid widget - treat drop on invalid widget same as node background
-              if (!linkConnector.overWidget) {
+              if (!linkConnector.overWidget && !linkConnector.overInput) {
                 if (inputId === -1 && outputId === -1) {
                   // Node background / title under the pointer
                   const result = node.findInputByType(firstLink.fromSlot.type)

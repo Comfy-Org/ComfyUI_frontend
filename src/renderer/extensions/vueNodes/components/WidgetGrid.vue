@@ -27,7 +27,7 @@
             )
           "
         >
-          <div :class="row.slotClass">
+          <div class="z-10 flex items-stretch" :class="row.slotClass">
             <InputSlot
               v-if="row.widget.slotMetadata"
               :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
@@ -94,7 +94,6 @@ import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { AUTOGROW_GROUP_WIDGET_TYPE } from '@/core/graph/widgets/inputWidgetShim'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -140,13 +139,12 @@ const hoveredGroupName = computed(() => {
 })
 
 function revealedAutogrowGroup(widget: WidgetGridItem) {
-  const { type, name } = widget.simplified
   const slot = widget.slotMetadata
-  if (type !== AUTOGROW_GROUP_WIDGET_TYPE || !slot) return undefined
+  if (widget.inputRole !== 'autogrowGroup' || !slot) return undefined
   const dragType = autogrowIoInputDragType.value
   const accepts =
     dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
-  return slot.linked || accepts ? name : undefined
+  return slot.linked || accepts ? widget.simplified.name : undefined
 }
 
 function isInHoveredGroup(name: string) {
@@ -154,41 +152,47 @@ function isInHoveredGroup(name: string) {
   return !!group && (name === group || name.startsWith(`${group}.`))
 }
 
+const socketRow = {
+  showsControl: false,
+  testId: undefined,
+  slotClass: 'col-span-full'
+}
+const rowKinds = {
+  control: {
+    showsControl: true,
+    standalone: false,
+    testId: 'node-widget',
+    slotClass:
+      'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+  },
+  socket: { ...socketRow, standalone: true },
+  convertedSocket: { ...socketRow, standalone: false }
+}
+
+function rowKind(widget: WidgetGridItem, autogrowGroup?: string) {
+  const { slotMetadata, suppressedByConnection } = widget
+  if (isConvertedWidgetType(widget.simplified.type)) {
+    if (!slotMetadata) return undefined
+    return suppressedByConnection ? 'socket' : 'convertedSocket'
+  }
+  if (widget.visible)
+    return widget.inputRole === 'socket' ? 'socket' : 'control'
+  const revealed = suppressedByConnection || autogrowGroup
+  return revealed && slotMetadata ? 'socket' : undefined
+}
+
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
     const autogrowGroup = revealedAutogrowGroup(widget)
-    const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const isSocketOnly = widget.simplified.type === 'shim'
-    const showsControl = !isConverted && !isSocketOnly && widget.visible
-    const suppressedByConnection =
-      !!widget.suppressedByConnection || !!autogrowGroup
-    const shouldRender = isConverted
-      ? !!widget.slotMetadata
-      : widget.visible || (suppressedByConnection && !!widget.slotMetadata)
-    if (!shouldRender) return []
-    const highlighted = isInHoveredGroup(widget.simplified.name)
-
+    const kind = rowKind(widget, autogrowGroup)
+    if (!kind) return []
     return [
       {
+        ...rowKinds[kind],
         widget,
         autogrowGroup,
-        inHoveredGroup: highlighted,
-        socketOnly: isSocketOnly,
-        showsControl,
-        slotClass: cn(
-          'z-10 flex items-stretch',
-          showsControl
-            ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
-            : 'col-span-full',
-          (widget.slotMetadata?.linked || highlighted) && 'opacity-100'
-        ),
-        standalone: !showsControl && (suppressedByConnection || isSocketOnly),
-        testId: showsControl ? 'node-widget' : undefined,
-        rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-            ? 'auto'
-            : 'min-content'
+        inHoveredGroup: isInHoveredGroup(widget.simplified.name),
+        socketOnly: widget.inputRole === 'socket'
       }
     ]
   })
@@ -267,7 +271,14 @@ async function restoreRowFocus(name: string) {
 }
 
 const gridStyle = computed(() => {
-  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
+  const rows = renderedRows.value
+    .map(({ widget, showsControl }) =>
+      showsControl &&
+      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+        ? 'auto'
+        : 'min-content'
+    )
+    .join(' ')
   return {
     'grid-template-rows': rows,
     flex: rows.includes('auto') ? 1 : undefined

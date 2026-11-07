@@ -338,8 +338,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // rewire, not a real disconnect: cancel the pending demotion so the
         // widget is never torn down.
         input._pendingDemotionToken = undefined
-        if (!e.detail.widget || !e.detail.node) return
+        if (!e.detail.node) return
         if (this.bindDynamicInput(input, e.detail.node, e.detail.input)) return
+        if (!e.detail.widget) return
 
         this._setWidget(
           subgraphInput,
@@ -363,6 +364,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this.invalidatePromotedViews()
           return
         }
+        if (this._bindsRemainingLink(subgraphInput, input)) return
 
         // Defer the actual demotion by a microtask instead of clearing
         // input.widgetId/.widget/._widget here: a rewire (this disconnect
@@ -646,6 +648,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     this.invalidatePromotedViews()
+  }
+
+  private _bindsRemainingLink(
+    subgraphInput: SubgraphInput,
+    input: INodeInputSlot
+  ): boolean {
+    return subgraphInput.linkIds.some((linkId) => {
+      const { inputNode, input: target } =
+        this.subgraph.getLink(linkId)?.resolve(this.subgraph) ?? {}
+      return (
+        !!inputNode &&
+        !!target &&
+        this.bindDynamicInput(input, inputNode, target)
+      )
+    })
   }
 
   private _resolveInputWidget(

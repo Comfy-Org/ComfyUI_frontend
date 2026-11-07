@@ -126,6 +126,7 @@ export class LinkConnector {
   overWidget?: IBaseWidget
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
+  overInput?: INodeInputSlot
 
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
@@ -851,7 +852,7 @@ export class LinkConnector {
       }
       // To input
     } else if (connectingTo === 'input') {
-      const input = node.getInputOnPos([canvasX, canvasY])
+      const input = this.overInput ?? node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
       // Input slot; fall back to a free compatible input if the slot rejects it
@@ -1209,6 +1210,7 @@ export class LinkConnector {
     outputLinks.length = 0
     floatingLinks.length = 0
     hiddenReroutes.clear()
+    this.overInput = undefined
     state.multi = false
     state.draggingExistingLinks = false
     state.snapLinksPos = undefined
