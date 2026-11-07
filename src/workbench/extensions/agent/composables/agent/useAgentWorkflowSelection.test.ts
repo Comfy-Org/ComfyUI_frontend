@@ -363,9 +363,10 @@ describe('historical workflow restoration', () => {
   it('opens the chat with its workflow unavailable when a listed workflow has no saved file', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
 
-    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
-      true
-    )
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
 
     expect(workflows.syncWorkflows).toHaveBeenCalledOnce()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
@@ -373,7 +374,7 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(true)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      new Error('A listed workflow has no saved file to open'),
+      new Error('A listed workflow resolves to no single saved file'),
       {
         surface: 'agent',
         errorType: 'agent_workflow_target_unavailable',
@@ -400,9 +401,10 @@ describe('historical workflow restoration', () => {
       })
     )
 
-    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
-      true
-    )
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
 
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(panel.targetUnavailable).toBe(true)
@@ -471,6 +473,25 @@ describe('historical workflow restoration', () => {
 
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('opens the chat with its workflow unavailable when startup restores tabs during the restore', async () => {
+    const { selection, panel, listCloudWorkflows, workflows } = setup({
+      tabsRestored: false
+    })
+
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(panel.targetUnavailable).toBe(false)
+
+    workflows.markTabsRestored()
+
+    expect(await restoration).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+    expect(panel.targetUnavailable).toBe(true)
   })
 
   it('fails and stays retryable when startup has not restored tabs for a listed workflow', async () => {

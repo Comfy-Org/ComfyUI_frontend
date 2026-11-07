@@ -423,7 +423,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isLoading: isSyncLoading,
     execute: executeSyncWorkflows
   } = useAsyncState(
-    async (dir: string = '', onFailed?: () => void) => {
+    async (dir: string, onFailed: () => void) => {
       await syncEntities(
         dir ? 'workflows/' + dir : 'workflows',
         workflowLookup.value,
@@ -471,7 +471,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           return true
         }
       ).catch((error: unknown) => {
-        onFailed?.()
+        onFailed()
         throw error
       })
     },
