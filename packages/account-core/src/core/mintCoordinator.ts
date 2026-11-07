@@ -1,4 +1,4 @@
-import type { MintHandle, SessionResult } from './sessionContracts.js'
+import type { MintHandle, SessionResult } from './sessionContracts'
 
 // `joined` marks a caller that awaits another owner's in-flight mint rather
 // than starting or cache-serving its own, so it can defer to that owner's

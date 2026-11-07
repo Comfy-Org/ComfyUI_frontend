@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { iconForJobState } from '@/utils/queueDisplay'
 
@@ -128,7 +128,7 @@ function renderRunningJobWithActions(args: AssetsListItemProps) {
         </template>
         <template #actions>
           <Button variant="destructive" size="icon" aria-label="Cancel">
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </template>
       </AssetsListItem>

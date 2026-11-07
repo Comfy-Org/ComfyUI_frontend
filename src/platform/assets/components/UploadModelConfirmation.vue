@@ -57,7 +57,7 @@
           </span>
         </div>
       </div>
-      <SingleSelect
+      <AppSingleSelect
         v-model="modelValue"
         :label="
           isLoading
@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'

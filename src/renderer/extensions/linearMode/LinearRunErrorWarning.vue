@@ -2,14 +2,15 @@
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import Button from '@comfyorg/design-system/button/Button'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
 const { t } = useI18n()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
-const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
+const { hasError, overlayMessage, overlayTitle, overlayGroupKeys } =
+  useErrorOverlayState()
 </script>
 
 <template>
@@ -33,7 +34,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
           aria-hidden="true"
           :class="
             cn(
-              'mt-0.5 size-4 shrink-0',
+              'mt-0.5',
               hasError
                 ? 'icon-[lucide--circle-x] text-destructive'
                 : 'icon-[lucide--triangle-alert] text-warning'
@@ -68,7 +69,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
         size="unset"
         class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
         data-testid="linear-view-errors"
-        @click="viewErrorsInGraph"
+        @click="viewErrorsInGraph(overlayGroupKeys)"
       >
         {{ t('linearMode.error.goto') }}
       </Button>

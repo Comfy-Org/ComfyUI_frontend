@@ -4,6 +4,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
+import { isLoopbackHost } from '@/utils/hostWhitelist'
+
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
 // same-host ingress), so the Set-Cookie response lands on the FE origin. A
@@ -16,11 +18,14 @@ import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
 /**
- * The spec marks these required, but backends predating them omit both, so the
+ * The spec marks these required, but backends predating them omit them, so the
  * consent screen degrades instead of rejecting the challenge. Presence is all
  * that deviates — the field types still come from the generated contract.
  */
-type SurfacedOnlyByNewerBackends = 'resource_display_name' | 'redirect_uri'
+type SurfacedOnlyByNewerBackends =
+  | 'resource_display_name'
+  | 'redirect_uri'
+  | 'client_provenance'
 
 export type OAuthConsentChallenge = Omit<
   GeneratedOAuthConsentChallenge,
@@ -34,7 +39,28 @@ export type OAuthConsentChallenge = Omit<
      * Not in the spec yet.
      */
     client_application_type?: 'native' | 'web'
+    user_email?: string
+    user_display_name?: string
   }
+
+export function isFirstPartyClient(
+  challenge: Pick<OAuthConsentChallenge, 'client_provenance'>
+): boolean {
+  return challenge.client_provenance === 'first_party'
+}
+
+export function redirectHost(uri: string | undefined): string | undefined {
+  if (!uri) return undefined
+  try {
+    const { protocol, hostname } = new URL(uri)
+    const isWebHost =
+      (protocol === 'https:' || protocol === 'http:') &&
+      !isLoopbackHost(hostname)
+    return isWebHost ? hostname : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export type OAuthConsentDecisionParams = {
   oauthRequestId: string
@@ -100,10 +126,16 @@ function assertChallenge(
     !Array.isArray(challenge.scopes) ||
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
-    !challenge.workspaces.every(isValidWorkspace)
+    !challenge.workspaces.every(isValidWorkspace) ||
+    !isOptionalString(challenge.user_email) ||
+    !isOptionalString(challenge.user_display_name)
   ) {
     throw new Error('OAuth consent challenge is invalid')
   }
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
 }
 
 function isValidWorkspace(value: unknown): value is OAuthWorkspace {

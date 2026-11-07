@@ -3,8 +3,8 @@
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import { render, screen, waitFor } from '@testing-library/vue'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   assert,
   beforeEach,
@@ -19,37 +19,62 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  loadedEvent,
+  reduceDeploymentPick
+} from '@/platform/workspace/deploymentPickState'
+import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
 
 const mockData = vi.hoisted(() => ({
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
+const managerSurveyDialog = vi.hoisted(() => ({
+  show: vi.fn(),
+  hide: vi.fn()
+}))
+
+vi.mock(
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'),
+  () => ({ useManagerSurveyDialog: () => managerSurveyDialog })
+)
+
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
   isNightly: false
 }))
 
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: vi.fn(async () => {}) })
+)
+
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
 
   () => {
     const shouldShowConflictRedDot = ref(false)
@@ -66,7 +91,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
+  import('@/platform/customNodes/manager/composables/useManagerState'),
 
   () => {
     const managerState = {
@@ -85,9 +110,13 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
+vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerDialog')
+)
+
+vi.mock(import('@comfyorg/telemetry'))
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -116,6 +145,9 @@ function createWrapper({
         },
         rightSidePanel: {
           togglePanel: 'Toggle properties panel'
+        },
+        deployToComfyApi: {
+          buttonLabel: 'Deploy to Comfy API'
         }
       }
     }
@@ -137,7 +169,7 @@ function createWrapper({
           name: 'ContextMenu',
           props: ['model'],
           template:
-            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
+            '<div data-testid="context-menu" :data-model="JSON.stringify(model)"><slot /></div>'
         },
         ...stubs
       }
@@ -609,6 +641,79 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('span.bg-destructive')).not.toBeNull()
   })
 
+  it.for([
+    {
+      listing: 'was served',
+      state: reduceDeploymentPick(
+        { phase: 'idle' },
+        loadedEvent({ builds_visible: true, items: [] })
+      ),
+      pitchCount: 1,
+      surveyCount: 0
+    },
+    {
+      listing: 'was served without Build names',
+      state: reduceDeploymentPick(
+        { phase: 'idle' },
+        loadedEvent({ builds_visible: false, items: [] })
+      ),
+      pitchCount: 1,
+      surveyCount: 0
+    },
+    {
+      listing: 'refused this account',
+      state: { phase: 'hidden' },
+      pitchCount: 0,
+      surveyCount: 1
+    }
+  ] as const)(
+    'on Comfy Cloud, Extensions chooses between the custom deployment pitch and the survey when the deployments listing $listing',
+    async ({ state, pitchCount, surveyCount }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      vi.mocked(openDeployCustomNodesDialog).mockResolvedValue(true)
+      useDeploymentPickStore().state = state
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'menu.manageExtensions' })
+      )
+
+      await waitFor(() =>
+        expect(
+          vi.mocked(openDeployCustomNodesDialog).mock.calls.length +
+            managerSurveyDialog.show.mock.calls.length
+        ).toBe(1)
+      )
+      expect(openDeployCustomNodesDialog).toHaveBeenCalledTimes(pitchCount)
+      expect(managerSurveyDialog.show).toHaveBeenCalledTimes(surveyCount)
+    }
+  )
+
+  it('on Comfy Cloud, Extensions opens the survey when the deployments listing has not answered in time', async () => {
+    distribution.isCloud = true
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      distribution.isCloud = false
+      vi.useRealTimers()
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    createWrapper()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    await user.click(
+      screen.getByRole('button', { name: 'menu.manageExtensions' })
+    )
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
+
+    expect(managerSurveyDialog.show).toHaveBeenCalledOnce()
+    expect(openDeployCustomNodesDialog).not.toHaveBeenCalled()
+  })
+
   it('keeps the floating actionbar container open for the extensions button', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
 
@@ -631,6 +736,79 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
     )
+  })
+
+  describe('Deploy to Comfy API button', () => {
+    function enableDeployButton() {
+      Object.assign(useFeatureFlags().flags, { deployToCloud: true })
+    }
+
+    it.for([
+      { when: 'when the server allows it', deployToCloud: true, count: 1 },
+      { when: 'otherwise', deployToCloud: false, count: 0 }
+    ])('renders $count deploy button $when', ({ deployToCloud, count }) => {
+      Object.assign(useFeatureFlags().flags, { deployToCloud })
+
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+      ).toHaveLength(count)
+    })
+
+    it('sits left of the panel toggle and opens the dialog for the installation', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+      const deploy = screen.getByRole('button', {
+        name: 'Deploy to Comfy API'
+      })
+
+      expect(
+        deploy.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Toggle properties panel' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      await user.click(deploy)
+
+      expect(openDeployToComfyApiDialog).toHaveBeenCalledExactlyOnceWith({
+        deploysInstallation: true
+      })
+    })
+
+    it('tracks deploy button clicks', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Deploy to Comfy API' })
+      )
+
+      expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+        button_id: 'run_bar_deploy_clicked',
+        element_group: 'top_menu'
+      })
+    })
+
+    it('keeps the floating actionbar container open for the deploy button', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      useManagerState().shouldShowExtensionsButton = computed(() => false)
+      enableDeployButton()
+      const pinia = getActivePinia()
+      assert.exists(pinia)
+      vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+        if (key === 'Comfy.RightSidePanel.IsOpen') return true
+        return undefined
+      })
+
+      const { container } = createWrapper({ pinia })
+      await nextTick()
+
+      expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+        'w-0'
+      )
+    })
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {

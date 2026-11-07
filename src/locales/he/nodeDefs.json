@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "בחירה מתוך קלטים מחוברים לפי שם. ניתן לשנות את שמות הקלטים בלחיצה כפולה עליהם.",
+    "display_name": "הסתעפות",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פלט",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "הוספת אובייקט המתואר בטקסט חופשי לתמונה באמצעות Bria. ‏Bria מרנדרת מחדש את הפריים כולו בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
     "display_name": "Bria הוספת אובייקט",
@@ -850,7 +871,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכה נוספת באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -876,7 +897,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכה נוספת באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1002,9 +1023,31 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "הסירו את הרקע מתמונה באמצעות Bria, תוך שמירה על מה שהפרומפט מתאר. הפיקסלים המקוריים מוחזרים ברזולוציה מלאה עם ערוץ אלפא חדש. לחיתוך פשוט, Bria Remove Image Background עולה פחות.",
+    "display_name": "הסרת רקע מונחית של Bria",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      },
+      "moderation": {
+        "name": "סינון תוכן",
+        "tooltip": "הגדרות סינון תוכן"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מה לשמור, להסיר או לצמצם אליו, למשל 'האדם עם המזרן והצמח', 'האישה ליד שולחנה ללא המנורה' או 'רק הכיסא'. פרומפט שאינו תואם דבר מחזיר תמונה שקופה לחלוטין."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
-    "description": "עריכת תמונות באמצעות המודל העדכני של Bria",
-    "display_name": "Bria FIBO עריכת תמונה",
+    "description": "עריכת תמונות באמצעות Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "שליטה לאחר יצירה"
@@ -1055,6 +1098,49 @@
       }
     }
   },
+  "BriaImageGenerate": {
+    "description": "יצירת תמונה מפרומפט טקסט, מתמונת ייחוס או מפרומפט מובנה באמצעות Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_ממדים",
+        "tooltip": "16:10 והיחסים שאחריו דורשים 1MP ואחד בלבד מבין prompt או structured_prompt."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת ייחוס שעליה ניתן להתבסס. התוצאה היא תמונה חדשה ביחס הממדים שנבחר, ולא עריכה של תמונה זו."
+      },
+      "moderation": {
+        "name": "סינון תוכן",
+        "tooltip": "הגדרות סינון תוכן"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "פרומפט_מובנה",
+        "tooltip": "פרומפט מובנה מסוג JSON מתוצאת Bria FIBO קודמת. עם אותו seed, הוא יוצר מחדש את התמונה; שנו את ה-JSON או הוסיפו פרומפט כדי לדייק אותה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "פרומפט_מובנה",
+        "tooltip": "תיאור מובנה של התמונה שנוצרה, כדי ליצור אותה מחדש או לדייק אותה באמצעות צומת זה."
+      }
+    }
+  },
   "BriaIncreaseResolution": {
     "description": "הגדלת תמונה פי 2 או פי 4 באמצעות Bria, תוך שמירה על התוכן המקורי.",
     "display_name": "Bria הגדלת רזולוציה",
@@ -1073,6 +1159,42 @@
       "moderation": {
         "name": "סינון תוכן",
         "tooltip": "הגדרות סינון תוכן"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "הציבו מוצר בידיו של אדם באמצעות Bria. זהות האדם, התנוחה והרקע נשמרים, והסצנה מרונדרת מחדש בכמגה-פיקסל אחד בקירוב.",
+    "display_name": "החזקת מוצר של Bria",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_ממדים",
+        "tooltip": "auto שומר על המסגור של תמונת האדם בכמגה-פיקסל אחד בקירוב. יחס קבוע מחזיר 0.6 עד 1 מגה-פיקסל, למשל 768x1024 עבור 3:4."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "instruction": {
+        "name": "הנחיה",
+        "tooltip": "הכוונה נוספת אופציונלית שמתווספת להנחיה המובנית של Bria, למשל באיזו יד להשתמש או לאיזה כיוון פונה התווית."
+      },
+      "moderation": {
+        "name": "סינון תוכן",
+        "tooltip": "הגדרות סינון תוכן"
+      },
+      "person_image": {
+        "name": "תמונת_אדם"
+      },
+      "product_images": {
+        "name": "תמונות_מוצר",
+        "tooltip": "1–3 תמונות של מוצר אחד: המוצר עצמו, אריזתו, זווית נוספת או פריט נלווה. קלט באצווה נספר פעם אחת לכל תמונה. אזורים שקופים מטופלים כלבנים."
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -1107,7 +1229,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1236,7 +1358,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1262,7 +1384,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1284,7 +1406,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1388,6 +1510,42 @@
       "video": {
         "name": "וידאו",
         "tooltip": "וידאו חזית שהרקע שלו מוחלף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "הלבשת אדם בבגדים או באביזרים באמצעות Bria. זהות האדם, התנוחה והרקע נשמרים, והסצנה מרונדרת מחדש ברזולוציה של כמגה-פיקסל אחד.",
+    "display_name": "Bria Virtual Try-On",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto שומר על מסגור תמונת האדם ברזולוציה של כמגה-פיקסל אחד. יחס קבוע מחזיר 0.6 עד 1 מגה-פיקסל, לדוגמה 768x1024 עבור 3:4."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "garment_images": {
+        "name": "garment_images",
+        "tooltip": "1–3 פריטי לבוש או אביזרים הנלבשים יחד, כשכל אחד מחליף את הפריט התואם שלובש האדם. קלט באצווה נספר פעם אחת לכל תמונה. אזורים שקופים מטופלים כלבנים."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "הנחיה נוספת אופציונלית המתווספת להנחיה המובנית של Bria, כגון באיזו יד להשתמש או לאיזה כיוון פונה התווית."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות סינון"
+      },
+      "person_image": {
+        "name": "person_image"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -2413,7 +2571,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "מתכונים:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (מומלץ) או t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL או Music3 Qwen/RVQ",
+    "description": "מתכונים:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (מומלץ) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ\nflux3: qwen3-vl 4B\nfibo2: qwen3-vl 4B",
     "display_name": "Load CLIP",
     "inputs": {
       "clip_name": {
@@ -2953,6 +3111,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "הגדלת רזולוציה של וידאו באמצעות Crystal Video Upscaler של Clarity AI, מגדיל רזולוציה בנאמנות גבוהה שנותר נאמן למקור. הפלט מוגבל ל-9 מגה-פיקסל לכל פריים (לדוגמה 4000x2250), וקטעים ארוכים מוחזרים ברזולוציה נמוכה יותר. קטעים מעל 30 fps עולים פי 2, מעל 60 fps פי 3, וכן הלאה.",
+    "display_name": "Clarity AI Crystal Video Upscale",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -4353,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
       },
+      "chroma_subsampling": {
+        "name": "chroma_subsampling",
+        "tooltip": "444 שומר על רזולוציית צבע מלאה, 422 מחצה את רזולוציית הצבע האופקית, ו-420 מחצה את הרזולוציה בשני הצירים. Auto משתמש בברירת המחדל של המקודד. בבחירות שאינן נתמכות נעשה שימוש במצב הנתמך הקרוב ביותר, ומודפסת אזהרה במסוף."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "ניתן לקודד את הווידאו מיד באופן אופציונלי. None שומר את התמונות בצורת טנזורים; Auto משתמש ב-H.264."
@@ -5701,7 +5881,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "המרת טקסט לדיבור. תומך בסימוני רגש בטקסט ([happy], [whispering] ב־s2.1-pro; (happy) ב־s1) ובדיאלוג מרובה דוברים באמצעות תגיות {'@'}Voice1/{'@'}Voice2 עם מספר קולות מחוברים.",
+    "description": "המרת טקסט לדיבור. תומך ברמזי רגש בטקסט ([שמח], [בלחש] ב-s2.1-pro; (שמח) ב-s1), ב[הוראות] בשפה טבעית ובתגיות מילים `<whisper>...</whisper>` ב-drama-3, ובדיאלוג רב-דוברי באמצעות תגיות {'@'}Voice1/{'@'}Voice2 עם קולות מחוברים מרובים.",
     "display_name": "Fish Audio המרת טקסט לדיבור",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +6073,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "יוצר תמונה עם FLUX 3 מפרומפט, או עורך ומשלב עד 10 תמונות ייחוס. יש להתייחס לתמונות הייחוס בפרומפט כאל תמונה 1, תמונה 2 וכן הלאה.",
-    "display_name": "Flux 3 תמונה",
+    "description": "יצירת תמונה באמצעות FLUX 3 Image מפרומפט, או עריכה ושילוב של עד 10 תמונות עזר. יש להתייחס לתמונות העזר בפרומפט כאל תמונה 1, תמונה 2 וכן הלאה.",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6168,118 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "מוסיף את התיבות מתוך Create Bounding Boxes לפרומפט של FLUX 3 Image כטבלת הפריסה שלו.",
+    "display_name": "FLUX 3 Image Layout Prompt",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "רכיבי פרומפט מהצומת Create Bounding Boxes. לוחות צבעים אינם בשימוש; יש לתאר צבעים בתיאור."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "טקסט הפרומפט. יש לציין את תיבה N כ-<obj_N> כדי לקשור אליה מילים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxImageToVideoNode": {
+    "description": "הנפשת 1 עד 10 תמונות באמצעות FLUX 3 Max. כל תמונה הופכת לפריים בקטע: תמונה אחת פותחת אותו, שתיים הופכות לפריים הראשון והאחרון שלו, ותמונות נוספות מפוזרות לאורכו או מקובעות לזמנים שתבחרו.",
+    "display_name": "FLUX 3 Max Image to Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_גובה-רוחב",
+        "tooltip": "יחס גובה-רוחב של הפלט. 'auto' הוא 16:9 עבור פרומפטים טקסטואליים, ובמקרים אחרים פועל לפי התמונה הראשונה."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הקליפ בשניות."
+      },
+      "generate_audio": {
+        "name": "יצירת_שמע",
+        "tooltip": "יצירת שמע מסונכרן. במצב כבוי ייווצר סרטון ללא רצועת שמע."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 עד 10 תמונות, לפי סדר ההפעלה."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "'פריסה לאורך הקטע' מציב את התמונה הראשונה בהתחלה, את האחרונה בסוף ואת היתר במרווחים שווים ביניהן; 'בזמנים' מקבע כל תמונה לשנייה שתבחרו."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "האופן שבו הסצנה אמורה לנוע ולהישמע."
+      },
+      "reasoning_level": {
+        "name": "רמת_הסקה",
+        "tooltip": "מידת ההסקה וההרחבה של המודל על הפרומפט לפני היצירה. 'high' נמשך זמן רב יותר; המחיר זהה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית הפלט."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת צריך לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "יוצר סרטון עם שמע מסונכרן מפרומפט טקסטואלי באמצעות FLUX 3 Max.",
+    "display_name": "FLUX 3 Max טקסט לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_גובה-רוחב",
+        "tooltip": "יחס גובה-רוחב של הפלט. 'auto' הוא 16:9 עבור פרומפטים טקסטואליים, ובמקרים אחרים פועל לפי התמונה הראשונה."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הקליפ בשניות."
+      },
+      "generate_audio": {
+        "name": "יצירת_שמע",
+        "tooltip": "יצירת שמע מסונכרן. במצב כבוי ייווצר סרטון ללא רצועת שמע."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מה שאתם רוצים, בשפה פשוטה. תארו בנפרד צלילי אווירה, מוזיקה ודיבור לקבלת שמע בשכבות."
+      },
+      "reasoning_level": {
+        "name": "רמת_הסקה",
+        "tooltip": "מידת ההסקה וההרחבה של המודל על הפרומפט לפני היצירה. 'high' נמשך זמן רב יותר; המחיר זהה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית הפלט."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת צריך לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "יוצר וידאו עם אודיו מסונכרן מתוך פרומפט טקסט באמצעות FLUX 3.",
     "display_name": "Flux 3 טקסט לוידאו",
@@ -6067,7 +6359,7 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "הקליפ להמשך."
+        "tooltip": "הקליפ להמשך. קליפים ששטחם עולה על 3840x2160 פיקסלים מוקטנים כדי להתאים."
       }
     },
     "outputs": {
@@ -6462,11 +6754,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "הגדלת רזולוציית וידאו פי 1.5 עד 3 באמצעות רזולוציית-העל של FLUX, תוך שימור מדויק של המקור או שיפור יצירתי של פרטיו.",
-    "display_name": "הגדלת רזולוציית וידאו של Flux",
+    "display_name": "Flux הגדלת רזולוציית וידאו (מדור קודם)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "הקטן אוטומטית מקורות ששטחם עולה על 3840x2160 פיקסלים כדי להתאים למגבלת הקלט. יחס הממדים נשמר; סרטונים קטנים יותר נותרים ללא שינוי."
+        "tooltip": "הקטנה אוטומטית של מקורות שגודלם עולה על 2560x1440 פיקסלים כדי להתאים למגבלת הקלט. יחס הרוחב-גובה נשמר; סרטונים קטנים יותר נותרים ללא שינוי."
       },
       "control_after_generate": {
         "name": "בקרה לאחר יצירה"
@@ -6494,6 +6786,48 @@
       "video": {
         "name": "video",
         "tooltip": "קליפ מקור באורך של 1 עד 20 שניות וביחס רוחב-גובה בין 1:4 ל־4:1. הפלט מעובד ב־24 fps ומוגבל לכ־14.4 מגה-פיקסל לכל פריים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "מגדיל את רזולוציית הווידאו ל-1080p, 2K או 4K, או פי 1.5 עד 3, באמצעות רזולוציית-על של FLUX, תוך שמירה מדויקת על המקור או שיפור יצירתי של פרטיו.",
+    "display_name": "Flux הגדלת רזולוציית וידאו",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "הקטנת מקורות גדולים מדי במקום לדחות אותם: מעל 2560x1440 פיקסלים בשטח, או מעל שני שלישים מרזולוציית היעד (המקדם המינימלי הוא פי 1.5). יחס הרוחב-גובה נשמר."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "האפשרות 'creative' משחזרת וממציאה פרטים עדינים, ומתאימה במיוחד לצילומים שנוצרו, למרקמים ולנופים. האפשרות 'precise' מחדדת את המקור בלי לשנותו, ומתאימה לפנים, למוצרים ולצילום אמיתי."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תיאור אופציונלי של הקטע, המכוון את הפרטים המשופרים. השאירו ריק להגדלת רזולוציה ניטרלית."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "סבילות הסינון, כאשר 0 הוא הערך המחמיר ביותר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת יופעל מחדש; FLUX בוחר זרע משלו, ולכן התוצאות בפועל אינן דטרמיניסטיות ללא קשר לערך זה."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K ו-1080p מתאימים את הפלט בתוך 2560x1440, ‏3840x2160 או 1920x1080 בהתאמה (כשהממדים מתחלפים עבור קטעים אנכיים). מקור שקטן מכדי למלא את היעד גם בהגדלה המרבית של פי 3, מוגדל פי 3 והתוצאה קטנה יותר."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "קטע מקור באורך של 1 עד 20 שניות וביחס רוחב-גובה שבין 1:4 ל-4:1. הפלט מופק בקצב של 24 fps ומוגבל לכ-14.4 מגה-פיקסל לפריים."
       }
     },
     "outputs": {
@@ -7223,6 +7557,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "מחזיר את האורך, מספר ערוצי השמע וגודל האצווה של latent שמע.",
+    "display_name": "קבלת גודל latent של שמע",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "ה-latent של שמע או של שמע/וידאו לבדיקה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "אורך",
+        "tooltip": "אורך ה-latent של השמע."
+      },
+      "1": {
+        "name": "ערוצי_שמע",
+        "tooltip": "מספר ערוצי השמע. ל-latent ללא ממד של ערוץ שמע יש ערוץ אחד."
+      },
+      "2": {
+        "name": "גודל_אצווה",
+        "tooltip": "מספר ה-latent-ים באצווה."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "חילוץ פרמטרי IC-LoRA מהמטא-דאטה של safetensors במודל LoRA טעון, והעברתם ל-LTXVAddGuide (למשל reference_downscale_factor).",
     "display_name": "שליפת פרמטרי IC-LoRA",
@@ -7275,6 +7633,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "מחזיר את הרוחב, הגובה, מספר הפריימים וגודל האצווה של latent של תמונה או וידאו.",
+    "display_name": "קבלת גודל latent של תמונה/וידאו",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "ה-latent של התמונה או הווידאו לבדיקה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "רוחב",
+        "tooltip": "רוחב ה-latent."
+      },
+      "1": {
+        "name": "גובה",
+        "tooltip": "גובה ה-latent."
+      },
+      "2": {
+        "name": "פריימים",
+        "tooltip": "מספר הפריימים ב-latent. ל-latent של תמונה יש פריים אחד."
+      },
+      "3": {
+        "name": "גודל_אצווה",
+        "tooltip": "מספר ה-latent-ים באצווה."
       }
     }
   },
@@ -8046,6 +8432,66 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "שכפל קול מהקלטה של דובר יחיד באמצעות HeyGen Voice 1.0. חבר את voice_id אל HeyGen Voice 1.0 Text to Speech, או אל custom_voice_id ב-HeyGen Avatar Video וב-HeyGen Talking Photo.",
+    "display_name": "שכפול מיידי של HeyGen Voice 1.0",
+    "inputs": {
+      "audio": {
+        "name": "שמע",
+        "tooltip": "הקלטה של דובר יחיד. יש להשתמש ב-10 שניות לפחות של דיבור ברור; נעשה שימוש רק ב-3 הדקות הראשונות."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "language": {
+        "name": "שפה",
+        "tooltip": "השפה המדוברת בהקלטה."
+      },
+      "remove_background_noise": {
+        "name": "הסרת_רעש_רקע"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "שנה את ה-seed כדי לשכפל שוב את ההקלטה; כל שכפול הוא קול שונה במקצת."
+      },
+      "similarity": {
+        "name": "דמיון",
+        "tooltip": "מידת ההתאמה של הקול להקלטה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "הקרא טקסט בקול ששוכפל באמצעות HeyGen Voice 1.0 Instant Clone.",
+    "display_name": "HeyGen Voice 1.0 טקסט לדיבור",
+    "inputs": {
+      "model": {
+        "name": "מודל"
+      },
+      "model_expressiveness_boost": {
+        "name": "הגברת_הבעה"
+      },
+      "model_language": {
+        "name": "שפה"
+      },
+      "model_text": {
+        "name": "טקסט"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "ממוצע את פלט המודל על פני מספר מיקומי טלאים מוזזים בשלבי הדגימה המאוחרים. מבטל תפרים.",
     "display_name": "HiDream-O1 החלקת תפרי טלאים",
@@ -8106,6 +8552,33 @@
       },
       "1": {
         "name": "שלילי",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "עיצוב מחדש של סרטון עם דמויות, מיקומים או סגנונות חדשים מתמונות ייחוס, תוך שמירה על התנועה, תנועת המצלמה והתזמון שלו.",
+    "display_name": "העברת תנועה של Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו ייעשה שימוש."
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8612,7 +9085,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "עריכת תמונה בהנחיית פרומפט טקסט באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נגעו בהם נשארים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). ניתן לקבל עד 4 תמונות להפניה.",
+    "description": "עורך תמונה בהנחיית פרומפט טקסט באמצעות עריכה מדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נגעו בהם נותרים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). ניתן גם לערוך אזור יחיד, המוגדר באמצעות מסכה או תיבות תיחום, ולהחזיר את התמונה בגודל מלא. מקבל עד 4 תמונות ייחוס (3 עם context_window_mask).",
     "display_name": "Ideogram 4.5 עריכה מדויקת",
     "inputs": {
       "control_after_generate": {
@@ -8621,6 +9094,9 @@
       "model": {
         "name": "מודל",
         "tooltip": "המודל לשימוש."
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "הנחיה"
@@ -8759,6 +9235,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "יוצר SVG שניתן לעריכה מפרומפט טקסט, עם אפשרות להנחיה באמצעות עד 5 תמונות, באמצעות Ideogram Vector.",
+    "display_name": "יצירת SVG וקטורי באמצעות Ideogram",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_ממדים"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "ממיר תמונה ל־SVG הניתן לעריכה באמצעות Ideogram Vector. אזורים שקופים בתמונה הכוללת ערוץ אלפא נותרים שקופים.",
+    "display_name": "תמונת וקטור של Ideogram ל־SVG",
+    "inputs": {
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_mode": {
+        "name": "מצב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "הוסף רעש לתמונה",
     "inputs": {
@@ -8835,12 +9359,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "המר בין sRGB, ‏Rec.709 ליניארי, HDR (Rec.2020 HLG), ‏HDR PQ (Rec.2020 PQ), ‏HDR LogC3 ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד Rec.709 ובקודים המוגבלים לטווח [0, 1]. ‏ACEScct משתמש בצבעי יסוד AP1 ובלבן D60, עם התאמת Bradford ל־D65. המר LogC3 או ACEScct לליניארי לצורך שמירה כ־EXR. ‏1.0 ליניארי משתמש באותו לבן ייחוס של 203 ניטים כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניטים. פלטים ליניאריים ו־ACEScct שומרים על ערכים מורחבים. המרות מליניארי ל־HDR שומרות על ההדגשות ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרת PQ ל־HLG ממפים את עודף הבהיקות בגוונים על פני האצווה ודוחסים צבעים שמחוץ למכלול הצבעים. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת סוג הנתונים של תוצאת הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "המרת sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG), ‏HDR PQ ‏(Rec.2020 PQ), ‏HDR LogC3, ‏ACEScg ליניארי ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד של Rec.709 וערכים המוגבלים לטווח [0, 1]. ‏ACEScg הוא AP1 ליניארי לסצנה עם נקודת לבן D60. ‏ACEScct הוא קידוד הלוגריתמי של ACEScg. שניהם משתמשים בהתאמת Bradford ל־D65. יש להמיר LogC3 או ACEScct ל־ACEScg ליניארי (AP1 ליניארי לסצנה) או לליניארי (Rec.709) לפני שמירת EXR. ערך 1.0 ליניארי וערך 1.0 של ACEScg משתמשים באותו לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בצג ייחוס של 1000 ניט. פלטים ליניאריים, ACEScg ו־ACEScct משמרים ערכים מורחבים. המרות מליניארי ל־HDR משמרות הבהקים ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרה מ־PQ ל־HLG ממפים גוונים של בהיקות עודפת לאורך האצווה ודוחסים צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת dtype הביניים. אלפא ישיר אינו עובר המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct לליניארי לפני שמירת EXR, או ל-sRGB/HDR/HDR PQ לפני שמירת וידאו."
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct ל־ACEScg ליניארי עבור EXR של ACEScg, או לליניארי עבור EXR של Rec.709. יש להמיר ל־sRGB/HDR/HDR PQ לפני שמירת וידאו."
       },
       "image": {
         "name": "image"
@@ -9263,6 +9787,28 @@
       },
       "rotation": {
         "name": "rotation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "הרחבת בהירות sRGB ל-HLG HDR מסוג Rec.2020. יש לשמור את התוצאה כאשר מרחב הצבע HDR נבחר. ערוץ האלפא נשמר.",
+    "display_name": "המרת SDR ל-HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "אלגוריתם",
+        "tooltip": "הרחבה רציונלית בסגנון Lottes המשולבת עם עקומת הגבר לוגריתמית מונוטונית מכוילת."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונות SDR ב-sRGB."
       }
     },
     "outputs": {
@@ -9753,6 +10299,128 @@
       },
       "steps": {
         "name": "שלבים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4EditVideoNode": {
+    "description": "עריכת וידאו באמצעות פרומפט טקסט ותמונות וסרטוני וידאו אופציונליים לייחוס. לתוצאה אורך זהה לזה של סרטון הקלט.",
+    "display_name": "Kling 4.0 עריכת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "יצירת וידאו עם שמע באמצעות עד 10 פריימי מפתח. פריימי הביניים מרווחים באופן אחיד; יחס הרוחב-גובה של הסרטון נקבע לפי פריים המפתח הראשון.",
+    "display_name": "Kling 4.0 תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "יצירת וידאו עם שמע מתמונות ומסרטוני וידאו להפניה, עם אפשרות להתחיל או לסיים בפריימים נתונים.",
+    "display_name": "Kling 4.0 ייחוס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "יצירת וידאו עם שמע מפרומפט טקסטואלי.",
+    "display_name": "Kling 4.0 טקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {
@@ -10563,6 +11231,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "ערכו תמונות באמצעות Krea 3, או צרו תמונה חדשה מטקסט כאשר לא מחוברת תמונה.",
+    "display_name": "תמונה Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_precise_edit": {
+        "name": "עריכה_מדויקת"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_thinking_mode": {
+        "name": "מצב_חשיבה"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13166,6 +13869,83 @@
       }
     }
   },
+  "MOSSImageControl": {
+    "description": "מוסיף את אזור הצבע ואת מפות העומק עבור מתאם בקרת צבע/עומק של MOSS-Image שנטען באמצעות טוען LoRA.",
+    "display_name": "בקרת צבע/עומק של MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "מפת צבע",
+        "tooltip": "צבע אחיד אחד לכל אזור, בגודל הפלט. הצבעים הם מזהי אזורים בלבד."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "מפת עומק בגודל הפלט; הקרוב הוא לבן."
+      },
+      "end_percent": {
+        "name": "אחוז סיום",
+        "tooltip": "אחוז הדגימה שבו מסתיימת הבקרה. סיום מוקדם שומר על הפריסה והעומק, בעוד ששאר השלבים מרככים את הצורות."
+      },
+      "negative": {
+        "name": "שלילי"
+      },
+      "positive": {
+        "name": "חיובי"
+      },
+      "start_percent": {
+        "name": "אחוז התחלה",
+        "tooltip": "אחוז הדגימה שבו מתחילה הבקרה."
+      },
+      "strength": {
+        "name": "חוזק",
+        "tooltip": "משנה את קנה המידה של תרומת המפות לטוקני התמונה. 0.0 זהה להיעדר מפות, 1.0 הוא החוזק ששימש באימון."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "בונה פרומפט פריסה של MOSS-Image מהפרומפט ומהתיבות של Create Bounding Boxes.",
+    "display_name": "פרומפט פריסה של MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "מספרי תיבות האובייקטים שיש לסמן כדמויות במקום כאובייקטים, כפי שמתויגים בתצוגה המקדימה של Create Bounding Boxes, לדוגמה: \"1, 3\"."
+      },
+      "element": {
+        "name": "רכיב",
+        "tooltip": "רכיבי פרומפט מהצומת Create Bounding Boxes. התיאור הוא הכיתוב של התיבה; תיבות טקסט גם מעבדות את הטקסט שלהן."
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "גובה התמונה שנוצרת; התיבות ממוקמות בפיקסלים שלה."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תיאור התמונה כולה."
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "רוחב התמונה שנוצרת; התיבות ממוקמות בפיקסלים שלה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פרומפט",
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "הארת תמונה מחדש עם התאמות תאורה ואפשרות להעברת תאורה מתמונה נוספת.",
     "display_name": "Magnific Image Relight",
@@ -13815,6 +14595,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "יצירת רשת משולשים המוכנה למשחק ישירות במספר פאות יעד.",
+    "display_name": "Meshy: תמונה למודל (טופולוגיה חכמה)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "pose_mode": {
+        "name": "מצב_תנוחה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם יש להפעיל מחדש את הצומת; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "should_texture": {
+        "name": "האם_ליצור_טקסטורה"
+      },
+      "should_texture_enable_pbr": {
+        "name": "הפעלת_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "פרומפט_טקסטורה"
+      },
+      "should_texture_texture_resolution": {
+        "name": "רזולוציית_טקסטורה"
+      },
+      "target_polycount": {
+        "name": "מספר_פוליגונים_יעד",
+        "tooltip": "המספר המשוער של משולשים ברשת שנוצרה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה_משימת_meshy",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: המרת מספר תמונות למודל",
     "inputs": {
@@ -14030,6 +14862,46 @@
       }
     }
   },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "יצירת רשת משולשים המוכנה למשחק ישירות במספר פאות יעד.",
+    "display_name": "Meshy: טקסט למודל (טופולוגיה חכמה)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "pose_mode": {
+        "name": "מצב תנוחה"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "target_polycount": {
+        "name": "מספר_פוליגונים_יעד",
+        "tooltip": "המספר המשוער של משולשים ברשת שנוצרה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyTextureMultiViewNode": {
     "description": "הוסף מרקם למודל שנוצר קודם לכן באמצעות 1 עד 4 תצוגות ייחוס של אותו אובייקט.",
     "display_name": "Meshy: מרקם למודל (ריבוי תצוגות)",
@@ -14239,6 +15111,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "הגדרת חלונות הקשר עבור MiniMax H3. החלונות מתחילים במקטעים של 17 פריימים של המודל כדי לשמור על סנכרון בין הווידאו לשמע.",
+    "display_name": "חלונות הקשר של MiniMax H3",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "אורך חלון ההקשר בפריימים ממשיים. חייב להיות 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "החפיפה של חלון ההקשר בפריימים ממשיים. חייבת להיות 17*n + 5."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "האם להחיל ערבוב רעש של FreeNoise, המשפר את המיזוג בין החלונות."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "השיטה שתשמש למיזוג חלונות ההקשר."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שעליו יוחלו חלונות הקשר במהלך הדגימה."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "האם לפצל התניות מרובות (שנוצרו על-ידי ConditionCombine) לכל חלון לפי אינדקס האזור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "המודל שעליו הוחלו חלונות הקשר במהלך הדגימה."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
     "display_name": "החל MiniMax H3 Fun ControlNet",
@@ -14314,6 +15221,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "שינוי גודל הווידאו של latent מסוג MiniMax H3 באמצעות מודל הגדלת latent; השמע עובר ללא שינוי.",
+    "display_name": "הגדלת latent של MiniMax H3 באמצעות מודל",
+    "inputs": {
+      "height": {
+        "name": "גובה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "samples": {
+        "name": "דגימות"
+      },
+      "width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14508,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "יצירת וידאו המתחיל מהתמונה ומניע את המצלמה לזווית ולמרחק חדשים סביב הנושא.",
+    "display_name": "בקרת מצלמה MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_azimuth": {
+        "name": "אזימוט"
+      },
+      "model_distance": {
+        "name": "מרחק"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_elevation": {
+        "name": "הגבהה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "מצב הרחבת הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "המשך סרטון עם קטעים חדשים בהנחיית פרומפט והפניות שמע אופציונליות.",
+    "display_name": "MiniMax H3 Max הרחבת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס רוחב־גובה"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_output": {
+        "name": "פלט"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "החלף את החלק בסרטון שבין זמני ההתחלה וההמשך בסצנה שנוצרה מחדש, בהנחיית פרומפט ותמונות וסרטוני ייחוס אופציונליים.",
+    "display_name": "MiniMax H3 Max הוספת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_color_match": {
+        "name": "התאמת צבעים"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_resume_time": {
+        "name": "זמן המשך"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_start_time": {
+        "name": "זמן התחלה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "הנפש תמונה כך שתנועות הפה שלה יעקבו אחר השמע. אורך הסרטון יהיה כאורך השמע.",
+    "display_name": "MiniMax H3 Max סנכרון שפתיים",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_transcription": {
+        "name": "תמלול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "החלפת האנשים בסרטון באנשים מתמונות ייחוס, תוך שמירה על התנועה, המצלמה, החיתוכים והקול של סרטון המקור.",
+    "display_name": "MiniMax H3 Max Recast",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_enhance_realism": {
+        "name": "enhance_realism"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "התאמת סרטון ליחס ממדים חדש באמצעות התאמתו לקנבס חדש ויצירת האזורים שמסביב. התזמון והקול של סרטון המקור נשמרים.",
+    "display_name": "MiniMax H3 Max Reframe Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו בהתבסס על תמונות ייחוס, סרטונים ושמע באמצעות המודלים MiniMax H3. יש להתייחס להפניות בהנחיה לפי סדרן: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1, וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -14712,6 +15852,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "הפקת אפקטים קוליים מתיאור טקסט באמצעות Mirelo SFX.",
+    "display_name": "Mirelo טקסט ל-SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_negative_prompt": {
+        "name": "פרומפט שלילי"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "הפקת אפקטים קוליים המסונכרנים עם וידאו באמצעות Mirelo SFX.",
+    "display_name": "Mirelo וידאו ל-SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_negative_prompt": {
+        "name": "פרומפט שלילי"
+      },
+      "model_preserve_speech": {
+        "name": "שימור דיבור"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "שמע",
+        "tooltip": null
+      },
+      "1": {
+        "name": "דיבור",
+        "tooltip": "הדיאלוג המופרד מפסקול השמע; שקט כאשר לא נמצא דיבור."
       }
     }
   },
@@ -15998,6 +17203,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -17306,6 +18675,20 @@
       }
     }
   },
+  "NativeLoraTestOutput": {
+    "display_name": "NativeLoraTestOutput",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "model": {
+        "name": "מודל"
+      }
+    }
+  },
+  "NativeLoraTestSource": {
+    "display_name": "NativeLoraTestSource"
+  },
   "NormalizeImages": {
     "description": "נרמל תמונות באמצעות ממוצע וסטיית תקן.",
     "display_name": "נרמול צבעי תמונה",
@@ -17631,6 +19014,47 @@
       }
     }
   },
+  "PadImageNode": {
+    "description": "הוספת ריפוד לתמונה בצבע אחיד או בעותק משוקף של קצוותיה.",
+    "display_name": "ריפוד תמונה",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      },
+      "padding_style": {
+        "name": "padding_style",
+        "tooltip": "במה למלא את האזור המרופד."
+      },
+      "padding_style_color": {
+        "name": "צבע"
+      },
+      "padding_style_feathering": {
+        "name": "טשטוש קצוות"
+      },
+      "padding_type": {
+        "name": "padding_type",
+        "tooltip": "בחירת כמות הריפוד להוספה: כמות מדויקת לכל צד, מכפיל גודל או עד לכפולה הבאה."
+      },
+      "padding_type_bottom": {
+        "name": "תחתון"
+      },
+      "padding_type_left": {
+        "name": "שמאל"
+      },
+      "padding_type_right": {
+        "name": "ימין"
+      },
+      "padding_type_top": {
+        "name": "עליון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תמונה",
+        "tooltip": null
+      }
+    }
+  },
   "PaintMesh": {
     "description": "צובע כל קודקוד ברשת בצבע הווקסל הקרוב ביותר שלו משדה הווקסלים שבקלט.",
     "display_name": "צביעת רשת",
@@ -17835,6 +19259,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "חלץ חומר PBR שניתן לרצף ללא תפרים (תמונת מרקם + מפות PBR) מאזור בתמונת קלט, בהנחיית פרומפט.",
+    "display_name": "חילוץ חומר Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "יצירת מפת basecolor (albedo)."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "יצירת מפת הגובה/ההיסט."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "התמונה שממנה יש לחלץ מרקם."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "גודל מרקם הפלט. בחרו 'custom' עבור רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת משדרוג בקנה מידה פי 4 של המפות)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "יצירת מפת metalness."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "יצירת מפת normal."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "שלבי הפחתת רעש ליצירת מרקם."
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "תארו איזה מרקם יש לחלץ מהתמונה (לדוגמה, \"הקיר\")."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "הרחבת ההנחיה באמצעות LLM לקבלת פרטי מרקם עשירים יותר. האפשרות כבויה כברירת מחדל: ההרחבה ממסגרת מחדש את ההנחיה כתמונה ונוטה לדהות את מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "יצירת מפת roughness."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע ליצירה הניתנת לשחזור."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "גודל האריח במרחב latent ‏(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "פסיעת האריח במרחב latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "כיוון הריצוף: לכל הכיוונים, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "הגדלת SeedVR חלקה של מפות ה-PBR (מרקם הבסיס אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "יצירת חומר PBR שלם בעל ריצוף חלק ללא תפרים (תמונת מרקם + מפות PBR) מהנחיית טקסט, עד 8K. ניתן גם לבסס אותו על תמונת קלט (img2img) או על תמונה + מסכה (inpaint).",
+    "display_name": "חומר פטינה",
+    "inputs": {
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "יצירת מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "צור את מפת הגובה/ההעתקה."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת מקור אופציונלית. תמונה בלבד = img2img; עם mask = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "גודל מרקם הפלט. בחרו ב-'custom' עבור רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת מהגדלה פי 4 של המפות)."
+      },
+      "mask": {
+        "name": "מסכה",
+        "tooltip": "מסכת inpaint אופציונלית (דורשת תמונה). לבן = יצירה מחדש, שחור = שמירה."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "יצירת מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "יצירת מפת הנורמל."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "שלבי הפחתת רעש ליצירת המרקם."
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "תיאור החומר/המרקם ליצירה."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "הרחב את הפרומפט באמצעות LLM לקבלת פרטי מרקם עשירים יותר. כבוי כברירת מחדל: ההרחבה ממסגרת את הפרומפט כתצלום ונוטה להפחית את ניגודיות מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "יצירת מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed ליצירה שניתן לשחזר."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט. משמש רק כאשר מסופקת תמונה."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "גודל האריח במרחב latent ‏(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "צעד האריח במרחב latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "כיוון הריצוף: לכל הכיוונים, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "הגדלת SeedVR חלקה של מפות ה־PBR (מרקם הבסיס אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "צור מפות חומר PBR ‏(basecolor, normal, roughness, metalness, height) מתמונת מרקם.",
+    "display_name": "מפות חומר PBR של Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "הקטנה אוטומטית",
+        "tooltip": "הקטנה אוטומטית של תמונת קלט שהצלע הארוכה ביותר שלה עולה על 2048px (מגבלת הקלט של המודל), תוך שמירה על יחס הממדים; תמונות קטנות יותר יישארו ללא שינוי. יש להשבית כדי להציג שגיאה עבור תמונות גדולות מדי במקום זאת."
+      },
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "צור את מפת ה־basecolor ‏(albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "יצירת מפת הגובה/ההיסט."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תצלום או עיבוד קלט שמהם ייגזרו מפות PBR."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "יצירת מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "צור את מפת הנורמל."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "יצירת מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "בודק בטיחות"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע להפחתת רעש הניתנת לשחזור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "1": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "3": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "4": {
+        "name": "גובה",
         "tooltip": null
       }
     }
@@ -18788,6 +20494,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "הגדלת רזולוציה של וידאו ל־720p, 1080p, 2K או 4K באמצעות Pruna P-Video Upscale, תוך שמירה על יחס הממדים והשמע שלו.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "קצב הפריימים של הפלט. 'source' שומר על קצב הווידאו, עד 60. קצב גבוה יותר מחושב באמצעות אינטרפולציה. פלט מעל 30 fps עולה פי שניים."
+      },
+      "target": {
+        "name": "יעד",
+        "tooltip": "שטח הפלט בפיקסלים: 720p הוא כ־0.9 מגה־פיקסל, 1080p הוא 2.1, ‏2K הוא 3.7, ‏4K הוא 8.3. וידאו שכבר בגודל זה שומר על גודלו ומשופר בלבד. אורך מרבי: 2400, 1200, 600 או 300 פריימים, כ־100, 50, 25 או 12.5 שניות ב־24 fps."
+      },
+      "turbo": {
+        "name": "טורבו",
+        "tooltip": "הגדלת רזולוציה מהירה יותר עם פרטים רכים יותר, באותו מחיר."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "הווידאו להגדלת רזולוציה, עד 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "יוצר וידאו מפרומפט טקסט באמצעות מודלי הווידאו של Pruna, עם צליל שנוצר באופן אופציונלי או רצועת שמע להנעתו.",
     "display_name": "Pruna P-Video-2 טקסט לווידאו",
@@ -18889,7 +20622,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
+        "tooltip": "כמות החשיבה שהמודל מקצה לפני הציור. רמות גבוהות יותר משפרות את הפירוט וצורכות יותר טוקנים."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +20710,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
+        "tooltip": "כמות החשיבה שהמודל מקצה לפני הציור. רמות גבוהות יותר משפרות את הפירוט וצורכות יותר טוקנים."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +21569,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "מקודד תמונות ייחוס ומוסיף את ה-latents שלהן להתניה החיובית ולהתניה השלילית האופציונלית עבור מודלי עריכה.",
+    "display_name": "הגדרת Multi Latent ייחוס",
+    "inputs": {
+      "images": {
+        "name": "תמונות"
+      },
+      "negative": {
+        "name": "שלילי"
+      },
+      "positive": {
+        "name": "חיובי"
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "תמונות הייחוס אינן נלקחות בחשבון כאשר לא מחובר VAE."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": "מחזיר את הפלט החיובי כאשר ההתניה השלילית אינה מחוברת."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "הלטנט הראשון של הייחוס מוכפל ב-0.0, או לטנט ריק מרובע ברזולוציה שנבחרה."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "צומת זה מגדיר את האודיו הייחוס עבור ace step 1.5",
     "display_name": "הגדרת אודיו ייחוס",
@@ -19950,7 +21719,7 @@
     "inputs": {
       "band": {
         "name": "רצועה",
-        "tooltip": "רוחב הרצועה הצרה ביחידות ווקסל. במצב UDF הוא גם מסיט את המשטח."
+        "tooltip": "רוחב הפס הצר ביחידות ווקסל. במצב udf הוא גם מסיט את המשטח; במצב solid זהו רדיוס הסגירה: קמטים מעוגלים ומרווחים מגושרים בגודל זה, והמשטח ממוקם חצי ווקסל החוצה."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +21746,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: עמיד לקלט מבולגן/לא־מניפולדי. sdf: משטח יחיד ונקי עם שחזור מאפיינים חדים באמצעות QEF (Quadratic Error Function), אך דורש כיוון ליפוף עקבי."
+        "tooltip": "udf: עמיד לקלט מבולגן/שאינו יריעה. sdf: משטח יחיד ונקי עם שחזור מאפיינים חדים באמצעות QEF ‏(פונקציית שגיאה ריבועית), אך דורש כיוון ליפוף עקבי. solid: מוצק אטום למים יחיד מקלט מבולגן: חיתוך גרף גלובלי של פנים/חוץ (CelloCut) מסיר מעטפות כפולות וסוגר חורים קטנים. איטי יותר."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
@@ -22608,7 +24377,7 @@
       },
       "format": {
         "name": "פורמט",
-        "tooltip": "מכל הפלט. Auto משתמש ב-MP4 עבור Auto/H.264 וב-WebM עבור AV1. MP4, MKV ו-WebM בוחרים מכל מסוים."
+        "tooltip": "Auto משתמש ב־MOV עבור ProRes, ב־WebM עבור AV1, וב־MP4 אחרת."
       },
       "format_codec": {
         "name": "מקודד"
@@ -24332,6 +26101,54 @@
       }
     }
   },
+  "TextEncodeFibo2": {
+    "description": "מקודד פרומפט של Fibo 2.0, כיתוב JSON מובנה או טקסט פשוט. עם תמונות, הפרומפט הוא הוראת העריכה, או כיתוב JSON של התוצאה עם מפתח edit_instruction, והתמונות הופכות ללטנטים של ייחוס עבור שני הפלטים כאשר מחובר vae. דגמו את פלט הלטנט; זהו גודל התוצאה שאליו התמונות נחתכות.",
+    "display_name": "TextEncodeFibo2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "גובה התוצאה. 0 = הגודל שעליו אומן Fibo 2.0 עבור יחס הממדים של התמונה הראשונה, כ-1 מגה-פיקסל, או 1024 ללא תמונות."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות לעריכה, המכונות <image_1>, <image_2> וכן הלאה בהוראה. תמונה יחידה מותאמת בקנה מידה ונחתכת במרכז לגודל התוצאה, מאחר שהעריכה מיושרת אליה פיקסל לפיקסל; כמה תמונות מותאמות כל אחת לגודל שעליו אומנה."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "ערך ריק הוא הכיתוב הריק שבו Fibo 2.0 אומן עבור CFG עם תהליכי עבודה של עריכה."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "רוחב התוצאה. 0 = הגודל שעליו אומן Fibo 2.0 עבור יחס הממדים של התמונה הראשונה, כ-1 מגה-פיקסל, או 1024 ללא תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      },
+      "2": {
+        "name": "לטנט",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -24369,6 +26186,38 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "מקודד הנחיית עריכה עם תמונות ייחוס עבור LoRA לעריכת MOSS-Image; יש להשתמש בו גם עבור הפרומפט השלילי. תמונות הייחוס משמשות בגודל שבו הן מתקבלות, לכן יש לשנות את גודלן תחילה. ללא VAE, התמונות מועברות רק למקודד הטקסט.",
+    "display_name": "קידוד טקסט לעריכת MOSS-Image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "הפריסה שבה אומן LoRA העריכה: MOSS-Image Edit Training של ai-toolkit ‏(כאשר אפשרות kv_cache שלו פעילה או מושבתת) או Moss-Image-Edit. כאשר kv_cache מושבת, תמונות הייחוס מפעילות קשב גם לתמונה הנוצרת, ולכן הן מחושבות מחדש בכל שלב."
+      },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "קובע את מידת תשומת הלב של המודל לתמונות שמקודד הטקסט רואה (בתבניות ai-toolkit, או ללא VAE): הערך 0 מתעלם מהן, 1 אינו משנה אותן, וערך גבוה מ-1 מדגיש אותן."
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "מקודד את התמונות כ-latents ייחוס עבור LoRA העריכה."
       }
     },
     "outputs": {
@@ -24588,7 +26437,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "פענוח ספקולטיבי עם ראש חיזוי מרובה-אסימונים של נקודת הביקורת. אין השפעה ללא משקלי MTP. ‏auto מתאים את עומק הטיוטה; 2-5 מקבע אותו. הפלט הנדגם נשאר מפולג כראוי, אך שונה מפלט ללא MTP עבור אותו seed."
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש החיזוי הרב-אסימוני של נקודת הביקורת. אין השפעה ללא משקלי MTP. auto מתאים את עומק ורוחב הטיוטה להתאמות האסימונים שנצפו ולעלות הביצוע; 2-5 מקבע עומק טיוטה קבוע; מצבי tree מקבעים גם את הרוחב וגם את העומק. הפלט הנדגם שומר על ההתפלגות הנכונה, אך שונה מפלט ללא MTP עבור אותו seed."
       },
       "prompt": {
         "name": "פרומפט"
@@ -24662,7 +26511,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "פענוח ספקולטיבי באמצעות ראש החיזוי הרב-אסימוני של נקודת הביקורת. אין השפעה ללא משקלי MTP. auto מתאים את עומק הטיוטה; 2-5 מקבעים אותו. הפלט שנדגם נשאר בהתפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו seed."
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש החיזוי הרב-אסימוני של נקודת הביקורת. אין השפעה ללא משקלי MTP. auto מתאים את עומק ורוחב הטיוטה להתאמות האסימונים שנצפו ולעלות הביצוע; 2-5 מקבע עומק טיוטה קבוע; מצבי tree מקבעים גם את הרוחב וגם את העומק. הפלט הנדגם שומר על ההתפלגות הנכונה, אך שונה מפלט ללא MTP עבור אותו seed."
       },
       "prompt": {
         "name": "פרומפט"
@@ -24879,7 +26728,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "הגדלה ושיפור תמונה בתקן תעשייתי.",
+    "description": "הגדלת רזולוציה ושיפור תמונות בתקן התעשייה. פלט מרבי: 179 מגה־פיקסל.",
     "display_name": "Topaz שיפור תמונה",
     "inputs": {
       "image": {
@@ -24917,11 +26766,11 @@
       },
       "output_height": {
         "name": "גובה פלט",
-        "tooltip": "ערך אפס משמעו פלט באותו גובה כמו המקור או מותאם פרופורציונלית ל-output_width אם צוין. Wonder 3.5 תומך בפקטור הגדלה מ-1x עד 6x בלבד. Bloom 2 ו-Wonder 3.5 שומרים על יחס הגובה-רוחב המקורי ומתייחסים לגודל המבוקש כיעד."
+        "tooltip": "ערך אפס מציין פלט באותו גובה כמו המקור, או שינוי גודל יחסי ל־output_width אם צוין. Wonder 3.5 ו־Wonder 4 תומכים בגורמי הגדלת רזולוציה מ־1x עד 6x, ו־Bloom 2 מ־1x עד 12x. Bloom 2, Wonder 3.5 ו־Wonder 4 שומרים תמיד על יחס הממדים של הקלט: אם שני הגדלים מוגדרים והיחס ביניהם שונה, קנה המידה הגדול יותר גובר והפלט (והמחיר) גדול מהגודל המבוקש."
       },
       "output_width": {
         "name": "רוחב פלט",
-        "tooltip": "ערך אפס משמעו חישוב אוטומטי (בדרך כלל יהיה בגודל המקורי או מותאם פרופורציונלית ל-output_height אם צוין). Wonder 3.5 תומך בפקטור הגדלה מ-1x עד 6x בלבד. Bloom 2 ו-Wonder 3.5 שומרים על יחס הגובה-רוחב המקורי ומתייחסים לגודל המבוקש כיעד."
+        "tooltip": "ערך אפס מציין חישוב אוטומטי (בדרך כלל הגודל המקורי או שינוי גודל יחסי ל־output_height, אם צוין). Wonder 3.5 ו־Wonder 4 תומכים בגורמי הגדלת רזולוציה מ־1x עד 6x, ו־Bloom 2 מ־1x עד 12x. Bloom 2, Wonder 3.5 ו־Wonder 4 שומרים תמיד על יחס הממדים של הקלט: אם שני הגדלים מוגדרים והיחס ביניהם שונה, קנה המידה הגדול יותר גובר והפלט (והמחיר) גדול מהגודל המבוקש."
       }
     },
     "outputs": {
@@ -26859,6 +28708,24 @@
       }
     }
   },
+  "VAEComputeDtype": {
+    "description": "הגדרת סוג נתוני החישוב עבור קידוד ופענוח VAE, בלי להשפיע על ענפים אחרים.",
+    "display_name": "סוג נתוני חישוב VAE",
+    "inputs": {
+      "dtype": {
+        "name": "סוג נתונים",
+        "tooltip": "ברירת המחדל שומרת על סוג נתוני החישוב של ה־VAE בקלט."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VAEDecode": {
     "description": "מפענח תמונות לטנטיות בחזרה לתמונות במרחב פיקסלים.",
     "display_name": "פענוח VAE",
@@ -27283,6 +29150,146 @@
       "0": {
         "name": "צבעי_ווקסל",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "הסרת רעשי רקע מדיבור באמצעות VEED. מיועד לדיבור בכל שפה: גם מוזיקה ואפקטים קוליים מוסרים. מחזיר שמע מונופוני בתדר 48 kHz.",
+    "display_name": "VEED ניקוי שמע",
+    "inputs": {
+      "audio": {
+        "name": "שמע",
+        "tooltip": "הקלטת דיבור שאורכה פחות מ-30 דקות."
+      },
+      "loudness": {
+        "name": "עוצמת שמע"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת הסרת הרעש ברקע הדיבור. ערך נמוך יותר משמר יותר מצליל האווירה בחדר מאחורי הקול; הפסקות בין מילים תמיד מנוקות במלואן, וערכים מעל ברירת המחדל משנים מעט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "הסרת רעשי רקע מהדיבור בסרטון באמצעות VEED. רק פסקול השמע משתנה: הוא מוחלף בדיבור מונופוני נקי בתדר 48 kHz.",
+    "display_name": "VEED ניקוי שמע (בווידאו)",
+    "inputs": {
+      "loudness": {
+        "name": "עוצמת שמע"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת הסרת הרעש ברקע הדיבור. ערך נמוך יותר משמר יותר מצליל האווירה בחדר מאחורי הקול; הפסקות בין מילים תמיד מנוקות במלואן, וערכים מעל ברירת המחדל משנים מעט."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "וידאו עם פסקול דיבור, שאורכו פחות מ-30 דקות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "תרגום הדיבור בווידאו לשפה אחרת באמצעות VEED. קולו של כל דובר משוכפל ושפתיו מסונכרנות עם התרגום.",
+    "display_name": "VEED Dubbing",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "standard: מחיר נמוך יותר, שמע מונו; ספרדית היא לטינו־אמריקאית ופורטוגזית היא ברזילאית. pro: מבטאים אזוריים ושמע סטריאו."
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_source_language": {
+        "name": "שפת מקור"
+      },
+      "model_target_language": {
+        "name": "שפת יעד"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "הפיכת תמונה סטטית ורצועת דיבור לסרטון מדבר עם סנכרון תנועות שפתיים באמצעות VEED Fabric. פועל עם תמונות, איורים וקמעות; אורך הסרטון זהה לאורך השמע.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "מודל"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "סנכרון מחדש של פי הדובר בסרטון לרצועת דיבור חדשה באמצעות VEED Lipsync. דובר אחד לכל סרטון; הפלט שומר על רזולוציית הסרטון בקצב 25 fps ואורכו זהה לאורך השמע.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "פקד לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "חילוץ הנושא מתוך סרטון באמצעות VEED והחזרת הפריימים יחד עם מסכת אלפא. אפשר להשתמש בהם לקומפוזיטינג, או לשלב אותם עם Join Image with Alpha ו-Save WEBM כדי לכתוב סרטון שקוף.",
+    "display_name": "VEED הסרת רקע וידאו",
+    "inputs": {
+      "model": {
+        "name": "מודל",
+        "tooltip": "standard: כל רקע, הקצוות הטובים ביותר, פלט עד 3840x2160. fast: מהיר יותר, פלט עד 1920x1080. green screen: מסיר רקע ירוק, פלט עד 3840x2160. סרטונים גדולים יותר מוקטנים."
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תמונות",
+        "tooltip": null
+      },
+      "1": {
+        "name": "מסכה",
+        "tooltip": "1 באזורים שבהם הרקע הוסר. השתמשו ב-Join Image with Alpha וב-Save WEBM לסרטון שקוף; הוסיפו Invert Mask לפני Image Composite Masked."
       }
     }
   },

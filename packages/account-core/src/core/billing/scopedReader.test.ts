@@ -6,28 +6,29 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
+import type { SessionSnapshot } from '#/core/session'
 import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { BillingScopeSource } from './billingScope.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import { createCreditsReader } from './credits.js'
-import { createBillingEventsReader } from './events.js'
-import { createPaymentMethodsReader } from './paymentMethods.js'
-import { createPlansReader } from './plans.js'
-import { createBillingStatusReader } from './status.js'
+} from './billingContracts'
+import type { BillingScopeSource } from './billingScope'
+import { sessionBillingScopeSource } from './billingScope'
+import { createAutoTopUpReader } from './autoTopUp'
+import { createCapabilitiesReader } from './capabilities'
+import { createCreditsReader } from './credits'
+import { createBillingEventsReader } from './events'
+import { createPaymentMethodsReader } from './paymentMethods'
+import { createPlansReader } from './plans'
+import { createBillingStatusReader } from './status'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk,
   httpStatus
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 const SIGNED_OUT: SessionSnapshot = {
   phase: 'signed-out',
@@ -90,6 +91,7 @@ const STATUS = {
   occupied_seats: 4,
   pending_billing_op_id: 'op-1',
   pending_billing_op_type: 'subscription',
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -108,6 +110,31 @@ const PLAN = {
   },
   slug: 'creator_monthly',
   tier: 'CREATOR'
+}
+
+const AUTO_TOP_UP_OFF = {
+  card_expiry: null,
+  configured: false,
+  cycle_resets_at: null,
+  declined_payment_method: null,
+  disabled_reason: null,
+  enabled: false,
+  last_failure_at: null,
+  last_failure_reason: null,
+  max_monthly_budget_cents: 100_000,
+  max_reload_credits: null,
+  min_reload_credits: 500,
+  monthly_budget_cents: null,
+  monthly_budget_is_default: true,
+  paused_by_budget: false,
+  paused_by_budget_remainder: false,
+  paused_by_decline: false,
+  reload_amount_cents: null,
+  reload_credits: null,
+  spent_this_cycle_cents: 0,
+  status: 'off',
+  target_credits: null,
+  threshold_credits: null
 }
 
 const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
@@ -152,7 +179,10 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
       can_revert_scheduled_change: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_subscription: false,
+      can_open_plans: false,
       can_run_workflows: false,
       can_upgrade: false,
       can_subscribe_self_serve: false,
@@ -242,6 +272,13 @@ const CASES: readonly ReaderCase[] = [
     malformedBody: { ...EVENTS_PAGE, total: 'a few' },
     paced: false,
     create: (options) => alwaysRequests(createBillingEventsReader(options))
+  },
+  {
+    name: 'auto top-up',
+    body: AUTO_TOP_UP_OFF,
+    malformedBody: { ...AUTO_TOP_UP_OFF, status: 'paused' },
+    paced: false,
+    create: (options) => alwaysRequests(createAutoTopUpReader(options))
   },
   {
     name: 'capabilities',

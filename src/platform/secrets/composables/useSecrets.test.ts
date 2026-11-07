@@ -4,14 +4,14 @@ import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SecretErrorCode, SecretMetadata } from '../types'
+import type { SecretErrorCode, SecretMetadata } from '@/platform/secrets/types'
 import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock(import('../api/secretsApi'), () => ({
+vi.mock(import('@/platform/secrets/api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
   listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
@@ -81,7 +81,8 @@ describe('useSecrets', () => {
     })
 
     it('shows error toast on API failure', async () => {
-      const { SecretsApiError } = await import('../api/secretsApi')
+      const { SecretsApiError } =
+        await import('@/platform/secrets/api/secretsApi')
       mockListSecrets.mockRejectedValue(
         new SecretsApiError('Network error', 500)
       )
@@ -126,7 +127,8 @@ describe('useSecrets', () => {
     })
 
     it('shows error toast on delete failure', async () => {
-      const { SecretsApiError } = await import('../api/secretsApi')
+      const { SecretsApiError } =
+        await import('@/platform/secrets/api/secretsApi')
       const secret = createMockSecret()
       mockListSecrets.mockResolvedValue([secret])
       mockDeleteSecret.mockRejectedValue(
@@ -179,7 +181,8 @@ describe('useSecrets', () => {
     })
 
     it('leaves availableProviders null on API failure', async () => {
-      const { SecretsApiError } = await import('../api/secretsApi')
+      const { SecretsApiError } =
+        await import('@/platform/secrets/api/secretsApi')
       mockListSecretProviders.mockRejectedValue(
         new SecretsApiError('unavailable', 503)
       )

@@ -1,6 +1,7 @@
-import { app, ComfyApp } from '../../scripts/app'
-import { ComfyDialog } from '../../scripts/ui'
-import { $el } from '../../scripts/ui/utils'
+import { app, ComfyApp } from '@/scripts/app'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
+import type { ComfyExtension } from '@/types/comfy'
 
 class ClipspaceDialog extends ComfyDialog {
   static items: Array<
@@ -170,7 +171,7 @@ class ClipspaceDialog extends ComfyDialog {
   }
 }
 
-app.registerExtension({
+export const clipspaceExtension: ComfyExtension = {
   name: 'Comfy.Clipspace',
   init() {
     app.openClipspace = function () {
@@ -184,4 +185,4 @@ app.registerExtension({
       } else app.ui.dialog.show('Clipspace is Empty!')
     }
   }
-})
+}

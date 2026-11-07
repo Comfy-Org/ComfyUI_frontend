@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
@@ -19,8 +19,9 @@ import {
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { reportError } from '@/platform/telemetry/reportError'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -35,17 +36,17 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import type { LinkPresentation } from '@/types/linkPresentation'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseLinkId, toLinkId } from '@/types/linkId'
-import { isFloatingTopology } from '@/types/linkTopology'
-import { toRerouteId } from '@/types/rerouteId'
-import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { graphScopeOf, toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import {
   collectReservedGroupIds,
   collectReservedLinkIds,
@@ -84,15 +85,15 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
   parseNodeId,
   serializeNodeId,
   toNodeId
-} from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
 import {
@@ -109,7 +110,12 @@ import {
   endNamedValuesShadowDiffLoad
 } from './utils/namedValuesShadowDiffTelemetry'
 
-import type { DragAndScaleState } from './DragAndScale'
+import type {
+  PanZoom as DragAndScaleState,
+  HasBoundingRect,
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -123,7 +129,7 @@ import {
   unregisterLinkTopology
 } from './LLink'
 import { LinkMap } from './LinkMap'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
   registerRerouteChain,
@@ -131,23 +137,23 @@ import {
   unregisterAllRerouteChains,
   unregisterRerouteChain
 } from './Reroute'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
-import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import type { SubgraphEventMap } from '@comfyorg/graph-model/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
   Dictionary,
-  HasBoundingRect,
   LinkSegment,
   MethodNames,
   OptionalProps,
-  Point,
-  Positionable,
-  Size
-} from './interfaces'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
-import type { LinkNetwork } from './types/linkNetwork'
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { LiteGraph } from './litegraphInstance'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
@@ -181,23 +187,28 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import {
+  captureSerialisedInputLinks,
+  pruneDanglingSubgraphLinks
+} from './subgraph/pruneDanglingSubgraphLinks'
+import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
   LGraphTriggerHandler,
   LGraphTriggerParam
-} from './types/graphTriggers'
-import { LGraphTriggerActions } from './types/graphTriggers'
+} from '@comfyorg/graph-model/graphTriggers'
+import { LGraphTriggerActions } from '@comfyorg/graph-model/graphTriggers'
 import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedGraph,
   ISerialisedNode,
+  RendererType,
   Serialisable,
   SerialisableGraph,
   SerialisableReroute
-} from './types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import type { GraphCanonicalField } from './extensionPersistence'
 import {
@@ -215,7 +226,7 @@ import {
 export type {
   LGraphTriggerAction,
   LGraphTriggerParam
-} from './types/graphTriggers'
+} from '@comfyorg/graph-model/graphTriggers'
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
@@ -242,8 +253,6 @@ function copyUnhandledCanonicalFields(
     target[key] = source[key]
   }
 }
-
-export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 /**
  * Unique identifier for a subgraph definition. Structurally a {@link UUID};
@@ -474,21 +483,57 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     ordered.length !== adapters.size
   ) {
     const liveNodes = [...adapters.values()]
-    const missingState = ordered.find((state) => !adapters.has(state.id))
-    let missingAdapter: LGraphNode | undefined
-    if (missingState === undefined) {
-      const stateIds = new Set(ordered.map((state) => state.id))
-      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
-    }
-    const mismatch = missingState
-      ? `stored node ${missingState.id} has no live adapter`
-      : missingAdapter
-        ? `live node ${missingAdapter.id} has no stored state`
-        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    const stateIds = new Set(ordered.map((state) => state.id))
+    const storedOnlyState = ordered.find((state) => !adapters.has(state.id))
+    const liveOnlyAdapter = liveNodes.find(
+      (adapter) => !stateIds.has(adapter.id)
+    )
+    const mismatchDetails = storedOnlyState
+      ? liveOnlyAdapter
+        ? {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter; live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'stored_and_live_diverged',
+            storedOnlyNodeId: storedOnlyState.id,
+            storedOnlyStateGraphId: storedOnlyState.graphId,
+            liveOnlyNodeId: liveOnlyAdapter.id,
+            liveOnlyNodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            liveOnlyStateGraphId: liveOnlyAdapter._state.graphId,
+            liveOnlyRegistrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            liveOnlyRegistrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter`,
+            mismatchKind: 'stored_without_live_adapter',
+            nodeId: storedOnlyState.id,
+            stateGraphId: storedOnlyState.graphId
+          }
+      : liveOnlyAdapter
+        ? {
+            mismatch: `live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'live_without_stored_state',
+            nodeId: liveOnlyAdapter.id,
+            nodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            stateGraphId: liveOnlyAdapter._state.graphId,
+            registrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            registrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `${ordered.length} stored nodes do not match ${adapters.size} live nodes`,
+            mismatchKind: 'count_mismatch'
+          }
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
-      context: { graphId: owner.id, mismatch }
+      tags: { outcome: 'degraded' },
+      context: {
+        graphId: owner.id,
+        rootGraphId: owner.rootGraph.id,
+        ...mismatchDetails
+      }
     })
     const nodes = sortNodes
       ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
@@ -3620,9 +3665,11 @@ export class Subgraph
     keep_old?: boolean
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
+    const serialisedInputLinks = captureSerialisedInputLinks(normalized.nodes)
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)
+    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
     return r
   }
 
@@ -3821,7 +3868,7 @@ type RegisteredSubgraphId = SubgraphId
 type RegisteredGraphOrSubgraph = GraphOrSubgraph
 type RegisteredBaseLGraph = BaseLGraph
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LitegraphEntityRegistry {
     SubgraphId: RegisteredSubgraphId
     GraphOrSubgraph: RegisteredGraphOrSubgraph

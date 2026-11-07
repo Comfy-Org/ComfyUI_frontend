@@ -70,17 +70,40 @@ describe('comfyAPIPlugin transform', () => {
   })
 
   it.for([
-    'addValueControlWidget',
-    'addValueControlWidgets',
-    'updateControlWidgetLabel'
-  ])('keeps %s in the scripts/widgets.js shim for custom nodes', (name) => {
-    const id = path.join(root, 'src/scripts/widgets.ts')
-    const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))
+    {
+      module: 'widgets',
+      names: [
+        'addValueControlWidget',
+        'addValueControlWidgets',
+        'updateControlWidgetLabel'
+      ]
+    },
+    {
+      module: 'pnginfo',
+      names: [
+        'getAvifMetadata',
+        'getFlacMetadata',
+        'getLatentMetadata',
+        'getPngMetadata',
+        'getWebpMetadata'
+      ]
+    }
+  ])(
+    'keeps compatibility exports in scripts/$module.js',
+    ({ module, names }) => {
+      const id = path.join(root, `src/scripts/${module}.ts`)
+      const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))
 
-    expect(emitFile.mock.calls[0][0].source).toContain(
-      `export const ${name} = window.comfyAPI.widgets.${name};`
-    )
-  })
+      expect(emitFile.mock.calls[0][0].source.split('\n')).toEqual(
+        expect.arrayContaining(
+          names.map(
+            (name) =>
+              `export const ${name} = window.comfyAPI.${module}.${name};`
+          )
+        )
+      )
+    }
+  )
 
   it('derives the module name from an id with Windows separators', () => {
     const { result, emitFile } = runTransform(

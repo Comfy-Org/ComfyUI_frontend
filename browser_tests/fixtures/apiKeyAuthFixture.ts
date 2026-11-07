@@ -10,7 +10,7 @@ import type {
   CurrentWorkspaceResponse,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { formatCreditsFromCents } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -56,33 +56,13 @@ const API_KEY_WORKSPACE_EVENT_ID = 'evt-api-key-workspace'
  * user, a stored `comfy_api_key`, and the cloud API resolving that key to a
  * single bound workspace. Mirrors the QA flow behind the 1.51 API-key billing
  * findings: workspace context, balance, and activity must all come from the
- * key's workspace via `/api/workspaces/current` and `/api/billing/*`, never
- * from the legacy user-scoped `/customers/*` rail.
- *
- * The fixture records any legacy-rail read so specs can assert the session
- * never falls back to it.
+ * key's workspace via `/api/workspaces/current` and `/api/billing/*`.
  */
 export const apiKeyAuthFixture = base.extend<{
   comfyPage: ComfyPage
-  legacyBillingReads: string[]
 }>({
-  legacyBillingReads: async ({ page }, use) => {
-    const reads: string[] = []
-    await page.route('**/customers/balance', (route) => {
-      reads.push(route.request().url())
-      return route.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
-    })
-    await page.route('**/customers/events**', (route) => {
-      reads.push(route.request().url())
-      return route.fulfill(
-        jsonRoute({ events: [], page: 1, limit: 7, total: 0, totalPages: 0 })
-      )
-    })
-    await use(reads)
-  },
-  comfyPage: async ({ page, request, legacyBillingReads }, use, testInfo) => {
+  comfyPage: async ({ page, request }, use, testInfo) => {
     testInfo.setTimeout(45_000)
-    void legacyBillingReads
 
     const comfyPage = new ComfyPage(page, request)
     const userId = await comfyPage.setupUser(
@@ -119,8 +99,10 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
+        ended_at: null,
         team_credit_stop: null,
-        scheduled_change: null
+        scheduled_change: null,
+        next_charge: null
       } satisfies BillingStatusResponse)
     )
     await page.route('**/api/billing/capabilities', (route) =>

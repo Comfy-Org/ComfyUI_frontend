@@ -35,6 +35,7 @@ export function capabilitiesWith(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']>
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     capabilities: {
       can_cancel: true,
       can_change_seats: false,
@@ -42,8 +43,11 @@ export function capabilitiesWith(
       can_edit_workspace: false,
       can_invite_members: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_members: false,
       can_manage_subscription: true,
+      can_open_plans: true,
       can_delete_workspace: false,
       can_leave_workspace: false,
       can_manage_billing: false,
@@ -140,6 +144,7 @@ export function challengeRequiredOperation(
 export function defaultScenario(): CloudScenario {
   return {
     status: {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 1,
@@ -152,6 +157,7 @@ export function defaultScenario(): CloudScenario {
       subscription_status: 'active',
       renewal_date: inAnHour(),
       scheduled_change: null,
+      next_charge: null,
       team_credit_stop: null
     },
     balance: { amount_micros: 12_500_000, currency: 'usd' },

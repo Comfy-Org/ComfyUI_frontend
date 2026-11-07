@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/vue'
+import { Chart } from 'chart.js'
 import type { ChartData } from 'chart.js'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { getChartByName } from '@/components/ui/chart/__tests__/chartTestUtils'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
@@ -12,6 +12,12 @@ import WidgetChart from './WidgetChart.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 type ChartValue = Partial<ChartData> | null
+
+function getChartByName(name: string): Chart | undefined {
+  const canvas = screen.getByRole('img', { name })
+  assert(canvas instanceof HTMLCanvasElement)
+  return Chart.getChart(canvas)
+}
 
 const i18n = createI18n({
   legacy: false,

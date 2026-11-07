@@ -5,33 +5,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { computed, nextTick, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import {
-  LGraphEventMode,
-  TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { setSelectedIn } from '@/core/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -217,6 +217,21 @@ const mockRerouteNodeData: NodeState = {
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
+}
+
+function selectMockNode() {
+  const graph: Record<string, unknown> = {
+    id: mockNodeData.graphId,
+    getNodeById: () => null,
+    subgraphs: new Map()
+  }
+  graph.rootGraph = graph
+  useCanvasStore().currentGraph = fromAny(graph)
+  setSelectedIn(
+    graphScopeOf(fromAny(graph)),
+    toSelectableKey('node', mockNodeData.id),
+    true
+  )
 }
 
 describe('LGraphNode', () => {
@@ -427,9 +442,7 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', async () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -634,9 +647,107 @@ describe('LGraphNode', () => {
     ).not.toBeInTheDocument()
   })
 
+  describe('header missing-resources icon', () => {
+    const missingResourcesIcon = () =>
+      screen.queryByRole('img', { name: 'Missing resources' })
+
+    const issuesTabEnabled = ref(false)
+
+    function setIssuesTabEnabled(enabled: boolean) {
+      issuesTabEnabled.value = enabled
+      vi.mocked(useSettingStore().get).mockImplementation((key) => {
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab')
+          return issuesTabEnabled.value
+        if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
+        if (key === 'Comfy.Node.Opacity') return 1
+      })
+    }
+
+    function markModelMissing() {
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingModels'] =
+        true
+      useMissingModelStore().setMissingModels([
+        {
+          nodeId: createNodeExecutionId([mockNodeData.id]),
+          nodeType: 'TestNode',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          directory: 'checkpoints',
+          isAssetSupported: false,
+          isMissing: true
+        }
+      ])
+    }
+
+    function recordValidationError() {
+      useExecutionErrorStore().recordNodeErrors({
+        [mockNodeData.id]: nodeError([
+          validationError('required_input_missing', 'positive')
+        ])
+      })
+    }
+
+    function renderWithHeader() {
+      render(LGraphNode, {
+        props: { nodeData: mockNodeData },
+        global: {
+          plugins: [getActivePinia()!, i18n],
+          stubs: {
+            NodeSlots: true,
+            NodeWidgets: true,
+            NodeContent: true,
+            SlotConnectionDot: true
+          }
+        }
+      })
+    }
+
+    it('shows for a node with a missing model while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).toBeInTheDocument()
+    })
+
+    it('hides for a node with a missing model while the Issues tab is on', () => {
+      setIssuesTabEnabled(true)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides on a mounted node once the Issues tab is turned on', async () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+      expect(missingResourcesIcon()).toBeInTheDocument()
+
+      issuesTabEnabled.value = true
+      await nextTick()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node with a validation error while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      recordValidationError()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node without issues while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+  })
+
   it('should widen the selection outline rounding when the node has an error', () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
     useExecutionErrorStore().recordNodeErrors({
       [mockNodeData.id]: nodeError([
         validationError('required_input_missing', 'positive')

@@ -16,6 +16,9 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
 beforeEach(() => {
   const store = useAssetsStore()
   store.outputAssets = {
@@ -116,7 +119,7 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click', 'context-menu'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
   template: `
     <div data-testid="assets-grid">
       <button
@@ -124,8 +127,14 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
+      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
     </div>
   `
+}
+
+const mediaLightboxStub = {
+  props: ['allGalleryItems', 'activeIndex'],
+  template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
 function renderTab({ realTemplate = false } = {}) {
@@ -138,13 +147,14 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true
+        MediaLightbox: mediaLightboxStub
       }
     }
   })
 }
 
 beforeEach(() => {
+  distribution.isCloud = false
   useAssetsStore().outputAssets.items = [folderAsset]
   useAssetsStore().outputAssets.hasMore = false
 })
@@ -189,6 +199,37 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
 })
+
+it('gives the lightbox a playable URL for a video without a preview_url', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
+})
+
+it.for([
+  { isCloud: true, expected: 'true' },
+  { isCloud: false, expected: 'false' }
+])(
+  'marks the lightbox item filename as a display name only on Cloud ($isCloud)',
+  async ({ isCloud, expected }) => {
+    distribution.isCloud = isCloud
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+    ]
+    renderTab()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+    expect(
+      screen.getByTestId('lightbox-url').getAttribute('data-display-name')
+    ).toBe(expected)
+  }
+)
 
 it('shows the sidebar close button when mounted as a sidebar tab', () => {
   renderTab({ realTemplate: true })

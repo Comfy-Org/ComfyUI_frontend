@@ -37,6 +37,59 @@ describe('AgentPaywallCard visual contract', () => {
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
 
+  it.for([
+    {
+      planCreditLine: 'planRequiredFreeRuns' as const,
+      note: "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    {
+      planCreditLine: 'planRequiredSubscribe' as const,
+      note: "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    }
+  ])(
+    'says Add credits does not start a plan for an owner with no plan ($planCreditLine)',
+    ({ planCreditLine, note }) => {
+      render(AgentPaywallCard, {
+        props: {
+          presentation: {
+            kind: 'subscribed',
+            showUpgrade: false,
+            planCreditLine
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-paywall-plan-note')).toHaveTextContent(
+        note
+      )
+      expect(
+        screen.getByText(
+          'Your account has no credits available for the agent. Add credits to use it.'
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(/spent its monthly credits/)
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Add credits' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Upgrade plan' })).toBeNull()
+    }
+  )
+
+  it('keeps the plan note out for a subscribed owner', () => {
+    render(AgentPaywallCard, {
+      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-paywall-plan-note')).toBeNull()
+  })
+
   it('announces the server denial without purchase actions when capabilities are unknown', () => {
     render(AgentPaywallCard, {
       props: { message: 'Your workspace spend limit was reached.' },
@@ -79,7 +132,7 @@ describe('AgentPaywallCard visual contract', () => {
     },
     {
       presentation: { kind: 'local' as const },
-      body: "You've spent your credit balance. Add credits to keep the agent running.",
+      body: 'Your account has no credits available for the agent. Add credits to use it.',
       action: 'Add credits',
       emitted: 'addCredits'
     },

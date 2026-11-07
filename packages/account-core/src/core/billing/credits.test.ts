@@ -4,16 +4,16 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createCreditsReader } from './credits.js'
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
+import { createCreditsReader } from './credits'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {
@@ -101,6 +101,23 @@ describe('createCreditsReader', () => {
       })
     }
   )
+
+  it.for([
+    { case: 'a served fractional display balance', served: 1_234.5 },
+    { case: 'a served negative display balance', served: -42.25 },
+    { case: 'an omitted display balance', served: undefined }
+  ])('keeps $case as received', async ({ served }) => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({ ...BALANCE, cloud_credit_display_balance_cents: served })
+    ])
+
+    const result = await createCreditsReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.balance.cloud_credit_display_balance_cents).toBe(served)
+  })
 
   it('rejects a suggested top-up amount outside the safe integer range', async () => {
     const { scopeSource } = fakeSession()

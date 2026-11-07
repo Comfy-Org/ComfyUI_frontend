@@ -3,7 +3,7 @@
     <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-1600 flex overflow-y-auto bg-background focus:outline-none"
+        class="fixed inset-0 z-onboarding flex overflow-y-auto bg-background focus:outline-none"
         role="dialog"
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
@@ -125,10 +125,10 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -165,7 +165,6 @@ const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 
-/** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
 const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()

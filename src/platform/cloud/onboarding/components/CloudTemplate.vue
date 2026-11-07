@@ -39,7 +39,7 @@ import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTem
 import CloudTermsNotice from '@/platform/cloud/onboarding/components/CloudTermsNotice.vue'
 import { useDocumentDarkTheme } from '@/platform/cloud/onboarding/composables/useDocumentDarkTheme'
 
-import '../assets/css/fonts.css'
+import '@/platform/cloud/onboarding/assets/css/fonts.css'
 
 const { t } = useI18n()
 const route = useRoute()

@@ -1,10 +1,10 @@
-import type { CapabilityDenialReason } from '../capabilityDenials.js'
-import type { BillingSurface } from './billingTelemetryEvent.js'
+import type { CapabilityDenialReason } from '#/core/billing/capabilityDenials'
+import type { BillingSurface } from './billingTelemetryEvent'
 import type {
   BillingTelemetryErrorCode,
   BillingTelemetryFailureCategory
-} from './stages.js'
-import type { PaymentIntentSource } from './vocabulary.js'
+} from './stages'
+import type { PaymentIntentSource } from './vocabulary'
 
 /**
  * Checkout-journey lifecycle events for the embedded-checkout rollout.

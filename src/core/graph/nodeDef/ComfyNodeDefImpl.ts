@@ -4,19 +4,19 @@ import { resolveNodeDefText } from '@/i18n'
 import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes
-} from '@/schemas/nodeDef/searchableSlotTypes'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
@@ -106,6 +106,11 @@ export class ComfyNodeDefImpl
    * Migrate default input options to forceInput.
    */
   private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+    const usesDefaultInput = [
+      ...Object.values(nodeDef.input?.required ?? {}),
+      ...Object.values(nodeDef.input?.optional ?? {})
+    ].some((spec) => spec[1]?.defaultInput)
+    if (!usesDefaultInput) return { ...nodeDef, input: nodeDef.input ?? {} }
     const def = cloneDeep(nodeDef)
     def.input ??= {}
     // For required inputs, now we have the input socket always present. Specifying

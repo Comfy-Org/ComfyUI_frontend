@@ -1,8 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -123,7 +123,7 @@
                 :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <PasswordInput
+            <AppPasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -151,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>
@@ -165,30 +165,32 @@
 import { computed, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import Field from '@/components/ui/field/Field.vue'
-import FieldDescription from '@/components/ui/field/FieldDescription.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
-import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const {
   secret,

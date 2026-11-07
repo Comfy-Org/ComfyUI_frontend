@@ -12,7 +12,7 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
         <CheckoutTitle
           class="m-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl"
@@ -27,7 +27,7 @@
         :title="bannerTitle"
         :segments="bannerSegments"
         :checkbox-label="
-          exceedsMonthlyThreshold
+          requiresChargeConsent
             ? copy.reactivation.checkboxLabel(chargeDisplay)
             : null
         "
@@ -126,6 +126,7 @@ import type {
   BillingAuthenticationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
+import { pendingServerFact } from '@comfyorg/account-core/billing'
 
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
@@ -243,18 +244,19 @@ const isImmediate = computed(() => previewData.is_immediate)
 const newIsYearly = computed(() =>
   isAnnualDuration(previewData.new_plan.duration)
 )
-const currentIsYearly = computed(() =>
-  isAnnualDuration(previewData.current_plan?.duration)
-)
 
 const isCancelled = computed(
   () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
 )
 
+const servedChargeConsent = computed(
+  () => previewData.requires_reactivation_charge_confirmation
+)
+
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
 >(() => {
-  if (!isCancelled.value) return null
+  if (!isCancelled.value && servedChargeConsent.value !== true) return null
   switch (previewData.transition_type) {
     case 'upgrade':
       return 'upgrade'
@@ -275,31 +277,32 @@ const cancelAt = computed(
 
 const isReactivating = computed(
   () =>
-    isCancelled.value &&
-    reactivationVariant.value !== null &&
-    !!cancelAt.value &&
-    !!previewData.current_plan
+    servedChargeConsent.value === true ||
+    (isCancelled.value &&
+      reactivationVariant.value !== null &&
+      !!cancelAt.value &&
+      !!previewData.current_plan)
 )
 
-// seat_summary.total_cost_cents is the whole-subscription price; price_cents
-// is per-seat and understates the threshold on multi-seat team plans. ANNUAL
-// divides by 12 for a monthly equivalent.
 const currentMonthlyPriceCents = computed(() => {
   const current = previewData.current_plan
   if (!current) return 0
   const totalCents = current.seat_summary.total_cost_cents
-  return currentIsYearly.value ? totalCents / 12 : totalCents
+  return isAnnualDuration(current.duration) ? totalCents / 12 : totalCents
 })
+
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
-// The downgrade copy always says "you won't be charged today" with no amount
-// shown, so it never gets the checkbox even if cost_today_cents is positive.
-const exceedsMonthlyThreshold = computed(
+const requiresChargeConsent = computed(
   () =>
-    isReactivating.value &&
-    reactivationVariant.value !== 'downgrade' &&
-    chargeCents.value > currentMonthlyPriceCents.value
+    servedChargeConsent.value ??
+    pendingServerFact(
+      'BE-25331',
+      isReactivating.value &&
+        reactivationVariant.value !== 'downgrade' &&
+        chargeCents.value > currentMonthlyPriceCents.value
+    )
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`
@@ -318,7 +321,7 @@ watch(
 const confirmDisabled = computed(
   () =>
     !subscriptionLoaded ||
-    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
+    (requiresChargeConsent.value && !reactivationConfirmed.value)
 )
 const confirmBlocked = computed(
   () =>
@@ -329,7 +332,7 @@ const confirmBlocked = computed(
 const confirmReactivation = computed(
   () =>
     isReactivating.value &&
-    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
+    (!requiresChargeConsent.value || reactivationConfirmed.value)
 )
 
 const bannerTitle = computed(() =>

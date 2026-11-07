@@ -1,9 +1,11 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { basename, join } from 'node:path'
 
-import { themeSchema } from '@/schemas/colorPaletteSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import { themeSchema } from '@comfyorg/settings-core/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -75,6 +77,17 @@ describe('useColorPaletteService theme variables', () => {
         '--node-foreground': '#657b83',
         '--secondary': '#094656',
         '--border': 'color-mix(in srgb, #073642 75.5%, #fff)'
+      }
+    },
+    {
+      paletteId: 'spooky',
+      expected: {
+        '--background': '#0c0910',
+        '--node': '#140f19',
+        '--node-header': '#2b1640',
+        '--node-foreground': '#c8b6d6',
+        '--secondary': '#22182c',
+        '--border': '#45305a'
       }
     }
   ])(
@@ -224,16 +237,16 @@ describe('useColorPaletteService theme variables', () => {
       'css'
     )
     const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
-    const styleCss = readFileSync(join(cssDir, 'style.css'), 'utf8')
+    const themeCss = readFileSync(join(cssDir, 'theme.css'), 'utf8')
     const palette = Object.fromEntries(
       [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
         ([, name, hex]) => [name, hex.toLowerCase()]
       )
     )
     palette.white = '#ffffff'
-    const rootBlock = styleCss.slice(
-      styleCss.indexOf(':root {'),
-      styleCss.indexOf('}', styleCss.indexOf(':root {'))
+    const rootBlock = themeCss.slice(
+      themeCss.indexOf(':root {'),
+      themeCss.indexOf('}', themeCss.indexOf(':root {'))
     )
     const stylesheetDefaults = Object.fromEntries(
       [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
@@ -254,6 +267,47 @@ describe('useColorPaletteService theme variables', () => {
       )
     )
   })
+
+  it.for(
+    Object.values(CORE_COLOR_PALETTES).flatMap(({ id, colors }) =>
+      colors.theme ? [{ paletteId: id, theme: colors.theme }] : []
+    )
+  )(
+    'applies every theme token the $paletteId palette sets',
+    async ({ paletteId, theme }) => {
+      clearRootThemeAfterTest()
+
+      await useColorPaletteService().loadColorPalette(paletteId)
+
+      const tokens = Object.keys(theme).map((token) => `--${token}`)
+      expect(
+        Object.fromEntries(tokens.map((name) => [name, readRootProperty(name)]))
+      ).toEqual(
+        Object.fromEntries(
+          Object.entries(theme).map(([token, value]) => [`--${token}`, value])
+        )
+      )
+    }
+  )
+
+  it.for(
+    Object.values(CORE_COLOR_PALETTES).flatMap(({ id, colors }) => {
+      const image = colors.litegraph_base.BACKGROUND_IMAGE
+      return image?.startsWith('/assets/') ? [{ paletteId: id, image }] : []
+    })
+  )('ships the $paletteId canvas background image', ({ image }) => {
+    expect(existsSync(join(process.cwd(), 'public', image))).toBe(true)
+  })
+
+  it('lists every shipped palette file as a selectable palette', () => {
+    const shipped = readdirSync(join(process.cwd(), 'src/assets/palettes')).map(
+      (file) => basename(file, '.json')
+    )
+
+    expect(useColorPaletteStore().palettes.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(shipped)
+    )
+  })
 })
 
 describe('useColorPaletteService', () => {
@@ -270,6 +324,22 @@ describe('useColorPaletteService', () => {
       expect(readRootProperty('--shadow-color')).toBe(expected)
     }
   )
+
+  it('keeps the current palette and reports an error when asked to load an unknown palette', async () => {
+    clearRootThemeAfterTest()
+    const service = useColorPaletteService()
+    await service.loadColorPalette('nord')
+
+    await service.loadColorPalette('unknown')
+
+    expect(readRootProperty('--background')).toBe('#161b22')
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Color palette unknown not found'
+      })
+    )
+  })
 
   it('removes a custom palette legacy shadow once the next palette omits it', async () => {
     clearRootThemeAfterTest()

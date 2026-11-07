@@ -12,12 +12,12 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useTelemetry } from '@/platform/telemetry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -30,10 +30,10 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
-import { GetNodeParentGroupKey } from '../shared'
+import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
 import WidgetItem from './WidgetItem.vue'
 import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
@@ -73,8 +73,8 @@ const emit = defineEmits<{
 const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
-const widgets = shallowRef(widgetsProp)
-watchEffect(() => (widgets.value = widgetsProp))
+const localWidgets = shallowRef(widgetsProp)
+watchEffect(() => (localWidgets.value = widgetsProp))
 
 const draggableList = ref<DraggableList | undefined>()
 
@@ -106,7 +106,7 @@ function setDraggableState() {
 }
 
 watchDebounced(
-  [widgets, () => isDraggable, collapse],
+  [localWidgets, () => isDraggable, collapse],
   () => setDraggableState(),
   { debounce: 100 }
 )
@@ -124,7 +124,7 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-const isEmpty = computed(() => widgets.value.length === 0)
+const isEmpty = computed(() => localWidgets.value.length === 0)
 
 const displayLabel = computed(
   () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
@@ -134,10 +134,12 @@ const targetNode = computed<LGraphNode | null>(() => {
   if (node) return node
   if (isEmpty.value) return null
 
-  const firstNodeId = widgets.value[0].node.id
-  const allSameNode = widgets.value.every(({ node }) => node.id === firstNodeId)
+  const firstNodeId = localWidgets.value[0].node.id
+  const allSameNode = localWidgets.value.every(
+    ({ node }) => node.id === firstNodeId
+  )
 
-  return allSameNode ? widgets.value[0].node : null
+  return allSameNode ? localWidgets.value[0].node : null
 })
 
 const hasDirectError = computed(() => {
@@ -297,7 +299,7 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive"
+              class="icon-[lucide--octagon-alert] text-destructive"
             />
             <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">
@@ -330,7 +332,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
           >
-            <i class="icon-[lucide--rotate-ccw] size-4" />
+            <i class="icon-[lucide--rotate-ccw]" />
           </Button>
           <Button
             v-if="canShowLocateButton"
@@ -341,7 +343,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"
           >
-            <i class="icon-[lucide--locate] size-4" />
+            <i class="icon-[lucide--locate]" />
           </Button>
         </div>
       </template>
@@ -355,7 +357,7 @@ defineExpose({
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
         <WidgetItem
-          v-for="{ widget, node } in widgets"
+          v-for="{ widget, node } in localWidgets"
           :key="getStableWidgetRenderKey(widget)"
           :widget
           :node

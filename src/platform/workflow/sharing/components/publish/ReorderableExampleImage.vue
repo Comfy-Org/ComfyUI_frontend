@@ -38,7 +38,7 @@
       class="absolute top-1 right-1 flex size-6 bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
       @click="$emit('remove', image.id)"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </div>
 </template>
@@ -47,7 +47,7 @@
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import { nextTick, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

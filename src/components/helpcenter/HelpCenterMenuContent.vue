@@ -34,11 +34,11 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
-            class="pi pi-chevron-right ml-auto"
+            class="ml-auto icon-[lucide--chevron-right]"
           />
         </button>
       </nav>
@@ -49,8 +49,7 @@
       </div>
     </div>
 
-    <!-- More Submenu -->
-    <Teleport to="body">
+    <Teleport :to="config.teleportTo ?? 'body'">
       <div
         v-if="isSubmenuVisible"
         ref="submenuRef"
@@ -140,13 +139,16 @@
         role="status"
         aria-live="polite"
       >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <i
+          class="help-menu-icon icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
       <!-- No Releases State -->
       <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+        <i class="help-menu-icon icon-[lucide--info]" aria-hidden="true" />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
       </div>
     </section>
@@ -155,27 +157,35 @@
 
 <script setup lang="ts">
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { injectConfigProviderContext } from 'reka-ui'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref
+} from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import PuzzleIcon from '@comfyorg/design-system/icon/PuzzleIcon'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {
@@ -202,11 +212,11 @@ const TIME_UNITS = {
 
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
-  OFFSET_PX: 8,
-  Z_INDEX: 10001
+  OFFSET_PX: 8
 } as const
 
 // Composables
+const config = reactive(injectConfigProviderContext(null) ?? {})
 const { t } = useI18n()
 const toast = useToast()
 const { staticUrls, buildDocsUrl } = useExternalLink()
@@ -473,39 +483,28 @@ const clearHoverTimeout = (): void => {
 
 const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   const rect = button.getBoundingClientRect()
-  const submenuWidth = 210 // Width defined in CSS
+  const submenuWidth = 210
 
-  // Get actual submenu height if available, otherwise estimate based on visible item count
   const visibleItemCount =
     moreMenuItem.value?.items?.filter((item) => item.visible !== false)
       .length || 0
-  const estimatedHeight = visibleItemCount * 48 + 16 // ~48px per item + padding
+  const estimatedHeight = visibleItemCount * 48 + 16
   const submenuHeight = submenuRef.value?.offsetHeight || estimatedHeight
 
-  // Get viewport dimensions
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
-  // Calculate basic position (aligned with button)
   let top = rect.top
   let left = rect.right + SUBMENU_CONFIG.OFFSET_PX
 
-  // Check if submenu would overflow viewport on the right
   if (left + submenuWidth > viewportWidth) {
-    // Position submenu to the left of the button instead
     left = rect.left - submenuWidth - SUBMENU_CONFIG.OFFSET_PX
   }
 
-  // Check if submenu would overflow viewport at the bottom
   if (top + submenuHeight > viewportHeight) {
-    // Position submenu above the button, aligned to bottom
-    top = Math.max(
-      SUBMENU_CONFIG.OFFSET_PX, // Minimum distance from top of viewport
-      rect.bottom - submenuHeight
-    )
+    top = Math.max(SUBMENU_CONFIG.OFFSET_PX, rect.bottom - submenuHeight)
   }
 
-  // Ensure submenu doesn't go above viewport
   if (top < SUBMENU_CONFIG.OFFSET_PX) {
     top = SUBMENU_CONFIG.OFFSET_PX
   }
@@ -515,8 +514,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   return {
     position: 'fixed',
     top: `${top}px`,
-    left: `${left}px`,
-    zIndex: SUBMENU_CONFIG.Z_INDEX
+    left: `${left}px`
   }
 }
 

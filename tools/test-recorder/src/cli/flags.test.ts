@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseFlags, parseTags } from './flags'
+import { isFlagOn, parseFlags, parseTags } from './flags'
 
 describe('parseFlags', () => {
   it('separates positional arguments from flags', () => {
@@ -25,6 +25,25 @@ describe('parseFlags', () => {
     const { positional, flags } = parseFlags(['--dry-run', 'a.ts'], ['name'])
     expect(flags['dry-run']).toBe('')
     expect(positional).toEqual(['a.ts'])
+  })
+
+  it.for(['true', 'false'])(
+    'reads a separated %s as the value of a flag that takes none',
+    (value) => {
+      const { positional, flags } = parseFlags(
+        ['a.ts', '--force', value],
+        [],
+        ['force']
+      )
+      expect(flags.force).toBe(value)
+      expect(positional).toEqual(['a.ts'])
+    }
+  )
+
+  it('leaves separated booleans positional for flags not declared boolean-valued', () => {
+    const { positional, flags } = parseFlags(['--headed', 'false'])
+    expect(flags.headed).toBe('')
+    expect(positional).toEqual(['false'])
   })
 
   it('keeps a value that contains an equals sign intact', () => {
@@ -56,4 +75,21 @@ describe('parseTags', () => {
   it('returns undefined when nothing survives filtering', () => {
     expect(parseTags(' , , ')).toBeUndefined()
   })
+})
+
+describe('isFlagOn', () => {
+  it.for([
+    { value: undefined, expected: false },
+    { value: 'false', expected: false },
+    { value: 'true', expected: true }
+  ])('reads $value as $expected', ({ value, expected }) => {
+    expect(isFlagOn(value, 'force')).toBe(expected)
+  })
+
+  it.for(['', '1', 'yes', 'TRUE'])(
+    'rejects the malformed value %s',
+    (value) => {
+      expect(() => isFlagOn(value, 'force')).toThrow(/Invalid --force value/)
+    }
+  )
 })
