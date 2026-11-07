@@ -14,6 +14,7 @@ import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -2562,8 +2563,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
-        const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
         try {
+          runCanvasFramePhase(this.canvas, 'update')
+          layoutStore.flushPendingChanges()
+          const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
           this.draw()
           if (drawsSomething) failedFrames = 0
         } catch (cause) {
@@ -5149,7 +5152,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   draw(force_canvas?: boolean, force_bgcanvas?: boolean): void {
     if (this.canvas.width == 0 || this.canvas.height == 0) return
 
-    // fps counting
     const now = LiteGraph.getTime()
     this.render_time = (now - this.last_draw_time) * 0.001
     this.last_draw_time = now
@@ -5177,18 +5179,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const sharesCanvas = this.bgcanvas === this.canvas
     if (sharesCanvas && shouldDrawBackground) this.dirty_canvas = true
 
-    // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas) {
       this.computeVisibleNodes(
         getCurrentGraphNodesInFrameOrder(),
         this.visible_nodes
       )
-      // Update visible node IDs
       this._visible_node_ids = new Set(
         this.visible_nodes.map((node) => node.id)
       )
 
-      // Arrange subgraph IO nodes
       const { subgraph } = this
       if (subgraph) {
         subgraph.inputNode.arrange()
@@ -5224,6 +5223,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
+    runCanvasFramePhase(this.canvas, 'present')
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
   }

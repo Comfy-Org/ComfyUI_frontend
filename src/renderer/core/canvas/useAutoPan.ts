@@ -1,6 +1,7 @@
-import { useRafFn } from '@vueuse/core'
+import { tryOnScopeDispose } from '@vueuse/core'
 
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 const EDGE_THRESHOLD = 50
 
@@ -51,14 +52,15 @@ export class AutoPanController {
   private readonly ds: DragAndScale
   private readonly maxPanSpeed: number
   private readonly onPan: (dx: number, dy: number) => void
-  private readonly raf: ReturnType<typeof useRafFn>
+  private stopFrame: (() => void) | undefined
+  private lastFrameTime = 0
 
   constructor(options: AutoPanOptions) {
     this.canvas = options.canvas
     this.ds = options.ds
     this.maxPanSpeed = options.maxPanSpeed
     this.onPan = options.onPan
-    this.raf = useRafFn(() => this.tick(), { immediate: false })
+    tryOnScopeDispose(() => this.stop())
   }
 
   updatePointer(screenX: number, screenY: number) {
@@ -67,14 +69,21 @@ export class AutoPanController {
   }
 
   start() {
-    this.raf.resume()
+    if (this.stopFrame) return
+    this.lastFrameTime = performance.now()
+    this.stopFrame = onCanvasFrame(this.canvas, 'update', () => this.tick())
   }
 
   stop() {
-    this.raf.pause()
+    this.stopFrame?.()
+    this.stopFrame = undefined
   }
 
   private tick() {
+    const now = performance.now()
+    const elapsed = Math.min(50, now - this.lastFrameTime)
+    this.lastFrameTime = now
+    const maxPanSpeed = (this.maxPanSpeed * elapsed) / (1000 / 60)
     const rect = this.canvas.getBoundingClientRect()
     const scale = this.ds.scale
 
@@ -83,14 +92,14 @@ export class AutoPanController {
       rect.left,
       rect.right,
       scale,
-      this.maxPanSpeed
+      maxPanSpeed
     )
     const panY = calculateEdgePanSpeed(
       this.pointerY,
       rect.top,
       rect.bottom,
       scale,
-      this.maxPanSpeed
+      maxPanSpeed
     )
 
     if (panX === 0 && panY === 0) return
