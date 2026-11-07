@@ -1,11 +1,8 @@
-export interface CloudMissingModel {
-  name: string
-  folder: string
-}
+import type { CompatibilityModel } from '@comfyorg/ingest-types'
 
 export interface CloudWorkflowGaps {
   nodePacks: string[]
-  models: CloudMissingModel[]
+  models: CompatibilityModel[]
 }
 
 export type CloudWorkflowVerdict =

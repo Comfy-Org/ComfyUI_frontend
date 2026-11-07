@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
+import type { ModelFolder } from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -86,6 +88,55 @@ describe(checkCloudCompatibility, () => {
       node_types: ['CheckpointLoaderSimple', 'KSampler'],
       models: [{ folder: 'checkpoints', name: 'sdxl.safetensors' }]
     })
+  })
+
+  it('sends models from loaders the asset picker does not map, using the local model folders', async () => {
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({
+        directory: 'text_encoders',
+        models: {
+          '0/t5xxl_fp16.safetensors': { file_name: 't5xxl_fp16.safetensors' },
+          '0/clip_l.safetensors': { file_name: 'clip_l.safetensors' }
+        }
+      })
+    ])
+    vi.mocked(app.graphToPrompt).mockResolvedValue(
+      fromPartial({
+        output: {
+          1: {
+            class_type: 'DualCLIPLoader',
+            inputs: {
+              clip_name1: 't5xxl_fp16.safetensors',
+              clip_name2: 'clip_l.safetensors',
+              type: 'flux'
+            }
+          }
+        }
+      })
+    )
+    cloudAnswers(
+      Response.json({
+        cloud: {
+          missing_node_types: [],
+          missing_models: [
+            { folder: 'text_encoders', name: 't5xxl_fp16.safetensors' }
+          ]
+        }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: {
+        nodePacks: [],
+        models: [{ folder: 'text_encoders', name: 't5xxl_fp16.safetensors' }]
+      }
+    })
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    expect(JSON.parse(String(init?.body)).models).toEqual([
+      { folder: 'text_encoders', name: 't5xxl_fp16.safetensors' },
+      { folder: 'text_encoders', name: 'clip_l.safetensors' }
+    ])
   })
 
   it.for([

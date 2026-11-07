@@ -4260,7 +4260,8 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "cannotRunYet": "Comfy Cloud is missing nodes or models this workflow uses."
   },
   "selectionToolbox": {
     "executeButton": {

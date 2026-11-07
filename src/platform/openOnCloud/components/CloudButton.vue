@@ -7,9 +7,9 @@
     :aria-label="tooltip"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
-    @pointerenter="checkWorkflow"
-    @keydown.enter="checkWorkflow"
-    @keydown.space="checkWorkflow"
+    @pointerenter="prefetch"
+    @keydown.enter="prefetch"
+    @keydown.space="prefetch"
     @click="openModal"
   >
     <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
@@ -45,26 +45,31 @@ const tooltip = computed(() =>
     : t('openOnCloud.cloudButton.tooltip')
 )
 
-function checkWorkflow() {
-  const { phase } = check.value
-  if (phase === 'idle' || phase === 'failed') void checkStore.check()
+function prefetch() {
+  if (check.value.phase === 'idle') void checkStore.check()
 }
 
 function showModal() {
-  if (check.value.phase === 'failed') {
+  const current = check.value
+  if (current.phase === 'failed') {
     toast.error(t('openOnCloud.checkFailed'))
+    return
+  }
+  if (current.phase === 'answered' && current.verdict.kind !== 'canOpen') {
+    toast.error(t('openOnCloud.cannotRunYet'))
     return
   }
   void openRunOnCloudDialog()
 }
 
 function openModal() {
-  if (check.value.phase === 'answered') {
+  const { phase } = check.value
+  if (phase === 'answered') {
     showModal()
     return
   }
   opensWhenAnswered.value = true
-  checkWorkflow()
+  if (phase === 'idle' || phase === 'failed') void checkStore.check()
 }
 
 watch(
