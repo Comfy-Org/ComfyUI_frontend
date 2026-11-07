@@ -15,6 +15,7 @@ export enum ServerFeatureFlag {
   DEPLOYMENT_START_ENABLED = 'deployment_start_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
+  OPEN_ON_CLOUD_ENABLED = 'open_on_cloud_enabled',
   DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
