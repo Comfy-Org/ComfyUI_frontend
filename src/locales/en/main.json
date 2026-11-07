@@ -6332,6 +6332,7 @@
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
+    "sendAwaitingRunApproval": "Approve the card above to run, or cancel it to send a new message.",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",

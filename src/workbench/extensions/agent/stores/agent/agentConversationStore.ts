@@ -1746,6 +1746,15 @@ export const useAgentConversationStore = defineStore(
       return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
     }
 
+    const awaitsRunApproval = computed(
+      () =>
+        activeMessage.value?.parts.some(
+          (part) =>
+            part.type === 'runApproval' &&
+            !answeringAskIds.value.has(part.askId)
+        ) ?? false
+    )
+
     const activeTurnTabPath = computed(() => {
       const slot = activeSlot.value
       return slot !== null && isStreaming.value ? openPathOf(slot.tab) : null
@@ -1797,6 +1806,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnTabPath,
       turnTabs,
       awaitingApproval,
+      awaitsRunApproval,
       onTurnCompleted: turnCompleted.on,
       onSnapshotTurnSettled: snapshotTurnSettled.on,
       setTurnTabResolver,
