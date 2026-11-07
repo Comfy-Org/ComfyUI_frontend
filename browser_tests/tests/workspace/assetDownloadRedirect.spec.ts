@@ -1,10 +1,12 @@
-import { readFile } from 'node:fs/promises'
-
 import { expect } from '@playwright/test'
 
-import { assetDownloadRedirectTest as test } from '@e2e/fixtures/assetDownloadRedirectFixture'
+import {
+  assetDownloadRedirectTest as test,
+  downloadStableOutput
+} from '@e2e/fixtures/assetDownloadRedirectFixture'
 import { STABLE_OUTPUT } from '@e2e/fixtures/data/assetFixtures'
 import { WEB_SESSION_COOKIE } from '@e2e/fixtures/data/webSession'
+import { MOCK_WORKSPACE_TOKEN } from '@e2e/fixtures/utils/workspaceMocks'
 
 test.use({
   firebaseLogin: false,
@@ -21,18 +23,11 @@ for (const workspace of ['ws-personal', 'ws-team']) {
       comfyPage,
       assetRedirect
     }, testInfo) => {
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
-      await tab.waitForAssets(1)
-      await tab.rightClickAsset('ComfyUI_00001_')
-      const downloadPromise = comfyPage.page.waitForEvent('download')
-      await comfyPage.contextMenu.clickMenuItemExact('Download')
-      const download = await downloadPromise
-      const file = testInfo.outputPath(STABLE_OUTPUT.name)
-      await download.saveAs(file)
+      await assetRedirect.assertStorageRejectsCredentials()
 
-      expect(download.suggestedFilename()).toBe(STABLE_OUTPUT.name)
-      expect(await readFile(file)).toEqual(assetRedirect.bytes)
+      const download = await downloadStableOutput(comfyPage, testInfo)
+      expect(download.suggestedFilename).toBe(STABLE_OUTPUT.name)
+      expect(download.bytes).toEqual(assetRedirect.bytes)
       expect(assetRedirect.storageCookies).toEqual([undefined])
       expect(assetRedirect.requestHeaders).toEqual([
         expect.objectContaining({
@@ -45,3 +40,30 @@ for (const workspace of ['ws-personal', 'ws-team']) {
     })
   })
 }
+
+test.describe('Asset download on the token rail', { tag: '@cloud' }, () => {
+  test.use({
+    rail: 'token',
+    firebaseLogin: true,
+    serverFeatures: {
+      assets: true,
+      unified_cloud_auth: true,
+      unified_web_session: false
+    }
+  })
+
+  test('downloads through a storage redirect on a bearer token', async ({
+    comfyPage,
+    assetRedirect
+  }, testInfo) => {
+    await assetRedirect.assertStorageRejectsCredentials()
+
+    const download = await downloadStableOutput(comfyPage, testInfo)
+    expect(download.suggestedFilename).toBe(STABLE_OUTPUT.name)
+    expect(download.bytes).toEqual(assetRedirect.bytes)
+    expect(assetRedirect.storageCookies).toEqual([undefined])
+    expect(assetRedirect.requestHeaders).toHaveLength(1)
+    const [firstHop] = assetRedirect.requestHeaders
+    expect(firstHop.authorization).toBe(`Bearer ${MOCK_WORKSPACE_TOKEN}`)
+  })
+})
