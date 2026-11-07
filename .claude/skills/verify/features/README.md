@@ -6,7 +6,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## Baseline preconditions
 
-- Launch at `http://localhost:5173` with `nvm use 26 && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
+- Launch at `http://localhost:5173` with `nvm use && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
 - Run all four Doctor checks. In particular, confirm both `curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billing_sdk_topup_enabled` and the same with `billing_sdk_subscription_enabled` are non-zero. A build that carries only one of them cannot run S2 or S3. An environment without the migration makes every result below meaningless.
 - Sign in with an **email-verified `@comfy.org`** account. Without it `?ff=` overrides are silently ignored. The human signs in; never type someone's password.
 - Have ready: an account with a saved card, one without, a declining card, a 3DS card, and both a personal and a team workspace.
@@ -22,7 +22,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## The scenario matrix
 
-Both rails are ANDed with `unified_cloud_auth`. The anonymous `/api/features` reports it `false` in every environment, but it resolves `true` for a signed-in user. Resolve `flags.unifiedCloudAuthEnabled` in the page before trusting a scenario, and do not override it. Forcing it on with the dev `ff:unified_cloud_auth` key put the local app into a reload loop on 2026-09-21 (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Override only the billing flags.
+Both rails are ANDed with `unified_cloud_auth`. The anonymous `/api/features` reports it `false` in every environment, but it resolves `true` for a signed-in user. Resolve `flags.unifiedCloudAuthEnabled` in the page before trusting a scenario, and do not override it. Forcing it on with the dev `ff:unified_cloud_auth` key has put the local app into a reload loop (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Override only the billing flags.
 
 | #   | Query string                                                        | What it is                                               |
 | --- | ------------------------------------------------------------------- | -------------------------------------------------------- |

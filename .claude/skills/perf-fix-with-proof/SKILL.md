@@ -9,7 +9,7 @@ Ships perf fixes as two stacked PRs so CI automatically proves the improvement.
 
 ## Why Two PRs
 
-The `ci-perf-report.yaml` workflow compares PR metrics against the **base branch baseline**. If you add a new `@perf` test in the same PR as the fix, that test doesn't exist on main yet — no baseline, no delta, no proof. Stacking solves this:
+`ci-perf-report.yaml` runs the `@perf` tests on every PR and on pushes to main, where it saves a baseline to the `perf-data` branch. `pr-report.yaml` then posts a PR comment comparing the PR's metrics against those baselines. If you add a new `@perf` test in the same PR as the fix, that test doesn't exist on main yet — no baseline, no delta, no proof. Stacking solves this:
 
 1. **PR1 (test-only)** — adds the `@perf` test that exercises the bottleneck. Merges to main. CI runs it on main → baseline established.
 2. **PR2 (fix)** — adds the optimization. CI runs the same test → compares against PR1's baseline → delta shows improvement.
@@ -20,7 +20,10 @@ The `ci-perf-report.yaml` workflow compares PR metrics against the **base branch
 
 ```bash
 git worktree add <worktree-path> -b perf/test-<name> origin/main
+cd <worktree-path> && pnpm install --frozen-lockfile
 ```
+
+The git hooks need the worktree's own `node_modules`.
 
 ### Step 2: Write the `@perf` test
 
@@ -28,26 +31,23 @@ Add a test to `browser_tests/tests/performance.spec.ts` (or a new file with `@pe
 
 **Test structure:**
 
+Load a workflow that exercises the bottleneck, start measuring, perform the action at scale, then stop measuring and record:
+
 ```typescript
 test('<descriptive name>', async ({ comfyPage }) => {
-  // 1. Load a workflow that exercises the bottleneck
   await comfyPage.workflow.loadWorkflow('<workflow>')
-
-  // 2. Start measuring
   await comfyPage.perf.startMeasuring()
 
-  // 3. Perform the action that triggers the bottleneck (at scale)
   for (let i = 0; i < N; i++) {
-    // ... stress the hot path ...
     await comfyPage.nextFrame()
   }
 
-  // 4. Stop measuring and record
   const m = await comfyPage.perf.stopMeasuring('<metric-name>')
   recordMeasurement(m)
-  console.log(`<name>: ${m.styleRecalcs} recalcs, ${m.layouts} layouts`)
 })
 ```
+
+Replace the loop body with the interaction that stresses the hot path.
 
 **Available metrics** (from `PerformanceHelper`):
 
@@ -78,10 +78,11 @@ Confirm the test runs and produces reasonable metric values.
 
 ### Step 5: Create PR1 (test-only)
 
+The pre-commit hook formats, lints and runs `pnpm typecheck:browser` for staged `browser_tests/` files; do not run repo-wide `pnpm lint` or `pnpm typecheck`.
+
 ```bash
-pnpm typecheck:browser
-pnpm lint
 git add browser_tests/
+pnpm lint:unstaged:fix
 git commit -m "test: add perf test for <bottleneck description>"
 git push -u origin perf/test-<name>
 gh pr create --title "test: add perf test for <bottleneck>" \
@@ -93,13 +94,13 @@ This is PR 1 of 2. The fix will follow in a separate PR once this baseline is es
 Adds \`<test-name>\` to the performance test suite measuring <metric> during <action>.
 
 ## Why
-Needed to prove the improvement from the upcoming fix for backlog item #<N>." \
+Needed to prove the improvement from the upcoming fix for <issue link>." \
   --base main
 ```
 
 ### Step 6: Get PR1 merged
 
-Once PR1 merges, CI runs the test on main → baseline artifact saved.
+Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch.
 
 ### Step 7: Create PR2 (fix) on top of main
 
@@ -110,44 +111,28 @@ git worktree add <worktree-path> -b perf/fix-<name> origin/main
 Implement the fix. The `@perf` test from PR1 is now on main and will run automatically. CI will:
 
 1. Run the test on the PR branch
-2. Download the baseline from main (which includes PR1's test results)
-3. Post a PR comment showing the delta
+2. Compare against the `perf-data` baselines from main, which include PR1's test
+3. Post the delta in the unified PR report comment (`pr-report.yaml`)
 
 ### Step 8: Verify the improvement shows in CI
 
-The `ci-perf-report.yaml` posts a comment like:
-
-```markdown
-## ⚡ Performance: ✅ No regressions detected
-
-<details>
-<summary>Details</summary>
-
-| Metric                | Baseline | PR (n=3) | Δ    | Sig |
-| --------------------- | -------- | -------- | ---- | --- |
-| <name>: style recalcs | 450      | 12       | -97% | 🟢  |
-
-</details>
-```
-
-If Δ is negative for the target metric, the fix is proven.
+Read the performance section of the PR report comment. If Δ is negative for the target metric and marked significant, the fix is proven.
 
 ## Test Design Guidelines
 
 1. **Stress the specific bottleneck** — don't measure everything, isolate the hot path
 2. **Use enough iterations** — the test should run long enough that the metric difference is clear (100+ frames for idle tests, 50+ interactions for event tests)
 3. **Keep it deterministic** — avoid timing-dependent assertions; measure counts not durations when possible
-4. **Match the backlog entry** — reference the backlog item number in the test name or PR description
+4. **Link the issue** — reference the tracking issue in the PR description
 
 ## Examples
 
-**Testing DOM widget reactive mutations (backlog #8):**
+**Testing DOM widget reactive mutations:**
 
 ```typescript
 test('DOM widget positioning recalculations', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('default')
   await comfyPage.perf.startMeasuring()
-  // Idle for 120 frames — DOM widgets update position every frame
   for (let i = 0; i < 120; i++) {
     await comfyPage.nextFrame()
   }
@@ -156,29 +141,30 @@ test('DOM widget positioning recalculations', async ({ comfyPage }) => {
 })
 ```
 
-**Testing measureText caching (backlog #4):**
+**Testing measureText caching:**
 
 ```typescript
 test('canvas text rendering with many nodes', async ({ comfyPage }) => {
-  await comfyPage.workflow.loadWorkflow('large-workflow-50-nodes')
+  await comfyPage.workflow.loadWorkflow('large-graph-workflow')
   await comfyPage.perf.startMeasuring()
   for (let i = 0; i < 60; i++) {
     await comfyPage.nextFrame()
   }
-  const m = await comfyPage.perf.stopMeasuring('text-rendering-50-nodes')
+  const m = await comfyPage.perf.stopMeasuring('text-rendering-large-graph')
   recordMeasurement(m)
 })
 ```
 
 ## Reference
 
-| Resource          | Path                                                  |
-| ----------------- | ----------------------------------------------------- |
-| Perf test file    | `browser_tests/tests/performance.spec.ts`             |
-| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
-| Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`        |
-| CI workflow       | `.github/workflows/ci-perf-report.yaml`               |
-| Report generator  | `scripts/perf-report.ts`                              |
-| Stats utilities   | `scripts/perf-stats.ts`                               |
-| Backlog           | `docs/perf/BACKLOG.md` (local only, not committed)    |
-| Playbook          | `docs/perf/PLAYBOOK.md` (local only, not committed)   |
+| Resource          | Path                                                                             |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Perf test file    | `browser_tests/tests/performance.spec.ts`                                        |
+| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts`                            |
+| Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`                                   |
+| CI workflow       | `.github/workflows/ci-perf-report.yaml`                                          |
+| PR comment        | `.github/workflows/pr-report.yaml`                                               |
+| Report generator  | `scripts/perf-report.ts`                                                         |
+| Stats utilities   | `scripts/perf-stats.ts`                                                          |
+| Incident runbook  | `docs/guidance/performance-incident-runbook.md`                                  |
+| Measurement ADR   | `docs/adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md` |

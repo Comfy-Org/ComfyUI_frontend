@@ -41,6 +41,6 @@ Preconditions:
 
 - The operation pointer lives in `sessionStorage` under a `comfy:billing:operation` prefix with a 24h max age. It dies with the tab. "Reopen the app" means a new tab in the same browser, not a restarted browser, unless you are deliberately testing the stale path.
 - The rail that owns a recovery is keyed on the pending operation's type, not on which flag you flipped last. A pending top-up recovers on the top-up rail even in S2.
-- With embedded off, `selectBillingPresentation` returns `hosted` unconditionally, `retryPaymentAuthentication` returns false without doing anything, and switching to embedded is refused as `embedded_unavailable`. None of the in-page challenge code runs. If a case here seems to have no visible behaviour, that is why. It belongs to P2, not P0.
+- With embedded off, `selectBillingPresentation` returns `hosted`, and switching to embedded is refused as `embedded_unavailable`. None of the in-page challenge code runs. If a case here seems to have no visible behaviour, that is why. It belongs to P2, not P0.
 - Do not confuse "the provider page rejected the card" with "the app failed to follow the operation". Read the request table before filing either.
 - A verification re-offered after completion is a customer-visible defect even if the money is correct; report it as such.
