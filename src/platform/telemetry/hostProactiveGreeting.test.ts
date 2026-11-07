@@ -27,7 +27,7 @@ it('leaves ordinary browsers and old hosts outside the experiment', async () => 
   expect(await canEnrollHostProactiveGreeting('user-a')).toBe(false)
 })
 
-it.for([true, false, undefined])(
+it.for([true, false, undefined, 'true', 1, { allowed: true }])(
   'requires explicit host admission for the current actor: %s',
   async (admitted) => {
     const canEnrollProactiveGreeting = vi.fn().mockResolvedValue(admitted)

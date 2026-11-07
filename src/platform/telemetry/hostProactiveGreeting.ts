@@ -26,7 +26,8 @@ export async function canEnrollHostProactiveGreeting(
   )
     return false
   try {
-    return (await telemetry.canEnrollProactiveGreeting(userId)) === true
+    const result: unknown = await telemetry.canEnrollProactiveGreeting(userId)
+    return result === true
   } catch {
     return false
   }
