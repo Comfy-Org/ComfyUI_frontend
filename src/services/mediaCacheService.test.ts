@@ -39,11 +39,26 @@ describe('mediaCacheService', () => {
   })
 
   describe('failed media caching', () => {
-    const imageResponse = () =>
-      new Response(new Blob(['image-bytes']), { status: 200 })
+    function imageResponse() {
+      return Promise.resolve(
+        new Response(new Blob(['image-bytes']), { status: 200 })
+      )
+    }
+
+    function serverError() {
+      return Promise.resolve(new Response('nope', { status: 500 }))
+    }
+
+    function notFound() {
+      return Promise.resolve(new Response('nope', { status: 404 }))
+    }
+
+    function networkError() {
+      return Promise.reject(new TypeError('fetch failed'))
+    }
 
     it('serves a successful result without refetching', async () => {
-      vi.mocked(fetch).mockResolvedValue(imageResponse())
+      vi.mocked(fetch).mockImplementation(imageResponse)
       vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url')
       const { getCachedMedia } = useMediaCache()
 
@@ -53,17 +68,15 @@ describe('mediaCacheService', () => {
       expect(first.error).toBeUndefined()
       expect(second.objectUrl).toBe('blob:mock-url')
       expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledWith('thumb.webp', {
+        cache: 'force-cache'
+      })
     })
 
     it.for([
-      {
-        scenario: 'a non-OK response',
-        failure: () => Promise.resolve(new Response('nope', { status: 500 }))
-      },
-      {
-        scenario: 'a network error',
-        failure: () => Promise.reject(new TypeError('fetch failed'))
-      }
+      { scenario: 'a 500 response', failure: serverError },
+      { scenario: 'a 404 response', failure: notFound },
+      { scenario: 'a network error', failure: networkError }
     ])(
       'retries after $scenario instead of serving the cached error',
       async ({ failure }) => {
@@ -74,12 +87,15 @@ describe('mediaCacheService', () => {
         const failed = await getCachedMedia('thumb.webp')
         expect(failed.error).toBe(true)
 
-        vi.mocked(fetch).mockResolvedValueOnce(imageResponse())
+        vi.mocked(fetch).mockImplementationOnce(imageResponse)
         const retried = await getCachedMedia('thumb.webp')
 
         expect(retried.error).toBeUndefined()
         expect(retried.objectUrl).toBe('blob:mock-url')
         expect(fetch).toHaveBeenCalledTimes(2)
+        expect(fetch).toHaveBeenNthCalledWith(2, 'thumb.webp', {
+          cache: 'reload'
+        })
       }
     )
   })

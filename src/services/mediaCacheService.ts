@@ -95,6 +95,7 @@ class MediaCacheService {
   async getCachedMedia(src: string): Promise<CachedMedia> {
     let entry = this.cache.get(src)
 
+    const retryingAfterError = Boolean(entry?.error)
     if (entry?.error) {
       this.cache.delete(src)
       entry = undefined
@@ -118,7 +119,9 @@ class MediaCacheService {
 
     try {
       // Fetch the media
-      const response = await fetch(src, { cache: 'force-cache' })
+      const response = await fetch(src, {
+        cache: retryingAfterError ? 'reload' : 'force-cache'
+      })
       if (!response.ok) {
         console.error(`Failed to fetch: ${response.status}`)
         const errorEntry: CachedMedia = {
