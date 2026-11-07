@@ -2112,20 +2112,40 @@ describe('PostHogTelemetryProvider', () => {
       }))
     })
 
-    it.for([
-      { queued: false, failure: 'filtered' },
-      { queued: false, failure: 'throws' },
-      { queued: true, failure: 'filtered' },
-      { queued: true, failure: 'throws' }
-    ])(
-      'allows enrollment retry after $failure capture (queued: $queued)',
-      async ({ queued, failure }) => {
+    const captureFailures = [
+      { failure: 'filtered', capture: () => undefined },
+      {
+        failure: 'throws',
+        capture: () => {
+          throw new Error('capture failed')
+        }
+      }
+    ]
+
+    it.for(captureFailures)(
+      'allows enrollment retry after immediate $failure capture',
+      async ({ capture }) => {
         const provider = createProvider()
-        if (!queued) await vi.dynamicImportSettled()
-        hoisted.mockCapture.mockImplementationOnce(() => {
-          if (failure === 'throws') throw new Error('capture failed')
-          return undefined
-        })
+        await vi.dynamicImportSettled()
+        hoisted.mockCapture.mockImplementationOnce(capture)
+        provider.trackProactiveGreetingEnrolled(enrollment)
+        provider.trackProactiveGreetingEnrolled(enrollment)
+        provider.trackProactiveGreetingEnrolled(enrollment)
+        expect(hoisted.mockCapture).toHaveBeenCalledTimes(2)
+        expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+          TelemetryEvents.EXPERIMENT_EXPOSURE,
+          expect.objectContaining({
+            $groups: { user_workspace: enrollment.group_key }
+          })
+        )
+      }
+    )
+
+    it.for(captureFailures)(
+      'allows enrollment retry after queued $failure capture',
+      async ({ capture }) => {
+        const provider = createProvider()
+        hoisted.mockCapture.mockImplementationOnce(capture)
         provider.trackProactiveGreetingEnrolled(enrollment)
         await vi.dynamicImportSettled()
         provider.trackProactiveGreetingEnrolled(enrollment)
