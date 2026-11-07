@@ -4420,23 +4420,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       links: [],
       subgraphs: []
     }
-
-    // NOTE: logic for traversing nested subgraphs depends on this being a set.
     const subgraphs = new Set<Subgraph>()
-
-    // Create serialisable objects
     for (const item of items ?? this.selectedItems) {
       if (item instanceof LGraphNode) {
-        // Nodes
         if (item.clonable === false) continue
 
         const cloned = item.clone()?.serialize()
         if (!cloned) continue
 
         cloned.id = serializeNodeId(item.id)
+        cloned.inputs = item
+          .serialize()
+          .inputs?.map((input) => ({ ...input, link: null }))
         serialisable.nodes.push(cloned)
-
-        // Links
         for (const { link: linkId } of item.inputs) {
           if (linkId == null) continue
 
@@ -4452,22 +4448,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             )
           })
         }
-
-        // Find all unique referenced subgraphs
         if (item instanceof SubgraphNode) {
           subgraphs.add(item.subgraph)
         }
       } else if (item instanceof LGraphGroup) {
-        // Groups
         serialisable.groups.push(item.serialize())
       } else if (item instanceof Reroute) {
-        // Reroutes
         serialisable.reroutes.push(item.asSerialisable())
       }
     }
-
-    // Add unique subgraph entries
-    // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
       for (const node of subgraph.nodes) {
         if (node instanceof SubgraphNode) {
