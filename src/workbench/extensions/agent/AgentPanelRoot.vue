@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
+import type { AgentGreetingAssignment } from './types/proactiveGreeting'
+import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard, useEventListener } from '@vueuse/core'
@@ -201,6 +203,10 @@ import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
 )
+
+const { proactiveAssignment } = defineProps<{
+  proactiveAssignment?: AgentGreetingAssignment
+}>()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -1382,6 +1388,33 @@ useEventListener(
   }
 )
 
+const greetingCanvasHasNodes = ref(false)
+function refreshGreetingCanvas(): void {
+  greetingCanvasHasNodes.value =
+    (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0) > 0
+}
+watch(() => workflowStore.activeWorkflow, refreshGreetingCanvas, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    greetingCanvasHasNodes.value = (event.detail.nodes?.length ?? 0) > 0
+  }
+)
+const proactive = useProactiveGreeting({
+  assignment: () => (isCloud ? proactiveAssignment : undefined),
+  identity: () => ({
+    userId: authStore.userId ?? null,
+    workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
+  }),
+  active: () =>
+    agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
+  canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
+  getUsageStatus: (options) => rest.getUsageStatus(options)
+})
+
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
   const lastCanvasTool = conversationMessages.value
@@ -2212,6 +2245,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
+    const sentUsageScope = proactive.scope.value
     try {
       return await sendWithFundsRecheck((onAccepted) =>
         sendMessage(
@@ -2221,10 +2255,14 @@ const { submit: onSend } = useAgentDraftSubmission({
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
           meta.clientMessageId,
-          onAccepted
+          () => {
+            proactive.accepted(sentUsageScope)
+            onAccepted()
+          }
         )
       )
     } finally {
+      if (proactive.scope.value === sentUsageScope) void proactive.refresh()
       reportPendingSend()
     }
   }
@@ -2273,6 +2311,7 @@ function onNewChat(
   errorAttachRun++
   composerStore.clearDraft()
   newChat(source)
+  void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 
@@ -2600,6 +2639,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @change="onFilesPicked"
     />
     <AgentPanel
+      :greeting="proactive.greeting.value"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
