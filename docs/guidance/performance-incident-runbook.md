@@ -1,3 +1,14 @@
+---
+globs:
+  - 'browser_tests/tests/performance*'
+  - 'browser_tests/tests/performance/**'
+  - 'browser_tests/fixtures/helpers/PerformanceHelper.ts'
+  - 'browser_tests/fixtures/utils/perfReporter.ts'
+  - 'scripts/perf-*.ts'
+  - 'src/platform/telemetry/perf/**'
+  - '**/*.performance.test.ts'
+---
+
 # Frontend performance incident runbook
 
 Use this runbook for frame drops, input latency, long tasks, unexpected redraws,
