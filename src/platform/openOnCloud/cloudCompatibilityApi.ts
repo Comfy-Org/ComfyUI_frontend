@@ -24,6 +24,7 @@ type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
   pickerInputs: Set<string>
+  hasUnreadableModels: boolean
 }
 
 const PICKER_WIDGET_TYPES = new Set(['combo', 'asset'])
@@ -71,11 +72,25 @@ function pickerInputs(node: ExecutableLGraphNode): Set<string> {
   return new Set(widgets.map((widget) => widget.name))
 }
 
+function hasUnreadableModels(node: ExecutableLGraphNode): boolean {
+  if (node.comfyClass || !(node instanceof ExecutableNodeDTO)) return false
+  const values: unknown = node.node.last_serialization?.widgets_values
+  const saved = Array.isArray(values)
+    ? values
+    : values && typeof values === 'object'
+      ? Object.values(values)
+      : []
+  return saved.some(
+    (value) => typeof value === 'string' && isModelFileName(value)
+  )
+}
+
 function checkedNodes(graph: LGraph): CheckedNode[] {
   return executableNodes(graph).map((node) => ({
     class_type: nodeType(node),
     inputs: nodeInputs(node),
-    pickerInputs: pickerInputs(node)
+    pickerInputs: pickerInputs(node),
+    hasUnreadableModels: hasUnreadableModels(node)
   }))
 }
 
@@ -156,6 +171,7 @@ async function resolveUnmapped(
 async function collectModels(
   nodes: CheckedNode[]
 ): Promise<CompatibilityModel[] | null> {
+  if (nodes.some((node) => node.hasUnreadableModels)) return null
   const { mapped, unmapped } = scanModelInputs(nodes)
   const resolved = await resolveUnmapped(unmapped)
   if (!resolved) return null

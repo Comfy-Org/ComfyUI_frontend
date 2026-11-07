@@ -240,6 +240,18 @@ describe(checkCloudCompatibility, () => {
     expect(requestBody().node_types).toEqual(['ImpactWildcard', 'KSampler'])
   })
 
+  it('returns no verdict when a loader that is not installed locally picked a model', async () => {
+    const missing = new LGraphNode('ImpactCheckpointLoader')
+    missing.last_serialization = fromPartial({
+      type: 'ImpactCheckpointLoader',
+      widgets_values: ['sdxl.safetensors', 1]
+    })
+    workflowHas(missing)
+
+    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('asks about the model chosen on a subgraph host, not the interior default', async () => {
     registerCheckpointLoader()
     const subgraph = createTestSubgraph({
