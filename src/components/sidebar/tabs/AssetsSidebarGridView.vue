@@ -3,6 +3,7 @@
     <!-- Assets Grid -->
     <VirtualGrid
       class="flex-1"
+      data-asset-grid-scroller
       :items="assetItems"
       :grid-style
       :on-load-more
