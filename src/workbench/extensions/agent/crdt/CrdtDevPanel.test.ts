@@ -32,6 +32,7 @@ const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
   canvasMayBeStale: false,
+  canvasStaleCause: null,
   terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,
