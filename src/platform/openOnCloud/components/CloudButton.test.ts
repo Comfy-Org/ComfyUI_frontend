@@ -198,6 +198,11 @@ describe('Cloud button compatibility checks', () => {
   })
 
   it('opens nothing when the button unmounts while the dialog loads', async () => {
+    let opening: Promise<boolean> | undefined
+    vi.mocked(openRunOnCloudDialog).mockImplementationOnce((isStillWanted) => {
+      opening = openRunOnCloudDialog(isStillWanted)
+      return opening
+    })
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
     const { unmount } = render(CloudButton, {
@@ -211,9 +216,7 @@ describe('Cloud button compatibility checks', () => {
     await nextTick()
     unmount()
 
-    await expect(
-      vi.mocked(openRunOnCloudDialog).mock.results[0].value
-    ).resolves.toBe(false)
+    await expect(opening).resolves.toBe(false)
 
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false

@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -32,8 +34,27 @@ function node(
   return graphNode
 }
 
+let rootGraph: LGraph
+
 function workflowHas(...nodes: LGraphNode[]) {
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(fromPartial({ nodes }))
+  for (const graphNode of nodes) rootGraph.add(graphNode)
+}
+
+function registerCheckpointLoader() {
+  useNodeDefStore().updateNodeDefs([
+    {
+      name: 'CheckpointLoaderSimple',
+      display_name: 'Load Checkpoint',
+      category: 'loaders',
+      python_module: 'nodes',
+      description: '',
+      output: ['MODEL'],
+      output_node: false,
+      deprecated: false,
+      experimental: false,
+      input: { required: { ckpt_name: ['COMBO', { options: [] }] } }
+    }
+  ])
 }
 
 function requestBody() {
@@ -49,7 +70,8 @@ function cloudAnswers(response: Response | Error) {
 describe(checkCloudCompatibility, () => {
   beforeEach(() => {
     stubFirebaseAuthHarness()
-    workflowHas(node('KSampler'))
+    rootGraph = createTestRootGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
     vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
   })
 
@@ -73,20 +95,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('asks Cloud about the node types and loader models the workflow uses', async () => {
-    useNodeDefStore().updateNodeDefs([
-      {
-        name: 'CheckpointLoaderSimple',
-        display_name: 'Load Checkpoint',
-        category: 'loaders',
-        python_module: 'nodes',
-        description: '',
-        output: ['MODEL'],
-        output_node: false,
-        deprecated: false,
-        experimental: false,
-        input: { required: { ckpt_name: ['COMBO', { options: [] }] } }
-      }
-    ])
+    registerCheckpointLoader()
     workflowHas(
       node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' }),
       node('KSampler')
@@ -186,7 +195,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('asks about nodes inside subgraphs and skips bypassed, muted and virtual nodes', async () => {
-    const subgraph = createTestSubgraph()
+    const subgraph = createTestSubgraph({ rootGraph })
     subgraph.add(node('KSampler'))
     const reroute = node('Reroute')
     reroute.isVirtualNode = true
@@ -201,6 +210,41 @@ describe(checkCloudCompatibility, () => {
     await checkCloudCompatibility()
 
     expect(requestBody().node_types).toEqual(['KSampler'])
+  })
+
+  it('asks about node types that are not installed locally', async () => {
+    const missing = new LGraphNode('ImpactWildcard')
+    missing.last_serialization = fromPartial({ type: 'ImpactWildcard' })
+    workflowHas(missing, node('KSampler'))
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await checkCloudCompatibility()
+
+    expect(requestBody().node_types).toEqual(['ImpactWildcard', 'KSampler'])
+  })
+
+  it('asks about the model chosen on a subgraph host, not the interior default', async () => {
+    registerCheckpointLoader()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'ckpt_name', type: 'COMBO' }]
+    })
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'interior.safetensors'
+    })
+    loader.addInput('ckpt_name', 'COMBO').widget = { name: 'ckpt_name' }
+    subgraph.add(loader)
+    subgraph.inputNode.slots[0].connect(loader.inputs[0], loader)
+    const host = createTestSubgraphNode(subgraph)
+    workflowHas(host)
+    host.widgets[0].value = 'host.safetensors'
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await checkCloudCompatibility()
+
+    expect(requestBody().models).toEqual([
+      { folder: 'checkpoints', name: 'host.safetensors' }
+    ])
   })
 
   it.for([

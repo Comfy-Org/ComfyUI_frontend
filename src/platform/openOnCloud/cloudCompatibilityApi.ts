@@ -4,11 +4,14 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -25,42 +28,55 @@ type CheckedNode = {
 
 const PICKER_WIDGET_TYPES = new Set(['combo', 'asset'])
 
-function isMuted(node: LGraphNode): boolean {
-  return (
-    node.mode === LGraphEventMode.NEVER || node.mode === LGraphEventMode.BYPASS
+function isSkippedByExecution(mode: LGraphEventMode | undefined): boolean {
+  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
+}
+
+function executableNodes(graph: LGraph): ExecutableLGraphNode[] {
+  const byId = new Map<ExecutionId, ExecutableLGraphNode>()
+  for (const node of graph.nodes) {
+    const dto = new ExecutableNodeDTO(node, [], byId)
+    byId.set(dto.id, dto)
+    if (isSkippedByExecution(node.mode)) continue
+    for (const inner of dto.getInnerNodes()) byId.set(inner.id, inner)
+  }
+  return [...byId.values()].filter(
+    (node) => !node.isVirtualNode && !isSkippedByExecution(node.mode)
   )
 }
 
-function widgetInputs(node: LGraphNode): Record<string, unknown> {
+function nodeType(node: ExecutableLGraphNode): string {
+  const source = node instanceof ExecutableNodeDTO ? node.node : null
+  return source?.last_serialization?.type ?? node.comfyClass ?? node.type
+}
+
+function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
   const widgets = (node.widgets ?? []).filter(
     (widget) => widget.name && widget.options.serialize !== false
   )
-  return Object.fromEntries(
+  const inputs: Record<string, unknown> = Object.fromEntries(
     widgets.map((widget) => [widget.name, widget.value])
   )
+  for (const [slot, input] of node.inputs.entries()) {
+    const promoted = node.resolveInput(slot)?.widgetInfo
+    if (promoted) inputs[input.name] = promoted.value
+  }
+  return inputs
 }
 
-function pickerInputs(node: LGraphNode): Set<string> {
+function pickerInputs(node: ExecutableLGraphNode): Set<string> {
   const widgets = (node.widgets ?? []).filter((widget) =>
     PICKER_WIDGET_TYPES.has(widget.type)
   )
   return new Set(widgets.map((widget) => widget.name))
 }
 
-function executableNodes(graph: LGraph | Subgraph): CheckedNode[] {
-  return graph.nodes.flatMap((node) => {
-    if (isMuted(node)) return []
-    if (node.isSubgraphNode()) return executableNodes(node.subgraph)
-    const { comfyClass } = node
-    if (node.isVirtualNode || !comfyClass) return []
-    return [
-      {
-        class_type: comfyClass,
-        inputs: widgetInputs(node),
-        pickerInputs: pickerInputs(node)
-      }
-    ]
-  })
+function checkedNodes(graph: LGraph): CheckedNode[] {
+  return executableNodes(graph).map((node) => ({
+    class_type: nodeType(node),
+    inputs: nodeInputs(node),
+    pickerInputs: pickerInputs(node)
+  }))
 }
 
 function modelInputsByNodeType() {
@@ -145,7 +161,7 @@ async function collectModels(
 }
 
 async function postCompatibilityCheck(): Promise<Response | null> {
-  const nodes = executableNodes(app.rootGraph)
+  const nodes = checkedNodes(app.rootGraph)
   const models = await collectModels(nodes)
   if (!models) return null
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
