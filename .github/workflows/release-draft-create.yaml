@@ -80,8 +80,9 @@ jobs:
           name: dist-files
       - name: Create release
         id: create_release
+        continue-on-error: true
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        with:
+        with: &release_inputs
           # GITHUB_TOKEN is refused on core/* lines — 403 "Resource not
           # accessible by integration" with contents: write granted.
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -97,6 +98,24 @@ jobs:
           prerelease: >-
             ${{ needs.build.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
+      - name: Wait for release token rate limit reset
+        if: steps.create_release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 65
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+        run: |
+          quota=$(gh api rate_limit --jq '.resources.core | "\(.remaining) \(.reset)"')
+          read -r remaining reset <<<"$quota"
+          wait_seconds=$((reset - $(date +%s) + 5))
+          if ((remaining < 100 && wait_seconds > 0)); then
+            echo "$remaining API calls left; waiting ${wait_seconds}s for the reset."
+            sleep "$wait_seconds"
+          fi
+      - name: Retry create release
+        if: steps.create_release.outcome == 'failure'
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with: *release_inputs
 
   publish_types:
     needs: build
