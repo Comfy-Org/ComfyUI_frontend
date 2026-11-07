@@ -7,7 +7,14 @@
             class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              class="icon-[lucide--app-window] size-8 text-black"
+              :class="
+                cn(
+                  verified
+                    ? verifiedClientIcons[verified.platform]
+                    : 'icon-[lucide--app-window]',
+                  'size-8 text-black'
+                )
+              "
               aria-hidden="true"
               data-testid="client-icon"
             />
@@ -33,7 +40,19 @@
               })
             }}
           </h1>
-          <template v-if="!isFirstPartyClient(challenge)">
+          <p
+            v-if="verified"
+            class="m-0 text-xs wrap-anywhere text-muted-foreground"
+            data-testid="client-verified"
+          >
+            {{
+              t('oauth.consent.verifiedNotice', {
+                platform: verified.display_name,
+                host: destinationHost
+              })
+            }}
+          </p>
+          <template v-else-if="!isFirstPartyClient(challenge)">
             <Badge
               variant="compact"
               severity="warning"
@@ -254,7 +273,9 @@ import {
   fetchOAuthConsentChallenge,
   isFirstPartyClient,
   redirectHost,
-  submitOAuthConsentDecision
+  submitOAuthConsentDecision,
+  verifiedClient,
+  verifiedClientIcons
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
@@ -313,6 +334,12 @@ const resourceName = computed(
 
 const destinationHost = computed(() =>
   redirectHost(challenge.value?.redirect_uri)
+)
+
+const verified = computed(() =>
+  challenge.value && destinationHost.value
+    ? verifiedClient(challenge.value)
+    : undefined
 )
 
 const selectedWorkspaceIsValid = computed(() =>
