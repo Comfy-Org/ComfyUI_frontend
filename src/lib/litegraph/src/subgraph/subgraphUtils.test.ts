@@ -159,7 +159,7 @@ describe('subgraphUtils', () => {
       expect(result.has(subgraph2.id)).toBe(true)
     })
 
-    it('throws RangeError when graph.add() creates a circular subgraph reference', () => {
+    it('does not throw when graph.add() creates a circular subgraph reference', () => {
       const rootGraph = new LGraph()
       const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
       const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
@@ -173,9 +173,8 @@ describe('subgraphUtils', () => {
       subgraph1.add(node2)
 
       // Add subgraph1 to subgraph2 (circular reference)
-      // Note: add() itself throws RangeError due to recursive forEachNode
       const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
-      expect(() => subgraph2.add(node3)).toThrow(RangeError)
+      expect(() => subgraph2.add(node3)).not.toThrow()
     })
 
     it('should handle missing subgraphs in registry gracefully', () => {

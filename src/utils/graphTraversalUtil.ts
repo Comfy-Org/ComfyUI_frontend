@@ -179,12 +179,23 @@ export function mapAllNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
+  return mapAllNodesWithVisited(graph, mapFn, new Set())
+}
+
+function mapAllNodesWithVisited<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<LGraph | Subgraph>
+): T[] {
+  if (visited.has(graph)) return []
+  visited.add(graph)
+
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
     // Recursively map over subgraphs first
     if (isSubgraphNode(node)) {
-      results.push(...mapAllNodes(node.subgraph, mapFn))
+      results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
     // Apply map function to current node
@@ -194,6 +205,7 @@ export function mapAllNodes<T>(
     }
   })
 
+  visited.delete(graph)
   return results
 }
 
@@ -249,15 +261,28 @@ export function forEachNode(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void
 ): void {
+  forEachNodeWithVisited(graph, fn, new Set())
+}
+
+function forEachNodeWithVisited(
+  graph: LGraph | Subgraph,
+  fn: (node: LGraphNode) => void,
+  visited: Set<LGraph | Subgraph>
+): void {
+  if (visited.has(graph)) return
+  visited.add(graph)
+
   visitGraphNodes(graph, (node) => {
     // Recursively process subgraphs first
     if (isSubgraphNode(node)) {
-      forEachNode(node.subgraph, fn)
+      forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
     // Execute function on current node
     fn(node)
   })
+
+  visited.delete(graph)
 }
 
 /**
