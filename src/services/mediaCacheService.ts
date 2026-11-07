@@ -95,6 +95,11 @@ class MediaCacheService {
   async getCachedMedia(src: string): Promise<CachedMedia> {
     let entry = this.cache.get(src)
 
+    if (entry?.error) {
+      this.cache.delete(src)
+      entry = undefined
+    }
+
     if (entry) {
       // Update last accessed time
       entry.lastAccessed = Date.now()
