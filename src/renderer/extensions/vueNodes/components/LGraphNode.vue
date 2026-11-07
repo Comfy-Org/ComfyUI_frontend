@@ -17,7 +17,7 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isEmphasized && 'outline-foreground',
+        isEmphasized && 'outline-foreground outline-none',
         executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
