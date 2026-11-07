@@ -99,11 +99,17 @@ async function tourOnRunStep() {
   return { controller, started: await starting }
 }
 
-/** The engine ending the tour and recording how, the way `finish()` leaves it. */
+/**
+ * The engine ending the tour and recording how, in the order `finish()` writes
+ * them: `dispatch({ type: 'ended' })` returns the state machine to `IDLE` — so
+ * `activeTour` and `step` fall together — and only then is `lastEnding`
+ * assigned. Writing the ending first would leave anything watching the tour end
+ * free to read it a flush early and still look correct.
+ */
 function endTour(ending: TourEnding) {
-  useOnboardingTourStore().lastEnding = ending
   useOnboardingTourStore().activeTour = null
   Object.assign(useOnboardingTourStore(), { step: null })
+  useOnboardingTourStore().lastEnding = ending
   return nextTick()
 }
 
@@ -1006,8 +1012,7 @@ describe('useFirstRunTourController', () => {
       await finishRun(TOUR_WORKFLOW, 'completed')
       expect(mocks.runState.value).toBe('succeeded')
 
-      useOnboardingTourStore().activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(
         mocks.runState.value,
@@ -1088,8 +1093,7 @@ describe('useFirstRunTourController', () => {
         'a nudge fighting a live tour for the screen helps nobody'
       ).toBe(false)
 
-      useOnboardingTourStore().activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(controller.nudgeArmed.value).toBe(true)
     })
@@ -1099,8 +1103,7 @@ describe('useFirstRunTourController', () => {
       mountRunButton('queue-button', () => {}).click()
       await finishRun(TOUR_WORKFLOW, 'failed')
 
-      useOnboardingTourStore().activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(
         controller.nudgeArmed.value,
@@ -1110,8 +1113,7 @@ describe('useFirstRunTourController', () => {
 
     it('takes an armed nudge off the screen when a second tour starts', async () => {
       const { controller } = await tourOnRunStep()
-      useOnboardingTourStore().activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
       expect(controller.nudgeArmed.value).toBe(true)
 
       const starting = controller.beginTour('image_z_image_turbo')
@@ -1193,8 +1195,7 @@ describe('useFirstRunTourController', () => {
 
     it('stops offering the nudge once it is waved away', async () => {
       const { controller } = await tourOnRunStep()
-      useOnboardingTourStore().activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       controller.dismissNudge()
 
