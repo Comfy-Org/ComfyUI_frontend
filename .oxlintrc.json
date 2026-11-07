@@ -436,7 +436,7 @@
           {
             "object": "vi",
             "property": "doMock",
-            "message": "Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md"
+            "message": "Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/guidance/vitest.md#mocking"
           }
         ]
       }

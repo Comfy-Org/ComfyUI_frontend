@@ -100,14 +100,13 @@ reviews:
     - path: '**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
-        `docs/guidance/vitest.md`, and `docs/testing/vitest-patterns.md` as
-        required review context for every changed Vitest test file.
+        and `docs/guidance/vitest.md` as required review context for every
+        changed Vitest test file.
     - path: 'src/lib/litegraph/**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
-        `docs/guidance/vitest.md`, `docs/testing/vitest-patterns.md`, and
-        `docs/testing/litegraph-testing.md` as required review context for
-        every changed LiteGraph Vitest test file.
+        and `docs/guidance/vitest.md` as required review context for every
+        changed LiteGraph Vitest test file.
     - path: 'browser_tests/**/*.spec.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
