@@ -101,6 +101,8 @@
         "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
+        :copy="creditsCardCopy"
+        :locale
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
@@ -208,7 +210,6 @@ import BillingStatusBanner from '@/platform/billing/components/settings/BillingS
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
-import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   addCreditsAvailability,
@@ -220,6 +221,7 @@ import {
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
 import {
+  BillingCreditsCard,
   BillingPlanRow,
   suppressesCreditBanners
 } from '@comfyorg/account-ui/billing'
@@ -232,6 +234,7 @@ import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
+import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -254,6 +257,7 @@ const planRowCopy = usePlanRowCopy()
 const { locale } = useI18n()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
+const creditsCardCopy = useCreditsCardCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
