@@ -5925,7 +5925,7 @@
         "enterpriseBody": "それまではメンバー全員がフルアクセスを維持できます。延長するには営業チームにお問い合わせください。",
         "enterpriseTitle": "Enterpriseプランは{date}に終了します",
         "memberBody": "それまでワークフローを実行できます。",
-        "personalBody": "今後請求されることはありません。毎月のクレジットを維持するには、プランを再開してください。",
+        "personalBody": "今後請求されることはありません。クレジットを引き続き受け取るには、プランを再開してください。",
         "personalTitle": "{plan}プランは{date}に終了します",
         "reactivate": "プランを再開",
         "title": "Team プランは {date} に終了します"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "新しい Enterprise プランを開始するには、営業にお問い合わせください。",
         "enterpriseTitle": "Enterprise プランは {date} に終了しました",
-        "personalBody": "ワークフローを実行し、毎月のクレジットを再び取得するには、再登録してください。",
+        "personalBody": "ワークフローを実行し、クレジットを再び取得するには、再登録してください。",
         "personalTitle": "{plan}プランは{date}に終了しました",
         "personalTitleNoDate": "{plan}プランは終了しました",
         "planTitle": "プランは {date} に終了しました",

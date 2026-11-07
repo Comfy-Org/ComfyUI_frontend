@@ -5925,7 +5925,7 @@
         "enterpriseBody": "Os membros mantêm acesso completo até lá. Entre em contato com nossa equipe de vendas para estender.",
         "enterpriseTitle": "Seu plano Enterprise termina em {date}",
         "memberBody": "Você pode executar fluxos de trabalho até lá.",
-        "personalBody": "Você não receberá mais cobranças. Retome seu plano para manter seus créditos mensais.",
+        "personalBody": "Você não receberá mais cobranças. Retome seu plano para continuar recebendo créditos.",
         "personalTitle": "Seu plano {plan} termina em {date}",
         "reactivate": "Retomar plano",
         "title": "Seu plano Team termina em {date}"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "Contate vendas para iniciar um novo plano Enterprise.",
         "enterpriseTitle": "Seu plano Enterprise terminou em {date}",
-        "personalBody": "Assine novamente para executar workflows e voltar a receber créditos mensais.",
+        "personalBody": "Assine novamente para executar workflows e voltar a receber créditos.",
         "personalTitle": "Seu plano {plan} terminou em {date}",
         "personalTitleNoDate": "Seu plano {plan} terminou",
         "planTitle": "Seu plano terminou em {date}",

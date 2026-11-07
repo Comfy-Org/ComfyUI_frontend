@@ -5925,7 +5925,7 @@
         "enterpriseBody": "Mitglieder behalten bis dahin den vollen Zugriff. Wenden Sie sich an unser Vertriebsteam, um ihn zu verlängern.",
         "enterpriseTitle": "Ihr Enterprise-Plan endet am {date}",
         "memberBody": "Sie können bis dahin Workflows ausführen.",
-        "personalBody": "Ihnen werden keine weiteren Kosten berechnet. Setzen Sie Ihren Plan fort, um Ihre monatlichen Credits zu behalten.",
+        "personalBody": "Ihnen werden keine weiteren Kosten berechnet. Setzen Sie Ihren Plan fort, um weiterhin Credits zu erhalten.",
         "personalTitle": "Ihr {plan}-Plan endet am {date}",
         "reactivate": "Plan fortsetzen",
         "title": "Ihr Team-Plan endet am {date}"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "Kontaktieren Sie den Vertrieb, um einen neuen Enterprise-Plan zu starten.",
         "enterpriseTitle": "Ihr Enterprise-Plan endete am {date}",
-        "personalBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder monatliche Credits zu erhalten.",
+        "personalBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder Credits zu erhalten.",
         "personalTitle": "Ihr {plan}-Plan endete am {date}",
         "personalTitleNoDate": "Ihr {plan}-Plan ist beendet",
         "planTitle": "Ihr Plan endete am {date}",

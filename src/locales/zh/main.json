@@ -5925,7 +5925,7 @@
         "enterpriseBody": "成员在此之前将保留完整访问权限。请联系销售团队以延长套餐。",
         "enterpriseTitle": "你的企业套餐将于 {date} 结束",
         "memberBody": "在此之前，您可以运行工作流。",
-        "personalBody": "您不会再被收费。恢复您的套餐以保留每月积分。",
+        "personalBody": "您不会再被收费。恢复您的套餐以继续获得积分。",
         "personalTitle": "您的 {plan} 套餐将于 {date} 结束",
         "reactivate": "恢复套餐",
         "title": "您的团队套餐将于 {date} 结束"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "请联系销售以开通新的企业套餐。",
         "enterpriseTitle": "您的企业套餐已于 {date} 结束",
-        "personalBody": "重新订阅即可再次运行工作流并获得每月积分。",
+        "personalBody": "重新订阅即可再次运行工作流并获得积分。",
         "personalTitle": "您的 {plan} 套餐已于 {date} 结束",
         "personalTitleNoDate": "您的 {plan} 套餐已结束",
         "planTitle": "您的套餐已于 {date} 结束",

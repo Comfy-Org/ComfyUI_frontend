@@ -5925,7 +5925,7 @@
         "enterpriseBody": "그때까지 멤버는 전체 액세스 권한을 유지합니다. 연장하려면 영업팀에 문의하세요.",
         "enterpriseTitle": "Enterprise 요금제가 {date}에 종료됩니다",
         "memberBody": "그때까지 워크플로를 실행할 수 있습니다.",
-        "personalBody": "더 이상 요금이 청구되지 않습니다. 월간 크레딧을 유지하려면 요금제를 재개하세요.",
+        "personalBody": "더 이상 요금이 청구되지 않습니다. 크레딧을 계속 받으려면 요금제를 재개하세요.",
         "personalTitle": "{plan} 요금제가 {date}에 종료됩니다",
         "reactivate": "요금제 재개",
         "title": "Team 요금제가 {date}에 종료됩니다"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "새 Enterprise 요금제를 시작하려면 영업팀에 문의하세요.",
         "enterpriseTitle": "Enterprise 요금제가 {date}에 종료되었습니다",
-        "personalBody": "워크플로를 실행하고 월간 크레딧을 다시 받으려면 재구독하세요.",
+        "personalBody": "워크플로를 실행하고 크레딧을 다시 받으려면 재구독하세요.",
         "personalTitle": "{plan} 요금제가 {date}에 종료되었습니다",
         "personalTitleNoDate": "{plan} 요금제가 종료되었습니다",
         "planTitle": "요금제가 {date}에 종료되었습니다",
