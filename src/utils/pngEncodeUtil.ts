@@ -17,7 +17,7 @@ for (let n = 0; n < 256; n++) {
   CRC_TABLE[n] = c
 }
 
-function crc32(...parts: Uint8Array[]): number {
+export function crc32(...parts: Uint8Array[]): number {
   let crc = 0xffffffff
   for (const part of parts) {
     for (const byte of part) {

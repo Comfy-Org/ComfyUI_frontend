@@ -156,12 +156,14 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
-const dialogStore = useDialogStore()
+const { signal, closeSession } = defineProps<{
+  signal: AbortSignal
+  closeSession: () => void
+}>()
 const canvasTools = useCanvasTools()
 const canvasTransform = useCanvasTransform()
 const saver = useMaskEditorSaver()
@@ -219,14 +221,18 @@ const onClear = () => {
 }
 
 const handleSave = async () => {
+  const saveSignal = signal
+  const closeSavedSession = closeSession
+  if (saveSignal.aborted) return
   saveButtonText.value = t('g.saving')
   saveEnabled.value = false
 
   try {
     store.brushVisible = false
-    await saver.save()
-    dialogStore.closeDialog()
+    const result = await saver.save(saveSignal)
+    if (result === 'saved' && !saveSignal.aborted) closeSavedSession()
   } catch (error) {
+    if (saveSignal.aborted) return
     console.error('[TopBarHeader] Save failed:', error)
     store.brushVisible = true
     saveButtonText.value = t('g.save')
@@ -235,6 +241,6 @@ const handleSave = async () => {
 }
 
 const handleCancel = () => {
-  dialogStore.closeDialog({ key: 'global-mask-editor' })
+  closeSession()
 }
 </script>

@@ -1,9 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick } from 'vue'
+import type { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'
 import { createI18n } from 'vue-i18n'
 
 import TopBarHeader from '@/renderer/extensions/maskEditor/components/dialog/TopBarHeader.vue'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
@@ -22,7 +26,9 @@ const mockCanvasTransform = vi.hoisted(() => ({
 }))
 
 const mockSaver = vi.hoisted(() => ({
-  save: vi.fn().mockResolvedValue(undefined)
+  save: vi.fn<ReturnType<typeof useMaskEditorSaver>['save']>(
+    async () => 'saved'
+  )
 }))
 
 vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasTools'), () => ({
@@ -65,13 +71,65 @@ const i18n = createI18n({
   }
 })
 
-const renderHeader = () => render(TopBarHeader, { global: { plugins: [i18n] } })
+const renderHeader = (
+  props: Partial<{ signal: AbortSignal; closeSession: () => void }> = {}
+) =>
+  render(TopBarHeader, {
+    props: {
+      signal: props.signal ?? new AbortController().signal,
+      closeSession:
+        props.closeSession ??
+        (() => useDialogStore().closeDialog({ key: 'global-mask-editor' }))
+    },
+    global: { plugins: [i18n] }
+  })
 
 describe('TopBarHeader', () => {
   beforeEach(() => {
     mockStore = useMaskEditorStore()
     vi.spyOn(mockStore.canvasHistory, 'undo').mockImplementation(() => {})
     vi.spyOn(mockStore.canvasHistory, 'redo').mockImplementation(() => {})
+  })
+
+  it('starts a fresh header when a saving dialog is replaced before the render flush', async () => {
+    let finishSave = () => {}
+    mockSaver.save.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishSave = () => resolve('saved')
+        })
+    )
+    const dialogs = useDialogStore()
+    render(
+      defineComponent(
+        () => () =>
+          h(
+            'div',
+            dialogs.dialogStack.map((dialog) =>
+              h('div', { key: dialog.key }, [
+                dialog.headerComponent
+                  ? h(dialog.headerComponent, dialog.headerProps)
+                  : null
+              ])
+            )
+          )
+      ),
+      { global: { plugins: [i18n] } }
+    )
+    const node = new LGraphNode('Mask editor test')
+    node.imgs = [new Image()]
+    const editor = useMaskEditor()
+    editor.openMaskEditor(node)
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Save' }))
+    expect(screen.getByRole('button', { name: 'Saving' })).toBeDisabled()
+    dialogs.closeDialog({ key: 'global-mask-editor' })
+    editor.openMaskEditor(node)
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeEnabled()
+    finishSave()
+    await nextTick()
+    expect(dialogs.dialogStack).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
 
   describe('title', () => {
@@ -166,21 +224,22 @@ describe('TopBarHeader', () => {
   describe('save', () => {
     it('should hide brush, save, and close the dialog on success', async () => {
       const user = userEvent.setup()
-      renderHeader()
+      const signal = new AbortController().signal
+      renderHeader({ signal })
       mockStore.brushVisible = true
 
       await user.click(screen.getByRole('button', { name: /save/i }))
 
       expect(mockStore.brushVisible).toBe(false)
-      expect(mockSaver.save).toHaveBeenCalledTimes(1)
+      expect(mockSaver.save).toHaveBeenCalledExactlyOnceWith(signal)
       expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
     })
 
     it('should switch the button text to "Saving" and disable the button while saving', async () => {
       let resolve!: () => void
       mockSaver.save.mockReturnValueOnce(
-        new Promise<void>((r) => {
-          resolve = r
+        new Promise<'saved' | 'cancelled'>((r) => {
+          resolve = () => r('saved')
         })
       )
       const user = userEvent.setup()
@@ -194,6 +253,82 @@ describe('TopBarHeader', () => {
 
       resolve()
       await clickPromise
+    })
+
+    it.for([
+      {
+        outcome: 'success',
+        settle: (
+          resolve: (value: 'saved' | 'cancelled') => void,
+          _reject: (error: Error) => void
+        ) => resolve('saved')
+      },
+      {
+        outcome: 'failure',
+        settle: (
+          _resolve: (value: 'saved' | 'cancelled') => void,
+          reject: (error: Error) => void
+        ) => reject(new Error('old save failed'))
+      }
+    ])(
+      'does not close or change a replacement editor after a cancelled save finishes with $outcome',
+      async ({ settle }) => {
+        let resolve!: (value: 'saved' | 'cancelled') => void
+        let reject!: (error: Error) => void
+        mockSaver.save.mockReturnValueOnce(
+          new Promise((yes, no) => {
+            resolve = yes
+            reject = no
+          })
+        )
+        const controller = new AbortController()
+        const closeSession = vi.fn()
+        const oldHeader = renderHeader({
+          signal: controller.signal,
+          closeSession
+        })
+        const user = userEvent.setup()
+        await user.click(screen.getByRole('button', { name: 'Save' }))
+        await screen.findByRole('button', { name: 'Saving' })
+        controller.abort()
+        oldHeader.unmount()
+        renderHeader()
+        mockStore.brushVisible = false
+        settle(resolve, reject)
+        await nextTick()
+        expect(closeSession).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+        expect(mockStore.brushVisible).toBe(false)
+        expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+      }
+    )
+
+    it('keeps the original session identity when the mounted header receives replacement props during save', async () => {
+      let finish!: (value: 'saved' | 'cancelled') => void
+      mockSaver.save.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve
+        })
+      )
+      const previous = new AbortController()
+      const oldClose = vi.fn()
+      const header = renderHeader({
+        signal: previous.signal,
+        closeSession: oldClose
+      })
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      previous.abort()
+      const nextClose = vi.fn()
+      await header.rerender({
+        signal: new AbortController().signal,
+        closeSession: nextClose
+      })
+      finish('saved')
+      await nextTick()
+      expect(oldClose).not.toHaveBeenCalled()
+      expect(nextClose).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('should restore brush + button state and log on save failure', async () => {
