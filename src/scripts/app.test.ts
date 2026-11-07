@@ -5577,9 +5577,7 @@ describe('ComfyApp', () => {
           ReturnType<typeof keybindingServiceModule.useKeybindingService>
         >({ executeCanvasKeybinding })
       )
-      ;(
-        app as unknown as { addProcessKeyHandler(): void }
-      ).addProcessKeyHandler()
+      app['addProcessKeyHandler']()
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
@@ -5609,9 +5607,7 @@ describe('ComfyApp', () => {
         this.graph?.change()
       })
       LGraphCanvas.prototype.processKey = processKey
-      ;(
-        app as unknown as { addProcessKeyHandler(): void }
-      ).addProcessKeyHandler()
+      app['addProcessKeyHandler']()
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')

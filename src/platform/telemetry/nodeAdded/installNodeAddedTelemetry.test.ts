@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useTelemetry } from '@comfyorg/telemetry'
 
@@ -12,15 +10,12 @@ import { withNodeAddSource } from './nodeAddSource'
 vi.mock(import('@comfyorg/telemetry'))
 
 function fakeGraph(): LGraph {
-  return {
-    onNodeAdded: undefined,
-    events: new CustomEventTarget<LGraphEventMap>()
-  } as unknown as LGraph
+  return new LGraph()
 }
 
 function addNode(graph: LGraph, type: string) {
   graph.events.dispatch('node:added', {
-    node: { type } as unknown as LGraphNode
+    node: new LGraphNode(type, type)
   })
 }
 

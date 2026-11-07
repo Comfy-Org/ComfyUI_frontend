@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
@@ -172,11 +173,14 @@ describe('collectRegistrableSlotTypes', () => {
   it('does not throw on a malformed output type', () => {
     expect(() =>
       collectRegistrableSlotTypes(
-        nodeDef({ required: {} }, {
-          output: [null],
-          output_name: ['out'],
-          output_is_list: [false]
-        } as unknown as Partial<ComfyNodeDef>)
+        nodeDef(
+          { required: {} },
+          fromAny<Partial<ComfyNodeDef>, unknown>({
+            output: [null],
+            output_name: ['out'],
+            output_is_list: [false]
+          })
+        )
       )
     ).not.toThrow()
   })

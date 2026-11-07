@@ -648,7 +648,7 @@ describe('applyLayerState', () => {
         y: 0,
         width: 5,
         height: 5,
-        name: 7 as unknown as string
+        name: 7
       }
     ])
     expect(state).not.toBeNull()

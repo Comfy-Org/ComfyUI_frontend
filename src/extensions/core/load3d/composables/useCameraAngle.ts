@@ -1,4 +1,4 @@
-import { computed, ref, toRaw, toRef, watch } from 'vue'
+import { computed, ref, toRaw, unref, watch } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import {
@@ -27,7 +27,6 @@ import {
   writeStateToWidgets,
   writeViewMode
 } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
-import type { NodeWithWidgets } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -44,7 +43,6 @@ export function useCameraAngle(
   nodeRef: MaybeRef<LGraphNode | null>,
   options: UseCameraAngleOptions = {}
 ) {
-  const node = toRef(nodeRef)
   const nodeOutputStore = useNodeOutputStore()
   const wiring = useViewportNodeWiring()
   let viewport: CameraAngleViewport | null = null
@@ -55,7 +53,7 @@ export function useCameraAngle(
   const previewVisible = ref(false)
   const prompt = computed(() => describeCameraAngle(state.value))
 
-  const rawNode = () => toRaw(node.value)
+  const rawNode = () => toRaw(unref(nodeRef))
 
   const initialize = (container: HTMLElement): void => {
     const raw = rawNode()
@@ -63,7 +61,7 @@ export function useCameraAngle(
     if (viewport) cleanup()
 
     try {
-      const target = raw as NodeWithWidgets
+      const target = raw
       state.value = readStateFromWidgets(target)
       viewMode.value = readViewMode(target)
       viewport = new CameraAngleViewport(container, state.value, {
@@ -80,7 +78,7 @@ export function useCameraAngle(
         state.value = readStateFromWidgets(target)
         viewport.applyState(state.value)
       })
-      wiring.wireNode(raw as LGraphNode, {
+      wiring.wireNode(raw, {
         viewport: () => viewport?.viewport,
         onConnectionsChange: syncSubjectImage
       })
@@ -106,7 +104,7 @@ export function useCameraAngle(
   const setViewMode = (mode: CameraAngleViewMode): void => {
     viewMode.value = mode
     const raw = rawNode()
-    if (raw) writeViewMode(raw as NodeWithWidgets, mode)
+    if (raw) writeViewMode(raw, mode)
     viewport?.setViewMode(mode)
   }
 
@@ -119,7 +117,7 @@ export function useCameraAngle(
     const next = clampState({ ...state.value, [field]: value })
     state.value = next
     const raw = rawNode()
-    if (raw) writeStateToWidgets(raw as NodeWithWidgets, next)
+    if (raw) writeStateToWidgets(raw, next)
     viewport?.applyState(next)
   }
 
@@ -133,7 +131,7 @@ export function useCameraAngle(
   function syncSubjectImage(): void {
     const raw = rawNode()
     if (!raw || !viewport) return
-    const url = subjectImageUrl(raw as LGraphNode)
+    const url = subjectImageUrl(raw)
     if (url === lastImageUrl) return
     lastImageUrl = url
     void viewport.setImage(url)

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { AccountUser } from '@comfyorg/account-core/session'
 import type { Ref } from 'vue'
@@ -29,11 +30,11 @@ vi.mock<unknown>(import('@/session/billingWebSession'), async () => {
 })
 
 function makeIdentity(): FirebaseIdentity {
-  return {
+  return fromAny<FirebaseIdentity, unknown>({
     signInWithGoogle: vi.fn(async () => ({
       user: { uid: 'uid-1' }
     }))
-  } as unknown as FirebaseIdentity
+  })
 }
 
 function signedInUser(): AccountUser {

@@ -6,7 +6,7 @@ import type { Load3dHost, MaterialMode } from './interfaces'
 export interface ModelLoadContext {
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   registerOriginalMaterial(
-    mesh: THREE.Mesh,
+    object: THREE.Object3D,
     material: THREE.Material | THREE.Material[]
   ): void
   readonly standardMaterial: THREE.MeshStandardMaterial

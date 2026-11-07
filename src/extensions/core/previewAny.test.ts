@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -20,7 +21,7 @@ vi.mock(import('@/scripts/app'))
 type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>
 
 async function setupNode() {
-  const nodeType = { prototype: {} } as unknown as Parameters<BeforeRegister>[0]
+  const nodeType = fromPartial<Parameters<BeforeRegister>[0]>({ prototype: {} })
   const nodeData = { name: 'PreviewAny' } as Parameters<BeforeRegister>[1]
   await previewAnyExtension.beforeRegisterNodeDef!(
     nodeType,

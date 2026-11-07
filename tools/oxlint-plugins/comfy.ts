@@ -29,6 +29,7 @@ import {
   noPrimeVueImports,
   noStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests,
+  noUnknownDoubleAssertion,
   noUnsafeErrorAssertion,
   noVitestMockMethodNames
 } from './restrictedSyntax.ts'
@@ -79,6 +80,7 @@ export default {
     'no-restricted-paths': noRestrictedPaths,
     'no-throw-in-expect-poll': noThrowInExpectPoll,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
+    'no-unknown-double-assertion': noUnknownDoubleAssertion,
     'no-unread-hoisted-mock-state': noUnreadHoistedMockState,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
     'no-useless-path-segments': noUselessPathSegments,

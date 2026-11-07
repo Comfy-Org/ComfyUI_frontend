@@ -27,7 +27,7 @@ const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
 const LAYER_STATE_VERSION = 1
 
 export interface CompositorBBox extends Bounds {
-  name?: string | null
+  name?: unknown
   rotation?: number
   visible?: boolean
   opacity?: number

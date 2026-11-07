@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -50,7 +51,7 @@ function renderLayerEditorExport(session: LayerEditorSession) {
 
 function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const noop = () => {}
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     canvas,
     imageSmoothingEnabled: false,
     imageSmoothingQuality: 'low',
@@ -66,7 +67,7 @@ function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
     rect: noop,
     clip: noop,
     putImageData: noop
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 const origGetContext = HTMLCanvasElement.prototype.getContext
@@ -146,7 +147,7 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
       }
     ])
   )
-  return {
+  return fromPartial<LayerEditorSession>({
     glOk: ref(glOk),
     requestRender: vi.fn(),
     compositor: {
@@ -164,7 +165,7 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
       document: () => doc,
       render: vi.fn()
     }
-  } as unknown as LayerEditorSession
+  })
 }
 
 describe('useLayerEditorExport', () => {

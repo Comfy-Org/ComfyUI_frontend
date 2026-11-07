@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -592,11 +593,11 @@ describe('preview subscribe on the billing SDK rail', () => {
 })
 
 describe('payment portal on the billing SDK rail', () => {
-  let portalTab: { location: { href: string }; close: () => void }
+  let portalTab: Window
 
   beforeEach(() => {
-    portalTab = { location: { href: '' }, close: vi.fn() }
-    vi.mocked(window.open).mockReturnValue(portalTab as unknown as Window)
+    portalTab = fromPartial<Window>({ location: { href: '' }, close: vi.fn() })
+    vi.mocked(window.open).mockReturnValue(portalTab)
   })
 
   it('opens the workspace client URL while the rail is off', async () => {
@@ -657,10 +658,12 @@ describe('payment portal telemetry', () => {
   beforeEach(() => {
     const trackBillingEvent = useTelemetry()?.trackBillingEvent
     if (trackBillingEvent) vi.mocked(trackBillingEvent).mockClear()
-    vi.mocked(window.open).mockReturnValue({
-      location: { href: '' },
-      close: vi.fn()
-    } as unknown as Window)
+    vi.mocked(window.open).mockReturnValue(
+      fromPartial<Window>({
+        location: { href: '' },
+        close: vi.fn()
+      })
+    )
   })
 
   it.for<{

@@ -179,10 +179,6 @@ export class MeshModelAdapter implements ModelAdapter {
   }
 }
 
-interface ObjLoaderInternals {
-  workerTask?: { getWorker(): Worker | undefined }
-}
-
 // OBJLoader2Parallel swallows worker failures (it only logs them), which leaves
 // the load promise pending forever. The worker is created synchronously inside
 // parse(), so hook it to surface those failures as rejections.
@@ -190,9 +186,7 @@ function rejectOnWorkerFailure(
   objLoader: OBJLoader2Parallel,
   reject: (reason: unknown) => void
 ): void {
-  const worker = (
-    objLoader as unknown as ObjLoaderInternals
-  ).workerTask?.getWorker()
+  const worker: Worker | undefined = objLoader['workerTask']?.getWorker()
   if (!worker) return
 
   const fail = (reason: unknown) => {

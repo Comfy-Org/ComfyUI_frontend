@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -34,7 +35,7 @@ function createMockTrack() {
 }
 
 function createMockStream(tracks = [createMockTrack()]) {
-  return { getTracks: () => tracks } as unknown as MediaStream
+  return fromPartial<MediaStream>({ getTracks: () => tracks })
 }
 
 const mockGetUserMedia = vi.fn()

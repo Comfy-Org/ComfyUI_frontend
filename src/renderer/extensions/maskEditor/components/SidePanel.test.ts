@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -38,7 +39,9 @@ describe('SidePanel', () => {
   })
 
   it('should forward toolManager prop to ImageLayerSettingsPanel', () => {
-    const toolManager = { tag: 'my-tool-manager' } as unknown as ToolManager
+    const toolManager = fromAny<ToolManager, unknown>({
+      tag: 'my-tool-manager'
+    })
 
     render(SidePanel, { props: { toolManager } })
 

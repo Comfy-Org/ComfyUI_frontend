@@ -400,7 +400,7 @@ export class NodeReference {
       ([id, prop]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error('Node not found')
-        return (node as unknown as Record<string, T>)[prop]
+        return Reflect.get(node, prop) as T
       },
       [this.id, prop] as const
     )

@@ -42,7 +42,7 @@ import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,
-  getOptionLabel?: (value?: string | null) => string
+  getOptionLabel?: (value?: string | null) => string | undefined
 ): string {
   if (!getOptionLabel) return value
 
@@ -116,7 +116,7 @@ function getAnnotatedValueMediaUrl(
 export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
-    ((value?: string | null) => string) | undefined
+    ((value?: string | null) => string | undefined) | undefined
   >
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>

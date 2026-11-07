@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -8,7 +9,7 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     save: vi.fn(),
     restore: vi.fn(),
     stroke: vi.fn(),
@@ -19,14 +20,14 @@ function createMockCtx(): CanvasRenderingContext2D {
     arc: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
-    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+    getTransform: vi.fn(() => new DOMMatrix()),
     setTransform: vi.fn(),
     strokeStyle: '',
     fillStyle: '',
     lineWidth: 0,
     lineJoin: 'round',
     globalAlpha: 1
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 function makeLink(overrides: Partial<LinkRenderData> = {}): LinkRenderData {

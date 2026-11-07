@@ -102,7 +102,7 @@ function growConnect(name: string, fromNode: number, linkId: number): Op {
     link_id: linkId,
     link_type: 'IMAGE',
     grow: { name, type: 'IMAGE' }
-  } as unknown as Op
+  }
 }
 
 function setup(workflow: WorkflowJSON) {

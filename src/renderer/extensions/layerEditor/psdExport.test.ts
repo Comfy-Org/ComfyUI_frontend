@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+
 import type { Document } from '@comfyorg/layer-editor/document'
 import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
 import { defaultMode } from '@comfyorg/layer-editor/mode'
@@ -15,11 +17,10 @@ import {
 import type { PsdExportDeps } from './psdExport'
 
 function fakeCanvas(w = 8, h = 8): HTMLCanvasElement {
-  return {
-    width: w,
-    height: h,
-    tag: Math.random()
-  } as unknown as HTMLCanvasElement
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  return canvas
 }
 
 let idSeq = 0
@@ -266,17 +267,12 @@ describe('placed leaf rasterization', () => {
     ) {
       if (kind !== '2d') return null
       const noop = () => {}
-      return {
+      return createMockCanvasRenderingContext2D({
         canvas: this,
-        fillStyle: '',
-        fillRect: noop,
         translate: noop,
         rotate: noop,
-        drawImage: noop,
-        clearRect: noop,
-        save: noop,
-        restore: noop
-      } as unknown as CanvasRenderingContext2D
+        drawImage: noop
+      })
     } as typeof HTMLCanvasElement.prototype.getContext
   })
 

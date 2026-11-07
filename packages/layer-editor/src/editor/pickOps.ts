@@ -4,6 +4,7 @@ import type { Point2D as Vec2 } from '@comfyorg/shared-frontend-utils/geometry'
 import { toLocalFrame } from '#/tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25
+type ContentLookup = Pick<ContentStore, 'get'>
 
 export type AlphaSampler = (
   canvas: HTMLCanvasElement,
@@ -36,7 +37,7 @@ function defaultAlphaSampler(
 function rasterAlphaAt(
   node: RasterData,
   pt: Vec2,
-  content: ContentStore,
+  content: ContentLookup,
   sample: AlphaSampler
 ): number {
   const t = node.transform
@@ -60,7 +61,7 @@ function boxAlphaAt(node: SceneNode, pt: Vec2): number {
 export function layerOpacityAt(
   node: SceneNode,
   pt: Vec2,
-  content: ContentStore,
+  content: ContentLookup,
   sample: AlphaSampler = defaultAlphaSampler
 ): number {
   if (!node.visible || node.opacity <= 0) return 0
@@ -83,7 +84,7 @@ export function layerOpacityAt(
 export function pickLayerAt(
   layers: readonly SceneNode[],
   pt: Vec2,
-  content: ContentStore,
+  content: ContentLookup,
   sample: AlphaSampler = defaultAlphaSampler
 ): SceneNode | null {
   for (let i = layers.length - 1; i >= 0; i--) {

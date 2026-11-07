@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -13,14 +14,14 @@ import MultiSelectWidget from './MultiSelectWidget.vue'
 function makeWidget(
   inputSpec: Partial<ComboInputSpec>
 ): ComponentWidget<string[]> {
-  return {
+  return fromPartial<ComponentWidget<string[]>>({
     name: 'multi',
     inputSpec: {
       type: 'COMBO',
       name: 'multi',
       ...inputSpec
     } as ComboInputSpec
-  } as unknown as ComponentWidget<string[]>
+  })
 }
 
 function renderWidget(

@@ -33,6 +33,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
+import { toWorkflowJson } from './__fixtures__/workflowJson'
 import {
   PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
   PROMOTED_WRITE_RETRY_MS,
@@ -152,7 +153,7 @@ const CATALOG: WidgetCatalog = {
 }
 
 function mintDocFrom(graph: LGraph, catalog: WidgetCatalog = CATALOG) {
-  const serialized = graph.serialize() as unknown as WorkflowJSON
+  const serialized = toWorkflowJson(graph.serialize())
   return mint(serialized, catalog)
 }
 
@@ -1438,7 +1439,7 @@ describe('attachDocOpMinter', () => {
         subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
       }
     })
-    const serialized = graph.serialize() as unknown as WorkflowJSON
+    const serialized = toWorkflowJson(graph.serialize())
     if (hostWidgetValues) {
       const hostNode = serialized.nodes.find(
         (node) => String(node.id) === String(host.id)

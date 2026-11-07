@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
@@ -855,7 +856,7 @@ describe('LGraphNode', () => {
     let out: Rect
 
     beforeEach(() => {
-      out = [0, 0, 0, 0] as unknown as Rect
+      out = fromPartial<Rect>([0, 0, 0, 0])
       node.flags.collapsed = true
       node.size[0] = 150
       node.size[1] = 10

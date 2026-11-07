@@ -2345,11 +2345,10 @@ export class LGraphNode
       }
     }
     // litescene mode using the constructor
-    const constructorProperties = this.constructor as unknown as Record<
-      string,
-      unknown
-    >
-    const constructorProperty = constructorProperties[`@${property}`]
+    const constructorProperty: unknown = Reflect.get(
+      this.constructor,
+      `@${property}`
+    )
     if (isNodePropertyInfo(constructorProperty)) info = constructorProperty
 
     const widgetInfo = this.constructor.widgets_info?.[property]

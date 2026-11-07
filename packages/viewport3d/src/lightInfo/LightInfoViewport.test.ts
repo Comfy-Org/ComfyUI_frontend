@@ -111,7 +111,7 @@ function pointer(
 }
 
 function gizmoControls(handle: TargetHandle): TransformControls {
-  return (handle as unknown as { controls: TransformControls }).controls
+  return handle['controls']
 }
 
 function lastLights(

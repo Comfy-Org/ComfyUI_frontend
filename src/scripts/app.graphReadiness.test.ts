@@ -5,11 +5,7 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 const setGraph = (graph: LGraph | undefined) => {
-  ;(
-    app as unknown as {
-      rootGraphInternal: LGraph | undefined
-    }
-  ).rootGraphInternal = graph
+  app['rootGraphInternal'] = graph
 }
 
 describe('ComfyApp graph-readiness reactivity', () => {

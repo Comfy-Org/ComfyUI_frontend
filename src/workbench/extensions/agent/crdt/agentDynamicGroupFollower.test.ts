@@ -33,6 +33,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
+import { toWorkflowJson } from './__fixtures__/workflowJson'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
@@ -136,7 +137,7 @@ function dynamicGroupDefinitionWorkflow(
   }
   for (let id = 1; id <= instances; id++)
     graph.add(createTestSubgraphNode(subgraph, { id, pos: [id * 400, 0] }))
-  return graph.serialize() as unknown as WorkflowJSON
+  return toWorkflowJson(graph.serialize())
 }
 
 function startFollower(instances: number, promoteFirstRow = false) {

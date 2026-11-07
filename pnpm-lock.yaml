@@ -532,6 +532,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: 'catalog:'
         version: 3.31.0
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.44(typescript@6.0.3))
@@ -698,9 +701,6 @@ importers:
       '@testing-library/vue':
         specifier: 'catalog:'
         version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
-      '@total-typescript/shoehorn':
-        specifier: 'catalog:'
-        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4
@@ -969,6 +969,9 @@ importers:
       '@testing-library/vue':
         specifier: 'catalog:'
         version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -1015,6 +1018,9 @@ importers:
       '@comfyorg/test-utils':
         specifier: workspace:*
         version: link:../test-utils
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -1155,6 +1161,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1328,6 +1337,9 @@ importers:
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:../viewport3d
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1388,6 +1400,9 @@ importers:
         specifier: 'catalog:'
         version: 1.49.0
     devDependencies:
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
@@ -1536,6 +1551,9 @@ importers:
         specifier: 'catalog:'
         version: 7.2.0
     devDependencies:
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)

@@ -29,6 +29,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
+import { toWorkflowJson } from './__fixtures__/workflowJson'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
@@ -106,7 +107,7 @@ function workflow(options: WorkflowOptions = {}): WorkflowJSON {
     const sourceNode = serialized.nodes.find((n) => n.id === 2)
     if (sourceNode) sourceNode.id = 7
   }
-  return serialized as unknown as WorkflowJSON
+  return toWorkflowJson(serialized)
 }
 
 function startFollower(options: WorkflowOptions = {}) {

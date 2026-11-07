@@ -509,16 +509,12 @@ export class LiteGraphGlobal {
     base_class.title ||= classname
 
     // extend class
-    const targetPrototype = base_class.prototype as unknown as Record<
-      string,
-      unknown
-    >
-    const sourcePrototype = LGraphNode.prototype as unknown as Record<
-      string,
-      unknown
-    >
+    const targetPrototype = base_class.prototype
+    const sourcePrototype = LGraphNode.prototype
     for (const i in LGraphNode.prototype) {
-      targetPrototype[i] ||= sourcePrototype[i]
+      if (!Reflect.get(targetPrototype, i)) {
+        Object.assign(targetPrototype, { [i]: Reflect.get(sourcePrototype, i) })
+      }
     }
 
     const prev = Object.hasOwn(this.registered_node_types, type)
@@ -755,10 +751,7 @@ export class LiteGraphGlobal {
     const r: Record<string, unknown> = JSON.parse(JSON.stringify(obj))
     if (!target) return r as WhenNullish<T, null>
 
-    const targetRecord = target as unknown as Record<string, unknown>
-    for (const i in r) {
-      targetRecord[i] = r[i]
-    }
+    Object.assign(target, r)
     return target
   }
 

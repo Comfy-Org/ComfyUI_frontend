@@ -66,7 +66,7 @@ export class GizmoManager {
   private installPointerNdcOverride(): void {
     if (!this.transformControls) return
     const transformControls = this.transformControls
-    const controls = transformControls as unknown as {
+    const controls = transformControls as {
       _getPointer?: (event: PointerEvent) => Point2D & {
         button: number
       }

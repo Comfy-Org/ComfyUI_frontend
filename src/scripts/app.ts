@@ -1296,7 +1296,7 @@ export class ComfyApp implements IComfyApp {
               onClick: async () => {
                 await this.loadGraphData(
                   migrateLegacyRerouteNodes(
-                    this.rootGraph.serialize() as unknown as WorkflowJSON04
+                    this.rootGraph.serialize() as WorkflowJSON04
                   ),
                   false,
                   false,
@@ -1598,7 +1598,7 @@ export class ComfyApp implements IComfyApp {
       try {
         await useWorkflowService().afterLoadNewGraph(
           workflow,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+          this.rootGraph.serialize() as ComfyWorkflowJSON,
           effectiveShareId
         )
       } catch (error) {
@@ -2313,7 +2313,7 @@ export class ComfyApp implements IComfyApp {
           )
           await useWorkflowService().afterLoadNewGraph(
             fileName,
-            this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+            this.rootGraph.serialize() as ComfyWorkflowJSON
           )
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
           return
@@ -2674,7 +2674,7 @@ export class ComfyApp implements IComfyApp {
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as ComfyWorkflowJSON
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       lifecycleCompleted = true

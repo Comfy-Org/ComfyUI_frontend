@@ -2,21 +2,30 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
+import type {
+  TemplateInfo,
+  TemplateGroup,
+  WorkflowTemplates
+} from '@comfyorg/api-client/templateTypes'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
-import type { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
-import type { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
+import type {
+  TemplateSortMode,
+  useTemplateFiltering
+} from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 
-const fixtures = vi.hoisted(() => {
+const fixtures = await vi.hoisted(async () => {
+  const { zLegacyLoadableWorkflow } =
+    await import('@comfyorg/graph-model/workflowSchema')
   const activeModel = {
     name: 'active-model.safetensors',
     directory: 'checkpoints',
@@ -57,7 +66,8 @@ const fixtures = vi.hoisted(() => {
     controller: new AbortController(),
     data: {
       template: undefined,
-      json: {
+      json: zLegacyLoadableWorkflow.parse({
+        version: 0.4,
         nodes: [
           {
             id: 1,
@@ -84,7 +94,7 @@ const fixtures = vi.hoisted(() => {
           )
         ],
         links: []
-      }
+      })
     }
   }
   const customPrepared = {
@@ -119,7 +129,9 @@ const mocks = vi.hoisted(() => ({
     (template: { description: string }) => template.description
   ),
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
-  getTemplateTitle: vi.fn((template: { title: string }) => template.title),
+  getTemplateTitle: vi.fn(
+    (template: TemplateInfo) => template.title ?? template.name
+  ),
   getTemplateInputAssets: vi.fn(
     async (): Promise<(typeof fixtures.inputAsset)[] | null> => [
       fixtures.inputAsset
@@ -196,26 +208,24 @@ vi.mock(
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
-    useTemplateWorkflows: () =>
-      ({
-        selectedTemplate: ref<string | null>(null),
-        loadingTemplateId: computed(() => null),
-        isTemplatesLoaded: computed(() => true),
-        allTemplateGroups: computed<WorkflowTemplates[]>(() => []),
-        loadTemplates: mocks.loadTemplates,
-        selectFirstTemplateCategory: vi.fn(),
-        // Narrowing predicate the dialog never calls; satisfied, not modelled.
-        selectTemplateCategory: (
-          category: WorkflowTemplates | null
-        ): category is WorkflowTemplates => category !== null,
-        getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
-        getTemplateTitle: mocks.getTemplateTitle,
-        getTemplateDescription: mocks.getTemplateDescription,
-        prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
-        openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
-        discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate,
-        loadWorkflowTemplate: vi.fn(async () => 'loaded')
-      }) as unknown as ReturnType<typeof useTemplateWorkflows>
+    useTemplateWorkflows: (): ReturnType<typeof useTemplateWorkflows> => ({
+      selectedTemplate: ref<WorkflowTemplates | null>(null),
+      loadingTemplateId: computed(() => null),
+      isTemplatesLoaded: computed(() => true),
+      allTemplateGroups: computed<TemplateGroup[]>(() => []),
+      loadTemplates: mocks.loadTemplates,
+      selectFirstTemplateCategory: vi.fn(),
+      selectTemplateCategory: (
+        category: WorkflowTemplates | null
+      ): category is WorkflowTemplates => category !== null,
+      getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
+      getTemplateTitle: mocks.getTemplateTitle,
+      getTemplateDescription: mocks.getTemplateDescription,
+      prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
+      openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
+      discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate,
+      loadWorkflowTemplate: vi.fn(async () => 'loaded' as const)
+    })
   })
 )
 
@@ -251,46 +261,63 @@ vi.mock(
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateFiltering'),
   () => ({
-    useTemplateFiltering: ((templates: {
-      value: (typeof fixtures.template)[]
-    }) => {
+    useTemplateFiltering: <T extends TemplateInfo>(
+      templates: Ref<T[]> | T[]
+    ): ReturnType<typeof useTemplateFiltering<T>> => {
+      const items = computed(() =>
+        'value' in templates ? templates.value : templates
+      )
       const searchQuery = ref('')
       const selectedModels = ref<string[]>([])
       const selectedUseCases = ref<string[]>([])
       const selectedRunsOn = ref<string[]>([])
-      const sortSelection = ref('default')
+      const selectedSort = ref<TemplateSortMode>('default')
+      const sortSelection = computed({
+        get: () => selectedSort.value,
+        set: (value: TemplateSortMode) => {
+          selectedSort.value = value
+        }
+      })
 
       return {
         searchQuery,
         selectedModels,
         selectedUseCases,
         selectedRunsOn,
+        sortBy: ref<Exclude<TemplateSortMode, 'relevance'>>('default'),
         sortSelection,
         hasActiveQuery: computed(() => false),
         activeModels: computed(() => selectedModels.value),
         activeUseCases: computed(() => selectedUseCases.value),
-        filteredTemplates: templates,
+        inactiveModels: computed(() => []),
+        inactiveUseCases: computed(() => []),
+        filteredTemplates: items,
         availableModels: computed(() => []),
         availableUseCases: computed(() => []),
         availableRunsOn: computed(() => []),
-        filteredCount: computed(() => templates.value.length),
-        totalCount: computed(() => templates.value.length),
-        resetFilters: vi.fn()
+        filteredCount: computed(() => items.value.length),
+        totalCount: computed(() => items.value.length),
+        resetFilters: vi.fn(),
+        removeModelFilter: vi.fn(),
+        removeUseCaseFilter: vi.fn(),
+        removeRunsOnFilter: vi.fn()
       }
-    }) as unknown as typeof useTemplateFiltering
+    }
   })
 )
 
 vi.mock(
   import('@/platform/workflow/templates/composables/useLazyPagination'),
   () => ({
-    useLazyPagination: ((items: { value: unknown[] }) => ({
-      paginatedItems: items,
+    useLazyPagination: <T>(items: Ref<T[]> | T[]) => ({
+      paginatedItems: computed(() => ('value' in items ? items.value : items)),
       isLoading: ref(false),
       hasMoreItems: computed(() => false),
+      currentPage: ref(1),
+      totalPages: computed(() => 1),
       loadNextPage: vi.fn(async () => {}),
       reset: vi.fn()
-    })) as unknown as typeof useLazyPagination
+    })
   })
 )
 

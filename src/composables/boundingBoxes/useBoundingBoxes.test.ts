@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
@@ -62,7 +63,7 @@ vi.mock(
   })
 )
 
-const ctx = {
+const ctx = fromPartial<CanvasRenderingContext2D>({
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -82,13 +83,13 @@ const ctx = {
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0
-} as unknown as CanvasRenderingContext2D
+})
 
 function makeCanvas(): HTMLCanvasElement {
   const el = document.createElement('canvas')
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
   Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
-  el.getContext = (() => ctx) as unknown as HTMLCanvasElement['getContext']
+  el.getContext = vi.fn().mockReturnValue(ctx)
   el.getBoundingClientRect = () => ({
     left: 0,
     top: 0,
@@ -128,21 +129,15 @@ const setLastIncomingOf = (node: MockNode, value: BoundingBox[]) => {
   node.widgets.find((w) => w.name === 'last_incoming')!.value = value
 }
 
-const pe = (
-  clientX: number,
-  clientY: number,
-  over: Partial<PointerEvent> = {}
-) =>
-  ({
+const pe = (clientX: number, clientY: number, over: PointerEventInit = {}) =>
+  new PointerEvent('pointerdown', {
     button: 0,
     clientX,
     clientY,
     altKey: false,
     pointerId: 1,
-    preventDefault: () => {},
-    stopPropagation: () => {},
     ...over
-  }) as unknown as PointerEvent
+  })
 
 const flush = async () => {
   await Promise.resolve()
@@ -340,11 +335,7 @@ describe('useBoundingBoxes region editing', () => {
 
   it('deletes the active region on Delete', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(new KeyboardEvent('keydown', { key: 'Delete' }))
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
   })
@@ -437,11 +428,7 @@ describe('useBoundingBoxes node history', () => {
     const c = setup([box()])
     c.updateRegion(c.activeIndex.value, 'type', 'text')
     c.undo()
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(new KeyboardEvent('keydown', { key: 'Delete' }))
     await flush()
     expect(c.canRedo.value).toBe(false)
 

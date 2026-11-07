@@ -1,6 +1,5 @@
 // @vitest-environment node
-import { EventEmitter } from 'node:events'
-import type { ChildProcess } from 'node:child_process'
+import { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -10,11 +9,10 @@ import { assertFree, supervise, waitForStartup } from './dev-agent-supervisor'
 
 vi.mock(import('node:fs/promises'), () => ({ rm: vi.fn() }))
 
-class FakeChild extends EventEmitter {
-  exitCode: number | null = null
-  signalCode: NodeJS.Signals | null = null
+class FakeChild extends ChildProcess {
+  override exitCode: number | null = null
 
-  constructor(readonly pid = 100) {
+  constructor(override readonly pid = 100) {
     super()
   }
 
@@ -47,7 +45,7 @@ describe('supervise state', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(child as unknown as ChildProcess)
+    supervisor.watch(child)
 
     child.exit(0)
 
@@ -62,8 +60,8 @@ describe('supervise state', () => {
     const first = new FakeChild(100)
     const second = new FakeChild(101)
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(first as unknown as ChildProcess)
-    supervisor.watch(second as unknown as ChildProcess)
+    supervisor.watch(first)
+    supervisor.watch(second)
 
     second.exit(17)
     first.exit(0)
@@ -82,10 +80,7 @@ describe('waitForStartup', () => {
     const exitRequested = new Promise<number>((resolve) => {
       requestExit = resolve
     })
-    const child = {
-      exitCode: null,
-      signalCode: null
-    } as unknown as ChildProcess
+    const child = new FakeChild()
     const startup = waitForStartup(
       child,
       'http://127.0.0.1:8096/health',
@@ -104,10 +99,7 @@ describe('waitForStartup', () => {
 
   it('preserves a fatal exit when HTTP becomes ready at the same boundary', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }))
-    const child = {
-      exitCode: null,
-      signalCode: null
-    } as unknown as ChildProcess
+    const child = new FakeChild()
 
     await expect(
       waitForStartup(child, 'http://127.0.0.1:6207', 'Vite', {
@@ -133,7 +125,7 @@ describe('supervise teardown', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(child as unknown as ChildProcess)
+    supervisor.watch(child)
 
     process.emit('SIGINT', 'SIGINT')
     const stopped = supervisor.stop(130)
@@ -179,7 +171,7 @@ describe('supervise teardown', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(child as unknown as ChildProcess)
+    supervisor.watch(child)
     child.exit(0)
 
     const stopped = supervisor.stop(1)
@@ -198,7 +190,7 @@ describe('supervise teardown', () => {
     vi.spyOn(process, 'kill').mockReturnValue(true)
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(child as unknown as ChildProcess)
+    supervisor.watch(child)
     child.exit(0)
 
     const stopped = supervisor.stop(1).catch((error: unknown) => error)

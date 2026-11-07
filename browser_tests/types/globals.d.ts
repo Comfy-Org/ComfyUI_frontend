@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { RawPromptEvent } from '@e2e/fixtures/customNode/promptEventScope'
 import type { App } from 'vue'
 
 /**
@@ -57,7 +58,14 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    value?: unknown
+    __portalOpens?: string[]
     __commandExecutionCounts?: Record<string, number>
+    __cnEvents?: RawPromptEvent[]
+    __cnPairCursor?: string
+    __cnSelfCheckTimer?: ReturnType<typeof setInterval>
+    __cnTapInstalled?: boolean
+    __graphReadyHeartbeat?: boolean
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
     __captureHostTelemetry?: (captured: {

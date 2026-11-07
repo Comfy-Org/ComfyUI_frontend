@@ -1,6 +1,5 @@
 import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
 
-import type { Compositor } from '@comfyorg/layer-editor/compositor'
 import type { ContentEntry, ContentStore } from '@comfyorg/layer-editor/content'
 import type { Document } from '@comfyorg/layer-editor/document'
 import type {
@@ -186,7 +185,6 @@ export function rasterizeLeafPlaced(
   const bounds = leafPlacedBounds(node.transform, doc)
   const captured: HTMLCanvasElement[] = []
   const ctx: RenderNodeCtx = {
-    compositor: null as unknown as Compositor,
     content: content as ContentStore,
     renderChild: () => null,
     placed: (_key, _stamp, bitmap, tf, linear) => {

@@ -5,6 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
+import { fromAny } from '@total-typescript/shoehorn'
 import { isEqual, isPlainObject, omit } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
@@ -1350,7 +1351,9 @@ export class LiveGraphApplier {
       )
     }
     if (docNode.widgetRecord)
-      info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
+      info.widgets_values = fromAny<WidgetValue[], Record<string, unknown>>(
+        docNode.widgetRecord
+      )
     detachSerialisedLinks(info)
     node.pos = [info.pos[0], info.pos[1]]
     graph.add(node)
@@ -2229,7 +2232,7 @@ function restoreWidgetRecord(
   node: LGraphNode,
   record: Record<string, unknown>
 ): void {
-  const widgets_values = record as unknown as WidgetValue[]
+  const widgets_values = fromAny<WidgetValue[], Record<string, unknown>>(record)
   if (node.has_errors) {
     const snapshot = node.last_serialization
     if (snapshot) node.last_serialization = { ...snapshot, widgets_values }

@@ -86,6 +86,7 @@ vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
  * on top of the overlays `handleStartupOutcome` establishes.
  */
 const mocks = vi.hoisted(() => ({
+  rootGraph: undefined as LGraph | undefined,
   handleStartupOutcome: vi.fn(),
   handleUrlWorkflow: vi.fn(),
   initializeWorkflow: vi.fn(),
@@ -128,25 +129,21 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
-  let rootGraphInternal: LGraph | undefined
   return {
     app: {
       vueAppReady: false,
       canvas,
       get graph(): LGraph {
-        return rootGraphInternal!
+        return mocks.rootGraph!
       },
       get rootGraph(): LGraph {
-        return rootGraphInternal!
+        return mocks.rootGraph!
       },
       get rootGraphOrUndefined(): LGraph | undefined {
-        return rootGraphInternal
+        return mocks.rootGraph
       },
       get isGraphReady(): boolean {
-        return !!rootGraphInternal
-      },
-      set rootGraph(graph: LGraph | undefined) {
-        rootGraphInternal = graph
+        return !!mocks.rootGraph
       },
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn()
@@ -211,13 +208,8 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
-/**
- * Installs (or clears) the mock app's root graph, standing in for the
- * assignment `ComfyApp.setup()` makes. The real class exposes no setter, so the
- * mock's test-only one is reached through a cast.
- */
 function setRootGraph(graph: LGraph | undefined) {
-  ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
+  mocks.rootGraph = graph
 }
 
 async function mountGraphCanvas(
@@ -615,14 +607,18 @@ describe('GraphCanvas widget control mode watcher', () => {
   }
 
   function addControlWidgetNode() {
-    const controlWidget = {
+    const controlWidget: IBaseWidget = {
       name: 'control_after_generate',
-      label: undefined as string | undefined,
+      label: undefined,
+      type: 'combo',
+      value: 'randomize',
+      options: {},
+      y: 0,
       [IS_CONTROL_WIDGET]: true
     }
     const node = new LGraphNode('Test node')
     node.id = toNodeId(1)
-    node.widgets = [controlWidget as unknown as IBaseWidget]
+    node.widgets = [controlWidget]
 
     const graph = new LGraph()
     graph._nodes.push(node)

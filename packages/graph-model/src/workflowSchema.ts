@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type {
@@ -291,7 +292,9 @@ function normalizeClipboardNodeWidgets<
   if (values && !Array.isArray(values) && typeof values.length !== 'number') {
     return {
       ...node,
-      widgets_values: values as unknown as TWidgetValue[],
+      widgets_values: fromAny<TWidgetValue[], Record<string, TWidgetValue>>(
+        values
+      ),
       widgets_values_named: { ...values }
     }
   }

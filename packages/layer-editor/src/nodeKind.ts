@@ -3,12 +3,11 @@ import type {
   CompactRect as Rect,
   Point2D as Vec2
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { Compositor, NodeTexture } from './compositor'
+import type { NodeTexture } from './compositor'
 import type { ContentStore } from './content'
 import type { Command } from './history'
 
 export interface RenderNodeCtx {
-  compositor: Compositor
   content: ContentStore
 
   renderChild(node: NodeBase, region: Rect): NodeTexture | null

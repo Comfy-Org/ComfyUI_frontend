@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -5,11 +6,11 @@ import { api } from '@/scripts/api'
 // Tests for api.cancelJob and api.cancelJobs; fetchApi is stubbed.
 const okResponse = () => ({ ok: true, status: 200 }) as Response
 const errorResponse = (status: number, body = '') =>
-  ({
+  fromPartial<Response>({
     ok: false,
     status,
     text: () => Promise.resolve(body)
-  }) as unknown as Response
+  })
 
 describe('api jobs-namespace cancel', () => {
   let fetchApiSpy: ReturnType<typeof vi.spyOn>

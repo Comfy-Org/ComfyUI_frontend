@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -28,8 +29,9 @@ import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 function getUploadMock() {
   const service = useModelUpload()
   return {
-    isUploadButtonEnabled:
-      service.isUploadButtonEnabled as unknown as Ref<boolean>,
+    isUploadButtonEnabled: fromPartial<Ref<boolean>>(
+      service.isUploadButtonEnabled
+    ),
     showUploadDialog: vi.mocked(service.showUploadDialog)
   }
 }
