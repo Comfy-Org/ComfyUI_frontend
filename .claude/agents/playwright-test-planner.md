@@ -1,7 +1,7 @@
 ---
 name: playwright-test-planner
 description: Use this agent to plan browser tests for supported user journeys and observable behavioral contracts
-tools: Glob, Grep, Read, mcp__playwright-test__browser_click, mcp__playwright-test__browser_close, mcp__playwright-test__browser_console_messages, mcp__playwright-test__browser_drag, mcp__playwright-test__browser_evaluate, mcp__playwright-test__browser_file_upload, mcp__playwright-test__browser_handle_dialog, mcp__playwright-test__browser_hover, mcp__playwright-test__browser_navigate, mcp__playwright-test__browser_navigate_back, mcp__playwright-test__browser_network_requests, mcp__playwright-test__browser_press_key, mcp__playwright-test__browser_run_code, mcp__playwright-test__browser_select_option, mcp__playwright-test__browser_snapshot, mcp__playwright-test__browser_take_screenshot, mcp__playwright-test__browser_type, mcp__playwright-test__browser_wait_for, mcp__playwright-test__planner_setup_page, mcp__playwright-test__planner_save_plan
+tools: Glob, Grep, Read, mcp__playwright-test__browser_click, mcp__playwright-test__browser_close, mcp__playwright-test__browser_console_messages, mcp__playwright-test__browser_drag, mcp__playwright-test__browser_evaluate, mcp__playwright-test__browser_file_upload, mcp__playwright-test__browser_handle_dialog, mcp__playwright-test__browser_hover, mcp__playwright-test__browser_navigate, mcp__playwright-test__browser_navigate_back, mcp__playwright-test__browser_network_request, mcp__playwright-test__browser_network_requests, mcp__playwright-test__browser_press_key, mcp__playwright-test__browser_run_code_unsafe, mcp__playwright-test__browser_select_option, mcp__playwright-test__browser_snapshot, mcp__playwright-test__browser_take_screenshot, mcp__playwright-test__browser_type, mcp__playwright-test__browser_wait_for, mcp__playwright-test__planner_setup_page, mcp__playwright-test__planner_save_plan
 model: sonnet
 color: green
 ---
@@ -57,36 +57,21 @@ professional formatting suitable for sharing with development and QA teams.
 
 ## ComfyUI Project Context
 
-### Application Overview
+ComfyUI is a canvas-based node graph editor: a LiteGraph canvas, Vue sidebars
+and dialogs, a topbar with run controls, a node search box opened by
+double-clicking the canvas, and a WebSocket connection to a Python backend.
+Load a workflow before exploring; the app does little on an empty canvas.
 
-ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a complex SPA with:
-
-- A **LiteGraph canvas** where users create workflows by connecting nodes
-- A **Vue 3 sidebar** with node library, workflows panel, and settings
-- A **topbar** with queue/run buttons and workspace controls
-- A **search box** for finding and adding nodes (opens on double-click)
-- WebSocket-based real-time communication with a Python backend
-
-### Exploration Tips
-
-- Start by loading a workflow: the app is most useful with nodes on the canvas
-- Key UI areas to explore: canvas interactions, sidebar panels, topbar buttons, search box, context menus, settings dialog
-- Double-click the canvas to open the node search box
-- Right-click nodes/canvas for context menus
-- The bottom panel shows job queue and execution logs
-
-### Test Environment
-
-- The seed test uses `comfyPageFixture` which provides a `comfyPage` object with extensive helpers
-- Workflows (JSON files) are loaded via `comfyPage.workflow.loadWorkflow('name')`
-- Available workflow assets are in `browser_tests/assets/`
-- The backend MUST be running with `--multi-user` flag
-- A Vite dev server runs on `:5173`
-
-### When Creating Test Plans
-
-- Reference specific workflow assets when a scenario needs a starting state
-- Note that canvas interactions use pixel coordinates — these may vary across environments
-- Distinguish between "canvas tests" (LiteGraph) and "UI tests" (Vue components)
-- Include tags in your plans: `@canvas`, `@widget`, `@sidebar`, `@smoke`, `@screenshot`
-- Reference `browser_tests/fixtures/ComfyPage.ts` for available test helpers
+- Read `docs/guidance/testing-principles.md` and `docs/guidance/playwright.md`
+  before writing or changing a spec. The second holds every Playwright
+  convention for this repository: fixtures, selectors, Vue Nodes, canvas timing,
+  tags, settings isolation, typed mocks, screenshots, and flake patterns.
+- Tests use `comfyPageFixture` and `comfyExpect` from `@e2e/fixtures/ComfyPage`
+  and receive `comfyPage`, not `page`.
+- Read the fixture code in `browser_tests/fixtures/` for available helpers;
+  workflow assets are in `browser_tests/assets/`.
+- `pnpm comfy-test tags` lists the area tags; `docs/guidance/playwright.md` lists
+  the project-routing tags.
+- For raw codegen output, apply `.claude/skills/codegen-transform/SKILL.md`.
+- Backend and dev server setup is in `browser_tests/README.md`.
+- Name the workflow asset each scenario starts from, and the tags it needs.

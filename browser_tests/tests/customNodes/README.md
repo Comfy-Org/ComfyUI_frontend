@@ -21,7 +21,7 @@ published versions; ComfyUI core is pinned in `ci-tests-custom-nodes.yaml`.
 Refreshing the Cloud population is deliberate because the generated node
 counts and sentinels must come from the same deployment as the source YAML:
 
-1. Replace `data/cloud/supported_nodes.yaml` from the reviewed Cloud commit and
+1. Replace `browser_tests/fixtures/data/cloud/supported_nodes.yaml` from the reviewed Cloud commit and
    update its `# Source` and `# Imported` headers.
 2. Capture `/object_info` from that Cloud deployment.
 3. Run `pnpm gen:cloud-manifest <object-info-snapshot.json>`.
