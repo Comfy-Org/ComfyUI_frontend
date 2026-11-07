@@ -4,9 +4,9 @@ Date: 2026-03-23
 
 ## Status
 
-Proposed
+Superseded by [ADR-ECS-0051](ECS-0051-entity-data-lives-in-dedicated-stores-as-plain-data.md)
 
-Implementation status: Partial
+## Amendments
 
 ### Historical amendment (2026-06-19, PR 12617)
 
@@ -15,8 +15,8 @@ implementation. At that date, the implemented subset was held in dedicated
 Pinia stores — `widgetValueStore`, `domWidgetStore`, `layoutStore`,
 `nodeOutputStore`, `subgraphNavigationStore`, and `previewExposureStore`.
 Widget values are keyed by `WidgetId` (`graphId:nodeId:name`, see
-`src/types/widgetId.ts`); the `world/*` layer (`widgetValueIO`, `entityIds`,
-`brand`, `WidgetEntityId`) was deleted. The ECS principles below still hold —
+`packages/graph-model/src/widgetId.ts`); the `world/*` layer (`widgetValueIO`,
+`entityIds`, `brand`, `WidgetEntityId`) was deleted. The ECS principles below still hold —
 plain-data components, separation of data from behavior, and no god-object
 growth — realized incrementally across those stores. This amendment did not
 establish command-driven mutation outside layout. Later amendments add
@@ -122,7 +122,7 @@ type GraphId = string & { readonly __brand: 'GraphId' }
 ```
 
 > **Amended (PR 12617):** Widgets are keyed by a branded composite **string**,
-> `WidgetId = graphId:nodeId:name` (`src/types/widgetId.ts`). See
+> `WidgetId = graphId:nodeId:name` (`packages/graph-model/src/widgetId.ts`). See
 > [Widget identity keys on `name`](#widget-identity-keys-on-name) for why the
 > tail segment is the widget's name rather than a minted id. The numeric
 > per-kind brands above for Node/Link/Reroute/Group remain aspirational and

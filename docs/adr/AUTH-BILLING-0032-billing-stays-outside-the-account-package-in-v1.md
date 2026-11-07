@@ -4,7 +4,13 @@ Date: 2026-09-15
 
 ## Status
 
-Proposed
+Deprecated
+
+## Amendments
+
+Deprecated 2026-11-02: the Workshop site (`apps/website`) this ADR governs left the
+repository in #21861. Billing and workspace ownership in the cloud app is decided
+by [ADR-BILLING-0049](BILLING-0049-billing-and-workspace-ownership.md).
 
 ## Context
 

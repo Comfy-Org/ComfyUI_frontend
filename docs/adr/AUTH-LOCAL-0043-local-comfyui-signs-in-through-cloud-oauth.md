@@ -4,7 +4,7 @@ Date: 2026-10-10
 
 ## Status
 
-Accepted (2026-10-13). D1, the option 3 partner-node token design, was approved by Christian Byrne on #proj-sso; the superseded credential-registry approach (ComfyUI #16242) is closed. Outcomes and the current dependency graph are in the [TDD](../tdd/2026-10-local-comfyui-sso-sign-in.md#decisions).
+Accepted (2026-10-13)
 
 ## Context
 
@@ -84,6 +84,8 @@ Christian listed three options for execution auth (#bug-dump, Aug 25):
 - Option 3 needs coordinated Cloud, comfy-api and core releases.
 
 ## Notes
+
+D1, the option 3 partner-node token design, was approved by Christian Byrne on #proj-sso on 2026-10-13; the superseded credential-registry approach (ComfyUI #16242) is closed. Outcomes and the current dependency graph are in the [TDD](../tdd/2026-10-local-comfyui-sso-sign-in.md#decisions).
 
 The action items, dependency graph and open questions are in
 [docs/tdd/2026-10-local-comfyui-sso-sign-in.md](../tdd/2026-10-local-comfyui-sso-sign-in.md).

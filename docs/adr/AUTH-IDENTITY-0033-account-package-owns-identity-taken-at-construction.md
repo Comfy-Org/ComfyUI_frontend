@@ -6,12 +6,12 @@ Date: 2026-09-16
 
 Accepted
 
+## Context
+
 Supersedes the original transitional text of
 [AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md)
 (the Pinia identity adapter and the `attachIdentity` seam); rules 1–5 of
 0028 as amended on 2026-09-16 stand.
-
-## Context
 
 ADR-AUTH-IDENTITY-0028 first shipped a transitional shape: the cloud app
 owned identity (vuefire plus the Pinia `authStore`) and pushed it into the

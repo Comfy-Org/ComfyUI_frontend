@@ -4,13 +4,15 @@ Date: 2026-09-19
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
 
 Amended 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):
 the trigger, offset, and pure decision function are unchanged; the seam moved
 from `graphMutations`' prepare/commit batch and its `SemanticPlacementPort` to
-`LiveGraphApplier.#placeBatch`, which runs after each frame's nodes are created
+`LiveGraphApplier.placeBatch`, which runs after each frame's nodes are created
 on the live graph.
 
 Amended 2026-10-21 by
@@ -78,7 +80,7 @@ condition alone decides.
 All decision logic is a pure function in workbench
 (`src/workbench/extensions/agent/crdt/batchPlacement.ts`): given the existing
 nodes' rects, the viewport rect (nullable), and the incoming batch's rects, it
-returns a single `{ dx, dy }` or `null`. `LiveGraphApplier.#placeBatch` calls
+returns a single `{ dx, dy }` or `null`. `LiveGraphApplier.placeBatch` calls
 it after a frame's nodes and links are on the graph, with "existing" being
 every live node the frame did not create and "incoming" the nodes it did. The
 offset is applied by assigning `node.pos` inside the same remote-provenance
@@ -88,7 +90,7 @@ remote actor and nothing mints it back.
 Eligibility is "created by this pass". A node the frame only updated, or
 recreated because its document `type` changed, is not moved. Applying the
 changes collected while a tab was inactive (`applyCollected`) uses the same
-`#placeBatch` for the nodes it creates, with the lost rule only: the collected
+`placeBatch` for the nodes it creates, with the lost rule only: the collected
 changes do not record which writer made them, so the collision rule (see
 "Trigger"), which needs a live agent-turn writer, does not run there. A client
 that returns to a tab and finds far, offscreen nodes inserted while it was away

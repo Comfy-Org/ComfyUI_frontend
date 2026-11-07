@@ -6,6 +6,12 @@ Date: 2025-08-27
 
 Rejected
 
+## Amendments
+
+PrimeVue was later removed from the frontend entirely in #16407. Its imports are
+banned by the `comfy/no-primevue-imports` lint rule; UI components come from
+`@comfyorg/design-system`.
+
 ## Context
 
 ComfyUI's frontend requires modifications to PrimeVue components that cannot be achieved through the library's customization APIs. Two specific technical incompatibilities have been identified with the transform-based canvas architecture:

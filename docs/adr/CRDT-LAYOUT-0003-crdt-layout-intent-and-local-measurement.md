@@ -6,7 +6,14 @@ Date: 2025-08-27
 
 Proposed
 
-Implementation status: Partial
+## Amendments
+
+Implementation is partial. Durable node, group and reroute geometry goes
+through `LayoutOperation` commands applied by the layout store, and
+measurement stays local. Replication, op-stamp ordering for collisions in
+non-layout stores, and collapse as layout data are not built. The rules that
+hold today are restated in
+[ADR-ECS-0051](ECS-0051-entity-data-lives-in-dedicated-stores-as-plain-data.md).
 
 ## Context
 

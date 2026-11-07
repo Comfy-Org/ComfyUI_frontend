@@ -4,7 +4,9 @@ Date: 2026-09-19
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
 
 Amended 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):

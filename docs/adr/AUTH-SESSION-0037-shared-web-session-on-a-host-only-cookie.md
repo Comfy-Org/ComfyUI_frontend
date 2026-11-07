@@ -6,6 +6,8 @@ Date: 2026-09-24
 
 Proposed
 
+## Context
+
 Builds on the credential lifecycle in
 [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)
 and the identity ownership in
@@ -13,8 +15,6 @@ and the identity ownership in
 Source of truth: the TDD "One Comfy session across comfy.org" (sections 4, 8,
 9, 10 and appendix A10). This record keeps only what a maintainer cannot read
 off the code.
-
-## Context
 
 Each first-party site (comfy.org, cloud.comfy.org, platform.comfy.org,
 billing.comfy.org) runs its own Firebase sign-in, because the browser keeps
