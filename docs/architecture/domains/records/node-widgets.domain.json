@@ -13,9 +13,6 @@
       "path": "src/core/graph/widgets/comboWidgetInventory.ts"
     },
     {
-      "path": "src/core/graph/widgets/controlWidgetMarker.ts"
-    },
-    {
       "path": "src/core/graph/widgets/dynamicGroupWidget.ts"
     },
     {
@@ -37,7 +34,7 @@
       "path": "src/core/graph/widgets/revealDynamicInputSlot.ts"
     },
     {
-      "path": "src/core/graph/widgets/valueControl.ts"
+      "path": "src/core/graph/widgets/control/valueControl.ts"
     },
     {
       "path": "src/core/graph/widgets/valueControlWidgets.ts"
@@ -135,7 +132,7 @@
       "checks": [
         "src/core/graph/widgets/dynamicWidgets.test.ts",
         "src/core/graph/widgets/dynamicGroupWidget.test.ts",
-        "src/core/graph/widgets/valueControl.test.ts",
+        "src/core/graph/widgets/control/valueControl.test.ts",
         "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts"
       ]
     },

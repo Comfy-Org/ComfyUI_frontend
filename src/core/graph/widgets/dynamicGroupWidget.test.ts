@@ -15,6 +15,7 @@ import {
 } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -273,7 +274,9 @@ describe('DynamicGroup widgets', () => {
 
     expect(widget('seeds').value).toBe(1)
     expect(widget('seeds.0.seed').value).toBe(12)
-    expect(widget('seeds.0.seed.0').value).toBe('fixed')
+    expect(getControlProjections(widget('seeds.0.seed'))[0]?.value).toBe(
+      'fixed'
+    )
     expect(widget('tail').value).toBe('untouched')
   })
 
@@ -1034,18 +1037,24 @@ describe('DynamicGroup widgets', () => {
       }
     })
     widget('seeds').value = 2
-    widget('seeds.1.seed.0').value = 'fixed'
+    const [control] = getControlProjections(widget('seeds.1.seed'))
+    assert.exists(control)
+    control.value = 'fixed'
     widget('seeds.0').callback?.(undefined)
-    expect(widget('seeds.0.seed.0').value).toBe('fixed')
+    expect(getControlProjections(widget('seeds.0.seed'))[0]?.value).toBe(
+      'fixed'
+    )
     const saved = node.serialize()
 
     widget('seeds').value = 0
     node.configure(saved)
 
-    expect(widget('seeds.0.seed.0').value).toBe('fixed')
+    expect(getControlProjections(widget('seeds.0.seed'))[0]?.value).toBe(
+      'fixed'
+    )
     expect(
       node.widgets?.filter((w) => w.name.startsWith('seeds.'))
-    ).toHaveLength(5)
+    ).toHaveLength(4)
   })
 
   it('restores rows and their edited values after switching the containing DynamicCombo', () => {

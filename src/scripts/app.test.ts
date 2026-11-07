@@ -1730,6 +1730,119 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
 
+    it('advances a controlled seed once when the mode changes during prompt building', async () => {
+      prepareEmptyPromptQueue()
+      const node = new LGraphNode('SeedNode')
+      const seed = node.addWidget('number', 'seed', 7, () => {}, {
+        min: 0,
+        max: 100,
+        step2: 1
+      })
+      seed.controlConfig = { mode: 'increment', hasFilter: false }
+      app.rootGraph.add(node)
+      const settingStore = useSettingStore()
+      settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
+      let resolvePrompt:
+        | ((value: Awaited<ReturnType<ComfyApp['graphToPrompt']>>) => void)
+        | undefined
+      const prompt = new Promise<
+        Awaited<ReturnType<ComfyApp['graphToPrompt']>>
+      >((resolve) => {
+        resolvePrompt = resolve
+      })
+      vi.mocked(app.graphToPrompt).mockReturnValueOnce(prompt)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({ prompt_id: 'job-1' })
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
+      expect(seed.value).toBe(7)
+      settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
+      assert.exists(resolvePrompt)
+      resolvePrompt({ output: {}, workflow: createWorkflowGraphData() })
+
+      await expect(submission).resolves.toBe(true)
+      expect(seed.value).toBe(8)
+    })
+
+    it.for([
+      {
+        replacement: 'a different root graph',
+        switchGraph: (_queuedGraph: LGraph, visibleNode: LGraphNode) => {
+          const graph = new LGraph()
+          graph.add(visibleNode)
+          Reflect.set(app, 'rootGraphInternal', graph)
+          Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        }
+      },
+      {
+        replacement: 'different nodes reloaded into the same root graph',
+        switchGraph: (queuedGraph: LGraph, visibleNode: LGraphNode) => {
+          queuedGraph.clear()
+          queuedGraph.add(visibleNode)
+        }
+      },
+      {
+        replacement: 'a node added to the queued graph',
+        switchGraph: (queuedGraph: LGraph, visibleNode: LGraphNode) => {
+          queuedGraph.add(visibleNode)
+        }
+      },
+      {
+        replacement: 'a widget added to a queued node',
+        switchGraph: (queuedGraph: LGraph, visibleNode: LGraphNode) => {
+          const queuedNode = queuedGraph.nodes[0]
+          const visibleSeed = visibleNode.widgets?.[0]
+          assert.exists(queuedNode)
+          assert.exists(visibleSeed)
+          visibleSeed.name = 'new_seed'
+          queuedNode.addCustomWidget(visibleSeed)
+        }
+      }
+    ])(
+      'does not advance controls on $replacement while a submission is pending',
+      async ({ switchGraph }) => {
+        prepareEmptyPromptQueue()
+        const queuedGraph = app.rootGraph
+        const queuedNode = new LGraphNode('QueuedSeedNode')
+        const queuedSeed = queuedNode.addWidget('number', 'seed', 7, () => {}, {
+          min: 0,
+          max: 100,
+          step2: 1
+        })
+        queuedSeed.controlConfig = { mode: 'increment', hasFilter: false }
+        queuedGraph.add(queuedNode)
+        useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'after'
+        let resolveResponse:
+          | ((value: Awaited<ReturnType<typeof api.queuePrompt>>) => void)
+          | undefined
+        const response = new Promise<
+          Awaited<ReturnType<typeof api.queuePrompt>>
+        >((resolve) => {
+          resolveResponse = resolve
+        })
+        vi.spyOn(api, 'queuePrompt').mockReturnValueOnce(response)
+        const visibleNode = new LGraphNode('VisibleSeedNode')
+        const visibleSeed = visibleNode.addWidget(
+          'number',
+          'seed',
+          40,
+          () => {},
+          { min: 0, max: 100, step2: 1 }
+        )
+        visibleSeed.controlConfig = { mode: 'increment', hasFilter: false }
+
+        const submission = app.queuePrompt(0)
+        await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledOnce())
+        switchGraph(queuedGraph, visibleNode)
+        assert.exists(resolveResponse)
+        resolveResponse({ prompt_id: 'job-1' })
+
+        await expect(submission).resolves.toBe(true)
+        expect(visibleSeed.value).toBe(40)
+        expect(queuedSeed.value).toBe(7)
+      }
+    )
+
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}

@@ -69,6 +69,7 @@ import type {
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
+import { wireWidgets } from './wireWidgets'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -662,7 +663,7 @@ function withLinkId<T>(graph: LGraph, id: LinkId, fn: () => T): T {
 }
 
 function serializableWidgets(node: LGraphNode): IBaseWidget[] {
-  return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
+  return wireWidgets(node).filter((widget) => widget.serialize !== false)
 }
 
 function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
@@ -874,7 +875,7 @@ function documentWidget(
   name: string
 ): IBaseWidget | undefined {
   return (
-    node.widgets?.find((widget) => widget.name === name) ??
+    wireWidgets(node).find((widget) => widget.name === name) ??
     overflowWidget(node, name)
   )
 }
@@ -902,7 +903,7 @@ function supersededOverflowAlias(
   document: DocNode['widgets']
 ): boolean {
   if (document === undefined || Array.isArray(document)) return false
-  if (node.widgets?.some((widget) => widget.name === name)) return false
+  if (wireWidgets(node).some((widget) => widget.name === name)) return false
   const positional = overflowWidget(node, name)
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
@@ -1387,7 +1388,7 @@ export class LiveGraphApplier {
       } else {
         const constructed = serializableWidgets(node)
         const constructedNames = new Set(
-          node.widgets?.map((widget) => widget.name)
+          wireWidgets(node).map((widget) => widget.name)
         )
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         configureRemoteNode(node, {

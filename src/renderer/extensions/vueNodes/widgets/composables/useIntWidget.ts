@@ -8,7 +8,6 @@ import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSche
 import { isIntInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
-import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step
@@ -84,15 +83,7 @@ export const useIntWidget = () => {
         typeof inputSpec.control_after_generate === 'string'
           ? inputSpec.control_after_generate
           : 'randomize'
-      const controlWidget = addValueControlWidget(
-        node,
-        widget,
-        defaultType,
-        undefined,
-        undefined,
-        transformInputSpecV2ToV1(inputSpec)
-      )
-      widget.linkedWidgets = [controlWidget]
+      addValueControlWidget(widget, defaultType)
     }
 
     return widget

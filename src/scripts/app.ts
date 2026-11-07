@@ -5,6 +5,7 @@ import { reactive, unref, shallowRef } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { runWidgetControl } from '@/core/graph/widgets/control/widgetControlSystem'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
   applyViewport,
@@ -203,7 +204,6 @@ import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from './api'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import type { ComfyUI } from './ui'
 import type { ComfyAppMenu } from './ui/menu/index'
@@ -1846,19 +1846,28 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
+          const widgetControlMode = useSettingStore().get(
+            'Comfy.WidgetControlMode'
+          )
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued')
           })
+          runWidgetControl(this.rootGraph, 'before', widgetControlMode)
 
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
+          const queuedGraph = this.rootGraph
+          const queuedGraphId = queuedGraph.id
+          const queuedNodes = collectAllNodes(queuedGraph)
+          const queuedWidgets = queuedNodes.map((node) => [
+            ...(node.widgets ?? [])
+          ])
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(queuedGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1870,7 +1879,6 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -2062,8 +2070,21 @@ export class ComfyApp implements IComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued')
+          if (
+            this.rootGraph === queuedGraph &&
+            queuedGraph.id === queuedGraphId &&
+            collectAllNodes(queuedGraph).length === queuedNodes.length &&
+            queuedNodes.every(
+              (node, index) =>
+                node.graph?.getNodeById(node.id) === node &&
+                (node.widgets?.length ?? 0) === queuedWidgets[index].length &&
+                queuedWidgets[index].every(
+                  (widget, widgetIndex) =>
+                    node.widgets?.[widgetIndex] === widget
+                )
+            )
+          ) {
+            runWidgetControl(queuedGraph, 'after', widgetControlMode)
           }
           useFreeTierQuota().trackRun()
         }

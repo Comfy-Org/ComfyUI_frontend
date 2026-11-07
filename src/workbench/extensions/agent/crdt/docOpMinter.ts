@@ -52,6 +52,7 @@ import {
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { reportLostEdit } from './reportLostEdit'
+import { wireWidgets } from './wireWidgets'
 import {
   isValueWidget,
   provenWidgetValuesForm,
@@ -252,9 +253,9 @@ function isValueWidgetWrite(
   const stored = useWidgetValueStore().getWidget(
     widgetId(rootGraphId, event.nodeId, event.name)
   )
-  const widget = owner?.widgets?.find(
-    (candidate) => candidate.name === event.name
-  )
+  const widget = owner
+    ? wireWidgets(owner).find((candidate) => candidate.name === event.name)
+    : undefined
   return isValueWidget(widget, stored)
 }
 

@@ -23,6 +23,10 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
+import {
+  announceControlValues,
+  getControlProjections
+} from './control/controlProjection'
 
 import {
   dynamicGroupRowAllocationBound,
@@ -240,8 +244,10 @@ export function dynamicGroupWidget(
         widget.serialize !== false &&
         widget.type !== 'button' &&
         widget.widgetId
-      )
+      ) {
         store.announceValue(widget.widgetId)
+        announceControlValues(widget)
+      }
     }
   }
 
@@ -363,6 +369,13 @@ export function dynamicGroupWidget(
           widget.options = options
           if (widget.name === name) {
             if (input?.label) widget.label = input.label
+            getControlProjections(widget).forEach((control, index) => {
+              Object.defineProperty(control, 'name', {
+                configurable: true,
+                enumerable: true,
+                get: () => `${widget.name}.${index}`
+              })
+            })
             return
           }
           widget.label ??= widget.name
@@ -379,8 +392,10 @@ export function dynamicGroupWidget(
         widget.serialize !== false &&
         widget.type !== 'button' &&
         widget.widgetId
-      )
+      ) {
         store.announceValue(widget.widgetId)
+        announceControlValues(widget)
+      }
     }
   }
 

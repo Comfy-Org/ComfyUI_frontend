@@ -1,3 +1,7 @@
+import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
+import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { t } from '@/i18n'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,184 +12,181 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@comfyorg/object-info-parser'
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-import { isValueControlMode, nextValueForLinkedTarget } from './valueControl'
-
-function controlValueRunBefore() {
-  return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+function toControlMode(value: string | undefined): ValueControlMode {
+  return isValueControlMode(value) ? value : value ? 'fixed' : 'randomize'
 }
 
-export function updateControlWidgetLabel(widget: IBaseWidget) {
-  if (controlValueRunBefore()) {
-    widget.label = t('g.control_before_generate')
-  } else {
-    widget.label = t('g.control_after_generate')
-  }
-}
-
-const HAS_EXECUTED = Symbol()
-
-/**
- * `control_after_generate` is either a group-node widget name override or a
- * control mode that core's `io.ControlAfterGenerate` enum serialises into
- * `object_info`. Only a non-blank string that is not a mode is a name.
- */
-function controlAfterGenerateNameOverride(value: unknown): string | undefined {
-  if (typeof value !== 'string' || value.trim() === '') return undefined
-  return isValueControlMode(value) ? undefined : value
-}
-
-export function addValueControlWidget(
-  node: LGraphNode,
-  targetWidget: IBaseWidget,
-  defaultValue?: string,
-  _values?: unknown,
-  widgetName?: string,
-  inputData?: InputSpec
-): IComboWidget {
-  const name =
-    controlAfterGenerateNameOverride(inputData?.[1]?.control_after_generate) ??
-    widgetName
-  const widgets = addValueControlWidgets(
-    node,
-    targetWidget,
-    defaultValue ?? 'randomize',
-    {
-      addFilterList: false,
-      controlAfterGenerateName: name
-    },
-    inputData
-  )
-  return widgets[0]
-}
-
-interface ValueControlWidgetOptions {
+interface ValueControlOptions extends Record<string, unknown> {
   addFilterList?: boolean
   controlAfterGenerateName?: string
   controlFilterListName?: string
 }
 
+function configureValueControl(
+  targetWidget: IBaseWidget,
+  defaultValue: string | undefined,
+  addFilterList: boolean
+): void {
+  targetWidget.controlConfig = {
+    mode: toControlMode(defaultValue),
+    hasFilter: isComboWidget(targetWidget) && addFilterList
+  }
+  registerWidgetControlFromConfig(targetWidget)
+}
+
+function resolveControlTarget(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  legacyTarget: IBaseWidget | undefined
+): IBaseWidget {
+  if (legacyTarget) return legacyTarget
+  if ('options' in nodeOrTarget) return nodeOrTarget
+  throw new TypeError('Value control target widget is required')
+}
+
+function configuredControlProjections(
+  targetWidget: IBaseWidget
+): [IComboWidget, ...IStringWidget[]] | undefined {
+  const [mode, ...filters] = getControlProjections(targetWidget)
+  return mode ? [mode, ...filters] : undefined
+}
+
+function legacyControlName(
+  defaultName: string,
+  optionName: keyof ValueControlOptions,
+  options: ValueControlOptions,
+  inputData: InputSpec | undefined
+): string {
+  const inputName = inputData?.[1]?.[defaultName]
+  const override = [
+    options[optionName],
+    defaultName === 'control_after_generate' && isValueControlMode(inputName)
+      ? undefined
+      : inputName
+  ].find((name): name is string => typeof name === 'string' && !!name.trim())
+  if (override) return override
+  const prefix = inputData?.[1]?.control_prefix
+  return prefix ? `${prefix} ${defaultName}` : defaultName
+}
+
+export function addValueControlWidget(
+  targetWidget: IBaseWidget,
+  defaultValue?: string
+): void
+export function addValueControlWidget(
+  node: LGraphNode,
+  targetWidget: IBaseWidget,
+  defaultValue?: string,
+  values?: unknown,
+  widgetName?: string,
+  inputData?: InputSpec
+): IComboWidget
+export function addValueControlWidget(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  targetOrDefault?: IBaseWidget | string,
+  legacyDefault?: string,
+  _legacyValues?: unknown,
+  legacyWidgetName?: string,
+  legacyInputData?: InputSpec
+): void | IComboWidget {
+  const legacyTarget =
+    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
+  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
+  const defaultValue = legacyTarget
+    ? legacyDefault
+    : typeof targetOrDefault === 'string'
+      ? targetOrDefault
+      : undefined
+  configureValueControl(
+    targetWidget,
+    defaultValue === legacyInputData?.[1]?.control_after_generate &&
+      !isValueControlMode(defaultValue)
+      ? undefined
+      : defaultValue,
+    false
+  )
+  if (!legacyTarget) return
+
+  const projections = getControlProjections(targetWidget, [targetWidget])
+  const [mode] = projections
+  if (!mode) return
+  mode.name = legacyControlName(
+    'control_after_generate',
+    'controlAfterGenerateName',
+    { controlAfterGenerateName: legacyWidgetName },
+    legacyInputData
+  )
+  return configuredControlProjections(targetWidget)?.[0]
+}
+
+export function addValueControlWidgets(
+  targetWidget: IBaseWidget,
+  defaultValue?: string,
+  options?: ValueControlOptions
+): void
 export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options: ValueControlWidgetOptions = {},
+  options?: ValueControlOptions,
   inputData?: InputSpec
-): [IComboWidget, ...IStringWidget[]] {
-  // `useIntWidget` forwards a group-node name override here as the mode.
-  const specNameOverride = controlAfterGenerateNameOverride(
-    inputData?.[1]?.control_after_generate
+): [IComboWidget, ...IStringWidget[]]
+export function addValueControlWidgets(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  targetOrDefault?: IBaseWidget | string,
+  defaultOrOptions?: string | ValueControlOptions,
+  legacyOptions: ValueControlOptions = {},
+  legacyInputData?: InputSpec
+): void | [IComboWidget, ...IStringWidget[]] {
+  const legacyTarget =
+    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
+  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
+  const defaultValue = legacyTarget
+    ? typeof defaultOrOptions === 'string'
+      ? defaultOrOptions
+      : undefined
+    : typeof targetOrDefault === 'string'
+      ? targetOrDefault
+      : undefined
+  const options = legacyTarget
+    ? legacyOptions
+    : typeof defaultOrOptions === 'object'
+      ? defaultOrOptions
+      : {}
+  configureValueControl(
+    targetWidget,
+    defaultValue === legacyInputData?.[1]?.control_after_generate &&
+      !isValueControlMode(defaultValue)
+      ? undefined
+      : defaultValue,
+    options.addFilterList !== false
   )
-  if (!defaultValue || defaultValue === specNameOverride) {
-    defaultValue = 'randomize'
-  }
+  if (!legacyTarget) return
 
-  const getName = (
-    defaultName: 'control_after_generate' | 'control_filter_list',
-    optionName: 'controlAfterGenerateName' | 'controlFilterListName'
-  ) => {
-    const nameOverride = options[optionName]
-    if (nameOverride) return nameOverride
-    const inputOptions = inputData?.[1]
-    const specValue = inputOptions?.[defaultName]
-    const defaultNameOverride =
-      defaultName === 'control_after_generate'
-        ? controlAfterGenerateNameOverride(specValue)
-        : typeof specValue === 'string'
-          ? specValue
-          : undefined
-    if (defaultNameOverride !== undefined) return defaultNameOverride
-    if (inputOptions?.control_prefix) {
-      return inputOptions.control_prefix + ' ' + defaultName
-    }
-    return defaultName
-  }
-
-  const valueControl = node.addWidget(
-    'combo',
-    getName('control_after_generate', 'controlAfterGenerateName'),
-    defaultValue,
-    function () {},
-    {
-      values: [...CONTROL_OPTIONS],
-      serialize: false, // Don't include this in prompt.
-      surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
-    }
-  ) as IComboWidget
-
-  valueControl.tooltip =
-    'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
-  valueControl[IS_CONTROL_WIDGET] = true
-  updateControlWidgetLabel(valueControl)
-  Object.defineProperty(valueControl, 'disabled', {
-    get: () => targetWidget.computedDisabled
-  })
-  const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
-
-  const isCombo = isComboWidget(targetWidget)
-  let comboFilter: IStringWidget
-  if (isCombo) {
-    const values = valueControl.options.values
-    if (Array.isArray(values)) values.push('increment-wrap')
-  }
-  if (isCombo && options.addFilterList !== false) {
-    comboFilter = node.addWidget(
-      'string',
-      getName('control_filter_list', 'controlFilterListName'),
-      '',
-      function () {},
-      {
-        serialize: false // Don't include this in prompt.
-      }
-    ) as IStringWidget
-    updateControlWidgetLabel(comboFilter)
-    comboFilter.tooltip =
-      "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
-    Object.defineProperty(comboFilter, 'disabled', {
-      get: () => targetWidget.computedDisabled
-    })
-
-    widgets.push(comboFilter)
-  }
-
-  function applyWidgetControl() {
-    if (
-      node.inputs.some(
-        (input, index) =>
-          input.widget?.name === targetWidget.name &&
-          node.isInputConnected(index)
-      )
+  const projections = getControlProjections(targetWidget, [targetWidget])
+  const [mode] = projections
+  if (!mode) return
+  mode.name = legacyControlName(
+    'control_after_generate',
+    'controlAfterGenerateName',
+    options,
+    legacyInputData
+  )
+  const filter = projections.at(1)
+  if (filter) {
+    filter.name = legacyControlName(
+      'control_filter_list',
+      'controlFilterListName',
+      options,
+      legacyInputData
     )
-      return
-
-    const next = nextValueForLinkedTarget({
-      target: targetWidget,
-      linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id
-    })
-    if (next === undefined) return
-
-    targetWidget.value = next
-    targetWidget.callback?.(next)
   }
+  return configuredControlProjections(targetWidget)
+}
 
-  valueControl.beforeQueued = () => {
-    if (controlValueRunBefore()) {
-      // Don't run on first execution
-      if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl()
-      }
-    }
-    valueControl[HAS_EXECUTED] = true
-  }
-
-  valueControl.afterQueued = () => {
-    if (!controlValueRunBefore()) {
-      applyWidgetControl()
-    }
-  }
-
-  return widgets
+export function updateControlWidgetLabel(widget: IBaseWidget): void {
+  widget.label =
+    useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+      ? t('g.control_before_generate')
+      : t('g.control_after_generate')
 }

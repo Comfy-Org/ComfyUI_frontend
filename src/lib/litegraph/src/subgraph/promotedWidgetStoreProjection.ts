@@ -36,6 +36,9 @@ export function createPromotedWidgetStoreProjection(
     set options(next) {
       store.setOptions(id, next)
     },
+    get serialize() {
+      return store.getWidget(id)?.serialize
+    },
     get value() {
       return store.getWidget(id)?.value
     },

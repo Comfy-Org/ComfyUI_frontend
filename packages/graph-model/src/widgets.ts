@@ -15,6 +15,7 @@ import type { BoundingBox } from './boundingBoxes'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { WidgetValue } from './widgetValue'
 import type { WidgetId } from './widgetId'
+import type { WidgetControlConfig } from './widgetState'
 import type {
   WidgetSurfaces,
   WidgetVisibilityComponent
@@ -542,6 +543,8 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  controlConfig?: WidgetControlConfig
 
   readonly widgetId?: WidgetId
 

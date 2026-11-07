@@ -100,6 +100,22 @@ may retain a partial registration or removal.
    measuring remaining use over a stated observation window. Define the
    threshold and rollback condition in the deprecation proposal.
 
+### Migrate widget controls
+
+Control rows no longer appear in `node.widgets`. Extensions must use these
+replacements:
+
+- Call `addValueControlWidget()` or `addValueControlWidgets()` to configure a
+  target widget. Read its `controlConfig` instead of finding a linked control
+  widget.
+- Call `node.getLayoutWidgets()` only when code needs the transient rows used
+  by classic canvas layout. Do not store or serialize those projections.
+- Keep workflow persistence positional. A controlled target serializes as
+  `[targetValue, controlMode]`, followed by the filter for controls that have
+  one. Control values are not part of API prompt serialization.
+- Remove extension callbacks attached to a control row. The graph-level control
+  system updates the target and invokes the target widget callback.
+
 Removing the compatibility adapter requires a follow-up ADR or an amendment to
 this one.
 

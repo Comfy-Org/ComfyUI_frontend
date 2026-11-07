@@ -32,7 +32,7 @@
       "checks": [
         "src/core/graph/subgraph/resolveConcretePromotedWidget.test.ts",
         "src/core/graph/subgraph/promotedInputWidget.test.ts",
-        "src/core/graph/subgraph/promotedWidgetControl.test.ts",
+        "src/core/graph/widgets/control/widgetControlSystem.promoted.test.ts",
         "src/core/graph/subgraph/promotionAfterReplacement.test.ts"
       ]
     },

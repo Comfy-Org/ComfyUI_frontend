@@ -119,6 +119,17 @@ describe('_setConcreteSlots', () => {
     expect(runs).toBe(2)
     stop(runner)
   })
+
+  test('exposes widget positions after layout without requiring a draw', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const widget = node.addWidget('number', 'value', 0, () => undefined, {})
+    graph.add(node)
+
+    node.arrange()
+
+    expect(widget.last_y).toBe(widget.y)
+  })
 })
 
 describe('widgets array reactivity', () => {

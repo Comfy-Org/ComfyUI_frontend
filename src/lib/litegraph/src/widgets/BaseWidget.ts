@@ -3,6 +3,7 @@ import type {
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
 import { t } from '@/i18n'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -434,6 +435,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     )
     if (!registered) return
     this.bindRegisteredState(nodeId)
+    registerWidgetControlFromConfig(this)
   }
 
   releaseRegisteredState(): void {
@@ -462,20 +464,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   constructor(widget: TWidget & { node: LGraphNode })
   constructor(widget: TWidget, node: LGraphNode)
   constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
-    // Private fields
     this._node = node ?? widget.node
 
-    this._visibility = deriveWidgetVisibility(widget)
+    this._visibility = widget.visibility ?? deriveWidgetVisibility(widget)
 
-    // The set and get functions for DOM widget values are hacked on to the options object;
-    // attempting to set value before options will throw.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
     this.installOptionsShim(widget.options)
     this.type = widget.type
 
-    // `node` has no setter - Object.assign will throw.
-    // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
     const { label, hidden, disabled, value } = widget
     const safeValues = { ...widget } as unknown as Record<string, unknown>
     for (const key of [
@@ -490,6 +486,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       'displayValue',
       'labelBaseline',
       'label',
+      'visibility',
       'hidden',
       'disabled',
       'value',
@@ -513,7 +510,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       options: this._rawOptions,
       y: this.y
     }
-    if (hidden !== undefined) this.hidden = hidden
+    if (hidden !== undefined && !widget.visibility) this.hidden = hidden
   }
 
   getOutlineColor() {
