@@ -88,6 +88,7 @@ import {
   hostProactiveGreetingProperties,
   supportsHostProactiveGreeting
 } from '@/platform/telemetry/hostProactiveGreeting'
+import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -393,6 +394,7 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, {
       ...properties,
       ...(context &&
+        isHostTelemetryEnabled() &&
         supportsHostProactiveGreeting() &&
         hostProactiveGreetingProperties(context))
     })
@@ -401,7 +403,7 @@ export class HostTelemetrySink implements TelemetryProvider {
   trackProactiveGreetingEnrolled(
     metadata: ProactiveGreetingEnrolledMetadata
   ): void {
-    if (!supportsHostProactiveGreeting()) return
+    if (!isHostTelemetryEnabled() || !supportsHostProactiveGreeting()) return
     this.capture(TelemetryEvents.EXPERIMENT_EXPOSURE, {
       ...hostProactiveGreetingProperties(metadata),
       canvas_state: metadata.canvas_state

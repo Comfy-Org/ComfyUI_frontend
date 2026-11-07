@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { AgentMessageSentMetadata } from '@comfyorg/telemetry/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
+
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const state = vi.hoisted(() => ({
   capture: vi.fn()
@@ -612,6 +616,9 @@ describe('HostTelemetrySink', () => {
 })
 
 describe('proactive greeting host delivery', () => {
+  beforeEach(() => {
+    remoteConfig.value = { enable_telemetry: true }
+  })
   afterEach(() => {
     delete window.__comfyDesktop2
   })
@@ -693,6 +700,54 @@ describe('proactive greeting host delivery', () => {
         }
       ]
     ])
+  })
+
+  it('drops retained experiment context when telemetry turns off before delivery', () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      Telemetry: Object.assign(
+        { capture },
+        {
+          proactiveGreetingExperimentVersion: 1,
+          canEnrollProactiveGreeting: async () => true
+        }
+      )
+    }
+    const provider = new HostTelemetrySink()
+    const context = {
+      user_id: 'user-a',
+      workspace_id: 'workspace-a',
+      group_key: '["user-a","workspace-a"]',
+      variant: 'generic' as const
+    }
+    const pendingSend: AgentMessageSentMetadata = {
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null,
+      proactive_greeting: context
+    }
+    remoteConfig.value = { enable_telemetry: false }
+    provider.trackAgentMessageSent(pendingSend)
+    provider.trackProactiveGreetingEnrolled({
+      ...context,
+      canvas_state: 'empty'
+    })
+    expect(capture).toHaveBeenCalledExactlyOnceWith('app:agent_message_sent', {
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
+    })
   })
 
   it('does not send experiment exposure to an old host', () => {
