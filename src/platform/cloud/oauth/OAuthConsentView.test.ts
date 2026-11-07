@@ -8,7 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
   OAuthApiError,
@@ -223,6 +223,76 @@ describe('OAuthConsentView', () => {
     // Unknown scopes fall back to the raw scope string so a new resource
     // doesn't require a frontend release just to render its consent page.
     expect(screen.getByText('mcp:unknown:test')).toBeVisible()
+  })
+
+  it.for([
+    {
+      scope: 'comfy-router:models:invoke',
+      label: 'Run partner models through Comfy Router, using your credits'
+    },
+    {
+      scope: 'comfy-mcp:tools:call',
+      label:
+        'Run workflows and partner models on your behalf, using your credits'
+    },
+    {
+      scope: 'comfy-router:models:unknown',
+      label: 'comfy-router:models:unknown'
+    }
+  ])(
+    'renders $scope as "$label" from the English catalog',
+    ({ scope, label }) => {
+      render(OAuthConsentView, {
+        global: {
+          plugins: [
+            createI18n({
+              legacy: false,
+              locale: 'en',
+              messages: { en: enMessages }
+            })
+          ]
+        },
+        props: {
+          initialChallenge: {
+            ...challenge,
+            resource_display_name: 'Comfy Router',
+            scopes: [scope]
+          }
+        }
+      })
+
+      expect(screen.getByText(label)).toBeVisible()
+    }
+  )
+
+  it('falls back to the English credit-spending label for an untranslated locale', () => {
+    render(OAuthConsentView, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'ja',
+            fallbackLocale: 'en',
+            missingWarn: false,
+            fallbackWarn: false,
+            messages: { en: enMessages, ja: {} }
+          })
+        ]
+      },
+      props: {
+        initialChallenge: {
+          ...challenge,
+          resource_display_name: 'Comfy Router',
+          scopes: ['comfy-router:models:invoke']
+        }
+      }
+    })
+
+    expect(
+      screen.getByText(
+        'Run partner models through Comfy Router, using your credits'
+      )
+    ).toBeVisible()
   })
 
   it('renders the registered redirect URI verbatim', () => {
