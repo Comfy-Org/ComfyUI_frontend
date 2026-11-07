@@ -57,11 +57,32 @@
       <BillingPlanRow
         v-else
         :state="planRow"
-        :action="action"
+        :action
+        :copy="planRowCopy"
+        :locale
         :sales-variant="salesVariant"
         :add-credits-variant="addCreditsVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
-      />
+      >
+        <template #leading>
+          <BillingPlanLifecycle :state="planRow" />
+        </template>
+        <template #action="{ action: shown, label, variant }">
+          <Button
+            as="a"
+            :href="shown === 'contactSales' ? CONTACT_SALES_URL : plansHref"
+            target="_blank"
+            rel="noopener"
+            :variant
+            size="md"
+            class="shrink-0 no-underline"
+            @click="trackPlanAction(shown)"
+          >
+            {{ label }}
+            <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+          </Button>
+        </template>
+      </BillingPlanRow>
     </section>
 
     <section
@@ -166,6 +187,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -187,15 +209,20 @@ import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanChe
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
-import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
+import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   addCreditsAvailability,
   addCreditsEmphasis,
+  CONTACT_SALES_URL,
   deriveAutoTopUpSection,
   deriveBillingTabLoad,
   planRowAction
 } from '@comfyorg/account-core/billing'
-import { suppressesCreditBanners } from '@comfyorg/account-ui/billing'
+import type { PlanRowAction } from '@comfyorg/account-core/billing'
+import {
+  BillingPlanRow,
+  suppressesCreditBanners
+} from '@comfyorg/account-ui/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -204,6 +231,7 @@ import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpP
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -222,6 +250,8 @@ const suppressCreditBanner = computed(() =>
   ])
 )
 const { state: planRow } = useBillingPlanRow()
+const planRowCopy = usePlanRowCopy()
+const { locale } = useI18n()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
@@ -295,6 +325,15 @@ const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )
+
+const { href: plansHref, track: trackPlans } = usePlatformHandoff(
+  '/profile/billing/plans',
+  { target: 'plans' }
+)
+
+function trackPlanAction(shown: PlanRowAction) {
+  if (shown !== 'contactSales') trackPlans()
+}
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
