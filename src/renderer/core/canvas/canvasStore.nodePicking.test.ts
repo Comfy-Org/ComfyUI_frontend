@@ -4,7 +4,10 @@ import { nextTick, watch } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  NODE_PICKING_BANNER_CLEARANCE,
+  useCanvasStore
+} from '@/renderer/core/canvas/canvasStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -44,10 +47,34 @@ describe('canvas node picking', () => {
       store.startNodePicking()
 
       expect(animate).toHaveBeenCalledWith(bounds, {
-        viewport: [0, 0, 800, 600]
+        viewport: [
+          0,
+          NODE_PICKING_BANNER_CLEARANCE,
+          800,
+          600 - NODE_PICKING_BANNER_CLEARANCE
+        ]
       })
     }
   )
+
+  it('frames below the selection-mode banner so it cannot cover the top node', () => {
+    const { store, animate } = setup()
+
+    store.startNodePicking()
+
+    const [, top] = animate.mock.calls[0][1]!.viewport!
+    // Banner: top-4 offset (16) + p-4 padding (32) + two text-sm lines (40) + border (2).
+    expect(top).toBeGreaterThanOrEqual(90)
+  })
+
+  it('keeps the full height when the canvas is too short to give up the banner strip', () => {
+    const { store, canvas, animate } = setup()
+    vi.spyOn(canvas.ds, 'getViewportSize').mockReturnValue([800, 150])
+
+    store.startNodePicking()
+
+    expect(animate.mock.calls[0][1]!.viewport).toEqual([0, 0, 800, 150])
+  })
 
   it('holds notifications for the duration of node picking', async () => {
     const { store } = setup()
