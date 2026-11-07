@@ -2,15 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { effectScope, nextTick, watch } from 'vue'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import { app } from '@/scripts/app'
 
-const setGraph = (graph: LGraph | undefined) => {
-  ;(
-    app as unknown as {
-      rootGraphInternal: LGraph | undefined
-    }
-  ).rootGraphInternal = graph
-}
+const setGraph = (graph: LGraph | undefined) => setRootGraph(app, graph)
 
 describe('ComfyApp graph-readiness reactivity', () => {
   beforeEach(() => setGraph(undefined))
