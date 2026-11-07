@@ -59,7 +59,7 @@ function showModal() {
     toast.error(t('openOnCloud.cannotRunYet'))
     return
   }
-  void openRunOnCloudDialog()
+  void openRunOnCloudDialog(() => check.value === current)
 }
 
 function openModal() {
