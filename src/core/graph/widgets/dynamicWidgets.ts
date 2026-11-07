@@ -8,6 +8,7 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import {
   getWidgetIds,
@@ -27,6 +28,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
+  inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
@@ -52,6 +54,7 @@ type AutogrowNode = LGraphNode &
           inputSpecs: InputSpecV2[]
           prefix?: string
           names?: string[]
+          inputSpec: InputSpecV2
         }
       >
     }
@@ -78,9 +81,28 @@ function syncNodeWidgetOrder(node: LGraphNode) {
 }
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  const { widget } = input
-  if (!widget || !node.widgets?.some((w) => w.name === widget.name))
-    addShimWidget(node, input)
+  const name = input.widget?.name ?? input.name
+  const existing = node.widgets?.find((w) => w.name === name)
+  if (existing) {
+    input.widget ??= { name }
+    if (existing.type === 'shim') input.alwaysVisible = true
+    return
+  }
+  addShimWidget(node, input)
+
+  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
+  const widgets = node.widgets
+  const shim = widgets?.pop()
+  if (!widgets || !shim) return
+  const lastGroupWidget = widgets.findLastIndex(
+    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
+  )
+  widgets.splice(
+    lastGroupWidget === -1 ? widgets.length : lastGroupWidget + 1,
+    0,
+    shim
+  )
+  syncNodeWidgetOrder(node)
 }
 
 function dynamicComboWidget(
@@ -470,7 +492,7 @@ function addAutogrowGroup(
 ) {
   const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
-  if (ordinal >= max) return
+  if (ordinal >= max || isAutogrowGroupConnected(node, groupName)) return
 
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
@@ -483,10 +505,9 @@ function addAutogrowGroup(
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
     const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    if (inputSpecs.length !== 1) ensureWidgetForInput(node, input)
+    ensureWidgetForInput(node, input)
     return input
   })
-
   for (const newInput of newInputs) {
     for (const existingInput of remove(
       node.inputs,
@@ -504,13 +525,14 @@ function addAutogrowGroup(
     groupName,
     node
   ).name
-  const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(targetName)
+  const lastIndex = node.inputs.findLastIndex(
+    (inp) => inp.name.startsWith(targetName) || inp.name === groupName
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
+  syncNodeWidgetOrder(node)
   node.graph?.setDirtyCanvas(true, true)
 }
 
@@ -616,13 +638,10 @@ export function growAutogrowInput(
   return index === -1 ? undefined : index
 }
 
-function autogrowInputDisconnected(index: number, node: AutogrowNode) {
-  const input = node.inputs.at(index)
-  if (!input) return
-  //The slot was reconnected before this deferred compaction ran (e.g. a
-  //connect/disconnect/reconnect sequence in immediate succession); the
-  //compaction is stale and must not run against the slot's new link.
-  if (node.getInputLink(index)) return
+function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
+  const index = node.inputs.indexOf(input)
+  if (index === -1) return
+  if (node.isInputConnected(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
     ? node.comfyDynamic.autogrow[groupName]
@@ -633,7 +652,6 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
-  //resolve all inputs in group
   const groupInputs = node.inputs.filter(
     (inp) =>
       inp.name.startsWith(groupName + '.') &&
@@ -689,19 +707,65 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   for (const input of toRemove) {
     const widgetName = input.widget?.name
     if (!widgetName) continue
-    for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
-      widget.onRemove?.()
-      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
-    }
+    for (const widget of node.widgets.filter((w) => w.name === widgetName))
+      node.removeWidget(widget)
     syncNodeWidgetOrder(node)
   }
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
+function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
+  const index = node.inputs.findIndex((input) => input.name === groupName)
+  if (index === -1 || !node.graph) return false
+  return inputLink(node.graph, node.id, index)?.type === node.inputs[index].type
+}
+
+function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
+  const children = node.inputs.filter((input) =>
+    input.name.startsWith(`${groupName}.`)
+  )
+  if (isAutogrowGroupConnected(node, groupName))
+    removeAutogrowChildren(node, groupName)
+  else if (!children.length) growAutogrowToMin(node, groupName)
+  else for (const input of children) ensureWidgetForInput(node, input)
+}
+
+function growAutogrowToMin(node: AutogrowNode, groupName: string) {
+  const { min } = node.comfyDynamic.autogrow[groupName]
+  for (let i = 0; i === 0 || i < min + 1; i++)
+    addAutogrowGroup(i, groupName, node)
+}
+
+function removeAutogrowChildren(node: AutogrowNode, groupName: string) {
+  const prefix = `${groupName}.`
+  for (let slot = node.inputs.length - 1; slot >= 0; slot--) {
+    if (
+      node.inputs[slot].name.startsWith(prefix) &&
+      node.isInputConnected(slot)
+    )
+      node.disconnectInput(slot)
+  }
+  const previous = captureInputLayout(node)
+  const finalInputs = previous.inputs.filter(
+    (input) => !input.name.startsWith(prefix)
+  )
+  if (finalInputs.length === previous.inputs.length) return
+  const result = replaceNodeInputs(node, previous, finalInputs)
+  if (!result.ok) return
+  for (const widget of node.widgets.filter((w) => w.name.startsWith(prefix)))
+    node.removeWidget(widget)
+  for (const nested of Object.keys(node.comfyDynamic.autogrow))
+    if (nested.startsWith(prefix)) delete node.comfyDynamic.autogrow[nested]
+  syncNodeWidgetOrder(node)
+  node.size = [node.size[0], node.computeSize([...node.size])[1]]
+  node.graph?.setDirtyCanvas(true, true)
+}
+
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
-  node.comfyDynamic.autogrow = {}
+  const groups: AutogrowNode['comfyDynamic']['autogrow'] = {}
+  node.comfyDynamic.autogrow = groups
 
   let pendingConnection: number | undefined
   //Whether the input-side `connect` event for `pendingConnection` has
@@ -732,6 +796,13 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
+    const groupInput = this.inputs.at(slot)
+    if (
+      groupInput &&
+      Object.hasOwn(groups, groupInput.name) &&
+      !isSubgraphInput(args[1])
+    )
+      return false
     pendingConnection = slot
     pendingConnectionSeen = false
     requestAnimationFrame(() => {
@@ -740,6 +811,14 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
+
+  node.onAfterGraphConfigured = useChainCallback(
+    node.onAfterGraphConfigured,
+    function (this: AutogrowNode) {
+      for (const groupName of Object.keys(groups))
+        syncAutogrowGroup(this, groupName)
+    }
+  )
 
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -752,6 +831,10 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     ) {
       const input = this.inputs.at(slot)
       if (contype !== LiteGraph.INPUT || !input) return
+      if (Object.hasOwn(this.comfyDynamic.autogrow, input.name)) {
+        if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
+        return
+      }
       //Return if input isn't known autogrow
       const key = input.name.slice(0, input.name.lastIndexOf('.'))
       const autogrowGroup = Object.hasOwn(this.comfyDynamic.autogrow, key)
@@ -776,12 +859,20 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
           })
           return
         }
-        requestAnimationFrame(() => autogrowInputDisconnected(slot, this))
+        requestAnimationFrame(() => autogrowInputDisconnected(input, this))
       }
     }
   )
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
+  const groupName = inputSpecV2.name
+  const groupInput =
+    node.inputs.find((input) => input.name === groupName) ??
+    node.addInput(groupName, inputSpecV2.type, {
+      localized_name: inputSpecV2.display_name
+    })
+  if (!node.widgets?.some((w) => w.name === groupName))
+    addShimWidget(node, groupInput, { autogrowGroup: true })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
@@ -798,13 +889,61 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
-  node.comfyDynamic.autogrow[inputSpecV2.name] = {
+  node.comfyDynamic.autogrow[groupName] = {
     names,
     min,
     max: names?.length ?? max,
     prefix,
-    inputSpecs: inputsV2
+    inputSpecs: inputsV2,
+    inputSpec: inputSpecV2
   }
-  for (let i = 0; i === 0 || i < min + 1; i++)
-    addAutogrowGroup(i, inputSpecV2.name, node)
+  growAutogrowToMin(node, groupName)
+}
+
+/**
+ * Makes `node` own the autogrow group `interiorInput` defines, through `input`.
+ * False if `interiorInput` is not an autogrow group.
+ */
+export function bindPromotedAutogrowGroup(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  interiorNode: LGraphNode,
+  interiorInput: INodeInputSlot
+): boolean {
+  if (
+    !hasAutogrowGroups(interiorNode) ||
+    !Object.hasOwn(interiorNode.comfyDynamic.autogrow, interiorInput.name)
+  )
+    return false
+  if (
+    hasAutogrowGroups(node) &&
+    Object.hasOwn(node.comfyDynamic.autogrow, input.name)
+  )
+    return true
+  const { inputSpec } = interiorNode.comfyDynamic.autogrow[interiorInput.name]
+  applyAutogrow(node, {
+    ...inputSpec,
+    name: input.name,
+    display_name: input.label ?? inputSpec.display_name
+  })
+  return true
+}
+
+/** Removes the autogrow group `node` owns through `input`; false if none. */
+export function unbindPromotedAutogrowGroup(
+  node: LGraphNode,
+  input: INodeInputSlot
+): boolean {
+  if (
+    !hasAutogrowGroups(node) ||
+    !Object.hasOwn(node.comfyDynamic.autogrow, input.name)
+  )
+    return false
+  removeAutogrowChildren(node, input.name)
+  delete node.comfyDynamic.autogrow[input.name]
+  const groupWidget = node.widgets.find((w) => w.name === input.name)
+  if (groupWidget) node.removeWidget(groupWidget)
+  input.widget = undefined
+  syncNodeWidgetOrder(node)
+  return true
 }

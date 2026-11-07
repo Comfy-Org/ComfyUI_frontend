@@ -38,9 +38,13 @@ function buildConcat({ widgetBeforeAdding = false } = {}) {
     const source = new LGraphNode(title)
     source.addOutput('VIDEO', 'VIDEO')
     graph.add(source)
-    source.connect(0, concat, slot)
+    source.connect(0, concat, slotOf(concat, `0.video${slot}`))
   }
   return { concat, widget }
+}
+
+function slotOf(node: LGraphNode, name: string) {
+  return node.inputs.findIndex((input) => input.name === name)
 }
 
 function clipTitles(concat: LGraphNode, order: string[]) {
@@ -64,11 +68,11 @@ describe('syncConcatOrderWithLinks', () => {
         'green'
       ])
 
-      concat.disconnectInput(0)
+      concat.disconnectInput(slotOf(concat, '0.video0'))
       await animationFrame()
       await nextTick()
 
-      expect(concat.inputs[0].name).toBe('0.video0')
+      expect(concat.inputs[1].name).toBe('0.video0')
       expect(clipTitles(concat, widget.value.order ?? [])).toEqual([
         'blue',
         'green'
@@ -83,7 +87,7 @@ describe('syncConcatOrderWithLinks', () => {
     await nextTick()
 
     concat.onRemoved?.()
-    concat.disconnectInput(0)
+    concat.disconnectInput(slotOf(concat, '0.video0'))
     await animationFrame()
     await nextTick()
 
