@@ -20,12 +20,13 @@ test.describe(
       await test.step('Check compatibility against the real Cloud server', async () => {
         const responsePromise = comfyPage.page.waitForResponse(
           (response) =>
-            response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
+            new URL(response.url()).pathname === '/api/cloud/compatibility' &&
             response.request().method() === 'POST'
         )
         await comfyPage.page.getByTestId('cloud-button').click()
         const response = await responsePromise
 
+        expect(new URL(response.url()).origin).toBe(cloudOrigin)
         expect(response.status()).toBe(200)
         expect(await response.serverAddr()).not.toBeNull()
         const compatibility = zCloudCompatibility.parse(await response.json())

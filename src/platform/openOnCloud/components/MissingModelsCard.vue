@@ -33,12 +33,13 @@
 </template>
 
 <script setup lang="ts">
+import type { CompatibilityModel } from '@comfyorg/ingest-types'
+
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import type { CloudMissingModel } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-defineProps<{ models: CloudMissingModel[] }>()
+defineProps<{ models: CompatibilityModel[] }>()
 
 const emit = defineEmits<{ dismiss: [] }>()
 </script>

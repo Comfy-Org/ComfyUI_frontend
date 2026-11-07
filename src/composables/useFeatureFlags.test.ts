@@ -541,6 +541,12 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
+    it('defaults on in a development build that serves no value', () => {
+      vi.stubEnv('DEV', true)
+
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(true)
+    })
+
     it.for([
       { dev: false, served: true, expected: true },
       { dev: true, served: false, expected: false }

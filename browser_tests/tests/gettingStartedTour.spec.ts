@@ -19,6 +19,7 @@ import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -351,6 +352,7 @@ test.describe(
 
     test.describe('without a subscription', () => {
       test.beforeEach(async ({ page }) => {
+        await keepPricingTableInApp(page)
         await mockBilling(page)
         await page.route('**/api/billing/status', (route) =>
           route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))

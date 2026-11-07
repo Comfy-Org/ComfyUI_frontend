@@ -8,7 +8,7 @@ import {
 export const DESKTOP_RELAY_PARAM = 'desktop_workflow'
 export const DESKTOP_HANDOFF_HASH = '#desktop_workflow='
 export const DESKTOP_HANDOFF_LIFETIME_MS = 10 * 60_000
-const MAX_HANDOFF_BYTES = 8 * 1024 * 1024
+const MAX_HANDOFF_BYTES = 2 * 1024 * 1024
 const MAX_ENCODED_LENGTH = 1024 * 1024
 const STORAGE_PREFIX = 'Comfy.OpenOnCloud.Desktop.'
 

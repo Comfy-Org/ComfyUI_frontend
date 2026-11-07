@@ -27,6 +27,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   member,
   mockWorkspace,
@@ -451,6 +452,7 @@ async function setupCloudApp(
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
   await mockWorkspace(page, ws, members)
+  await keepPricingTableInApp(page)
   await bootCloud(page)
 }
 

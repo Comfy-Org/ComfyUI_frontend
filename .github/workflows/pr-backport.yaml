@@ -368,6 +368,7 @@ jobs:
         env:
           FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
           ALREADY_APPLIED_TARGETS: ${{ steps.backport.outputs.already-applied }}
+          JOB_TOKEN: ${{ github.token }}
           FORCE_RERUN: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
@@ -451,14 +452,25 @@ jobs:
           # Count only reports posted by this workflow's own identity, so a
           # marker quoted or planted by anyone else cannot suppress a notice.
           # A locked PR gets its report as a tracking issue, so search those too.
-          POSTING_LOGIN=$(gh api user --jq '.login') || POSTING_LOGIN=""
+          POSTING_LOGIN=$(gh api user --jq '.login') ||
+            POSTING_LOGIN=$(gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login') ||
+            POSTING_LOGIN=""
+
+          read_all() {
+            local out
+            if out=$(GH_TOKEN="${JOB_TOKEN}" gh api --paginate "$1"); then
+              printf '%s\n' "${out}"
+            else
+              gh api --paginate "$1"
+            fi
+          }
 
           conflict_already_reported() {
             local marker="$1" comments issues
             [ -n "${POSTING_LOGIN}" ] || return 1
-            comments=$(gh api --paginate \
+            comments=$(read_all \
               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments") || return 1
-            issues=$(gh api --paginate \
+            issues=$(read_all \
               "repos/${GITHUB_REPOSITORY}/issues?state=open&creator=${POSTING_LOGIN}") || return 1
             jq -en \
               --arg login "${POSTING_LOGIN}" \

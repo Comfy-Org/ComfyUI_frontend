@@ -60,12 +60,14 @@ vi.mock(
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const distribution = vi.hoisted(() => ({ isCloud: false }))
+const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
-  isDesktop: false,
+  get isDesktop() {
+    return distribution.isDesktop
+  },
   isNightly: false
 }))
 
@@ -763,6 +765,39 @@ describe('TopMenuSection', () => {
         expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
           count
         )
+      }
+    )
+
+    it.for([
+      {
+        host: 'the Desktop distribution',
+        enter: () => {
+          distribution.isDesktop = true
+        },
+        leave: () => {
+          distribution.isDesktop = false
+        }
+      },
+      {
+        host: 'a Desktop 2 host serving a localhost build',
+        enter: () => {
+          window.__comfyDesktop2 = {}
+        },
+        leave: () => {
+          delete window.__comfyDesktop2
+        }
+      }
+    ])(
+      'renders no Cloud button on $host until its relay ships',
+      ({ enter, leave }) => {
+        enter()
+        onTestFinished(leave)
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
       }
     )
 
