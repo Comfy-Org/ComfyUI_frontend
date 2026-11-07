@@ -60,4 +60,37 @@ describe('web-session request credentials', () => {
       })
     }
   )
+  it('checks the captured identity again after authorization and before sending', async () => {
+    const scope: WebSessionRequestScope = {
+      epoch: 1,
+      session: {
+        user: { id: 'user', email: 'user@example.com', emailVerified: true },
+        csrfToken: 'csrf',
+        expiresAt: Number.MAX_SAFE_INTEGER,
+        absoluteExpiresAt: Number.MAX_SAFE_INTEGER
+      }
+    }
+    const authorize = createRequestAuthorizer({
+      getWorkspaceToken: async () => 'unused'
+    })
+    const beforeSend = vi.fn(() => {
+      throw new Error('identity changed')
+    })
+    await expect(
+      fetchOnWebSession(
+        '/api/auth/desktop-login-codes/redeem',
+        { method: 'POST' },
+        scope,
+        {
+          authorize,
+          beforeSend,
+          refresh: async () => undefined,
+          workspaceDenied: vi.fn(),
+          ssoRequired: vi.fn()
+        }
+      )
+    ).rejects.toThrow('identity changed')
+    expect(beforeSend).toHaveBeenCalledWith(scope)
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

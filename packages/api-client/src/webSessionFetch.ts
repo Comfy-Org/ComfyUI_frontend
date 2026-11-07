@@ -35,6 +35,7 @@ export interface WebSessionFetchPorts {
   readonly workspaceDenied: (workspaceId: string) => void
   readonly ssoRequired: (scope: WebSessionRequestScope) => void
   readonly authorize: RequestAuthorizer
+  readonly beforeSend?: (scope: WebSessionRequestScope) => void
 }
 
 async function refusalCode(
@@ -69,6 +70,7 @@ export async function fetchOnWebSession(
         workspaceId: current.workspaceId
       }
     )
+    ports.beforeSend?.(current)
     const merged = new Headers(init.headers)
     for (const [name, value] of Object.entries(headers)) merged.set(name, value)
     return fetch(url, {
