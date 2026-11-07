@@ -1,9 +1,11 @@
 import type {
   AgentMessages,
+  AgentResolvedAsk,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
+  zAgentResolvedAsk,
   zPersistedThinkingEntry,
   zPersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -20,7 +22,8 @@ import {
   askIdOf,
   createAssistantMessage,
   isOpenAskPart,
-  toAskOrNoticePart
+  toAskOrNoticePart,
+  toResolvedAskPart
 } from './agentMessageParts'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
@@ -407,9 +410,8 @@ function appendAssistantContent(
   message: AssistantMessage,
   row: AgentMessages[number],
   text: string,
-  isLive: boolean
+  toolCalls: ParsedToolCall[] | undefined
 ): void {
-  const toolCalls = parseToolCalls(row.content, isLive)
   if (toolCalls) {
     let statusByCallId = toolCallStatusByMessage.get(message)
     if (!statusByCallId) {
@@ -443,6 +445,62 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
+function resolvedAsksOf(row: AgentMessages[number]): AgentResolvedAsk[] {
+  const raw = row.resolved_asks
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((entry) => zAgentResolvedAsk.safeParse(entry).data ?? [])
+}
+
+export function openPendingAsk(
+  row: AgentMessages[number]
+): AgentMessages[number]['pending_ask'] {
+  const ask = row.pending_ask
+  if (!ask) return undefined
+  return resolvedAsksOf(row).some(({ ask_id }) => ask_id === ask.ask_id)
+    ? undefined
+    : ask
+}
+
+interface RowCalls {
+  ids: string[]
+  earlier: Set<string>
+}
+
+function resolvedAskIndex(
+  parts: AssistantMessage['parts'],
+  rowCalls: RowCalls,
+  afterToolCalls: number | undefined,
+  rowText: AssistantMessage['parts'][number] | undefined
+): number {
+  const next = rowCalls.ids
+    .slice(afterToolCalls ?? rowCalls.ids.length)
+    .find((callId) => !rowCalls.earlier.has(callId))
+  const index =
+    next === undefined
+      ? parts.findIndex((part) => part === rowText)
+      : parts.findIndex((part) => part.type === 'tool' && part.callId === next)
+  return index === -1 ? parts.length : index
+}
+
+function insertResolvedAsks(
+  message: AssistantMessage,
+  asks: AgentResolvedAsk[],
+  rowCalls: RowCalls,
+  rowText: AssistantMessage['parts'][number] | undefined
+): void {
+  const parts = [...message.parts]
+  for (const ask of asks) {
+    const part = toResolvedAskPart(ask)
+    if (!part) continue
+    parts.splice(
+      resolvedAskIndex(parts, rowCalls, ask.after_tool_calls, rowText),
+      0,
+      part
+    )
+  }
+  message.parts = parts
+}
+
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -450,11 +508,22 @@ function applyAssistantRow(
 ): NormalizedAgentTranscript['pending'] {
   const isLive = row.status === 'streaming'
   message.streaming = isLive
-  appendAssistantContent(message, row, text, isLive)
+  const earlier = new Set(
+    message.parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+  )
+  const toolCalls = parseToolCalls(row.content, isLive)
+  appendAssistantContent(message, row, text, toolCalls)
+  insertResolvedAsks(
+    message,
+    resolvedAsksOf(row),
+    { ids: (toolCalls ?? []).map(({ part }) => part.callId), earlier },
+    text ? message.parts.at(-1) : undefined
+  )
 
   if (!isLive) return undefined
 
-  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
+  const pendingAsk = openPendingAsk(row)
+  if (pendingAsk) message.parts.push(toAskOrNoticePart(pendingAsk))
   return { messageId: toTurnId(row.id), message }
 }
 
