@@ -6,6 +6,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
+  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
   isRecommendedWidget,
@@ -82,6 +83,8 @@ function refreshPromotedRows() {
   promotedRows.value = node ? buildPromotedRows(node) : []
 }
 watch(activeNode, refreshPromotedRows, { immediate: true })
+
+const promotionVersion = ref(0)
 useEventListener(
   () => activeNode.value?.subgraph.events,
   [
@@ -91,7 +94,10 @@ useEventListener(
     'removing-input',
     'inputs-reordered'
   ],
-  refreshPromotedRows
+  () => {
+    refreshPromotedRows()
+    promotionVersion.value++
+  }
 )
 
 function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
@@ -158,6 +164,7 @@ function updateActivePromotedRows(
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  void promotionVersion.value
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = node.subgraph.nodes
   for (const node of interiorNodes) {
@@ -272,12 +279,7 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const subgraphSlot = row.input._subgraphSlot
-    if (subgraphSlot) {
-      const inputIndex = subgraphNode.inputs.indexOf(row.input)
-      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
-      else subgraphNode.subgraph.removeInput(subgraphSlot)
-    }
+    demotePromotedInput(subgraphNode, row.input)
     refreshActiveNodeRendering()
     return
   }
