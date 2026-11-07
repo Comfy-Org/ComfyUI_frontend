@@ -159,3 +159,19 @@ changes the boot warning described under Negative consequences. A restoration
 that cannot open its workflow now reports "Couldn’t open the target workflow."
 A workflow absent from a successful Cloud listing shows an in-chat notice
 instead of a toast.
+
+## Amendment (2026-10-15): Only a lookup 404 marks a workflow gone
+
+[AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
+narrows the notice in the amendment above: only a 404 from the direct lookup
+of the workflow marks it gone and shows the in-chat notice. When no local tab
+resolves, as with a refused binding, the chat otherwise opens readable without
+a target, and Send asks the person to pick a workflow. That ADR's 2026-10-15
+amendment states when the lookup runs and what counts as inconclusive.
+
+This supersedes the boot outcome in the first two Negative consequences. A
+refused binding to a workflow that is not gone no longer shows a warning at
+every boot. The next message on the thread is not posted without a workflow.
+Picking the draft still saves it as a new Cloud workflow and orphans the old
+one. "Couldn’t open the target workflow." remains for a found workflow that
+fails to open.

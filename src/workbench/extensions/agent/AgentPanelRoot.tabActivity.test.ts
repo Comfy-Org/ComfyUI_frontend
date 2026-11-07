@@ -866,36 +866,20 @@ describe('AgentPanelRoot tab activity across chats', () => {
     ).toBe(true)
   })
 
-  it('moves the tab of the chat that asked for it when the user switches chats mid-open', async () => {
+  it('keeps the tab of the chat that asked for it after the user switches chats', async () => {
     addBoundTab(otherTab, 'wf-other')
     transcripts['th-2'] = liveOtherThread()
     renderPanel()
     await send('add an upscaler')
-    let finishOpening!: () => void
-    vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
-      (tab) =>
-        new Promise((resolve) => {
-          finishOpening = () => {
-            workflowStore.activeWorkflow = tab as LoadedComfyWorkflow
-            resolve(true)
-          }
-        })
-    )
 
     agentSocket.receive('agent_active_tab', {
       workflow_id: 'wf-other',
       thread_id: 'th-1'
     })
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
+      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
     )
     await openChat('Other chat', 'th-2')
-    finishOpening()
-    await vi.waitFor(() =>
-      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-other')).toBe(
-        otherTab
-      )
-    )
     await nextTick()
     expect(useWorkflowTabActivityStore().editingPaths.has(otherTab)).toBe(true)
 

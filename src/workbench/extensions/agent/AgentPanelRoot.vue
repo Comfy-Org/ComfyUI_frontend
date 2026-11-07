@@ -546,6 +546,7 @@ const {
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
+  retryTarget: retryUnresolvedTarget,
   adoptTarget: adoptWorkflowTarget,
   requestReferences: onRequestWorkflowReferences,
   cancelSelection: cancelWorkflowSelection
@@ -998,14 +999,11 @@ function onWorkflowAdopted(
   }
 }
 
-async function onWorkflowRestoredAndBound(
-  workflowId: string | undefined,
+async function bindRestoration(
+  restoration: ReturnType<typeof onWorkflowRestored>,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  const { ready, committedWorkflowId } = await onWorkflowRestored(
-    workflowId,
-    isCurrent
-  )
+  const { ready, committedWorkflowId } = await restoration
   if (committedWorkflowId === null || !isCurrent()) return ready
   bindRestoredWorkflow(committedWorkflowId)
   return ready
@@ -1355,9 +1353,24 @@ async function restoreThreadWorkflow(
   isCurrent: () => boolean
 ): Promise<boolean> {
   const restoring = agentPanelStore.canRestoreWorkflow
-  const ready = await onWorkflowRestoredAndBound(workflowId, isCurrent)
+  const ready = await bindRestoration(
+    onWorkflowRestored(workflowId, isCurrent),
+    isCurrent
+  )
   if (ready && restoring && workflowId !== undefined)
     adoptRestoredWorkflowTab(workflowId)
+  return ready
+}
+
+async function retryUnresolvedThreadWorkflow(
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const workflowId = conversationStore.latestWorkflowId
+  const ready = await bindRestoration(
+    retryUnresolvedTarget(workflowId, isCurrent),
+    isCurrent
+  )
+  if (ready && workflowId !== undefined) adoptRestoredWorkflowTab(workflowId)
   return ready
 }
 
@@ -1468,12 +1481,21 @@ let activeTabChain: Promise<void> = Promise.resolve()
 
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
+  const ownerThreadId = threadId.value
+  function isCurrent(): boolean {
+    if (generation !== activeTabGeneration) return false
+    if (ownerThreadId !== null && threadId.value !== ownerThreadId) return false
+    return agentPanelStore.isThreadNavigationCurrent(
+      threadId.value,
+      history.activeId
+    )
+  }
   const turnId =
     data.message_id === undefined
       ? conversationTurnId.value
       : toTurnId(data.message_id)
   const result = activeTabChain.then(() =>
-    onAgentActiveTab(data, generation, turnId)
+    onAgentActiveTab(data, isCurrent, turnId)
   )
   activeTabChain = result.then(() => undefined)
   return result
@@ -1546,20 +1568,19 @@ function agentTabFilename(name: string | undefined): string | undefined {
 }
 
 interface ActiveTabActivation {
-  stale: () => boolean
+  isCurrent: () => boolean
   showTurnOn: (tab: ComfyWorkflow) => void
 }
 
 async function onAgentActiveTab(
   data: AgentActiveTabData,
-  generation: number,
+  isCurrent: () => boolean,
   turnId: TurnId | null
 ): Promise<boolean> {
   const previousWorkflowId = boundWorkflowId.value
-  const stale = () => generation !== activeTabGeneration
-  if (stale()) return false
+  if (!isCurrent()) return false
   const activation: ActiveTabActivation = {
-    stale,
+    isCurrent,
     showTurnOn: (tab) => {
       if (turnId !== null)
         conversationStore.moveTurnToTab(turnId, tab.instanceId)
@@ -1576,7 +1597,7 @@ async function onAgentActiveTab(
         )
       : await createAndActivateAgentTab(data, previousWorkflowId, activation)
   } catch (error) {
-    if (stale()) return false
+    if (!isCurrent()) return false
     bindWorkflow(data.workflow_id)
     reportError(error, {
       surface: 'agent',
@@ -1597,10 +1618,10 @@ async function activateExistingAgentTab(
   data: AgentActiveTabData,
   bound: ComfyWorkflow,
   previousWorkflowId: string | null,
-  { stale, showTurnOn }: ActiveTabActivation
+  { isCurrent, showTurnOn }: ActiveTabActivation
 ): Promise<boolean> {
-  const opened = await workflowService.openWorkflow(bound)
-  if (stale()) return false
+  const opened = await workflowService.openWorkflow(bound, { isCurrent })
+  if (!isCurrent()) return false
   if (!opened) {
     warnWorkflowUnavailable()
     trackWorkflowOpenFailure('toast')
@@ -1620,7 +1641,7 @@ async function activateExistingAgentTab(
 async function createAndActivateAgentTab(
   data: AgentActiveTabData,
   previousWorkflowId: string | null,
-  { stale, showTurnOn }: ActiveTabActivation
+  { isCurrent, showTurnOn }: ActiveTabActivation
 ): Promise<boolean> {
   const creatingStartedAt = Date.now()
   tabActivity.setCreating(true)
@@ -1628,7 +1649,7 @@ async function createAndActivateAgentTab(
     CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
   if (remainingCreatingTime > 0)
     await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-  if (stale()) return false
+  if (!isCurrent()) return false
   const tab = workflowStore.createNewTemporary(
     agentTabFilename(data.name),
     agentTabGraph
@@ -1636,14 +1657,14 @@ async function createAndActivateAgentTab(
   tabActivity.setCreating(false)
   let opened: boolean
   try {
-    opened = await workflowService.openWorkflow(tab)
+    opened = await workflowService.openWorkflow(tab, { isCurrent })
   } catch (error) {
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
     throw error
   }
-  if (stale() || !opened) {
+  if (!isCurrent() || !opened) {
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-    if (!stale()) {
+    if (isCurrent()) {
       warnWorkflowUnavailable()
       trackWorkflowOpenFailure('toast')
     }
@@ -1899,7 +1920,7 @@ const currentChatReady = computed(
   () =>
     isTranscriptReady.value &&
     threadId.value === history.activeId &&
-    selectedTarget.value !== null
+    (selectedTarget.value !== null || agentPanelStore.targetUnresolved)
 )
 
 const historyGroups = computed(() => {
@@ -1911,6 +1932,13 @@ const historyGroups = computed(() => {
     history.titleFor(id) || deriveSessionTitle(entries.value)
   )
 })
+
+function abandonPendingChatWork(): void {
+  ++activeTabGeneration
+  composerStore.invalidateSubmission()
+  cancelWorkflowSelection()
+  canvasStore.stopNodePicking()
+}
 
 const workflowChatFollow = useAgentWorkflowChatFollow({
   activeWorkflow: () => workflowStore.activeWorkflow,
@@ -1967,14 +1995,15 @@ async function onSelectHistory(
 ): Promise<boolean> {
   retireFollow()
   provisionalTitle.value = undefined
-  if (currentChatReady.value && id === threadId.value)
+  if (currentChatReady.value && id === threadId.value) {
+    if (agentPanelStore.targetUnresolved)
+      return retryUnresolvedThreadWorkflow(isCurrent)
     return onShowTarget(isCurrent, warnRestoreFailed)
-  composerStore.invalidateSubmission()
+  }
+  abandonPendingChatWork()
   errorAttachRun++
   composerStore.clearErrorContext()
-  cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
-  canvasStore.stopNodePicking()
   const opened = await loadThread(id, isCurrent)
   if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -2264,9 +2293,7 @@ function onNewChat(
     return
   }
   provisionalTitle.value = undefined
-  composerStore.invalidateSubmission()
-  cancelWorkflowSelection()
-  canvasStore.stopNodePicking()
+  abandonPendingChatWork()
   attachment.cancelAllUploads()
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
