@@ -55,6 +55,25 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+export function toolCallEvent(
+  toolCallId: string,
+  toolName: string,
+  status: 'running' | 'success' | 'error',
+  skill?: string
+): AgentWsEvent {
+  return {
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: toolCallId,
+      tool_name: toolName,
+      status,
+      message_id: TURN_ID,
+      thread_id: THREAD_ID,
+      ...(skill === undefined ? {} : { skill })
+    }
+  }
+}
+
 export function pushHostFrames(
   ws: WebSocketRoute,
   frames: readonly HostFrame[]
@@ -301,6 +320,17 @@ export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   }
 }
 
+export const RUNNING_RUN_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-run',
+    tool_name: 'run',
+    status: 'running',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
@@ -363,6 +393,7 @@ async function mockAgentBoot(
     agentRetryAfter,
     agentBilling,
     acceptedTurns,
+    agentRemoteConfig,
     crdtDebugEnabled,
     initialFeatureFlags,
     initialSettings,
@@ -435,7 +466,8 @@ async function mockAgentBoot(
     features: {
       ...agentFeatures(agentFlagEnabled),
       ...(agentConsentWebSession && { unified_web_session: true }),
-      ...initialFeatureFlags
+      ...initialFeatureFlags,
+      ...agentRemoteConfig
     },
     settings: storedSettings,
     objectInfo
@@ -679,6 +711,7 @@ type AgentFixtures = {
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
   agentRetryAfter: string | undefined
+  agentRemoteConfig: Partial<RemoteConfig>
   crdtDebugEnabled: boolean
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo: 'server' | undefined
@@ -711,6 +744,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
   agentRetryAfter: [undefined, { option: true }],
+  agentRemoteConfig: [{}, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
   objectInfo: [undefined, { option: true }],
   page: async (
@@ -727,6 +761,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,
@@ -750,6 +785,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,

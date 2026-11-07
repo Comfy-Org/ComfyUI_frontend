@@ -4,41 +4,10 @@
   "description": "Sharing workflows by link and publishing them to ComfyHub: share and ComfyHub API schemas and services, the share dialog and copyable share URL, opening a shared workflow from a URL (including logged-out share attribution), and the ComfyHub profile gate and multi-step publish wizard. The workflow store, workflowService, assets store, auth, telemetry, and dialog infrastructure remain external.",
   "modules": [
     {
-      "path": "src/platform/workflow/sharing/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/sharing/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useAssetSections.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useSliderFromMouse.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workflow/sharing/services/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/validateFileSize.ts",
-      "role": "presentation"
+      "path": "src/platform/workflow/sharing/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Share and ComfyHub payloads are validated at the API boundary",
@@ -77,7 +46,7 @@
   "compatibilityPromises": [
     "Share URLs using the existing share query parameter keep opening the shared workflow.",
     "Unclassified callers may import sharing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "Dialog launchers that load presentation and components that call share services directly remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "Dialog launchers that load presentation and components that call share services directly remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

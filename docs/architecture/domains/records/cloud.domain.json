@@ -4,137 +4,49 @@
   "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
   "modules": [
     {
-      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
-      "role": "presentation"
+      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue"
     },
     {
-      "path": "src/extensions/core/cloudBadges.ts",
-      "role": "integration"
+      "path": "src/extensions/core/cloudBadges.ts"
     },
     {
-      "path": "src/extensions/core/cloudFeedbackTopbarButton.ts",
-      "role": "integration"
+      "path": "src/extensions/core/cloudFeedbackTopbarButton.ts"
     },
     {
-      "path": "src/extensions/core/cloudRemoteConfig.ts",
-      "role": "integration"
+      "path": "src/extensions/core/cloudRemoteConfig.ts"
     },
     {
-      "path": "src/extensions/core/cloudSessionCookie.ts",
-      "role": "integration"
+      "path": "src/extensions/core/cloudSessionCookie.ts"
     },
     {
-      "path": "src/platform/auth/cloudApiAuthProvider.ts",
-      "role": "infrastructure"
+      "path": "src/platform/auth/cloudApiAuthProvider.ts"
     },
     {
-      "path": "src/platform/auth/session/cloudIdentityBoot.ts",
-      "role": "application"
+      "path": "src/platform/auth/session/cloudIdentityBoot.ts"
     },
     {
-      "path": "src/platform/auth/session/cloudWebSessionStore.ts",
-      "role": "application"
+      "path": "src/platform/auth/session/cloudWebSessionStore.ts"
     },
     {
-      "path": "src/platform/cloud/**",
-      "role": "application"
+      "path": "src/platform/cloud/**"
     },
     {
-      "path": "src/platform/cloud/notification/components/**",
-      "role": "presentation"
+      "path": "src/platform/distribution/**"
     },
     {
-      "path": "src/platform/cloud/oauth/**",
-      "role": "infrastructure"
+      "path": "src/platform/telemetry/initTelemetry.ts"
     },
     {
-      "path": "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
-      "role": "presentation"
+      "path": "src/platform/telemetry/providers/**"
     },
     {
-      "path": "src/platform/cloud/oauth/OAuthConsentView.vue",
-      "role": "presentation"
+      "path": "src/utils/textCaseUtil.ts"
     },
     {
-      "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/auth.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/useProgressBarPainter.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/desktopLoginRedemption.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/onboardingCloudRoutes.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/sso/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/sso/ssoReentry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/survey/surveySchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/distribution/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/initTelemetry.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/telemetry/providers/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/textCaseUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "packages/shared-frontend-utils/src/piiUtil.ts",
-      "role": "infrastructure"
+      "path": "packages/shared-frontend-utils/src/piiUtil.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["telemetry"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Cloud onboarding routes gate users through sign-in, survey, and post-auth redirects",
@@ -199,7 +111,7 @@
   "compatibilityPromises": [
     "main.ts, router.ts, bootstrapStore, shared auth, billing, workspace, and telemetry code may continue importing cloud internals during inventory.",
     "Cloud bootstrap extensions and onboarding routes remain the integration seams between the cloud distribution and the host app.",
-    "Dialog launchers that lazy-load presentation and views that call OAuth, onboarding, or checkout adapters directly remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "Dialog launchers that lazy-load presentation and views that call OAuth, onboarding, or checkout adapters directly remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }
