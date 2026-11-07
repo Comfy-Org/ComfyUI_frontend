@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
   redactTelemetryError,
@@ -159,9 +159,49 @@ describe('redactTelemetryUrls', () => {
       kind: 'digit-led root segment before more path',
       input: 'GET /1/x?token=SECRET',
       expected: 'GET /1/x'
+    },
+    {
+      kind: 'bare query with no URL-shaped prefix',
+      input: '?token=secret',
+      expected: ''
+    },
+    {
+      kind: 'bare fragment with no URL-shaped prefix',
+      input: '#access_token=x',
+      expected: ''
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata', () => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    })
+  })
+
+  it('redacts a query value containing an apostrophe without leaking the rest of the query', () => {
+    const redacted = redactTelemetryUrls(
+      "https://h/api/search?q=o'brien&token=SECRET"
+    )
+    expect(redacted).not.toContain('SECRET')
+    expect(redacted).toBe('https://h/api/search')
+  })
+
+  describe.for([
+    {
+      kind: 'a single-quoted URL',
+      input: "GET 'https://h/x?token=SECRET'",
+      expected: "GET 'https://h/x'"
+    },
+    {
+      kind: 'a single-quoted URL followed by more text',
+      input: "Load failed: 'https://h/a?token=S', retrying",
+      expected: "Load failed: 'https://h/a', retrying"
+    },
+    {
+      kind: 'single-quoted URLs in a stringified array',
+      input: "['https://h/a?t=1','https://user:pw@h/b?t=2']",
+      expected: "['https://h/a','https://h/b']"
+    }
+  ])('$kind', ({ input, expected }) => {
+    it('redacts URL metadata without swallowing the closing quote', () => {
       expect(redactTelemetryUrls(input)).toBe(expected)
     })
   })
@@ -178,7 +218,15 @@ describe('redactTelemetryUrls', () => {
     { kind: 'an absolute file path', text: '/home/u/models/x.safetensors' },
     { kind: 'a Windows file path', text: 'C:\\Users\\u\\workflow.json' },
     { kind: 'a version string', text: 'comfyui 1.2.3 ready' },
-    { kind: 'a bare question', text: 'Can this work?' }
+    { kind: 'a bare question', text: 'Can this work?' },
+    {
+      kind: 'a CSS selector with ids',
+      text: 'body > div#graph-canvas-container.absolute > canvas#graph-canvas'
+    },
+    {
+      kind: 'a click-event invoker string',
+      text: 'BUTTON#run.onclick'
+    }
   ])('$kind', ({ text }) => {
     it('survives redaction unchanged', () => {
       expect(redactTelemetryUrls(text)).toBe(text)
@@ -206,6 +254,20 @@ describe('redactTelemetryUrls', () => {
         )
       ).toBe(`https://a.test/x${expected}https://b.test/y`)
     })
+  })
+
+  it('strips userinfo from a second URL glued on by a comma with an uppercase scheme', () => {
+    const redacted = redactTelemetryUrls(
+      'https://a.test/x,HTTPS://user:pw@b.test/y'
+    )
+    expect(redacted).toBe('https://a.test/x,HTTPS://b.test/y')
+  })
+
+  it('strips userinfo from a second URL glued on by punctuation with no recognized boundary', () => {
+    const redacted = redactTelemetryUrls(
+      'https://a.test/x|https://user:pw@b.test/y'
+    )
+    expect(redacted).toBe('https://a.test/x|https://b.test/y')
   })
 
   it('redacts proxy-like paths without changing ordinary question text', () => {
@@ -245,6 +307,20 @@ describe('redactTelemetryUrls', () => {
   it('handles a long dotted non-URL run without pathological rescanning', () => {
     const text = 'a.'.repeat(20_000)
     expect(redactTelemetryUrls(text)).toBe('[Redacted]')
+  })
+
+  it('handles a short dotted non-URL run without pathological rescanning', () => {
+    const text = 'a' + '.'.repeat(70) + '!'
+    expect(redactTelemetryUrls(text)).toBe(text)
+  })
+
+  it('handles a long spaced near-miss query run without pathological rescanning', () => {
+    const text = `https://h/x?${' '.repeat(16_000)}!`
+    const expected = `https://h/x${' '.repeat(16_000)}!`
+    vi.useRealTimers()
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe(expected)
+    expect(performance.now() - start).toBeLessThan(300)
   })
 })
 
@@ -402,6 +478,22 @@ describe('redactTelemetryValues', () => {
     expect(Object.getPrototypeOf(redacted)).toBeNull()
   })
 
+  it('disambiguates distinct keys that redact to the same string instead of dropping one', () => {
+    const redacted = redactTelemetryValues({
+      'https://h/x~2': 'literal',
+      'https://h/x?job=1': 'ok',
+      'https://h/x?job=2': 'timeout',
+      'https://h/x?job=3': 'failed'
+    })
+
+    expect(redacted).toEqual({
+      'https://h/x~2': 'literal',
+      'https://h/x': 'ok',
+      'https://h/x~3': 'timeout',
+      'https://h/x~4': 'failed'
+    })
+  })
+
   it('preserves inherited Error names and empty messages', () => {
     const error = new TypeError()
     Object.defineProperty(error, 'stack', {
@@ -414,5 +506,18 @@ describe('redactTelemetryValues', () => {
     assert.instanceOf(redacted, Error)
     expect(redacted.name).toBe('TypeError')
     expect(redacted.message).toBe('')
+    expect(redacted.stack).toBeUndefined()
+  })
+
+  it('clears the auto-captured stack when the source error had no real stack', () => {
+    const error = new Error('plain message')
+    Object.defineProperty(error, 'stack', {
+      value: undefined,
+      enumerable: true
+    })
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).toBeUndefined()
   })
 })
