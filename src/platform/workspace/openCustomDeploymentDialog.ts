@@ -22,7 +22,8 @@ function cardOf(module: { default?: Component } | undefined): Component {
 export async function openCardDialog(
   key: string,
   load: () => Promise<{ default?: Component } | undefined>,
-  props: Record<string, unknown>
+  props: Record<string, unknown>,
+  isStillWanted: () => boolean = () => true
 ): Promise<boolean> {
   const card = await load()
     .then(cardOf)
@@ -30,7 +31,7 @@ export async function openCardDialog(
       useErrorHandling().toastErrorHandler(error)
       return null
     })
-  if (card === null) return false
+  if (card === null || !isStillWanted()) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({
@@ -99,10 +100,15 @@ export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
     )
 }
 
+/** Whether the workflow deployment dialog is open. */
+export function isWorkflowNeedsDeploymentDialogOpen(): boolean {
+  return useDialogStore().isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)
+}
+
 /** Opens the workflow deployment dialog, replacing an earlier one. */
 export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   const dialogStore = useDialogStore()
-  if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {
+  if (isWorkflowNeedsDeploymentDialogOpen()) {
     dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
     await nextTick()
   }

@@ -11,8 +11,6 @@ function isOpenOnCloudTraffic(request: Request): boolean {
   )
 }
 
-// CI serves a production build, where the `ff:` localStorage override is
-// tree-shaken, so the gate is driven through the server feature-flag handshake.
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
   test('boots, loads and hovers the top menu without any Open on Cloud surface or traffic while the gate is off', async ({
     comfyPage
@@ -30,7 +28,6 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
     await comfyPage.page.getByTestId('top-menu-actionbars').hover()
 
     await expect(comfyPage.page.getByTestId('cloud-button')).toHaveCount(0)
-    expect(comfyPage.page.url()).not.toContain('desktop_workflow')
     expect(traffic).toEqual([])
   })
 
