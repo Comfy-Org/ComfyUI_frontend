@@ -1606,6 +1606,136 @@
     },
     "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
+  "buildCustomNodes": {
+    "loading": "טעינת הצמתים המותאמים אישית של ה-Build",
+    "pinned": "מוצמד",
+    "defaultBranch": "ענף ברירת המחדל",
+    "uploaded": "הועלה",
+    "learnCustomNodes": "מידע נוסף על צמתים מותאמים אישית",
+    "loadFailed": {
+      "title": "לא ניתן היה לטעון את הצמתים המותאמים אישית של ה-Build"
+    },
+    "picker": {
+      "title": "הוספת צמתים מותאמים אישית ל-{build}",
+      "body": "בחרו חבילות צמתים להוספה. Comfy Cloud יבנה מהדורה חדשה של {build}, ולאחר מכן יעביר אליה את {deployment}.",
+      "search": "חיפוש חבילות צמתים",
+      "clearSearch": "ניקוי החיפוש",
+      "columnName": "שם החבילה",
+      "columnPublisher": "מפרסם",
+      "columnInstalls": "התקנות",
+      "columnStars": "כוכבים",
+      "columnVersion": "גרסה",
+      "columnLicense": "רישיון",
+      "columnInstall": "התקנה",
+      "installLabel": "הוספת {pack} ל-Build",
+      "noVersion": "אין גרסה שפורסמה",
+      "versionLabel": "בחרו גרסה של {pack}. כרגע נבחרה {version}.",
+      "versionsOf": "הגרסאות של {pack}",
+      "latest": "האחרונה",
+      "loadingVersions": "טעינת גרסאות",
+      "pinCommit": "הצמדת hash של commit",
+      "pinCommitLabel": "הצמדת hash של commit עבור {pack}",
+      "commitField": "Hash של commit",
+      "pin": "הצמדה",
+      "notCommit": "הזינו hash של commit באורך 7 עד 40 אותיות וספרות.",
+      "loading": "טעינת חבילות צמתים",
+      "searchFailed": "לא ניתן היה להתחבר ל-Comfy Registry. נסו שוב.",
+      "noMatches": "אין חבילות צמתים שתואמות ל-\"{query}\".",
+      "inBuildCount": "{count} חבילת צמתים ב-{build} | {count} חבילות צמתים ב-{build}",
+      "pickedCount": "· עדיין לא נבחר דבר | · {count} נבחרה | · {count} נבחרו",
+      "previousPage": "העמוד הקודם",
+      "nextPage": "העמוד הבא",
+      "review": "סקירת השינויים | סקירת {count} חבילת צמתים | סקירת {count} חבילות צמתים",
+      "inBuildLabel": "החבילה {pack} כבר נמצאת ב-Build",
+      "pageOf": "עמוד {page} מתוך {count}",
+      "editOnPlatform": "עריכה ב-Platform",
+      "editOnPlatformLabel": "עריכת הצמתים המותאמים אישית של {build} ב-Developer Platform",
+      "statusMenuLabel": "סינון חבילות צמתים לפי סטטוס. מוצג כעת {value}.",
+      "licenseMenuLabel": "סינון חבילות צמתים לפי רישיון. מוצג כעת {value}.",
+      "sortMenuLabel": "מיון חבילות צמתים. ממוין כעת לפי {value}.",
+      "status": {
+        "heading": "סטטוס",
+        "all": "כל החבילות",
+        "installed": "מותקנות",
+        "notInstalled": "לא מותקנות"
+      },
+      "license": {
+        "heading": "רישיון",
+        "any": "כל רישיון",
+        "count": "{count} רישיון | {count} רישיונות",
+        "unlisted": "לא צוין רישיון",
+        "clear": "ניקוי מסנן הרישיון"
+      },
+      "sort": {
+        "heading": "מיון",
+        "installs": "הכי הרבה התקנות",
+        "stars": "הכי הרבה כוכבים",
+        "nameAsc": "שם החבילה, A עד Z",
+        "nameDesc": "שם החבילה, Z עד A"
+      }
+    },
+    "review": {
+      "title": "הוספת {count} חבילת צמתים ל-{build} | הוספת {count} חבילות צמתים ל-{build}",
+      "body": "Comfy Cloud יבנה איתן מהדורה חדשה של {build}, ולאחר מכן יעביר אליה את {deployment}. התהליך נמשך בדרך כלל 10–15 דקות.",
+      "listLabel": "חבילות צמתים להוספה",
+      "note": "משימות שרצות כעת יסתיימו על v{version}. כשהמהדורה החדשה תהיה מוכנה, טענו מחדש את העורך כדי להשתמש בצמתים החדשים.",
+      "backLabel": "חזרה לחבילות הצמתים",
+      "submit": "הוספה ופריסה מחדש"
+    },
+    "readOnly": {
+      "title": "צמתים מותאמים אישית ב-{build}",
+      "body": "אין לכם אפשרות להוסיף חבילות צמתים ל-Build הזה. בקשו מהאדם שמנהל אותו להוסיף אותן עבורכם.",
+      "listLabel": "חבילות צמתים ב-{build}"
+    },
+    "building": {
+      "titleStarting": "הבנייה מתחילה",
+      "title": "בניית מהדורה v{version}",
+      "body": "מתבצעת התקנה של {count} חבילת צמתים ב-{build}. בנייה נמשכת בדרך כלל 10–15 דקות. | מתבצעת התקנה של {count} חבילות צמתים ב-{build}. בנייה נמשכת בדרך כלל 10–15 דקות.",
+      "step": {
+        "queued": "ממתין לשרת בנייה",
+        "resolving": "קביעת הגרסאות של חבילות הצמתים",
+        "installing": "התקנת חבילות הצמתים",
+        "checking": "בדיקה שהצמתים נטענים",
+        "packaging": "אריזת המהדורה"
+      },
+      "stepOf": "שלב {step} מתוך {count}",
+      "elapsed": "פחות מדקה עד כה | {count} דק׳ עד כה | {count} דק׳ עד כה",
+      "progressLabel": "התקדמות הבנייה",
+      "showLog": "הצגת יומן הבנייה",
+      "hideLog": "הסתרת יומן הבנייה",
+      "logLabel": "יומן הבנייה",
+      "logEmpty": "שרת הבנייה עדיין לא כתב ליומן.",
+      "note": "אפשר לסגור את החלון הזה. השאירו את הלשונית הזו פתוחה כדי ש-{deployment} יוכל לעבור למהדורה החדשה."
+    },
+    "failed": {
+      "title": "הבנייה של מהדורה v{version} נכשלה",
+      "body": "הבנייה נעצרה, ולכן {deployment} עדיין פועל על v{version}. שנו את הגרסה של חבילת הצמתים שמוזכרת בהודעה, או הסירו אותה. לאחר מכן בנו שוב.",
+      "messageHeading": "הודעה משרת הבנייה",
+      "copyLabel": "העתקת ההודעה של שרת הבנייה",
+      "openLog": "פתיחת היומן המלא",
+      "noMessage": "שרת הבנייה לא ציין סיבה. פתחו את היומן המלא כדי לראות מה קרה.",
+      "change": "שינוי חבילות הצמתים",
+      "retry": "בנייה מחדש"
+    },
+    "moving": {
+      "title": "העברת {deployment} ל-v{version}",
+      "body": "מהדורה v{version} נבנתה. המעבר יתבצע כשהעותק החדש של {deployment} יהיה מוכן, בדרך כלל תוך כמה דקות.",
+      "step": "הפעלת עותק חדש של {deployment}",
+      "progressLabel": "התקדמות הפריסה מחדש",
+      "note": "עד אז, משימות חדשות ירוצו על v{version}. משימות שכבר התחילו יסתיימו על v{version}."
+    },
+    "moveFailed": {
+      "title": "לא ניתן היה להעביר את {deployment} ל-v{version}",
+      "body": "מהדורה v{version} נבנתה, אבל {deployment} עדיין פועל על v{current}. העבירו אותו שוב, או שנו את המהדורה שלו ב-Developer Platform.",
+      "retry": "העברה חוזרת"
+    },
+    "landed": {
+      "title": "כעת {build} v{version} פועל על {deployment}",
+      "body": "טענו מחדש את העורך כדי להשתמש בחבילת הצמתים שהוספתם. הלשוניות שלכם יישארו פתוחות. | טענו מחדש את העורך כדי להשתמש ב-{count} חבילות הצמתים שהוספתם. הלשוניות שלכם יישארו פתוחות.",
+      "later": "מאוחר יותר",
+      "reload": "טעינה מחדש"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "confirmSummary": "לאשר כניסה משולחן העבודה?",

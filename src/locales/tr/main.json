@@ -1606,6 +1606,136 @@
     },
     "workspaceDefault": "Çalışma alanı varsayılanı"
   },
+  "buildCustomNodes": {
+    "loading": "Derlemenin özel düğümleri yükleniyor",
+    "pinned": "Sabitlendi",
+    "defaultBranch": "Varsayılan dal",
+    "uploaded": "Karşıya yüklendi",
+    "learnCustomNodes": "Özel düğümler hakkında bilgi edinin",
+    "loadFailed": {
+      "title": "Derlemenin özel düğümleri yüklenemedi"
+    },
+    "picker": {
+      "title": "Özel düğümleri {build} Derlemesine ekleyin",
+      "body": "Eklenecek düğüm paketlerini seçin. Comfy Cloud, {build} Derlemesinin yeni bir Release'ini oluşturur ve ardından {deployment} dağıtımını bu Release'e taşır.",
+      "search": "Düğüm paketlerinde ara",
+      "clearSearch": "Aramayı temizle",
+      "columnName": "Paket adı",
+      "columnPublisher": "Yayıncı",
+      "columnInstalls": "Kurulum sayısı",
+      "columnStars": "Yıldızlar",
+      "columnVersion": "Sürüm",
+      "columnLicense": "Lisans",
+      "columnInstall": "Yükle",
+      "installLabel": "Derlemeye {pack} paketini ekle",
+      "noVersion": "Yayımlanmış sürüm yok",
+      "versionLabel": "Bir {pack} sürümü seçin. Şu anda {version} seçili.",
+      "versionsOf": "Tüm {pack} sürümleri",
+      "latest": "En son",
+      "loadingVersions": "Sürümler yükleniyor",
+      "pinCommit": "Commit hash'ine sabitle",
+      "pinCommitLabel": "Commit hash'i ile {pack} paketini sabitle",
+      "commitField": "Commit hash'i",
+      "pin": "Sabitle",
+      "notCommit": "7 ile 40 arasında harf ve rakamdan oluşan bir commit hash'i girin.",
+      "loading": "Düğüm paketleri yükleniyor",
+      "searchFailed": "Comfy Kayıt Defteri'ne ulaşılamadı. Tekrar deneyin.",
+      "noMatches": "\"{query}\" ile eşleşen düğüm paketi yok.",
+      "inBuildCount": "Derleme {build} içinde {count} düğüm paketi | Derleme {build} içinde {count} düğüm paketi",
+      "pickedCount": "· henüz seçim yok | · {count} seçildi | · {count} seçildi",
+      "previousPage": "Önceki sayfa",
+      "nextPage": "Sonraki sayfa",
+      "review": "Değişiklikleri incele | {count} düğüm paketini incele | {count} düğüm paketini incele",
+      "inBuildLabel": "Derlemede zaten {pack} paketi var",
+      "pageOf": "Sayfa {page} / {count}",
+      "editOnPlatform": "Platform'da düzenle",
+      "editOnPlatformLabel": "Geliştirici Platformu'nda {build} Derlemesinin özel düğümlerini düzenleyin",
+      "statusMenuLabel": "Düğüm paketlerini duruma göre filtreleyin. Şu anda {value} gösteriliyor.",
+      "licenseMenuLabel": "Düğüm paketlerini lisansa göre filtreleyin. Şu anda {value} gösteriliyor.",
+      "sortMenuLabel": "Düğüm paketlerini sıralayın. Geçerli sıralama {value}.",
+      "status": {
+        "heading": "Durum",
+        "all": "Tüm paketler",
+        "installed": "Yüklü",
+        "notInstalled": "Yüklü değil"
+      },
+      "license": {
+        "heading": "Lisans",
+        "any": "Herhangi bir lisans",
+        "count": "{count} lisans | {count} lisans",
+        "unlisted": "Lisans belirtilmemiş",
+        "clear": "Lisans filtresini temizle"
+      },
+      "sort": {
+        "heading": "Sıralama",
+        "installs": "En çok kurulan",
+        "stars": "En çok yıldız alan",
+        "nameAsc": "Paket adı, A'dan Z'ye",
+        "nameDesc": "Paket adı, Z'den A'ya"
+      }
+    },
+    "review": {
+      "title": "{count} düğüm paketini {build} Derlemesine ekleyin | {count} düğüm paketini {build} Derlemesine ekleyin",
+      "body": "Comfy Cloud bunlarla {build} Derlemesinin yeni bir Release'ini oluşturur, ardından {deployment} dağıtımını bu Release'e taşır. Bu işlem genellikle 10–15 dakika sürer.",
+      "listLabel": "Eklenecek düğüm paketleri",
+      "note": "Şu anda çalışan işler v{version} üzerinde tamamlanır. Yeni Release hazır olduğunda yeni düğümleri kullanmak için düzenleyiciyi yeniden yükleyin.",
+      "backLabel": "Düğüm paketlerine dön",
+      "submit": "Ekle ve yeniden dağıt"
+    },
+    "readOnly": {
+      "title": "Derleme {build} içindeki özel düğümler",
+      "body": "Bu Derlemeye düğüm paketi ekleyemezsiniz. Derlemeyi yöneten kişiden bunları sizin için eklemesini isteyin.",
+      "listLabel": "Derleme {build} içindeki düğüm paketleri"
+    },
+    "building": {
+      "titleStarting": "Derleme başlatılıyor",
+      "title": "Release v{version} derleniyor",
+      "body": "{count} düğüm paketi {build} içine kuruluyor. Derlemeler genellikle 10–15 dakika sürer. | {count} düğüm paketi {build} içine kuruluyor. Derlemeler genellikle 10–15 dakika sürer.",
+      "step": {
+        "queued": "Bir derleme sunucusu bekleniyor",
+        "resolving": "Düğüm paketi sürümleri belirleniyor",
+        "installing": "Düğüm paketleri kuruluyor",
+        "checking": "Düğümlerin yüklendiği kontrol ediliyor",
+        "packaging": "Release paketleniyor"
+      },
+      "stepOf": "Adım {step} / {count}",
+      "elapsed": "Şimdiye kadar bir dakikadan az | Şimdiye kadar {count} dk | Şimdiye kadar {count} dk",
+      "progressLabel": "Derleme ilerlemesi",
+      "showLog": "Derleme günlüğünü göster",
+      "hideLog": "Derleme günlüğünü gizle",
+      "logLabel": "Derleme günlüğü",
+      "logEmpty": "Derleme sunucusu henüz günlüğe bir şey yazmadı.",
+      "note": "Bu pencereyi kapatabilirsiniz. Bu sekmeyi açık tutun ki {deployment} dağıtımı yeni Release'e geçebilsin."
+    },
+    "failed": {
+      "title": "Release v{version} derlenemedi",
+      "body": "Derleme durdu, bu nedenle {deployment} hâlâ v{version} çalıştırıyor. Mesajda adı geçen düğüm paketinin sürümünü değiştirin veya paketi kaldırın. Ardından yeniden derleyin.",
+      "messageHeading": "Derleme sunucusunun mesajı",
+      "copyLabel": "Derleme sunucusunun mesajını kopyala",
+      "openLog": "Tam günlüğü aç",
+      "noMessage": "Derleme sunucusu nedenini belirtmedi. Ne olduğunu görmek için tam günlüğü açın.",
+      "change": "Düğüm paketlerini değiştir",
+      "retry": "Yeniden derle"
+    },
+    "moving": {
+      "title": "Release v{version} için {deployment} taşınıyor",
+      "body": "Release v{version} derlendi. Geçiş, {deployment} dağıtımının yeni kopyası hazır olduğunda gerçekleşir; bu genellikle birkaç dakika sürer.",
+      "step": "Yeni bir {deployment} kopyası başlatılıyor",
+      "progressLabel": "Yeniden dağıtım ilerlemesi",
+      "note": "O zamana kadar yeni işler v{version} üzerinde çalışır. Başlamış olan işler v{version} üzerinde tamamlanır."
+    },
+    "moveFailed": {
+      "title": "Release v{version} için {deployment} taşınamadı",
+      "body": "Release v{version} derlendi, ancak {deployment} hâlâ v{current} çalıştırıyor. Yeniden taşıyın veya Geliştirici Platformu'nda Release'ini değiştirin.",
+      "retry": "Yeniden taşı"
+    },
+    "landed": {
+      "title": "Artık {deployment} üzerinde {build} v{version} çalışıyor",
+      "body": "Eklediğiniz düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır. | Eklediğiniz {count} düğüm paketini kullanmak için düzenleyiciyi yeniden yükleyin. Sekmeleriniz açık kalır.",
+      "later": "Daha sonra",
+      "reload": "Yeniden yükle"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",

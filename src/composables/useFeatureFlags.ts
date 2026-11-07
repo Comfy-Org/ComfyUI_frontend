@@ -267,6 +267,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get buildCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.BUILD_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.build_custom_nodes_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },

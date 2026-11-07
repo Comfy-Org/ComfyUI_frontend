@@ -1606,6 +1606,136 @@
     },
     "workspaceDefault": "پیش‌فرض workspace"
   },
+  "buildCustomNodes": {
+    "loading": "در حال بارگذاری nodeهای سفارشی Build",
+    "pinned": "سنجاق‌شده",
+    "defaultBranch": "شاخهٔ پیش‌فرض",
+    "uploaded": "آپلودشده",
+    "learnCustomNodes": "دربارهٔ nodeهای سفارشی بیشتر بدانید",
+    "loadFailed": {
+      "title": "بارگذاری nodeهای سفارشی Build ممکن نشد"
+    },
+    "picker": {
+      "title": "افزودن nodeهای سفارشی به {build}",
+      "body": "بسته‌های node موردنظر را برای افزودن انتخاب کنید. Comfy Cloud یک Release جدید از {build} می‌سازد و سپس {deployment} را به آن منتقل می‌کند.",
+      "search": "جست‌وجوی بسته‌های node",
+      "clearSearch": "پاک کردن جست‌وجو",
+      "columnName": "نام بسته",
+      "columnPublisher": "ناشر",
+      "columnInstalls": "تعداد نصب",
+      "columnStars": "ستاره‌ها",
+      "columnVersion": "نسخه",
+      "columnLicense": "مجوز",
+      "columnInstall": "نصب",
+      "installLabel": "افزودن {pack} به Build",
+      "noVersion": "نسخهٔ منتشرشده‌ای ندارد",
+      "versionLabel": "نسخه‌ای از {pack} را انتخاب کنید. اکنون {version} انتخاب شده است.",
+      "versionsOf": "نسخه‌های {pack}",
+      "latest": "آخرین نسخه",
+      "loadingVersions": "در حال بارگذاری نسخه‌ها",
+      "pinCommit": "سنجاق کردن هش commit",
+      "pinCommitLabel": "سنجاق کردن هش commit برای {pack}",
+      "commitField": "هش commit",
+      "pin": "سنجاق کردن",
+      "notCommit": "یک هش commit با ۷ تا ۴۰ حرف و رقم وارد کنید.",
+      "loading": "در حال بارگذاری بسته‌های node",
+      "searchFailed": "دسترسی به رجیستری Comfy ممکن نشد. دوباره تلاش کنید.",
+      "noMatches": "هیچ بستهٔ nodeای با «{query}» مطابقت ندارد.",
+      "inBuildCount": "{count} بستهٔ node در {build} | {count} بستهٔ node در {build}",
+      "pickedCount": "· هنوز چیزی انتخاب نشده | · {count} مورد انتخاب شده | · {count} مورد انتخاب شده",
+      "previousPage": "صفحهٔ قبل",
+      "nextPage": "صفحهٔ بعد",
+      "review": "بررسی تغییرات | بررسی {count} بستهٔ node | بررسی {count} بستهٔ node",
+      "inBuildLabel": "بستهٔ {pack} از قبل در Build است",
+      "pageOf": "صفحهٔ {page} از {count}",
+      "editOnPlatform": "ویرایش در پلتفرم",
+      "editOnPlatformLabel": "ویرایش nodeهای سفارشی {build} در پلتفرم توسعه‌دهندگان",
+      "statusMenuLabel": "فیلتر کردن بسته‌های node بر اساس وضعیت. اکنون {value} نمایش داده می‌شود.",
+      "licenseMenuLabel": "فیلتر کردن بسته‌های node بر اساس مجوز. اکنون {value} نمایش داده می‌شود.",
+      "sortMenuLabel": "مرتب‌سازی بسته‌های node. مرتب‌شده بر اساس {value}.",
+      "status": {
+        "heading": "وضعیت",
+        "all": "همهٔ بسته‌ها",
+        "installed": "نصب‌شده",
+        "notInstalled": "نصب‌نشده"
+      },
+      "license": {
+        "heading": "مجوز",
+        "any": "هر مجوزی",
+        "count": "{count} مجوز | {count} مجوز",
+        "unlisted": "مجوزی ذکر نشده",
+        "clear": "پاک کردن فیلتر مجوز"
+      },
+      "sort": {
+        "heading": "مرتب‌سازی",
+        "installs": "بیشترین نصب",
+        "stars": "بیشترین ستاره",
+        "nameAsc": "نام بسته، A تا Z",
+        "nameDesc": "نام بسته، Z تا A"
+      }
+    },
+    "review": {
+      "title": "افزودن {count} بستهٔ node به {build} | افزودن {count} بستهٔ node به {build}",
+      "body": "Comfy Cloud با آن‌ها یک Release جدید از {build} می‌سازد و سپس {deployment} را به آن منتقل می‌کند. این کار معمولاً ۱۰ تا ۱۵ دقیقه طول می‌کشد.",
+      "listLabel": "بسته‌های node برای افزودن",
+      "note": "jobهایی که اکنون در حال اجرا هستند روی v{version} تمام می‌شوند. وقتی Release جدید آماده شد، ویرایشگر را دوباره بارگذاری کنید تا از nodeهای جدید استفاده کنید.",
+      "backLabel": "بازگشت به بسته‌های node",
+      "submit": "افزودن و استقرار مجدد"
+    },
+    "readOnly": {
+      "title": "nodeهای سفارشی در {build}",
+      "body": "نمی‌توانید به این Build بستهٔ node اضافه کنید. از فردی که آن را مدیریت می‌کند بخواهید آن‌ها را برایتان اضافه کند.",
+      "listLabel": "بسته‌های node در {build}"
+    },
+    "building": {
+      "titleStarting": "در حال شروع ساخت",
+      "title": "در حال ساخت Release v{version}",
+      "body": "در حال نصب {count} بستهٔ node در {build}. ساخت معمولاً ۱۰ تا ۱۵ دقیقه طول می‌کشد. | در حال نصب {count} بستهٔ node در {build}. ساخت معمولاً ۱۰ تا ۱۵ دقیقه طول می‌کشد.",
+      "step": {
+        "queued": "در انتظار یک سرور ساخت",
+        "resolving": "در حال تعیین نسخه‌های بسته‌های node",
+        "installing": "در حال نصب بسته‌های node",
+        "checking": "در حال بررسی بارگذاری nodeها",
+        "packaging": "در حال بسته‌بندی Release"
+      },
+      "stepOf": "مرحلهٔ {step} از {count}",
+      "elapsed": "تا اینجا کمتر از یک دقیقه | تا اینجا {count} دقیقه | تا اینجا {count} دقیقه",
+      "progressLabel": "پیشرفت ساخت",
+      "showLog": "نمایش گزارش ساخت",
+      "hideLog": "پنهان کردن گزارش ساخت",
+      "logLabel": "گزارش ساخت",
+      "logEmpty": "سرور ساخت هنوز چیزی در گزارش ننوشته است.",
+      "note": "می‌توانید این پنجره را ببندید. این زبانه را باز نگه دارید تا {deployment} بتواند به Release جدید منتقل شود."
+    },
+    "failed": {
+      "title": "ساخت Release v{version} انجام نشد",
+      "body": "ساخت متوقف شد، بنابراین {deployment} همچنان v{version} را اجرا می‌کند. نسخهٔ بستهٔ nodeای را که در پیام نام برده شده تغییر دهید یا آن را حذف کنید. سپس دوباره بسازید.",
+      "messageHeading": "پیام سرور ساخت",
+      "copyLabel": "کپی پیام سرور ساخت",
+      "openLog": "باز کردن گزارش کامل",
+      "noMessage": "سرور ساخت دلیلی اعلام نکرد. برای دیدن آنچه رخ داد، گزارش کامل را باز کنید.",
+      "change": "تغییر بسته‌های node",
+      "retry": "ساخت دوباره"
+    },
+    "moving": {
+      "title": "در حال انتقال {deployment} به v{version}",
+      "body": "Release v{version} ساخته شد. جابه‌جایی زمانی انجام می‌شود که نمونهٔ جدید {deployment} آماده شود؛ معمولاً ظرف چند دقیقه.",
+      "step": "در حال راه‌اندازی نمونهٔ جدیدی از {deployment}",
+      "progressLabel": "پیشرفت استقرار مجدد",
+      "note": "تا آن زمان jobهای جدید روی v{version} اجرا می‌شوند. jobهایی که از قبل شروع شده‌اند روی v{version} تمام می‌شوند."
+    },
+    "moveFailed": {
+      "title": "انتقال {deployment} به v{version} ممکن نشد",
+      "body": "Release v{version} ساخته شده است، اما {deployment} همچنان v{current} را اجرا می‌کند. دوباره آن را منتقل کنید یا Release آن را در پلتفرم توسعه‌دهندگان تغییر دهید.",
+      "retry": "انتقال دوباره"
+    },
+    "landed": {
+      "title": "اکنون {build} v{version} روی {deployment} اجرا می‌شود",
+      "body": "ویرایشگر را دوباره بارگذاری کنید تا از بستهٔ nodeای که اضافه کردید استفاده کنید. زبانه‌های شما باز می‌مانند. | ویرایشگر را دوباره بارگذاری کنید تا از {count} بستهٔ nodeای که اضافه کردید استفاده کنید. زبانه‌های شما باز می‌مانند.",
+      "later": "بعداً",
+      "reload": "بارگذاری مجدد"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
     "confirmSummary": "تأیید ورود دسکتاپ",

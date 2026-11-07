@@ -1606,6 +1606,136 @@
     },
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
+  "buildCustomNodes": {
+    "loading": "Caricamento dei nodi personalizzati della build",
+    "pinned": "Fissato",
+    "defaultBranch": "Branch predefinito",
+    "uploaded": "Caricato",
+    "learnCustomNodes": "Scopri di più sui nodi personalizzati",
+    "loadFailed": {
+      "title": "Impossibile caricare i nodi personalizzati della build"
+    },
+    "picker": {
+      "title": "Aggiungi nodi personalizzati a {build}",
+      "body": "Scegli i pacchetti di nodi da aggiungere. Comfy Cloud crea una nuova Release di {build}, poi sposta {deployment} su di essa.",
+      "search": "Cerca pacchetti di nodi",
+      "clearSearch": "Cancella ricerca",
+      "columnName": "Nome del pacchetto",
+      "columnPublisher": "Editore",
+      "columnInstalls": "Installazioni",
+      "columnStars": "Stelle",
+      "columnVersion": "Versione",
+      "columnLicense": "Licenza",
+      "columnInstall": "Installa",
+      "installLabel": "Aggiungi {pack} alla build",
+      "noVersion": "Nessuna versione pubblicata",
+      "versionLabel": "Scegli una versione di {pack}. Ora è selezionata {version}.",
+      "versionsOf": "Versioni di {pack}",
+      "latest": "Ultima",
+      "loadingVersions": "Caricamento delle versioni",
+      "pinCommit": "Fissa un hash di commit",
+      "pinCommitLabel": "Fissa un hash di commit per {pack}",
+      "commitField": "Hash di commit",
+      "pin": "Fissa",
+      "notCommit": "Inserisci un hash di commit da 7 a 40 lettere e cifre.",
+      "loading": "Caricamento dei pacchetti di nodi",
+      "searchFailed": "Impossibile raggiungere il Registro Comfy. Riprova.",
+      "noMatches": "Nessun pacchetto di nodi corrisponde a «{query}».",
+      "inBuildCount": "{count} pacchetto di nodi in {build} | {count} pacchetti di nodi in {build}",
+      "pickedCount": "· nessuno selezionato | · {count} selezionato | · {count} selezionati",
+      "previousPage": "Pagina precedente",
+      "nextPage": "Pagina successiva",
+      "review": "Rivedi le modifiche | Rivedi {count} pacchetto di nodi | Rivedi {count} pacchetti di nodi",
+      "inBuildLabel": "Il pacchetto {pack} è già nella build",
+      "pageOf": "Pagina {page} di {count}",
+      "editOnPlatform": "Modifica su Platform",
+      "editOnPlatformLabel": "Modifica i nodi personalizzati di {build} sulla Developer Platform",
+      "statusMenuLabel": "Filtra i pacchetti di nodi per stato. Stai visualizzando {value}.",
+      "licenseMenuLabel": "Filtra i pacchetti di nodi per licenza. Stai visualizzando {value}.",
+      "sortMenuLabel": "Ordina i pacchetti di nodi. Ordinati per {value}.",
+      "status": {
+        "heading": "Stato",
+        "all": "Tutti i pacchetti",
+        "installed": "Installati",
+        "notInstalled": "Non installati"
+      },
+      "license": {
+        "heading": "Licenza",
+        "any": "Qualsiasi licenza",
+        "count": "{count} licenza | {count} licenze",
+        "unlisted": "Nessuna licenza indicata",
+        "clear": "Cancella il filtro licenza"
+      },
+      "sort": {
+        "heading": "Ordinamento",
+        "installs": "Più installazioni",
+        "stars": "Più stelle",
+        "nameAsc": "Nome del pacchetto, dalla A alla Z",
+        "nameDesc": "Nome del pacchetto, dalla Z alla A"
+      }
+    },
+    "review": {
+      "title": "Aggiungi {count} pacchetto di nodi a {build} | Aggiungi {count} pacchetti di nodi a {build}",
+      "body": "Comfy Cloud crea con questi una nuova Release di {build}, poi sposta {deployment} su di essa. Di solito servono 10–15 minuti.",
+      "listLabel": "Pacchetti di nodi da aggiungere",
+      "note": "I processi in corso terminano sulla v{version}. Quando la nuova Release è pronta, ricarica l'editor per usare i nuovi nodi.",
+      "backLabel": "Torna ai pacchetti di nodi",
+      "submit": "Aggiungi e ridistribuisci"
+    },
+    "readOnly": {
+      "title": "Nodi personalizzati in {build}",
+      "body": "Non puoi aggiungere pacchetti di nodi a questa build. Chiedi alla persona che la gestisce di aggiungerli per te.",
+      "listLabel": "Pacchetti di nodi in {build}"
+    },
+    "building": {
+      "titleStarting": "Avvio della build",
+      "title": "Build della Release v{version} in corso",
+      "body": "Installazione di {count} pacchetto di nodi in {build}. Di solito le build richiedono 10–15 minuti. | Installazione di {count} pacchetti di nodi in {build}. Di solito le build richiedono 10–15 minuti.",
+      "step": {
+        "queued": "In attesa di un server di build",
+        "resolving": "Risoluzione delle versioni dei pacchetti di nodi",
+        "installing": "Installazione dei pacchetti di nodi",
+        "checking": "Verifica del caricamento dei nodi",
+        "packaging": "Creazione del pacchetto della Release"
+      },
+      "stepOf": "Passaggio {step} di {count}",
+      "elapsed": "Meno di un minuto finora | {count} min finora | {count} min finora",
+      "progressLabel": "Avanzamento della build",
+      "showLog": "Mostra il log di build",
+      "hideLog": "Nascondi il log di build",
+      "logLabel": "Log di build",
+      "logEmpty": "Il server di build non ha ancora scritto nel log.",
+      "note": "Puoi chiudere questa finestra. Tieni aperta questa scheda affinché {deployment} possa passare alla nuova Release."
+    },
+    "failed": {
+      "title": "La build della Release v{version} non è riuscita",
+      "body": "La build si è interrotta, quindi {deployment} esegue ancora la v{version}. Cambia la versione del pacchetto di nodi indicato nel messaggio, oppure rimuovilo. Poi avvia di nuovo la build.",
+      "messageHeading": "Messaggio del server di build",
+      "copyLabel": "Copia il messaggio del server di build",
+      "openLog": "Apri il log completo",
+      "noMessage": "Il server di build non ha indicato il motivo. Apri il log completo per vedere cosa è successo.",
+      "change": "Modifica i pacchetti di nodi",
+      "retry": "Riavvia la build"
+    },
+    "moving": {
+      "title": "Spostamento di {deployment} sulla v{version}",
+      "body": "La Release v{version} è stata creata. Il passaggio avviene quando la nuova copia di {deployment} è pronta, di solito in pochi minuti.",
+      "step": "Avvio di una nuova copia di {deployment}",
+      "progressLabel": "Avanzamento della ridistribuzione",
+      "note": "Fino ad allora, i nuovi processi vengono eseguiti sulla v{version}. I processi già avviati terminano sulla v{version}."
+    },
+    "moveFailed": {
+      "title": "Impossibile spostare {deployment} sulla v{version}",
+      "body": "La Release v{version} è stata creata, ma {deployment} esegue ancora la v{current}. Spostalo di nuovo, oppure cambia la sua Release sulla Developer Platform.",
+      "retry": "Sposta di nuovo"
+    },
+    "landed": {
+      "title": "Ora {build} v{version} è in esecuzione su {deployment}",
+      "body": "Ricarica l'editor per usare il pacchetto di nodi che hai aggiunto. Le tue schede rimangono aperte. | Ricarica l'editor per usare i {count} pacchetti di nodi che hai aggiunto. Le tue schede rimangono aperte.",
+      "later": "Più tardi",
+      "reload": "Ricarica"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "L'app desktop ComfyUI è in attesa di accedere con il tuo account. Continua solo se hai appena avviato l'accesso dall'app desktop ComfyUI.",
     "confirmSummary": "Approva l'accesso desktop?",

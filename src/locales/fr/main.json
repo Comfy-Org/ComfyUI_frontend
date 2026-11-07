@@ -1606,6 +1606,136 @@
     },
     "workspaceDefault": "Déploiement par défaut de l’espace de travail"
   },
+  "buildCustomNodes": {
+    "loading": "Chargement des nœuds personnalisés du Build",
+    "pinned": "Épinglé",
+    "defaultBranch": "Branche par défaut",
+    "uploaded": "Importé",
+    "learnCustomNodes": "En savoir plus sur les nœuds personnalisés",
+    "loadFailed": {
+      "title": "Impossible de charger les nœuds personnalisés du Build"
+    },
+    "picker": {
+      "title": "Ajouter des nœuds personnalisés à {build}",
+      "body": "Choisissez les packs de nœuds à ajouter. Comfy Cloud crée une nouvelle version de {build}, puis y déplace {deployment}.",
+      "search": "Rechercher des packs de nœuds",
+      "clearSearch": "Effacer la recherche",
+      "columnName": "Nom du pack",
+      "columnPublisher": "Éditeur",
+      "columnInstalls": "Installations",
+      "columnStars": "Étoiles",
+      "columnVersion": "Version",
+      "columnLicense": "Licence",
+      "columnInstall": "Installer",
+      "installLabel": "Ajouter {pack} au Build",
+      "noVersion": "Aucune version publiée",
+      "versionLabel": "Choisissez une version de {pack}. {version} est sélectionnée pour l'instant.",
+      "versionsOf": "Versions de {pack}",
+      "latest": "Dernière",
+      "loadingVersions": "Chargement des versions",
+      "pinCommit": "Épingler un hash de commit",
+      "pinCommitLabel": "Épingler un hash de commit pour {pack}",
+      "commitField": "Hash de commit",
+      "pin": "Épingler",
+      "notCommit": "Saisissez un hash de commit de 7 à 40 lettres et chiffres.",
+      "loading": "Chargement des packs de nœuds",
+      "searchFailed": "Impossible de joindre le registre Comfy. Réessayez.",
+      "noMatches": "Aucun pack de nœuds ne correspond à « {query} ».",
+      "inBuildCount": "{count} pack de nœuds dans {build} | {count} packs de nœuds dans {build}",
+      "pickedCount": "· aucun sélectionné pour l'instant | · {count} sélectionné | · {count} sélectionnés",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "review": "Vérifier les modifications | Vérifier {count} pack de nœuds | Vérifier {count} packs de nœuds",
+      "inBuildLabel": "Le pack {pack} est déjà dans le Build",
+      "pageOf": "Page {page} sur {count}",
+      "editOnPlatform": "Modifier sur la Platform",
+      "editOnPlatformLabel": "Modifier les nœuds personnalisés de {build} sur la Developer Platform",
+      "statusMenuLabel": "Filtrer les packs de nœuds par statut. Le filtre actuel est {value}.",
+      "licenseMenuLabel": "Filtrer les packs de nœuds par licence. Le filtre actuel est {value}.",
+      "sortMenuLabel": "Trier les packs de nœuds. Le tri actuel est {value}.",
+      "status": {
+        "heading": "Statut",
+        "all": "Tous les packs",
+        "installed": "Installés",
+        "notInstalled": "Non installés"
+      },
+      "license": {
+        "heading": "Licence",
+        "any": "Toute licence",
+        "count": "{count} licence | {count} licences",
+        "unlisted": "Aucune licence indiquée",
+        "clear": "Effacer le filtre de licence"
+      },
+      "sort": {
+        "heading": "Tri",
+        "installs": "Plus d'installations",
+        "stars": "Plus d'étoiles",
+        "nameAsc": "Nom du pack, de A à Z",
+        "nameDesc": "Nom du pack, de Z à A"
+      }
+    },
+    "review": {
+      "title": "Ajouter {count} pack de nœuds à {build} | Ajouter {count} packs de nœuds à {build}",
+      "body": "Comfy Cloud crée avec eux une nouvelle version de {build}, puis y déplace {deployment}. Cela prend généralement 10 à 15 minutes.",
+      "listLabel": "Packs de nœuds à ajouter",
+      "note": "Les tâches en cours se terminent sur la v{version}. Quand la nouvelle version est prête, rechargez l'éditeur pour utiliser les nouveaux nœuds.",
+      "backLabel": "Retour aux packs de nœuds",
+      "submit": "Ajouter et redéployer"
+    },
+    "readOnly": {
+      "title": "Nœuds personnalisés dans {build}",
+      "body": "Vous ne pouvez pas ajouter de packs de nœuds à ce Build. Demandez à la personne qui le gère de les ajouter pour vous.",
+      "listLabel": "Packs de nœuds dans {build}"
+    },
+    "building": {
+      "titleStarting": "Lancement de la compilation",
+      "title": "Compilation de la version v{version}",
+      "body": "Installation de {count} pack de nœuds dans {build}. La compilation prend généralement 10 à 15 minutes. | Installation de {count} packs de nœuds dans {build}. La compilation prend généralement 10 à 15 minutes.",
+      "step": {
+        "queued": "En attente d'une machine de compilation",
+        "resolving": "Résolution des versions des packs de nœuds",
+        "installing": "Installation des packs de nœuds",
+        "checking": "Vérification du chargement des nœuds",
+        "packaging": "Empaquetage de la version"
+      },
+      "stepOf": "Étape {step} sur {count}",
+      "elapsed": "Moins d'une minute écoulée | {count} min écoulée | {count} min écoulées",
+      "progressLabel": "Progression de la compilation",
+      "showLog": "Afficher le journal de compilation",
+      "hideLog": "Masquer le journal de compilation",
+      "logLabel": "Journal de compilation",
+      "logEmpty": "La machine de compilation n'a encore rien écrit dans le journal.",
+      "note": "Vous pouvez fermer cette fenêtre. Gardez cet onglet ouvert pour que {deployment} puisse passer à la nouvelle version."
+    },
+    "failed": {
+      "title": "La compilation de la version v{version} a échoué",
+      "body": "La compilation s'est arrêtée, donc {deployment} exécute toujours la v{version}. Changez la version du pack de nœuds cité dans le message, ou retirez-le. Puis relancez la compilation.",
+      "messageHeading": "Message de la machine de compilation",
+      "copyLabel": "Copier le message de la machine de compilation",
+      "openLog": "Ouvrir le journal complet",
+      "noMessage": "La machine de compilation n'a pas indiqué la cause. Ouvrez le journal complet pour voir ce qui s'est passé.",
+      "change": "Modifier les packs de nœuds",
+      "retry": "Relancer la compilation"
+    },
+    "moving": {
+      "title": "Déplacement de {deployment} vers la v{version}",
+      "body": "La version v{version} est compilée. Le basculement a lieu dès que la nouvelle copie de {deployment} est prête, généralement en quelques minutes.",
+      "step": "Démarrage d'une nouvelle copie de {deployment}",
+      "progressLabel": "Progression du redéploiement",
+      "note": "D'ici là, les nouvelles tâches s'exécutent sur la v{version}. Les tâches déjà lancées se terminent sur la v{version}."
+    },
+    "moveFailed": {
+      "title": "Impossible de déplacer {deployment} vers la v{version}",
+      "body": "La version v{version} est compilée, mais {deployment} exécute toujours la v{current}. Déplacez-le à nouveau, ou changez sa version sur la Developer Platform.",
+      "retry": "Déplacer à nouveau"
+    },
+    "landed": {
+      "title": "Désormais, {build} v{version} s'exécute sur {deployment}",
+      "body": "Rechargez l'éditeur pour utiliser le pack de nœuds ajouté. Vos onglets restent ouverts. | Rechargez l'éditeur pour utiliser les {count} packs de nœuds ajoutés. Vos onglets restent ouverts.",
+      "later": "Plus tard",
+      "reload": "Recharger"
+    }
+  },
   "desktopLogin": {
     "confirmMessage": "L’application de bureau ComfyUI attend de se connecter avec votre compte. Continuez uniquement si vous venez de lancer la connexion depuis l’application de bureau ComfyUI.",
     "confirmSummary": "Approuver la connexion sur le bureau ?",
