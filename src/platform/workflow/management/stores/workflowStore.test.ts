@@ -141,6 +141,22 @@ describe('useWorkflowStore', () => {
       expect(store.workflows.length).toBe(2)
     })
 
+    it('resolves whether its own sync succeeded when another sync overlaps it', async () => {
+      let failListing = (_error: Error) => {}
+      vi.mocked(api.listUserDataFullInfo).mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            failListing = reject
+          })
+      )
+      const failing = store.syncWorkflows()
+      const succeeding = syncRemoteWorkflows(['a.json'])
+      failListing(new Error('offline'))
+
+      expect(await failing).toBe(false)
+      expect(await succeeding).toBe(true)
+    })
+
     it('should exclude temporary workflows', async () => {
       const workflow = store.createTemporary('c.json')
       await syncRemoteWorkflows(['a.json', 'b.json'])

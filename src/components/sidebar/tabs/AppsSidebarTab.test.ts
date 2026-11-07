@@ -18,7 +18,7 @@ vi.mock(import('firebase/auth'))
 beforeEach(() => {
   useAppMode().isAppMode = computed(() => true)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-  vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(true)
   vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
     undefined
   )

@@ -429,7 +429,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isLoading: isSyncLoading,
     execute: executeSyncWorkflows
   } = useAsyncState(
-    async (dir: string = '') => {
+    async (dir: string, onFailed: () => void) => {
       await syncEntities(
         dir ? 'workflows/' + dir : 'workflows',
         workflowLookup.value,
@@ -469,8 +469,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           existingWorkflow.unload()
         },
-        /* exclude */ (workflow) => workflow.isTemporary,
-        /* beforeDelete */ (workflow, path) => {
+        (workflow) => workflow.isTemporary,
+        (workflow, path) => {
           if (isActive(workflow)) return false
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
@@ -478,14 +478,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
           forgetNodeHistories(workflow)
           return true
         }
-      )
+      ).catch((error: unknown) => {
+        onFailed()
+        throw error
+      })
     },
     undefined,
     { immediate: false }
   )
 
-  async function syncWorkflows(dir: string = '') {
-    return executeSyncWorkflows(0, dir)
+  async function syncWorkflows(dir: string = ''): Promise<boolean> {
+    let synced = true
+    await executeSyncWorkflows(0, dir, () => {
+      synced = false
+    })
+    return synced
   }
 
   async function loadWorkflows(): Promise<void> {

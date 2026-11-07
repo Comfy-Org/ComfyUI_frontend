@@ -526,7 +526,7 @@ beforeEach(() => {
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
-  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(true)
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
@@ -11693,6 +11693,60 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     }
   )
+
+  it('opens a chat from history whose listed workflow has no tab or saved file in this browser', async () => {
+    makeTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'history-user',
+            thread_id: 'th-history',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'history-turn',
+            workflow_id: 'wf-elsewhere',
+            content: { text: 'Historical prompt' }
+          }
+        ])
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
+            })
+          ])
+        )
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-elsewhere', name: 'Unsaved Workflow (2)' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, {})
+    })
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+
+    await screen.findAllByText('Historical prompt')
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    expect(
+      screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
+    ).toBeNull()
+    expect(useAgentPanelStore().targetUnavailable).toBe(true)
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
 
   it('does not commit a pending selection after its tab closes', async () => {
     const current = makeTab('wf-42')
