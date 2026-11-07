@@ -1683,6 +1683,69 @@ export const zCccLegacyTarget = z.object({
   type: z.enum(['workflow', 'app', 'model'])
 })
 
+export const zCccMediaConstraint = z.object({
+  max_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  max_height: z.int().optional(),
+  max_width: z.int().optional(),
+  mime_type: z.string(),
+  min_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Holds when field equals equals (a bool or string). if_absent decides when field is absent or null; a value of another shape holds.
+ */
+export const zCccPublicationCondition = z.object({
+  equals: z.unknown(),
+  field: z.string(),
+  if_absent: z.lazy((): any => zCccPublicationCondition).optional()
+})
+
+/**
+ * One publish-time field rule. Publish enforces required levels, media constraints and resolves_to references; recommended levels are advice only.
+ */
+export const zCccPublicationRule = z.object({
+  fields: z.array(z.string()).min(1),
+  level: z.enum(['required', 'recommended']).optional(),
+  media: zCccMediaConstraint.optional(),
+  message: z.string(),
+  resolves_to: z.string().optional(),
+  types: z
+    .array(z.enum(['model', 'workflow', 'app', 'template_set']))
+    .optional(),
+  when: zCccPublicationCondition.optional()
+})
+
+export const zCccTypeSchema = z.object({
+  contract_version: z.string(),
+  environment: z.string(),
+  format: z.enum(['openapi-3.0-schema']),
+  publication: z
+    .object({
+      rules: z.array(zCccPublicationRule)
+    })
+    .optional(),
+  schema: z.record(z.string(), z.unknown()),
+  schema_version: z.int(),
+  server_fields: z.array(z.string()).optional(),
+  type: z.enum(['model', 'workflow', 'app', 'template_set', 'media'])
+})
+
 export const zCccWebsiteCardFacet = z.object({
   count: z.int().gte(0).optional(),
   label: z.string(),
@@ -7544,7 +7607,7 @@ export const zGetCccTypeSchemaPath = z.object({
 /**
  * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
  */
-export const zGetCccTypeSchemaResponse = zCccjson
+export const zGetCccTypeSchemaResponse = zCccTypeSchema
 
 /**
  * Private state; never cacheable

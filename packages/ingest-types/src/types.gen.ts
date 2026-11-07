@@ -3503,6 +3503,14 @@ export type CccLegacyTarget = {
   type: 'workflow' | 'app' | 'model'
 }
 
+export type CccMediaConstraint = {
+  max_bytes?: number
+  max_height?: number
+  max_width?: number
+  mime_type: string
+  min_bytes?: number
+}
+
 export type CccPublicItemsPage = ContentCatalogProjection & {
   has_more: boolean
   /**
@@ -3510,6 +3518,70 @@ export type CccPublicItemsPage = ContentCatalogProjection & {
    */
   next_cursor?: string
   page_size: number
+}
+
+/**
+ * Holds when field equals equals (a bool or string). if_absent decides when field is absent or null; a value of another shape holds.
+ */
+export type CccPublicationCondition = {
+  /**
+   * A boolean or string.
+   */
+  equals: unknown
+  field: string
+  if_absent?: CccPublicationCondition
+}
+
+/**
+ * One publish-time field rule. Publish enforces required levels, media constraints and resolves_to references; recommended levels are advice only.
+ */
+export type CccPublicationRule = {
+  /**
+   * Document paths such as $.title or $.workflow_versions[0].api. A level is met when any one is filled; [*] matches every array index.
+   */
+  fields: Array<string>
+  /**
+   * Absent means the rule only constrains a value that is set.
+   */
+  level?: 'required' | 'recommended'
+  media?: CccMediaConstraint
+  /**
+   * Display text. Required and media faults return it.
+   */
+  message: string
+  /**
+   * Content type a referenced UID must resolve to as enabled public content; "content" means any type.
+   */
+  resolves_to?: string
+  /**
+   * Content types the rule applies to; absent means every type.
+   */
+  types?: Array<'model' | 'workflow' | 'app' | 'template_set'>
+  when?: CccPublicationCondition
+}
+
+export type CccTypeSchema = {
+  contract_version: string
+  environment: string
+  format: 'openapi-3.0-schema'
+  /**
+   * Content types only.
+   */
+  publication?: {
+    rules: Array<CccPublicationRule>
+  }
+  /**
+   * OpenAPI 3.0 schema the save validator applies.
+   */
+  schema: {
+    [key: string]: unknown
+  }
+  schema_version: number
+  /**
+   * Content types only. The readOnly CCCJSON properties; a save never applies them.
+   */
+  server_fields?: Array<string>
+  type: 'model' | 'workflow' | 'app' | 'template_set' | 'media'
 }
 
 export type CccWebsiteCardFacet = {
@@ -19079,7 +19151,7 @@ export type GetCccTypeSchemaResponses = {
   /**
    * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
    */
-  200: Cccjson
+  200: CccTypeSchema
 }
 
 export type GetCccTypeSchemaResponse =
