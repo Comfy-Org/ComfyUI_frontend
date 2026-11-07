@@ -79,7 +79,7 @@ describe('useConflictDetection', () => {
   const mockComfyManagerService = {
     getImportFailInfoBulk: vi.fn(),
     listInstalledPacks: vi.fn(async () => ({})),
-    isLoading: ref(false),
+    isLoading: computed(() => false),
     error: ref<string | null>(null)
   } as Partial<ReturnType<typeof useComfyManagerService>> as ReturnType<
     typeof useComfyManagerService
@@ -87,7 +87,7 @@ describe('useConflictDetection', () => {
 
   const mockRegistryService = {
     getBulkNodeVersions: vi.fn(),
-    isLoading: ref(false),
+    isLoading: computed(() => false),
     error: ref<string | null>(null)
   } as Partial<ReturnType<typeof useComfyRegistryService>> as ReturnType<
     typeof useComfyRegistryService

@@ -9,7 +9,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
@@ -94,7 +94,7 @@ describe('useComfyManagerStore', () => {
       api.clientId = previousClientId
     })
     mockManagerService = {
-      isLoading: ref(false),
+      isLoading: computed(() => false),
       error: ref(null),
       startQueue: vi.fn().mockResolvedValue(''),
       getQueueStatus: vi.fn().mockResolvedValue({
