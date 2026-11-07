@@ -466,6 +466,27 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('BE-24672: keeps the truncated mark on a persisted thinking entry the server cut', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 'Whole round.' },
+        { text: 'Cut round…', truncated: true },
+        { text: 'Not cut.', truncated: false }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Whole round.', state: 'done' },
+      { type: 'thinking', text: 'Cut round…', state: 'done', truncated: true },
+      { type: 'thinking', text: 'Not cut.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('restores persisted thinking whose tool_call_id is an explicit null', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
