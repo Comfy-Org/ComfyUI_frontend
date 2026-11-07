@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isComfyAgentReady } from '@/platform/remoteConfig/comfyAgentFeature'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
@@ -32,11 +33,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  const agentHosted = computed(
-    () =>
-      api.getServerFeature<{ state?: unknown } | null>('agent')?.state ===
-      'ready'
-  )
+  const agentHosted = computed(isComfyAgentReady)
   const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
   const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
 
