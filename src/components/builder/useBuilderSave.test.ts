@@ -9,8 +9,10 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useBuilderSave } from './useBuilderSave'
 
@@ -31,6 +33,8 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
+
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
@@ -85,6 +89,37 @@ describe('useBuilderSave', () => {
       expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
       expect(showConfirmDialog).not.toHaveBeenCalled()
     })
+
+    it.for([
+      {
+        name: 'an unspecified default view',
+        initialMode: null,
+        linearMode: undefined,
+        expectedMode: 'app',
+        expectedLinearMode: true
+      },
+      {
+        name: 'an explicit node graph default',
+        initialMode: 'graph',
+        linearMode: false,
+        expectedMode: 'graph',
+        expectedLinearMode: false
+      }
+    ] as const)(
+      'persists the builder default view when saving with $name',
+      async ({ initialMode, linearMode, expectedMode, expectedLinearMode }) => {
+        const workflow = createMockLoadedWorkflow({ initialMode })
+        useWorkflowStore().activeWorkflow = workflow
+        app.rootGraph.extra = { linearMode }
+        vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(true)
+
+        await useBuilderSave().save()
+
+        expect(workflow.initialMode).toBe(expectedMode)
+        expect(app.rootGraph.extra.linearMode).toBe(expectedLinearMode)
+        expect(useWorkflowService().saveWorkflow).toHaveBeenCalledWith(workflow)
+      }
+    )
 
     it('toasts error on failure', async () => {
       useWorkflowStore().activeWorkflow = fromPartial({
