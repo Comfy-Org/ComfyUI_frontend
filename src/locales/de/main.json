@@ -6095,6 +6095,7 @@
         },
         "scheduledChange": "Wechselt am {date} zu {plan}.",
         "stayConfirm": {
+          "body": "Sie bleiben bei {current}, das sich am {date} verlängert. Sie können jederzeit erneut eine Änderung planen.",
           "bodyNoAmount": "Sie bleiben bei {current}. Sie können jederzeit erneut eine Änderung planen.",
           "title": "Änderung zu {plan} abbrechen?"
         },
