@@ -28,7 +28,7 @@ function node(
   graphNode.comfyClass = comfyClass
   graphNode.mode = mode
   for (const [name, value] of Object.entries(inputs))
-    graphNode.addWidget('text', name, value, () => {})
+    graphNode.addWidget('combo', name, value, () => {}, { values: [value] })
   return graphNode
 }
 
@@ -158,6 +158,18 @@ describe(checkCloudCompatibility, () => {
     await expect(checkCloudCompatibility()).resolves.toBeNull()
     expect(fetch).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('treats only picker widgets as possible model files', async () => {
+    const prompt = node('CLIPTextEncode')
+    prompt.addWidget('text', 'text', 'portrait.safetensors', () => {})
+    workflowHas(prompt)
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen'
+    })
+    expect(requestBody().models).toEqual([])
   })
 
   it('reads widget values without running their serialize hooks', async () => {

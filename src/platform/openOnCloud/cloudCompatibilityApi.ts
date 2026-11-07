@@ -17,7 +17,13 @@ import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingM
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 
-type CheckedNode = { class_type: string; inputs: Record<string, unknown> }
+type CheckedNode = {
+  class_type: string
+  inputs: Record<string, unknown>
+  pickerInputs: Set<string>
+}
+
+const PICKER_WIDGET_TYPES = new Set(['combo', 'asset'])
 
 function isMuted(node: LGraphNode): boolean {
   return (
@@ -34,13 +40,26 @@ function widgetInputs(node: LGraphNode): Record<string, unknown> {
   )
 }
 
+function pickerInputs(node: LGraphNode): Set<string> {
+  const widgets = (node.widgets ?? []).filter((widget) =>
+    PICKER_WIDGET_TYPES.has(widget.type)
+  )
+  return new Set(widgets.map((widget) => widget.name))
+}
+
 function executableNodes(graph: LGraph | Subgraph): CheckedNode[] {
   return graph.nodes.flatMap((node) => {
     if (isMuted(node)) return []
     if (node.isSubgraphNode()) return executableNodes(node.subgraph)
     const { comfyClass } = node
     if (node.isVirtualNode || !comfyClass) return []
-    return [{ class_type: comfyClass, inputs: widgetInputs(node) }]
+    return [
+      {
+        class_type: comfyClass,
+        inputs: widgetInputs(node),
+        pickerInputs: pickerInputs(node)
+      }
+    ]
   })
 }
 
@@ -88,7 +107,12 @@ function scanModelInputs(nodes: CheckedNode[]) {
       if (typeof name !== 'string') continue
       const folders = loaderFolders(loaderInputs, input)
       mapped.push(...folders.map((folder) => ({ folder, name })))
-      if (!folders.length && isModelFileName(name)) unmapped.push(name)
+      if (
+        !folders.length &&
+        node.pickerInputs.has(input) &&
+        isModelFileName(name)
+      )
+        unmapped.push(name)
     }
   }
   return { mapped, unmapped }
@@ -145,7 +169,7 @@ function giveUp(cause: unknown): null {
   return null
 }
 
-/** Resolves null after any failure, or when a model's folder is unknown, so callers only branch. */
+/** Resolves null when no verdict is available. */
 export async function checkCloudCompatibility(): Promise<CloudWorkflowVerdict | null> {
   let body: unknown
   try {

@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
@@ -18,6 +19,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
+vi.mock(import('@/platform/openOnCloud/openRunOnCloudDialog'), { spy: true })
 
 await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
 
@@ -208,7 +210,10 @@ describe('Cloud button compatibility checks', () => {
     await response.promise
     await nextTick()
     unmount()
-    await new Promise((settle) => setTimeout(settle, 0))
+
+    await expect(
+      vi.mocked(openRunOnCloudDialog).mock.results[0].value
+    ).resolves.toBe(false)
 
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false
