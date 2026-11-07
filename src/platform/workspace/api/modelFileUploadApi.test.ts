@@ -214,17 +214,47 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     }
   )
 
-  it('does not request a single PUT for a file over 2 GiB', async () => {
-    vi.spyOn(file, 'size', 'get').mockReturnValue(2147483649)
+  it("reports the server's size limit when a file over 2 GiB is refused resumable mode", async () => {
+    const size = 2147483649
+    vi.spyOn(file, 'size', 'get').mockReturnValue(size)
     const calls = serverAnswers(
-      json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' })
+      json(403, {
+        code: 'FEATURE_DISABLED',
+        message: 'Resumable model uploads are not enabled'
+      }),
+      json(400, {
+        code: 'FILE_TOO_LARGE',
+        message: 'Files can be up to 2 GB.'
+      })
     )
 
-    await expect(upload().result).resolves.toMatchObject({
+    await expect(upload().result).resolves.toEqual({
       ok: false,
-      reason: 'failed'
+      reason: 'tooLarge',
+      message: 'Files can be up to 2 GB.'
     })
-    expect(calls).toHaveLength(1)
+    expect(calls).toEqual([
+      {
+        route: '/assets/uploads',
+        method: 'POST',
+        body: {
+          filename: file.name,
+          size_bytes: size,
+          resumable: true,
+          tags
+        }
+      },
+      {
+        route: '/assets/uploads',
+        method: 'POST',
+        body: {
+          filename: file.name,
+          size_bytes: size,
+          resumable: false,
+          tags
+        }
+      }
+    ])
     expect(StorageRequest.sent).toHaveLength(0)
   })
 

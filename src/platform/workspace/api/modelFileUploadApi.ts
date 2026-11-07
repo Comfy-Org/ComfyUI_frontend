@@ -271,7 +271,7 @@ async function startFileUpload(
     tags: options.tags
   } satisfies z.input<typeof zStartModelUploadBody>
   const response = await postJson(UPLOADS_ENDPOINT, body, options.signal)
-  if (response.status !== 403 || file.size > 2 ** 31) return response
+  if (response.status !== 403) return response
   const refusal = zErrorResponse.safeParse(
     await response
       .clone()
