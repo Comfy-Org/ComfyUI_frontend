@@ -4,20 +4,21 @@
     v-model="modelValue"
     :widget
     :node-type="widget.nodeType ?? nodeType"
-    :asset-kind="assetKind"
-    :allow-upload="allowUpload"
-    :upload-folder="uploadFolder"
-    :upload-subfolder="uploadSubfolder"
-    :is-asset-mode="isAssetMode"
-    :default-layout-mode="defaultLayoutMode"
+    :asset-kind
+    :allow-upload
+    :upload-folder
+    :upload-subfolder
+    :is-asset-mode
+    :default-layout-mode
   />
   <WidgetWithControl
     v-else-if="widget.controlWidget"
     v-model="modelValue"
     :component="WidgetSelectDefault"
     :widget="widget as SelectControlWidget"
+    :filename-summary
   />
-  <WidgetSelectDefault v-else v-model="modelValue" :widget />
+  <WidgetSelectDefault v-else v-model="modelValue" :widget :filename-summary />
 </template>
 
 <script setup lang="ts">
@@ -46,6 +47,12 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
+const filenameSummary = computed(() =>
+  assetService.isAssetBrowserEligible(
+    props.widget.nodeType ?? props.nodeType ?? '',
+    props.widget.name
+  )
+)
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
