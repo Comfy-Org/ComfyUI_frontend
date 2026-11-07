@@ -92,6 +92,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  loadCustomColorPalettes: vi.fn(async () => {}),
   setDirty: vi.fn()
 }))
 
@@ -180,7 +181,10 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
 }))
 
 vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+  useColorPaletteService: () => ({
+    loadColorPalette: vi.fn(),
+    loadCustomColorPalettes: mocks.loadCustomColorPalettes
+  })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -256,6 +260,37 @@ async function mountGraphCanvas(
     await Promise.resolve()
   }
 }
+
+it('keeps the canvas unavailable until saved custom palettes are ready', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomColorPalettes.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+
+  await mountGraphCanvas()
+
+  expect(useCanvasStore().canvas).toBeNull()
+  finishLoading()
+  await vi.waitFor(() => expect(useCanvasStore().canvas).toBe(app.canvas))
+})
+
+it('does not expose a disposed canvas after custom palettes finish loading', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomColorPalettes.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+  await mountGraphCanvas()
+
+  cleanup()
+  finishLoading()
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(useCanvasStore().canvas).toBeNull()
+})
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
