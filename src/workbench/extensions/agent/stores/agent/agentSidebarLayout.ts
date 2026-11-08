@@ -4,7 +4,7 @@ export type SidebarMode = 'expanded' | 'rail' | 'drawer'
 
 export type SidebarSection = 'chats' | 'apps' | 'workflows'
 
-export const SIDEBAR_DRAWER_BREAKPOINT = 900
+const SIDEBAR_DRAWER_BREAKPOINT = 900
 export const SIDEBAR_DEFAULT_WIDTH = 260
 export const SIDEBAR_MIN_WIDTH = 220
 export const SIDEBAR_MAX_WIDTH = 480
