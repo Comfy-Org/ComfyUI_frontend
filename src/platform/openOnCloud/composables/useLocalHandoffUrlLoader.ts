@@ -18,6 +18,7 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
+import { takeDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
 const HANDOFF_WAIT_MS = 60_000
@@ -85,7 +86,10 @@ export function useLocalHandoffUrlLoader(
   const { flags } = useFeatureFlags()
 
   async function receiveHandoff(nonce: string) {
+    const desktop = takeDesktopWorkflowHandoff(nonce)
     if (!flags.openOnCloudEnabled) return
+    if (desktop)
+      return openHandedOffWorkflow(desktop.filename, desktop.workflow)
     const opener = getOpener()
     if (opener) requestWorkflow(opener, nonce)
     else showMissingWorkflow()
