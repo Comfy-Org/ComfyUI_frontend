@@ -360,6 +360,26 @@ export function useTemplateWorkflows() {
     }
   }
 
+  async function prepareWorkflowTemplateInputs(
+    data: PreparedWorkflowTemplate['data'],
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const inputs = data.template?.io?.inputs
+    if (
+      isCloud ||
+      sourceModule !== 'default' ||
+      !data.strict ||
+      !inputs?.length
+    )
+      return data
+
+    return {
+      ...data,
+      json: await withPreparedSampleInputs(data.json, inputs, signal)
+    }
+  }
+
   async function openPreparedWorkflowTemplate(
     prepared: PreparedWorkflowTemplate,
     { downloadAssets = !isDesktop } = {}
@@ -367,15 +387,13 @@ export function useTemplateWorkflows() {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
       controller.signal.throwIfAborted()
-      const inputs = data.template?.io?.inputs
-      const json =
-        downloadAssets &&
-        !isCloud &&
-        sourceModule === 'default' &&
-        data.strict &&
-        inputs?.length
-          ? await withPreparedSampleInputs(data.json, inputs, controller.signal)
-          : data.json
+      const preparedData = downloadAssets
+        ? await prepareWorkflowTemplateInputs(
+            data,
+            sourceModule,
+            controller.signal
+          )
+        : data
       controller.signal.throwIfAborted()
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
@@ -387,11 +405,7 @@ export function useTemplateWorkflows() {
 
       dialogStore.closeDialog()
       if (downloadAssets) startTemplateInputDownloads(id, sourceModule)
-      return await loadTemplateGraph(
-        { ...data, json },
-        workflowName,
-        sourceModule
-      )
+      return await loadTemplateGraph(preparedData, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
