@@ -78,9 +78,7 @@ test.describe('Save Video preview of an undecodable output', () => {
       })
       .toBeNull()
     await expect(
-      comfyPage.page
-        .locator('.comfy-img-preview')
-        .getByText(CANT_PLAY_MESSAGE)
+      comfyPage.page.locator('.comfy-img-preview').getByText(CANT_PLAY_MESSAGE)
     ).toBeVisible()
   })
 
@@ -117,9 +115,7 @@ test.describe('Save Video preview of an undecodable output', () => {
 
       execution.executed('', nodeId, videoOutput(UNDECODABLE))
 
-      await expect(
-node.getByText(CANT_PLAY_MESSAGE)
-      ).toBeVisible()
+      await expect(node.getByText(CANT_PLAY_MESSAGE)).toBeVisible()
       await expect(node.getByText(UNDECODABLE)).toBeVisible()
       await expect(node.getByText('Invalid URL')).toBeHidden()
       await expect(node.getByTestId('main-video')).toHaveCount(0)
