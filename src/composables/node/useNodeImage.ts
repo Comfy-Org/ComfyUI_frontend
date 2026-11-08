@@ -105,6 +105,7 @@ const useNodePreview = <T extends MediaElement>(
     if (!outputUrls?.length) return
 
     if (options.block) node.isLoading = true
+    const { images, preview } = node
 
     loadElements(outputUrls)
       .then((elements) => {
@@ -113,7 +114,7 @@ const useNodePreview = <T extends MediaElement>(
         )
         if (validElements.length) {
           onLoaded?.(validElements)
-        } else {
+        } else if (node.images === images && node.preview === preview) {
           onFailedLoading?.()
         }
         node.graph?.setDirtyCanvas(true)

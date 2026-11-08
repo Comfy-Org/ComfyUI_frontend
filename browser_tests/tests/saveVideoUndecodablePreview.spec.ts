@@ -11,8 +11,6 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-// Chromium decodes VP8 but has no ProRes decoder, so the .mov stands in for any
-// output the browser cannot preview while the server serves it fine.
 const PLAYABLE = 'video-preview-square.webm'
 const UNDECODABLE = 'save-video-prores.mov'
 
@@ -27,24 +25,13 @@ async function serveVideoOutputs(page: Page) {
   })
 }
 
-async function addSaveVideoNode(page: Page) {
-  return page.evaluate(() => {
-    const node = window.LiteGraph!.createNode('SaveVideo')!
-    node.pos = [300, 150]
-    window.app!.graph.add(node)
-    return String(node.id)
-  })
-}
-
 const videoOutput = (filename: string) => ({
   images: [{ filename, subfolder: '', type: 'output' }],
   animated: [true]
 })
 
-/** The video the canvas renderer's preview widget holds, if any. */
 function canvasPreviewVideo(page: Page) {
   return page.evaluate(() => {
-    // The canvas renderer starts loading a new output from its draw loop.
     window.app!.canvas.setDirty(true, true)
     const video = document.querySelector<HTMLVideoElement>(
       '.comfy-img-preview video'
@@ -67,7 +54,9 @@ test.describe('Save Video preview of an undecodable output', () => {
     getWebSocket
   }) => {
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-    const nodeId = await addSaveVideoNode(comfyPage.page)
+    const nodeId = String(
+      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
+    )
 
     execution.executed('', nodeId, videoOutput(PLAYABLE))
     await expect
@@ -85,7 +74,9 @@ test.describe('Save Video preview of an undecodable output', () => {
   test.describe('Vue nodes renderer', { tag: '@vue-nodes' }, () => {
     test('previews a playable output', async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = await addSaveVideoNode(comfyPage.page)
+      const nodeId = String(
+      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
+    )
 
       execution.executed('', nodeId, videoOutput(PLAYABLE))
 
@@ -107,7 +98,9 @@ test.describe('Save Video preview of an undecodable output', () => {
       getWebSocket
     }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = await addSaveVideoNode(comfyPage.page)
+      const nodeId = String(
+      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
+    )
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
 
       execution.executed('', nodeId, videoOutput(PLAYABLE))

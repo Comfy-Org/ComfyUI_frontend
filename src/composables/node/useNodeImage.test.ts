@@ -6,7 +6,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
@@ -55,41 +54,44 @@ describe('useNodeVideo', () => {
     return { node, video, createdVideos }
   }
 
-  async function rerun(
-    node: LGraphNode,
-    createdVideos: HTMLVideoElement[],
-    outcome: 'error' | 'loadeddata'
-  ) {
-    const before = createdVideos.length
-    useNodeVideo(node).showPreview()
-    while (createdVideos.length > before) {
-      const next = createdVideos.shift()!
-      if (outcome === 'error') next.onerror?.(new Event('error'))
-      else next.onloadeddata?.(new Event('loadeddata'))
-      await vi.advanceTimersByTimeAsync(1)
-      if (outcome === 'loadeddata') return next
-    }
+  async function failBothAttempts(createdVideos: HTMLVideoElement[]) {
+    createdVideos.at(-1)?.onerror?.(new Event('error'))
+    await vi.advanceTimersByTimeAsync(1)
+    createdVideos.at(-1)?.onerror?.(new Event('error'))
+    await vi.advanceTimersByTimeAsync(1)
   }
 
   it('drops the previous video when a new output fails to load', async () => {
     const { node, video, createdVideos } = await setup()
-    createdVideos.length = 0
 
-    await rerun(node, createdVideos, 'error')
+    useNodeVideo(node).showPreview()
+    await failBothAttempts(createdVideos)
 
     expect(node.videoContainer?.contains(video)).toBe(false)
     expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
   })
 
+  it('keeps a newer output when an older load fails late', async () => {
+    const { node, video, createdVideos } = await setup()
+
+    useNodeVideo(node).showPreview()
+    node.images = [{ filename: 'newer.mp4', type: 'output' }]
+    await failBothAttempts(createdVideos)
+
+    expect(node.videoContainer?.contains(video)).toBe(true)
+  })
+
   it('shows the next good output after a failed one', async () => {
     const { node, createdVideos } = await setup()
-    createdVideos.length = 0
-    await rerun(node, createdVideos, 'error')
+    useNodeVideo(node).showPreview()
+    await failBothAttempts(createdVideos)
 
-    const next = await rerun(node, createdVideos, 'loadeddata')
+    useNodeVideo(node).showPreview()
+    const next = createdVideos.at(-1)!
+    next.onloadeddata?.(new Event('loadeddata'))
+    await vi.advanceTimersByTimeAsync(1)
 
-    expect(next).toBeDefined()
-    expect(node.widgets?.[0]?.element.contains(next!)).toBe(true)
+    expect(node.widgets?.[0]?.element.contains(next)).toBe(true)
   })
 
   it('creates a video-preview widget and forwards canvas events while alive', async () => {
