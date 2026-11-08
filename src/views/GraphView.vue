@@ -120,7 +120,7 @@ import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { electronAPI } from '@/utils/envUtil'
+import { electronAPI, isLocalDesktopHost } from '@/utils/envUtil'
 import { createUuidv4 } from '@/utils/uuid'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
@@ -180,7 +180,7 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   }
 })
 const stopTemplateInputDownloadTracking =
-  (isDesktop &&
+  (isLocalDesktopHost() &&
     window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
       templateInputDownloadStore.updateProgress(progress)
       templateInputGraphSync.handleProgress(progress)
