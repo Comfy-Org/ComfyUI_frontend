@@ -54,6 +54,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const FAR_OUT_CANCEL_AT = new Date(Date.now() + 240 * DAY_MS).toISOString()
 const ENDING_SOON_CANCEL_AT = new Date(Date.now() + 10 * DAY_MS).toISOString()
 
+const FAR_OUT_NOTICE_STARTS_AT = new Date(
+  Date.parse(FAR_OUT_CANCEL_AT) - 14 * DAY_MS
+).toISOString()
+
 const ENDING_SOON_NOTICE_STARTS_AT = new Date(
   Date.parse(ENDING_SOON_CANCEL_AT) - 14 * DAY_MS
 ).toISOString()
@@ -91,17 +95,26 @@ async function setupSalesManagedWorkspace(
   return workspace
 }
 
-async function serveEnterpriseEndingNotice(page: Page, startsAt: string) {
+async function serveSalesManagedFacts(
+  page: Page,
+  {
+    capabilities = SALES_MANAGED_CAPABILITIES,
+    endingNoticeStartsAt
+  }: {
+    capabilities?: Partial<BillingCapabilities>
+    endingNoticeStartsAt?: string
+  } = {}
+) {
   await page.route('**/api/billing/capabilities', (r) => {
     if (r.request().method() !== 'GET') return r.fallback()
     return r.fulfill(
       jsonRoute({
-        ...createWorkspaceBillingCapabilities(
-          TEAM_WORKSPACE,
-          SALES_MANAGED_CAPABILITIES
-        ),
+        ...createWorkspaceBillingCapabilities(TEAM_WORKSPACE, capabilities),
+        plan_kind: 'sales_managed',
         billing_notice_audience: 'none',
-        ending_notice_starts_at: startsAt
+        ...(endingNoticeStartsAt && {
+          ending_notice_starts_at: endingNoticeStartsAt
+        })
       })
     )
   })
@@ -202,6 +215,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       page,
       CANCELLED_ACTIVE_ENTERPRISE_STATUS
     )
+    await serveSalesManagedFacts(page, {
+      endingNoticeStartsAt: FAR_OUT_NOTICE_STARTS_AT
+    })
     await enableBillingControl(page)
     const content = await workspace.openPlanAndCreditsSettings()
 
@@ -241,7 +257,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       ENDING_SOON_ENTERPRISE_STATUS
     )
     await enableBillingControl(page)
-    await serveEnterpriseEndingNotice(page, ENDING_SOON_NOTICE_STARTS_AT)
+    await serveSalesManagedFacts(page, {
+      endingNoticeStartsAt: ENDING_SOON_NOTICE_STARTS_AT
+    })
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
@@ -274,6 +292,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       ENDED_ENTERPRISE_STATUS,
       { ...SALES_MANAGED_CAPABILITIES, can_top_up: false }
     )
+    await serveSalesManagedFacts(page, {
+      capabilities: { ...SALES_MANAGED_CAPABILITIES, can_top_up: false }
+    })
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
