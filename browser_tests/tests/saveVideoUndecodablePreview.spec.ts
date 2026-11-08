@@ -80,12 +80,12 @@ test.describe('Save Video preview of an undecodable output', () => {
 
     const undecodableServed = waitForServed(comfyPage.page, UNDECODABLE)
     execution.executed('', nodeId, videoOutput(UNDECODABLE))
-    await undecodableServed
     await expect
       .poll(() => canvasPreviewVideo(comfyPage.page), {
         message: 'the previous run must not stay up as the new output preview'
       })
       .toBeNull()
+    await undecodableServed
     await expect(
       comfyPage.page.locator('.comfy-img-preview').getByText(CANT_PLAY_MESSAGE)
     ).toBeVisible()
