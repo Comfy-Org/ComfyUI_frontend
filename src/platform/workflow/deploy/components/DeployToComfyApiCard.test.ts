@@ -134,7 +134,7 @@ describe('DeployToComfyApiCard', () => {
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
 
     expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
-      'Build with your agent'
+      'Deploy with your agent'
     )
   })
 
@@ -146,7 +146,7 @@ describe('DeployToComfyApiCard', () => {
 
     await user.click(button)
 
-    expect(button).toHaveTextContent('Build with your agent')
+    expect(button).toHaveTextContent('Deploy with your agent')
   })
 
   it('links to the developer platform in a new tab without a referrer, and reports done', async () => {
