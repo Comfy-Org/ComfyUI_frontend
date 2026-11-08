@@ -104,14 +104,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DISPATCH_OUTPUT=$(gh workflow run publish-package.yaml \
-            --repo "$REPO" \
-            --ref main \
-            -f package="$PACKAGE" \
-            -f version="$VERSION" \
-            -f dist_tag="$DIST_TAG" 2>&1)
-          echo "$DISPATCH_OUTPUT"
-          RUN_ID=$(grep -oE 'actions/runs/[0-9]+' <<<"$DISPATCH_OUTPUT" | cut -d/ -f3)
+          RUN_ID=$(gh api --method POST \
+            "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
+            -f ref=main \
+            -F return_run_details=true \
+            -f "inputs[package]=$PACKAGE" \
+            -f "inputs[version]=$VERSION" \
+            -f "inputs[dist_tag]=$DIST_TAG" \
+            --jq '.workflow_run_id')
           gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15
 
   # The release links are written to an artifact here and posted by
@@ -166,9 +166,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # publish is a matrix of dispatched runs, so it cannot say which package
-  # published and which was skipped as already-on-npm. The wording below is
-  # therefore true of both outcomes.
   notify_slack:
     name: Notify Slack
     needs:
