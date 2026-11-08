@@ -152,7 +152,7 @@ jobs:
               .include[]
               | "- npm @comfyorg/\(.package): [`\(.version)`](https://www.npmjs.com/package/@comfyorg/\(.package)/v/\(.version)) on `\(.dist_tag)`"
             ' <<<"$MATRIX"
-            echo "- Published from [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
+            echo "- Release PR merged as [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
             echo ''
             echo '</details>'
           } > publish-report/report.md
