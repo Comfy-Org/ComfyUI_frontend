@@ -23,6 +23,19 @@ vi.mock(import('@/utils/imageUtil'), () => ({
 }))
 
 describe('useNodeVideo', () => {
+  function trackCreatedVideos() {
+    const createdVideos: HTMLVideoElement[] = []
+    const realCreateElement = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation(
+      (tag: string, opts?: ElementCreationOptions) => {
+        const el = realCreateElement(tag, opts)
+        if (el instanceof HTMLVideoElement) createdVideos.push(el)
+        return el
+      }
+    )
+    return createdVideos
+  }
+
   async function setup() {
     vi.clearAllMocks()
 
@@ -34,15 +47,7 @@ describe('useNodeVideo', () => {
       graph: new LGraph()
     })
 
-    const createdVideos: HTMLVideoElement[] = []
-    const realCreateElement = document.createElement.bind(document)
-    vi.spyOn(document, 'createElement').mockImplementation(
-      (tag: string, opts?: ElementCreationOptions) => {
-        const el = realCreateElement(tag, opts)
-        if (el instanceof HTMLVideoElement) createdVideos.push(el)
-        return el
-      }
-    )
+    const createdVideos = trackCreatedVideos()
 
     const { showPreview } = useNodeVideo(node)
     showPreview()
@@ -54,21 +59,54 @@ describe('useNodeVideo', () => {
     return { node, video, createdVideos }
   }
 
-  async function failBothAttempts(createdVideos: HTMLVideoElement[]) {
-    createdVideos.at(-1)?.onerror?.(new Event('error'))
-    await vi.advanceTimersByTimeAsync(1)
-    createdVideos.at(-1)?.onerror?.(new Event('error'))
-    await vi.advanceTimersByTimeAsync(1)
+  async function failBothAttempts(
+    createdVideos: HTMLVideoElement[],
+    errorCode?: number
+  ) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const video = createdVideos.at(-1)!
+      if (errorCode) {
+        Object.defineProperty(video, 'error', { value: { code: errorCode } })
+      }
+      video.onerror?.(new Event('error'))
+      await vi.advanceTimersByTimeAsync(1)
+    }
   }
 
-  it('drops the previous video when a new output fails to load', async () => {
+  it('replaces the previous video with a message when a new output fails to load', async () => {
     const { node, video, createdVideos } = await setup()
 
     useNodeVideo(node).showPreview()
-    await failBothAttempts(createdVideos)
+    await failBothAttempts(createdVideos, 2)
 
     expect(node.videoContainer?.contains(video)).toBe(false)
     expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
+    expect(node.videoContainer?.textContent).toBe('Video failed to load')
+  })
+
+  it('says the browser cannot play a source it does not support', async () => {
+    const { node, createdVideos } = await setup()
+
+    useNodeVideo(node).showPreview()
+    await failBothAttempts(createdVideos, 4)
+
+    expect(node.videoContainer?.textContent).toBe(
+      "Your browser can't play this video. Download it to view it in another app."
+    )
+  })
+
+  it('shows the message on a node that never previewed a video', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/1.mov'
+    ])
+    const node = createDOMWidgetNode({ size: [400, 400], graph: new LGraph() })
+    const createdVideos = trackCreatedVideos()
+
+    useNodeVideo(node).showPreview()
+    await failBothAttempts(createdVideos, 4)
+
+    expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
+    expect(node.videoContainer?.textContent).toContain("can't play this video")
   })
 
   it.for([

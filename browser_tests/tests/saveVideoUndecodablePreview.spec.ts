@@ -15,6 +15,8 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const PLAYABLE = 'video-preview-square.webm'
 const UNDECODABLE = 'save-video-prores.mov'
+const CANT_PLAY_MESSAGE =
+  "Your browser can't play this video. Download it to view it in another app."
 
 async function addSaveVideoNode(comfyPage: ComfyPage) {
   const node = await comfyPage.nodeOps.addNode('SaveVideo', undefined, {
@@ -57,7 +59,7 @@ test.describe('Save Video preview of an undecodable output', () => {
     })
   })
 
-  test('canvas renderer drops the previous run when the new output cannot be decoded', async ({
+  test('canvas renderer replaces the previous run with a message when the new output cannot be decoded', async ({
     comfyPage,
     getWebSocket
   }) => {
@@ -75,6 +77,11 @@ test.describe('Save Video preview of an undecodable output', () => {
         message: 'the previous run must not stay up as the new output preview'
       })
       .toBeNull()
+    await expect(
+      comfyPage.page
+        .locator('.comfy-img-preview')
+        .getByText(CANT_PLAY_MESSAGE)
+    ).toBeVisible()
   })
 
   test.describe('Vue nodes renderer', { tag: '@vue-nodes' }, () => {
@@ -111,9 +118,7 @@ test.describe('Save Video preview of an undecodable output', () => {
       execution.executed('', nodeId, videoOutput(UNDECODABLE))
 
       await expect(
-        node.getByText(
-          "Your browser can't play this video. Download it to view it in another app."
-        )
+node.getByText(CANT_PLAY_MESSAGE)
       ).toBeVisible()
       await expect(node.getByText(UNDECODABLE)).toBeVisible()
       await expect(node.getByText('Invalid URL')).toBeHidden()

@@ -1,4 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -17,6 +18,7 @@ const VIDEO_DEFAULT_OPTIONS = {
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -171,6 +173,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = DEFAULT_VIDEO_SIZE
+  let unsupportedSource = false
 
   const { handleWheel, handlePointerDown, handlePointerMove } =
     useCanvasInteractions()
@@ -196,7 +199,10 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
         setMinDimensions(video)
         resolve(video)
       }
-      video.onerror = () => resolve(null)
+      video.onerror = () => {
+        unsupportedSource = video.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED
+        resolve(null)
+      }
       video.src = url
     })
 
@@ -225,15 +231,16 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     }
   }
 
-  const onLoaded = (videoElements: HTMLVideoElement[]) => {
-    const videoElement = videoElements[0]
-
+  const showInContainer = (element: HTMLElement) => {
     if (!node.videoContainer) {
       node.videoContainer = createContainer()
       addVideoDomWidget(node.videoContainer)
     }
+    node.videoContainer.replaceChildren(element)
+  }
 
-    node.videoContainer.replaceChildren(videoElement)
+  const onLoaded = (videoElements: HTMLVideoElement[]) => {
+    showInContainer(videoElements[0])
     callback?.()
   }
 
@@ -242,7 +249,12 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     onLoaded,
     telemetrySource: 'canvas_node_video',
     onFailedLoading: () => {
-      node.videoContainer?.replaceChildren()
+      const message = document.createElement('p')
+      message.className = 'p-2 text-center text-sm'
+      message.textContent = t(
+        unsupportedSource ? 'g.videoFormatNotSupported' : 'g.videoFailedToLoad'
+      )
+      showInContainer(message)
     }
   })
 }
