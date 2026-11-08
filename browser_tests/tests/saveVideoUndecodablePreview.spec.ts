@@ -5,6 +5,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -23,6 +24,14 @@ async function serveVideoOutputs(page: Page) {
       contentType: name === UNDECODABLE ? 'video/quicktime' : 'video/webm'
     })
   })
+}
+
+async function addSaveVideoNode(comfyPage: ComfyPage) {
+  const node = await comfyPage.nodeOps.addNode('SaveVideo', undefined, {
+    x: 300,
+    y: 150
+  })
+  return String(node.id)
 }
 
 const videoOutput = (filename: string) => ({
@@ -54,9 +63,7 @@ test.describe('Save Video preview of an undecodable output', () => {
     getWebSocket
   }) => {
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-    const nodeId = String(
-      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
-    )
+    const nodeId = await addSaveVideoNode(comfyPage)
 
     execution.executed('', nodeId, videoOutput(PLAYABLE))
     await expect
@@ -74,9 +81,7 @@ test.describe('Save Video preview of an undecodable output', () => {
   test.describe('Vue nodes renderer', { tag: '@vue-nodes' }, () => {
     test('previews a playable output', async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = String(
-      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
-    )
+      const nodeId = await addSaveVideoNode(comfyPage)
 
       execution.executed('', nodeId, videoOutput(PLAYABLE))
 
@@ -93,14 +98,12 @@ test.describe('Save Video preview of an undecodable output', () => {
         .toBe(true)
     })
 
-    test('says the browser cannot play the format and the file was saved', async ({
+    test('says the browser cannot play the output', async ({
       comfyPage,
       getWebSocket
     }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = String(
-      (await comfyPage.nodeOps.addNode('SaveVideo', undefined, { x: 300, y: 150 })).id
-    )
+      const nodeId = await addSaveVideoNode(comfyPage)
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
 
       execution.executed('', nodeId, videoOutput(PLAYABLE))
@@ -109,10 +112,9 @@ test.describe('Save Video preview of an undecodable output', () => {
       execution.executed('', nodeId, videoOutput(UNDECODABLE))
 
       await expect(
-        node.getByText("Your browser can't play this video format")
-      ).toBeVisible()
-      await expect(
-        node.getByText('The file was saved. Download it to view it.')
+        node.getByText(
+          "Your browser can't play this video. Download it to view it in another app."
+        )
       ).toBeVisible()
       await expect(node.getByText(UNDECODABLE)).toBeVisible()
       await expect(node.getByText('Invalid URL')).toBeHidden()

@@ -32,8 +32,8 @@ const i18n = createI18n({
         failedToDownloadVideo: 'Failed to download video',
         calculatingDimensions: 'Calculating dimensions',
         videoFailedToLoad: 'Video failed to load',
-        videoFormatNotSupported: "Your browser can't play this video format",
-        videoSavedDownloadToView: 'The file was saved. Download it to view it.',
+        videoFormatNotSupported:
+          "Your browser can't play this video. Download it to view it in another app.",
         loading: 'Loading'
       }
     }
@@ -92,11 +92,7 @@ describe('VideoPreview', () => {
   })
 
   describe('load failure message', () => {
-    async function failWith(status: number, code: number) {
-      resetImageFailureProbesForTest()
-      vi.mocked(fetch).mockImplementation(
-        async () => new Response(null, { status })
-      )
+    async function failWith(code: number) {
       renderVideoPreview({
         imageUrls: ['/api/view?filename=clip.mov&type=output']
       })
@@ -106,40 +102,27 @@ describe('VideoPreview', () => {
     }
 
     it('names the file of a relative /api/view URL instead of "Invalid URL"', async () => {
-      await failWith(404, 4)
+      await failWith(2)
 
       expect(screen.getByText('clip.mov')).toBeInTheDocument()
       expect(screen.queryByText('Invalid URL')).not.toBeInTheDocument()
     })
 
-    it('says the format is unplayable when the file is served but cannot be decoded', async () => {
-      await failWith(206, 4)
+    it('says the browser cannot play a source it does not support', async () => {
+      await failWith(4)
 
       expect(
-        await screen.findByText("Your browser can't play this video format")
+        screen.getByText(
+          "Your browser can't play this video. Download it to view it in another app."
+        )
       ).toBeInTheDocument()
-      expect(screen.getByTestId('video-saved-hint')).toBeInTheDocument()
       expect(screen.queryByText('Video failed to load')).not.toBeInTheDocument()
     })
 
-    it('keeps the generic message when the file itself is missing', async () => {
-      await failWith(404, 4)
-      await vi.waitFor(() =>
-        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalled()
-      )
+    it('keeps the generic message for other load errors', async () => {
+      await failWith(2)
 
       expect(screen.getByText('Video failed to load')).toBeInTheDocument()
-      expect(screen.queryByTestId('video-saved-hint')).not.toBeInTheDocument()
-    })
-
-    it('keeps the generic message for a network error on a served file', async () => {
-      await failWith(206, 2)
-      await vi.waitFor(() =>
-        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalled()
-      )
-
-      expect(screen.getByText('Video failed to load')).toBeInTheDocument()
-      expect(screen.queryByTestId('video-saved-hint')).not.toBeInTheDocument()
     })
   })
 
