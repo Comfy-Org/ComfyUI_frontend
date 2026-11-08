@@ -113,8 +113,10 @@ const useNodePreview = <T extends MediaElement>(
         )
         if (validElements.length) {
           onLoaded?.(validElements)
-          node.graph?.setDirtyCanvas(true)
+        } else {
+          onFailedLoading?.()
         }
+        node.graph?.setDirtyCanvas(true)
       })
       .catch(() => {
         onFailedLoading?.()
@@ -239,7 +241,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     onLoaded,
     telemetrySource: 'canvas_node_video',
     onFailedLoading: () => {
-      node.videoContainer = undefined
+      node.videoContainer?.replaceChildren()
     }
   })
 }

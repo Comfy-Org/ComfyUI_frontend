@@ -6,6 +6,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
@@ -51,8 +52,45 @@ describe('useNodeVideo', () => {
     video.onloadeddata?.(new Event('loadeddata'))
     await vi.runAllTimersAsync()
 
-    return { node, video }
+    return { node, video, createdVideos }
   }
+
+  async function rerun(
+    node: LGraphNode,
+    createdVideos: HTMLVideoElement[],
+    outcome: 'error' | 'loadeddata'
+  ) {
+    const before = createdVideos.length
+    useNodeVideo(node).showPreview()
+    while (createdVideos.length > before) {
+      const next = createdVideos.shift()!
+      if (outcome === 'error') next.onerror?.(new Event('error'))
+      else next.onloadeddata?.(new Event('loadeddata'))
+      await vi.advanceTimersByTimeAsync(1)
+      if (outcome === 'loadeddata') return next
+    }
+  }
+
+  it('drops the previous video when a new output fails to load', async () => {
+    const { node, video, createdVideos } = await setup()
+    createdVideos.length = 0
+
+    await rerun(node, createdVideos, 'error')
+
+    expect(node.videoContainer?.contains(video)).toBe(false)
+    expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
+  })
+
+  it('shows the next good output after a failed one', async () => {
+    const { node, createdVideos } = await setup()
+    createdVideos.length = 0
+    await rerun(node, createdVideos, 'error')
+
+    const next = await rerun(node, createdVideos, 'loadeddata')
+
+    expect(next).toBeDefined()
+    expect(node.widgets?.[0]?.element.contains(next!)).toBe(true)
+  })
 
   it('creates a video-preview widget and forwards canvas events while alive', async () => {
     const { node, video } = await setup()
@@ -149,6 +187,34 @@ describe('canvas node media failure telemetry', () => {
     expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'canvas_node_image', timed_out: true })
     )
+  })
+
+  it('drops the previous image when a new output fails to load', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=ok.png&type=output'
+    ])
+    const created = stubImages()
+    const node = createDOMWidgetNode({
+      size: [400, 400],
+      graph: new LGraph()
+    })
+    useNodeImage(node).showPreview()
+    await flush()
+    created[0].onload?.(new Event('load'))
+    await flush()
+    expect(node.imgs).toEqual([created[0]])
+
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=gone.png&type=output'
+    ])
+    useNodeImage(node).showPreview()
+    await flush()
+    created[1].onerror?.(new Event('error'))
+    await flush()
+    created[2].onerror?.(new Event('error'))
+    await flush()
+
+    expect(node.imgs).toBeUndefined()
   })
 
   it('stays silent when the image loads', async () => {

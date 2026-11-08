@@ -25,7 +25,13 @@
       >
         <i class="mb-2 icon-[lucide--video-off] size-12" />
         <p class="text-sm">
-          {{ $t('g.videoFailedToLoad') }}
+          {{
+            $t(
+              isUnsupportedFormat
+                ? 'g.videoFormatNotSupported'
+                : 'g.videoFailedToLoad'
+            )
+          }}
         </p>
         <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
@@ -109,8 +115,11 @@
 
     <!-- Video Dimensions -->
     <div class="mt-2 text-center text-muted-foreground">
+      <span v-if="isUnsupportedFormat" data-testid="video-saved-hint">
+        {{ $t('g.videoSavedDownloadToView') }}
+      </span>
       <span
-        v-if="videoError"
+        v-else-if="videoError"
         class="text-destructive"
         data-testid="error-loading-video"
       >
@@ -157,12 +166,16 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+const unsupportedFormatUrl = ref<string>()
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
+const isUnsupportedFormat = computed(
+  () => videoError.value && unsupportedFormatUrl.value === currentVideoUrl.value
+)
 
 // Watch for URL changes and reset state
 watch(
@@ -200,14 +213,27 @@ const handleVideoLoad = (event: Event) => {
   }
 }
 
-const handleVideoError = () => {
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+
+const handleVideoError = (event: Event) => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
 
   const failedUrl = currentVideoUrl.value
   if (!failedUrl) return
+  const notSupported =
+    event.target instanceof HTMLVideoElement &&
+    event.target.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED
   void describeImageLoadFailure(failedUrl).then((metadata) => {
+    // Chrome reports a 404 with the same error code as an unplayable codec,
+    // so only a reachable file means the format is what failed.
+    const reachable =
+      metadata.probe_outcome === 'probe_redirected' ||
+      (metadata.status !== undefined &&
+        metadata.status >= 200 &&
+        metadata.status < 300)
+    if (notSupported && reachable) unsupportedFormatUrl.value = failedUrl
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
       source: 'node_video_preview'
@@ -303,7 +329,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const getVideoFilename = (url: string): string => {
   try {
-    return new URL(url).searchParams.get('filename') || 'Unknown file'
+    return (
+      new URL(url, window.location.href).searchParams.get('filename') ||
+      'Unknown file'
+    )
   } catch {
     return 'Invalid URL'
   }
