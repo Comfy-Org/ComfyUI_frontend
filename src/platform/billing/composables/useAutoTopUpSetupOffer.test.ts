@@ -94,6 +94,36 @@ describe('useAutoTopUpSetupOffer', () => {
     await expect(setupUrl()).rejects.toThrow('Failed to fetch')
   })
 
+  it('reports the offer once it is shown, and not when nothing is offered', async () => {
+    const billingEvents = vi.mocked(useTelemetry()!.trackBillingEvent)
+    const shown = await serve()
+    await shown.setupUrl()
+    expect(billingEvents).toHaveBeenCalledExactlyOnceWith({
+      operation: 'auto_top_up_offer',
+      stage: 'viewed',
+      outcome: 'pending'
+    })
+
+    billingEvents.mockClear()
+    const alreadyOn = await serve({ status: 'on' })
+    await alreadyOn.setupUrl()
+    expect(billingEvents).not.toHaveBeenCalled()
+  })
+
+  it('reports Not now as a declined offer', async () => {
+    const billingEvents = vi.mocked(useTelemetry()!.trackBillingEvent)
+    billingEvents.mockClear()
+    const { trackDeclined } = await serve()
+
+    trackDeclined()
+
+    expect(billingEvents).toHaveBeenCalledExactlyOnceWith({
+      operation: 'auto_top_up_offer',
+      stage: 'declined',
+      outcome: 'pending'
+    })
+  })
+
   it('reports the Set up click as a Turn on handoff', async () => {
     const { track } = await serve()
 

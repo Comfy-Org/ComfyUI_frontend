@@ -78,7 +78,7 @@
       :translate
       :ui
       @set-up="setUpAutoTopUp"
-      @close="emit('close')"
+      @close="declineAutoTopUp"
     />
   </div>
 </template>
@@ -148,10 +148,19 @@ const {
   ui?: AddCreditsUi
 }>()
 
-const emit = defineEmits<{ close: []; setUpAutoTopUp: [] }>()
+const emit = defineEmits<{
+  close: []
+  setUpAutoTopUp: []
+  declineAutoTopUp: []
+}>()
 
 function setUpAutoTopUp() {
   emit('setUpAutoTopUp')
+  emit('close')
+}
+
+function declineAutoTopUp() {
+  emit('declineAutoTopUp')
   emit('close')
 }
 

@@ -543,9 +543,9 @@ describe('AddCreditsDialog auto top-up suggestion', () => {
   })
 
   it.for([
-    { name: 'Not now', button: 'Not now' },
-    { name: 'the X', button: 'Close' }
-  ])('$name closes the suggestion', async ({ button }) => {
+    { name: 'Not now', button: 'Not now', declined: true },
+    { name: 'the X', button: 'Close', declined: false }
+  ])('$name closes the suggestion', async ({ button, declined }) => {
     const { user, emitted } = await landPayment(() =>
       Promise.resolve(AUTO_TOP_UP_SETUP_URL)
     )
@@ -555,6 +555,7 @@ describe('AddCreditsDialog auto top-up suggestion', () => {
 
     expect(emitted().close).toHaveLength(1)
     expect(emitted().setUpAutoTopUp).toBeUndefined()
+    expect('declineAutoTopUp' in emitted()).toBe(declined)
   })
 
   it.for([

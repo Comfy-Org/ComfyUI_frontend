@@ -16,6 +16,7 @@
     :title-as="DialogTitle"
     @close="close"
     @set-up-auto-top-up="autoTopUpOffer.track"
+    @decline-auto-top-up="autoTopUpOffer.trackDeclined"
   >
     <template v-if="isInsufficientCredits" #description>
       <p class="m-0 text-muted-foreground">
