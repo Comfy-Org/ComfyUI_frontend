@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,5 +36,58 @@ describe('useSettingsDialog', () => {
     useSettingsDialog().showAbout()
     const [args] = showDialog.mock.calls[0]
     expect(args.props.defaultPanel).toBe('about')
+  })
+
+  describe('planCreditsView', () => {
+    function openSettingsOnAbout() {
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(
+        fromPartial<DialogInstance>({
+          key: 'global-settings',
+          contentProps: { defaultPanel: 'about' },
+          dialogComponentProps: {}
+        })
+      )
+      return dialogStore.dialogStack[0]
+    }
+
+    it('show(panel) leaves the Plan & Credits view out of the dialog props', () => {
+      useSettingsDialog().show('workspace')
+      const [args] = showDialog.mock.calls[0]
+      expect(args.props).not.toHaveProperty('planCreditsView')
+    })
+
+    it('show(panel, settingId, { planCreditsView }) forwards the view to the dialog props', () => {
+      useSettingsDialog().show('workspace', undefined, {
+        planCreditsView: 'activity'
+      })
+      const [args] = showDialog.mock.calls[0]
+      expect(args.props.defaultPanel).toBe('workspace')
+      expect(args.props.planCreditsView).toBe('activity')
+    })
+
+    it('applies the view to a settings dialog that is already open', () => {
+      const openDialog = openSettingsOnAbout()
+
+      useSettingsDialog().show('workspace', undefined, {
+        planCreditsView: 'activity'
+      })
+
+      expect(openDialog.contentProps).toMatchObject({
+        defaultPanel: 'workspace',
+        planCreditsView: 'activity'
+      })
+    })
+
+    it('adds no view to an already open settings dialog without the option', () => {
+      const openDialog = openSettingsOnAbout()
+
+      useSettingsDialog().show('workspace')
+
+      expect(openDialog.contentProps).toMatchObject({
+        defaultPanel: 'workspace'
+      })
+      expect(openDialog.contentProps).not.toHaveProperty('planCreditsView')
+    })
   })
 })

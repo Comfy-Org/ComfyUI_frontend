@@ -90,7 +90,7 @@
       >
         <template v-if="activePanel">
           <Suspense>
-            <component :is="activePanel.component" v-bind="activePanel.props" />
+            <component :is="activePanel.component" v-bind="activePanelProps" />
             <template #fallback>
               <div>
                 {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
@@ -145,8 +145,13 @@ import type {
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId, navigationRequestId } =
-  defineProps<SettingDialogProps>()
+const {
+  onClose,
+  defaultPanel,
+  scrollToSettingId,
+  navigationRequestId,
+  planCreditsView
+} = defineProps<SettingDialogProps>()
 
 const modalLayoutLabels = useModalLayoutLabels()
 
@@ -251,6 +256,12 @@ const activePanel = computed(() => {
   if (!activeCategoryKey.value) return null
   return findPanelByKey(activeCategoryKey.value)
 })
+
+const activePanelProps = computed(() =>
+  planCreditsView && activePanel.value?.props?.section === 'planCredits'
+    ? { ...activePanel.value.props, planCreditsView }
+    : activePanel.value?.props
+)
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>
   Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))

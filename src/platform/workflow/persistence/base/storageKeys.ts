@@ -91,6 +91,10 @@ export const StorageKeys = {
     return `Comfy.Agent.DeletedThreads:${workspaceId}`
   },
 
+  agentPinnedThreads(workspaceId: string): string {
+    return `Comfy.Agent.PinnedThreads:${workspaceId}`
+  },
+
   agentComposerDraft(workspaceId: string): string {
     return `Comfy.Agent.ComposerDraft:${workspaceId}`
   },
@@ -122,6 +126,7 @@ export const StorageKeys = {
     agentWorkflowTabBindings: 'Comfy.Agent.WorkflowTabBindings:',
     agentChatTitles: 'Comfy.Agent.ChatTitles:',
     agentDeletedThreads: 'Comfy.Agent.DeletedThreads:',
+    agentPinnedThreads: 'Comfy.Agent.PinnedThreads:',
     agentComposerDraft: 'Comfy.Agent.ComposerDraft:'
   }
 } as const

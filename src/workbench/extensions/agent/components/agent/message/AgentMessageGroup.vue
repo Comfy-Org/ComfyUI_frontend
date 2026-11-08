@@ -6,6 +6,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import AgentRegionBoundary from '@/workbench/extensions/agent/components/agent/AgentRegionBoundary.vue'
 import ActivityTrace from './ActivityTrace.vue'
 import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPausedCard from './AgentPausedCard.vue'
@@ -15,6 +16,7 @@ import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import ExtensionChangeCard from './ExtensionChangeCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
+import RunProgressSlot from './RunProgressSlot.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import type { AgentMessageGroup } from './agentMessageGroup'
 import WorkSummary from './WorkSummary.vue'
@@ -104,5 +106,8 @@ const emit = defineEmits<{
     :message="group.part.message"
     @paywall-action="emit('paywallAction', $event, 'refused_send')"
   />
+  <AgentRegionBoundary v-else-if="group.kind === 'run'" region="runCard">
+    <RunProgressSlot :run-slot="group.slot" />
+  </AgentRegionBoundary>
   <AgentNoticeCard v-else :part="group.part" />
 </template>

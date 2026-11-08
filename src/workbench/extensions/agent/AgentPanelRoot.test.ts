@@ -1007,6 +1007,81 @@ describe('AgentPanelRoot onboarding', () => {
     )
   })
 
+  it('shows the chat sidebar only while the panel is full screen', async () => {
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    const panel = useAgentPanelStore()
+    panel.experience = 'redesign'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(screen.queryByTestId('agent-sidebar')).toBeNull()
+
+    panel.toggleMaximize()
+
+    expect(await screen.findByTestId('agent-sidebar')).toHaveAttribute(
+      'data-mode',
+      'expanded'
+    )
+    expect(screen.getByRole('navigation', { name: 'Chats' })).toBeVisible()
+    expect(
+      within(screen.getByTestId('agent-sidebar')).getByRole('button', {
+        name: 'Account menu'
+      })
+    ).toBeVisible()
+
+    panel.toggleMaximize()
+
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('agent-sidebar')).toBeNull()
+    )
+  })
+
+  it('resizes the chat sidebar by dragging its handle and resets it on a double click', async () => {
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    const panel = useAgentPanelStore()
+    panel.experience = 'redesign'
+    panel.toggleMaximize()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const sidebar = await screen.findByTestId('agent-sidebar')
+    const handle = screen.getByRole('separator', { name: 'Resize sidebar' })
+    expect(sidebar.style.width).toBe('260px')
+
+    await userEvent.pointer([
+      { keys: '[MouseLeft>]', target: handle, coords: { x: 258, y: 10 } },
+      { coords: { x: 338, y: 10 } },
+      { keys: '[/MouseLeft]' }
+    ])
+
+    await vi.waitFor(() => expect(sidebar.style.width).toBe('340px'))
+
+    await userEvent.dblClick(handle)
+
+    await vi.waitFor(() => expect(sidebar.style.width).toBe('260px'))
+  })
+
+  it('defers the tour while the chat is full screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-fullscreen'
+    })
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    const panel = useAgentPanelStore()
+    panel.experience = 'redesign'
+    panel.toggleMaximize()
+    expect(panel.isFullscreen).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'fullscreen' })
+    )
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+  })
+
   it('reports a deferral once however often the panel remounts', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-remount'
@@ -1087,6 +1162,93 @@ describe('AgentPanelRoot onboarding', () => {
 
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot sidebar sections', () => {
+  beforeEach(() => {
+    ws.clear()
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+  })
+
+  async function showFullscreenSidebar(): Promise<HTMLElement> {
+    const panel = useAgentPanelStore()
+    panel.experience = 'redesign'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    panel.toggleMaximize()
+    return screen.findByTestId('agent-sidebar')
+  }
+
+  it('lists the saved workflows in place of the chats when Workflows is chosen', async () => {
+    addTab('workflows/video/Seedance clip.json', {
+      isPersisted: true,
+      lastModified: 20
+    })
+    const sidebar = await showFullscreenSidebar()
+
+    await userEvent.click(
+      within(sidebar).getByRole('button', { name: 'Workflows' })
+    )
+
+    expect(
+      within(
+        within(sidebar).getByRole('navigation', { name: 'Workflows' })
+      ).getByRole('button', { name: 'Seedance clip' })
+    ).toHaveAccessibleDescription('video')
+    expect(
+      within(sidebar).queryByRole('navigation', { name: 'Chats' })
+    ).toBeNull()
+    expect(workflowStore.syncWorkflows).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the workflow picked from the sidebar and leaves full screen', async () => {
+    const saved = addTab('workflows/Portrait upscale.json', {
+      isPersisted: true,
+      lastModified: 20
+    })
+    const sidebar = await showFullscreenSidebar()
+    await userEvent.click(
+      within(sidebar).getByRole('button', { name: 'Workflows' })
+    )
+
+    await userEvent.click(
+      within(sidebar).getByRole('button', { name: 'Portrait upscale' })
+    )
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().isFullscreen).toBe(false)
+    )
+    expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
+  })
+
+  it('keeps the account menu above the section nav', async () => {
+    const sidebar = await showFullscreenSidebar()
+
+    expect(
+      within(sidebar)
+        .getByRole('button', { name: 'Account menu' })
+        .compareDocumentPosition(
+          within(sidebar).getByRole('navigation', { name: 'Agent sections' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('opens the template browser over the chat when Templates is chosen', async () => {
+    const sidebar = await showFullscreenSidebar()
+
+    await userEvent.click(
+      within(sidebar).getByRole('button', { name: 'Templates' })
+    )
+
+    expect(
+      useDialogStore().isDialogOpen('global-workflow-template-selector')
+    ).toBe(true)
+    expect(useAgentPanelStore().isFullscreen).toBe(true)
+    expect(
+      telemetry.trackTemplateLibraryOpened
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'agent_sidebar' })
   })
 })
 
@@ -8418,6 +8580,59 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot run cards', () => {
+  beforeEach(() => {
+    ws.clear()
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+  })
+
+  it.for([
+    { experience: 'redesign', cards: 1, rows: 0 },
+    { experience: 'classic', cards: 0, rows: 1 }
+  ] as const)(
+    'shows a workflow run as $cards card(s) and $rows tool row(s) in the $experience experience',
+    async ({ experience, cards, rows }) => {
+      useAgentPanelStore().experience = experience
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const store = useAgentConversationStore()
+      store.setThreadId('th-1')
+      const turnId = 'turn-run' as TurnId
+      store.recordUser(turnId, 'run it')
+      store.startTurn(turnId)
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_tool_call',
+          data: {
+            thread_id: 'th-1',
+            message_id: turnId,
+            tool_call_id: 'call-ls-nodes',
+            tool_name: 'ls_nodes',
+            status: 'success'
+          }
+        })
+      )
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_tool_call',
+          data: {
+            thread_id: 'th-1',
+            message_id: turnId,
+            tool_call_id: 'call-run',
+            tool_name: 'run',
+            status: 'running'
+          }
+        })
+      )
+
+      expect(await screen.findByText('Ls nodes')).toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('group', { name: 'Workflow run' })
+      ).toHaveLength(cards)
+      expect(screen.queryAllByText('Run')).toHaveLength(rows)
+    }
+  )
+})
+
 describe('AgentPanelRoot ask_user answer telemetry', () => {
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
     respondToFetch({}, () => json(200, {}))
@@ -8488,6 +8703,21 @@ describe('AgentPanelRoot lifecycle', () => {
     })
     expect(useAgentPanelStore().isOpen).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
+  it('leaves full screen before picking nodes on the canvas', async () => {
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const panel = useAgentPanelStore()
+    panel.experience = 'redesign'
+    panel.toggleMaximize()
+    expect(panel.prefersFullscreen).toBe(true)
+
+    await startVueNodeSelection()
+
+    expect(panel.prefersFullscreen).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(true)
   })
 
   it('ends node selection when the panel unmounts', async () => {

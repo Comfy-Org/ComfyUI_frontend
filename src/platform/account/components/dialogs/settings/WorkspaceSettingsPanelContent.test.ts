@@ -45,7 +45,10 @@ const stubs = {
   BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
-  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' }
+  PlanCreditsPanelContent: {
+    props: ['initialView'],
+    template: '<div data-testid="plan-body">{{ initialView }}</div>'
+  }
 }
 
 beforeEach(() => {
@@ -101,5 +104,23 @@ describe('WorkspaceSettingsPanelContent', () => {
 
     unmount()
     expect(mockBannerUnmounted).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the Plan & Credits view to the panel by default', () => {
+    render(WorkspaceSettingsPanelContent, {
+      props: { section: 'planCredits' },
+      global: { stubs }
+    })
+
+    expect(screen.getByTestId('plan-body')).toBeEmptyDOMElement()
+  })
+
+  it('opens Plan & Credits on the requested view', () => {
+    render(WorkspaceSettingsPanelContent, {
+      props: { section: 'planCredits', planCreditsView: 'activity' },
+      global: { stubs }
+    })
+
+    expect(screen.getByTestId('plan-body')).toHaveTextContent('activity')
   })
 })

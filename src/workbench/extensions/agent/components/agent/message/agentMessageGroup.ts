@@ -12,6 +12,11 @@ import type {
   TabLinkPart,
   TextPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import type { RunSlot } from '@/workbench/extensions/agent/services/agent/agentRunSlots'
+import {
+  runOwnedCallIds,
+  runSlotsOf
+} from '@/workbench/extensions/agent/services/agent/agentRunSlots'
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
@@ -24,17 +29,34 @@ export type AgentMessageGroup =
   | { kind: 'askUser'; part: AskUserPart }
   | { kind: 'deleteApproval'; part: DeleteApprovalPart }
   | { kind: 'paused'; part: PausedPart }
+  | { kind: 'run'; slot: RunSlot }
 
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
+interface GroupMessagePartsOptions {
+  foldRuns?: boolean
+  streaming?: boolean
+}
+
 export function groupMessageParts(
-  parts: readonly MessagePart[]
+  parts: readonly MessagePart[],
+  { foldRuns = false, streaming = false }: GroupMessagePartsOptions = {}
 ): AgentMessageGroup[] {
+  const slots = foldRuns ? runSlotsOf({ parts, streaming }) : []
+  const runSlots = new Map(slots.map((slot) => [slot.callId, slot]))
+  const ownedByRun = foldRuns ? runOwnedCallIds(parts) : new Set<string>()
   const out: AgentMessageGroup[] = []
   let tracePlaced = false
   let openTextGroup: TextGroup | null = null
   for (const part of parts) {
+    if (part.type === 'tool' && ownedByRun.has(part.callId)) {
+      const slot = runSlots.get(part.callId)
+      if (!slot) continue
+      openTextGroup = null
+      out.push({ kind: 'run', slot })
+      continue
+    }
     if (part.type === 'tool' || part.type === 'thinking') {
       if (tracePlaced) continue
       tracePlaced = true

@@ -116,6 +116,13 @@ export function useAgentWorkflowResolver({
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
+  function displayNameFor(workflowId: string): string | undefined {
+    const tabPath = bindings.tabPathFor(workflowId)
+    const bound =
+      tabPath === undefined ? undefined : workflows.getWorkflowByPath(tabPath)
+    return bound?.filename ?? indexedNameFor(workflowId)
+  }
+
   /**
    * A persisted binding is stale when the cloud index says `workflowId` is
    * a different saved workflow than the tab it points at, and the tab's own
@@ -255,6 +262,7 @@ export function useAgentWorkflowResolver({
     forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,
+    displayNameFor,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,

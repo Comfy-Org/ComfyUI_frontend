@@ -9,7 +9,12 @@ export const TestIds = {
   },
   agent: {
     conversationScroll: 'agent-conversation-scroll',
-    activityTrace: 'agent-activity-trace'
+    activityTrace: 'agent-activity-trace',
+    sidebar: 'agent-sidebar',
+    sidebarScrim: 'agent-sidebar-scrim',
+    chatRow: 'chat-row',
+    chatWorkflowName: 'chat-workflow-name',
+    starterPrompts: 'agent-starter-prompts'
   },
   sidebar: {
     toolbar: 'side-toolbar',

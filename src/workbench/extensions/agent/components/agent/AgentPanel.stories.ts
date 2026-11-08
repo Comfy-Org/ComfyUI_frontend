@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { onBeforeUnmount } from 'vue'
 
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import '@/workbench/extensions/agent/agentPanel.css'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -121,4 +123,19 @@ export const FreeUsePlacements: Story = {
     `
   }),
   decorators: [() => ({ template: '<story />' })]
+}
+
+export const Redesign: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        const store = useAgentPanelStore()
+        store.experience = 'redesign'
+        onBeforeUnmount(() => {
+          store.experience = 'classic'
+        })
+      },
+      template: '<story />'
+    })
+  ]
 }

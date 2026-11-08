@@ -49,7 +49,13 @@ vi.mock<unknown>(
         return item
           ? {
               node: { key: item.id, label: item.label, children: [] },
-              component: { template: `<div>${key} panel</div>` }
+              component: {
+                props: ['section', 'planCreditsView'],
+                template: `<div>${key} panel {{ planCreditsView }}</div>`
+              },
+              ...(key === 'workspace'
+                ? { props: { section: 'planCredits' } }
+                : {})
             }
           : null
       }
@@ -369,6 +375,35 @@ it('restores the collapsed header when switching sections', async () => {
   expect(await screen.findByText('workspace panel')).toBeInTheDocument()
   expect(
     await screen.findByRole('heading', { name: 'Acme Team' })
+  ).toBeInTheDocument()
+})
+
+it('opens Plan & Credits on the requested view', async () => {
+  defaultCategory.value = {
+    key: 'workspace',
+    label: 'Workspace',
+    children: []
+  }
+
+  renderDialog({ props: { planCreditsView: 'activity' } })
+
+  expect(
+    await screen.findByText('workspace panel activity')
+  ).toBeInTheDocument()
+})
+
+it('keeps a view requested while the dialog is open for Plan & Credits only', async () => {
+  const { rerender } = renderDialog()
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ planCreditsView: 'activity' })
+  expect(screen.getByText('workspace-allowlist panel')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Workspace' }))
+  expect(
+    await screen.findByText('workspace panel activity')
   ).toBeInTheDocument()
 })
 

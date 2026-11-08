@@ -46,4 +46,27 @@ describe('DockedAgentPanel chunk-load failure', () => {
       errorType: 'agent_panel_load_failure'
     })
   })
+
+  it('leaves full screen when the chunk cannot load, so the graph is not left covered', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.consentAccepted = true
+    store.isOpen = true
+    store.experience = 'redesign'
+    store.toggleMaximize()
+    expect(store.isFullscreen).toBe(true)
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+    render(DockedAgentPanel, {
+      global: { plugins: [i18n], config: { errorHandler: () => {} } }
+    })
+
+    await screen.findByText('The agent panel failed to load.')
+
+    expect(store.isFullscreen).toBe(false)
+    expect(store.coversWorkspace).toBe(false)
+  })
 })

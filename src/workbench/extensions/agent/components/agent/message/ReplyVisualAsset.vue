@@ -16,6 +16,9 @@ defineEmits<{ inspect: [] }>()
 
 const { t } = useI18n()
 
+const singleMediaClass =
+  'block h-auto max-w-full @min-[1024px]:max-h-128 @min-[1024px]:w-auto'
+
 const previewing = ref(false)
 
 const name = computed(() => asset.label ?? asset.filename)
@@ -54,7 +57,10 @@ function clearPreviewingUnlessLooping(event: Event): void {
       cn(
         'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
         multi && 'aspect-square bg-accent',
-        !multi && asset.kind === '3D' && 'justify-self-end'
+        !multi &&
+          (asset.kind === '3D'
+            ? 'justify-self-end'
+            : '@min-[1024px]:w-fit @min-[1024px]:justify-self-start')
       )
     "
     @click="$emit('inspect')"
@@ -65,7 +71,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
       :alt="name"
       data-testid="reply-image-preview"
       loading="lazy"
-      :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
+      :class="multi ? 'size-full object-cover' : singleMediaClass"
     />
     <video
       v-else-if="asset.kind === 'video'"
@@ -75,7 +81,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
       loop
       playsinline
       preload="metadata"
-      :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
+      :class="multi ? 'size-full object-cover' : singleMediaClass"
       @mouseenter="playPreview"
       @mouseleave="stopPreview"
       @playing="previewing = true"
@@ -87,7 +93,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
       :src="modelThumbnailSrc"
       :alt="name"
       loading="lazy"
-      :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
+      :class="multi ? 'size-full object-cover' : singleMediaClass"
     />
     <span
       v-else

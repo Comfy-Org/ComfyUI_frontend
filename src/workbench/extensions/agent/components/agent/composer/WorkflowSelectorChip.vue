@@ -25,7 +25,9 @@ const {
   selectingTabPath = null,
   selectTab = async () => false,
   detached = false,
-  disabled = false
+  disabled = false,
+  inline = false,
+  menuAnchor
 } = defineProps<{
   activeTab: ActiveTab | null
   tabs: ActiveTab[]
@@ -34,6 +36,8 @@ const {
   selectTab?: (path: string) => Promise<boolean>
   detached?: boolean
   disabled?: boolean
+  inline?: boolean
+  menuAnchor?: HTMLElement | null
 }>()
 
 const { t } = useI18n()
@@ -52,7 +56,8 @@ const query = ref('')
 const searchInput = ref<InstanceType<typeof Input>>()
 const selectorRoot = useTemplateRef<HTMLElement>('selectorRoot')
 const composerReference = computed(
-  () => selectorRoot.value?.parentElement?.parentElement ?? undefined
+  () =>
+    menuAnchor ?? selectorRoot.value?.parentElement?.parentElement ?? undefined
 )
 
 watch(open, async (isOpen) => {
@@ -110,7 +115,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
 <template>
   <div
     ref="selectorRoot"
-    class="flex w-full items-center justify-between gap-1.5"
+    :class="
+      cn(
+        'flex items-center',
+        inline ? 'min-w-0' : 'w-full justify-between gap-1.5'
+      )
+    "
   >
     <DropdownMenuRoot :open @update:open="onOpenChange">
       <DropdownMenuTrigger as-child>
@@ -124,7 +134,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :class="
             cn(
               'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
-              current && 'flex-1'
+              current && !inline && 'flex-1'
             )
           "
         >
@@ -150,6 +160,11 @@ function onSearchKeydown(event: KeyboardEvent): void {
           >
             <span class="size-[7px] rounded-full bg-foreground" />
           </span>
+          <i
+            v-if="inline"
+            aria-hidden="true"
+            class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
+          />
         </Button>
       </DropdownMenuTrigger>
       <MenuContent

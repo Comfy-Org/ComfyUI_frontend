@@ -34,6 +34,15 @@
   }
 }
 
+@keyframes agent-run-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
 .agent-work-summary:where([data-state='open']) {
   animation: agent-collapsible-down 200ms ease-out;
 }
@@ -63,6 +72,14 @@
   -webkit-text-fill-color: currentcolor;
 }
 
+.agent-run-bar {
+  animation: agent-run-bar 1.6s ease-in-out infinite;
+}
+
+.disable-animations :where(#agent-panel-root, .agent-scope) .agent-run-bar {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .agent-work-summary {
     animation-duration: 0.001ms;
@@ -75,6 +92,10 @@
   }
 
   .agent-row-enter {
+    animation: none;
+  }
+
+  .agent-run-bar {
     animation: none;
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
 
@@ -98,12 +99,19 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import { useDialogService } from '@/services/dialogService'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentBrand from './components/agent/AgentBrand.vue'
+import AgentRegionBoundary from './components/agent/AgentRegionBoundary.vue'
+import AgentAccountMenu from './components/agent/sidebar/AgentAccountMenu.vue'
+import AgentSidebar from './components/agent/sidebar/AgentSidebar.vue'
+import AgentWorkflowList from './components/agent/sidebar/AgentWorkflowList.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import { agentRunCardsKey } from './components/agent/message/agentRunCards'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -136,6 +144,7 @@ import { useAgentTabSignals } from './composables/agent/useAgentTabSignals'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
+import { useAgentSidebarLibrary } from './composables/agent/useAgentSidebarLibrary'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import {
@@ -532,6 +541,7 @@ const {
   refreshCloudWorkflowIds,
   forgetCloudWorkflowId,
   cloudIdFor,
+  displayNameFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -674,11 +684,13 @@ const { activeTour } = storeToRefs(useOnboardingTourStore())
 const coachDeferredBy = computed(() =>
   canvasStore.linearMode
     ? 'app_mode'
-    : activeTour.value !== null
-      ? 'tour_active'
-      : dialogStore.dialogStack.length > 0
-        ? 'dialog_open'
-        : null
+    : agentPanelStore.isFullscreen
+      ? 'fullscreen'
+      : activeTour.value !== null
+        ? 'tour_active'
+        : dialogStore.dialogStack.length > 0
+          ? 'dialog_open'
+          : null
 )
 const sendGates = useAgentSendGates(
   () => threadId.value,
@@ -762,6 +774,7 @@ function restartCoach(): void {
   // Take-the-tour stays clickable while the coach is deferred by App Mode, and
   // there is no instance to hand the transition to. Clearing the persisted flag
   // makes the replay wait for the mount instead of being dropped.
+  agentPanelStore.exitFullscreen('tour')
   if (coachRef.value) coachRef.value.restart()
   else if (onboardingKey.value) resetCoach(onboardingKey.value)
 }
@@ -1115,7 +1128,15 @@ const {
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onAgentEvent: observeAgentEvent,
-  onThreadActivated: (id) => history.setActive(id),
+  onThreadActivated: (id) => {
+    history.setActive(id)
+    if (
+      id !== null &&
+      agentPanelStore.isFullscreen &&
+      !history.sessions.some((session) => session.id === id)
+    )
+      void refreshHistory()
+  },
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
   workflow: {
@@ -1485,6 +1506,7 @@ async function onOpenApprovalWorkflow(
   workflowName?: string
 ): Promise<void> {
   const decidedAt = Date.now()
+  agentPanelStore.exitFullscreen('graph_reveal')
   if (await enqueueActiveTab({ workflow_id: workflowId, name: workflowName }))
     trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
@@ -1492,6 +1514,7 @@ async function onOpenApprovalWorkflow(
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
+  agentPanelStore.exitFullscreen('graph_reveal')
   try {
     let target = openWorkflowFor(workflowId)
     if (target === null) {
@@ -2245,6 +2268,19 @@ function onRenameHistory(id: string, title: string): void {
   history.rename(id, title)
 }
 
+async function confirmChatDelete(id: string): Promise<boolean> {
+  const title =
+    history.titleFor(id) ??
+    history.sessions.find((session) => session.id === id)?.title ??
+    t('agent.untitledChat')
+  const confirmed = await useDialogService().confirm({
+    type: 'delete',
+    title: t('agent.sidebar.deleteTitle'),
+    message: t('agent.sidebar.deleteMessage', { title })
+  })
+  return confirmed === true
+}
+
 function onDeleteHistory(id: string): void {
   const isCurrent =
     id === history.activeId ||
@@ -2279,6 +2315,66 @@ function onNewChat(
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
+provide(
+  agentRunCardsKey,
+  computed(() => agentPanelStore.experience === 'redesign')
+)
+const panelRef = ref<InstanceType<typeof AgentPanel>>()
+
+function onToggleSize(): void {
+  agentPanelStore.toggleMaximize()
+}
+
+watch(
+  () => agentPanelStore.isFullscreen,
+  (fullscreen) => {
+    if (!fullscreen) return
+    canvasStore.stopNodePicking()
+    void refreshHistory()
+  }
+)
+
+const sidebarSelection = computed(() => {
+  const view = agentPanelStore.view
+  const selection = view.screen === 'history' ? view.selection : null
+  return {
+    loadingId: selection?.status === 'loading' ? selection.id : null,
+    failedId: selection?.status === 'failed' ? selection.id : null
+  }
+})
+
+const chatWorkflowNames = computed(
+  () =>
+    new Map(
+      history.sessions.flatMap(({ workflowId }) => {
+        const name =
+          workflowId === undefined ? undefined : displayNameFor(workflowId)
+        return workflowId !== undefined && name !== undefined
+          ? [[workflowId, name] as const]
+          : []
+      })
+    )
+)
+
+const {
+  items: libraryItems,
+  openingPath: libraryOpeningPath,
+  failedPath: libraryFailedPath,
+  refresh: refreshLibrary,
+  showSection: onSidebarSection,
+  openTemplates: onSidebarTemplates,
+  open: onOpenLibraryWorkflow
+} = useAgentSidebarLibrary()
+
+function onSidebarSelect(id: string): void {
+  agentPanelStore.dismissSidebarDrawer()
+  void panelRef.value?.selectChat(id)
+}
+
+function onSidebarNewChat(): void {
+  agentPanelStore.dismissSidebarDrawer()
+  panelRef.value?.startNewChat()
+}
 
 watch(
   selectedTarget,
@@ -2320,6 +2416,7 @@ function onSelectNodes(): void {
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
   const canvas = app.canvas
   if (!canvas) return
+  agentPanelStore.exitFullscreen('graph_reveal')
 
   const merged = new Map<string, LGraphNode>(
     [...canvas.selectedItems]
@@ -2584,7 +2681,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="relative size-full"
+    :class="cn('relative size-full', agentPanelStore.isFullscreen && 'flex')"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -2599,7 +2696,57 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
+    <AgentRegionBoundary v-if="agentPanelStore.isFullscreen" region="sidebar">
+      <AgentSidebar
+        :mode="agentPanelStore.sidebarMode"
+        :width="agentPanelStore.sidebarWidth"
+        :section="agentPanelStore.sidebarSection"
+        :groups="history.groupedInPlace"
+        :loading-id="sidebarSelection.loadingId"
+        :failed-id="sidebarSelection.failedId"
+        :active-id="history.activeId"
+        :pinned-ids="history.pinnedIds"
+        :workflow-names="chatWorkflowNames"
+        @toggle-pin="history.togglePin($event)"
+        @toggle="agentPanelStore.toggleSidebar()"
+        @dismiss-drawer="agentPanelStore.dismissSidebarDrawer()"
+        @resize="agentPanelStore.setSidebarWidth($event)"
+        @reset-width="agentPanelStore.resetSidebarWidth()"
+        @new-chat="onSidebarNewChat"
+        @select="onSidebarSelect"
+        @delete="panelRef?.deleteChat($event)"
+        @rename="onRenameHistory"
+        @copy-markdown="onCopyMarkdown"
+        @section="onSidebarSection"
+        @open-templates="onSidebarTemplates"
+      >
+        <template #brand>
+          <AgentBrand @start-tour="restartCoach" />
+        </template>
+        <template #account="{ compact }">
+          <AgentRegionBoundary region="accountMenu">
+            <AgentAccountMenu :compact />
+          </AgentRegionBoundary>
+        </template>
+        <template #library="{ section }">
+          <AgentRegionBoundary region="sidebarLibrary">
+            <AgentWorkflowList
+              :key="section"
+              :kind="section"
+              :items="libraryItems"
+              :loading="workflowStore.isSyncLoading"
+              :opening-path="libraryOpeningPath"
+              :failed-path="libraryFailedPath"
+              @open="onOpenLibraryWorkflow"
+              @refresh="refreshLibrary"
+            />
+          </AgentRegionBoundary>
+        </template>
+      </AgentSidebar>
+    </AgentRegionBoundary>
     <AgentPanel
+      ref="panelRef"
+      :class="cn(agentPanelStore.isFullscreen && 'min-w-0 flex-1')"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -2608,9 +2755,16 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
-      :is-maximized="agentPanelStore.isMaximized"
+      :is-maximized="
+        agentPanelStore.isMaximized || agentPanelStore.isFullscreen
+      "
       :history-groups="historyGroups"
       :select-history="onSelectHistory"
+      :confirm-delete="
+        agentPanelStore.experience === 'redesign'
+          ? confirmChatDelete
+          : undefined
+      "
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"
       :session-id="threadId"
@@ -2620,6 +2774,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
           ?.title ??
         provisionalTitle
       "
+      :chat-pinned="threadId !== null && history.pinnedIds.has(threadId)"
       :selection-tags="selectionTags"
       :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
@@ -2668,7 +2823,8 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @retry-sync="retrySubscription"
       @new-chat="onNewChat"
       @start-tour="restartCoach"
-      @toggle-size="agentPanelStore.toggleMaximize()"
+      @toggle-pin-chat="threadId !== null && history.togglePin(threadId)"
+      @toggle-size="onToggleSize"
       @close="onClosePanel"
       @open-history="onOpenHistory"
       @delete-history="onDeleteHistory"

@@ -522,7 +522,13 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command' | 'appbuilder' | 'first_run_nudge'
+  source:
+    | 'sidebar'
+    | 'menu'
+    | 'command'
+    | 'appbuilder'
+    | 'first_run_nudge'
+    | 'agent_sidebar'
 }
 
 /**
@@ -674,6 +680,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'topbar_button'
     | 'automatic_consent'
     | 'activation'
+    | 'command'
     | 'error_context'
 }
 export type AgentConsentNotOfferedReason =
@@ -776,7 +783,7 @@ export interface AgentConsentOfferExitedMetadata extends Record<
   trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
-  | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
+  | { reason: 'app_mode' | 'fullscreen' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
 export type AgentSendGate = 'composer' | 'consent' | 'coach'
 export type AgentComposerDropReason =
@@ -804,6 +811,7 @@ export type AgentCoachReleaseReason =
   | 'deferred_app_mode'
   | 'deferred_tour_active'
   | 'deferred_dialog_open'
+  | 'deferred_fullscreen'
 export type AgentCoachDropReason =
   | 'panel_closed'
   | 'consent_cleared'

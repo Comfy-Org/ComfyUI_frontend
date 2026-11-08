@@ -12,6 +12,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isKeybindingAllowed } from '@/platform/keybindings/keybindingGate'
 import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
@@ -731,6 +732,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           return
         }
         if (isModalOpen(dialogStore.dialogStack.length)) return
+        if (!isKeybindingAllowed('Comfy.Undo')) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return

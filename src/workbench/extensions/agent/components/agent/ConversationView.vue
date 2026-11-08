@@ -14,6 +14,8 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { AGENT_COLUMN_CLASS } from './agentLayout'
+
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -232,7 +234,7 @@ watch(
       "
     >
       <div ref="top" />
-      <div ref="content" class="mx-auto max-w-[640px] p-4">
+      <div ref="content" :class="cn(AGENT_COLUMN_CLASS, 'p-4')">
         <div class="flex flex-col gap-4">
           <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
             <UserMessage

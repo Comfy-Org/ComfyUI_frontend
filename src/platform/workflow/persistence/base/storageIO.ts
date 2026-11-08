@@ -665,6 +665,7 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentWorkflowTabBindings,
       StorageKeys.prefixes.agentChatTitles,
       StorageKeys.prefixes.agentDeletedThreads,
+      StorageKeys.prefixes.agentPinnedThreads,
       StorageKeys.prefixes.agentComposerDraft
     ]
   )

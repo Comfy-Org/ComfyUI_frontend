@@ -25,6 +25,7 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import type { AgentExperience } from '@/workbench/extensions/agent/experiments/chatRedesign'
 import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type {
@@ -34,11 +35,33 @@ import type {
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
-const PANEL_MIN_WIDTH = 420
-const PANEL_MAX_WIDTH = 960
+import { reduceChatNavigation } from './agentChatNavigation'
+import type { AgentPanelView } from './agentChatNavigation'
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  clampSidebarWidth,
+  resolveSidebarMode,
+  toggleSidebarLayout
+} from './agentSidebarLayout'
+import type { SidebarSection } from './agentSidebarLayout'
+import {
+  PANEL_MAX_WIDTH,
+  PANEL_MIN_WIDTH,
+  reduceAgentPanelSize,
+  resolveAgentPanelPresentation
+} from './agentPanelSize'
+import type {
+  AgentPanelSize,
+  AgentPanelSizeEvent,
+  FullscreenExitReason
+} from './agentPanelSize'
+
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
+const FULLSCREEN_MIN_WINDOW_WIDTH = 768
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'Comfy.AgentPanel.sidebarCollapsed'
+const SIDEBAR_WIDTH_STORAGE_KEY = 'Comfy.AgentPanel.sidebarWidth'
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -64,18 +87,9 @@ type TargetTracking =
       unavailable: true
     }
 
-export type AgentPanelView =
-  | { screen: 'chat' }
-  | {
-      screen: 'history'
-      previousThreadId: string | null
-      selection:
-        | { status: 'idle' }
-        | { status: 'loading' | 'failed'; id: string }
-    }
-
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
+  const experience = ref<AgentExperience>('classic')
   const consentAccepted = ref(false)
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
@@ -99,7 +113,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       ? (agent as AgentServerFeature)
       : undefined
   })
-  const maximized = ref(false)
+  const size = shallowRef<AgentPanelSize>({ mode: 'docked' })
+  const isMaximized = computed(() => size.value.mode === 'wide')
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
@@ -141,14 +156,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function interruptHistorySelection(): void {
-    if (
-      view.value.screen === 'history' &&
-      view.value.selection.status === 'loading'
-    )
-      view.value = {
-        ...view.value,
-        selection: { status: 'failed', id: view.value.selection.id }
-      }
+    view.value = reduceChatNavigation(view.value, {
+      type: 'selectionInterrupted'
+    })
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -276,18 +286,116 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const width = computed(() =>
     Math.min(
       maxWidth.value,
-      maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+      isMaximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
     )
   )
   const requestedWidth = computed(() =>
-    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+    isMaximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
   )
   const isOverlay = computed(
     () =>
       windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
   )
 
-  const isMaximized = computed(() => maximized.value)
+  const presentedSize = computed((): AgentPanelSize =>
+    size.value.mode === 'fullscreen' &&
+    windowWidth.value < FULLSCREEN_MIN_WINDOW_WIDTH
+      ? { mode: 'docked' }
+      : size.value
+  )
+  const isFullscreen = computed(() => presentedSize.value.mode === 'fullscreen')
+  const prefersFullscreen = computed(() => size.value.mode === 'fullscreen')
+
+  const presentation = computed(() =>
+    resolveAgentPanelPresentation({
+      visible: isVisible.value,
+      size: presentedSize.value,
+      windowWidth: windowWidth.value,
+      draggedWidth: draggedWidth.value,
+      reservedWorkspaceWidth: reservedWorkspaceWidth.value
+    })
+  )
+
+  const panelMounted = ref(false)
+  const coversWorkspace = computed(
+    () => presentation.value.kind === 'fullscreen' && panelMounted.value
+  )
+
+  const sidebarSection = ref<SidebarSection>('chats')
+
+  function dispatchSize(event: AgentPanelSizeEvent): void {
+    size.value = reduceAgentPanelSize(size.value, event)
+    if (size.value.mode !== 'fullscreen') sidebarSection.value = 'chats'
+  }
+
+  const sidebarCollapsed = useLocalStorage(
+    SIDEBAR_COLLAPSED_STORAGE_KEY,
+    false,
+    { writeDefaults: false }
+  )
+  const sidebarDrawerOpen = ref(false)
+  const sidebarMode = computed(() =>
+    resolveSidebarMode(
+      {
+        collapsed: sidebarCollapsed.value,
+        drawerOpen: sidebarDrawerOpen.value
+      },
+      windowWidth.value
+    )
+  )
+
+  function toggleSidebar(): void {
+    const next = toggleSidebarLayout(
+      {
+        collapsed: sidebarCollapsed.value,
+        drawerOpen: sidebarDrawerOpen.value
+      },
+      windowWidth.value
+    )
+    sidebarCollapsed.value = next.collapsed
+    sidebarDrawerOpen.value = next.drawerOpen
+  }
+
+  function dismissSidebarDrawer(): void {
+    sidebarDrawerOpen.value = false
+  }
+
+  const storedSidebarWidth = useLocalStorage(
+    SIDEBAR_WIDTH_STORAGE_KEY,
+    SIDEBAR_DEFAULT_WIDTH,
+    { writeDefaults: false }
+  )
+  const sidebarWidth = computed(() =>
+    clampSidebarWidth(storedSidebarWidth.value, windowWidth.value)
+  )
+
+  function setSidebarWidth(px: number): void {
+    storedSidebarWidth.value = clampSidebarWidth(
+      Math.round(px),
+      windowWidth.value
+    )
+  }
+
+  function resetSidebarWidth(): void {
+    storedSidebarWidth.value = SIDEBAR_DEFAULT_WIDTH
+  }
+
+  function showSidebarSection(section: SidebarSection): void {
+    sidebarSection.value = section
+    if (sidebarMode.value === 'rail') toggleSidebar()
+  }
+
+  function setPanelMounted(mounted: boolean): void {
+    panelMounted.value = mounted
+  }
+
+  function exitFullscreen(reason: FullscreenExitReason): void {
+    dispatchSize({ type: 'fullscreenExited', reason })
+  }
+
+  function restoreFullscreen(): void {
+    dispatchSize({ type: 'fullscreenRestored' })
+  }
 
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
@@ -301,6 +409,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function close(source: AgentPanelCloseSource): void {
     if (!isOpen.value) return
     isOpen.value = false
+    dispatchSize({ type: 'panelClosed' })
     const openDurationMs = openedAt === null ? null : Date.now() - openedAt
     openedAt = null
     useTelemetry()?.trackAgentPanelClosed({
@@ -340,13 +449,19 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWidth(px: number): void {
-    maximized.value = false
+    dispatchSize({ type: 'widthDragged' })
     draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {
-    maximized.value = !maximized.value
-    if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
+    const wasMaximized = isMaximized.value
+    dispatchSize({
+      type: 'expandToggled',
+      fullscreenAvailable:
+        experience.value === 'redesign' &&
+        windowWidth.value >= FULLSCREEN_MIN_WINDOW_WIDTH
+    })
+    if (wasMaximized) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
   function dispatchCreditTransitionNotice(
@@ -413,6 +528,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   return {
     enabled,
+    experience,
     consentAccepted,
     isOpen,
     isVisible,
@@ -439,7 +555,22 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     requestedWidth,
     isOverlay,
+    presentation,
     isMaximized,
+    isFullscreen,
+    prefersFullscreen,
+    coversWorkspace,
+    setPanelMounted,
+    exitFullscreen,
+    restoreFullscreen,
+    sidebarMode,
+    toggleSidebar,
+    dismissSidebarDrawer,
+    sidebarWidth,
+    setSidebarWidth,
+    resetSidebarWidth,
+    sidebarSection,
+    showSidebarSection,
     dismissedSelectionSignature,
     open,
     targetTracking,

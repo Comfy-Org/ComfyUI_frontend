@@ -1,5 +1,8 @@
 <template>
-  <div class="comfyui-body isolate grid size-full overflow-hidden">
+  <div
+    class="comfyui-body isolate grid size-full overflow-hidden"
+    :inert="agentCoversWorkspace"
+  >
     <div id="comfyui-body-top" class="comfyui-body-top z-3" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom z-2" />
     <div id="comfyui-body-left" class="comfyui-body-left z-1" />
@@ -91,6 +94,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -152,6 +156,8 @@ const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const { coversWorkspace: agentCoversWorkspace } =
+  storeToRefs(useAgentPanelStore())
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   getReferencedInputNames: () =>

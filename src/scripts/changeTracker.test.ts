@@ -30,6 +30,7 @@ import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { registerKeybindingGate } from '@/platform/keybindings/keybindingGate'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
@@ -306,6 +307,30 @@ describe('ChangeTracker', () => {
         expect(undo).toHaveBeenCalledTimes(undoCalls)
       }
     )
+
+    it('leaves Ctrl+Z alone while a keybinding gate refuses graph shortcuts', async () => {
+      const tracker = createTracker()
+      const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+      onTestFinished(registerKeybindingGate(() => false))
+
+      keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
+
+      expect(frames).toHaveLength(0)
+      expect(undo).not.toHaveBeenCalled()
+    })
 
     describe('modifier release around history shortcuts', () => {
       let events: EventTarget

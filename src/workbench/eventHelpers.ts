@@ -1,5 +1,6 @@
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 /**
  * Utility functions for handling workbench events
  */
@@ -82,6 +83,9 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'submit'
       ].includes(target.type))
   return (
-    isTextInput || useCanvasStore().linearMode || activeTextSelection() !== null
+    isTextInput ||
+    useCanvasStore().linearMode ||
+    useAgentPanelStore().coversWorkspace ||
+    activeTextSelection() !== null
   )
 }

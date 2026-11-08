@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
@@ -13,6 +13,7 @@ import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
@@ -145,6 +146,75 @@ describe('DockedAgentPanel', () => {
     ).toBe('0px')
     expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
     expect(rootLiveness.maxLive).toBe(1)
+  })
+
+  it('covers the whole window in full screen without remounting the panel', async () => {
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    const store = openPanel()
+    store.experience = 'redesign'
+    store.setWidth(700)
+    renderPanel()
+    const root = await screen.findByTestId('agent-panel-root-stub')
+
+    store.toggleMaximize()
+    await nextTick()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(container).toHaveAttribute('data-presentation', 'fullscreen')
+    expect(container.style.width).toBe('')
+    expect(screen.queryByTestId('agent-panel-resize-handle')).toBeNull()
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+    expect(store.coversWorkspace).toBe(true)
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+
+    store.toggleMaximize()
+    await nextTick()
+
+    expect(screen.getByTestId('docked-agent-panel').style.width).toBe('700px')
+    expect(screen.getByTestId('agent-panel-resize-handle')).toBeVisible()
+    expect(store.coversWorkspace).toBe(false)
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+    expect(rootLiveness.maxLive).toBe(1)
+  })
+
+  it('shows an agent error inside the full-screen chat, where the top menu is covered', async () => {
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    const store = openPanel()
+    store.experience = 'redesign'
+    renderPanel()
+    await screen.findByTestId('agent-panel-root-stub')
+    const errors = useExecutionErrorStore()
+    errors.recordPromptError({
+      type: 'agent_api_failed',
+      message: 'The agent could not be reached',
+      details: 'network down'
+    })
+    errors.showErrorOverlay()
+    await nextTick()
+    const panel = screen.getByTestId('docked-agent-panel')
+    expect(within(panel).queryByTestId('error-overlay')).toBeNull()
+
+    store.toggleMaximize()
+
+    expect(await within(panel).findByTestId('error-overlay')).toBeVisible()
+  })
+
+  it('stops covering the workspace once the panel is unmounted', async () => {
+    const store = openPanel()
+    store.experience = 'redesign'
+    const view = renderPanel()
+    await screen.findByTestId('agent-panel-root-stub')
+    store.toggleMaximize()
+    await nextTick()
+    expect(store.coversWorkspace).toBe(true)
+
+    view.unmount()
+
+    expect(store.coversWorkspace).toBe(false)
   })
 
   it('restores the server run mode when the panel initializes', async () => {

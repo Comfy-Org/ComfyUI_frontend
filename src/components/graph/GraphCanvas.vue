@@ -78,10 +78,13 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
-    <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
+    <template
+      v-if="showUI || agentFullscreen"
+      #agent-panel="{ hasOpaqueNeighbor }"
+    >
       <component
         :is="DockedAgentPanel"
-        v-if="agentDocked && !linearMode"
+        v-if="agentDocked && (!linearMode || agentFullscreen)"
         :has-opaque-neighbor="hasOpaqueNeighbor"
       />
     </template>
@@ -148,6 +151,7 @@ import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -243,6 +247,7 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
 )
 const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { isFullscreen: agentFullscreen } = storeToRefs(useAgentPanelStore())
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toast = useToast()

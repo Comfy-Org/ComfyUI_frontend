@@ -7,6 +7,8 @@ type Subscription = BillingContext['subscription']['value']
 /** The billing state a story wants the stub to report. */
 export interface BillingContextMockState {
   subscription: Subscription
+  tier: BillingContext['tier']['value']
+  balance: BillingContext['balance']['value']
   canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
@@ -19,6 +21,8 @@ export interface BillingContextMockState {
 
 const defaultState: BillingContextMockState = {
   subscription: null,
+  tier: null,
+  balance: null,
   canAccessSubscriptionFeatures: false,
   isTeamPlan: false,
   billingStatus: null,
@@ -54,7 +58,7 @@ export function useBillingContext(): BillingContext {
     type: computed(() => 'workspace' as const),
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
-    balance: computed(() => null),
+    balance: computed(() => state.value.balance),
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
@@ -77,7 +81,7 @@ export function useBillingContext(): BillingContext {
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
     subscriptionState: computed(() => state.value.subscriptionState),
-    tier: computed(() => null),
+    tier: computed(() => state.value.tier),
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
     periodCreditGrant: computed(() => null),

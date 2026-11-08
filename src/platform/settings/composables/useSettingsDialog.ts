@@ -4,6 +4,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
+  PlanCreditsView,
   SettingDialogProps,
   SettingPanelType
 } from '@comfyorg/settings-core/types'
@@ -46,7 +47,11 @@ export function useSettingsDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show(panel?: SettingPanelType, settingId?: string) {
+  function show(
+    panel?: SettingPanelType,
+    settingId?: string,
+    options?: { planCreditsView?: PlanCreditsView }
+  ) {
     if (!settingDialogComponent) {
       reportError(new Error('Setting dialog component is not registered'), {
         errorType: 'failure_opening_settings_dialog',
@@ -54,7 +59,11 @@ export function useSettingsDialog() {
       })
       return
     }
-    const destination = nextNavigationRequest(panel, settingId)
+    const planCreditsView = options?.planCreditsView
+    const navigation = nextNavigationRequest(panel, settingId)
+    const destination = planCreditsView
+      ? { ...navigation, planCreditsView }
+      : navigation
     if (destination && dialogStore.isDialogOpen(DIALOG_KEY)) {
       dialogStore.updateDialog({
         key: DIALOG_KEY,

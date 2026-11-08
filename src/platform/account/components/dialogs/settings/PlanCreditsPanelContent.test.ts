@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { render, screen, waitFor } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
+import type { PlanCreditsView } from '@comfyorg/settings-core/types'
 
 import PlanCreditsPanelContent from '@/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue'
 
@@ -61,14 +62,20 @@ const stubs = {
   }
 }
 
-function renderPanel({ cloud = true } = {}) {
+function renderPanel({
+  cloud = true,
+  initialView
+}: { cloud?: boolean; initialView?: PlanCreditsView } = {}) {
   mockDistribution.cloud = cloud
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
     messages: { en: enMessages }
   })
-  return render(PlanCreditsPanelContent, { global: { plugins: [i18n], stubs } })
+  return render(PlanCreditsPanelContent, {
+    props: { initialView },
+    global: { plugins: [i18n], stubs }
+  })
 }
 
 beforeEach(() => {
@@ -109,6 +116,27 @@ describe('PlanCreditsPanelContent', () => {
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
+  })
+
+  it('opens on the Activity tab with its usage log loaded when asked to', async () => {
+    renderPanel({ initialView: 'activity' })
+
+    expect(screen.getByRole('region', { name: 'Usage logs' })).toBeTruthy()
+    expect(
+      screen.queryByRole('region', { name: 'Plan and credits overview' })
+    ).toBeNull()
+    await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
+  })
+
+  it('still switches to Credits after opening on the Activity tab', async () => {
+    renderPanel({ initialView: 'activity' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
+
+    expect(
+      screen.getByRole('region', { name: 'Plan and credits overview' })
+    ).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Usage logs' })).toBeNull()
   })
 
   it('opens the Invoices tab for a billing manager', async () => {
