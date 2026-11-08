@@ -316,7 +316,7 @@ describe('BillingTab', () => {
       ({ canManageBilling, body, buttons }) => {
         arrange({ isPaused: true, canManageBilling })
 
-        const banner = screen.getByTestId('billing-paused-banner')
+        const banner = screen.getByTestId('billing-banner-paused')
         expect(banner).toHaveTextContent('Subscription paused')
         expect(banner).toHaveTextContent(body)
         expect(
@@ -324,7 +324,10 @@ describe('BillingTab', () => {
             .queryAllByRole('button')
             .map((button) => button.textContent.trim())
         ).toEqual(buttons)
-        expect(banner).toHaveClass('rounded-xl', 'p-3')
+        expect(within(banner).getByRole('status')).toHaveClass(
+          'rounded-xl',
+          'p-3'
+        )
       }
     )
 
@@ -332,7 +335,7 @@ describe('BillingTab', () => {
       arrange({ isPaused: true, canManageBilling: true })
 
       expect(
-        within(screen.getByTestId('billing-paused-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-paused')).getByRole(
           'button',
           { name: 'Update payment' }
         )
@@ -343,7 +346,7 @@ describe('BillingTab', () => {
       const { manageSubscription } = arrange({ isPaused: true })
 
       await userEvent.click(
-        within(screen.getByTestId('billing-paused-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-paused')).getByRole(
           'button',
           { name: 'Update payment' }
         )
@@ -356,7 +359,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        screen.queryByTestId('billing-paused-banner')
+        screen.queryByTestId('billing-banner-paused')
       ).not.toBeInTheDocument()
     })
   })
@@ -370,7 +373,7 @@ describe('BillingTab', () => {
       ({ canManageBilling, shown }) => {
         arrange({ hasParkedBillingOperation: true, canManageBilling })
 
-        expect(screen.queryByTestId('billing-parked-banner') !== null).toBe(
+        expect(screen.queryByTestId('billing-banner-parked') !== null).toBe(
           shown
         )
       }
@@ -379,7 +382,7 @@ describe('BillingTab', () => {
     it('shows Contact support when a payment is parked', () => {
       arrange({ hasParkedBillingOperation: true })
 
-      const banner = screen.getByTestId('billing-parked-banner')
+      const banner = screen.getByTestId('billing-banner-parked')
       expect(banner).toHaveTextContent(
         'Something went wrong with a recent payment'
       )
@@ -393,7 +396,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        screen.queryByTestId('billing-parked-banner')
+        screen.queryByTestId('billing-banner-parked')
       ).not.toBeInTheDocument()
     })
   })
@@ -404,13 +407,13 @@ describe('BillingTab', () => {
       subscription: { ...activeSubscription, hasFunds: false }
     })
 
-    const banner = screen.getByTestId('billing-local-credit-banner')
+    const banner = screen.getByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent('Out of credits')
     expect(banner).toHaveTextContent(
       "You've used all your credits. Add more credits."
     )
     expect(
-      screen.queryByTestId('billing-paused-banner')
+      screen.queryByTestId('billing-banner-paused')
     ).not.toBeInTheDocument()
     expect(banner).not.toHaveTextContent('Subscription paused')
     expect(banner).not.toHaveTextContent('plan ends')
@@ -427,7 +430,7 @@ describe('BillingTab', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -1389,9 +1392,7 @@ describe('BillingTab', () => {
         servedCheckouts(checkout(state))
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-banner-topupCheckout')
         expect(banner).toHaveTextContent(text)
         expect(
           within(banner)
@@ -1412,9 +1413,7 @@ describe('BillingTab', () => {
         )
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-banner-topupCheckout')
         expect(banner).toHaveTextContent(title)
         expect(banner).toHaveTextContent(
           'No credits were added. Try again or use a different payment method.'
@@ -1446,7 +1445,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'))
       arrange({ balance: zeroBalance })
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       expect(
         [
           within(banner).getByRole('button', { name: 'Add credits' }),
@@ -1473,7 +1472,7 @@ describe('BillingTab', () => {
 
       await screen.findByTestId('billing-auto-top-up-status')
       expect(
-        within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-credit')).getByRole(
           'button',
           { name: 'Add credits' }
         )
@@ -1500,7 +1499,7 @@ describe('BillingTab', () => {
 
         await screen.findByTestId('billing-auto-top-up-status')
         expect(
-          within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+          within(screen.getByTestId('billing-banner-credit')).getByRole(
             'button',
             { name: 'Add credits' }
           )
@@ -1524,7 +1523,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
 
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       await screen.findByTestId('billing-auto-top-up-status')
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
@@ -1628,7 +1627,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'))
       arrange({ canTopUp: false })
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       expect(
         within(banner).queryByRole('button', { name: 'Add credits' })
       ).not.toBeInTheDocument()
@@ -1662,13 +1661,13 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'), checkout('payment_processing'))
       arrange()
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       await userEvent.click(
         within(banner).getByRole('button', { name: 'Dismiss' })
       )
 
       expect(
-        screen.getByTestId('billing-topup-checkout-banner')
+        screen.getByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
     })
 
@@ -1694,7 +1693,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
       settleDetail[0](checkout('credits_applying', { session_id: 'cs_1' }))
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       await vi.advanceTimersByTimeAsync(5_000)
       await vi.waitFor(() => expect(settleDetail).toHaveLength(2))
@@ -1713,7 +1712,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1749,13 +1748,13 @@ describe('BillingTab', () => {
       expect(settleDetail).toHaveLength(1)
 
       settleDetail[0](checkout('payment_processing', { session_id: 'cs_1' }))
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       await vi.waitFor(() => expect(settleDetail).toHaveLength(2))
       settleDetail[1](checkout('fulfilled', { session_id: 'cs_1' }))
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1763,14 +1762,14 @@ describe('BillingTab', () => {
     it('clears the credits banner on its own once the server reports fulfilled', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       servedCheckouts(checkout('fulfilled', { session_id: 'cs_1' }))
       await vi.advanceTimersByTimeAsync(5_000)
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1801,7 +1800,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
       expect(reportError).toHaveBeenCalledWith(
         unavailable,
@@ -1812,7 +1811,7 @@ describe('BillingTab', () => {
     it('keeps Payment received and keeps polling when a credits_applying read fails once', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       vi.mocked(billingApi.getTopupCheckout).mockRejectedValueOnce(
         new WorkspaceApiError('Bad gateway', 502)
@@ -1826,7 +1825,7 @@ describe('BillingTab', () => {
         expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_1')
       )
       expect(
-        screen.getByTestId('billing-topup-checkout-banner')
+        screen.getByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment received')
     })
 
@@ -1869,7 +1868,7 @@ describe('BillingTab', () => {
       )
       await vi.advanceTimersByTimeAsync(0)
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
 
       vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
@@ -1886,14 +1885,14 @@ describe('BillingTab', () => {
         next_cursor: null
       })
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
     })
 
     it("clears the previous workspace's checkout banner on a workspace switch", async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       vi.mocked(billingApi.listTopupCheckouts).mockResolvedValue({
         checkouts: [],
@@ -1903,7 +1902,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1920,7 +1919,7 @@ describe('BillingTab', () => {
         )
       )
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
     })
 
@@ -1932,7 +1931,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent("Your $25 top-up didn't go through")
       vi.mocked(billingApi.getTopupCheckout).mockClear()
 
@@ -1968,7 +1967,7 @@ describe('BillingTab', () => {
       )
       arrange()
 
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       expect(reportError).toHaveBeenCalledTimes(1)
       vi.mocked(reportError).mockClear()
       vi.mocked(billingApi.getTopupCheckout).mockClear()
@@ -1986,7 +1985,7 @@ describe('BillingTab', () => {
     it('reports a checkout list failure once until a later read succeeds', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       const unavailable = new WorkspaceApiError('Unavailable', 503)
       vi.mocked(billingApi.listTopupCheckouts).mockRejectedValue(unavailable)
@@ -2015,7 +2014,7 @@ describe('BillingTab', () => {
 
       expect(billingApi.listTopupCheckouts).not.toHaveBeenCalled()
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
     })
   })
@@ -2147,12 +2146,12 @@ describe('BillingTab', () => {
 
 describe('BillingTab banner stack parity with selectBillingBanners', () => {
   const BANNER_KINDS: Record<string, BillingBannerKind> = {
-    'billing-paused-banner': 'paused',
-    'billing-plan-checkout-banner': 'planCheckout',
-    'billing-topup-checkout-banner': 'topupCheckout',
-    'billing-parked-banner': 'parked',
-    'billing-auto-top-up-banner': 'autoTopUp',
-    'billing-local-credit-banner': 'credit'
+    'billing-banner-paused': 'paused',
+    'billing-banner-planCheckout': 'planCheckout',
+    'billing-banner-topupCheckout': 'topupCheckout',
+    'billing-banner-parked': 'parked',
+    'billing-banner-autoTopUp': 'autoTopUp',
+    'billing-banner-credit': 'credit'
   }
 
   const text = { title: '', body: '' }
@@ -2262,7 +2261,7 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
         subscription: { ...activeSubscription, hasFunds: false }
       })
       if (topupProcessing) {
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       }
 
       expect(shownStack()).toEqual(

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -5,7 +6,7 @@ import { defineComponent } from 'vue'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
-import BillingInfoTip from '@/platform/billing/components/billingTab/BillingInfoTip.vue'
+import BillingInfoTip from './BillingInfoTip.vue'
 
 function renderTip(props: { text: string; label?: string }) {
   return render(
