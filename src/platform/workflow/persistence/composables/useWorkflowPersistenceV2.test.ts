@@ -14,6 +14,7 @@ import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -153,6 +154,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
@@ -829,15 +831,6 @@ describe('useWorkflowPersistenceV2', () => {
       [
         'template intent preserved across /user-select redirect',
         () => (preservedQueryMocks.payloads.template = { template: 'id' })
-      ],
-      [
-        'local handoff param in URL',
-        () => (routeMocks.query = { from_local: 'nonce' })
-      ],
-      [
-        'local handoff preserved across the sign-in redirect',
-        () =>
-          (preservedQueryMocks.payloads.local_handoff = { from_local: 'nonce' })
       ]
     ] as const)(
       'reports url-intent, not fresh, with %s',
@@ -848,6 +841,35 @@ describe('useWorkflowPersistenceV2', () => {
 
         await expect(initializeWorkflow()).resolves.toBe('url-intent')
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      }
+    )
+
+    it.for(
+      [
+        {
+          name: 'local handoff param in URL',
+          applyIntent: () => (routeMocks.query = { from_local: 'nonce' })
+        },
+        {
+          name: 'local handoff preserved across the sign-in redirect',
+          applyIntent: () =>
+            (preservedQueryMocks.payloads.local_handoff = {
+              from_local: 'nonce'
+            })
+        }
+      ].flatMap((intent) => [
+        { ...intent, openOnCloudEnabled: true, outcome: 'url-intent' },
+        { ...intent, openOnCloudEnabled: false, outcome: 'fresh' }
+      ])
+    )(
+      'reports $outcome with $name while Open on Cloud is $openOnCloudEnabled',
+      async ({ applyIntent, openOnCloudEnabled, outcome }) => {
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
+        applyIntent()
+
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await expect(initializeWorkflow()).resolves.toBe(outcome)
       }
     )
   })
