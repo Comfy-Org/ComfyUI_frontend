@@ -23,6 +23,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 beforeEach(() => {
   distribution.isDesktop = false
@@ -203,7 +204,9 @@ vi.mock<unknown>(
     default: { template: '<div data-testid="education-card-stub" />' }
   })
 )
-vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
+  default: { template: '<div data-testid="graph-canvas-stub" />' }
+}))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/platform/settings/components/SettingDialog.vue'),
@@ -372,6 +375,50 @@ describe('GraphView - reconnect wiring', () => {
     expect(inputStore.clear).toHaveBeenCalledOnce()
     expect(app.reloadNodeDefs).not.toHaveBeenCalled()
     expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'host detection is malformed',
+      bridge: { isRemote: false }
+    },
+    {
+      name: 'host detection throws',
+      bridge: {
+        isRemote: () => {
+          throw new Error('Host detection failed')
+        }
+      }
+    },
+    {
+      name: 'progress registration is malformed',
+      bridge: { isRemote: () => false, onTemplateInputDownloadProgress: true }
+    },
+    {
+      name: 'progress registration throws',
+      bridge: {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: () => {
+          throw new Error('Progress registration failed')
+        }
+      }
+    }
+  ])('keeps the graph usable when native $name', ({ bridge }) => {
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('graph-canvas-stub')).toBeInTheDocument()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'graph',
+      errorType: 'workflow_template_input_tracking_failed',
+      level: 'warning'
+    })
+    expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
+
+    unmount()
+    expect(useTemplateInputDownloadStore().clear).toHaveBeenCalledOnce()
+    expect(templateInputMock.stopProgress).not.toHaveBeenCalled()
   })
 
   it.for([

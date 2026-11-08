@@ -179,13 +179,29 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
     })
   }
 })
-const stopTemplateInputDownloadTracking =
-  (isLocalDesktopHost() &&
-    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
-      templateInputDownloadStore.updateProgress(progress)
-      templateInputGraphSync.handleProgress(progress)
-    })) ||
-  (() => undefined)
+const stopTemplateInputDownloadTracking = startTemplateInputDownloadTracking()
+
+function startTemplateInputDownloadTracking() {
+  try {
+    return (
+      (isLocalDesktopHost() &&
+        window.__comfyDesktop2?.onTemplateInputDownloadProgress?.(
+          (progress) => {
+            templateInputDownloadStore.updateProgress(progress)
+            templateInputGraphSync.handleProgress(progress)
+          }
+        )) ||
+      (() => undefined)
+    )
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_template_input_tracking_failed',
+      level: 'warning'
+    })
+    return () => undefined
+  }
+}
 
 onBeforeUnmount(() => {
   stopTemplateInputDownloadTracking()
