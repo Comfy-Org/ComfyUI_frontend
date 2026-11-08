@@ -91,6 +91,9 @@ async function takeRelayDestination(
 async function relayWorkflow(url: URL): Promise<boolean> {
   const nonce = relayNonce(url)
   if (!nonce) return false
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false })
   api.user = url.searchParams.get('user') ?? ''
   const destination = await takeRelayDestination(nonce)
   if (!destination) return false

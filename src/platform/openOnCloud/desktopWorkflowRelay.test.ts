@@ -15,6 +15,7 @@ import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
 } from '@/platform/openOnCloud/desktopWorkflowRelay'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
@@ -61,6 +62,12 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    const previousConfig = remoteConfig.value
+    remoteConfig.value = {}
+    onTestFinished(() => {
+      remoteConfig.value = previousConfig
+    })
   })
 
   it('lets the editor boot when the URL carries no relay', async () => {
@@ -116,6 +123,29 @@ describe(handleDesktopWorkflowHandoff, () => {
       expect.anything(),
       expect.objectContaining({ overwrite: false })
     )
+  })
+
+  it('accepts the staged Cloud origin after reading the relay server features', async () => {
+    const features = {
+      comfy_cloud_base_url: 'https://custom-cloud.example.com'
+    }
+    remoteConfig.value = features
+    const { relay, record } = await stagedRelay()
+    expect(new URL(record.destination).origin).toBe(
+      features.comfy_cloud_base_url
+    )
+    remoteConfig.value = {}
+    openAt(relay)
+    vi.mocked(fetch).mockResolvedValue(Response.json(features))
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      '/api/features',
+      expect.objectContaining({ cache: 'no-store' })
+    )
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
   })
 
   it.for<{
