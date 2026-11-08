@@ -99,12 +99,11 @@ import {
   isComboInputSpecV2
 } from '@comfyorg/object-info-parser'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import {
-  ComponentWidgetImpl,
-  DOMWidgetImpl,
   registerDomWidgets,
   unregisterDomWidgets
-} from '@/scripts/domWidget'
+} from '@/scripts/rootGraphDomWidgets'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import {
@@ -123,6 +122,7 @@ import {
   isGraphLoadFailurePresented,
   markGraphLoadFailurePresented
 } from '@/services/graphLoadFailure'
+import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -924,6 +924,7 @@ export class ComfyApp implements IComfyApp {
     })
     this.addAfterConfigureHandler(graph)
     installNodeAddedTelemetry(graph)
+    applyLegacyGraphPatches(this, graph)
     return graph
   }
 
