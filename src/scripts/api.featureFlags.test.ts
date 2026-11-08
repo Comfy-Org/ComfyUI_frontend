@@ -261,7 +261,7 @@ describe('API Feature Flags', () => {
         await vi.advanceTimersByTimeAsync(1_000)
         wsEventHandlers['close'](new Event('close'))
         expect(api.serverFeatureFlagsSettled.value).toBe(true)
-        await vi.advanceTimersByTimeAsync(300)
+        await vi.advanceTimersByTimeAsync(5_000)
         expect(api.serverFeatureFlagsSettled.value).toBe(false)
       }
 

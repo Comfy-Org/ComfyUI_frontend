@@ -309,8 +309,9 @@ void registerCoreBottomPanelTabs()
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = async (e: CustomEvent<StatusWsMessageStatus | null>) => {
   queuePendingTaskCountStore.update(e)
+  if (!e.detail) return
   await queueStore.update()
   await assetsStore.outputAssets.loadNew()
 }

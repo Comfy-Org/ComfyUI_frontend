@@ -23,6 +23,10 @@ import type { ApiAuthProvider } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
+import {
+  sessionRecoveryDelayMs,
+  socketReconnectDelayMs
+} from './socketReconnectDelay'
 import { webSessionRequests } from './webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from './apiTimeouts'
 import { addBreadcrumb } from '@sentry/vue'
@@ -460,7 +464,7 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
-  private socketRetryDelayMs = 1_000
+  private failedSocketAttempts = 0
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -949,7 +953,7 @@ export class ComfyApi extends EventTarget {
     if (this.socket) {
       return
     }
-    if (!isReconnect) this.socketRetryDelayMs = 1_000
+    if (!isReconnect) this.failedSocketAttempts = 0
     const generation = ++this.socketGeneration
 
     let opened = false
@@ -988,7 +992,7 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('open', () => {
       if (this.socket !== socket) return
       opened = true
-      this.socketRetryDelayMs = 1_000
+      this.failedSocketAttempts = 0
 
       socket.send(
         JSON.stringify({
@@ -1010,15 +1014,19 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event: CloseEvent) => {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       const recoverSession = sessionRequests && !opened
-      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
-      if (recoverSession) {
-        this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
-      }
+      const delayMs = opened
+        ? socketReconnectDelayMs({ opened, code: event.code })
+        : recoverSession
+          ? sessionRecoveryDelayMs(this.failedSocketAttempts++)
+          : socketReconnectDelayMs({
+              opened,
+              failedAttempts: this.failedSocketAttempts++
+            })
       setTimeout(async () => {
         if (this.socket !== socket) return
         if (recoverSession) {

@@ -354,6 +354,22 @@ describe('GraphView - output assets refresh', () => {
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
+
+  it('waits for the reconnected socket status instead of refetching when the socket drops', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+    const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
+
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new CustomEvent('status', { detail: null }))
+    apiEvents.dispatchEvent(
+      new CustomEvent('status', {
+        detail: { exec_info: { queue_remaining: 0 } }
+      })
+    )
+
+    await waitFor(() => expect(loadNew).toHaveBeenCalled())
+    expect(loadNew).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('GraphView - partner nodes education card', () => {

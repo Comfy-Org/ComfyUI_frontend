@@ -48,6 +48,11 @@ class FakeWebSocket {
     this.readyState = FakeWebSocket.OPEN
     this.handlers['open']?.(new Event('open'))
   }
+
+  closeFromServer(code?: number) {
+    this.readyState = FakeWebSocket.CLOSED
+    this.handlers['close']?.(new CloseEvent('close', { code }))
+  }
 }
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -154,5 +159,47 @@ describe('ComfyApi realtime socket reset', () => {
     expect(api.clientId).toBeUndefined()
     expect(window.name).toBe('')
     expect(sessionStorage.getItem('clientId')).toBeNull()
+  })
+
+  describe('reconnect delay', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    })
+
+    async function expectReconnectAfter(delayMs: number, code?: number) {
+      const attempts = FakeWebSocket.instances.length
+      FakeWebSocket.instances.at(-1)!.closeFromServer(code)
+      await vi.advanceTimersByTimeAsync(delayMs - 1)
+      expect(FakeWebSocket.instances).toHaveLength(attempts)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(FakeWebSocket.instances).toHaveLength(attempts + 1)
+    }
+
+    it.for([
+      { name: 'any close', code: 1006, delayMs: 2_500 },
+      { name: 'a service restart', code: 1012, delayMs: 15_000 }
+    ])(
+      'spreads the first reconnect after $name of an opened socket across its window',
+      async ({ code, delayMs }) => {
+        await api.resetSocket()
+        FakeWebSocket.instances[0].simulateOpen()
+
+        await expectReconnectAfter(delayMs, code)
+      }
+    )
+
+    it('backs off failed reconnects exponentially up to 30s and resets once one opens', async () => {
+      await api.resetSocket()
+      FakeWebSocket.instances[0].simulateOpen()
+      await expectReconnectAfter(2_500)
+
+      for (const delayMs of [500, 1_000, 2_000, 4_000, 8_000, 15_000, 15_000])
+        await expectReconnectAfter(delayMs)
+
+      FakeWebSocket.instances.at(-1)!.simulateOpen()
+      await expectReconnectAfter(2_500)
+      await expectReconnectAfter(500)
+    })
   })
 })
