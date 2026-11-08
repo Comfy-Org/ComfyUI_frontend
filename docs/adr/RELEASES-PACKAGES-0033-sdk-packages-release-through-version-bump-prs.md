@@ -120,10 +120,10 @@ The decisions inside those workflows:
   alpha of an auth package should be able to verify where the tarball came
   from.
 - **No unmerged pull-request run reaches the registry credentials.** The
-  on-merge path runs on the merge commit of a reviewed, `Release`-labelled PR,
-  and the credentialed job refuses a `workflow_dispatch` on any ref but
-  `main`, so a branch cannot hand `NPM_TOKEN` its own tree by pressing the
-  button. A write-access holder can still edit that guard on a branch and
+  on-merge path starts only from a merged, reviewed, `Release`-labelled PR and
+  publishes `main`, and the credentialed job refuses a `workflow_dispatch` on
+  any ref but `main`, so a branch cannot hand `NPM_TOKEN` its own tree by
+  pressing the button. A write-access holder can still edit that guard on a branch and
   dispatch it; the control for that is a protected publish environment with a
   branch rule, which this ADR does not yet claim.
 
