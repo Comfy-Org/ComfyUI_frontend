@@ -71,15 +71,21 @@ describe('useNodeVideo', () => {
     expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
   })
 
-  it('keeps a newer output when an older load fails late', async () => {
-    const { node, video, createdVideos } = await setup()
+  it.for([
+    ['images', { images: [{ filename: 'newer.mp4', type: 'output' }] }],
+    ['preview', { preview: ['blob:newer'] }]
+  ] as const)(
+    'leaves the preview alone when a superseded load fails (new %s)',
+    async ([, newerOutput]) => {
+      const { node, video, createdVideos } = await setup()
 
-    useNodeVideo(node).showPreview()
-    node.images = [{ filename: 'newer.mp4', type: 'output' }]
-    await failBothAttempts(createdVideos)
+      useNodeVideo(node).showPreview()
+      Object.assign(node, newerOutput)
+      await failBothAttempts(createdVideos)
 
-    expect(node.videoContainer?.contains(video)).toBe(true)
-  })
+      expect(node.videoContainer?.contains(video)).toBe(true)
+    }
+  )
 
   it('shows the next good output after a failed one', async () => {
     const { node, createdVideos } = await setup()
@@ -209,6 +215,7 @@ describe('canvas node media failure telemetry', () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
       '/api/view?filename=gone.png&type=output'
     ])
+    const setDirtyCanvas = vi.spyOn(node.graph!, 'setDirtyCanvas')
     useNodeImage(node).showPreview()
     await flush()
     created[1].onerror?.(new Event('error'))
@@ -217,6 +224,7 @@ describe('canvas node media failure telemetry', () => {
     await flush()
 
     expect(node.imgs).toBeUndefined()
+    expect(setDirtyCanvas).toHaveBeenCalled()
   })
 
   it('stays silent when the image loads', async () => {

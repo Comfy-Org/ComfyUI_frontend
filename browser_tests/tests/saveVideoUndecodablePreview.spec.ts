@@ -8,23 +8,13 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const PLAYABLE = 'video-preview-square.webm'
 const UNDECODABLE = 'save-video-prores.mov'
-
-async function serveVideoOutputs(page: Page) {
-  await page.route(/\/api\/view\?/, async (route) => {
-    const name = new URL(route.request().url()).searchParams.get('filename')
-    if (name !== PLAYABLE && name !== UNDECODABLE) return route.fallback()
-    await route.fulfill({
-      path: assetPath(`video/${name}`),
-      contentType: name === UNDECODABLE ? 'video/quicktime' : 'video/webm'
-    })
-  })
-}
 
 async function addSaveVideoNode(comfyPage: ComfyPage) {
   const node = await comfyPage.nodeOps.addNode('SaveVideo', undefined, {
@@ -55,7 +45,16 @@ function canvasPreviewVideo(page: Page) {
 
 test.describe('Save Video preview of an undecodable output', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await serveVideoOutputs(comfyPage.page)
+    await mockViewFiles(comfyPage.page, {
+      [PLAYABLE]: {
+        path: assetPath(`video/${PLAYABLE}`),
+        contentType: 'video/webm'
+      },
+      [UNDECODABLE]: {
+        path: assetPath(`video/${UNDECODABLE}`),
+        contentType: 'video/quicktime'
+      }
+    })
   })
 
   test('canvas renderer drops the previous run when the new output cannot be decoded', async ({

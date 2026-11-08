@@ -119,11 +119,14 @@ describe('VideoPreview', () => {
       expect(screen.queryByText('Video failed to load')).not.toBeInTheDocument()
     })
 
-    it('keeps the generic message for other load errors', async () => {
-      await failWith(2)
+    it.for([1, 2, 3])(
+      'keeps the generic message for media error code %i',
+      async (code) => {
+        await failWith(code)
 
-      expect(screen.getByText('Video failed to load')).toBeInTheDocument()
-    })
+        expect(screen.getByText('Video failed to load')).toBeInTheDocument()
+      }
+    )
   })
 
   describe('batch cycling with identical URLs', () => {
