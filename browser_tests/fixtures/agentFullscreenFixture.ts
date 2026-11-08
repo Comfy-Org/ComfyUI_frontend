@@ -44,7 +44,7 @@ export const agentFullscreenTest = agentTest.extend<AgentFullscreenFixtures>({
     await page.route('**/api/experiment/models', (route) =>
       route.fulfill(jsonRoute([]))
     )
-    await page.route('**/api/agent/threads', (route) =>
+    await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(agentThreads))
     )
     await page.route('**/api/agent/run-mode', (route) =>
