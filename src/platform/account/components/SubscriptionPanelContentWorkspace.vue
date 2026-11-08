@@ -691,7 +691,9 @@ const SALES_MANAGED_TIER_NAME_KEYS: Partial<
 function salesManagedTierNameKey(
   tier: IngestSubscriptionTier | null | undefined
 ): string | undefined {
-  return tier ? SALES_MANAGED_TIER_NAME_KEYS[tier] : undefined
+  return tier && Object.hasOwn(SALES_MANAGED_TIER_NAME_KEYS, tier)
+    ? SALES_MANAGED_TIER_NAME_KEYS[tier]
+    : undefined
 }
 
 const planDisplayName = computed(() => {
