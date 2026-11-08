@@ -21,7 +21,7 @@ import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTo
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
-import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
+import { CreditBannerHarness } from '@/platform/billing/__tests__/CreditBannerHarness'
 
 const track = vi.fn()
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -105,7 +105,7 @@ function arrange(options: {
   }))
   workspace.workspaceType = computed(() => options.workspaceType ?? 'personal')
 
-  render(BillingLocalCreditBanner, {
+  render(CreditBannerHarness, {
     props: { addCreditsVariant: options.addCreditsVariant },
     global: {
       plugins: [
@@ -121,7 +121,7 @@ function arrange(options: {
   return { subscription, balance }
 }
 
-describe('BillingLocalCreditBanner', () => {
+describe('useCreditBanner', () => {
   it('renders nothing off the unified billing flag', () => {
     arrange({
       unified: false,
@@ -129,7 +129,7 @@ describe('BillingLocalCreditBanner', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -145,7 +145,7 @@ describe('BillingLocalCreditBanner', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -156,7 +156,7 @@ describe('BillingLocalCreditBanner', () => {
       nextCreditRefillAt: '2026-10-01T00:00:00Z'
     })
 
-    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+    expect(screen.getByTestId('billing-banner-credit')).toHaveTextContent(
       'Out of credits'
     )
   })
@@ -167,7 +167,7 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+    expect(screen.getByTestId('billing-banner-credit')).toHaveTextContent(
       'Credits are low'
     )
   })
@@ -265,7 +265,7 @@ describe('BillingLocalCreditBanner', () => {
         subscription: { ...personalSubscription, hasFunds: false }
       })
 
-      const banner = screen.getByTestId('billing-local-credit-banner')
+      const banner = screen.getByTestId('billing-banner-credit')
       expect(banner).toHaveTextContent('Out of credits')
       expect(within(banner).getByText(body)).toBeInTheDocument()
       expect(
@@ -315,7 +315,7 @@ describe('BillingLocalCreditBanner', () => {
         subscription: { ...personalSubscription, hasFunds: false }
       })
 
-      const banner = screen.getByTestId('billing-local-credit-banner')
+      const banner = screen.getByTestId('billing-banner-credit')
       expect(banner).toHaveTextContent(body)
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
@@ -412,7 +412,7 @@ describe('BillingLocalCreditBanner', () => {
         subscription: { ...personalSubscription, hasFunds: false }
       })
 
-      const banner = screen.getByTestId('billing-local-credit-banner')
+      const banner = screen.getByTestId('billing-banner-credit')
       expect(banner).toHaveTextContent('Out of credits')
       expect(banner).toHaveTextContent(body)
       expect(
@@ -469,7 +469,7 @@ describe('BillingLocalCreditBanner', () => {
         balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
       })
 
-      const banner = screen.getByTestId('billing-local-credit-banner')
+      const banner = screen.getByTestId('billing-banner-credit')
       expect(banner).toHaveTextContent('Credits are low')
       expect(banner).toHaveTextContent(body)
       expect(
@@ -483,7 +483,7 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    const banner = screen.getByTestId('billing-local-credit-banner')
+    const banner = screen.getByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent('Credits are low')
     expect(banner).toHaveTextContent(
       'You have 1,055 credits left. Add credits to keep running Partner Nodes.'
@@ -550,7 +550,7 @@ describe('BillingLocalCreditBanner', () => {
         balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
       })
 
-      const banner = screen.getByTestId('billing-local-credit-banner')
+      const banner = screen.getByTestId('billing-banner-credit')
       expect(banner).toHaveTextContent('Credits are low')
       expect(banner).toHaveTextContent(body)
       expect(
@@ -584,7 +584,7 @@ describe('BillingLocalCreditBanner', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -596,7 +596,7 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+    expect(screen.getByTestId('billing-banner-credit')).toHaveTextContent(
       'Out of credits'
     )
 
@@ -604,7 +604,7 @@ describe('BillingLocalCreditBanner', () => {
 
     expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -619,7 +619,7 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    const banner = screen.getByTestId('billing-local-credit-banner')
+    const banner = screen.getByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent('Out of credits')
     expect(banner).not.toHaveTextContent('Credits are low')
     expect(banner).not.toHaveTextContent('Subscription paused')
@@ -638,7 +638,7 @@ describe('BillingLocalCreditBanner', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -649,7 +649,7 @@ describe('BillingLocalCreditBanner', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
 
     subscription.value = { ...personalSubscription, hasFunds: true }
@@ -657,7 +657,7 @@ describe('BillingLocalCreditBanner', () => {
     subscription.value = { ...personalSubscription, hasFunds: false }
     await nextTick()
 
-    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+    expect(screen.getByTestId('billing-banner-credit')).toHaveTextContent(
       'Out of credits'
     )
   })
@@ -670,10 +670,33 @@ describe('BillingLocalCreditBanner', () => {
   ] as const)('shows $kind on cloud=$isCloud', ({ isCloud, kind, title }) => {
     arrange({ isCloud, autoTopUp: kind })
 
-    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
+    expect(screen.getByTestId('billing-banner-autoTopUp')).toHaveTextContent(
       title
     )
   })
+
+  it.for([
+    {
+      kind: 'autoTopUpFailed',
+      title: 'Auto top-up failed',
+      body: "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
+    },
+    {
+      kind: 'autoTopUpOff',
+      title: 'Auto top-up turned off',
+      body: 'Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on.'
+    }
+  ] as const)(
+    'renders the $kind copy in the 12px banner shell',
+    ({ kind, title, body }) => {
+      arrange({ autoTopUp: kind })
+
+      const banner = screen.getByTestId('billing-banner-autoTopUp')
+      expect(banner).toHaveTextContent(title)
+      expect(banner).toHaveTextContent(body)
+      expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
+    }
+  )
 
   it('ranks auto top-up above out of credits and low credits', () => {
     arrange({
@@ -682,9 +705,9 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    expect(screen.getByTestId('billing-auto-top-up-banner')).toBeInTheDocument()
+    expect(screen.getByTestId('billing-banner-autoTopUp')).toBeInTheDocument()
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -692,7 +715,7 @@ describe('BillingLocalCreditBanner', () => {
     arrange({ unified: false, autoTopUp: 'autoTopUpFailed' })
 
     expect(
-      screen.queryByTestId('billing-auto-top-up-banner')
+      screen.queryByTestId('billing-banner-autoTopUp')
     ).not.toBeInTheDocument()
   })
 
