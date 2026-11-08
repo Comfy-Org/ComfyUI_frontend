@@ -64,9 +64,12 @@ describe(handleDesktopWorkflowHandoff, () => {
     api.user = 'desktop-user'
     vi.mocked(fetch).mockImplementation(async () => Response.json({}))
     const previousConfig = remoteConfig.value
+    const previousWindowConfig = window.__CONFIG__
     remoteConfig.value = {}
+    window.__CONFIG__ = {}
     onTestFinished(() => {
       remoteConfig.value = previousConfig
+      window.__CONFIG__ = previousWindowConfig
     })
   })
 
