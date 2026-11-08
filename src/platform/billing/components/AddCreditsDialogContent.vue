@@ -42,10 +42,8 @@ import {
   addCreditsPendingTopup,
   topupCheckoutFailure
 } from '@/platform/billing/addCredits/addCreditsFacts'
-import {
-  handsPopupsToSystemBrowser,
-  reserveBillingTab
-} from '@/platform/billing/billingTab'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useAutoTopUpSetupOffer } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
