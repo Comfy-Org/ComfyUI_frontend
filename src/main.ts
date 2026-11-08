@@ -114,8 +114,8 @@ function initFirebaseIdentity(): void {
     firebaseIdentity.initialize()
   } finally {
     phaseFirebase.stop()
+    if (isCloud) reportFirebaseConfigSource()
   }
-  if (isCloud) reportFirebaseConfigSource()
 }
 
 function resolveRuntimeSentryDsn(): string {

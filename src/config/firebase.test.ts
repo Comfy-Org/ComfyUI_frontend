@@ -25,7 +25,13 @@ describe('getFirebaseConfig', () => {
     expect(getFirebaseConfig()).toEqual(cloudConfig)
   })
 
-  it('falls back to the build-time config when the server sends no firebase_config', async () => {
+  it('uses the dev project when the server reports firebase_env "dev", even if the build-time fallback is prod', async () => {
+    const { getFirebaseConfig, remoteConfig } = await loadFirebase(true)
+    remoteConfig.value = { firebase_env: 'dev' }
+    expect(getFirebaseConfig().projectId).toBe('dreamboothy-dev')
+  })
+
+  it('falls back to the build-time config when the server names no project', async () => {
     const prod = await loadFirebase(true)
     prod.remoteConfig.value = {}
     expect(prod.getFirebaseConfig().projectId).toBe('dreamboothy')
@@ -37,8 +43,9 @@ describe('getFirebaseConfig', () => {
 
   it.for([
     { serverConfig: { firebase_config: cloudConfig }, source: 'server' },
+    { serverConfig: { firebase_env: 'dev' as const }, source: 'server' },
     { serverConfig: {}, source: 'build-time' }
-  ])('reports the $source source', async ({ serverConfig, source }) => {
+  ])('reports the $source source for %#', async ({ serverConfig, source }) => {
     const { getFirebaseConfigSource, remoteConfig } = await loadFirebase(true)
     remoteConfig.value = serverConfig
     expect(getFirebaseConfigSource()).toBe(source)

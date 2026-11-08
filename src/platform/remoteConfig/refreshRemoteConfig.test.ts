@@ -639,5 +639,21 @@ describe('refreshRemoteConfig', () => {
       vi.unstubAllGlobals()
       vi.useRealTimers()
     })
+
+    it('accepts a 200 that names the dev project through firebase_env', async () => {
+      vi.useFakeTimers()
+      const serverConfig = { firebase_env: 'dev' as const }
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse(serverConfig)
+      )
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(remoteConfig.value).toEqual(serverConfig)
+      vi.useRealTimers()
+    })
   })
 })
