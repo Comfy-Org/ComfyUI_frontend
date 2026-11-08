@@ -11,7 +11,7 @@
       v-if="field.type === 'single'"
       :model-value="(modelValue as string) ?? ''"
       type="single"
-      class="flex w-full flex-col gap-2"
+      class="w-full flex-col gap-2"
       @update:model-value="onSingleChange"
     >
       <ToggleGroupItem
@@ -34,7 +34,7 @@
       v-else
       :model-value="(modelValue as string[]) ?? []"
       type="multiple"
-      class="flex w-full flex-col gap-2"
+      class="w-full flex-col gap-2"
       @update:model-value="onMultiChange"
     >
       <ToggleGroupItem

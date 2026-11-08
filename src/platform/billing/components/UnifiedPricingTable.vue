@@ -367,7 +367,7 @@
           :href="CONTACT_SUPPORT_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="font-inter text-sm font-bold text-background no-underline hover:opacity-80"
+          class="font-inter font-bold text-background no-underline hover:opacity-80"
         >
           {{ t('subscription.signupPaymentRecovery.contactSupport') }}
         </a>
