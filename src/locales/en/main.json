@@ -4268,6 +4268,46 @@
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
     "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
+  "openOnCloud": {
+    "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "pointNodes": "Bring your custom nodes and models"
+    },
+    "openedFromLocal": "Opened from ComfyUI on your computer",
+    "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
+    "handoffFailed": "Couldn't open the workflow from ComfyUI on your computer",
+    "handoffMissing": "Your workflow didn't arrive",
+    "handoffMissingDetail": "ComfyUI stops waiting after 10 minutes. Click Open on Comfy Cloud in ComfyUI again.",
+    "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
+    "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
+    "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "downloaded": "Workflow downloaded",
+    "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
+    "cloudButton": {
+      "tooltip": "Run on Comfy Cloud",
+      "checking": "Checking Comfy Cloud…"
+    },
+    "runDialog": {
+      "title": "Run on Comfy Cloud",
+      "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
+      "openOnCloud": "Open on Comfy Cloud"
+    },
+    "agentMenu": {
+      "openInClaude": "Open in Claude desktop",
+      "openInCodex": "Open in Codex",
+      "copyPrompt": "Copy prompt"
+    },
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+    },
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
@@ -4615,8 +4655,11 @@
       "planUnavailable": "Couldn't check your plan. Try again.",
       "privateModelsDisabled": "Your plan doesn't include private models.",
       "progress": "{sent} of {total}",
+      "reconnecting": "Reconnecting...",
       "saving": "Saving to your library...",
+      "sessionExpired": "This upload expired. Try again to start a new upload.",
       "stopping": "Stopping the earlier upload...",
+      "transferEstimate": "{rate}/s · {time} left",
       "tryAgain": "Try again",
       "unsupportedType": "Cloud can't store this model type yet. Choose another type.",
       "upload": "Upload",
@@ -4877,7 +4920,7 @@
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
     "deployOnPlatform": "Deploy on Platform",
-    "deployWithAgent": "Build with your agent",
+    "deployWithAgent": "Deploy with your agent",
     "copied": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",

@@ -6030,13 +6030,14 @@ export type ModelFolder = {
  */
 export type ModelUploadStarted = {
   /**
-   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
    */
-  chunk_size_bytes?: number
+  upload_id: string
   /**
-   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
    */
-  expires_at: string
+  upload_url: string
+  method: 'PUT'
   /**
    * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
@@ -6044,22 +6045,21 @@ export type ModelUploadStarted = {
     [key: string]: string
   }
   /**
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
+   */
+  expires_at: string
+  /**
    * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
    */
   max_size_bytes: number
-  method: 'PUT'
   /**
-   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
-   */
-  upload_id: string
-  /**
-   * Present only for a resumable session. Clients must tolerate unknown values and refuse unsupported modes without sending bytes. When absent, send one PUT with the returned headers.
+   * Present only for a resumable session. When absent, send one PUT with the returned headers.
    */
   upload_mode?: 'resumable'
   /**
-   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
    */
-  upload_url: string
+  chunk_size_bytes?: number
 }
 
 /**
@@ -11537,13 +11537,13 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
-     */
-    resumable?: boolean
-    /**
      * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
+    /**
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
@@ -14115,6 +14115,10 @@ export type GetFeaturesResponses = {
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     */
+    open_on_cloud_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */

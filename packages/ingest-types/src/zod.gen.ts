@@ -3234,17 +3234,11 @@ export const zModelFolder = z.object({
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
 export const zModelUploadStarted = z.object({
-  chunk_size_bytes: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  expires_at: z.iso.datetime(),
+  upload_id: z.uuid(),
+  upload_url: z.string(),
+  method: z.enum(['PUT']),
   headers: z.record(z.string(), z.string()),
+  expires_at: z.iso.datetime(),
   max_size_bytes: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3253,10 +3247,16 @@ export const zModelUploadStarted = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
-  method: z.enum(['PUT']),
-  upload_id: z.uuid(),
   upload_mode: z.enum(['resumable']).optional(),
-  upload_url: z.string()
+  chunk_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
 })
 
 /**
@@ -5966,6 +5966,7 @@ export const zStartModelUploadBody = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  resumable: z.boolean().optional().default(false),
   tags: z.array(z.string())
 })
 
@@ -6431,6 +6432,7 @@ export const zGetFeaturesResponse = z.object({
   max_upload_size: z.int().optional(),
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
+  open_on_cloud_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
