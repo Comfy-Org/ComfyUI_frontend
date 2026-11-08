@@ -59,10 +59,6 @@ function showModal() {
     toast.error(t('openOnCloud.checkFailed'))
     return
   }
-  if (current.phase === 'answered' && current.verdict.kind !== 'canOpen') {
-    toast.error(t('openOnCloud.cannotRunYet'))
-    return
-  }
   void openRunOnCloudDialog(() => isMounted && check.value === current)
 }
 
