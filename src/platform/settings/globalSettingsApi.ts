@@ -5,13 +5,11 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zErrorResponse, zGlobalSetting } from '@comfyorg/ingest-types/zod'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
-import { api } from '@/scripts/api'
 import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
@@ -28,7 +26,7 @@ export class GlobalSettingsApiError extends Error {
 
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
-  return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
+  return ingestApiUrl(path)
 }
 
 async function responseBody(response: Response): Promise<unknown> {
