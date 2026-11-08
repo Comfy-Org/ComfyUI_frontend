@@ -42,6 +42,14 @@ export const remoteConfigRevision = ref(0)
 
 export const remoteConfigErrorStatus = ref<number | null>(null)
 
+export type RemoteConfigFailure =
+  | { reason: 'timeout' }
+  | { reason: 'http'; status: number }
+  | { reason: 'network' }
+
+/** Why the latest /features read failed; `null` once a read succeeds. */
+export const remoteConfigFailure = ref<RemoteConfigFailure | null>(null)
+
 /** Whether the authenticated config has been loaded. */
 export const isAuthenticatedConfigLoaded = computed(
   () => authenticatedRemoteConfigState.value === 'authenticated'

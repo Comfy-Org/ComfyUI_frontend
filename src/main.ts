@@ -16,6 +16,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { reportFirebaseConfigSource } from '@/platform/telemetry/firebaseConfigSourceTelemetry'
 import { initSentry } from '@/platform/telemetry/initSentry'
 import {
   markStoresPending,
@@ -114,6 +115,7 @@ function initFirebaseIdentity(): void {
   } finally {
     phaseFirebase.stop()
   }
+  if (isCloud) reportFirebaseConfigSource()
 }
 
 function resolveRuntimeSentryDsn(): string {

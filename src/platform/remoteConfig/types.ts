@@ -98,7 +98,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
-  firebase_env?: 'dev'
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean

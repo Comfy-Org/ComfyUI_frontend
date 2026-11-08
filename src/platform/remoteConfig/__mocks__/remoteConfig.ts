@@ -52,6 +52,7 @@ const remoteConfigModule: typeof realRemoteConfig = {
   authenticatedRemoteConfigState: authenticatedRemoteConfigStateRef,
   remoteConfigRevision: testScopedRef(0),
   remoteConfigErrorStatus: testScopedRef(null),
+  remoteConfigFailure: testScopedRef(null),
   isAuthenticatedConfigLoaded: computed(
     () =>
       authenticatedRemoteConfigStateRef.value === 'authenticated' ||
@@ -70,6 +71,7 @@ export const {
   authenticatedRemoteConfigState,
   remoteConfigRevision,
   remoteConfigErrorStatus,
+  remoteConfigFailure,
   isAuthenticatedConfigLoaded,
   remoteConfig,
   configValueOrDefault,

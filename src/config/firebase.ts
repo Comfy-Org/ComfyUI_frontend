@@ -26,21 +26,14 @@ const PROD_CONFIG: FirebaseOptions = {
 
 const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
 
-/**
- * Firebase config for the current backend: the server's firebase_config (cloud builds),
- * else the bundled DEV_CONFIG when the server reports a dev-tier backend, else the build-time default.
- */
-export function getFirebaseConfig(): FirebaseOptions {
-  const runtimeConfig = remoteConfig.value.firebase_config
-  if (runtimeConfig) return runtimeConfig
-  if (remoteConfig.value.firebase_env === 'dev') return DEV_CONFIG
-  return BUILD_TIME_CONFIG
+export type FirebaseConfigSource = 'server' | 'build-time'
+
+/** Whether {@link getFirebaseConfig} names the project from the server or falls back to the build. */
+export function getFirebaseConfigSource(): FirebaseConfigSource {
+  return remoteConfig.value.firebase_config ? 'server' : 'build-time'
 }
 
-/** Whether {@link getFirebaseConfig} names the project from the server rather than the build. */
-export function hasServerFirebaseConfig(): boolean {
-  return (
-    Boolean(remoteConfig.value.firebase_config) ||
-    remoteConfig.value.firebase_env === 'dev'
-  )
+/** Firebase config for the current backend: the server's firebase_config (cloud builds), else the build-time default. */
+export function getFirebaseConfig(): FirebaseOptions {
+  return remoteConfig.value.firebase_config ?? BUILD_TIME_CONFIG
 }

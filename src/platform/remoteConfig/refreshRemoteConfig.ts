@@ -2,7 +2,7 @@ import { delay } from 'es-toolkit'
 
 import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 
-import { hasServerFirebaseConfig } from '@/config/firebase'
+import { getFirebaseConfigSource } from '@/config/firebase'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
@@ -11,6 +11,7 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigErrorStatus,
+  remoteConfigFailure,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
@@ -71,6 +72,7 @@ export function invalidateRemoteConfig(): void {
   window.__CONFIG__ = retainedConfig
   remoteConfig.value = retainedConfig
   remoteConfigErrorStatus.value = null
+  remoteConfigFailure.value = null
   remoteConfigState.value = 'unloaded'
   authenticatedRemoteConfigState.value = 'unloaded'
   clearSessionAgentGrant()
@@ -108,6 +110,7 @@ function commitRemoteConfigSuccess(
   window.__CONFIG__ = config
   remoteConfig.value = config
   remoteConfigErrorStatus.value = null
+  remoteConfigFailure.value = null
   remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'authenticated'
@@ -152,6 +155,7 @@ async function readCredentialedWebSessionFlag(
 
 function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
   console.warn('Failed to load remote config:', response.statusText)
+  remoteConfigFailure.value = { reason: 'http', status: response.status }
   if (response.status === 401 || response.status === 403) {
     if (useAuth) {
       remoteConfigErrorStatus.value = response.status
@@ -172,9 +176,14 @@ function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
   remoteConfigRevision.value++
 }
 
-function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
+function commitRemoteConfigException(
+  error: unknown,
+  timedOut: boolean,
+  useAuth: boolean
+): void {
   console.error('Failed to fetch remote config:', error)
   remoteConfigErrorStatus.value = null
+  remoteConfigFailure.value = { reason: timedOut ? 'timeout' : 'network' }
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'error'
     authenticatedLoadingGeneration = undefined
@@ -229,6 +238,7 @@ export async function refreshRemoteConfig(
         authenticatedRemoteConfigState.value = 'error'
         authenticatedLoadingGeneration = undefined
         remoteConfigErrorStatus.value = null
+        remoteConfigFailure.value = null
         remoteConfigState.value = 'error'
         console.warn(
           'Rejected authenticated remote config response without credentials'
@@ -244,7 +254,7 @@ export async function refreshRemoteConfig(
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
-    commitRemoteConfigException(error, useAuth)
+    commitRemoteConfigException(error, controller.signal.aborted, useAuth)
   } finally {
     if (authenticatedLoadingGeneration === generation) {
       authenticatedRemoteConfigState.value = previousAuthenticatedState
@@ -273,7 +283,7 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     await refreshRemoteConfig({ useAuth: false })
     if (remoteConfigState.value !== 'error') {
-      if (hasServerFirebaseConfig()) return
+      if (getFirebaseConfigSource() === 'server') return
       unnamedProjectReads++
       if (unnamedProjectReads === 1) {
         reportError(
