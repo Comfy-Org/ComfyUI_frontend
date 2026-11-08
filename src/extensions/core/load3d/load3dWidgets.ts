@@ -6,6 +6,7 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
+import { recordModelChange } from '@/extensions/core/load3d/recordModelChange'
 import { isSupportedModelFilename } from '@/extensions/core/load3d/supportedModelFile'
 import { t } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -13,7 +14,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IComboWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { CustomInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { CustomComfyWidgetConstructor } from '@/types/comfy'
@@ -48,10 +48,6 @@ const VIEWPORT_STATE_NODES = new Set([
   'SaveGaussianSplat',
   'SavePointCloud'
 ])
-
-function recordModelChange() {
-  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-}
 
 function resourceSubfolder(node: LGraphNode) {
   const resourceFolder = String(node.properties['Resource Folder'] ?? '').trim()
