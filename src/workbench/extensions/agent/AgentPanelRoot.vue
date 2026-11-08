@@ -2321,6 +2321,30 @@ provide(
 )
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
 
+const rootClass = computed(() =>
+  cn('relative size-full', agentPanelStore.isFullscreen && 'flex')
+)
+const panelClass = computed(() =>
+  cn(agentPanelStore.isFullscreen && 'min-w-0 flex-1')
+)
+const panelExpanded = computed(
+  () => agentPanelStore.isMaximized || agentPanelStore.isFullscreen
+)
+const redesignDeleteConfirmation = computed(() =>
+  agentPanelStore.experience === 'redesign' ? confirmChatDelete : undefined
+)
+const currentChatPinned = computed(
+  () => threadId.value !== null && history.pinnedIds.has(threadId.value)
+)
+
+function onToggleCurrentChatPin(): void {
+  if (threadId.value !== null) history.togglePin(threadId.value)
+}
+
+function onSidebarDelete(id: string): void {
+  void panelRef.value?.deleteChat(id)
+}
+
 function onToggleSize(): void {
   agentPanelStore.toggleMaximize()
 }
@@ -2681,7 +2705,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    :class="cn('relative size-full', agentPanelStore.isFullscreen && 'flex')"
+    :class="rootClass"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -2714,7 +2738,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         @reset-width="agentPanelStore.resetSidebarWidth()"
         @new-chat="onSidebarNewChat"
         @select="onSidebarSelect"
-        @delete="panelRef?.deleteChat($event)"
+        @delete="onSidebarDelete"
         @rename="onRenameHistory"
         @copy-markdown="onCopyMarkdown"
         @section="onSidebarSection"
@@ -2746,7 +2770,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
     </AgentRegionBoundary>
     <AgentPanel
       ref="panelRef"
-      :class="cn(agentPanelStore.isFullscreen && 'min-w-0 flex-1')"
+      :class="panelClass"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -2755,16 +2779,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
-      :is-maximized="
-        agentPanelStore.isMaximized || agentPanelStore.isFullscreen
-      "
+      :is-maximized="panelExpanded"
       :history-groups="historyGroups"
       :select-history="onSelectHistory"
-      :confirm-delete="
-        agentPanelStore.experience === 'redesign'
-          ? confirmChatDelete
-          : undefined
-      "
+      :confirm-delete="redesignDeleteConfirmation"
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"
       :session-id="threadId"
@@ -2774,7 +2792,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
           ?.title ??
         provisionalTitle
       "
-      :chat-pinned="threadId !== null && history.pinnedIds.has(threadId)"
+      :chat-pinned="currentChatPinned"
       :selection-tags="selectionTags"
       :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
@@ -2823,7 +2841,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @retry-sync="retrySubscription"
       @new-chat="onNewChat"
       @start-tour="restartCoach"
-      @toggle-pin-chat="threadId !== null && history.togglePin(threadId)"
+      @toggle-pin-chat="onToggleCurrentChatPin"
       @toggle-size="onToggleSize"
       @close="onClosePanel"
       @open-history="onOpenHistory"

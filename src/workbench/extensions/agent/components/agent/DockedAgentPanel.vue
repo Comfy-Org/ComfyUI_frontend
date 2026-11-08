@@ -7,19 +7,8 @@
       :data-presentation="presentation.kind"
       role="complementary"
       aria-labelledby="agent-panel-title"
-      :class="
-        cn(
-          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden',
-          isFullscreen
-            ? 'fixed inset-0 z-panel bg-background'
-            : '[anchor-name:--docked-agent-panel]',
-          !isFullscreen &&
-            (isOverlay
-              ? 'fixed inset-y-0 right-0 z-panel max-w-full bg-background shadow-lg'
-              : 'relative h-full')
-        )
-      "
-      :style="isFullscreen ? undefined : { width: `${panelWidth}px` }"
+      :class="panelClass"
+      :style="panelStyle"
     >
       <div
         v-if="!detached"
@@ -29,26 +18,8 @@
         @pointerdown="onResizeStart"
         @lostpointercapture="isResizing = false"
       />
-      <div
-        data-testid="docked-agent-panel-shell"
-        :class="
-          cn(
-            'size-full',
-            !isFullscreen && 'p-2',
-            hasOpaqueNeighbor &&
-              !isFullscreen &&
-              'border-l border-border bg-background'
-          )
-        "
-      >
-        <div
-          :class="
-            cn(
-              'size-full overflow-hidden',
-              !isFullscreen && 'rounded-lg border'
-            )
-          "
-        >
+      <div data-testid="docked-agent-panel-shell" :class="shellClass">
+        <div :class="frameClass">
           <AgentPanelLoadError v-if="mountFailed" :on-retry="retryMount" />
           <AgentPanelRoot v-else :key="mountAttempt" />
         </div>
@@ -175,6 +146,35 @@ const {
   presentation
 } = storeToRefs(agentPanelStore)
 const detached = computed(() => isOverlay.value || isFullscreen.value)
+
+function presentationClass(): string {
+  if (isFullscreen.value) return 'fixed inset-0 z-panel bg-background'
+  return isOverlay.value
+    ? '[anchor-name:--docked-agent-panel] fixed inset-y-0 right-0 z-panel max-w-full bg-background shadow-lg'
+    : '[anchor-name:--docked-agent-panel] relative h-full'
+}
+
+const panelClass = computed(() =>
+  cn(
+    'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden',
+    presentationClass()
+  )
+)
+const panelStyle = computed(() =>
+  isFullscreen.value ? undefined : { width: `${panelWidth.value}px` }
+)
+const shellClass = computed(() =>
+  cn(
+    'size-full',
+    !isFullscreen.value && 'p-2',
+    hasOpaqueNeighbor &&
+      !isFullscreen.value &&
+      'border-l border-border bg-background'
+  )
+)
+const frameClass = computed(() =>
+  cn('size-full overflow-hidden', !isFullscreen.value && 'rounded-lg border')
+)
 const { width: viewportWidth } = useWindowSize()
 const panelWidth = computed(() =>
   Math.min(

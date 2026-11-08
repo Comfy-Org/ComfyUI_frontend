@@ -14,7 +14,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -40,6 +39,9 @@ import {
 } from '@/workbench/extensions/agent/utils/outputTiles'
 import OutputTile from './OutputTile.vue'
 import OutputsTrayActions from './OutputsTrayActions.vue'
+import OutputsTrayPlaceholder from './OutputsTrayPlaceholder.vue'
+import OutputsTrayShowMore from './OutputsTrayShowMore.vue'
+import { OUTPUTS_TRAY_GRID_CLASS } from './outputsTrayGrid'
 
 const emit = defineEmits<{ attached: [count: number] }>()
 
@@ -56,10 +58,6 @@ const MediaLightbox = defineAsyncComponent(
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
-
-const SKELETON_COUNT = 9
-const GRID_CLASS =
-  'm-0 grid list-none grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2 p-0'
 
 const titleId = useId()
 
@@ -80,9 +78,6 @@ const revealedAssets = computed(() =>
 )
 const hasHiddenLoaded = computed(
   () => loadedAssets.value.length > revealed.value
-)
-const canShowMore = computed(
-  () => hasHiddenLoaded.value || hasMoreOnServer.value || more.value !== 'idle'
 )
 
 const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
@@ -119,6 +114,13 @@ const tiles = computed(() =>
     })
 )
 type Tile = (typeof tiles.value)[number]
+
+const hasTiles = computed(() => tiles.value.length > 0)
+const canShowMore = computed(
+  () =>
+    hasTiles.value &&
+    (hasHiddenLoaded.value || hasMoreOnServer.value || more.value !== 'idle')
+)
 
 const selectedTiles = computed(() =>
   tiles.value.filter(({ key }) => tray.selectedKeys.has(key))
@@ -268,7 +270,7 @@ function downloadSelected(): void {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <ul v-if="tiles.length > 0" :class="GRID_CLASS">
+      <ul v-if="hasTiles" :class="OUTPUTS_TRAY_GRID_CLASS">
         <OutputTile
           v-for="tile in tiles"
           :key="tile.key"
@@ -285,62 +287,18 @@ function downloadSelected(): void {
           @toggle-stack="onToggleStack(tile.asset)"
         />
       </ul>
-      <div v-else-if="loading" :class="GRID_CLASS">
-        <Skeleton
-          v-for="index in SKELETON_COUNT"
-          :key="index"
-          data-testid="agent-outputs-skeleton"
-          class="aspect-square rounded-lg bg-accent"
-        />
-        <span role="status" class="sr-only">
-          {{ t('agent.outputs.loading') }}
-        </span>
-      </div>
-      <div
-        v-else
-        class="flex flex-col items-center gap-2 px-4 py-6 text-center"
-      >
-        <p class="m-0 text-sm text-foreground">
-          {{ t('agent.outputs.emptyTitle') }}
-        </p>
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ t('agent.outputs.emptyBody') }}
-        </p>
-        <Button type="button" variant="outline" size="md" @click="refresh">
-          {{ t('agent.outputs.refresh') }}
-        </Button>
-      </div>
+      <OutputsTrayPlaceholder v-else :loading @refresh="refresh" />
 
-      <div
-        v-if="tiles.length > 0 && canShowMore"
-        class="flex flex-col items-center gap-1 pt-2"
-      >
-        <p
-          v-if="more === 'failed' && !hasHiddenLoaded"
-          role="alert"
-          class="m-0 text-xs text-muted-foreground"
-        >
-          {{ t('agent.outputs.loadMoreFailed') }}
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          class="rounded-full border-border"
-          :aria-busy="more === 'loading' || undefined"
-          @click="showMore"
-        >
-          {{
-            more === 'loading'
-              ? t('agent.outputs.loadingMore')
-              : t('agent.showMore')
-          }}
-        </Button>
-      </div>
+      <OutputsTrayShowMore
+        v-if="canShowMore"
+        :more
+        :has-hidden-loaded
+        @show-more="showMore"
+      />
     </div>
 
     <OutputsTrayActions
-      v-if="tiles.length > 0"
+      v-if="hasTiles"
       class="shrink-0"
       :selected-count="selectedTiles.length"
       :attachable-count="attachable.length"

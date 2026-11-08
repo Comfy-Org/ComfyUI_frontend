@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import {
-  DropdownMenuLabel,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import { computed } from 'vue'
+import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -12,9 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Button from '@comfyorg/design-system/button/Button'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
-import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
@@ -25,7 +20,12 @@ import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { useAgentAccount } from '@/workbench/extensions/agent/composables/agent/useAgentAccount'
+import AccountApiKeyItem from './AccountApiKeyItem.vue'
+import AccountEmailLabel from './AccountEmailLabel.vue'
 import AccountLanguageSubmenu from './AccountLanguageSubmenu.vue'
+import AccountMenuAction from './AccountMenuAction.vue'
+import AccountMenuTriggerLabel from './AccountMenuTriggerLabel.vue'
+import AccountUsageItem from './AccountUsageItem.vue'
 import AccountWorkspaceGroup from './AccountWorkspaceGroup.vue'
 import { trackAccountMenu } from './trackAccountMenu'
 
@@ -86,6 +86,69 @@ type AccountMenuEntry =
   | 'apiKey'
   | 'logout'
 
+interface AccountMenuEntryView {
+  component: Component
+  props?: Record<string, unknown>
+}
+
+function action(
+  icon: string,
+  label: string,
+  onSelect: () => void
+): AccountMenuEntryView {
+  return { component: AccountMenuAction, props: { icon, label, onSelect } }
+}
+
+const entryViews = computed(
+  (): Record<AccountMenuEntry, AccountMenuEntryView> => ({
+    workspaces: { component: AccountWorkspaceGroup },
+    workspaceSettings: action(
+      'icon-[lucide--users]',
+      t('agent.account.workspaceSettings'),
+      onSelectWorkspaceSettings
+    ),
+    usage: {
+      component: AccountUsageItem,
+      props: {
+        creditBalance: creditBalance.value,
+        loading: isBalanceLoading.value,
+        onSelect: onSelectUsage
+      }
+    },
+    plans: action(
+      'icon-[lucide--receipt-text]',
+      t('agent.account.viewAllPlans'),
+      onSelectPlans
+    ),
+    email: { component: AccountEmailLabel, props: { email: email.value } },
+    settings: {
+      component: AccountMenuAction,
+      props: {
+        icon: 'icon-[lucide--settings]',
+        label: t('agent.account.settings'),
+        shortcut: settingsCombo.value?.toString(),
+        'aria-keyshortcuts': settingsAriaShortcut.value,
+        onSelect: onSelectSettings
+      }
+    },
+    language: { component: AccountLanguageSubmenu },
+    help: action(
+      'icon-[lucide--circle-help]',
+      t('agent.account.getHelp'),
+      onSelectHelp
+    ),
+    apiKey: {
+      component: AccountApiKeyItem,
+      props: { onSelect: onSelectApiKey }
+    },
+    logout: action(
+      'icon-[lucide--log-out]',
+      t('agent.account.logOut'),
+      onSelectLogOut
+    )
+  })
+)
+
 const groups = computed(() => {
   const order: [entry: AccountMenuEntry, shown: boolean][][] = [
     [['workspaces', activeWorkspace.value !== undefined]],
@@ -106,7 +169,11 @@ const groups = computed(() => {
     ]
   ]
   return order
-    .map((group) => group.filter(([, shown]) => shown).map(([entry]) => entry))
+    .map((group) =>
+      group
+        .filter(([, shown]) => shown)
+        .map(([entry]) => ({ key: entry, ...entryViews.value[entry] }))
+    )
     .filter((group) => group.length > 0)
 })
 
@@ -188,30 +255,12 @@ function onSelectLogOut(): void {
           :initials
           class="shrink-0"
         />
-        <template v-if="!compact">
-          <span
-            v-if="activeWorkspace"
-            class="flex min-w-0 flex-1 flex-col text-left"
-          >
-            <span class="truncate">{{ activeWorkspace.name }}</span>
-            <span
-              v-if="planLabel"
-              class="truncate text-xs/4 text-muted-foreground"
-            >
-              {{ planLabel }}
-            </span>
-          </span>
-          <span v-else class="min-w-0 flex-1 truncate text-left">
-            <span>{{ firstName ?? t('agent.account.fallbackName') }}</span>
-            <span v-if="planLabel" class="text-muted-foreground">
-              · {{ planLabel }}
-            </span>
-          </span>
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--chevron-down] text-muted-foreground"
-          />
-        </template>
+        <AccountMenuTriggerLabel
+          v-if="!compact"
+          :workspace-name="activeWorkspace?.name"
+          :first-name
+          :plan-label
+        />
       </Button>
     </DropdownMenuTrigger>
     <MenuContent
@@ -221,104 +270,14 @@ function onSelectLogOut(): void {
       width="trigger"
       class="agent-scope min-w-64 overflow-y-auto"
     >
-      <template v-for="(group, index) in groups" :key="group[0]">
+      <template v-for="(group, index) in groups" :key="group[0].key">
         <MenuSeparator v-if="index > 0" />
-        <template v-for="entry in group" :key="entry">
-          <AccountWorkspaceGroup v-if="entry === 'workspaces'" />
-          <MenuItem
-            v-else-if="entry === 'workspaceSettings'"
-            @select="onSelectWorkspaceSettings"
-          >
-            <i aria-hidden="true" class="icon-[lucide--users]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.workspaceSettings') }}
-            </span>
-          </MenuItem>
-          <DropdownMenuLabel
-            v-else-if="entry === 'email'"
-            class="truncate px-3 py-1.5 text-xs text-muted-foreground"
-          >
-            {{ email }}
-          </DropdownMenuLabel>
-          <MenuItem
-            v-else-if="entry === 'settings'"
-            :aria-keyshortcuts="settingsAriaShortcut"
-            @select="onSelectSettings"
-          >
-            <i aria-hidden="true" class="icon-[lucide--settings]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.settings') }}
-            </span>
-            <span
-              v-if="settingsCombo"
-              aria-hidden="true"
-              class="shrink-0 rounded-sm bg-muted px-1 py-0.5 text-xs/4 text-muted-foreground"
-            >
-              {{ settingsCombo.toString() }}
-            </span>
-          </MenuItem>
-          <MenuItem v-else-if="entry === 'usage'" @select="onSelectUsage">
-            <i aria-hidden="true" class="icon-[lucide--chart-column]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.usage') }}
-            </span>
-            <Skeleton
-              v-if="isBalanceLoading"
-              data-testid="agent-account-balance-loading"
-              class="h-4 w-10 shrink-0 bg-accent"
-            />
-            <template v-else-if="creditBalance !== undefined">
-              <span
-                aria-hidden="true"
-                class="shrink-0 text-xs text-muted-foreground"
-              >
-                {{ creditBalance }}
-              </span>
-              <span class="sr-only">
-                {{
-                  t('agent.account.creditBalance', { credits: creditBalance })
-                }}
-              </span>
-            </template>
-          </MenuItem>
-          <AccountLanguageSubmenu v-else-if="entry === 'language'" />
-          <MenuItem v-else-if="entry === 'help'" @select="onSelectHelp">
-            <i aria-hidden="true" class="icon-[lucide--circle-help]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.getHelp') }}
-            </span>
-          </MenuItem>
-          <MenuItem v-else-if="entry === 'plans'" @select="onSelectPlans">
-            <i aria-hidden="true" class="icon-[lucide--receipt-text]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.viewAllPlans') }}
-            </span>
-          </MenuItem>
-          <MenuItem v-else-if="entry === 'apiKey'" @select="onSelectApiKey">
-            <i aria-hidden="true" class="icon-[lucide--key-round]" />
-            <span class="flex min-w-0 flex-1 flex-col">
-              <span class="truncate">
-                {{ t('agent.account.getApiKey') }}
-              </span>
-              <span class="truncate text-xs/4 text-muted-foreground">
-                {{ t('agent.account.getApiKeyHint') }}
-              </span>
-            </span>
-            <i
-              aria-hidden="true"
-              class="icon-[lucide--external-link] text-muted-foreground"
-            />
-            <span class="sr-only">
-              {{ t('agent.account.opensInNewTab') }}
-            </span>
-          </MenuItem>
-          <MenuItem v-else @select="onSelectLogOut">
-            <i aria-hidden="true" class="icon-[lucide--log-out]" />
-            <span class="min-w-0 flex-1 truncate">
-              {{ t('agent.account.logOut') }}
-            </span>
-          </MenuItem>
-        </template>
+        <component
+          :is="entry.component"
+          v-for="entry in group"
+          :key="entry.key"
+          v-bind="entry.props"
+        />
       </template>
     </MenuContent>
   </DropdownMenuRoot>

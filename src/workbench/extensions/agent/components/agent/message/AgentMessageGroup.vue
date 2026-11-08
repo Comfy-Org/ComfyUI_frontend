@@ -8,17 +8,15 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import AgentRegionBoundary from '@/workbench/extensions/agent/components/agent/AgentRegionBoundary.vue'
 import ActivityTrace from './ActivityTrace.vue'
+import AgentAskCard from './AgentAskCard.vue'
 import AgentNoticeCard from './AgentNoticeCard.vue'
-import AgentPausedCard from './AgentPausedCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
-import AskUserCard from './AskUserCard.vue'
-import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import ExtensionChangeCard from './ExtensionChangeCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
-import RunApprovalCard from './RunApprovalCard.vue'
 import RunProgressSlot from './RunProgressSlot.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import type { AgentMessageGroup } from './agentMessageGroup'
+import { isAskGroup } from './agentMessageGroup'
 import WorkSummary from './WorkSummary.vue'
 
 const { group } = defineProps<{
@@ -63,40 +61,18 @@ const emit = defineEmits<{
     v-else-if="group.kind === 'extensionChange'"
     :part="group.part"
   />
-  <RunApprovalCard
-    v-else-if="group.kind === 'runApproval'"
-    :part="group.part"
+  <AgentAskCard
+    v-else-if="isAskGroup(group)"
+    :group
     :answering="answeringAskIds.has(group.part.askId)"
-    @answer="
-      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    :paywall-presentation
+    @answer="(askId, answer) => emit('answer', askId, answer)"
+    @approval-shown="
+      (askId, workflowId) => emit('approvalShown', askId, workflowId)
     "
-    @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
       (askId, workflowId, workflowName) =>
         emit('openWorkflow', askId, workflowId, workflowName)
-    "
-  />
-  <AskUserCard
-    v-else-if="group.kind === 'askUser'"
-    :part="group.part"
-    :answering="answeringAskIds.has(group.part.askId)"
-    @answer="(askId, answer) => emit('answer', askId, answer)"
-  />
-  <DeleteApprovalCard
-    v-else-if="group.kind === 'deleteApproval'"
-    :part="group.part"
-    :answering="answeringAskIds.has(group.part.askId)"
-    @answer="
-      (askId, selection) => emit('answer', askId, { selected: [selection] })
-    "
-  />
-  <AgentPausedCard
-    v-else-if="group.kind === 'paused'"
-    :part="group.part"
-    :presentation="paywallPresentation"
-    :answering="answeringAskIds.has(group.part.askId)"
-    @answer="
-      (askId, selection) => emit('answer', askId, { selected: [selection] })
     "
     @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
   />

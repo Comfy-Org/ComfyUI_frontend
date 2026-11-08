@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 
+import AgentWorkflowListRow from './AgentWorkflowListRow.vue'
 import type { WorkflowListItem } from './workflowListItem'
 
 const PAGE_SIZE = 50
@@ -30,7 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const listId = useId()
 
 const query = ref('')
 const showAll = ref(false)
@@ -54,17 +54,6 @@ const matches = computed(() => {
 const rows = computed(() =>
   showAll.value ? matches.value : matches.value.slice(0, PAGE_SIZE)
 )
-
-function describedBy(
-  item: WorkflowListItem,
-  index: number
-): string | undefined {
-  const ids = [
-    ...(item.folder ? [`${listId}-folder-${index}`] : []),
-    ...(item.path === failedPath ? [`${listId}-error-${index}`] : [])
-  ]
-  return ids.length > 0 ? ids.join(' ') : undefined
-}
 </script>
 
 <template>
@@ -118,48 +107,15 @@ function describedBy(
       </p>
 
       <ul v-else class="m-0 flex list-none flex-col gap-0.5 p-0">
-        <li
-          v-for="(item, index) in rows"
+        <AgentWorkflowListRow
+          v-for="item in rows"
           :key="item.path"
-          class="flex flex-col"
-        >
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="item.name"
-            :aria-describedby="describedBy(item, index)"
-            :aria-busy="item.path === openingPath"
-            :disabled="item.path === openingPath"
-            class="w-full justify-start gap-2 rounded-sm px-2 py-1 text-left text-xs font-normal"
-            @click="emit('open', item.path)"
-          >
-            <i
-              aria-hidden="true"
-              :class="
-                item.path === openingPath
-                  ? 'icon-[lucide--loader-circle] animate-spin'
-                  : rowIcon
-              "
-            />
-            <span class="flex min-w-0 flex-1 flex-col">
-              <span class="truncate text-foreground">{{ item.name }}</span>
-              <span
-                v-if="item.folder"
-                :id="`${listId}-folder-${index}`"
-                class="truncate text-muted-foreground"
-                >{{ item.folder }}</span
-              >
-            </span>
-          </Button>
-          <span
-            v-if="item.path === failedPath"
-            :id="`${listId}-error-${index}`"
-            role="alert"
-            class="pr-2 pb-1 pl-8 text-xs text-destructive"
-            >{{ t('agent.nav.openFailed', { name: item.name }) }}</span
-          >
-        </li>
+          :item
+          :icon="rowIcon"
+          :opening="item.path === openingPath"
+          :failed="item.path === failedPath"
+          @open="emit('open', item.path)"
+        />
       </ul>
 
       <Button

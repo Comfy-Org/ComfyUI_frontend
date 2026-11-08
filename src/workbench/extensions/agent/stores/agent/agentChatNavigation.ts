@@ -16,50 +16,60 @@ export type ChatNavigationEvent =
   | { type: 'chatDeleted'; id: string }
   | { type: 'conversationShown' }
 
+type HistoryView = Extract<AgentPanelView, { screen: 'history' }>
+
 export function reduceChatNavigation(
   view: AgentPanelView,
   event: ChatNavigationEvent
 ): AgentPanelView {
   switch (event.type) {
     case 'listOpened':
-      return {
-        screen: 'history',
-        previousThreadId: event.threadId,
-        selection: { status: 'idle' }
-      }
+      return idleHistory(event.threadId)
     case 'chatSelected':
-      return {
-        screen: 'history',
-        previousThreadId:
-          view.screen === 'history' ? view.previousThreadId : event.threadId,
-        selection: { status: 'loading', id: event.id }
-      }
+      return selectChat(view, event.id, event.threadId)
     case 'selectionResolved':
-      if (view.screen !== 'history' || view.selection.status !== 'loading')
-        return view
-      return event.opened
-        ? { screen: 'chat' }
-        : { ...view, selection: { status: 'failed', id: view.selection.id } }
+      return resolveSelection(view, event.opened)
     case 'selectionInterrupted':
-      if (view.screen !== 'history' || view.selection.status !== 'loading')
-        return view
-      return {
-        ...view,
-        selection: { status: 'failed', id: view.selection.id }
-      }
-    case 'chatDeleted': {
-      if (view.screen !== 'history') return view
-      const wasPrevious = view.previousThreadId === event.id
-      const wasSelected =
-        view.selection.status !== 'idle' && view.selection.id === event.id
-      if (!wasPrevious && !wasSelected) return view
-      return {
-        screen: 'history',
-        previousThreadId: wasPrevious ? null : view.previousThreadId,
-        selection: { status: 'idle' }
-      }
-    }
+      return resolveSelection(view, false)
+    case 'chatDeleted':
+      return deleteChat(view, event.id)
     case 'conversationShown':
       return { screen: 'chat' }
   }
+}
+
+function idleHistory(previousThreadId: string | null): HistoryView {
+  return { screen: 'history', previousThreadId, selection: { status: 'idle' } }
+}
+
+function selectChat(
+  view: AgentPanelView,
+  id: string,
+  threadId: string | null
+): HistoryView {
+  return {
+    screen: 'history',
+    previousThreadId:
+      view.screen === 'history' ? view.previousThreadId : threadId,
+    selection: { status: 'loading', id }
+  }
+}
+
+function resolveSelection(
+  view: AgentPanelView,
+  opened: boolean
+): AgentPanelView {
+  if (view.screen !== 'history' || view.selection.status !== 'loading')
+    return view
+  if (opened) return { screen: 'chat' }
+  return { ...view, selection: { status: 'failed', id: view.selection.id } }
+}
+
+function deleteChat(view: AgentPanelView, id: string): AgentPanelView {
+  if (view.screen !== 'history') return view
+  const wasPrevious = view.previousThreadId === id
+  const wasSelected =
+    view.selection.status !== 'idle' && view.selection.id === id
+  if (!wasPrevious && !wasSelected) return view
+  return idleHistory(wasPrevious ? null : view.previousThreadId)
 }

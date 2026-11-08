@@ -28,6 +28,15 @@ import AgentSidebarNav from './AgentSidebarNav.vue'
 
 const KEYBOARD_RESIZE_STEP = 16
 
+const MODE_CLASSES: Record<SidebarMode, { root: string; header: string }> = {
+  expanded: { root: 'relative w-65', header: 'pl-4' },
+  rail: { root: 'w-12', header: 'justify-center' },
+  drawer: {
+    root: 'absolute inset-y-0 left-0 z-20 w-65 shadow-lg',
+    header: 'pl-4'
+  }
+}
+
 const {
   mode,
   width = SIDEBAR_DEFAULT_WIDTH,
@@ -73,6 +82,14 @@ const sectionLabel = computed(() => {
   if (section === 'workflows') return t('agent.nav.workflows')
   return t('agent.sidebar.chats')
 })
+
+const toggleLabel = computed(() =>
+  mode === 'rail' ? t('agent.sidebar.open') : t('agent.sidebar.close')
+)
+
+const rootStyle = computed(() =>
+  mode === 'expanded' ? { width: `${width}px` } : undefined
+)
 
 function onKeydown(event: KeyboardEvent): void {
   if (event.key !== 'Escape' || mode !== 'drawer') return
@@ -158,19 +175,17 @@ function onResizeKeydown(event: KeyboardEvent): void {
     :class="
       cn(
         'flex h-full shrink-0 flex-col border-r border-border bg-background',
-        mode === 'rail' ? 'w-12' : 'w-65',
-        mode === 'expanded' && 'relative',
-        mode === 'drawer' && 'absolute inset-y-0 left-0 z-20 shadow-lg'
+        MODE_CLASSES[mode].root
       )
     "
-    :style="mode === 'expanded' ? { width: `${width}px` } : undefined"
+    :style="rootStyle"
     @keydown="onKeydown"
   >
     <div
       :class="
         cn(
           'flex h-12 shrink-0 items-center gap-1 border-b border-border px-2',
-          mode === 'rail' ? 'justify-center' : 'pl-4'
+          MODE_CLASSES[mode].header
         )
       "
     >
@@ -178,16 +193,12 @@ function onResizeKeydown(event: KeyboardEvent): void {
         <slot name="brand" />
       </div>
       <Button
-        :tooltip="
-          mode === 'rail' ? t('agent.sidebar.open') : t('agent.sidebar.close')
-        "
+        :tooltip="toggleLabel"
         tooltip-side="right"
         type="button"
         variant="muted-textonly"
         size="icon"
-        :aria-label="
-          mode === 'rail' ? t('agent.sidebar.open') : t('agent.sidebar.close')
-        "
+        :aria-label="toggleLabel"
         :aria-expanded="mode !== 'rail'"
         :aria-controls="listId"
         @click="emit('toggle')"

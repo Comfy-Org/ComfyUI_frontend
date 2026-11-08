@@ -11,12 +11,14 @@ const {
   title,
   hasChat = false,
   canPin = false,
-  pinned = false
+  pinned = false,
+  disabled = false
 } = defineProps<{
   title?: string
   hasChat?: boolean
   canPin?: boolean
   pinned?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -112,7 +114,7 @@ const menuItems = computed<MenuItem[]>(() => [
       type="button"
       variant="muted-textonly"
       size="sm"
-      :disabled="!hasChat"
+      :disabled
       class="min-w-0 justify-start text-left"
       @click="startRename"
     >

@@ -43,6 +43,17 @@ const kindIconClass = computed(() =>
 )
 const previewable = computed(() => kind !== 'text' && kind !== 'other')
 const stacked = computed(() => stackCount > 1)
+const hasBadges = computed(() => inMessage || stacked.value)
+const stackLabel = computed(() =>
+  stackExpanded
+    ? t('agent.outputs.hideRest')
+    : t('agent.outputs.showRest', stackCount - 1)
+)
+const stackIconClass = computed(() =>
+  stackLoading
+    ? 'icon-[lucide--loader-circle] motion-safe:animate-spin'
+    : 'icon-[lucide--layers]'
+)
 
 function playPreview(event: Event): void {
   const video = event.target
@@ -77,18 +88,32 @@ function stopPreview(event: Event): void {
         draggable="false"
         class="size-full object-cover"
       />
-      <video
-        v-else-if="kind === 'video'"
-        :src="videoUrl"
-        data-testid="agent-output-tile-video"
-        muted
-        loop
-        playsinline
-        preload="metadata"
-        class="size-full object-cover"
-        @mouseenter="playPreview"
-        @mouseleave="stopPreview"
-      />
+      <template v-else-if="kind === 'video'">
+        <video
+          :src="videoUrl"
+          data-testid="agent-output-tile-video"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          class="size-full object-cover"
+          @mouseenter="playPreview"
+          @mouseleave="stopPreview"
+        />
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--play] size-3.5 fill-current"
+            />
+          </span>
+        </span>
+      </template>
       <span
         v-else
         class="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-muted-foreground"
@@ -98,20 +123,6 @@ function stopPreview(event: Event): void {
           :class="cn(kindIconClass, 'size-6 shrink-0')"
         />
         <span class="w-full truncate text-center text-xs">{{ name }}</span>
-      </span>
-      <span
-        v-if="kind === 'video'"
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center"
-      >
-        <span
-          class="flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
-        >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--play] size-3.5 fill-current"
-          />
-        </span>
       </span>
     </button>
 
@@ -140,7 +151,7 @@ function stopPreview(event: Event): void {
     </Button>
 
     <div
-      v-if="inMessage || stacked"
+      v-if="hasBadges"
       class="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end gap-1"
     >
       <span
@@ -156,25 +167,11 @@ function stopPreview(event: Event): void {
         size="unset"
         :aria-expanded="stackExpanded"
         :aria-busy="stackLoading || undefined"
-        :aria-label="
-          stackExpanded
-            ? t('agent.outputs.hideRest')
-            : t('agent.outputs.showRest', stackCount - 1)
-        "
+        :aria-label="stackLabel"
         class="pointer-events-auto ml-auto h-5 shrink-0 gap-1 rounded-sm bg-black/60 px-1.5 py-0 text-2xs text-white hover:bg-black/80 hover:text-white focus-visible:outline-2 focus-visible:outline-foreground"
         @click="emit('toggleStack')"
       >
-        <i
-          aria-hidden="true"
-          :class="
-            cn(
-              'size-3',
-              stackLoading
-                ? 'icon-[lucide--loader-circle] motion-safe:animate-spin'
-                : 'icon-[lucide--layers]'
-            )
-          "
-        />
+        <i aria-hidden="true" :class="cn('size-3', stackIconClass)" />
         {{ stackCount }}
       </Button>
     </div>

@@ -32,7 +32,7 @@ function entries(menu: HTMLElement): string[] {
 
 describe('ChatTitleMenu', () => {
   it('names a chat that has no title yet and offers no menu for it', () => {
-    mount({ title: undefined, hasChat: false })
+    mount({ title: undefined, hasChat: false, disabled: true })
 
     expect(screen.getByRole('button', { name: 'Untitled' })).toBeDisabled()
     expect(
