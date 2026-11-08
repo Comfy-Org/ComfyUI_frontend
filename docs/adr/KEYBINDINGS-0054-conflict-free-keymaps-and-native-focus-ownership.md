@@ -36,7 +36,7 @@ Use the same key normalization for validation and dispatch, including platform m
 
 A conflict requires explicit replacement, unbinding, or narrower applicability. Replacement removes or narrows every conflicting assignment and validates the whole result before committing it. An invalid edit or import leaves the current valid keymap unchanged. The same keys may perform different actions only in contexts that cannot be eligible together.
 
-Collect proposed defaults before validating them. On a fresh configuration, colliding defaults remain inactive until resolved; registration order chooses neither one. Later default proposals cannot displace an accepted assignment without confirmation. Conflicts remain visible, and explicit unbindings survive default updates. Source provenance is diagnostic metadata, never dispatch priority.
+Validate the complete set of known default proposals after each registration batch. Automatically activated defaults remain provisional. A later conflict deactivates every conflicting provisional default, regardless of arrival order. An accepted assignment is an explicit user choice, including one restored from saved configuration. Later proposals cannot displace accepted assignments without confirmation and remain visibly inactive instead. Explicit unbindings survive default updates. Source provenance is diagnostic metadata, never dispatch priority.
 
 The proposed assignment flow handles ambiguity while the user edits the map. The effective map changes only after the complete replacement passes validation.
 
@@ -70,7 +70,7 @@ The editor uses the same validated keymap and eligibility rules as dispatch. For
 
 Let focused controls and component handlers process their input before application shortcut execution. Respect consumed events and native ownership. Execute the unique eligible assignment, or execute no application command. Do not fall through to another binding when a command is unavailable.
 
-Prevent the browser default only for a handled application assignment or a recognized pending sequence in an application-owned context. Do not stop propagation globally to enforce listener order. Cancel pending sequences when ownership changes; never transfer an unfinished sequence to a new owner.
+Decide synchronously whether an application assignment handles the input. For a handled assignment, prevent the browser default during the original event dispatch, before starting command execution. Do not await command completion or success to make that decision. A recognized pending sequence may also prevent the default in an application-owned context. Do not stop propagation globally to enforce listener order. Cancel pending sequences when ownership changes; never transfer an unfinished sequence to a new owner.
 
 A held action retains its original target. Release it exactly once on key-up, focus or mode loss, modal exclusion, window blur, or target removal. Changing owners does not start an action from a key that was already held. Entity systems handle commands against the focused target; individual entities do not register competing physical-key listeners or own user keymap settings.
 
@@ -97,10 +97,10 @@ sequenceDiagram
             Dispatch->>Keymap: Lookup in current context
             Note over Dispatch,Keymap: Modal context excludes background assignments
             Keymap->>Dispatch: At most one assignment
-            alt Assignment exists and command is available
-                Dispatch->>Command: Execute against focused target
-                Command->>Dispatch: Handled
-                Dispatch->>Browser: preventDefault
+            alt Assignment exists and command is synchronously available
+                Dispatch->>Dispatch: Claim application input synchronously
+                Dispatch->>Browser: preventDefault during original dispatch
+                Dispatch->>Command: Start execution against focused target
             else No available command
                 Note over Dispatch,Command: No fallback to another assignment
             end
@@ -125,7 +125,7 @@ Legacy document and window listeners can bypass focus policy and uniqueness. Pro
 
 ### Runtime ranking versus a validated map
 
-The ranking branch summarizes the [original ADR proposal at the reviewed head](https://github.com/Comfy-Org/ComfyUI_frontend/blob/627b3915daf2ab52ec396bc36a3abd86691e0352/docs/adr/KEYBINDINGS-0054-scoped-keybinding-resolution.md), not implemented behavior. A warning-only editor still needs runtime arbitration if it retains competing assignments. Both models need native ownership checks and held-action cleanup. The replacement moves conflict resolution to configuration rather than eliminating that work.
+The ranking branch summarizes the [original ADR proposal](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21984) at [the reviewed commit](https://github.com/Comfy-Org/ComfyUI_frontend/commit/627b3915daf2ab52ec396bc36a3abd86691e0352), not implemented behavior. A warning-only editor still needs runtime arbitration if it retains competing assignments. Both models need native ownership checks and held-action cleanup. The replacement moves conflict resolution to configuration rather than eliminating that work.
 
 ```mermaid
 flowchart TB
@@ -178,7 +178,7 @@ Some defaults and imported assignments need user resolution before activation. T
 
 - An overlapping assignment or prefix conflict cannot activate through any configuration entry point. A rejected change preserves the valid keymap.
 - The same key can serve two exclusive modes, but an application-wide and a focused-panel assignment cannot overlap without explicit resolution.
-- Changing registration order does not change an accepted keymap. Conflicting fresh defaults remain visibly inactive rather than selecting a winner.
+- For the same proposals and user choices, registration order does not change the effective keymap. Conflicting provisional defaults remain visibly inactive, including those contributed in later batches.
 - A modal prevents background commands while preserving its focus and dismissal behavior. Text editing, composition, and standard widget keys remain local.
 - The current-context view and dispatch agree on command and target. Unavailable commands do not reveal hidden fallback assignments.
 - Ownership loss releases held actions once and cancels pending sequences.
