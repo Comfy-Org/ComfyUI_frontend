@@ -204,6 +204,17 @@ export class FeatureFlagHelper {
     await this.page.route('**/api/features', this.featuresRouteHandler)
   }
 
+  /** Merge features into the real /api/features response. */
+  async mergeServerFeatures(features: Record<string, unknown>): Promise<void> {
+    await this.page.route('**/api/features', async (route) => {
+      const response = await route.fetch()
+      await route.fulfill({
+        response,
+        json: { ...(await response.json()), ...features }
+      })
+    })
+  }
+
   async clearMocks(): Promise<void> {
     if (this.featuresRouteHandler) {
       await this.page.unroute('**/api/features', this.featuresRouteHandler)
