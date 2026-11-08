@@ -1,3 +1,5 @@
+import { gzipSync } from 'node:zlib'
+
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -59,6 +61,41 @@ describe('Desktop workflow transfer through the external browser', () => {
 
     await vi.advanceTimersByTimeAsync(DESKTOP_HANDOFF_LIFETIME_MS + 1)
 
+    expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
+  })
+
+  it('refuses a compressed workflow that exceeds the decompressed size limit', async () => {
+    const nonce = crypto.randomUUID()
+    const encoded = gzipSync(
+      JSON.stringify({
+        filename: 'oversized',
+        workflow: { data: 'x'.repeat(2 * 1024 * 1024) },
+        expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+      })
+    ).toString('base64')
+    const url = new URL(window.location.href)
+    url.searchParams.set('from_local', nonce)
+    url.hash = `${DESKTOP_HANDOFF_HASH}${encoded}`
+
+    await expect(captureDesktopWorkflowHandoff(url)).resolves.toBe(false)
+    expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
+  })
+
+  it('refuses the handoff when browser history cannot remove its payload', async () => {
+    const nonce = crypto.randomUUID()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'my-workflow',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new DOMException('History update denied', 'SecurityError')
+    })
+
+    await expect(
+      captureDesktopWorkflowHandoff(new URL(destination))
+    ).resolves.toBe(false)
     expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
   })
 

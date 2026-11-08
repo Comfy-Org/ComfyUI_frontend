@@ -81,10 +81,11 @@ async function takeRelayDestination(
   const file = transferFile(nonce)
   const response = await api.getUserData(file)
   if (!response.ok) return undefined
-  const record = zRelayRecord.safeParse(await response.json())
-  if (!record.success || record.data.expiresAt <= Date.now()) return undefined
+  const record = zRelayRecord.safeParse(await response.json().catch(() => null))
   const removed = await api.deleteUserData(file)
-  return removed.ok ? record.data.destination : undefined
+  if (!removed.ok || !record.success || record.data.expiresAt <= Date.now())
+    return undefined
+  return record.data.destination
 }
 
 async function relayWorkflow(url: URL): Promise<boolean> {

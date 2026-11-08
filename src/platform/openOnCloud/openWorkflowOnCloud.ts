@@ -1,10 +1,10 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import {
   cloudEditorUrl,
   cloudOrigin,
-  handsOffThroughDesktopRelay,
   localHandoffWorkflow,
   zLocalHandoffReady
 } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -128,7 +128,7 @@ export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (handsOffThroughDesktopRelay()) return openFromDesktop(tabs, filename)
+  if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
 
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))

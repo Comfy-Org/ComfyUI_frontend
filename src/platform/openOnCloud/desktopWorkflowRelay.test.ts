@@ -118,7 +118,11 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
-  it.for<{ name: string; arrange: (relay: string) => string | void }>([
+  it.for<{
+    name: string
+    arrange: (relay: string) => string | void
+    deleteAttempts?: number
+  }>([
     {
       name: 'a nonce that is not a uuid',
       arrange: (relay) => {
@@ -144,12 +148,14 @@ describe(handleDesktopWorkflowHandoff, () => {
     },
     {
       name: 'an expired transfer',
+      deleteAttempts: 1,
       arrange: () => {
         vi.setSystemTime(Date.now() + 11 * 60_000)
       }
     },
     {
       name: 'a destination outside Comfy Cloud',
+      deleteAttempts: 1,
       arrange: () => {
         vi.mocked(api.getUserData).mockResolvedValue(
           Response.json({
@@ -160,7 +166,15 @@ describe(handleDesktopWorkflowHandoff, () => {
       }
     },
     {
+      name: 'a transfer with malformed JSON',
+      deleteAttempts: 1,
+      arrange: () => {
+        vi.mocked(api.getUserData).mockResolvedValue(new Response('{'))
+      }
+    },
+    {
       name: 'a transfer that cannot be removed',
+      deleteAttempts: 1,
       arrange: () => {
         vi.mocked(api.deleteUserData).mockResolvedValue(
           new Response(null, { status: 500 })
@@ -173,15 +187,19 @@ describe(handleDesktopWorkflowHandoff, () => {
         vi.mocked(api.getUserData).mockRejectedValue(new TypeError('offline'))
       }
     }
-  ])('refuses $name and says the transfer failed', async ({ arrange }) => {
-    const { relay } = await stagedRelay()
-    openAt(arrange(relay) ?? relay)
-    const replace = relayed()
-    const splash = showSplash()
+  ])(
+    'refuses $name and says the transfer failed',
+    async ({ arrange, deleteAttempts = 0 }) => {
+      const { relay } = await stagedRelay()
+      openAt(arrange(relay) ?? relay)
+      const replace = relayed()
+      const splash = showSplash()
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+      await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
-    expect(replace).not.toHaveBeenCalled()
-    expect(splash.textContent).not.toBe('')
-  })
+      expect(replace).not.toHaveBeenCalled()
+      expect(api.deleteUserData).toHaveBeenCalledTimes(deleteAttempts)
+      expect(splash.textContent).not.toBe('')
+    }
+  )
 })

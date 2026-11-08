@@ -79,15 +79,15 @@ export async function captureDesktopWorkflowHandoff(
   if (!url.hash.startsWith(DESKTOP_HANDOFF_HASH)) return false
   const encoded = url.hash.slice(DESKTOP_HANDOFF_HASH.length)
   url.hash = ''
-  window.history.replaceState(null, '', url.href)
-  const nonce = url.searchParams.get(LOCAL_HANDOFF_PARAM)
-  if (
-    !nonce ||
-    !z.uuid().safeParse(nonce).success ||
-    encoded.length > MAX_ENCODED_LENGTH
-  )
-    return false
   try {
+    window.history.replaceState(null, '', url.href)
+    const nonce = url.searchParams.get(LOCAL_HANDOFF_PARAM)
+    if (
+      !nonce ||
+      !z.uuid().safeParse(nonce).success ||
+      encoded.length > MAX_ENCODED_LENGTH
+    )
+      return false
     const bytes = Uint8Array.from(atob(encoded), (character) =>
       character.charCodeAt(0)
     )
