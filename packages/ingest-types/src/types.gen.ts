@@ -3048,28 +3048,36 @@ export type NextCharge = {
  */
 export type ModelUploadStarted = {
   /**
-   * When `upload_url` stops working (15 minutes after the answer).
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
    */
-  expires_at: string
+  upload_id: string
   /**
-   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
+   */
+  upload_url: string
+  method: 'PUT'
+  /**
+   * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
   headers: {
     [key: string]: string
   }
   /**
-   * The largest file an upload accepts, 2147483648 (2 GiB).
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
+   */
+  expires_at: string
+  /**
+   * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
    */
   max_size_bytes: number
-  method: 'PUT'
   /**
-   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   * Present only for a resumable session. When absent, send one PUT with the returned headers.
    */
-  upload_id: string
+  upload_mode?: 'resumable'
   /**
-   * Signed URL for exactly one staged object; works until `expires_at`.
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
    */
-  upload_url: string
+  chunk_size_bytes?: number
 }
 
 /**
@@ -11076,13 +11084,23 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * The file's size, 1 to 2147483648 (2 GiB).
+     * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
+    /**
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
     tags: Array<string>
+  }
+  headers?: {
+    /**
+     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     */
+    Origin?: string
   }
   path?: never
   query?: never
