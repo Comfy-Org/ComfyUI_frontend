@@ -160,6 +160,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
 
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
+  let disposed = false
 
   function armPaymentWatch() {
     if (stopWatch) return
@@ -173,6 +174,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     const setupUrl = ports.autoTopUpSetupUrl
       ? await ports.autoTopUpSetupUrl().catch(() => null)
       : null
+    if (disposed) return
     dispatch(
       setupUrl === null
         ? { type: 'payment_landed' }
@@ -225,6 +227,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   }
 
   onScopeDispose(() => {
+    disposed = true
     quoteScope?.abort()
     checkoutScope?.abort()
     stopWatch?.()
