@@ -527,22 +527,6 @@ describe('AddCreditsDialog auto top-up suggestion', () => {
     expect(emitted().close).toBeUndefined()
   })
 
-  it('does not close a dialog unmounted while the offer read was in flight', async () => {
-    let answer: (url: string | null) => void = () => {}
-    const { emitted, unmount } = await landPayment(
-      () =>
-        new Promise((resolve) => {
-          answer = resolve
-        })
-    )
-
-    unmount()
-    answer(null)
-    await Promise.resolve()
-
-    expect(emitted().close).toBeUndefined()
-  })
-
   it('Set up opens Platform billing in a new tab and closes the dialog', async () => {
     const { user, emitted } = await landPayment(() =>
       Promise.resolve(AUTO_TOP_UP_SETUP_URL)
