@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -14,6 +14,7 @@ import type {
   SavedPaymentMethod
 } from '@comfyorg/billing-core'
 import type { BillingResult } from '@comfyorg/account-core/billing'
+import { BillingAutoTopUpCard } from '@comfyorg/account-ui/billing'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
@@ -25,8 +26,9 @@ import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
-import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
-import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
+import { CreditBannerHarness } from '@/platform/billing/__tests__/CreditBannerHarness'
+
+import { useAutoTopUpCardSection } from './useAutoTopUpCardSection'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
@@ -97,6 +99,23 @@ function i18nOptions() {
   }
 }
 
+const AutoTopUpCard = {
+  setup() {
+    const card = useAutoTopUpCardSection(() => true)
+    return () =>
+      h(BillingAutoTopUpCard, {
+        state: card.state.value,
+        offView: card.offView.value,
+        setup: card.setup.value,
+        copy: card.copy.value,
+        locale: 'en',
+        actionHref: card.href.value,
+        onAction: card.track,
+        onRetry: card.retry
+      })
+  }
+}
+
 function renderCard(
   settings: AutoReloadSettings,
   setup: AutoTopUpSetup | null = null
@@ -109,7 +128,7 @@ function renderCard(
   )
   return {
     setupRef,
-    ...render(BillingAutoTopUpCard, i18nOptions())
+    ...render(AutoTopUpCard, i18nOptions())
   }
 }
 
@@ -139,7 +158,7 @@ async function returnToTab() {
   await setVisibility('visible')
 }
 
-describe('BillingAutoTopUpCard', () => {
+describe('useAutoTopUpCardSection', () => {
   it('reports no view while the read is shared with a banner that mounted first', async () => {
     activateBillingScope('actor-a', 'workspace-a')
     vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(configured)
@@ -148,7 +167,7 @@ describe('BillingAutoTopUpCard', () => {
     })
     useBillingCapabilities().autoTopUpEnabled = autoTopUpEnabledFact(true)
     useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(true)
-    render(BillingLocalCreditBanner, i18nOptions())
+    render(CreditBannerHarness, i18nOptions())
     await vi.waitFor(() =>
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     )
@@ -410,6 +429,24 @@ describe('BillingAutoTopUpCard', () => {
 
     expect(trackedEvents()).not.toHaveBeenCalled()
     await screen.findByText("Couldn't load auto top-up.")
+    expect(trackedEvents()).not.toHaveBeenCalled()
+  })
+
+  it('reads nothing and reports no view while the card is hidden', async () => {
+    activateBillingScope('actor-a', 'workspace-a')
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(configured)
+    render(
+      {
+        setup() {
+          useAutoTopUpCardSection(() => false)
+          return () => null
+        }
+      },
+      i18nOptions()
+    )
+    await nextTick()
+
+    expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
     expect(trackedEvents()).not.toHaveBeenCalled()
   })
 

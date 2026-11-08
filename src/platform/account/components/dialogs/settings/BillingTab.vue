@@ -1,30 +1,50 @@
 <template>
   <div class="flex flex-col gap-12 pt-7 pb-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
-    <BillingPausedBanner
-      :can-manage-billing="capabilities.canManageBilling.value"
+    <BillingBanner
+      v-if="isPaused"
+      :view="pausedView(capabilities.canManageBilling.value)"
+      :copy="bannerCopy"
+      :loading="isUpdatingPayment"
+      @action="updatePayment"
     />
-    <BillingPlanCheckoutBanner
-      :banner="planCheckout.banner.value"
+    <BillingBanner
+      v-if="planCheckout.banner.value"
+      :view="planCheckoutBannerView(planCheckout.banner.value, bannerCopy)"
+      :copy="bannerCopy"
       @dismiss="planCheckout.dismiss"
     />
-    <BillingTopupCheckoutBanner
-      :banner="topupCheckout.banner.value"
-      :can-top-up="capabilities.canTopUp.value"
+    <BillingBanner
+      v-if="topupCheckout.banner.value"
+      :view="
+        topupCheckoutBannerView(
+          topupCheckout.banner.value,
+          topupBannerCopy,
+          capabilities.canTopUp.value
+        )
+      "
+      :copy="topupBannerCopy"
       :add-credits-variant="addCreditsVariant"
       @dismiss="topupCheckout.dismiss"
-      @add-credits="addCredits('settings_billing_panel')"
+      @action="addCredits('settings_billing_panel')"
     />
-    <BillingParkedBanner
-      :parked="
+    <BillingBanner
+      v-if="
         capabilities.hasParkedBillingOperation.value &&
         capabilities.canManageBilling.value
       "
+      :view="parkedView"
+      :copy="bannerCopy"
     />
     <BillingStatusBanner section="billing" />
-    <BillingLocalCreditBanner
-      :suppressed="suppressCreditBanner"
+    <BillingBanner
+      v-if="creditBanner"
+      :view="creditBanner"
+      :copy="creditBannerCopy"
+      :loading="isUpdatingCreditPayment"
       :add-credits-variant="creditBannerAddCreditsVariant"
+      @action="actOnCreditBanner"
+      @dismiss="dismissCreditBanner"
     />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
@@ -70,7 +90,7 @@
         <template #action="{ action: shown, label, variant }">
           <Button
             as="a"
-            :href="shown === 'contactSales' ? CONTACT_SALES_URL : plansHref"
+            :href="planActionHref(shown)"
             target="_blank"
             rel="noopener"
             :variant
@@ -106,9 +126,22 @@
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
-      <BillingAutoTopUpMemberCard
+      <BillingAutoTopUpCard
+        v-if="autoTopUpSection.kind === 'card'"
+        :state="autoTopUpCardState"
+        :off-view="autoTopUpOffView"
+        :setup="autoTopUpSetup"
+        :copy="autoTopUpCardCopy"
+        :locale
+        :action-href="autoTopUpHref"
+        @action="trackAutoTopUp"
+        @retry="retryAutoTopUp"
+      />
+      <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
+        :copy="autoTopUpMemberCopy"
+        :view="capabilities.autoTopUpMemberView.value"
+        :locale
       />
     </section>
 
@@ -201,15 +234,8 @@ import { useMessageSupport } from '@/platform/billing/subscription/composables/u
 import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
-import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
-import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
-import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
-import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
-import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
-import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
-import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   addCreditsAvailability,
@@ -221,9 +247,14 @@ import {
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
 import {
+  BillingAutoTopUpCard,
+  BillingAutoTopUpMemberBlock,
+  BillingBanner,
   BillingCreditsCard,
   BillingPlanRow,
-  suppressesCreditBanners
+  planCheckoutBannerView,
+  suppressesCreditBanners,
+  topupCheckoutBannerView
 } from '@comfyorg/account-ui/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
@@ -235,6 +266,11 @@ import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupC
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
+import { useAutoTopUpCardSection } from '@/platform/billing/composables/useAutoTopUpCardSection'
+import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
+import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
+import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -252,6 +288,20 @@ const suppressCreditBanner = computed(() =>
     ...(topupCheckout.banner.value ? (['topupCheckout'] as const) : [])
   ])
 )
+const {
+  copy: bannerCopy,
+  topupCopy: topupBannerCopy,
+  pausedView,
+  parkedView
+} = useBillingBannerCopy()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const {
+  view: creditBanner,
+  copy: creditBannerCopy,
+  isUpdatingPayment: isUpdatingCreditPayment,
+  act: actOnCreditBanner,
+  dismiss: dismissCreditBanner
+} = useCreditBanner(suppressCreditBanner)
 const { state: planRow } = useBillingPlanRow()
 const planRowCopy = usePlanRowCopy()
 const { locale } = useI18n()
@@ -301,6 +351,18 @@ const autoTopUpSection = computed(() =>
       capabilities.canViewAutoTopUpMemberNotice.value
   })
 )
+const {
+  state: autoTopUpCardState,
+  offView: autoTopUpOffView,
+  setup: autoTopUpSetup,
+  copy: autoTopUpCardCopy,
+  href: autoTopUpHref,
+  track: trackAutoTopUp,
+  retry: retryAutoTopUp
+} = useAutoTopUpCardSection(
+  () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
+)
+const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -334,6 +396,10 @@ const { href: plansHref, track: trackPlans } = usePlatformHandoff(
   '/profile/billing/plans',
   { target: 'plans' }
 )
+
+function planActionHref(shown: PlanRowAction) {
+  return shown === 'contactSales' ? CONTACT_SALES_URL : plansHref.value
+}
 
 function trackPlanAction(shown: PlanRowAction) {
   if (shown !== 'contactSales') trackPlans()

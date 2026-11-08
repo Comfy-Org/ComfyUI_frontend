@@ -20,7 +20,7 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
+import { CreditBannerHarness } from '@/platform/billing/__tests__/CreditBannerHarness'
 
 const wire: { body: unknown } = { body: {} }
 
@@ -147,12 +147,12 @@ beforeEach(() => {
   workspace.workspaceType = computed(() => 'team')
 })
 
-describe('BillingLocalCreditBanner from a served capabilities read', () => {
+describe('useCreditBanner from a served capabilities read', () => {
   it('shows the purchases-paused owner banner from the wire reason', async () => {
     wire.body = capabilitiesBody({ can_top_up: 'topup_purchases_paused' })
     await useBillingCapabilities().refresh()
 
-    render(BillingLocalCreditBanner, {
+    render(CreditBannerHarness, {
       global: {
         plugins: [
           createI18n({
@@ -164,7 +164,7 @@ describe('BillingLocalCreditBanner from a served capabilities read', () => {
       }
     })
 
-    const banner = await screen.findByTestId('billing-local-credit-banner')
+    const banner = await screen.findByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent(
       "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     )
