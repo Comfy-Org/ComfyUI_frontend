@@ -10,8 +10,9 @@ The package ships ES modules and type declarations only. It has no CSS of its
 own: components render Tailwind 4 utility classes, and the host's Tailwind
 build generates them.
 
-1. Install the peers: `vue`, `@vueuse/core`, `reka-ui`, `@comfyorg/design-system`
-   and `tailwindcss`. Add `@stripe/stripe-js` only if you render
+1. Install the peers: `vue`, `@vueuse/core`, `@vueuse/integrations`, `reka-ui`,
+   `primeicons`, `@comfyorg/design-system` and `tailwindcss`. These components
+   do not need the `primeicons` CSS. Add `@stripe/stripe-js` only if you render
    `./billing/stripe` or `./billing/checkout`.
 2. Import the design-system CSS in the stylesheet Tailwind processes. It brings
    the theme tokens (`bg-background`, `text-muted-foreground`, ...) and the
