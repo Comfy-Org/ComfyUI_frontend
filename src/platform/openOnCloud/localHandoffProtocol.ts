@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const LOCAL_HANDOFF_PARAM = 'from_local'
+export const LOCAL_HANDOFF_PARAM = 'from_local'
 
 const READY = 'comfy-local-handoff:ready'
 const WORKFLOW = 'comfy-local-handoff:workflow'
@@ -12,14 +12,19 @@ export const zLocalHandoffReady = z.object({
   nonce: z.string()
 })
 
-const zLocalHandoffWorkflow = z.object({
+export const zLocalHandoffWorkflow = z.object({
   type: z.literal(WORKFLOW),
   nonce: z.string(),
   filename: z.string(),
   workflow: z.unknown()
 })
 
+type LocalHandoffReady = z.infer<typeof zLocalHandoffReady>
 type LocalHandoffWorkflow = z.infer<typeof zLocalHandoffWorkflow>
+
+export function localHandoffReady(nonce: string): LocalHandoffReady {
+  return { type: READY, nonce }
+}
 
 export function localHandoffWorkflow(
   nonce: string,
