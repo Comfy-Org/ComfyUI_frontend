@@ -38,13 +38,16 @@ import { prepareTemplateInputs } from '@/platform/workflow/templates/services/te
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
+type FetchedTemplate =
+  | { strict: true; json: ComfyWorkflowJSON }
+  | { strict: false; json: LegacyLoadableWorkflow }
+
 export type PreparedWorkflowTemplate = {
   id: string
   sourceModule: string
   workflowName: string
   controller: AbortController
-  data: {
-    json: ComfyWorkflowJSON | LegacyLoadableWorkflow
+  data: FetchedTemplate & {
     template:
       | ReturnType<
           typeof useWorkflowTemplatesStore
@@ -211,7 +214,7 @@ export function useTemplateWorkflows() {
   ) {
     const toast = useToast()
     const progressToastId = createToastId()
-    let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
+    let preparedJson = workflow
     const errors: unknown[] = []
     try {
       const result = await prepareTemplateInputs(
@@ -262,29 +265,18 @@ export function useTemplateWorkflows() {
     const fetched = await fetchTemplateJson(id, sourceModule, signal)
     signal.throwIfAborted()
     if (!fetched) return null
-    const { json } = fetched
-
     const template = workflowTemplatesStore.enhancedTemplates.find(
       (template) =>
         template.name === id && template.sourceModule === sourceModule
     )
-    const inputs = template?.io?.inputs
-    if (isCloud || sourceModule !== 'default' || !inputs?.length)
-      return { json, template }
-
-    return {
-      json: fetched.strict
-        ? await withPreparedSampleInputs(fetched.json, inputs, signal)
-        : json,
-      template
-    }
+    return { ...fetched, template }
   }
 
   async function loadTemplateGraph(
     {
       json,
       template
-    }: NonNullable<Awaited<ReturnType<typeof loadTemplateData>>>,
+    }: Pick<PreparedWorkflowTemplate['data'], 'json' | 'template'>,
     workflowName: string,
     sourceModule: string
   ): Promise<TemplateLoadResult> {
@@ -369,10 +361,22 @@ export function useTemplateWorkflows() {
   }
 
   async function openPreparedWorkflowTemplate(
-    prepared: PreparedWorkflowTemplate
+    prepared: PreparedWorkflowTemplate,
+    { downloadAssets = !isDesktop } = {}
   ): Promise<TemplateLoadResult> {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
+      controller.signal.throwIfAborted()
+      const inputs = data.template?.io?.inputs
+      const json =
+        downloadAssets &&
+        !isCloud &&
+        sourceModule === 'default' &&
+        data.strict &&
+        inputs?.length
+          ? await withPreparedSampleInputs(data.json, inputs, controller.signal)
+          : data.json
+      controller.signal.throwIfAborted()
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
 
@@ -382,8 +386,12 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      startTemplateInputDownloads(id, sourceModule)
-      return await loadTemplateGraph(data, workflowName, sourceModule)
+      if (downloadAssets) startTemplateInputDownloads(id, sourceModule)
+      return await loadTemplateGraph(
+        { ...data, json },
+        workflowName,
+        sourceModule
+      )
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
@@ -409,19 +417,6 @@ export function useTemplateWorkflows() {
     if (!prepared) return 'not-started'
     return openPreparedWorkflowTemplate(prepared)
   }
-
-  /**
-   * Fetches template JSON from the appropriate endpoint
-   */
-  /**
-   * The payload plus whether strict validation accepted it. Sample-input
-   * preparation needs a strictly valid workflow, and carrying the answer out
-   * of here keeps it from parsing the same payload a second time - which also
-   * reported the schema warning twice for a legacy template.
-   */
-  type FetchedTemplate =
-    | { strict: true; json: ComfyWorkflowJSON }
-    | { strict: false; json: LegacyLoadableWorkflow }
 
   async function fetchTemplateJson(
     id: string,

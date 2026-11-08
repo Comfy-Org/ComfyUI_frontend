@@ -56,7 +56,7 @@ const fixtures = vi.hoisted(() => {
     workflowName: template.title,
     controller: new AbortController(),
     data: {
-      template: undefined,
+      template,
       json: {
         nodes: [
           {
@@ -468,7 +468,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       within(requirements).queryByRole('region', { name: 'Input Assets' })
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(screen.getByRole('button', { name: 'Just open' }))
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
@@ -486,7 +486,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(within(assets).getByText(fixtures.inputAsset.filename)).toBeVisible()
     expect(within(assets).queryByRole('button')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(screen.getByRole('button', { name: 'Just open' }))
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
@@ -502,28 +502,29 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       screen.queryByRole('region', { name: 'Input Assets' })
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(screen.getByRole('button', { name: 'Just open' }))
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
     expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
   })
 
-  it('keeps Open now passive for idle models', async () => {
+  it('keeps Just open passive for idle models', async () => {
     const { user } = await clickTemplateCardAfterRender()
-    await user.click(await screen.findByRole('button', { name: 'Open now' }))
+    await user.click(await screen.findByRole('button', { name: 'Just open' }))
 
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
     expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
     expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
-      fixtures.prepared
+      fixtures.prepared,
+      { downloadAssets: false }
     )
     expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
   })
 
-  it('starts eligible rows before Download models & open opens the workflow', async () => {
+  it('starts eligible rows before Download assets & open opens the workflow', async () => {
     mocks.resolveAvailability.mockResolvedValueOnce(
       [
         fixtures.activeModel,
@@ -557,7 +558,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     })
     const { user } = await clickTemplateCardAfterRender()
     await user.click(
-      await screen.findByRole('button', { name: /^Download models & open/ })
+      await screen.findByRole('button', { name: /^Download assets & open/ })
     )
 
     await waitFor(() => {
@@ -565,7 +566,8 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     })
     expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
     expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
-      fixtures.prepared
+      fixtures.prepared,
+      { downloadAssets: true }
     )
     expect(mocks.rowDownloadRequest.mock.calls).toEqual([
       [fixtures.activeModel],
@@ -574,6 +576,69 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.rowDownloadRequest.mock.invocationCallOrder[1]).toBeLessThan(
       mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
     )
+  })
+
+  it('offers the asset choice for missing media without missing models', async () => {
+    mocks.resolveAvailability.mockResolvedValueOnce(
+      [
+        fixtures.activeModel,
+        fixtures.failedModel,
+        fixtures.activeDownloadModel,
+        fixtures.doneModel
+      ].map((model) => ({ model, status: 'installed' as const }))
+    )
+    const { user } = await clickTemplateCardAfterRender()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Download assets & open' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared,
+        { downloadAssets: true }
+      )
+    })
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+  })
+
+  it('offers the asset choice for catalog samples when the native bridge has no assets', async () => {
+    mocks.getTemplateInputAssets.mockResolvedValueOnce([])
+    mocks.resolveAvailability.mockResolvedValueOnce([])
+    const prepared = {
+      ...fixtures.prepared,
+      data: {
+        ...fixtures.prepared.data,
+        template: {
+          ...fixtures.template,
+          io: {
+            inputs: [
+              {
+                nodeId: 1,
+                nodeType: 'LoadImage',
+                file: 'subject.png',
+                mediaType: 'image' as const
+              }
+            ]
+          }
+        }
+      }
+    }
+    mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
+    const { user } = await clickTemplateCardAfterRender()
+
+    expect(
+      await screen.findByRole('button', { name: 'Download assets & open' })
+    ).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Just open' }))
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        prepared,
+        { downloadAssets: false }
+      )
+    })
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
   })
 
   it('applies the resolved model size to the visible row', async () => {
@@ -683,7 +748,8 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
   })
 
-  it('opens a model-ready Desktop template directly', async () => {
+  it('opens an asset-ready Desktop template directly', async () => {
+    mocks.getTemplateInputAssets.mockResolvedValue([])
     mocks.resolveAvailability.mockResolvedValueOnce([
       { model: fixtures.activeModel, status: 'installed' }
     ])
@@ -696,7 +762,8 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })
 
-  it('opens directly when inventory cannot confirm a missing model', async () => {
+  it('opens directly when inventory cannot confirm missing models or inputs', async () => {
+    mocks.getTemplateInputAssets.mockResolvedValue([])
     mocks.resolveAvailability.mockResolvedValueOnce([
       { model: fixtures.activeModel, status: 'unknown' }
     ])
@@ -711,6 +778,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   })
 
   it('lets a later open proceed after one does not start', async () => {
+    mocks.getTemplateInputAssets.mockResolvedValue([])
     mocks.resolveAvailability.mockResolvedValue([
       { model: fixtures.activeModel, status: 'installed' }
     ])

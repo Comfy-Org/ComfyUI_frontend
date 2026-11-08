@@ -414,13 +414,19 @@ describe('useTemplateWorkflows', () => {
     'asks the host for input assets $expectedCalls times for $sourceModule',
     async ({ sourceModule, expectedCalls }) => {
       mockDistributionIsDesktop.value = true
-      const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+      const { loader } = mountTemplateWorkflows()
       mockWorkflowTemplatesStore.isLoaded = true
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        sourceModule
+      )
+      assert.exists(prepared)
 
-      await loadWorkflowTemplate('template1', sourceModule)
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
       await flushPromises()
 
-      // Only first-party templates may ask the host to fetch files.
       expect(mockInputAssets.resolveTemplateInputAssets).toHaveBeenCalledTimes(
         expectedCalls
       )
@@ -785,6 +791,69 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
     return graph
   }
+
+  it('does not download or upload Desktop samples before choosing how to open', async () => {
+    mockDistributionIsDesktop.value = true
+    addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(
+      mockInputAssets.startMissingTemplateInputDownloads
+    ).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('opens Desktop templates without starting asset downloads by default', async () => {
+    mockDistributionIsDesktop.value = true
+    const graph = addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+
+    expect(await loader.loadWorkflowTemplate('video', 'default')).toBe('loaded')
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(
+      mockInputAssets.startMissingTemplateInputDownloads
+    ).not.toHaveBeenCalled()
+    expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, 'video', {
+      openSource: 'template'
+    })
+  })
+
+  it('prepares Desktop samples and starts native input downloads only after opting in', async () => {
+    mockDistributionIsDesktop.value = true
+    const graph = addVideoTemplate()
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).startsWith('mock-internal-url')) return Response.json([])
+      if (String(url).endsWith('.mp4')) return new Response('video')
+      return Response.json(graph)
+    })
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
+    ).toBe('loaded')
+    await flushPromises()
+
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    expect(
+      mockInputAssets.startMissingTemplateInputDownloads
+    ).toHaveBeenCalledOnce()
+    expect(app.loadGraphData).toHaveBeenCalledOnce()
+  })
 
   it.for([
     { restoreNamed: false, positional: 'kitten_cop.mp4', named: 'stale.mp4' },

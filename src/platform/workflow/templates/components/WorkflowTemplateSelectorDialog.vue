@@ -412,9 +412,9 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :model-setup="activeDetailModelSetup"
+        :asset-setup="activeDetailAssetSetup"
         @open-template="onOpenTemplate"
-        @download-models-and-open="onDownloadModelsAndOpen"
+        @download-assets-and-open="onDownloadAssetsAndOpen"
         @download-model="onDownloadModel"
       >
         <template #preview>
@@ -495,7 +495,7 @@ import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/template
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,
-  TemplateModelSetup
+  TemplateAssetSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
@@ -1144,11 +1144,16 @@ const activeDetailModelDownloadCandidates = computed<
   )
 })
 
-const activeDetailModelDownloadsAvailable = computed(
-  () => activeDetailModelDownloadCandidates.value.length > 0
-)
+const activeDetailHasInputDownloads = computed(() => {
+  const detail = activeDetail.value
+  return Boolean(
+    detail &&
+    ((detail.prepared.sourceModule === 'default' &&
+      detail.prepared.data.template?.io?.inputs?.length) ||
+      detail.inputAssets.some(({ availability }) => availability === 'missing'))
+  )
+})
 
-/** Withheld unless every candidate declares a size: a partial total reads as complete. */
 const activeDetailModelRequirementsMet = computed(() => {
   const setup = activeDetail.value?.modelSetup
   return Boolean(
@@ -1159,12 +1164,13 @@ const activeDetailModelRequirementsMet = computed(() => {
   )
 })
 
-const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+const activeDetailAssetSetup = computed<TemplateAssetSetup | undefined>(() => {
   const setup = activeDetail.value?.modelSetup
   if (!setup) return undefined
   if (setup.pending) return { state: 'resolving' }
+  if (activeDetailHasInputDownloads.value) return { state: 'startable' }
   if (activeDetailModelRequirementsMet.value) return undefined
-  if (!activeDetailModelDownloadsAvailable.value) return undefined
+  if (!activeDetailModelDownloadCandidates.value.length) return undefined
 
   const total = remainingModelDownloadTotal(
     setup.result.rows,
@@ -1233,13 +1239,16 @@ async function updateTemplateModelMetadata(
 
 async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
-  generation: number
+  generation: number,
+  downloadAssets = !isDesktop
 ): Promise<void> {
   if (openPending.value || generation !== detailGeneration) return
 
   openPending.value = true
   try {
-    const result = await openPreparedWorkflowTemplate(prepared)
+    const result = await openPreparedWorkflowTemplate(prepared, {
+      downloadAssets
+    })
     if (result === 'not-started') return
 
     templateWasSelected.value = result === 'loaded'
@@ -1249,7 +1258,7 @@ async function openPreparedTemplate(
   }
 }
 
-async function showModelSetupIfNeeded(
+async function showAssetSetupIfNeeded(
   template: TemplateInfo,
   prepared: PreparedWorkflowTemplate,
   generation: number
@@ -1263,22 +1272,23 @@ async function showModelSetupIfNeeded(
     prepared.sourceModule === 'default'
       ? resolveTemplateInputAssets(template.name, () => window.__comfyDesktop2)
       : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
-  if (requirements.length === 0) return false
-
-  // Only the Electron path needs real directories, and resolving them here
-  // rather than mid-dispatch keeps a download from depending on a lookup that
-  // can finish after this view is gone.
-  const [availability, folderPaths] = await Promise.all([
+  const [availability, folderPaths, inputAssets] = await Promise.all([
     resolveModelAvailability(requirements.map(({ model }) => model)),
-    modelDownloadNeedsFolderPaths()
+    requirements.length > 0 && modelDownloadNeedsFolderPaths()
       ? loadFolderPathsOnce().catch(() => ({}))
-      : Promise.resolve({})
+      : Promise.resolve({}),
+    inputAssetsPromise
   ])
   if (generation !== detailGeneration) return true
-  if (!availability.some(({ status }) => status === 'missing')) return false
-
-  const inputAssets = await inputAssetsPromise
-  if (generation !== detailGeneration) return true
+  const hasSampleInputs =
+    prepared.sourceModule === 'default' &&
+    prepared.data.template?.io?.inputs?.length
+  if (
+    !availability.some(({ status }) => status === 'missing') &&
+    !inputAssets.some(({ availability }) => availability === 'missing') &&
+    !hasSampleInputs
+  )
+    return false
 
   const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
   activeDetail.value = {
@@ -1292,7 +1302,7 @@ async function showModelSetupIfNeeded(
         { status: 'aborted' },
         { isDownloadable: isModelDownloadable }
       ),
-      pending: true,
+      pending: requirements.length > 0,
       rowDownloads
     }
   }
@@ -1302,12 +1312,14 @@ async function showModelSetupIfNeeded(
   if (generation !== detailGeneration) return true
   detailView.value?.focus()
 
-  void updateTemplateModelMetadata(
-    generation,
-    controller,
-    requirements,
-    availability
-  )
+  if (requirements.length > 0) {
+    void updateTemplateModelMetadata(
+      generation,
+      controller,
+      requirements,
+      availability
+    )
+  }
   return true
 }
 
@@ -1330,12 +1342,12 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     return
   }
 
-  const didShowModelSetup = await showModelSetupIfNeeded(
+  const didShowAssetSetup = await showAssetSetupIfNeeded(
     template,
     prepared,
     generation
   )
-  if (!didShowModelSetup) await openPreparedTemplate(prepared, generation)
+  if (!didShowAssetSetup) await openPreparedTemplate(prepared, generation)
 }
 
 async function onBackToTemplates() {
@@ -1361,7 +1373,7 @@ function onDownloadModel(rowId: string) {
   if (row?.status === 'downloadable') setup.rowDownloads.request(row.model)
 }
 
-async function onDownloadModelsAndOpen() {
+async function onDownloadAssetsAndOpen() {
   const detail = activeDetail.value
   const setup = detail?.modelSetup
   if (!detail || !setup || setup.pending || openPending.value) return
@@ -1370,7 +1382,7 @@ async function onDownloadModelsAndOpen() {
     setup.rowDownloads.request(row.model)
   }
 
-  await onOpenTemplate()
+  await openPreparedTemplate(detail.prepared, detailGeneration, true)
 }
 
 function onSelectNavItem(value: string | null) {
