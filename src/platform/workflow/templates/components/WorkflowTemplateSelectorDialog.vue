@@ -475,6 +475,7 @@ import type { TemplateSortMode } from '@/platform/workflow/templates/composables
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import {
   isModelDownloadable,
@@ -498,6 +499,7 @@ import type {
   TemplateAssetSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { getTemplateInputPlan } from '@/platform/workflow/templates/services/templateInputService'
 import {
   filterTemplatesByType,
   getTemplateTags,
@@ -1093,10 +1095,22 @@ function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
   }
 }
 
+function getPreparedSampleInputs(prepared: PreparedWorkflowTemplate) {
+  const { data, sourceModule } = prepared
+  const inputs = data.template?.io?.inputs
+  if (sourceModule !== 'default' || !data.strict || !inputs?.length) return []
+
+  const { files } = getTemplateInputPlan(data.json, inputs, {
+    restoreNamed: useSettingStore().get('Comfy.Workflow.NamedValuesRestore')
+  })
+  return [...files.keys()]
+}
+
 function buildTemplateDetailGroups(
   setup: TemplateModelSetupResult,
   rowDownloads: TemplateModelRowDownloads,
-  inputAssets: readonly ComfyTemplateInputAsset[]
+  inputAssets: readonly ComfyTemplateInputAsset[],
+  sampleInputs: ReturnType<typeof getPreparedSampleInputs>
 ): readonly TemplateDetailGroup[] {
   const groups: TemplateDetailGroup[] = []
 
@@ -1111,11 +1125,22 @@ function buildTemplateDetailGroups(
     })
   }
 
-  if (inputAssets.length > 0) {
+  const inputRows = [
+    ...inputAssets.map(toInputDetailRow),
+    ...sampleInputs
+      .filter((file) => !inputAssets.some(({ filename }) => filename === file))
+      .map((file): TemplateDetailRow => ({
+        id: `input:sample:${file}`,
+        kind: 'input',
+        name: file,
+        description: ''
+      }))
+  ]
+  if (inputRows.length > 0) {
     groups.push({
       id: 'input-assets',
       label: t('templateWorkflows.detail.inputAssets'),
-      rows: inputAssets.map(toInputDetailRow)
+      rows: inputRows
     })
   }
 
@@ -1129,7 +1154,8 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
   return buildTemplateDetailGroups(
     detail.modelSetup.result,
     detail.modelSetup.rowDownloads,
-    detail.inputAssets
+    detail.inputAssets,
+    getPreparedSampleInputs(detail.prepared)
   )
 })
 
@@ -1148,8 +1174,7 @@ const activeDetailHasInputDownloads = computed(() => {
   const detail = activeDetail.value
   return Boolean(
     detail &&
-    ((detail.prepared.sourceModule === 'default' &&
-      detail.prepared.data.template?.io?.inputs?.length) ||
+    (getPreparedSampleInputs(detail.prepared).length ||
       detail.inputAssets.some(({ availability }) => availability === 'missing'))
   )
 })
@@ -1280,9 +1305,7 @@ async function showAssetSetupIfNeeded(
     inputAssetsPromise
   ])
   if (generation !== detailGeneration) return true
-  const hasSampleInputs =
-    prepared.sourceModule === 'default' &&
-    prepared.data.template?.io?.inputs?.length
+  const hasSampleInputs = getPreparedSampleInputs(prepared).length > 0
   if (
     !availability.some(({ status }) => status === 'missing') &&
     !inputAssets.some(({ availability }) => availability === 'missing') &&

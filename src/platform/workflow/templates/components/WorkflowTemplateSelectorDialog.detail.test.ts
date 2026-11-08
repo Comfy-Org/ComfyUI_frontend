@@ -56,6 +56,7 @@ const fixtures = vi.hoisted(() => {
     workflowName: template.title,
     controller: new AbortController(),
     data: {
+      strict: true,
       template,
       json: {
         nodes: [
@@ -311,6 +312,48 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
+
+function samplePrepared({
+  strict = true,
+  nodeType = 'LoadImage',
+  sourceRevision = '0123456789abcdef0123456789abcdef01234567'
+}: {
+  strict?: boolean
+  nodeType?: string
+  sourceRevision?: string | null
+} = {}) {
+  return {
+    ...fixtures.prepared,
+    data: {
+      strict,
+      json: {
+        nodes: [
+          {
+            ...fixtures.prepared.data.json.nodes[0],
+            type: nodeType,
+            properties: { models: [] },
+            widgets_values: ['subject.png']
+          }
+        ],
+        links: []
+      },
+      template: {
+        ...fixtures.template,
+        io: {
+          inputs: [
+            {
+              nodeId: 1,
+              nodeType: 'LoadImage',
+              file: 'subject.png',
+              mediaType: 'image' as const,
+              sourceRevision: sourceRevision ?? undefined
+            }
+          ]
+        }
+      }
+    }
+  }
+}
 
 function renderDialog() {
   return render(WorkflowTemplateSelectorDialog, {
@@ -605,31 +648,14 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   it('offers the asset choice for catalog samples when the native bridge has no assets', async () => {
     mocks.getTemplateInputAssets.mockResolvedValueOnce([])
     mocks.resolveAvailability.mockResolvedValueOnce([])
-    const prepared = {
-      ...fixtures.prepared,
-      data: {
-        ...fixtures.prepared.data,
-        template: {
-          ...fixtures.template,
-          io: {
-            inputs: [
-              {
-                nodeId: 1,
-                nodeType: 'LoadImage',
-                file: 'subject.png',
-                mediaType: 'image' as const
-              }
-            ]
-          }
-        }
-      }
-    }
+    const prepared = samplePrepared()
     mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
     const { user } = await clickTemplateCardAfterRender()
 
     expect(
       await screen.findByRole('button', { name: 'Download assets & open' })
     ).toBeEnabled()
+    expect(screen.getByText('subject.png')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Just open' }))
 
     await waitFor(() => {
@@ -638,6 +664,30 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
         { downloadAssets: false }
       )
     })
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'legacy workflows', strict: false },
+    { name: 'unbound catalog samples', nodeType: 'UnsupportedLoader' },
+    { name: 'unpinned catalog samples', sourceRevision: null }
+  ])('does not offer an empty sample download for $name', async (options) => {
+    mocks.getTemplateInputAssets.mockResolvedValueOnce([])
+    mocks.resolveAvailability.mockResolvedValueOnce([])
+    const prepared = samplePrepared(options)
+    mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
+
+    await clickTemplateCardAfterRender()
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        prepared,
+        { downloadAssets: false }
+      )
+    })
+    expect(
+      screen.queryByRole('button', { name: 'Download assets & open' })
+    ).not.toBeInTheDocument()
     expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
   })
 

@@ -696,11 +696,6 @@
       "count": 1
     }
   },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
     "comfy/no-reexports": {
       "count": 1

@@ -843,15 +843,15 @@ describe('useTemplateWorkflows', () => {
         downloadAssets: true
       })
     ).toBe('loaded')
-    await flushPromises()
-
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
       expect.objectContaining({ method: 'POST' })
     )
-    expect(
-      mockInputAssets.startMissingTemplateInputDownloads
-    ).toHaveBeenCalledOnce()
+    await vi.waitFor(() =>
+      expect(
+        mockInputAssets.startMissingTemplateInputDownloads
+      ).toHaveBeenCalledOnce()
+    )
     expect(app.loadGraphData).toHaveBeenCalledOnce()
   })
 

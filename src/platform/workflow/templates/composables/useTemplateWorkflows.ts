@@ -217,17 +217,16 @@ export function useTemplateWorkflows() {
     let preparedJson = workflow
     const errors: unknown[] = []
     try {
-      const result = await prepareTemplateInputs(
-        workflow,
-        inputs,
-        signal,
-        useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
-        () => {
+      const result = await prepareTemplateInputs(workflow, inputs, signal, {
+        restoreNamed: useSettingStore().get(
+          'Comfy.Workflow.NamedValuesRestore'
+        ),
+        onStart: () => {
           toast.loading(t('templateWorkflows.preparingMedia'), {
             id: progressToastId
           })
         }
-      )
+      })
       errors.push(...result.errors)
       preparedJson = result.workflow
       if (result.uploadedCount > 0) {
