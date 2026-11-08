@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import koMessages from '@/locales/ko/main.json' with { type: 'json' }
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { taskService } from '@/platform/tasks/services/taskService'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
@@ -22,7 +23,8 @@ vi.mock(import('@/scripts/api'))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: enMessages },
+  fallbackLocale: 'en',
+  messages: { en: enMessages, ko: koMessages },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -269,6 +271,59 @@ describe('UploadModelDialog file upload', () => {
       )
     })
 
+    it('shows the rate and time left, then reconnecting with Cancel available', async () => {
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+      const { sends, user } = await startUpload()
+      const status = screen.getByRole('status')
+      expect(status).toBeEmptyDOMElement()
+      clock.mockReturnValue(1000)
+      sends[0].options.onProgress(5)
+      expect(await screen.findByText('5 B/s · 1s left')).toBeInTheDocument()
+      expect(status).toBeEmptyDOMElement()
+
+      sends[0].options.onReconnecting?.(true)
+      await vi.waitFor(() =>
+        expect(status).toHaveTextContent('Reconnecting...')
+      )
+      expect(screen.getByRole('status')).toBe(status)
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '50'
+      )
+      expect(screen.queryByText('5 B/s · 1s left')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(sends[0].options.signal.aborted).toBe(true)
+      sends[0].finish({ ok: false, reason: 'cancelled' })
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Upload canceled.'
+      )
+    })
+
+    it('translates the time-left unit when the active locale changes', async () => {
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+      const { sends } = await startUpload()
+      onTestFinished(() => {
+        i18n.global.locale.value = 'en'
+        sends[0].finish({ ok: false, reason: 'cancelled' })
+      })
+      i18n.global.locale.value = 'ko'
+      clock.mockReturnValue(1000)
+      sends[0].options.onProgress(5)
+
+      expect(await screen.findByText(/1초/)).toBeInTheDocument()
+    })
+
+    it('offers a new upload after the storage session expires', async () => {
+      const { sends, user } = await startUpload()
+      sends[0].finish({ ok: false, reason: 'sessionExpired' })
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'This upload expired. Try again to start a new upload.'
+      )
+      await user.click(screen.getByRole('button', { name: 'Try again' }))
+      expect(sends).toHaveLength(2)
+      sends[1].finish({ ok: false, reason: 'cancelled' })
+    })
+
     it('stops the transfer when Cancel is pressed', async () => {
       const { sends, user } = await startUpload()
 
@@ -463,5 +518,102 @@ describe('UploadModelDialog file upload', () => {
       ).toBeInTheDocument()
       expect(sends).toHaveLength(1)
     })
+  })
+})
+
+class BucketRequest {
+  static sent: BucketRequest[] = []
+  status = 0
+  range: string | null = null
+  headers: Record<string, string> = {}
+  upload: { onprogress: ((event: { loaded: number }) => void) | null } = {
+    onprogress: null
+  }
+  onload: (() => void) | null = null
+  onerror: (() => void) | null = null
+  onabort: (() => void) | null = null
+  onloadend: (() => void) | null = null
+  open() {}
+  setRequestHeader(name: string, value: string) {
+    this.headers[name] = value
+  }
+  getResponseHeader() {
+    return this.range
+  }
+  send() {
+    BucketRequest.sent.push(this)
+  }
+  abort() {
+    this.onabort?.()
+    this.onloadend?.()
+  }
+  finish(status: number, range: string | null = null) {
+    this.status = status
+    this.range = range
+    this.onload?.()
+    this.onloadend?.()
+  }
+  fail() {
+    this.onerror?.()
+    this.onloadend?.()
+  }
+}
+
+describe('model import with a dropped storage connection', () => {
+  it('resumes through the real transfer API and finishes in the library', async () => {
+    BucketRequest.sent = []
+    vi.stubGlobal('XMLHttpRequest', BucketRequest)
+    vi.mocked(api.getModelFolders).mockResolvedValue([
+      { name: 'loras', folders: [] }
+    ])
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            upload_id: '2f4b8c1e-6a0d-4e7b-9c3a-1d5e8f7a9b20',
+            upload_url: 'https://storage.example.com/session',
+            method: 'PUT',
+            headers: {},
+            expires_at: '2026-11-13T17:00:00Z',
+            max_size_bytes: 26_843_545_600,
+            upload_mode: 'resumable',
+            chunk_size_bytes: 4
+          },
+          { status: 201 }
+        )
+      )
+      .mockResolvedValueOnce(
+        Response.json({ task_id: TASK_ID, status: 'created' }, { status: 202 })
+      )
+    uploadsOn()
+    const user = userEvent.setup()
+    renderDialog()
+    await user.upload(screen.getByTestId('upload-model-file-input'), lora)
+    await user.click(screen.getByRole('button', { name: 'Upload' }))
+    await vi.waitFor(() => expect(BucketRequest.sent).toHaveLength(1))
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    BucketRequest.sent[0].fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(screen.getByRole('status')).toHaveTextContent('Reconnecting...')
+    expect(BucketRequest.sent[1].headers['Content-Range']).toBe('bytes */10')
+    BucketRequest.sent[1].finish(308, 'bytes=0-1')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(BucketRequest.sent[2].headers['Content-Range']).toBe('bytes 2-5/10')
+    expect(screen.queryByText('Reconnecting...')).not.toBeInTheDocument()
+    BucketRequest.sent[2].finish(308, 'bytes=0-5')
+    await vi.advanceTimersByTimeAsync(0)
+    BucketRequest.sent[3].finish(200)
+    await vi.advanceTimersByTimeAsync(0)
+    vi.useRealTimers()
+    expect(
+      await screen.findByText('Saving to your library...')
+    ).toBeInTheDocument()
+    taskUpdate('completed')
+    expect(
+      await screen.findByRole('button', { name: 'Finish' })
+    ).toBeInTheDocument()
   })
 })

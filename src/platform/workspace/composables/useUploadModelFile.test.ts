@@ -125,7 +125,7 @@ describe('useUploadModelFile', () => {
     const result = upload.upload()
     expect(server.options().tags).toEqual(['models', 'loras'])
     server.options().onProgress(4)
-    expect(upload.state.value).toEqual({
+    expect(upload.state.value).toMatchObject({
       status: 'uploading',
       file: lora,
       sent: 4
@@ -152,6 +152,54 @@ describe('useUploadModelFile', () => {
       taskId: TASK_ID,
       modelType: 'loras'
     })
+  })
+
+  it('clears its rate while reconnecting and measures resumed bytes after the wait', async () => {
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const result = upload.upload()
+
+    clock.mockReturnValue(1000)
+    server.options().onProgress(6)
+    expect(upload.state.value).toMatchObject({
+      status: 'uploading',
+      sent: 6,
+      bytesPerSecond: 6
+    })
+    server.options().onReconnecting?.(true)
+    expect(upload.state.value).toEqual({
+      status: 'reconnecting',
+      file: lora,
+      sent: 6
+    })
+    server.options().onProgress(3)
+    clock.mockReturnValue(61_000)
+    server.options().onReconnecting?.(false)
+    clock.mockReturnValue(62_000)
+    server.options().onProgress(7)
+    expect(upload.state.value).toMatchObject({
+      status: 'uploading',
+      sent: 7,
+      bytesPerSecond: 4
+    })
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+    expect(upload.state.value.status).toBe('saving')
+  })
+
+  it('ignores reconnection updates from an upload canceled by choosing another file', async () => {
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const result = upload.upload()
+    const other = new File(['x'], 'other.safetensors')
+    upload.choose(other)
+    server.options().onReconnecting?.(true)
+    server.finish({ ok: false, reason: 'cancelled' })
+    await result
+    expect(upload.state.value).toEqual({ status: 'chosen', file: other })
   })
 
   it('uploads into the folder the person picked', async () => {
@@ -250,7 +298,8 @@ describe('useUploadModelFile', () => {
   it.for([
     ['privateModelsDisabled', "Your plan doesn't include private models."],
     ['planUnavailable', "Couldn't check your plan. Try again."],
-    ['unsupportedFile', 'Only .safetensors files can be uploaded.']
+    ['unsupportedFile', 'Only .safetensors files can be uploaded.'],
+    ['sessionExpired', 'This upload expired. Try again to start a new upload.']
   ] as const)(
     'says what the server refused when it answers %s',
     async ([reason, copy]) => {
