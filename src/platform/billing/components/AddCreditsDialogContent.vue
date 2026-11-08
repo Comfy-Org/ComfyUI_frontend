@@ -44,10 +44,8 @@ import {
   addCreditsPendingTopup,
   topupCheckoutFailure
 } from '@/platform/billing/addCredits/addCreditsFacts'
-import {
-  handsPopupsToSystemBrowser,
-  reserveBillingTab
-} from '@/platform/billing/billingTab'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
