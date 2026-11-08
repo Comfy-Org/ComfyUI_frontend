@@ -18,7 +18,9 @@ Maintain one effective application keymap. For every reachable focus and mode st
 
 ### Focus determines ownership
 
-Use actual DOM focus to identify the application owner and target instance. DOM ancestry locates that owner; it does not activate a stack of ancestor keymaps. Pointer hover and the last clicked panel do not override focus. Canvas-based editors expose a keyboard-focusable owner. Clicking an editor can focus it, but does not establish a separate active-panel state. When no application owner has focus, only explicitly applicable application-wide assignments can run. Window blur suspends application shortcuts.
+Use actual DOM focus to identify the application input owner. DOM ancestry locates that owner; it does not activate a stack of ancestor keymaps. Pointer hover and the last clicked panel do not override focus. Canvas-based editors expose a keyboard-focusable owner. Clicking an editor can focus it, but does not establish a separate active-panel state. When no application owner has focus, only explicitly applicable application-wide assignments can run. Window blur suspends application shortcuts.
+
+Input ownership and command targets are separate. Instance-local commands require a compatible focused owner and target that instance. Commands with nonlocal targets declare their target policy explicitly: Queue Prompt targets the active workflow, while a bookmark command targets its declared bookmark, which may be in another subgraph. Resolve and retain the target when claiming the input. A command with no valid target is unavailable; neither hover nor a fallback canvas supplies one.
 
 Modes that cannot coexist are mutually exclusive eligibility states. A modal excludes background application assignments, including application-wide assignments. Modal commands may opt into that modal's context explicitly. Nonmodal panels remain reachable through normal keyboard navigation.
 
@@ -33,6 +35,8 @@ Commands register independently of key assignments. Core and extension defaults 
 Each assignment declares its command, keys, and applicability. Applicability uses a bounded model of focus owners, mutually exclusive modes, modal ownership, and editing state. Arbitrary JavaScript predicates and CSS selector specificity do not determine eligibility. If disjointness cannot be established, treat the assignments as conflicting.
 
 Use the same key normalization for validation and dispatch, including platform modifier aliases. Where applicability overlaps, reject duplicate sequences and any sequence that is a prefix of another. Command availability does not excuse a conflict: disabling one command must not expose another assignment.
+
+Use logical `KeyboardEvent.key` identity for application assignments. Keep physical-key declarations inactive until explicitly translated during migration. Commands declare one-shot, repeatable, or held input behavior. One-shot commands ignore repeat events, repeatable commands accept them, and held actions start once. Repeat handling does not select another assignment.
 
 A conflict requires explicit replacement, unbinding, or narrower applicability. Replacement removes or narrows every conflicting assignment and validates the whole result before committing it. An invalid edit or import leaves the current valid keymap unchanged. The same keys may perform different actions only in contexts that cannot be eligible together.
 
@@ -62,17 +66,23 @@ sequenceDiagram
 
 ### Show the effective map in one interface
 
-The shortcut editor presents one flat assignment list with keys, command, human-readable applicability, and status. It includes inactive conflicts and unavailable commands. A current-context view identifies the focused owner and shows what each application binding would do, or that native input owns the interaction. Users do not need to understand scope depth, handler order, or which package registered a command.
+The shortcut editor presents one flat assignment list with keys, command, human-readable applicability, target, and status. It includes inactive conflicts and unavailable commands. A current-context view identifies the focused owner and shows what each application binding would do, or that native input owns the interaction. Users do not need to understand scope depth, handler order, or which package registered a command.
 
 The editor uses the same validated keymap and eligibility rules as dispatch. For example, assigning a canvas-only key already used by an application-wide command requires a visible configuration change. Focusing the canvas cannot silently make the canvas assignment win.
+
+Workflow-stored shortcuts remain workflow declarations, not copies in account preferences. The flat interface identifies and edits those declarations through the workflow's normal edit and undo path. Loading, duplicating, editing, or removing entities updates their proposed assignments through the same validation before activation. Duplicating a bookmark cannot silently take over its original shortcut. Entity removal withdraws its contribution and releases any held action targeting it.
 
 ### Dispatch without arbitration
 
 Let focused controls and component handlers process their input before application shortcut execution. Respect consumed events and native ownership. Execute the unique eligible assignment, or execute no application command. Do not fall through to another binding when a command is unavailable.
 
+Retain the input's originating ownership before component processing. Observing ownership during capture does not execute a command. Component processing may remove eligibility but cannot grant a newly focused owner eligibility for that same keydown. Closing a modal or restoring background focus must not expose a background shortcut to the dismissing key. An explicit editor integration may commit its field and invoke a declared command against its captured target.
+
 Decide synchronously whether an application assignment handles the input. For a handled assignment, prevent the browser default during the original event dispatch, before starting command execution. Do not await command completion or success to make that decision. A recognized pending sequence may also prevent the default in an application-owned context. Do not stop propagation globally to enforce listener order. Cancel pending sequences when ownership changes; never transfer an unfinished sequence to a new owner.
 
-A held action retains its original target. Release it exactly once on key-up, focus or mode loss, modal exclusion, window blur, or target removal. Changing owners does not start an action from a key that was already held. Entity systems handle commands against the focused target; individual entities do not register competing physical-key listeners or own user keymap settings.
+A held action retains its original target. Release it exactly once on key-up, focus or mode loss, modal exclusion, window blur, or target removal. Changing owners does not start an action from a key that was already held. Entity systems handle commands against their declared targets. Entities may contribute workflow shortcut declarations, but do not register competing physical-key listeners or maintain a parallel user keymap.
+
+One assignment may invoke a composite command. Copy, paste, and delete apply one graph operation across the participating entity kinds, including extension-provided groups. Their systems contribute to that operation without separately interpreting its physical key. Consuming the input must not discard part of a mixed core/extension selection.
 
 These are proposed responsibilities, not names of implemented APIs. The native-input branch leaves the browser default intact even when the event reaches the application listener. The application branch has no winner-selection step.
 
@@ -85,22 +95,23 @@ sequenceDiagram
     participant Keymap as Effective keymap
     participant Command as Command and target
     User->>Browser: Press a key
+    Browser->>Dispatch: Record originating ownership without execution
     Browser->>Control: Deliver keydown
     Control->>Control: Process component-owned input
     opt Event continues to application listener
         Control->>Dispatch: Propagate event
-        Dispatch->>Browser: Read focus and modal ownership
-        Browser->>Dispatch: Current owner and target
-        alt Native editing or component-owned input
+        Dispatch->>Browser: Check originating ownership and current exclusions
+        Browser->>Dispatch: Origin and current focus and modal state
+        alt Native or component-owned input, or original ownership lost
             Note over Dispatch,Command: No application command executes
         else Application-owned input
-            Dispatch->>Keymap: Lookup in current context
+            Dispatch->>Keymap: Lookup for originating owner and mode
             Note over Dispatch,Keymap: Modal context excludes background assignments
             Keymap->>Dispatch: At most one assignment
             alt Assignment exists and command is synchronously available
                 Dispatch->>Dispatch: Claim application input synchronously
                 Dispatch->>Browser: preventDefault during original dispatch
-                Dispatch->>Command: Start execution against focused target
+                Dispatch->>Command: Start execution against retained declared target
             else No available command
                 Note over Dispatch,Command: No fallback to another assignment
             end
@@ -115,7 +126,17 @@ sequenceDiagram
 
 Move core and extension application shortcuts through this keymap. Preserve unknown stored assignments as inactive data with a visible reason. They must not execute through an unvalidated fallback dispatcher.
 
-Legacy document and window listeners can bypass focus policy and uniqueness. Provide migration guidance and identify incompatible extensions. A compatibility path cannot claim the conflict-free guarantee while independent listeners can still execute the same input. Capture-first execution and extension ranking are not substitutes for that migration.
+Legacy document and window listeners, canvas or node callback wrappers, and undo veto hooks can bypass focus policy and uniqueness. Provide migration guidance and identify incompatible extensions. Retire interception and its fallback patches together; removing a veto hook must not activate a tracker patch instead. A compatibility path cannot claim the conflict-free guarantee while independent listeners can still execute the same input. Capture-first execution and extension ranking are not substitutes for that migration.
+
+Preserve component-local autocomplete and custom editor history through explicit integrations. Replace invisible-textarea keyboard traps with focusable editor owners rather than pack-specific exceptions in core. Physical-key observation for pointer gestures is separate from application command dispatch. Migrate held commands and their release observers together so neither duplicate nor missing cleanup remains.
+
+### Simplify existing responsibilities
+
+Reuse the command registry and keybinding store rather than adding a second input framework. Consolidate application shortcut recognition into one dispatch path; remove canvas-first execution, hardcoded history shortcut recognition, and Escape override ordering as their consumers migrate. Retain history recording, command execution, and component-owned editing. Native or library modal dismissal replaces the application's parallel close-all-dialogs fallback.
+
+Use one assignment validation boundary for editor changes, presets, resets, workflow contributions, and extension registration. The editor and dispatcher read the resulting effective map instead of reconstructing overlay or replacement policy independently. Retain declaration provenance, saved user choices, and explicit unbindings for persistence and diagnostics. One flat interface does not mean discarding that configuration data.
+
+Focused instance commands replace selected-node keyboard broadcasts; composite graph commands still operate on the complete selection. Use declared modal ownership instead of repeatedly inferring legacy modal visibility once those surfaces migrate. Do not delete legacy detection while unmigrated dialogs still depend on it. The simplification removes duplicate command interpretation, not focus management, ownership observation, or held-action lifetimes.
 
 ## Alternatives considered
 
@@ -170,7 +191,7 @@ sequenceDiagram
 
 ## Consequences
 
-Users resolve ambiguous assignments in configuration, where the effect is visible. Native controls keep their established behavior, and repeated viewport instances share command definitions while focus supplies the target.
+Users resolve ambiguous assignments in configuration, where the effect is visible. Native controls keep their established behavior. Repeated viewport instances share command definitions, with focus selecting the target for instance-local commands. Nonlocal targets remain explicit.
 
 Some defaults and imported assignments need user resolution before activation. The application must maintain an explicit, bounded eligibility model and validate all assignment changes against it. Extensions with independent listeners require migration; this decision does not establish a security boundary against arbitrary extension JavaScript.
 
@@ -180,7 +201,12 @@ Some defaults and imported assignments need user resolution before activation. T
 - The same key can serve two exclusive modes, but an application-wide and a focused-panel assignment cannot overlap without explicit resolution.
 - For the same proposals and user choices, registration order does not change the effective keymap. Conflicting provisional defaults remain visibly inactive, including those contributed in later batches.
 - A modal prevents background commands while preserving its focus and dismissal behavior. Text editing, composition, and standard widget keys remain local.
+- Closing a modal or blurring a field during keydown cannot redirect that key to a new owner. Capturing ownership does not execute an application command.
 - The current-context view and dispatch agree on command and target. Unavailable commands do not reveal hidden fallback assignments.
+- Instance-local commands require compatible focus; Queue Prompt and bookmark commands retain their explicit nonlocal targets.
+- Mixed core/extension selections participate in one copy, paste, or delete operation through one assignment.
+- Workflow contribution edits use workflow history; entity duplication and removal cannot bypass conflict validation or retain a removed target's held action.
+- Logical-key migration and one-shot, repeatable, and held behavior are explicit; physical-key declarations are never silently reinterpreted.
 - Ownership loss releases held actions once and cancels pending sequences.
 
 ## References
