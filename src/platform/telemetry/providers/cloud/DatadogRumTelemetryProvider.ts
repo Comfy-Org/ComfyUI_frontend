@@ -21,6 +21,7 @@ import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type {
   AgentSendGatedMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
@@ -109,6 +110,15 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         : 'custom',
       color_scheme: colorScheme
     })
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'completed'
+        ? TelemetryEvents.ASSET_DOWNLOAD_COMPLETED
+        : TelemetryEvents.ASSET_DOWNLOAD_FAILED,
+      metadata
+    )
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {

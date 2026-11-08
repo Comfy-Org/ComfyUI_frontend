@@ -154,7 +154,7 @@ function handleCopy() {
 function handleDownload() {
   if (!downloadUrl.value) return
   try {
-    downloadFile(downloadUrl.value, savedFile.value?.filename)
+    downloadFile(downloadUrl.value, savedFile.value?.filename, 'node_preview')
   } catch {
     useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }

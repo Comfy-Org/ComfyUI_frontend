@@ -497,7 +497,7 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(resultItemUrl(items[currentIndex.value]))
+    downloadFile(resultItemUrl(items[currentIndex.value]), undefined, 'node_preview')
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')

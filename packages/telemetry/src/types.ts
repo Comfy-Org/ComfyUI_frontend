@@ -147,6 +147,26 @@ export interface ImageLoadFailureMetadata {
 }
 
 /**
+ * One settled cloud file download. Never carries the URL or filename, which
+ * are user-authored; `media_kind` is derived from the extension only.
+ */
+export interface AssetDownloadMetadata {
+  outcome: 'completed' | 'failed'
+  failure_kind?: 'http' | 'network' | 'timeout' | 'abort' | 'body_read'
+  /** HTTP status of a non-OK response. Absent when no response arrived. */
+  status?: number
+  phase: 'headers' | 'body'
+  auth_credential: 'session-cookie' | 'bearer' | 'api-key' | 'none'
+  route: 'assets_content' | 'view' | 'other'
+  media_kind: 'image' | 'video' | 'audio' | '3d' | 'text' | 'other'
+  surface: string
+  size_bytes?: number
+  duration_ms: number
+  page_age_ms: number
+  online: boolean
+}
+
+/**
  * One row per session describing how long startup took and where the time
  * went. `total_ms` is measured from navigation start, so it is directly
  * comparable to what a user experiences and can be percentiled across sessions
@@ -1591,6 +1611,7 @@ export interface TelemetryProvider {
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
   trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
+  trackAssetDownload?(metadata: AssetDownloadMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
@@ -1797,6 +1818,8 @@ export const TelemetryEvents = {
   SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  ASSET_DOWNLOAD_COMPLETED: 'app:asset_download_completed',
+  ASSET_DOWNLOAD_FAILED: 'app:asset_download_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
   THEME_LOADED: 'app:theme_loaded',
 
@@ -2013,6 +2036,7 @@ export type TelemetryEventProperties =
   | WebSessionTelemetryEvent['properties']
   | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
+  | AssetDownloadMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
