@@ -1,7 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
 export class FeatureFlagHelper {
-  private featuresRouteHandler: ((route: Route) => void) | null = null
+  private featuresRouteHandler: ((route: Route) => Promise<void>) | null = null
 
   constructor(private readonly page: Page) {}
 
@@ -206,13 +206,14 @@ export class FeatureFlagHelper {
 
   /** Merge features into the real /api/features response. */
   async mergeServerFeatures(features: Record<string, unknown>): Promise<void> {
-    await this.page.route('**/api/features', async (route) => {
+    this.featuresRouteHandler = async (route: Route) => {
       const response = await route.fetch()
       await route.fulfill({
         response,
         json: { ...(await response.json()), ...features }
       })
-    })
+    }
+    await this.page.route('**/api/features', this.featuresRouteHandler)
   }
 
   async clearMocks(): Promise<void> {
