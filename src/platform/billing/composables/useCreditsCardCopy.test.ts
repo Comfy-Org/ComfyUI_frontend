@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
@@ -13,8 +14,9 @@ import type {
   AddCreditsAvailability,
   CreditsCardFacts
 } from '@comfyorg/account-core/billing'
+import { BillingCreditsCard } from '@comfyorg/account-ui/billing'
 
-import BillingCreditsCard from './BillingCreditsCard.vue'
+import { useCreditsCardCopy } from './useCreditsCardCopy'
 
 function balanceOf(cents: {
   effective: number
@@ -52,26 +54,41 @@ const CARD_NOTES = [
 
 const ENABLED: AddCreditsAvailability = { kind: 'enabled' }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
 function renderCard(
   facts: CreditsCardFacts,
   addCredits: AddCreditsAvailability = ENABLED,
   planCreditNote: string | null = null
 ) {
-  return render(BillingCreditsCard, {
-    props: { state: deriveCreditsCard(facts), addCredits, planCreditNote },
-    global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: enMessages }
-        })
-      ]
-    }
-  })
+  const onRetry = vi.fn()
+  const onAddCredits = vi.fn()
+  render(
+    {
+      setup() {
+        const copy = useCreditsCardCopy()
+        return () =>
+          h(BillingCreditsCard, {
+            state: deriveCreditsCard(facts),
+            addCredits,
+            planCreditNote,
+            copy: copy.value,
+            locale: 'en',
+            onRetry,
+            onAddCredits
+          })
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
+  return { onRetry, onAddCredits }
 }
 
-describe('BillingCreditsCard', () => {
+describe('BillingCreditsCard with the app copy', () => {
   it.for<{
     case: string
     facts: Partial<CreditsCardFacts>
@@ -263,7 +280,7 @@ describe('BillingCreditsCard', () => {
   ])(
     'shows Add credits disabled with the reason for $case',
     async ({ facts, reasonKey, reason }) => {
-      const { emitted } = renderCard(
+      const { onAddCredits } = renderCard(
         { ...activeFacts, ...facts },
         { kind: 'disabled', reasonKey }
       )
@@ -272,7 +289,7 @@ describe('BillingCreditsCard', () => {
       expect(addCredits).toBeDisabled()
       expect(addCredits).toHaveAccessibleDescription(reason)
       await userEvent.click(addCredits)
-      expect(emitted('addCredits')).toBeUndefined()
+      expect(onAddCredits).not.toHaveBeenCalled()
     }
   )
 
@@ -541,11 +558,11 @@ describe('BillingCreditsCard', () => {
   })
 
   it('asks for the balance again from Try again', async () => {
-    const { emitted } = renderCard({ ...activeFacts, balance: null })
+    const { onRetry } = renderCard({ ...activeFacts, balance: null })
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(emitted('retry')).toHaveLength(1)
+    expect(onRetry).toHaveBeenCalledOnce()
   })
 
   it.for<{
@@ -586,10 +603,10 @@ describe('BillingCreditsCard', () => {
   )
 
   it('opens the top-up flow from Add credits', async () => {
-    const { emitted } = renderCard(activeFacts)
+    const { onAddCredits } = renderCard(activeFacts)
 
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
-    expect(emitted('addCredits')).toHaveLength(1)
+    expect(onAddCredits).toHaveBeenCalledOnce()
   })
 })
