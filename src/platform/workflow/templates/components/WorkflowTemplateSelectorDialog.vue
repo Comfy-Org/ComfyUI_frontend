@@ -1285,19 +1285,16 @@ async function openPreparedTemplate(
   }
 }
 
-async function showAssetSetupIfNeeded(
-  template: TemplateInfo,
-  prepared: PreparedWorkflowTemplate,
-  generation: number
-): Promise<boolean> {
-  if (!isLocalDesktopHost()) return false
-
+async function resolveTemplateAssetInventory(
+  templateId: string,
+  prepared: PreparedWorkflowTemplate
+) {
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json
   )
   const inputAssetsPromise =
     prepared.sourceModule === 'default'
-      ? resolveTemplateInputAssets(template.name, () => window.__comfyDesktop2)
+      ? resolveTemplateInputAssets(templateId, () => window.__comfyDesktop2)
       : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
   const [availability, folderPaths, inputAssets] = await Promise.all([
     resolveModelAvailability(requirements.map(({ model }) => model)),
@@ -1306,6 +1303,18 @@ async function showAssetSetupIfNeeded(
       : Promise.resolve({}),
     inputAssetsPromise
   ])
+  return { requirements, availability, folderPaths, inputAssets }
+}
+
+async function showAssetSetupIfNeeded(
+  template: TemplateInfo,
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+): Promise<boolean> {
+  if (!isLocalDesktopHost()) return false
+
+  const { requirements, availability, folderPaths, inputAssets } =
+    await resolveTemplateAssetInventory(template.name, prepared)
   if (generation !== detailGeneration) return true
   const hasSampleInputs = getPreparedSampleInputs(prepared).length > 0
   if (
@@ -1348,6 +1357,27 @@ async function showAssetSetupIfNeeded(
   return true
 }
 
+function handleTemplateSelectionError(
+  error: unknown,
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+) {
+  const isCurrent =
+    generation === detailGeneration &&
+    preparedInFlight === prepared &&
+    !prepared.controller.signal.aborted
+  discardPreparedWorkflowTemplate(prepared)
+  if (!isCurrent) return
+  preparedInFlight = null
+  reportError(error, {
+    surface: 'graph',
+    errorType: 'error_loading_template'
+  })
+  useToast().error(t('g.error'), {
+    description: t('templateWorkflows.error.loading')
+  })
+}
+
 async function onLoadWorkflow(template: TemplateInfo, event: MouseEvent) {
   if (openPending.value) return
 
@@ -1377,20 +1407,7 @@ async function onLoadWorkflow(template: TemplateInfo, event: MouseEvent) {
       await openPreparedTemplate(prepared, generation, !isLocalDesktopHost())
     }
   } catch (error) {
-    const isCurrent =
-      generation === detailGeneration &&
-      preparedInFlight === prepared &&
-      !prepared.controller.signal.aborted
-    discardPreparedWorkflowTemplate(prepared)
-    if (!isCurrent) return
-    preparedInFlight = null
-    reportError(error, {
-      surface: 'graph',
-      errorType: 'error_loading_template'
-    })
-    useToast().error(t('g.error'), {
-      description: t('templateWorkflows.error.loading')
-    })
+    handleTemplateSelectionError(error, prepared, generation)
   }
 }
 
