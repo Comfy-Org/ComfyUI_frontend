@@ -62,7 +62,9 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ open_on_cloud_enabled: true })
+    )
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
     remoteConfig.value = {}
@@ -149,7 +151,8 @@ describe(handleDesktopWorkflowHandoff, () => {
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {
     const features = {
-      comfy_cloud_base_url: 'https://custom-cloud.example.com'
+      comfy_cloud_base_url: 'https://custom-cloud.example.com',
+      open_on_cloud_enabled: true
     }
     remoteConfig.value = features
     const { relay, record } = await stagedRelay()
