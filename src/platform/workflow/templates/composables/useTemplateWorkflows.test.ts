@@ -844,6 +844,50 @@ describe('useTemplateWorkflows', () => {
   )
 
   it.for([
+    { name: 'malformed', isRemote: false },
+    {
+      name: 'throwing',
+      isRemote: () => {
+        throw new Error('Host detection failed')
+      }
+    }
+  ])(
+    'releases a direct template load after $name host detection and allows retry',
+    async ({ isRemote }) => {
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', { ...bridge, isRemote })
+      addVideoTemplate()
+      const { loader } = mountTemplateWorkflows()
+
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('not-started')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'error_loading_template'
+      })
+
+      vi.stubGlobal('__comfyDesktop2', bridge)
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('loaded')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
     {
       name: 'local web',
       nativeHost: false,

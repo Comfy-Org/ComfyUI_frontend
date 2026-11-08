@@ -572,6 +572,27 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
   })
 
+  it('keeps Just open download-free if host detection fails after setup', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+    const justOpen = await screen.findByRole('button', { name: 'Just open' })
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => {
+        throw new Error('Host detection failed')
+      }
+    })
+
+    await user.click(justOpen)
+
+    await waitFor(() =>
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared,
+        { downloadAssets: false }
+      )
+    )
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
+  })
+
   it('starts eligible rows before Download assets & open opens the workflow', async () => {
     mocks.resolveAvailability.mockResolvedValueOnce(
       [
@@ -912,6 +933,53 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     })
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('keeps a newer selection usable when an older asset lookup rejects', async () => {
+    let rejectAvailability: (error: Error) => void = () => {}
+    const oldPrepared = {
+      ...fixtures.prepared,
+      controller: new AbortController()
+    }
+    const newPrepared = {
+      ...fixtures.prepared,
+      controller: new AbortController()
+    }
+    mocks.prepareWorkflowTemplate
+      .mockResolvedValueOnce(oldPrepared)
+      .mockResolvedValueOnce(newPrepared)
+    mocks.resolveAvailability.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectAvailability = reject
+        })
+    )
+    const { user } = await clickTemplateCardAfterRender()
+    await waitFor(() =>
+      expect(mocks.resolveAvailability).toHaveBeenCalledOnce()
+    )
+    await clickTemplateCard()
+    const justOpen = await screen.findByRole('button', { name: 'Just open' })
+    mocks.discardPreparedWorkflowTemplate.mockClear()
+
+    rejectAvailability(new Error('Old lookup failed'))
+    await waitFor(() =>
+      expect(mocks.discardPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        oldPrepared
+      )
+    )
+
+    expect(mocks.discardPreparedWorkflowTemplate).not.toHaveBeenCalledWith(
+      newPrepared
+    )
+    expect(mocks.reportError).not.toHaveBeenCalled()
+    await user.click(justOpen)
+    await waitFor(() =>
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        newPrepared,
+        { downloadAssets: false }
+      )
+    )
   })
 
   it('discards the prepared workflow when a filter change clears a visible Detail', async () => {

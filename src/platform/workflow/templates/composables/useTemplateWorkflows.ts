@@ -382,12 +382,13 @@ export function useTemplateWorkflows() {
 
   async function openPreparedWorkflowTemplate(
     prepared: PreparedWorkflowTemplate,
-    { downloadAssets = !isLocalDesktopHost() } = {}
+    { downloadAssets }: { downloadAssets?: boolean } = {}
   ): Promise<TemplateLoadResult> {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
       controller.signal.throwIfAborted()
-      const preparedData = downloadAssets
+      const shouldDownloadAssets = downloadAssets ?? !isLocalDesktopHost()
+      const preparedData = shouldDownloadAssets
         ? await prepareWorkflowTemplateInputs(
             data,
             sourceModule,
@@ -404,7 +405,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      if (downloadAssets) startTemplateInputDownloads(id, sourceModule)
+      if (shouldDownloadAssets) startTemplateInputDownloads(id, sourceModule)
       return await loadTemplateGraph(preparedData, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)

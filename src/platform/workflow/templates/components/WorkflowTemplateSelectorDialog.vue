@@ -448,6 +448,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
@@ -1266,7 +1267,7 @@ async function updateTemplateModelMetadata(
 async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
   generation: number,
-  downloadAssets = !isLocalDesktopHost()
+  downloadAssets: boolean
 ): Promise<void> {
   if (openPending.value || generation !== detailGeneration) return
 
@@ -1347,7 +1348,7 @@ async function showAssetSetupIfNeeded(
   return true
 }
 
-const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
+async function onLoadWorkflow(template: TemplateInfo, event: MouseEvent) {
   if (openPending.value) return
 
   invalidateDetailWork()
@@ -1366,12 +1367,31 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     return
   }
 
-  const didShowAssetSetup = await showAssetSetupIfNeeded(
-    template,
-    prepared,
-    generation
-  )
-  if (!didShowAssetSetup) await openPreparedTemplate(prepared, generation)
+  try {
+    const didShowAssetSetup = await showAssetSetupIfNeeded(
+      template,
+      prepared,
+      generation
+    )
+    if (!didShowAssetSetup) {
+      await openPreparedTemplate(prepared, generation, !isLocalDesktopHost())
+    }
+  } catch (error) {
+    const isCurrent =
+      generation === detailGeneration &&
+      preparedInFlight === prepared &&
+      !prepared.controller.signal.aborted
+    discardPreparedWorkflowTemplate(prepared)
+    if (!isCurrent) return
+    preparedInFlight = null
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_loading_template'
+    })
+    useToast().error(t('g.error'), {
+      description: t('templateWorkflows.error.loading')
+    })
+  }
 }
 
 async function onBackToTemplates() {
@@ -1422,7 +1442,7 @@ const onOpenTemplate = async () => {
   const detail = activeDetail.value
   if (!detail || openPending.value) return
 
-  await openPreparedTemplate(detail.prepared, detailGeneration)
+  await openPreparedTemplate(detail.prepared, detailGeneration, false)
 }
 
 const pageTitle = computed(() => {
