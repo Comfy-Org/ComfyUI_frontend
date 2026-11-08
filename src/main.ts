@@ -36,6 +36,7 @@ import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAu
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -204,4 +205,4 @@ async function bootstrap(): Promise<void> {
   bootstrapTracer.milestone('app-mounted')
 }
 
-await bootstrap()
+if (!(await handleDesktopWorkflowHandoff())) await bootstrap()
