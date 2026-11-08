@@ -141,7 +141,7 @@ describe('useAgentHandoff', () => {
     }
   )
 
-  it('downloads the workflow before it opens the app, and opens nothing when the download fails', () => {
+  it('downloads the workflow before opening the agent app', () => {
     setActiveWorkflow()
     const order: string[] = []
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
@@ -152,17 +152,31 @@ describe('useAgentHandoff', () => {
     })
 
     useAgentHandoff().openBriefIn('claude')
-    vi.mocked(downloadBlob).mockImplementationOnce(() => {
-      throw new Error('download blocked')
-    })
-    useAgentHandoff().openBriefIn('claude')
 
     expect(order).toEqual(['download', 'open'])
-    expect(openAgentApp).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+  })
+
+  it('reports a failed download and leaves the agent app closed', () => {
+    setActiveWorkflow()
+    const downloadError = new Error('download blocked')
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      throw downloadError
+    })
+
+    useAgentHandoff().openBriefIn('claude')
+
+    expect(openAgentApp).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(downloadError, {
       errorType: 'error_opening_deploy_agent_brief',
       surface: 'platform'
     })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
+      })
+    ])
   })
 
   it('lists the model a known loader loads, and not prompt text ending in .pt', async () => {
