@@ -114,7 +114,9 @@ test.describe(
         })
       ).toBeVisible()
       await expect(cloudTab.getByRole('dialog')).toHaveCount(0)
-      expect(new URL(cloudTab.url()).searchParams.has('from_local')).toBe(false)
+      await expect
+        .poll(() => new URL(cloudTab.url()).searchParams.has('from_local'))
+        .toBe(false)
     })
   }
 )
