@@ -111,12 +111,13 @@ const useNodePreview = <T extends MediaElement>(
 
     loadElements(outputUrls)
       .then((elements) => {
+        if (node.images !== images || node.preview !== preview) return
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
         if (validElements.length) {
           onLoaded?.(validElements)
-        } else if (node.images === images && node.preview === preview) {
+        } else {
           onFailedLoading?.()
         }
         node.graph?.setDirtyCanvas(true)
@@ -194,6 +195,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
+      unsupportedSource = false
 
       video.onloadeddata = () => {
         setMinDimensions(video)
@@ -214,10 +216,6 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
         hideOnZoom: false
       })
       widget.serialize = false
-      widget.computeLayoutSize = () => ({
-        minHeight,
-        minWidth
-      })
 
       const controller = new AbortController()
       const { signal } = controller
@@ -236,6 +234,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       node.videoContainer = createContainer()
       addVideoDomWidget(node.videoContainer)
     }
+    const widget = node.widgets?.find((w) => w.name === VIDEO_WIDGET_NAME)
+    if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
     node.videoContainer.replaceChildren(element)
   }
 

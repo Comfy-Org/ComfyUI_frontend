@@ -6,6 +6,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
@@ -19,7 +20,7 @@ vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
   }))
 }))
 vi.mock(import('@/utils/imageUtil'), () => ({
-  fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
+  fitDimensionsToNodeWidth: vi.fn(() => ({ minHeight: 256, minWidth: 256 }))
 }))
 
 describe('useNodeVideo', () => {
@@ -124,6 +125,52 @@ describe('useNodeVideo', () => {
       expect(node.videoContainer?.contains(video)).toBe(true)
     }
   )
+
+  it('ignores a superseded load that succeeds late', async () => {
+    const { node, video, createdVideos } = await setup()
+
+    useNodeVideo(node).showPreview()
+    node.images = [{ filename: 'newer.mp4', type: 'output' }]
+    createdVideos.at(-1)!.onloadeddata?.(new Event('loadeddata'))
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(node.videoContainer?.contains(video)).toBe(true)
+  })
+
+  it('reports a timed-out load as a plain failure after an unsupported one', async () => {
+    const { node, createdVideos } = await setup()
+    const { showPreview } = useNodeVideo(node)
+
+    showPreview()
+    await failBothAttempts(createdVideos, 4)
+    showPreview()
+    await vi.runAllTimersAsync()
+
+    expect(node.videoContainer?.textContent).toBe('Video failed to load')
+  })
+
+  it('sizes the widget for a video that follows a failure', async () => {
+    const node = createDOMWidgetNode({ size: [400, 400], graph: new LGraph() })
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/1.mov'
+    ])
+    const createdVideos = trackCreatedVideos()
+    useNodeVideo(node).showPreview()
+    await failBothAttempts(createdVideos, 4)
+
+    vi.mocked(fitDimensionsToNodeWidth).mockReturnValue({
+      minHeight: 700,
+      minWidth: 400
+    })
+    useNodeVideo(node).showPreview()
+    createdVideos.at(-1)!.onloadeddata?.(new Event('loadeddata'))
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(node.widgets?.[0]?.computeLayoutSize?.(node)).toEqual({
+      minHeight: 700,
+      minWidth: 400
+    })
+  })
 
   it('shows the next good output after a failed one', async () => {
     const { node, createdVideos } = await setup()

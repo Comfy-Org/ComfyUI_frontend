@@ -26,6 +26,13 @@ async function addSaveVideoNode(comfyPage: ComfyPage) {
   return String(node.id)
 }
 
+const waitForServed = (page: Page, filename: string) =>
+  page.waitForResponse(
+    (response) =>
+      response.ok() &&
+      new URL(response.url()).searchParams.get('filename') === filename
+  )
+
 const videoOutput = (filename: string) => ({
   images: [{ filename, subfolder: '', type: 'output' }],
   animated: [true]
@@ -71,7 +78,9 @@ test.describe('Save Video preview of an undecodable output', () => {
       .poll(() => canvasPreviewVideo(comfyPage.page))
       .toEqual({ file: PLAYABLE, decoded: true })
 
+    const undecodableServed = waitForServed(comfyPage.page, UNDECODABLE)
     execution.executed('', nodeId, videoOutput(UNDECODABLE))
+    await undecodableServed
     await expect
       .poll(() => canvasPreviewVideo(comfyPage.page), {
         message: 'the previous run must not stay up as the new output preview'
@@ -113,7 +122,9 @@ test.describe('Save Video preview of an undecodable output', () => {
       execution.executed('', nodeId, videoOutput(PLAYABLE))
       await expect(node.getByTestId('main-video')).toBeVisible()
 
+      const undecodableServed = waitForServed(comfyPage.page, UNDECODABLE)
       execution.executed('', nodeId, videoOutput(UNDECODABLE))
+      await undecodableServed
 
       await expect(node.getByText(CANT_PLAY_MESSAGE)).toBeVisible()
       await expect(node.getByText(UNDECODABLE)).toBeVisible()
