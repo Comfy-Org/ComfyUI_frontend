@@ -87,7 +87,7 @@ function renderActions(
 async function copiedBrief(user: UserEvent): Promise<string> {
   copyToClipboard.mockResolvedValue(true)
   await user.click(
-    screen.getByRole('button', { name: /Build with your agent/ })
+    screen.getByRole('button', { name: /Deploy with your agent/ })
   )
   const [brief] = copyToClipboard.mock.lastCall ?? []
   return String(brief)
@@ -130,7 +130,7 @@ describe('DeploymentBuildActions', () => {
     const user = renderActions()
 
     await user.click(
-      screen.getByRole('button', { name: /Build with your agent/ })
+      screen.getByRole('button', { name: /Deploy with your agent/ })
     )
 
     const [brief] = copyToClipboard.mock.lastCall ?? []
@@ -248,7 +248,7 @@ describe('DeploymentBuildActions', () => {
           screen.queryByRole('link', { name: /on Platform/ })
         ).not.toBeInTheDocument()
         expect(
-          screen.queryByRole('button', { name: /Build with your agent/ })
+          screen.queryByRole('button', { name: /Deploy with your agent/ })
         ).not.toBeInTheDocument()
         await user.click(screen.getByRole('button', { name: 'Reload' }))
         await waitFor(() =>

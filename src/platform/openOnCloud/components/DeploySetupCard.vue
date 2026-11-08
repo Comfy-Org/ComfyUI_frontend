@@ -73,6 +73,7 @@
             aria-hidden="true"
           />
         </Button>
+        <DeploySetupAgentMenu />
       </footer>
     </section>
   </DeploymentDialogFrame>
@@ -86,6 +87,7 @@ import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 
