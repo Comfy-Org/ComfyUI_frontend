@@ -4278,6 +4278,11 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
+    "agentMenu": {
+      "openInClaude": "Open in Claude desktop",
+      "openInCodex": "Open in Codex",
+      "copyPrompt": "Copy prompt"
+    },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
@@ -4893,7 +4898,7 @@
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
     "deployOnPlatform": "Deploy on Platform",
-    "deployWithAgent": "Build with your agent",
+    "deployWithAgent": "Deploy with your agent",
     "copied": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
