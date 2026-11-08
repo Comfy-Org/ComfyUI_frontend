@@ -8,7 +8,7 @@ import {
 } from 'vue-router'
 import type {
   LocationQueryRaw,
-  NavigationGuardNext,
+  NavigationGuardReturn,
   RouteLocationNormalized
 } from 'vue-router'
 
@@ -89,15 +89,11 @@ const router = createRouter({
           path: '',
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
-          beforeEnter: async (_to, _from, next) => {
+          beforeEnter: async () => {
             // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
-            if (userStore.needsLogin) {
-              next('/user-select')
-            } else {
-              next()
-            }
+            if (userStore.needsLogin) return '/user-select'
           }
         },
         {
@@ -121,9 +117,8 @@ const router = createRouter({
 
 installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   captureOAuthRequestId(to.query)
-  next()
 })
 
 router.afterEach(() => {
@@ -179,9 +174,8 @@ if (isCloud) {
   /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
-    query: LocationQueryRaw,
-    next: NavigationGuardNext
-  ): void {
+    query: LocationQueryRaw
+  ): NavigationGuardReturn {
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -200,20 +194,20 @@ if (isCloud) {
           origin: window.location.origin
         })
       )
-      return next(false)
+      return false
     }
-    next({
+    return {
       name: 'cloud-login',
       query: {
         ...query,
         ...(reentry.kind !== 'login' && SSO_ENTRY_OPEN_QUERY),
         ...(ssoError && { sso_error: ssoError })
       }
-    })
+    }
   }
 
   // Global authentication guard
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to, from) => {
     rerouteWhenSignedOutElsewhere()
     const authStore = useAuthStore()
 
@@ -225,7 +219,7 @@ if (isCloud) {
         await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
-        return next({ name: 'cloud-auth-timeout' })
+        return { name: 'cloud-auth-timeout' }
       }
     }
 
@@ -246,21 +240,21 @@ if (isCloud) {
 
     // Allow public routes
     if (isPublicRoute(to)) {
-      return next()
+      return
     }
 
     // Special handling for user-check
     // These routes need auth but handle their own routing logic
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: 'cloud-login' })
+        return { name: 'cloud-login' }
       }
-      return next()
+      return
     }
 
     // Prevent redirect loop when coming from user-check
-    if (_from.name === 'cloud-user-check' && to.path === '/') {
-      return next()
+    if (from.name === 'cloud-user-check' && to.path === '/') {
+      return
     }
 
     const query = {
@@ -272,7 +266,7 @@ if (isCloud) {
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     // Handle other protected routes
@@ -280,17 +274,17 @@ if (isCloud) {
       // For Electron, use dialog
       if (isDesktop) {
         const loginSuccess = await useAuthDialogs().showSignInDialog()
-        return loginSuccess ? next() : next(false)
+        return loginSuccess
       }
 
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
     if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
-        return next()
+        return
       }
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
@@ -303,17 +297,17 @@ if (isCloud) {
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
+          return { name: 'cloud-survey' }
         }
       } catch (error) {
         console.error('Failed to check user status:', error)
         // On error, redirect to user-check as fallback
-        return next({ name: 'cloud-user-check' })
+        return { name: 'cloud-user-check' }
       }
     }
 
     // User is logged in and accessing protected route
-    return next()
+    return
   })
 
   installDesktopLoginRedemption(router)
