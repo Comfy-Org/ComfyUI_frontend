@@ -1,5 +1,5 @@
 /** @knipIgnoreUsedByStackedPR */
-export const OUTPUTS_PAGE = 30
+const OUTPUTS_PAGE = 30
 
 export type OutputsTrayState =
   | { phase: 'closed' }
