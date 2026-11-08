@@ -179,6 +179,7 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
         type: 'execution' as const,
         severity: 'error' as const,
         groupKey: `execution:${rawGroupKey}`,
+        catalogId: rawGroupKey,
         displayTitle: groupData.displayTitle,
         displayMessage: groupData.displayMessage,
         count: countExecutionCards(cards),

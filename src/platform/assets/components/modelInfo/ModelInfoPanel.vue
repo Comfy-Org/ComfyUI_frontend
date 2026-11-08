@@ -206,7 +206,7 @@ import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'
-import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
+import { useAssetMetadataStore } from '@/platform/assets/stores/assetMetadataStore'
 import {
   getAssetAdditionalTags,
   getAssetBaseModels,
@@ -238,10 +238,11 @@ const { asset, cacheKey } = defineProps<{
 }>()
 
 const assetsStore = useAssetsStore()
+const metadataStore = useAssetMetadataStore()
 const { flags } = useFeatureFlags()
 const { modelTypes } = useModelTypes()
 
-const pendingUpdates = ref<AssetUserMetadata>({})
+const pendingUpdates = computed(() => metadataStore.getPendingUpdates(asset.id))
 const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
@@ -269,37 +270,16 @@ const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 
 watch(
-  () => asset.user_metadata,
-  () => {
-    pendingUpdates.value = {}
-  }
-)
-
-watch(
   () => asset.tags,
   () => {
     pendingModelType.value = undefined
   }
 )
 
-const debouncedFlushMetadata = useDebounceFn(() => {
-  if (isImmutable.value) return
-  assetsStore.updateAssetMetadata(
-    asset,
-    { ...asset.user_metadata, ...pendingUpdates.value },
-    cacheKey
-  )
-}, 500)
-
-function queueMetadataUpdate(updates: AssetUserMetadata) {
-  pendingUpdates.value = { ...pendingUpdates.value, ...updates }
-  debouncedFlushMetadata()
-}
-
 function handleDisplayNameEdit(newName: string) {
   isEditingDisplayName.value = false
   if (newName && newName !== displayName.value) {
-    queueMetadataUpdate({ name: newName })
+    metadataStore.queueUpdate(asset, { name: newName }, cacheKey)
   }
 }
 
@@ -315,19 +295,22 @@ const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
 
 const baseModels = computed({
   get: () => pendingUpdates.value.base_model ?? getAssetBaseModels(asset),
-  set: (value: string[]) => queueMetadataUpdate({ base_model: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { base_model: value }, cacheKey)
 })
 
 const additionalTags = computed({
   get: () =>
     pendingUpdates.value.additional_tags ?? getAssetAdditionalTags(asset),
-  set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { additional_tags: value }, cacheKey)
 })
 
 const userDescription = computed({
   get: () =>
     pendingUpdates.value.user_description ?? getAssetUserDescription(asset),
-  set: (value: string) => queueMetadataUpdate({ user_description: value })
+  set: (value: string) =>
+    metadataStore.queueUpdate(asset, { user_description: value }, cacheKey)
 })
 
 const selectedModelType = computed({
