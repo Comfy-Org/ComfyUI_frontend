@@ -1,6 +1,7 @@
 export const SERVICE_RESTART_CLOSE_CODE = 1012
+export const LOCAL_SOCKET_RECONNECT_DELAY_MS = 300
 export const OPENED_SOCKET_RECONNECT_WINDOW_MS = 5_000
-export const SERVICE_RESTART_RECONNECT_WINDOW_MS = 30_000
+export const SERVICE_RESTART_RECONNECT_WINDOW_MS = 15_000
 export const FAILED_RECONNECT_BASE_DELAY_MS = 1_000
 export const FAILED_RECONNECT_MAX_DELAY_MS = 30_000
 export const SESSION_RECOVERY_MAX_DELAY_MS = 60_000
@@ -17,8 +18,8 @@ function failedReconnectCeilingMs(failedAttempts: number, maxDelayMs: number) {
 }
 
 /**
- * Full-jitter delay before reopening a closed socket, so tabs dropped together
- * by a server rollout do not reconnect in lockstep.
+ * Full-jitter delay before reopening a closed Cloud socket, so tabs dropped
+ * together by a server rollout do not reconnect in lockstep.
  */
 export function socketReconnectDelayMs(
   close: SocketClose,

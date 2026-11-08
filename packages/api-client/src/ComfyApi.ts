@@ -24,6 +24,7 @@ import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
 import {
+  LOCAL_SOCKET_RECONNECT_DELAY_MS,
   sessionRecoveryDelayMs,
   socketReconnectDelayMs
 } from './socketReconnectDelay'
@@ -1019,14 +1020,15 @@ export class ComfyApi extends EventTarget {
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       const recoverSession = sessionRequests && !opened
-      const delayMs = opened
-        ? socketReconnectDelayMs({ opened, code: event.code })
+      const delayMs = !this.ports.isCloud
+        ? LOCAL_SOCKET_RECONNECT_DELAY_MS
         : recoverSession
           ? sessionRecoveryDelayMs(this.failedSocketAttempts++)
-          : socketReconnectDelayMs({
-              opened,
-              failedAttempts: this.failedSocketAttempts++
-            })
+          : socketReconnectDelayMs(
+              opened
+                ? { opened, code: event.code }
+                : { opened, failedAttempts: this.failedSocketAttempts++ }
+            )
       setTimeout(async () => {
         if (this.socket !== socket) return
         if (recoverSession) {

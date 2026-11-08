@@ -178,7 +178,7 @@ describe('ComfyApi realtime socket reset', () => {
 
     it.for([
       { name: 'any close', code: 1006, delayMs: 2_500 },
-      { name: 'a service restart', code: 1012, delayMs: 15_000 }
+      { name: 'a service restart', code: 1012, delayMs: 7_500 }
     ])(
       'spreads the first reconnect after $name of an opened socket across its window',
       async ({ code, delayMs }) => {

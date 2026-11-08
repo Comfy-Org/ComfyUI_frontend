@@ -12,7 +12,7 @@ describe('socketReconnectDelayMs', () => {
     {
       name: 'an opened socket closed for a service restart',
       close: { opened: true, code: 1012 },
-      windowMs: 30_000
+      windowMs: 15_000
     },
     {
       name: 'the first failed attempt',
