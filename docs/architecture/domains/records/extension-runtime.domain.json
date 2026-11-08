@@ -62,6 +62,9 @@
     },
     {
       "path": "packages/api-client/src/apiTimeouts.ts"
+    },
+    {
+      "path": "packages/api-client/src/reconnectBackoff.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -113,7 +116,9 @@
         "src/scripts/api.getSettings.test.ts",
         "src/scripts/api.getShareableAssets.test.ts",
         "src/scripts/api.logs.test.ts",
-        "src/scripts/api.socketReset.test.ts"
+        "src/scripts/api.socketReset.test.ts",
+        "packages/api-client/src/ComfyApi.reconnectBackoff.test.ts",
+        "packages/api-client/src/reconnectBackoff.test.ts"
       ]
     },
     {
