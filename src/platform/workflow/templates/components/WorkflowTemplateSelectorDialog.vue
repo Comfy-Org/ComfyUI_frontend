@@ -474,7 +474,8 @@ import { useTemplateFiltering } from '@/platform/workflow/templates/composables/
 import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
+import { isLocalDesktopHost } from '@/utils/envUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import {
@@ -1265,7 +1266,7 @@ async function updateTemplateModelMetadata(
 async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
   generation: number,
-  downloadAssets = !isDesktop
+  downloadAssets = !isLocalDesktopHost()
 ): Promise<void> {
   if (openPending.value || generation !== detailGeneration) return
 
@@ -1288,7 +1289,7 @@ async function showAssetSetupIfNeeded(
   prepared: PreparedWorkflowTemplate,
   generation: number
 ): Promise<boolean> {
-  if (!isDesktop) return false
+  if (!isLocalDesktopHost()) return false
 
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json

@@ -113,7 +113,7 @@ const fixtures = vi.hoisted(() => {
   }
 })
 
-const runtime = vi.hoisted(() => ({ isCloud: false, isDesktop: true }))
+const runtime = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 const mocks = vi.hoisted(() => ({
   filterTemplatesByCategory: vi.fn(() => [fixtures.template]),
   getTemplateDescription: vi.fn(
@@ -419,7 +419,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     ).mockImplementation(mocks.filterTemplatesByCategory)
     vi.mocked(workflowTemplatesStore.loadWorkflowTemplates).mockResolvedValue()
     runtime.isCloud = false
-    runtime.isDesktop = true
+    runtime.isDesktop = false
     mocks.prepareWorkflowTemplate.mockResolvedValue(fixtures.prepared)
     mocks.openPreparedWorkflowTemplate.mockResolvedValue('loaded')
     mocks.resolveAvailability.mockResolvedValue([
@@ -429,40 +429,45 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       status: 'idle',
       attempt: 0
     }))
-    Object.defineProperty(window, '__comfyDesktop2', {
-      configurable: true,
-      value: {
-        isRemote: () => false,
-        getTemplateInputAssets: mocks.getTemplateInputAssets,
-        downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
-      }
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => false,
+      getTemplateInputAssets: mocks.getTemplateInputAssets,
+      downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
     })
   })
 
-  it('shows only active requirements when a Desktop model is missing', async () => {
-    renderDialog()
-    await clickTemplateCard()
+  it.for([
+    { name: 'native Desktop', legacyDesktop: false },
+    { name: 'legacy Desktop', legacyDesktop: true }
+  ])(
+    'shows only active requirements when a $name model is missing',
+    async ({ legacyDesktop }) => {
+      runtime.isDesktop = legacyDesktop
+      if (legacyDesktop) vi.stubGlobal('__comfyDesktop2', undefined)
+      renderDialog()
+      await clickTemplateCard()
 
-    const detail = await screen.findByRole('article', {
-      name: fixtures.template.title
-    })
-    expect(detail).toHaveFocus()
-    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledWith(
-      fixtures.template.name,
-      'default'
-    )
-    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+      const detail = await screen.findByRole('article', {
+        name: fixtures.template.title
+      })
+      expect(detail).toHaveFocus()
+      expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.template.name,
+        'default'
+      )
+      expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
 
-    const requirements = within(detail).getByRole('region', {
-      name: 'Template requirements'
-    })
-    expect(
-      within(requirements).getByText(fixtures.activeModel.name)
-    ).toBeInTheDocument()
-    expect(
-      within(requirements).queryByText(fixtures.bypassedModel.name)
-    ).not.toBeInTheDocument()
-  })
+      const requirements = within(detail).getByRole('region', {
+        name: 'Template requirements'
+      })
+      expect(
+        within(requirements).getByText(fixtures.activeModel.name)
+      ).toBeInTheDocument()
+      expect(
+        within(requirements).queryByText(fixtures.bypassedModel.name)
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps an individual model download inside the mounted Detail', async () => {
     const { user } = await clickTemplateCardAfterRender()
@@ -785,18 +790,47 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(preview).toHaveAttribute('data-hovered', 'false')
   })
 
-  it('opens directly outside Desktop without resolving model inventory', async () => {
-    runtime.isDesktop = false
-    renderDialog()
-    await clickTemplateCard()
+  it.for([
+    {
+      name: 'local web',
+      nativeHost: false,
+      remote: undefined,
+      remoteFlag: undefined
+    },
+    {
+      name: 'remote Desktop',
+      nativeHost: true,
+      remote: () => true,
+      remoteFlag: undefined
+    },
+    {
+      name: 'older remote Desktop',
+      nativeHost: true,
+      remote: undefined,
+      remoteFlag: true
+    }
+  ])(
+    'opens directly on $name without resolving local model inventory',
+    async ({ nativeHost, remote, remoteFlag }) => {
+      vi.stubGlobal(
+        '__comfyDesktop2',
+        nativeHost ? { ...window.__comfyDesktop2, isRemote: remote } : undefined
+      )
+      vi.stubGlobal('__comfyDesktop2Remote', remoteFlag)
+      renderDialog()
+      await clickTemplateCard()
 
-    await waitFor(() => {
-      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
-    })
-    expect(screen.queryByRole('article')).not.toBeInTheDocument()
-    expect(mocks.resolveAvailability).not.toHaveBeenCalled()
-    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
-  })
+      await waitFor(() => {
+        expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+          fixtures.prepared,
+          { downloadAssets: true }
+        )
+      })
+      expect(screen.queryByRole('article')).not.toBeInTheDocument()
+      expect(mocks.resolveAvailability).not.toHaveBeenCalled()
+      expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
+    }
+  )
 
   it('opens an asset-ready Desktop template directly', async () => {
     mocks.getTemplateInputAssets.mockResolvedValue([])
@@ -807,7 +841,10 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await clickTemplateCard()
 
     await waitFor(() => {
-      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared,
+        { downloadAssets: false }
+      )
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })

@@ -3,7 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
+import { isLocalDesktopHost } from '@/utils/envUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -172,7 +173,7 @@ export function useTemplateWorkflows() {
   }
 
   function startTemplateInputDownloads(id: string, sourceModule: string) {
-    if (!isDesktop || sourceModule !== 'default') return
+    if (!isLocalDesktopHost() || sourceModule !== 'default') return
 
     void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
       (assets) => {
@@ -381,7 +382,7 @@ export function useTemplateWorkflows() {
 
   async function openPreparedWorkflowTemplate(
     prepared: PreparedWorkflowTemplate,
-    { downloadAssets = !isDesktop } = {}
+    { downloadAssets = !isLocalDesktopHost() } = {}
   ): Promise<TemplateLoadResult> {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
