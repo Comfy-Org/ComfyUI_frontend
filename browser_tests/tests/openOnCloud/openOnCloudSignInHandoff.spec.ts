@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 
 import type { operations } from '@/types/comfyRegistryTypes'
 
+import handedOverWorkflow from '@e2e/assets/nodes/note_nodes.json' with { type: 'json' }
 import {
   cloudAppExpect as expect,
   cloudAppFixture as test
@@ -22,17 +23,6 @@ const FILENAME = 'handed-over.json'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
-
-const HANDED_OVER_WORKFLOW = {
-  last_node_id: 0,
-  last_link_id: 0,
-  nodes: [],
-  links: [],
-  groups: [],
-  config: {},
-  extra: {},
-  version: 0.4
-}
 
 async function openLocalOpener(page: Page): Promise<void> {
   await page.route(`**${OPENER_PATH}`, (route) =>
@@ -57,7 +47,7 @@ async function openLocalOpener(page: Page): Promise<void> {
         )
       })
     },
-    { nonce: NONCE, filename: FILENAME, workflow: HANDED_OVER_WORKFLOW }
+    { nonce: NONCE, filename: FILENAME, workflow: handedOverWorkflow }
   )
 }
 
@@ -113,6 +103,13 @@ test.describe(
           hasText: 'Opened from ComfyUI on your computer'
         })
       ).toBeVisible()
+      await expect
+        .poll(() =>
+          cloudTab.evaluate(() =>
+            window.app?.graph.nodes.map((node) => node.type).toSorted()
+          )
+        )
+        .toEqual(['MarkdownNote', 'Note'])
       await expect(cloudTab.getByRole('dialog')).toHaveCount(0)
       await expect
         .poll(() => new URL(cloudTab.url()).searchParams.has('from_local'))
