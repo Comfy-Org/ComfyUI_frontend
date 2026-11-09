@@ -627,11 +627,6 @@ export interface MountDef {
 /** What a mounted control can hold. @knipIgnoreUnusedButUsedByCustomNodes */
 export type MountedData = string | number | boolean | object | null
 
-/**
- * Reading and writing a mounted widget's value.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
 export interface MountedValue {
   get(): MountedData
   set(value: MountedData): void
@@ -949,6 +944,7 @@ function connectMountedLifecycle(
 }
 
 function renderMountedWidget(
+  node: LGraphNode,
   widget: IBaseWidget,
   def: MountDef,
   container: HTMLElement,
@@ -957,7 +953,7 @@ function renderMountedWidget(
   def.render(container, {
     get: () => widget.value as MountedData,
     set: (value) => {
-      widget.value = value
+      commitWidgetValue(widget, value, { node })
     },
     onChange: (listener) => {
       listeners.add(listener)
@@ -985,7 +981,7 @@ function mountWidget(node: LGraphNode, def: MountDef): IBaseWidget {
   widget.serialize = def.serialize ?? holdsValue
   const listeners = new Set<(value: MountedData) => void>()
   connectMountedLifecycle(widget, def, holdsValue, listeners)
-  renderMountedWidget(widget, def, container, listeners)
+  renderMountedWidget(node, widget, def, container, listeners)
   return widget
 }
 

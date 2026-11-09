@@ -2,7 +2,7 @@
  * A pack-declared input type renders as a widget rather than degrading to a
  * socket, and holds a real value.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Installs LGraphNode.prototype.addDOMWidget as a side effect.
@@ -12,6 +12,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { createGraphApi } from './graphHandle'
 import { constructDeclaredWidget } from './declaredWidgetTypes'
 import { createWidgetTypeRegistrar } from './widgetTypes'
+import type { WidgetTypeValue } from './widgetTypes'
 
 describe('pack-declared widget types', () => {
   let graph: LGraph
@@ -30,6 +31,41 @@ describe('pack-declared widget types', () => {
 
   const build = (type: string, options: Record<string, unknown> = {}) =>
     constructDeclaredWidget(node, type, 'colour', options, options.default)
+
+  it.for(['handle', 'control'] as const)(
+    'commits a declared value once through the %s',
+    (source) => {
+      let editor: WidgetTypeValue | undefined
+      const seen = vi.fn()
+      node.properties.amount = 3
+      defineWidgetType('VHSINT', {
+        defaultValue: 3,
+        render(_container, value) {
+          editor = value
+          value.onChange(seen)
+        }
+      })
+      const built = build('VHSINT', { property: 'amount' })
+      const graphApi = createGraphApi(() => graph)
+      const handle = graphApi.node(String(node.id))?.widgets.get('colour')
+      assert.exists(handle)
+      assert.exists(editor)
+      const version = graphApi.version
+      const write = { handle: handle.setValue, control: editor.set }[source]
+
+      write(11)
+
+      expect(built?.widget.value).toBe(11)
+      expect(node.properties.amount).toBe(11)
+      expect(graphApi.version).toBe(version + 1)
+      expect(seen).toHaveBeenCalledExactlyOnceWith(11)
+
+      write(11)
+
+      expect(graphApi.version).toBe(version + 1)
+      expect(seen).toHaveBeenCalledTimes(1)
+    }
+  )
 
   it('makes the type render as a widget, not a socket', () => {
     // The host decides widget-vs-socket purely by this lookup, so an

@@ -20,6 +20,7 @@
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { registerDeclaredWidget } from './declaredWidgetTypes'
 
@@ -30,11 +31,6 @@ import type { Unsubscribe } from './widgetHandle'
 /** What a pack-declared widget can hold. */
 export type WidgetTypeData = string | number | boolean | object | null
 
-/**
- * Reading and writing the widget's value, for the renderer to bind to.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
 export interface WidgetTypeValue {
   get(): WidgetTypeData
   set(value: WidgetTypeData): void
@@ -212,10 +208,8 @@ export function createWidgetTypeRegistrar(
         container,
         {
           get: () => widget.value,
-          // The widget's own setter stores through `setValue` and then fires
-          // the callback, so calling it here too would notify twice.
           set: (value) => {
-            widget.value = value as typeof widget.value
+            commitWidgetValue(widget, value, { node })
           },
           onChange: (listener) => {
             listeners.add(listener)

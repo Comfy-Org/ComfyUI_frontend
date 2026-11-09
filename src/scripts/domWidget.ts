@@ -10,6 +10,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { isCommittingWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type {
@@ -86,7 +87,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
 
   override set value(v: V) {
     writeDomWidgetValue(this.options, v)
-    this.callback?.(this.value)
+    if (!isCommittingWidgetValue(this)) this.callback?.(this.value)
   }
 
   get margin(): number {
@@ -297,19 +298,15 @@ LGraphNode.prototype.addDOMWidget = function <
     element,
     options: { hideOnZoom: true, ...options }
   })
-  // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
   addWidget(this, widget as unknown as BaseDOMWidget)
 
-  // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
-  // Some custom nodes are explicitly expecting getter and setter of `value`
-  // property to be on instance instead of prototype.
   Object.defineProperty(widget, 'value', {
     get(this: DOMWidgetImpl<T, V>): V {
       return readDomWidgetValue(this.options)
     },
     set(this: DOMWidgetImpl<T, V>, v: V) {
       writeDomWidgetValue(this.options, v)
-      this.callback?.(this.value)
+      if (!isCommittingWidgetValue(this)) this.callback?.(this.value)
     }
   })
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Installs LGraphNode.prototype.addDOMWidget as a side effect.
@@ -10,7 +10,7 @@ import { ComfyApiError, ComfyReadonlyError } from './errors'
 import { createGraphApi } from './graphHandle'
 import { whileEmbeddingWorkflow } from './serializeContext'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
-import type { WidgetCollection } from './widgetHandle'
+import type { MountedValue, WidgetCollection } from './widgetHandle'
 import { dispatchWidgetTextInteraction } from './widgetTextInteraction'
 import { createWidgetTypeRegistrar } from './widgetTypes'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -664,6 +664,56 @@ describe('mounted and canvas widgets', () => {
       String(node.id)
     )
   })
+
+  it.for([
+    { source: 'handle', activations: 0 },
+    { source: 'control', activations: 1 }
+  ] as const)(
+    'commits a mounted value once through the $source',
+    ({ source, activations }) => {
+      let editor: MountedValue | undefined
+      const seen = vi.fn()
+      const changed = vi.fn()
+      const activated = vi.fn()
+      node.properties.amount = 3
+      node.onWidgetChanged = changed
+      const handle = widgets.mount({
+        name: 'amount',
+        defaultValue: 3,
+        render(_container, value) {
+          editor = value
+          value.onChange(seen)
+        }
+      })
+      handle.setOption('property', 'amount')
+      handle.on('activate', activated)
+      assert.exists(editor)
+      assert.exists(node.graph)
+      const graphApi = createGraphApi(() => node.graph)
+      const version = graphApi.version
+      const write = { handle: handle.setValue, control: editor.set }[source]
+
+      write(11)
+
+      expect(handle.getValue()).toBe(11)
+      expect(node.properties.amount).toBe(11)
+      expect(graphApi.version).toBe(version + 1)
+      expect(seen).toHaveBeenCalledExactlyOnceWith(11)
+      expect(changed).toHaveBeenCalledExactlyOnceWith(
+        'amount',
+        11,
+        3,
+        node.widgets?.[0]
+      )
+      expect(activated).toHaveBeenCalledTimes(activations)
+
+      write(11)
+
+      expect(graphApi.version).toBe(version + 1)
+      expect(seen).toHaveBeenCalledTimes(1)
+      expect(changed).toHaveBeenCalledTimes(1)
+    }
+  )
 
   it('hands the pack a container it can fill', () => {
     let filled: HTMLElement | undefined

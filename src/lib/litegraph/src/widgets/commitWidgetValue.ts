@@ -6,6 +6,12 @@ import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
+const committingWidgets = new WeakSet<IBaseWidget>()
+
+export function isCommittingWidgetValue(widget: IBaseWidget): boolean {
+  return committingWidgets.has(widget)
+}
+
 export interface WidgetValueCommitOptions {
   node: LGraphNode
   canvas?: LGraphCanvas
@@ -21,10 +27,15 @@ export function commitWidgetValue(
   const isNumber = widget.type === 'number'
   const v = isNumber ? Number(value) : value
   if (v === oldValue || (isNumber && Number.isNaN(v))) return
-  widget.value = v
-  const property = extensionValue(widget.options)?.property
-  if (property && node.properties[property] !== undefined) {
-    node.setProperty(property, v)
+  committingWidgets.add(widget)
+  try {
+    widget.value = v
+    const property = extensionValue(widget.options)?.property
+    if (property && node.properties[property] !== undefined) {
+      node.setProperty(property, v)
+    }
+  } finally {
+    committingWidgets.delete(widget)
   }
   widget.callback?.(widget.value, canvas, node, canvas?.graph_mouse, e)
 
