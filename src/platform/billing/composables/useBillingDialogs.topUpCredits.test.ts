@@ -251,7 +251,7 @@ describe('showTopUpCreditsDialog', () => {
   ])(
     'opens the purchase dialog billing_new_ux_enabled=$flag picks, even while routing is unknown',
     async ({ flag, component }) => {
-      useFeatureFlags().flags.billingNewUxEnabled = flag
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = flag
       useBillingContext().type = computed(() => 'unknown')
 
       await useBillingDialogs().showTopUpCreditsDialog({
