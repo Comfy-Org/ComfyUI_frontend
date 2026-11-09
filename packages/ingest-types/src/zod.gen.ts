@@ -6212,6 +6212,7 @@ export const zGetFeaturesResponse = z.object({
   max_upload_size: z.int().optional(),
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
+  open_on_cloud_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
