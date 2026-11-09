@@ -44,6 +44,11 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
       await expect(checkpointNode).toHaveCSS('opacity', '1')
       await expect(ksamplerNode).toHaveCSS('opacity', '1')
       await expect(unselectedNode).toHaveCSS('opacity', '1')
+
+      await comfyPage.page.keyboard.press(MUTE_HOTKEY)
+      await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
+      await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
+      await expect(unselectedNode).toHaveCSS('opacity', '1')
     }
   )
 })
