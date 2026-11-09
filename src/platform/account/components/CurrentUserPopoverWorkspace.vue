@@ -48,7 +48,7 @@
               >
             </div>
             <i
-              class="icon-[lucide--arrow-left-right] size-4 text-muted-foreground"
+              class="icon-[lucide--arrow-left-right] text-muted-foreground"
             />
           </button>
         </PopoverTrigger>
@@ -58,7 +58,7 @@
           :side-offset="8"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2 shadow-md"
+          class="w-auto overflow-visible rounded-xl p-2"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover

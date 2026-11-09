@@ -115,7 +115,6 @@ describe('CurrentUserButton', () => {
         stubs: {
           CurrentUserPopoverWorkspace: workspacePopover,
           WorkspaceSwitcherPopover: true,
-          SubscribeButton: true,
           DeploymentSwitcher: true
         }
       }

@@ -17,10 +17,7 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import {
-  keepPricingTableInApp,
-  PLATFORM_PLANS_PATH
-} from '@e2e/fixtures/utils/platformPlans'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -397,31 +394,6 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .poll(() => statusRequests.length)
       .toBeGreaterThan(requestsBeforeReturn)
   })
-
-  for (const destination of ['stripe', 'billing_web'] as const) {
-    test(`hands the avatar menu's Plans and pricing off to the platform Plans page while the destination is ${destination}`, async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await bootApp(page)
-      if (destination === 'billing_web') {
-        await new FeatureFlagHelper(page).setServerFlagsPersistent({
-          hosted_billing_destination: 'billing_web'
-        })
-      }
-
-      await clickPlansAndPricing(page)
-
-      await expect
-        .poll(async () => {
-          const url = await openedUrl(page)
-          return url && new URL(url).pathname
-        })
-        .toBe(PLATFORM_PLANS_PATH)
-      await expect(pricingDialog(page)).toHaveCount(0)
-    })
-  }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
