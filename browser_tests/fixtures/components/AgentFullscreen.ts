@@ -128,6 +128,18 @@ export class AgentFullscreen {
     return this.sectionNav.getByRole('button', { name, exact: true })
   }
 
+  workspaceOption(name: string): Locator {
+    return this.accountMenu.getByRole('menuitemradio', {
+      name: new RegExp(`^${name}`)
+    })
+  }
+
+  accountMenuItem(name: string): Locator {
+    return this.accountMenu.getByRole('menuitem', {
+      name: new RegExp(`^${name}`)
+    })
+  }
+
   async sidebarWidth(): Promise<number | undefined> {
     return (await this.sidebar.boundingBox())?.width
   }

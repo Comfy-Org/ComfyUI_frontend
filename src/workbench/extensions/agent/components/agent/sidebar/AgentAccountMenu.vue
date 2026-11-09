@@ -13,6 +13,7 @@ import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
@@ -99,6 +100,20 @@ function action(
   return { component: AccountMenuAction, props: { icon, label, onSelect } }
 }
 
+function plansEntry(): AccountMenuEntryView {
+  return isCloud
+    ? action(
+        'icon-[lucide--receipt-text]',
+        t('agent.account.viewAllPlans'),
+        onSelectPlans
+      )
+    : action(
+        'icon-[lucide--coins]',
+        t('subscription.plansAndCredits'),
+        onSelectPlansAndCredits
+      )
+}
+
 const entryViews = computed(
   (): Record<AccountMenuEntry, AccountMenuEntryView> => ({
     workspaces: { component: AccountWorkspaceGroup },
@@ -115,11 +130,7 @@ const entryViews = computed(
         onSelect: onSelectUsage
       }
     },
-    plans: action(
-      'icon-[lucide--receipt-text]',
-      t('agent.account.viewAllPlans'),
-      onSelectPlans
-    ),
+    plans: plansEntry(),
     email: { component: AccountEmailLabel, props: { email: email.value } },
     settings: {
       component: AccountMenuAction,
@@ -206,6 +217,11 @@ function onSelectHelp(): void {
 function onSelectPlans(): void {
   trackAccountMenu('agent_account_menu_plans_clicked')
   subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
+}
+
+function onSelectPlansAndCredits(): void {
+  trackAccountMenu('agent_account_menu_plans_clicked')
+  settingsDialog.show('workspace')
 }
 
 function onSelectApiKey(): void {

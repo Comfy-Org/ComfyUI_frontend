@@ -47,20 +47,6 @@ function story(
   }
 }
 
-function cloudOnly(workspaceStory: Story): Story {
-  return {
-    ...workspaceStory,
-    parameters: {
-      docs: {
-        description: {
-          story:
-            'Run with `DISTRIBUTION=cloud pnpm storybook`. Workspaces are cloud-only, so a plain `pnpm storybook` shows the account trigger instead.'
-        }
-      }
-    }
-  }
-}
-
 const balance = { amountMicros: 588, currency: 'USD' }
 
 const personal: TeamWorkspaceMockState['workspaces'][number] = {
@@ -98,34 +84,41 @@ export const Compact: Story = story(
   { compact: true }
 )
 
-export const WithWorkspaces: Story = cloudOnly(
-  story({}, { tier: 'PRO', balance }, {}, workspaces)
+export const WithWorkspaces: Story = story(
+  {},
+  { tier: 'PRO', balance },
+  {},
+  workspaces
 )
 
-export const WorkspaceWithoutPlan: Story = cloudOnly(
-  story({}, { balance }, {}, workspaces)
+export const WorkspaceWithoutPlan: Story = story(
+  {},
+  { balance },
+  {},
+  workspaces
 )
 
-export const ManyWorkspaces: Story = cloudOnly(
-  story(
-    {},
-    { tier: 'PRO', balance },
-    {},
-    {
-      ...workspaces,
-      workspaces: [
-        personal,
-        studio,
-        ...Array.from({ length: 8 }, (_, index) => ({
-          ...studio,
-          id: `ws-team-${index}`,
-          name: `Team ${index + 1}`
-        }))
-      ]
-    }
-  )
+export const ManyWorkspaces: Story = story(
+  {},
+  { tier: 'PRO', balance },
+  {},
+  {
+    ...workspaces,
+    workspaces: [
+      personal,
+      studio,
+      ...Array.from({ length: 8 }, (_, index) => ({
+        ...studio,
+        id: `ws-team-${index}`,
+        name: `Team ${index + 1}`
+      }))
+    ]
+  }
 )
 
-export const CompactWithWorkspace: Story = cloudOnly(
-  story({}, { tier: 'PRO', balance }, { compact: true }, workspaces)
+export const CompactWithWorkspace: Story = story(
+  {},
+  { tier: 'PRO', balance },
+  { compact: true },
+  workspaces
 )

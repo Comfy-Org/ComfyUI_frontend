@@ -172,21 +172,23 @@ describe('AgentAccountMenu', () => {
       separators: 2
     },
     {
-      scenario: 'signed in outside cloud',
+      scenario: 'signed in outside cloud with workspaces',
       signedIn: true,
       isCloud: false,
       hasWorkspaces: true,
       entries: [
+        'Personal Workspace',
+        'Studio',
         'Workspace settings',
         'Usage',
-        'View all plans',
+        'Plans and credits',
         'Settings',
         'Language',
         'Get help',
         'Get API Key',
         'Log out'
       ],
-      separators: 2
+      separators: 3
     },
     {
       scenario: 'signed out on cloud',
@@ -206,7 +208,7 @@ describe('AgentAccountMenu', () => {
       signedIn: false,
       isCloud: false,
       entries: [
-        'View all plans',
+        'Plans and credits',
         'Settings',
         'Language',
         'Get help',
@@ -359,6 +361,23 @@ describe('AgentAccountMenu', () => {
       expectTracked(buttonId)
     }
   )
+
+  it('opens Plans and credits in the workspace settings off Cloud', async () => {
+    distribution.isCloud = false
+    signIn()
+    mount()
+    await openMenu()
+
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Plans and credits' })
+    )
+
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expectTracked('agent_account_menu_plans_clicked')
+  })
 
   it('says where the API key entry leads and that it opens a new tab', async () => {
     mount()
