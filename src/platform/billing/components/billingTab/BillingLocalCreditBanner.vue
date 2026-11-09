@@ -108,8 +108,13 @@ const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
 const { workspaceType } = useBillingUI()
-const { canTopUp, topUpDenial, hasResolvedCapabilities, canManageBilling } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  canManageBilling,
+  runDeniedPaymentPastDue
+} = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const { t, locale } = useI18n()
@@ -193,7 +198,10 @@ function pastDueBodyKey(): string {
 }
 
 function outOfCreditsView(): BannerView | null {
-  if (isTopUpDeniedPastDue(topUpDenial.value)) {
+  if (
+    runDeniedPaymentPastDue.value ||
+    isTopUpDeniedPastDue(topUpDenial.value)
+  ) {
     return {
       title: t(`${bs}.outOfCredits.title`),
       body: t(pastDueBodyKey()),

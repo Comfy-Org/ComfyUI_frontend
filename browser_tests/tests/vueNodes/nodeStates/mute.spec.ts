@@ -6,7 +6,6 @@ import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'
-const SELECTED_CLASS = /outline-foreground/
 
 test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
   test(
@@ -21,7 +20,7 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
       const unselectedNode =
         comfyPage.vueNodes.getNodeByTitle('Empty Latent Image')
       await comfyPage.page.getByText('Load Checkpoint').click()
-      await expect(checkpointNode).toHaveClass(SELECTED_CLASS)
+      await expect(checkpointNode).toHaveAttribute('data-emphasized', 'true')
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
@@ -35,7 +34,7 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
       await comfyPage.page
         .getByText('KSampler')
         .click({ modifiers: ['Control'] })
-      await expect(ksamplerNode).toHaveClass(SELECTED_CLASS)
+      await expect(ksamplerNode).toHaveAttribute('data-emphasized', 'true')
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
       await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
