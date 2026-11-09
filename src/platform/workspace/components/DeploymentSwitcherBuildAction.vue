@@ -6,7 +6,7 @@
   >
     <MenuItem as-child :class="switcherItemClass">
       <a
-        :href="buildsUrl"
+        :href="platformLink('/profile/builds')"
         target="_blank"
         rel="noopener noreferrer"
         class="text-foreground no-underline"
@@ -42,5 +42,4 @@ import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()
 const emit = defineEmits<{ createCustomDeployment: [] }>()
-const buildsUrl = platformLink('/profile/builds')
 </script>

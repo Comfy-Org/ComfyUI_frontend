@@ -106,11 +106,12 @@ useEventListener(window, 'focus', () => {
   void deploymentPick.load()
 })
 
-const buildsUrl = platformLink('/profile/builds')
 const buildUrl = computed(() =>
-  deployment.build_id
-    ? platformLink(`/profile/builds/${encodeURIComponent(deployment.build_id)}`)
-    : buildsUrl
+  platformLink(
+    deployment.build_id
+      ? `/profile/builds/${encodeURIComponent(deployment.build_id)}`
+      : '/profile/builds'
+  )
 )
 
 function buildPack(group: MissingPackGroup): MissingBuildPack {
