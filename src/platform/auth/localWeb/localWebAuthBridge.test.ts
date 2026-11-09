@@ -132,6 +132,26 @@ async function authorized(env: PopupEnv): Promise<void> {
   await vi.waitFor(() => expect(authorizeUrlOf(env)).toBeDefined())
 }
 
+function holdTokenRequests(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+) {
+  const held = { answer: (_response: Response) => {} }
+  env.fetchImpl.mockImplementation((url) =>
+    String(url) === `${ISSUER}/oauth/revoke`
+      ? Promise.resolve(new Response(null))
+      : new Promise((resolve) => (held.answer = resolve))
+  )
+  return held
+}
+
+function tokenRequests(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+) {
+  return env.fetchImpl.mock.calls.filter(
+    ([url]) => String(url) === `${ISSUER}/oauth/token`
+  )
+}
+
 function formOf(init: RequestInit | undefined): Record<string, string> {
   return Object.fromEntries(new URLSearchParams(String(init?.body)))
 }
@@ -724,16 +744,38 @@ describe('signOut', () => {
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
   })
 
+  it('asks the server to end every sign-in this page held', async () => {
+    const { bridge, env } = await signedInToBothWorkspaces()
+
+    await bridge.signOut()
+
+    await vi.waitFor(() => {
+      const revoked = env.fetchImpl.mock.calls
+        .filter(([url]) => String(url) === `${ISSUER}/oauth/revoke`)
+        .map(([, init]) => formOf(init).token)
+      expect(revoked).toHaveLength(2)
+      expect(revoked).toEqual(
+        expect.arrayContaining(['refresh-1', 'refresh-ws2'])
+      )
+    })
+  })
+
+  it('signs out at once even when the server cannot be reached', async () => {
+    const { bridge, env, tokens } = await signedIn()
+    env.fetchImpl.mockImplementation(() => new Promise<Response>(() => {}))
+
+    await expect(bridge.signOut()).resolves.toEqual({ status: 'signed_out' })
+
+    expect(tokens.read()).toBeUndefined()
+  })
+
   it('discards a refresh that finishes after sign-out', async () => {
     const { bridge, env, tokens } = await signedIn(30)
-    let answer: (response: Response) => void = () => {}
-    env.fetchImpl.mockImplementation(
-      () => new Promise((resolve) => (answer = resolve))
-    )
+    const held = holdTokenRequests(env)
 
     const read = bridge.getWorkspaceToken('ws-1')
     await bridge.signOut()
-    answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
+    held.answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
 
     await expect(read).resolves.toBeNull()
     expect(tokens.read()).toBeUndefined()
@@ -964,16 +1006,13 @@ describe('switchWorkspace', () => {
     })
 
     await expect(switching).resolves.toEqual({ status: 'signed_out' })
-    expect(env.fetchImpl).not.toHaveBeenCalled()
+    expect(tokenRequests(env)).toEqual([])
     expect(tokens.read()).toBeUndefined()
   })
 
   it('drops a switch consent whose code exchange finishes after sign-out', async () => {
     const { bridge, env, storage, popup, post, tokens } = await signedIn()
-    let answer: (response: Response) => void = () => {}
-    env.fetchImpl.mockImplementation(
-      () => new Promise((resolve) => (answer = resolve))
-    )
+    const held = holdTokenRequests(env)
     const switching = bridge.switchWorkspace?.('ws-2')
     await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
@@ -988,7 +1027,7 @@ describe('switchWorkspace', () => {
     await vi.waitFor(() => expect(env.fetchImpl).toHaveBeenCalledOnce())
 
     await bridge.signOut()
-    answer(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
+    held.answer(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
 
     await expect(switching).resolves.toEqual({ status: 'signed_out' })
     expect(tokens.read()).toBeUndefined()
