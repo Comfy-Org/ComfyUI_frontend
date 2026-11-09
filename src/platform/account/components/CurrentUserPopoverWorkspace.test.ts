@@ -1,108 +1,32 @@
-import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
-import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { getActivePinia } from 'pinia'
-import { render, screen, waitFor } from '@testing-library/vue'
+import type { WorkspacePlanSummary } from '@comfyorg/ingest-types'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { setImmediate } from 'node:timers/promises'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import type {
-  BalanceInfo,
-  SubscriptionInfo
-} from '@/platform/billing/composables/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import enMessages from '@/locales/en/main.json'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import enMessages from '@/locales/en/main.json'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useAccountUI } from '@/platform/account/composables/useAccountUI'
-import type { BillingStatus, BillingTopUpDenial } from '@comfyorg/billing-core'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 
-const state = vi.hoisted(() => {
-  function initialPlanSlug(): string | null {
-    return 'pro-monthly'
-  }
-
-  function initialBillingWebUrl(): URL | null {
-    return new URL('http://localhost:5174')
-  }
-
-  function initialBillingStatus(): BillingStatus {
-    return 'paid'
-  }
-
-  return {
-    isCloud: true,
-    billingStatus: initialBillingStatus(),
-    canAccessSubscriptionFeatures: true,
-    isCancelled: false,
-    planSlug: initialPlanSlug(),
-    canManageSubscription: false,
-    canManageSubscriptionLifecycle: false,
-    canReactivatePlan: false,
-    canOpenPricingSurface: false,
-    shouldUseWorkspaceBilling: true,
-    billingWebUrl: initialBillingWebUrl()
-  }
-})
-
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-
-vi.mock(import('@/platform/account/composables/useAccountUI'))
-
-vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-
-vi.mock(import('@/platform/billing/composables/useBillingRouting'))
-
-vi.mock(
-  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
-)
-
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return state.isCloud
-  }
-}))
-
-vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
-vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
-
 vi.mock(import('@comfyorg/telemetry'))
-
-vi.mock(import('@/composables/useFeatureFlags'))
-
-vi.mock<unknown>(import('@/platform/billing/billingWeb'), () => ({
-  getBillingWebUrl: () => state.billingWebUrl
-}))
-
-// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
-vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
-}))
 
 const WorkspaceSwitcherPopoverStub = defineComponent({
   emits: ['select', 'create'],
@@ -114,176 +38,224 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
   `
 })
 
-const SubscribeButtonStub = defineComponent({
-  props: {
-    label: { type: String, required: true }
-  },
-  template: '<button type="button">{{ label }}</button>'
-})
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
 })
 
-function renderComponent(
-  type: 'personal' | 'team' = 'personal',
-  accountActionsOnly = false
-) {
-  useTeamWorkspaceStore().initState = 'ready'
-  Object.assign(useTeamWorkspaceStore(), {
-    workspaceName: `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
+type Served = {
+  role: 'owner' | 'member'
+  planSummary?: WorkspacePlanSummary
+  balance: BalanceInfo | null
+  loading: boolean
+  accountActionsOnly: boolean
+}
+
+const defaults: Served = {
+  role: 'owner',
+  planSummary: { status: 'active', plan_name: 'Pro' },
+  balance: { amountMicros: 4_945_000, currency: 'USD' },
+  loading: false,
+  accountActionsOnly: false
+}
+
+function renderMenu(served: Partial<Served> = {}) {
+  const { role, planSummary, balance, loading, accountActionsOnly } = {
+    ...defaults,
+    ...served
+  }
+  const store = useTeamWorkspaceStore()
+  store.initState = 'ready'
+  Object.assign(store, {
+    workspaceName: 'Comfy Team',
+    activeWorkspace: {
+      id: 'ws-1',
+      name: 'Comfy Team',
+      type: 'team',
+      role,
+      created_at: '2026-01-01T00:00:00Z',
+      joined_at: '2026-01-01T00:00:00Z',
+      ...(planSummary && { plan_summary: planSummary })
+    }
   })
-  Object.assign(useTeamWorkspaceStore(), {
-    isInPersonalWorkspace: type === 'personal'
-  })
-  return render(CurrentUserPopoverWorkspace, {
-    props: { accountActionsOnly },
+  const billing = useBillingContext()
+  billing.balance = computed(() => balance)
+  billing.isLoading = ref(loading)
+
+  const emitted = vi.fn()
+  render(CurrentUserPopoverWorkspace, {
+    props: { accountActionsOnly, onClose: emitted },
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: SubscribeButtonStub,
-        WorkspaceProfilePic: true,
-        Divider: true
+        WorkspaceProfilePic: true
       }
     }
   })
+  return { closed: emitted }
 }
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    useCurrentUser().userDisplayName = computed(() => 'Liz')
-    useCurrentUser().userEmail = computed(() => 'liz@example.com')
-    useCurrentUser().userPhotoUrl = computed(() => null)
-    state.isCloud = true
-    state.billingStatus = 'paid'
-    state.canAccessSubscriptionFeatures = true
-    state.isCancelled = false
-    state.planSlug = 'pro-monthly'
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
-    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
-      showPaymentRecoveryDialog: vi.fn(),
-      updatePayment: vi.fn(),
-      isUpdatingPayment: computed(() => false),
-      paymentRecoveryLock: computed(() => null),
-      refreshCapabilities: vi.fn(async () => undefined)
+    useCurrentUser().userDisplayName = computed(() => 'Mariana Martinho')
+    useCurrentUser().userEmail = computed(() => 'mariana@comfy.org')
+    vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  })
+
+  describe('the plan line under the workspace name', () => {
+    it.for<{ name: string; served: Partial<Served>; line: string }>([
+      { name: 'an active plan', served: {}, line: 'Pro • Owner' },
+      {
+        name: 'a member of an active plan',
+        served: { role: 'member' },
+        line: 'Pro • Member'
+      },
+      {
+        name: 'no plan',
+        served: { planSummary: { status: 'no_plan', plan_name: null } },
+        line: 'No plan • Owner'
+      },
+      {
+        name: 'a paused plan',
+        served: { planSummary: { status: 'paused', plan_name: 'Pro' } },
+        line: 'Paused • Owner'
+      },
+      {
+        name: 'a renewal payment due',
+        served: { planSummary: { status: 'payment_due', plan_name: 'Pro' } },
+        line: 'Payment due • Owner'
+      },
+      {
+        name: 'an ended plan',
+        served: { planSummary: { status: 'ended', plan_name: 'Pro' } },
+        line: 'Plan ended • Owner'
+      },
+      {
+        name: 'an active plan whose name is unknown',
+        served: { planSummary: { status: 'active', plan_name: null } },
+        line: 'Owner'
+      },
+      {
+        name: 'no served summary',
+        served: { planSummary: undefined },
+        line: 'Owner'
+      }
+    ])('shows "$line" for $name', ({ served, line }) => {
+      renderMenu(served)
+
+      expect(screen.getByTestId('workspace-plan-line')).toHaveTextContent(line)
+    })
+  })
+
+  describe('the Credits row', () => {
+    it('shows the effective balance, keeping a negative sign', () => {
+      renderMenu({
+        balance: {
+          amountMicros: 100,
+          effectiveBalanceMicros: -2_110,
+          currency: 'USD'
+        }
+      })
+
+      expect(screen.getByTestId('credits-balance')).toHaveTextContent('-')
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
     })
 
-    state.canManageSubscription = false
-    state.canManageSubscriptionLifecycle = false
-    state.canOpenPricingSurface = false
+    it('shows a muted dash with the reason when the balance could not be read', async () => {
+      const user = userEvent.setup()
+      renderMenu({ balance: null })
 
-    state.shouldUseWorkspaceBilling = true
-    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-    state.billingWebUrl = new URL('http://localhost:5174')
-    const billingContext = useBillingContext()
-    billingContext.billingStatus = computed(() => state.billingStatus)
-    billingContext.canAccessSubscriptionFeatures = computed(
-      () => state.canAccessSubscriptionFeatures
-    )
-    billingContext.subscription = computed(
-      () =>
-        ({
-          isActive: true,
-          tier: null,
-          duration: null,
-          isCancelled: state.isCancelled,
-          planSlug: state.planSlug,
-          scheduledChange: null,
-          renewalDate: null,
-          endDate: null,
-          hasFunds: true,
-          agentHasFunds: true
-        }) satisfies SubscriptionInfo
-    )
-    billingContext.balance = computed(
-      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
-    )
-    billingContext.isLoading = ref(false)
-    vi.mocked(useBillingContext).mockReturnValue(billingContext)
-    const workspaceUI = vi.mocked(useAccountUI())
-    workspaceUI.permissions = computed(() => ({
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canManageSubscription: receiveServerFact(
-        'can_manage_subscription',
-        state.canManageSubscription
-      ),
-      canManageSubscriptionLifecycle: receiveServerFact(
-        'can_manage_subscription',
-        state.canManageSubscriptionLifecycle
-      ),
-      canDowngradeToPersonal: false
-    }))
-    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
-    workspaceUI.canOpenPricingSurface = computed(
-      () => state.canOpenPricingSurface
-    )
-    const billingRouting = vi.mocked(useBillingRouting())
-    billingRouting.shouldUseWorkspaceBilling = computed(
-      () => state.shouldUseWorkspaceBilling
-    )
+      const dash = screen.getByTestId('credits-balance-unavailable')
+      expect(dash).toHaveTextContent('—')
+      await user.hover(dash)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        "Couldn't load your balance."
+      )
+    })
+
+    it('shows no number while the balance loads', () => {
+      renderMenu({ loading: true })
+
+      expect(screen.queryByTestId('credits-balance')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
+    })
+
+    it.for([
+      { name: 'Credits', testId: 'credits-menu-item' },
+      { name: 'Workspace settings', testId: 'workspace-settings-menu-item' }
+    ])('opens Settings › Billing from $name and closes the menu', async ({
+      testId
+    }) => {
+      const user = userEvent.setup()
+      const { closed } = renderMenu()
+
+      await user.click(screen.getByTestId(testId))
+
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+      expect(closed).toHaveBeenCalledOnce()
+    })
   })
 
-  it('toggles the workspace switcher panel from the selector row', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-    const trigger = screen.getByTestId('workspace-switcher-trigger')
+  it('drops the actions the redesign removes', () => {
+    renderMenu()
 
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
-
-    await user.click(trigger)
-    const panel = screen.getByRole('dialog')
-    expect(panel).toBe(screen.getByTestId('workspace-switcher-panel'))
-    expect(trigger).toHaveAttribute('aria-controls', panel.id)
-    expect(trigger).toHaveAttribute('aria-expanded', 'true')
-
-    await user.click(trigger)
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
+    for (const name of [
+      'Add credits',
+      'Subscribe',
+      'Plans & pricing',
+      'Manage plan',
+      'Partner Nodes pricing'
+    ]) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+    }
+    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
   })
 
-  it('closes the workspace switcher panel on Escape', async () => {
+  it('shows the person with a monogram, name and email', () => {
+    renderMenu()
+
+    const identity = screen.getByTestId('current-user-identity')
+    expect(within(identity).getByText('M')).toBeInTheDocument()
+    expect(within(identity).getByText('Mariana Martinho')).toBeInTheDocument()
+    expect(within(identity).getByText('mariana@comfy.org')).toBeInTheDocument()
+  })
+
+  it('toggles the workspace switcher from the header row', async () => {
     const user = userEvent.setup()
-    renderComponent()
+    renderMenu()
     const trigger = screen.getByTestId('workspace-switcher-trigger')
 
     await user.click(trigger)
-    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
 
+    await user.click(trigger)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
   })
 
-  it('dismisses the keyboard-opened workspace name tooltip on Escape', async () => {
+  it('opens the create-workspace dialog and closes the menu on create', async () => {
     const user = userEvent.setup()
-    renderComponent('team')
+    const { closed } = renderMenu()
 
-    await user.tab()
-    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
-    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
-      'Team Workspace'
-    )
+    await user.click(screen.getByTestId('workspace-switcher-trigger'))
+    await user.click(screen.getByTestId('stub-create-workspace'))
 
-    await user.keyboard('{Escape}')
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    expect(useWorkspaceDialogs().showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(closed).toHaveBeenCalledOnce()
   })
 
   it('reports a failed balance read once instead of leaving it unhandled', async () => {
     const failure = new Error('Balance temporarily unavailable')
     vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
 
-    renderComponent()
+    renderMenu()
 
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(failure, {
@@ -296,17 +268,14 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it('keeps account actions available without workspace context', () => {
-    renderComponent('personal', true)
+    renderMenu({ accountActionsOnly: true })
 
     expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
     expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
     expect(
       screen.queryByTestId('workspace-switcher-trigger')
     ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('workspace-settings-menu-item')
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credits-menu-item')).not.toBeInTheDocument()
     expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 
@@ -332,7 +301,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       { name: 'shows a fixed workspace on an older Desktop', canSwitch: false }
     ])('$name', async ({ canSwitch }) => {
       await startDesktopHostSession(hostBridge(canSwitch))
-      renderComponent('team')
+      renderMenu()
 
       expect(screen.queryByTestId('workspace-switcher-trigger') !== null).toBe(
         canSwitch
@@ -340,543 +309,6 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(screen.queryByTestId('workspace-context-row') !== null).toBe(
         !canSwitch
       )
-    })
-  })
-
-  it('exposes the full workspace name on hover', async () => {
-    const user = userEvent.setup()
-    renderComponent('team')
-
-    await user.hover(screen.getByTestId('workspace-switcher-trigger'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
-        'Team Workspace'
-      )
-    })
-  })
-
-  it('closes the switcher panel after selecting a workspace', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    await user.click(screen.getByTestId('stub-select-workspace'))
-
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
-  })
-
-  it('opens the create-workspace dialog and closes the popover on create', async () => {
-    const user = userEvent.setup()
-    const { emitted } = renderComponent()
-
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    await user.click(screen.getByTestId('stub-create-workspace'))
-
-    expect(useWorkspaceDialogs().showCreateWorkspaceDialog).toHaveBeenCalled()
-    expect(emitted('close')).toHaveLength(1)
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
-  })
-
-  it('keeps a team workspace member read-only', () => {
-    renderComponent('team')
-
-    expect(screen.getByText('211')).toBeInTheDocument()
-    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('plans-pricing-menu-item')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('manage-plan-menu-item')
-    ).not.toBeInTheDocument()
-  })
-
-  /**
-   * Plan selection stays in the app regardless of `hosted_billing_destination`:
-   * billing-web's `/v1/pricing` has no personal/team tabs, cycle toggle, or
-   * credit slider, so the avatar menu always opens the in-app table. Only a
-   * Subscribe click inside that table (`useSubscriptionCheckout`) hands off
-   * to billing-web, covered in its own suite.
-   */
-  it.for(['stripe', 'billing_web'] as const)(
-    'always opens the in-app pricing table, never a tab, when the destination is %s',
-    async (destination) => {
-      const user = userEvent.setup()
-      const open = vi.spyOn(window, 'open')
-      state.canOpenPricingSurface = true
-      vi.mocked(useFeatureFlags().flags).hostedBillingDestination = destination
-      renderComponent('team')
-
-      await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
-        reason: 'avatar_menu_plans'
-      })
-      expect(open).not.toHaveBeenCalled()
-    }
-  )
-
-  it.for(['payment_failed', 'paused'] as const)(
-    'keeps Manage plan available for an existing %s subscription',
-    (billingStatus) => {
-      state.billingStatus = billingStatus
-      state.canAccessSubscriptionFeatures = false
-      state.canManageSubscription = true
-
-      renderComponent('team')
-
-      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
-    }
-  )
-
-  it('hides Manage plan and add-credits when payment_failed has no plan and top-up is denied', () => {
-    state.billingStatus = 'payment_failed'
-    state.canAccessSubscriptionFeatures = false
-    state.canManageSubscription = true
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    state.planSlug = null
-
-    renderComponent('team')
-
-    expect(
-      screen.queryByTestId('manage-plan-menu-item')
-    ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
-    state.isCloud = false
-    state.canAccessSubscriptionFeatures = false
-    state.canManageSubscription = true
-    const { rerender } = renderComponent('personal')
-
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-
-    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Team Workspace' })
-    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-    await rerender({})
-
-    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
-      'Team Workspace'
-    )
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('lets an owner add credits on Local without an active subscription', async () => {
-    const user = userEvent.setup()
-    state.isCloud = false
-    state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canTopUp = computed(() => true)
-
-    renderComponent('personal')
-
-    await user.click(screen.getByTestId('add-credits-button'))
-
-    expect(
-      useBillingDialogs().showTopUpCreditsDialog
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
-  })
-
-  it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
-    state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canTopUp = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    state.canManageSubscription = true
-
-    renderComponent('personal')
-
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
-  })
-
-  it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
-    state.isCloud = false
-    useBillingCapabilities().canTopUp = computed(() => true)
-
-    renderComponent('personal')
-
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-  })
-
-  it('hides add-credits when top-up is denied even though self-serve subscribe is allowed', () => {
-    state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    renderComponent('personal')
-
-    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-  })
-
-  it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
-    {
-      denial: 'topup_purchases_paused',
-      reason: "Buying credits isn't available right now. Try again later."
-    },
-    {
-      denial: 'payment_past_due',
-      reason: 'Update your payment method to add credits.'
-    },
-    {
-      denial: 'tier_not_self_serve',
-      reason: "Adding credits isn't available for this workspace right now."
-    },
-    {
-      denial: undefined,
-      reason: "Adding credits isn't available for this workspace right now."
-    }
-  ])(
-    'shows Add credits disabled with the reason for a $denial refusal',
-    ({ denial, reason }) => {
-      useBillingCapabilities().topUpDenial = computed(() => denial)
-
-      renderComponent('team')
-
-      const addCredits = screen.getByTestId('add-credits-button')
-      expect(addCredits).toBeDisabled()
-      expect(addCredits).toHaveAccessibleDescription(reason)
-    }
-  )
-
-  it.for(['not_workspace_owner', 'not_a_member'] as const)(
-    'hides Add credits for a %s refusal',
-    (denial) => {
-      useBillingCapabilities().topUpDenial = computed(() => denial)
-
-      renderComponent('team')
-
-      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    }
-  )
-
-  it('keeps a past-due owner a way to update payment', async () => {
-    const user = userEvent.setup()
-    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
-    useBillingCapabilities().paymentRecoveryAvailable =
-      paymentRecoveryAvailableFact(true)
-
-    renderComponent('team')
-
-    await user.click(screen.getByRole('button', { name: 'Update payment' }))
-
-    expect(usePaymentRecoveryDialog().updatePayment).toHaveBeenCalledOnce()
-    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
-  })
-
-  it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
-    state.isCloud = false
-    state.isCancelled = true
-    state.canManageSubscriptionLifecycle = true
-    useBillingCapabilities().canReactivate = computed(() => true)
-
-    renderComponent('team')
-
-    expect(
-      screen.queryByRole('button', { name: 'Resubscribe' })
-    ).not.toBeInTheDocument()
-  })
-
-  it.for([
-    {
-      name: 'allows a lifecycle manager to resubscribe a cancelled plan',
-      canAccessSubscriptionFeatures: true,
-      isCancelled: true,
-      canManageSubscription: false,
-      canManageSubscriptionLifecycle: true,
-      canReactivate: true,
-      canSubscribeSelfServe: false,
-      canTopUp: false,
-      action: 'Resubscribe',
-      visible: true
-    },
-    {
-      name: 'does not let a subscription manager resubscribe a cancelled plan',
-      canAccessSubscriptionFeatures: true,
-      isCancelled: true,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: false,
-      canReactivate: false,
-      canSubscribeSelfServe: false,
-      canTopUp: false,
-      action: 'Resubscribe',
-      visible: false
-    },
-    {
-      name: 'does not resubscribe a cancelled plan when the server denies reactivation to a client-side owner',
-      canAccessSubscriptionFeatures: true,
-      isCancelled: true,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true,
-      canReactivate: false,
-      canSubscribeSelfServe: false,
-      canTopUp: false,
-      action: 'Resubscribe',
-      visible: false
-    },
-    {
-      name: 'allows a subscription manager to subscribe an inaccessible plan',
-      canAccessSubscriptionFeatures: false,
-      isCancelled: false,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: false,
-      canReactivate: false,
-      canSubscribeSelfServe: true,
-      canTopUp: true,
-      action: 'Subscribe',
-      visible: true
-    },
-    {
-      name: 'does not let a lifecycle manager subscribe an inaccessible plan',
-      canAccessSubscriptionFeatures: false,
-      isCancelled: false,
-      canManageSubscription: false,
-      canManageSubscriptionLifecycle: true,
-      canReactivate: true,
-      canSubscribeSelfServe: false,
-      canTopUp: false,
-      action: 'Subscribe',
-      visible: false
-    }
-  ])(
-    '$name',
-    ({
-      canAccessSubscriptionFeatures,
-      isCancelled,
-      canManageSubscription,
-      canManageSubscriptionLifecycle,
-      canReactivate,
-      canSubscribeSelfServe,
-      canTopUp,
-      action,
-      visible
-    }) => {
-      state.canAccessSubscriptionFeatures = canAccessSubscriptionFeatures
-      state.isCancelled = isCancelled
-      state.canManageSubscription = canManageSubscription
-      state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
-      state.canReactivatePlan = canReactivate
-      useBillingCapabilities().canSubscribeSelfServe = computed(
-        () => canSubscribeSelfServe
-      )
-      useBillingCapabilities().canTopUp = computed(() => canTopUp)
-
-      renderComponent('team')
-
-      const subscribeAction = screen.queryByRole('button', { name: action })
-      if (visible) {
-        expect(subscribeAction).toBeInTheDocument()
-      } else {
-        expect(subscribeAction).not.toBeInTheDocument()
-      }
-    }
-  )
-
-  it('keeps billing controls and resubscribe available to a promoted owner', async () => {
-    const user = userEvent.setup()
-    state.isCancelled = true
-    useBillingCapabilities().canTopUp = computed(() => true)
-    state.canManageSubscription = true
-    state.canManageSubscriptionLifecycle = true
-    state.canReactivatePlan = true
-    state.canOpenPricingSurface = true
-    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
-    renderComponent('team')
-
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-    expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
-    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
-
-    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
-  })
-
-  it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
-    // Server-resolved for Enterprise/unrecognized tiers: no self-serve
-    // catalog, so canOpenPricingSurface resolves false while the plan is
-    // still manageable through settings.
-    state.canManageSubscription = true
-    state.canOpenPricingSurface = false
-    renderComponent('team')
-
-    expect(
-      screen.queryByTestId('plans-pricing-menu-item')
-    ).not.toBeInTheDocument()
-    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
-  })
-
-  it('hides Resubscribe for a cancelled sales-managed plan', () => {
-    state.isCancelled = true
-    state.canManageSubscription = true
-    state.canManageSubscriptionLifecycle = true
-    state.canReactivatePlan = false
-    renderComponent('team')
-
-    expect(
-      screen.queryByRole('button', { name: 'Resubscribe' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('reads the derived reactivate policy, not the raw server capability', () => {
-    state.isCancelled = true
-    state.canManageSubscriptionLifecycle = true
-    state.canReactivatePlan = true
-
-    renderComponent('personal')
-
-    expect(
-      screen.getByRole('button', { name: 'Resubscribe' })
-    ).toBeInTheDocument()
-  })
-
-  for (const workspaceType of ['personal', 'team'] as const) {
-    it(`opens workspace plan management for a ${workspaceType} owner`, async () => {
-      const user = userEvent.setup()
-      state.canManageSubscription = true
-      const { emitted } = renderComponent(workspaceType)
-
-      const menuItem = screen.getByRole('button', {
-        name: enMessages.subscription.managePlan
-      })
-      expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
-
-      menuItem.focus()
-      await user.keyboard('{Enter}')
-
-      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
-      expect(emitted('close')).toHaveLength(1)
-    })
-  }
-
-  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
-    state.isCloud = false
-    state.canManageSubscription = true
-    const user = userEvent.setup()
-    const { emitted } = renderComponent()
-
-    expect(
-      screen.queryByTestId('plans-pricing-menu-item')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('manage-plan-menu-item')
-    ).not.toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: enMessages.subscription.plansAndCredits
-      })
-    )
-
-    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
-    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
-    expect(emitted('close')).toHaveLength(1)
-  })
-
-  it('hides local Plan and Credits without subscription management permission', () => {
-    state.isCloud = false
-
-    renderComponent()
-
-    expect(
-      screen.queryByTestId('plans-credits-menu-item')
-    ).not.toBeInTheDocument()
-  })
-
-  // Paired with the negative case above: on its own, "hidden without
-  // permission" can pass vacuously if the item is missing for an unrelated
-  // reason (e.g. a renamed/merged testid), so this asserts the item actually
-  // renders once the only gating permission is granted.
-  it('shows local Plan and Credits with subscription management permission', () => {
-    state.isCloud = false
-    state.canManageSubscription = true
-
-    renderComponent()
-
-    expect(screen.getByTestId('plans-credits-menu-item')).toBeInTheDocument()
-  })
-
-  // The pair above only varies the permission, so both cases would still pass
-  // if the Local-only guard were dropped. This varies the distribution instead.
-  it('hides local Plan and Credits on Cloud', () => {
-    state.canManageSubscription = true
-
-    renderComponent()
-
-    expect(
-      screen.queryByTestId('plans-credits-menu-item')
-    ).not.toBeInTheDocument()
-  })
-
-  describe('credits flyout payment processing', () => {
-    const PROCESSING_LINE = "Payment processing. You don't need to pay again."
-
-    function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
-      vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
-        checkouts: [
-          {
-            amount_cents: 2500,
-            created_at: '2026-10-20T00:00:00Z',
-            session_id: 'cs_bank'
-          }
-        ],
-        next_cursor: null
-      })
-      vi.spyOn(billingApi, 'getTopupCheckout').mockResolvedValue({
-        amount_cents: 2500,
-        payment_amount_cents: 2500,
-        session_id: 'cs_bank',
-        state: checkoutState
-      })
-    }
-
-    beforeEach(() => {
-      useBillingCapabilities().canTopUp = computed(() => true)
-    })
-
-    it('does not read checkouts while unified billing settings are off', () => {
-      const list = vi.spyOn(billingApi, 'listTopupCheckouts')
-      renderComponent()
-
-      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-      expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
-      expect(list).not.toHaveBeenCalled()
-    })
-
-    it('shows the processing line from the checkout state', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
-      serveCheckout('payment_processing')
-      renderComponent()
-
-      expect(await screen.findByText(PROCESSING_LINE)).toBeInTheDocument()
-      expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
-    })
-
-    it('leaves the line out when the checkout is still open', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
-      serveCheckout('open')
-      renderComponent()
-
-      await waitFor(() =>
-        expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
-      )
-      await setImmediate()
-      expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
     })
   })
 })

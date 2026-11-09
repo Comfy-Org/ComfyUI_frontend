@@ -241,10 +241,9 @@ async function openedBillingEntry(page: Page) {
   }
 }
 
-/** The avatar menu's Plans and pricing entry. */
+/** The pricing deep link. */
 async function clickPlansAndPricing(page: Page) {
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
+  await page.goto(`${APP_URL}/?pricing=1`)
 }
 
 const pricingHeading = (page: Page) =>

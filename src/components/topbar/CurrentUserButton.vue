@@ -44,8 +44,8 @@
         align="end"
         :class="
           cn(
-            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
-            showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+            'overflow-visible border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            showWorkspacePopover ? 'w-72 rounded-xl' : 'w-80 rounded-lg'
           )
         "
       >

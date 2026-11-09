@@ -190,9 +190,8 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
 
     await page.getByTestId('current-user-button').click()
     const popover = page.getByTestId('current-user-popover')
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
-    await expect(popover.getByTestId('manage-plan-menu-item')).toBeVisible()
-    await expect(popover.getByTestId('plans-pricing-menu-item')).toHaveCount(0)
+    await popover.getByTestId('credits-menu-item').hover()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
   })
 
   test('keeps a far-out Enterprise end date looking plainly active', async ({
@@ -345,12 +344,6 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
       .getByTestId('settings-dialog')
       .getByRole('button', { name: 'Close dialog' })
       .click()
-    await page.getByTestId('current-user-button').click()
-    await expect(
-      page
-        .getByTestId('current-user-popover')
-        .getByTestId('plans-pricing-menu-item')
-    ).toBeVisible()
   })
 
   test('withholds the pricing deep link during a capability outage', async ({
