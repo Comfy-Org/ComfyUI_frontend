@@ -886,7 +886,7 @@ them for any mock targeting their endpoints:
 | Node definitions                                  | `@comfyorg/object-info-parser`, `@comfyorg/object-info-parser/schemas/nodeDefSchemaV2` |
 | Templates                                         | `@comfyorg/api-client/templateTypes`                                                   |
 | Jobs API                                          | `@comfyorg/api-client/jobTypes` (`zJobDetail`, `zJobsListResponse`)                    |
-| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                           |
+| Workflow validation                               | `@comfyorg/graph-model/workflowSchema`                                                 |
 | Asset metadata                                    | `src/types/metadataTypes.ts`                                                           |
 
 ```typescript

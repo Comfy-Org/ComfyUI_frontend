@@ -40,9 +40,11 @@ Runtime execution paths are a separate identity domain.
 | Slot geometry         | `${nodeId}-in-${index}` / `${nodeId}-out-${index}`       | Unscoped layout spatial index                                                | `slotId()`; safe only while node IDs remain root-unique.                                                                            |
 | Link segment geometry | `${linkId}:${rerouteId ?? 'final'}`                      | Unscoped layout spatial index                                                | `makeLinkSegmentKey()`; safe only while link and reroute IDs remain root-unique.                                                    |
 
-Stable definitions are in `src/types/graphScopeId.ts`,
-`src/lib/litegraph/src/idAllocation.ts`, `src/types/nodeIdentification.ts`,
-`src/types/widgetId.ts`, and `src/types/slotId.ts`.
+Stable definitions are in `packages/graph-model/src/graphScopeId.ts`,
+`src/lib/litegraph/src/idAllocation.ts`,
+`packages/graph-model/src/nodeIdentification.ts`,
+`packages/graph-model/src/widgetId.ts`, and
+`packages/graph-model/src/slotId.ts`.
 
 ## Allocation and recursive ownership
 

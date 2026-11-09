@@ -380,7 +380,7 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 
 ### Frontend
 
-1. **For client capabilities**, add to `src/config/clientFeatureFlags.json`:
+1. **For client capabilities**, add to `packages/api-client/src/clientFeatureFlags.json`:
 
 ```json
 {

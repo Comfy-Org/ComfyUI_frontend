@@ -90,8 +90,8 @@ import '@comfyorg/design-system/components.css'
 Import supporting types and recipes through the `./lib/` entries listed in the
 [exports table](#exports); other `lib/` paths are not exported.
 
-Components that retain `pi-*` icon classes require the host to load
-`primeicons/primeicons.css` separately.
+No published component depends on PrimeIcons; the set is phased out of this
+package. See [icons/README.md](src/icons/README.md) for the icon policy.
 
 ```vue
 <script setup lang="ts">

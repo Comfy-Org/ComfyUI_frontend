@@ -57,30 +57,45 @@ While services can interact with both UI components and stores (centralized stat
 
 ## Core Services
 
-The following table lists ALL services in the system as of 2025-09-01:
-
 ### Main Services
 
-| Service                    | Description                                               | Category   |
-| -------------------------- | --------------------------------------------------------- | ---------- |
-| audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
-| autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| colorPaletteService.ts     | Handles color palette management and customization        | UI         |
-| comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
-| comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
-| customerEventsService.ts   | Handles customer event tracking and audit logs            | Analytics  |
-| dialogService.ts           | Provides dialog and modal management                      | UI         |
-| extensionService.ts        | Manages extension registration and lifecycle              | Extensions |
-| litegraphService.ts        | Provides utilities for working with the LiteGraph library | Graph      |
-| load3dService.ts           | Manages 3D model loading and visualization                | 3D         |
-| mediaCacheService.ts       | Manages media file caching with blob storage and cleanup  | Media      |
-| newUserService.ts          | Handles new user initialization and onboarding            | System     |
-| nodeHelpService.ts         | Provides node documentation and help                      | Nodes      |
-| nodeOrganizationService.ts | Handles node organization and categorization              | Nodes      |
-| nodeSearchService.ts       | Implements node search functionality                      | Search     |
-| releaseService.ts          | Manages application release information and updates       | System     |
-| subgraphService.ts         | Handles subgraph operations and navigation                | Graph      |
-| workflowService.ts         | Handles workflow operations (save, load, execute)         | Workflows  |
+Everything in `src/services/` (excluding tests, mocks, fixtures and type-only
+modules):
+
+| Service                      | Description                                               | Category  |
+| ---------------------------- | --------------------------------------------------------- | --------- |
+| audioService.ts              | Manages audio recording and WAV encoding functionality    | Media     |
+| autoQueueService.ts          | Manages automatic queue execution                         | Execution |
+| changeCaptureSuppression.ts  | Suspends workflow change capture around bulk edits        | Workflows |
+| colorPaletteService.ts       | Handles color palette management and customization        | UI        |
+| comfyRegistryService.ts      | Handles registration and discovery of ComfyUI extensions  | Registry  |
+| customerEventsService.ts     | Handles customer event tracking and audit logs            | Analytics |
+| dialogService.ts             | Provides dialog and modal management                      | UI        |
+| extensionDialogService.ts    | Builds the dialog surface handed to extensions            | UI        |
+| graphLoadFailure.ts          | Marks graph-load errors as already presented to the user  | Graph     |
+| hdrViewerService.ts          | Opens the HDR image viewer                                | Media     |
+| jobOutputCache.ts            | Caches and indexes previewable job outputs                | Execution |
+| litegraphService.ts          | Provides utilities for working with the LiteGraph library | Graph     |
+| mediaCacheService.ts         | Manages media file caching with blob storage and cleanup  | Media     |
+| nodeHelpService.ts           | Provides node documentation and help                      | Nodes     |
+| nodeOrganizationService.ts   | Handles node organization and categorization              | Nodes     |
+| nodeSearchService.ts         | Implements node search functionality                      | Search    |
+| subgraphPseudoWidgetCache.ts | Caches resolved pseudo-widgets for subgraph boundaries    | Graph     |
+| subgraphService.ts           | Handles subgraph operations and navigation                | Graph     |
+| uploadTempFile.ts            | Uploads a temporary file to the backend                   | Media     |
+| useNewUserService.ts         | Handles new user initialization and onboarding            | System    |
+
+### Services owned by their feature
+
+These were once in `src/services/` and now live beside the feature they serve:
+
+| Service                | Location                                     |
+| ---------------------- | -------------------------------------------- |
+| comfyManagerService.ts | `src/platform/customNodes/manager/services/` |
+| extensionService.ts    | `src/platform/extensions/services/`          |
+| load3dService.ts       | `src/extensions/core/load3d/services/`       |
+| releaseService.ts      | `src/platform/updates/common/`               |
+| workflowService.ts     | `src/platform/workflow/core/services/`       |
 
 ### Gateway Services
 
@@ -111,10 +126,10 @@ For complex services with state management and multiple methods, class-based ser
 export class NodeSearchService {
   // Service state
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
-  public readonly inputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly outputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly nodeCategoryFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly nodeSourceFilter: FuseFilter<ComfyNodeDefImpl, string>
+  public readonly inputTypeFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly outputTypeFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly nodeCategoryFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly nodeSourceFilter: FuseFilter<ComfyNodeDefImpl>
 
   constructor(data: ComfyNodeDefImpl[]) {
     // Initialize search index
@@ -199,13 +214,13 @@ export function useNodeSearchService(initialData: ComfyNodeDefImpl[]) {
 
 | Aspect               | Class-Based Services                                                 | Composable-Style Services                  | Bootstrap Services            | Shared State Services              |
 | -------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------- | ---------------------------------- |
-| **Count**            | 4 services                                                           | 18+ services                               | 1 service                     | 1 service                          |
+| **Count**            | 1 service                                                            | Most services                              | 1 service                     | 1 service                          |
 | **Export Pattern**   | `export class ServiceName`                                           | `export function useServiceName()`         | `export function setupX()`    | `export function serviceFactory()` |
 | **Instantiation**    | `new ServiceName(data)`                                              | `useServiceName()`                         | Direct function call          | Direct function call               |
 | **Best For**         | Complex data structures, search algorithms, expensive initialization | Vue integration, API calls, reactive state | One-time app initialization   | Singleton-like shared state        |
 | **State Management** | Encapsulated private/public properties                               | External stores + reactive refs            | Event listeners, side effects | Module-level state                 |
 | **Vue Integration**  | Manual integration needed                                            | Native reactivity support                  | N/A                           | Varies                             |
-| **Examples**         | `NodeSearchService`, `Load3dService`                                 | `workflowService`, `dialogService`         | `autoQueueService`            | `newUserService`                   |
+| **Examples**         | `NodeSearchService`                                                  | `useLoad3dService`, `useDialogService`     | `setupAutoQueueHandler`       | `useNewUserService`                |
 
 ### Decision Criteria
 
