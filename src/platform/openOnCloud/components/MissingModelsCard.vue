@@ -35,8 +35,8 @@
 <script setup lang="ts">
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
 defineProps<{ models: CompatibilityModel[] }>()
