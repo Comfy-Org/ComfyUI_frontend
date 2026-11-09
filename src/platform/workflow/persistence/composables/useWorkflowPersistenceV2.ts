@@ -15,6 +15,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -61,6 +62,7 @@ export function useWorkflowPersistenceV2() {
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const LOCAL_HANDOFF_NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
+  const { flags } = useFeatureFlags()
   const draftStore = useWorkflowDraftStoreV2()
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
@@ -295,6 +297,7 @@ export function useWorkflowPersistenceV2() {
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
   const hasLocalHandoffIntent = () =>
+    flags.openOnCloudEnabled &&
     hasPreservedIntent(LOCAL_HANDOFF_NAMESPACE, LOCAL_HANDOFF_PARAM)
 
   const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
