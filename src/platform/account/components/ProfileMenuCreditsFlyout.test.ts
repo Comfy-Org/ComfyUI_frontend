@@ -16,9 +16,12 @@ import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuC
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
-vi.mock(import('@/platform/billing/composables/useProcessingTopupPayment'), () => ({
-  useProcessingTopupPayment: () => ({ payment: computed(() => null) })
-}))
+vi.mock(
+  import('@/platform/billing/composables/useProcessingTopupPayment'),
+  () => ({
+    useProcessingTopupPayment: () => ({ payment: computed(() => null) })
+  })
+)
 vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({

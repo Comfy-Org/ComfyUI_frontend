@@ -240,7 +240,9 @@ async function openedBillingEntry(page: Page) {
 
 async function openPricingFromPlanAndCredits(page: Page) {
   const content = await openPlanAndCredits(page)
-  await content.getByRole('button', { name: /Upgrade Plan|Change plan/ }).click()
+  await content
+    .getByRole('button', { name: /Upgrade Plan|Change plan/ })
+    .click()
 }
 
 const pricingHeading = (page: Page) =>

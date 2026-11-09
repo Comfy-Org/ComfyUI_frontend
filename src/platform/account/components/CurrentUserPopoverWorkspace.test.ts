@@ -189,17 +189,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     it.for([
       { name: 'Credits', testId: 'credits-menu-item' },
       { name: 'Workspace settings', testId: 'workspace-settings-menu-item' }
-    ])('opens Settings › Billing from $name and closes the menu', async ({
-      testId
-    }) => {
-      const user = userEvent.setup()
-      const { closed } = renderMenu()
+    ])(
+      'opens Settings › Billing from $name and closes the menu',
+      async ({ testId }) => {
+        const user = userEvent.setup()
+        const { closed } = renderMenu()
 
-      await user.click(screen.getByTestId(testId))
+        await user.click(screen.getByTestId(testId))
 
-      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
-      expect(closed).toHaveBeenCalledOnce()
-    })
+        expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+        expect(closed).toHaveBeenCalledOnce()
+      }
+    )
   })
 
   it('drops the actions the redesign removes', () => {

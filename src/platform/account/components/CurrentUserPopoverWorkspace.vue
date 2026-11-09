@@ -25,12 +25,7 @@
         <PopoverTrigger as-child>
           <button
             type="button"
-            :class="
-              cn(
-                menuRowClass,
-                'data-[state=open]:bg-accent'
-              )
-            "
+            :class="cn(menuRowClass, 'data-[state=open]:bg-accent')"
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
             data-testid="workspace-switcher-trigger"
@@ -47,9 +42,7 @@
                 >{{ planLine }}</span
               >
             </div>
-            <i
-              class="icon-[lucide--arrow-left-right] text-muted-foreground"
-            />
+            <i class="icon-[lucide--arrow-left-right] text-muted-foreground" />
           </button>
         </PopoverTrigger>
         <PopoverContent
@@ -93,9 +86,12 @@
                 $t('profileMenu.balanceUnavailable')
               }}</TooltipContent>
             </Tooltip>
-            <span v-else class="text-foreground" data-testid="credits-balance">{{
-              displayedCredits
-            }}</span>
+            <span
+              v-else
+              class="text-foreground"
+              data-testid="credits-balance"
+              >{{ displayedCredits }}</span
+            >
           </button>
         </HoverCardTrigger>
         <HoverCardContent
@@ -126,7 +122,10 @@
       <div class="my-1 border-t" />
     </template>
 
-    <div class="flex items-center gap-2 p-2" data-testid="current-user-identity">
+    <div
+      class="flex items-center gap-2 p-2"
+      data-testid="current-user-identity"
+    >
       <span
         aria-hidden="true"
         class="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase"
