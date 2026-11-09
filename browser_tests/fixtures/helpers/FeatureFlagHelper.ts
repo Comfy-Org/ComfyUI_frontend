@@ -1,24 +1,44 @@
 import type { Page, Route } from '@playwright/test'
 
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
 export class FeatureFlagHelper {
   private featuresRouteHandler: ((route: Route) => void) | null = null
 
   constructor(private readonly page: Page) {}
 
   /**
-   * Seed feature flags via `addInitScript` so they are available in
-   * localStorage before the app JS executes on first load.
-   * Must be called before `comfyPage.setup()` / `page.goto()`.
+   * Seed feature flags before the app boots, via `/api/features` — the
+   * endpoint that populates `remoteConfig`, which `resolveFlag()` in
+   * `useFeatureFlags.ts` falls back to. Must be called before
+   * `comfyPage.setup()` / `page.goto()`.
    *
-   * Note: Playwright init scripts persist for the page lifetime and
-   * cannot be removed. Call this once per test, before navigation.
+   * Not the `ff:` localStorage channel `setFlags()` writes: `getDevOverride()`
+   * returns early unless `import.meta.env.DEV`, which is `false` in the
+   * production build CI serves, so a seeded `ff:` entry is never read there.
+   *
+   * The seeded flags are layered **over** whatever the endpoint answers, so a
+   * spec keeps the rest of the server's config and overrides only the keys it
+   * names. Where there is no answer to layer over, the seed stands alone.
+   *
+   * Only reaches flags whose getter falls back to `remoteConfig.value`
+   * (most of them); one resolved purely from the server's WS
+   * `feature_flags` handshake needs `seedServerFlags()`/
+   * `setServerFlagsPersistent()` instead.
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(flagMap)) {
-        localStorage.setItem(`ff:${key}`, JSON.stringify(value))
+    await this.page.route('**/api/features', async (route) => {
+      let served: Record<string, unknown> = {}
+      try {
+        const response = await route.fetch()
+        const body: unknown = response.ok() ? await response.json() : null
+        if (body && typeof body === 'object' && !Array.isArray(body))
+          served = body as Record<string, unknown>
+      } catch {
+        // Nothing upstream to layer over; the seeded flags stand alone.
       }
-    }, flags)
+      await route.fulfill(jsonRoute({ ...served, ...flags }))
+    })
   }
 
   /**

@@ -616,7 +616,8 @@ export const comfyPageFixture = base.extend<{
   comfyFiles: ComfyFiles
 }>({
   // Allows configuring feature flags for tests with before initial setup:
-  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
+  // `test.use({ initialFeatureFlags: { my_flag: true } })`. See
+  // `FeatureFlagHelper.seedFlags()` for which flags this reaches.
   initialFeatureFlags: [{}, { option: true }],
 
   initialLocalStorage: [{}, { option: true }],
@@ -629,7 +630,17 @@ export const comfyPageFixture = base.extend<{
   // Set `false` to open a cloud tab that holds no Firebase login.
   firebaseLogin: [true, { option: true }],
 
-  page: async ({ page, browserName }, use) => {
+  page: async ({ page, browserName, initialFeatureFlags }, use) => {
+    // Applied in the `page` fixture rather than in `comfyPage`, so it is the
+    // FIRST `/api/features` handler registered on the page. Playwright matches
+    // the most recently registered handler first, so a spec's own `beforeEach`
+    // route and a derived fixture's boot mocks (`mockCloudBootRoutes`, which
+    // folds `initialFeatureFlags` into its own payload) still win — seeding
+    // from `comfyPage` would shadow them instead.
+    if (Object.keys(initialFeatureFlags).length > 0) {
+      await new FeatureFlagHelper(page).seedFlags(initialFeatureFlags)
+    }
+
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
       return use(page)
     }
@@ -651,7 +662,6 @@ export const comfyPageFixture = base.extend<{
     {
       page,
       request,
-      initialFeatureFlags,
       initialLocalStorage,
       initialSettings,
       initialUrl,
@@ -726,10 +736,6 @@ export const comfyPageFixture = base.extend<{
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
       if (isCustomNodes) await trackVisibleErrors(page)
-
-      if (Object.keys(initialFeatureFlags).length > 0) {
-        await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
-      }
 
       await comfyPage.setup({
         initialLocalStorage,
