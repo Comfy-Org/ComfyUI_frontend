@@ -4,6 +4,8 @@ import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 const EDGE_THRESHOLD = 50
+const STALL_LIMIT_MS = 50
+const REFERENCE_FRAME_MS = 1000 / 60
 
 interface AutoPanOptions {
   canvas: HTMLCanvasElement
@@ -71,7 +73,9 @@ export class AutoPanController {
   start() {
     if (this.stopFrame) return
     this.lastFrameTime = performance.now()
-    this.stopFrame = onCanvasFrame(this.canvas, 'update', () => this.tick())
+    this.stopFrame = onCanvasFrame(this.canvas, 'update', (frameIntervalMs) =>
+      this.tick(frameIntervalMs)
+    )
   }
 
   stop() {
@@ -79,11 +83,12 @@ export class AutoPanController {
     this.stopFrame = undefined
   }
 
-  private tick() {
+  private tick(frameIntervalMs: number) {
     const now = performance.now()
-    const elapsed = Math.min(50, now - this.lastFrameTime)
+    const stallLimit = Math.max(STALL_LIMIT_MS, frameIntervalMs)
+    const elapsed = Math.min(stallLimit, now - this.lastFrameTime)
     this.lastFrameTime = now
-    const maxPanSpeed = (this.maxPanSpeed * elapsed) / (1000 / 60)
+    const maxPanSpeed = (this.maxPanSpeed * elapsed) / REFERENCE_FRAME_MS
     const rect = this.canvas.getBoundingClientRect()
     const scale = this.ds.scale
 
