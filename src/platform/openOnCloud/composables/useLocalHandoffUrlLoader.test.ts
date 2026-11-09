@@ -1,4 +1,4 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -21,7 +21,7 @@ vi.mock(
 vi.mock(import('vue-router'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function linkWithNonce(): string {
   const nonce = crypto.randomUUID()

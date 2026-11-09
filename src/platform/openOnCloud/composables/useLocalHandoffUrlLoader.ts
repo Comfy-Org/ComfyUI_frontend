@@ -15,8 +15,8 @@ import {
   localHandoffReady,
   zLocalHandoffWorkflow
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@/platform/telemetry/reportError'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
