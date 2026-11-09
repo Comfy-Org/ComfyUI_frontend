@@ -23,7 +23,7 @@ import {
   ensureSignedIn,
   agentSettingsAuthHeader,
   withAgentAuth
-} from './agentAuth'
+} from '@/platform/auth/agentAuth'
 
 beforeEach(() => {
   distribution.isCloud = false

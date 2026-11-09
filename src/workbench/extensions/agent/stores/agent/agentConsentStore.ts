@@ -12,7 +12,7 @@ import {
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { agentSettingsAuthHeader } from '@/workbench/extensions/agent/services/agent/agentAuth'
+import { agentSettingsAuthHeader } from '@/platform/auth/agentAuth'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'

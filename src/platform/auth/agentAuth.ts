@@ -7,7 +7,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
-type AgentRequestInit = NonNullable<Parameters<typeof api.fetchApi>[1]>
+type AgentAuthRequestInit = NonNullable<Parameters<typeof api.fetchApi>[1]>
 
 function credentialValue(header: AuthHeader): string {
   return 'X-API-KEY' in header
@@ -45,8 +45,8 @@ export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
 }
 
 export async function withAgentAuth(
-  init: AgentRequestInit
-): Promise<AgentRequestInit> {
+  init: AgentAuthRequestInit
+): Promise<AgentAuthRequestInit> {
   if (isCloud) return init
   const header = await agentAuthHeader()
   if (!header) return init

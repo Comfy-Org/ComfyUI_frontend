@@ -3,6 +3,7 @@ import {
   zAgentSkillListResponse
 } from '@comfyorg/ingest-types/zod'
 
+import { withAgentAuth } from '@/platform/auth/agentAuth'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
@@ -49,7 +50,7 @@ async function toApiError(response: Response): Promise<SkillPacksApiError> {
 }
 
 export async function listSkillPacks(): Promise<SkillPack[]> {
-  const response = await api.fetchApi('/agent/skills')
+  const response = await api.fetchApi('/agent/skills', await withAgentAuth({}))
   if (!response.ok) throw await toApiError(response)
   return zAgentSkillListResponse.parse(await response.json()).skills
 }
@@ -58,11 +59,14 @@ export async function listSkillPacks(): Promise<SkillPack[]> {
 export async function publishSkillPack(
   payload: SkillPackPublishRequest
 ): Promise<SkillPack> {
-  const response = await api.fetchApi('/agent/skills', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+  const response = await api.fetchApi(
+    '/agent/skills',
+    await withAgentAuth({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  )
   if (!response.ok) throw await toApiError(response)
   return zAgentSkill.parse(await response.json())
 }
@@ -73,7 +77,7 @@ export async function deleteSkillPack(name: string): Promise<void> {
   }
   const response = await api.fetchApi(
     `/agent/skills/${encodeURIComponent(name)}`,
-    { method: 'DELETE' }
+    await withAgentAuth({ method: 'DELETE' })
   )
   if (!response.ok) throw await toApiError(response)
 }
