@@ -139,7 +139,7 @@ describe('CustomDeploymentCard', () => {
     await user.click(screen.getByTestId('custom-deployment-agent'))
 
     expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
-      'Deploy with your agent'
+      'Build with your agent'
     )
   })
 
