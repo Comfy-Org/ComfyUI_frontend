@@ -22,9 +22,12 @@ const agentPanelStore = useAgentPanelStore()
       <span
         role="img"
         :aria-label="t('agent.targetForThisChat')"
-        class="inline-flex size-2.5 shrink-0 text-brand-yellow"
+        class="inline-flex size-3.5 shrink-0"
       >
-        <i class="icon-[comfy--comfy-c] size-full" />
+        <i
+          data-testid="workflow-target-icon"
+          class="icon-[lucide--focus] size-3.5 text-credit"
+        />
       </span>
     </TooltipTrigger>
     <TooltipContent side="right">{{
