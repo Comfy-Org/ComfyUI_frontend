@@ -187,7 +187,11 @@ export const networkIsolationFixture = base.extend<{
     await context.route(
       'https://ajax.googleapis.com/ajax/libs/model-viewer/**',
       (route) =>
-        route.fulfill({ contentType: 'application/javascript', body: '' })
+        route.fulfill({
+          contentType: 'application/javascript',
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: ''
+        })
     )
     await context.route('https://cloud.comfy.org/cdn-cgi/trace', (route) =>
       route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' })
