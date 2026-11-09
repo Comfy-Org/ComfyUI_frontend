@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -32,9 +32,9 @@ const FIELDS: (keyof PerfMeasurement)[] = [
 ]
 
 export async function loadLargeGraph(comfyPage: ComfyPage) {
-  const workflow = JSON.parse(
-    readFileSync(assetPath('large-graph-workflow.json'), 'utf-8')
-  ) as ComfyWorkflowJSON
+  const workflow = zComfyWorkflow.parse(
+    JSON.parse(readFileSync(assetPath('large-graph-workflow.json'), 'utf-8'))
+  )
   await comfyPage.workflow.loadGraphData(workflow)
 }
 
