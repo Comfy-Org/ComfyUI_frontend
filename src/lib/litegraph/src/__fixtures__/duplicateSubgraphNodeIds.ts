@@ -2,7 +2,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 
 /**
  * Workflow with two subgraph definitions whose internal nodes share
@@ -152,7 +152,7 @@ export const duplicateSubgraphNodeIds = {
         ],
         links: [
           {
-            id: 2,
+            id: 1,
             origin_id: 3,
             origin_slot: 0,
             target_id: 37,

@@ -5,11 +5,35 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { RetrySignalLifecycle } from '@comfyorg/api-client/apiAuthProvider'
+import {
+  presentForRefusal,
+  presentForResponse
+} from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  UnifiedAuthRetryFailureReason,
+  UnifiedAuthRetryMetadata
+} from '@comfyorg/telemetry/types'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import { withSignInRefusalRetry } from '@comfyorg/api-client/retryPolicy'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
   | undefined
+
+type UnifiedRemint = (expectedToken: string) => Promise<string | null>
+
+let remintUnified: UnifiedRemint | undefined
+
+/** Installed by `workspaceAuthStore`; importing it here cycles through `authStore`. */
+export function provideUnifiedRemint(remint: UnifiedRemint): void {
+  remintUnified = remint
+}
 
 /**
  * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
@@ -20,11 +44,15 @@ let cachedUnifiedFlags:
  */
 export async function shouldRemintCloudRequest(): Promise<boolean> {
   if (!isCloud) return false
-  if (!cachedUnifiedFlags) {
-    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-    cachedUnifiedFlags = useFeatureFlags().flags
-  }
+  if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
   return cachedUnifiedFlags.unifiedCloudAuthEnabled
+}
+
+/** `policy`, also sending a write the sign-in check refused once more on cloud. */
+export function cloudRetryPolicy(
+  policy?: RetryPolicy
+): RetryPolicy | undefined {
+  return isCloud ? withSignInRefusalRetry(policy) : policy
 }
 
 /**
@@ -33,17 +61,79 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
  * active unified session, or the re-mint failed. A permanent auth failure is
  * surfaced + torn down inside `remintUnifiedOnce` (error toast + session clear,
  * matching the proactive refresh path); the `catch` here only guards an
- * unexpected throw (e.g. a chunk-load failure or no active Pinia), which it
- * logs. Either way `null` makes the caller surface its original 401 unchanged.
+ * unexpected throw (e.g. no active Pinia), which it
+ * reports as `auth_unified_remint_unexpected`. Either way `null` makes the
+ * caller surface its original 401 unchanged.
  */
-async function tryRemintToken(): Promise<string | null> {
+async function tryRemintToken(expectedToken: string): Promise<string | null> {
   try {
-    const { useWorkspaceAuthStore } =
-      await import('@/platform/workspace/stores/workspaceAuthStore')
-    return await useWorkspaceAuthStore().remintUnifiedOnce()
+    return (await remintUnified?.(expectedToken)) ?? null
   } catch (err) {
-    console.warn('Unified re-mint primitive threw unexpectedly:', err)
+    reportError(err, {
+      surface: 'auth',
+      errorType: 'auth_unified_remint_unexpected',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      level: 'error'
+    })
     return null
+  }
+}
+
+function trackRetry(
+  transport: UnifiedAuthRetryMetadata['transport'],
+  outcome: UnifiedAuthRetryMetadata['outcome'],
+  finalStatus?: number,
+  failureReason?: UnifiedAuthRetryFailureReason
+): void {
+  useTelemetry()?.trackUnifiedAuthRetry({
+    transport,
+    outcome,
+    ...(finalStatus !== undefined && { final_status: finalStatus }),
+    ...(failureReason !== undefined && { failure_reason: failureReason })
+  })
+}
+
+function trackRetryResponse(
+  transport: UnifiedAuthRetryMetadata['transport'],
+  status: number
+): void {
+  trackRetry(
+    transport,
+    status < 400 ? 'succeeded' : 'failed',
+    status,
+    status < 400 ? undefined : 'retry_rejected'
+  )
+}
+
+function bearerToken(authorization: unknown): string | undefined {
+  if (typeof authorization !== 'string') return
+  return authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined
+}
+
+function fetchRequestHeaders(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Headers {
+  if (init.headers !== undefined) return new Headers(init.headers)
+  return input instanceof Request ? new Headers(input.headers) : new Headers()
+}
+
+/** Best-effort: the SSO screen never replaces the 403 the caller is owed. */
+async function presentSsoRequired(present: () => unknown): Promise<void> {
+  try {
+    await present()
+  } catch (error) {
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'failure_presenting_sso_required'
+    })
   }
 }
 
@@ -55,16 +145,27 @@ async function tryRemintToken(): Promise<string | null> {
  * replayed, so such a request surfaces its original `401` without a retry (no
  * current cloud caller sends one).
  *
- * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
- * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
- * path, so the legacy cascade stays untouched for instant rollback.
+ * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}).
+ *
+ * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
+ * before re-minting and creates a fresh signal immediately before the retry.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
   init: RequestInit,
-  shouldRetryOn401: boolean
+  shouldRetryOn401: boolean,
+  retrySignalLifecycle?: RetrySignalLifecycle,
+  retryPolicy?: RetryPolicy
 ): Promise<Response> {
-  const response = await fetch(input, init)
+  const policy = cloudRetryPolicy(retryPolicy)
+  const retryInput =
+    shouldRetryOn401 && input instanceof Request && input.body !== null
+      ? input.clone()
+      : input
+  const response = await fetchWithRetry(input, init, { policy })
+  if (response.status === 403 && isCloud) {
+    await presentSsoRequired(() => presentForResponse(response))
+  }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
   }
@@ -73,17 +174,39 @@ export async function fetchWithUnifiedRemint(
     console.warn(
       'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
     )
+    trackRetry('fetch', 'failed', response.status, 'non_replayable_body')
     return response
   }
 
-  const token = await tryRemintToken()
+  const requestHeaders = fetchRequestHeaders(input, init)
+  const expectedToken = bearerToken(requestHeaders.get('Authorization'))
+  if (!expectedToken) {
+    trackRetry('fetch', 'failed', response.status, 'missing_bearer')
+    return response
+  }
+
+  retrySignalLifecycle?.clearInitialTimeout()
+  const token = await tryRemintToken(expectedToken)
   if (!token) {
+    trackRetry('fetch', 'failed', response.status, 'remint_failed')
     return response
   }
 
-  const headers = new Headers(init.headers)
+  const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
-  return fetch(input, { ...init, headers })
+  const retryInit = retrySignalLifecycle
+    ? { ...init, headers, signal: retrySignalLifecycle.createSignal() }
+    : { ...init, headers }
+  try {
+    const retryResponse = await fetchWithRetry(retryInput, retryInit, {
+      policy
+    })
+    trackRetryResponse('fetch', retryResponse.status)
+    return retryResponse
+  } catch (error) {
+    trackRetry('fetch', 'failed', undefined, 'retry_request_failed')
+    throw error
+  }
 }
 
 function isRetriableUnauthorized(
@@ -97,6 +220,15 @@ function isRetriableUnauthorized(
   return error.response?.status === 401
 }
 
+async function presentSsoRefusal(error: unknown): Promise<void> {
+  if (!isCloud || !axios.isAxiosError(error)) return
+  const response = error.response
+  if (response?.status !== 403) return
+  await presentSsoRequired(() =>
+    presentForRefusal(response.status, response.data)
+  )
+}
+
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
@@ -108,6 +240,7 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
+      await presentSsoRefusal(error)
       if (
         !isRetriableUnauthorized(error) ||
         !(await shouldRemintCloudRequest())
@@ -115,8 +248,17 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
         throw error
       }
 
-      const token = await tryRemintToken()
+      const expectedToken = bearerToken(
+        new AxiosHeaders(error.config.headers).get('Authorization')
+      )
+      if (!expectedToken) {
+        trackRetry('axios', 'failed', 401, 'missing_bearer')
+        throw error
+      }
+
+      const token = await tryRemintToken(expectedToken)
       if (!token) {
+        trackRetry('axios', 'failed', 401, 'remint_failed')
         throw error
       }
 
@@ -125,7 +267,26 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
       const { config } = error
       const headers = new AxiosHeaders(config.headers)
       headers.set('Authorization', `Bearer ${token}`)
-      return client.request({ ...config, headers, __unifiedRetried: true })
+      try {
+        const retryResponse = await client.request({
+          ...config,
+          headers,
+          __unifiedRetried: true
+        })
+        trackRetryResponse('axios', retryResponse.status)
+        return retryResponse
+      } catch (retryError) {
+        const finalStatus = axios.isAxiosError(retryError)
+          ? retryError.response?.status
+          : undefined
+        trackRetry(
+          'axios',
+          'failed',
+          finalStatus,
+          finalStatus !== undefined ? 'retry_rejected' : 'retry_request_failed'
+        )
+        throw retryError
+      }
     }
   )
 }

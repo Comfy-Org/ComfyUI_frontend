@@ -1,9 +1,49 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  zHubWorkflowPrefillResponse,
+  zHubProfileResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
+
+describe('Hub profile compatibility', () => {
+  it.for([
+    {
+      name: 'legacy snake-case images',
+      payload: {
+        name: 'Legacy creator',
+        cover_image_url: 'https://example.com/cover.png',
+        profile_picture_url: 'https://example.com/profile.png'
+      },
+      expected: {
+        name: 'Legacy creator',
+        coverImageUrl: 'https://example.com/cover.png',
+        profilePictureUrl: 'https://example.com/profile.png'
+      }
+    },
+    {
+      name: 'camel-case fields take precedence',
+      payload: {
+        name: 'Preferred name',
+        display_name: 'Fallback name',
+        profilePictureUrl: 'https://example.com/preferred.png',
+        avatar_url: 'https://example.com/fallback.png'
+      },
+      expected: {
+        name: 'Preferred name',
+        profilePictureUrl: 'https://example.com/preferred.png'
+      }
+    },
+    {
+      name: 'nullable images without optional profile details',
+      payload: { avatar_url: null, cover_image_url: null },
+      expected: { profilePictureUrl: null, coverImageUrl: null }
+    }
+  ])('accepts $name', ({ payload, expected }) => {
+    expect(
+      zHubProfileResponse.parse({ username: 'creator', ...payload })
+    ).toEqual({ username: 'creator', ...expected })
+  })
+})
 
 function makePayload(name: string) {
   return {
@@ -53,20 +93,5 @@ describe('zSharedWorkflowResponse name sanitization', () => {
   it('trims whitespace from sanitized names', () => {
     const result = zSharedWorkflowResponse.parse(makePayload('  spaced name  '))
     expect(result.name).toBe('spaced name')
-  })
-})
-
-describe('zHubWorkflowPrefillResponse tag tolerance', () => {
-  it('drops a malformed tag without discarding the rest of the prefill', () => {
-    const result = zHubWorkflowPrefillResponse.safeParse({
-      description: 'A cool workflow',
-      thumbnail_url: 'https://cdn.example.com/thumb.png',
-      tags: [{ name: 'art', display_name: 'Art' }, 'rawtag', { name: 'broken' }]
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.data?.tags).toEqual(['Art', 'rawtag'])
-    expect(result.data?.description).toBe('A cool workflow')
-    expect(result.data?.thumbnail_url).toBe('https://cdn.example.com/thumb.png')
   })
 })

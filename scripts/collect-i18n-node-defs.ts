@@ -1,72 +1,66 @@
 import * as fs from 'fs'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import type { WidgetLabels } from './nodeDefLocaleSerializer'
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
-interface WidgetInfo {
-  name?: string
-  label?: string
-}
-
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
-  // Mock view route
   await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
-  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
+  const rawNodeDefs = await comfyPage.page.evaluate(async () => {
+    const app = window.app
+    if (!app) throw new Error('ComfyUI app is not initialized')
 
-  const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
-    async () => {
-      // @ts-expect-error - app is dynamically added to window
-      const api = window['app'].api
-      const rawNodeDefs = await api.getNodeDefs()
-      const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
-
-      return (
-        Object.values(rawNodeDefs)
-          // Ignore DevTools nodes (used for internal testing)
-          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
-          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
-      )
-    }
-  )
+    return app.api.getNodeDefs()
+  })
+  const nodeDefs: ComfyNodeDefV2[] = Object.values(rawNodeDefs)
+    .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+    .map((def: ComfyNodeDef) => transformNodeDefV1ToV2(def))
 
   async function extractWidgetLabels() {
     const nodeLabels: WidgetLabels = {}
 
     for (const nodeDef of nodeDefs) {
-      const inputNames = Object.values(nodeDef.inputs).map(
-        (input) => input.name
+      const inputNames = Object.values(nodeDef.inputs).flatMap(
+        (input): string[] =>
+          typeof input.name === 'string' ? [input.name] : input.name
       )
 
       if (!inputNames.length) continue
 
       try {
         const widgetsMappings = await comfyPage.page.evaluate(
-          (args) => {
-            const [nodeName, displayName, inputNames] = args
-            // @ts-expect-error - LiteGraph is dynamically added to window
-            const node = window['LiteGraph'].createNode(nodeName, displayName)
-            if (!node.widgets?.length) return {}
+          (args): Record<string, string | undefined> => {
+            const { nodeName, displayName, inputNames } = args
+            const liteGraph = window.LiteGraph
+            if (!liteGraph) throw new Error('LiteGraph is not initialized')
+
+            const node = liteGraph.createNode(nodeName, displayName)
+            if (!node?.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
                 .filter(
-                  (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
+                  (widget) => widget.name && !inputNames.includes(widget.name)
                 )
-                .map((w: WidgetInfo) => [w.name, w.label])
+                .map((widget) => [widget.name, widget.label])
             )
           },
-          [nodeDef.name, nodeDef.display_name, inputNames]
+          {
+            nodeName: nodeDef.name,
+            displayName: nodeDef.display_name,
+            inputNames
+          }
         )
 
         const runtimeWidgets = Object.fromEntries(

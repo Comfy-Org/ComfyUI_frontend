@@ -119,9 +119,10 @@ export function moveEntry(
   const oldKey = hashPath(oldPath)
   const newKey = hashPath(newPath)
 
-  const oldEntry = index.entries[oldKey]
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
+  const oldEntry = entriesByKey[oldKey]
   if (!oldEntry) return null
-  if (oldKey !== newKey && index.entries[newKey]) return null
+  if (oldKey !== newKey && entriesByKey[newKey]) return null
 
   const entries = { ...index.entries }
   delete entries[oldKey]
@@ -181,10 +182,12 @@ export function removeOrphanedEntries(
 ): DraftIndexV2 {
   const entries: Record<string, DraftEntryMeta> = {}
   const order: string[] = []
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
 
   for (const key of index.order) {
-    if (existingPayloadKeys.has(key) && index.entries[key]) {
-      entries[key] = index.entries[key]
+    const entry = entriesByKey[key]
+    if (existingPayloadKeys.has(key) && entry) {
+      entries[key] = entry
       order.push(key)
     }
   }

@@ -1,5 +1,5 @@
 import type { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 type ExecutionErrorStore = ReturnType<typeof useExecutionErrorStore>
@@ -9,10 +9,10 @@ export function seedRequiredInputMissingNodeError(
   executionId: NodeExecutionId,
   inputName: string
 ): void {
-  store.lastNodeErrors = {
+  store.recordNodeErrors({
     [executionId]: nodeError(
       [validationError('required_input_missing', inputName, {}, 'Missing', '')],
       'TestNode'
     )
-  }
+  })
 }

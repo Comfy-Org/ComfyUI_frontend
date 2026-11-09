@@ -3,7 +3,11 @@ import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppExpect,
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 
 /**
@@ -53,8 +57,6 @@ test.describe('Cloud onboarding survey gate', { tag: '@cloud' }, () => {
   test('a transient 401 on the survey check does not bounce a working user to the survey', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, { features: BOOT_FEATURES })
     await mockSurveyTransient401(page)
     await bootCloud(page)
@@ -64,23 +66,19 @@ test.describe('Cloud onboarding survey gate', { tag: '@cloud' }, () => {
     // The full app boots — CloudSurveyView is a standalone onboarding view, so
     // reaching the extension manager proves we landed on the working app and
     // the transient 401 was treated as "completed", not a bounce.
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
     await expect(page).not.toHaveURL(/\/cloud\/survey/)
   })
 
   test('a not-completed (404) user landing on / is routed to the survey', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, { features: BOOT_FEATURES })
     await mockSurveyNotCompleted(page)
     await bootCloud(page)
 
     await page.goto(APP_URL)
 
-    await expect(page).toHaveURL(/\/cloud\/survey/, { timeout: 45_000 })
+    await cloudAppExpect(page).toHaveURL(/\/cloud\/survey/)
   })
 })

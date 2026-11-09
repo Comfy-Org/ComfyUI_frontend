@@ -9,7 +9,10 @@ import type {
   AssetFilterState,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterByBaseModels,
@@ -19,12 +22,18 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
-  getAssetFilename
+  getAssetCategories,
+  getAssetFilename,
+  getAssetTypeBadges
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 
 type NavId = 'all' | 'imported' | (string & {})
 
@@ -33,8 +42,7 @@ type AssetBadge = {
   type: 'type' | 'base' | 'size'
 }
 
-// Display properties for transformed assets
-export interface AssetDisplayItem extends AssetItem {
+export interface AssetDisplayItem extends ModelBrowserAsset {
   secondaryText: string
   badges: AssetBadge[]
   stats: {
@@ -43,27 +51,25 @@ export interface AssetDisplayItem extends AssetItem {
   }
 }
 
-const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
+const displayItemCache = new WeakMap<
+  AssetItem,
+  { modelTypeMode: boolean; item: AssetDisplayItem }
+>()
 
-function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
+function buildDisplayItem(
+  asset: ModelBrowserAsset,
+  modelTypeMode: boolean
+): AssetDisplayItem {
   const badges: AssetBadge[] = []
 
-  const typeTag = asset.tags.find((tag) => tag !== 'models')
-  if (typeTag) {
-    const badgeLabel = typeTag.includes('/')
-      ? typeTag.substring(typeTag.indexOf('/') + 1)
-      : typeTag
-
-    badges.push({ label: badgeLabel, type: 'type' })
+  for (const typeBadge of getAssetTypeBadges(asset, modelTypeMode)) {
+    badges.push({ label: typeBadge, type: 'type' })
   }
 
   for (const model of getAssetBaseModels(asset)) {
     badges.push({ label: model, type: 'base' })
   }
 
-  // Intentionally no formatted date here — the WeakMap caches by AssetItem
-  // reference, so a pre-formatted string would pin the locale active at first
-  // transform. AssetCard formats `created_at` at render via `d()` instead.
   return {
     ...asset,
     secondaryText: getAssetFilename(asset),
@@ -75,12 +81,15 @@ function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
   }
 }
 
-function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
+function transformAssetForDisplay(
+  asset: ModelBrowserAsset,
+  modelTypeMode: boolean
+): AssetDisplayItem {
   const cached = displayItemCache.get(asset)
-  if (cached) return cached
-  const built = buildDisplayItem(asset)
-  displayItemCache.set(asset, built)
-  return built
+  if (cached && cached.modelTypeMode === modelTypeMode) return cached.item
+  const item = buildDisplayItem(asset, modelTypeMode)
+  displayItemCache.set(asset, { modelTypeMode, item })
+  return item
 }
 
 /**
@@ -88,13 +97,15 @@ function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
  * Manages search, filtering, asset transformation and selection logic
  */
 export function useAssetBrowser(
-  assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
+  assetsSource: Ref<ModelBrowserAsset[] | undefined> = ref<
+    ModelBrowserAsset[] | undefined
+  >([])
 ) {
-  const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
+  const assets = computed<ModelBrowserAsset[]>(() => assetsSource.value ?? [])
   const assetDownloadStore = useAssetDownloadStore()
   const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
+  const { flags } = useFeatureFlags()
 
-  // State
   const searchQuery = ref('')
   const selectedNavItem = ref<NavId>('all')
   const filters = ref<AssetFilterState>({
@@ -122,12 +133,10 @@ export function useAssetBrowser(
   })
 
   const typeCategories = computed<NavItemData[]>(() => {
+    const modelTypeMode = flags.supportsModelTypeTags
     const categories = assets.value
       .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap((asset) =>
-        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
-      )
-      .map((tag) => tag.split('/')[0])
+      .flatMap((asset) => getAssetCategories(asset, modelTypeMode))
 
     return Array.from(new Set(categories))
       .sort()
@@ -174,7 +183,6 @@ export function useAssetBrowser(
     () => selectedNavItem.value === 'imported'
   )
 
-  // Compute content title from selected nav item
   const contentTitle = computed(() => {
     if (selectedNavItem.value === 'all') {
       return t('assetBrowser.allModels')
@@ -189,9 +197,10 @@ export function useAssetBrowser(
     return category?.label || t('assetBrowser.assets')
   })
 
-  // Category-filtered assets for filter options (before search/format/base model filters)
   const categoryFilteredAssets = computed(() => {
-    return assets.value.filter(filterByCategory(selectedCategory.value))
+    return assets.value.filter(
+      filterByCategory(selectedCategory.value, flags.supportsModelTypeTags)
+    )
   })
 
   const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
@@ -247,8 +256,10 @@ export function useAssetBrowser(
 
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)
 
-    // Transform to display format
-    return sortedAssets.map(transformAssetForDisplay)
+    const modelTypeMode = flags.supportsModelTypeTags
+    return sortedAssets.map((asset) =>
+      transformAssetForDisplay(asset, modelTypeMode)
+    )
   })
 
   function updateFilters(newFilters: AssetFilterState) {

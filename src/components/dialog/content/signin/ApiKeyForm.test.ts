@@ -1,34 +1,13 @@
-import { Form } from '@primevue/forms'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useAuthStore } from '@/stores/authStore'
 
 import ApiKeyForm from './ApiKeyForm.vue'
-
-const mockStoreApiKey = vi.fn()
-const mockLoadingRef = ref(false)
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
-
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: vi.fn(() => ({
-    storeApiKey: mockStoreApiKey
-  }))
-}))
+vi.mock(import('firebase/auth'))
 
 const i18n = createI18n({
   legacy: false,
@@ -58,18 +37,13 @@ const i18n = createI18n({
 
 describe('ApiKeyForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockStoreApiKey.mockReset()
-    mockLoadingRef.value = false
+    useAuthStore().loading = false
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
     const user = userEvent.setup()
     const result = render(ApiKeyForm, {
-      global: {
-        plugins: [PrimeVue, i18n],
-        components: { Button, Form, InputText, Message }
-      },
+      global: { plugins: [i18n] },
       props
     })
     return { ...result, user }
@@ -93,10 +67,10 @@ describe('ApiKeyForm', () => {
   })
 
   it('shows loading state when submitting', () => {
-    mockLoadingRef.value = true
+    useAuthStore().loading = true
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
   })
@@ -110,6 +84,12 @@ describe('ApiKeyForm', () => {
     expect(screen.getByRole('link', { name: 'Get one here' })).toHaveAttribute(
       'href',
       `${getComfyPlatformBaseUrl()}/login`
+    )
+    expect(
+      screen.getByRole('link', { name: 'About non-whitelisted sites' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
     )
   })
 })

@@ -1,0 +1,30 @@
+import {
+  emptyCompositorWidgetValue,
+  isCompositorWidgetValue
+} from '@/renderer/extensions/compositor/components/types'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+
+export const useCompositorWidget = (): ComfyWidgetConstructorV2 => {
+  return (node: LGraphNode, inputSpec: InputSpecV2): ICompositorWidget => {
+    const defaultValue = isCompositorWidgetValue(inputSpec.default)
+      ? inputSpec.default
+      : emptyCompositorWidgetValue()
+
+    const rawWidget = node.addWidget(
+      'compositor',
+      inputSpec.name,
+      defaultValue,
+      null,
+      { hideInPanel: true }
+    )
+
+    if (rawWidget.type !== 'compositor') {
+      throw new Error(`Unexpected widget type: ${rawWidget.type}`)
+    }
+
+    return rawWidget as ICompositorWidget
+  }
+}

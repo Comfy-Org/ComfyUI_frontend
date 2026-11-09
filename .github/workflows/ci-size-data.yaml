@@ -22,9 +22,9 @@ jobs:
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-source }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -34,16 +34,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
       - name: Build project
-        run: pnpm build
+        run: pnpm build:dist
 
       - name: Collect size data
-        run: node scripts/size-collect.js
+        run: pnpm size:collect
 
       - name: Upload size data
         uses: actions/upload-artifact@v6

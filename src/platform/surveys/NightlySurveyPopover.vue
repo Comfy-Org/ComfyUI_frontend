@@ -12,7 +12,7 @@
       <div
         v-show="openModel"
         data-testid="nightly-survey-popover"
-        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
+        class="fixed right-4 bottom-4 z-toast w-80 rounded-lg border border-border/50 bg-background p-4 shadow-lg"
       >
         <div class="mb-2 flex items-center justify-end">
           <Button
@@ -21,21 +21,13 @@
             :aria-label="t('g.close')"
             @click="handleDismiss"
           >
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
 
-        <div v-if="typeformError" class="text-danger text-sm">
-          {{ t('nightlySurvey.loadError') }}
+        <div class="min-h-75">
+          <TypeformEmbed :typeform-id="config.typeformId" auto-resize />
         </div>
-
-        <div
-          v-show="!typeformError && isValidTypeformId"
-          ref="typeformRef"
-          data-tf-auto-resize
-          :data-tf-widget="typeformId"
-          class="min-h-[300px]"
-        />
 
         <div
           class="mt-3 flex items-center gap-2"
@@ -59,14 +51,15 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
+import TypeformEmbed from './TypeformEmbed.vue'
 import type { FeatureSurveyConfig } from './useSurveyEligibility'
 import { useSurveyEligibility } from './useSurveyEligibility'
-import { useTypeformEmbed } from './useTypeformEmbed'
+import { isTypeformIdValid } from './useTypeformEmbed'
 
 const { config, mode = 'eligible' } = defineProps<{
   config: FeatureSurveyConfig
@@ -95,12 +88,6 @@ const { isEligible, delayMs, markSurveyShown, optOut } = useSurveyEligibility(
 )
 
 const hasOpenedOnce = ref(openModel.value)
-const typeformRef = useTemplateRef<HTMLDivElement>('typeformRef')
-
-const { typeformError, isValidTypeformId, typeformId } = useTypeformEmbed(
-  typeformRef,
-  () => config.typeformId
-)
 
 // Teleport stays mounted after the first open so the Typeform iframe
 // persists across consumer-side lifecycle changes.
@@ -126,7 +113,7 @@ watch(
 
     showTimeout = setTimeout(() => {
       showTimeout = null
-      if (!isValidTypeformId.value) return
+      if (!isTypeformIdValid(config.typeformId)) return
       if (openModel.value) return
       openModel.value = true
       markSurveyShown()

@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -15,7 +15,8 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -23,16 +24,25 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetKind } from '@/types/widgetTypes'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  hdrPreviewAssetUrl,
+  isHdrImageFilename,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
+import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,
-  getOptionLabel?: ((value?: string | null) => string) | undefined
+  getOptionLabel?: (value?: string | null) => string
 ): string {
   if (!getOptionLabel) return value
 
@@ -48,25 +58,69 @@ function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
 }
 
+function getAssetMediaType(asset: AssetItem): string {
+  return isHdrImageFilename(asset.name)
+    ? 'image'
+    : getMediaTypeFromFilename(asset.name)
+}
+
+function getHdrOutputPreviewUrl(asset: AssetItem): string {
+  if (asset.preview_id) return hdrPreviewAssetUrl(asset.preview_id)
+  return (
+    [asset.thumbnail_url, asset.preview_url].find(
+      (url) => url && !isHdrImageUrl(url)
+    ) ?? ''
+  )
+}
+
+type ResolvedJobOutputs = {
+  outputCount: number
+  items: AssetItem[]
+}
+
+function groupedOutputCount(meta: OutputAssetMetadata): number {
+  return meta.outputCount ?? meta.allOutputs?.length ?? 0
+}
+
 function getMediaUrl(
   filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
+  type: string,
+  assetKind: AssetKind | undefined,
+  subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
+  if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
 }
 
-interface UseWidgetSelectItemsOptions {
+function isPlainRelativePath(filepath: string): boolean {
+  return (
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  )
+}
+
+function getAnnotatedValueMediaUrl(
+  value: string,
+  assetKind: AssetKind | undefined
+): string {
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
+}
+
+export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
     ((value?: string | null) => string) | undefined
   >
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: IAssetsProvider
+  outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
@@ -110,10 +164,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     return availableBaseModels.value
   })
 
-  const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
+  const resolvedByJobId = shallowRef(new Map<string, ResolvedJobOutputs>())
 
   watch(
-    () => outputMediaAssets.media.value,
+    () => toValue(toValue(outputMediaAssets).items),
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -123,24 +177,22 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       const seenJobIds = new Set<string>()
       const jobsToResolve: Array<{
         jobId: string
-        meta: ReturnType<typeof getOutputAssetMetadata>
+        meta: OutputAssetMetadata
         createdAt?: string
+        outputCount: number
       }> = []
 
       for (const asset of assets) {
-        // Hash-keyed assets are leaf rows from the cloud `/assets` API and
-        // already carry their own URL-resolvable filename. Expanding them via
-        // resolveOutputAssetItems would synthesize sibling AssetItems without
-        // a hash and reintroduce the FE-227 hash→name fallback bug.
         if (asset.hash) continue
 
         const meta = getOutputAssetMetadata(asset.user_metadata)
         if (!meta) continue
 
-        const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
+        const outputCount = groupedOutputCount(meta)
+        const cached = resolvedByJobId.value.get(meta.jobId)
         if (
           outputCount <= 1 ||
-          resolvedByJobId.value.has(meta.jobId) ||
+          cached?.outputCount === outputCount ||
           seenJobIds.has(meta.jobId)
         )
           continue
@@ -149,19 +201,21 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         jobsToResolve.push({
           jobId: meta.jobId,
           meta,
-          createdAt: asset.created_at
+          createdAt: asset.created_at,
+          outputCount
         })
       }
 
       if (jobsToResolve.length === 0) return
 
       void Promise.all(
-        jobsToResolve.map(({ jobId, meta, createdAt }) =>
-          resolveOutputAssetItems(meta!, { createdAt })
-            .then((resolved) => ({ jobId, resolved }))
+        jobsToResolve.map(({ jobId, meta, createdAt, outputCount }) =>
+          resolveOutputAssetItems(meta, { createdAt })
+            .then((resolved) => ({ jobId, resolved, outputCount }))
             .catch((error) => {
               console.warn('Failed to resolve multi-output job', jobId, error)
-              return { jobId, resolved: [] as AssetItem[] }
+              const resolved: AssetItem[] = []
+              return { jobId, resolved, outputCount }
             })
         )
       ).then((results) => {
@@ -169,9 +223,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
         const next = new Map(resolvedByJobId.value)
         let changed = false
-        for (const { jobId, resolved } of results) {
+        for (const { jobId, resolved, outputCount } of results) {
           if (!resolved.length) continue
-          next.set(jobId, resolved)
+          next.set(jobId, { outputCount, items: resolved })
           changed = true
         }
         if (changed) resolvedByJobId.value = next
@@ -191,7 +245,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       .filter((value) => !missing.has(String(value)))
       .map((value, index) => ({
         id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
+        preview_url: getAnnotatedValueMediaUrl(String(value), kind),
         name: String(value),
         label: getDisplayLabel(String(value), labelFn)
       }))
@@ -206,34 +260,39 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = outputMediaAssets.media.value.flatMap((asset) => {
-      const meta = getOutputAssetMetadata(asset.user_metadata)
-      const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
-      return resolved ?? [asset]
-    })
+    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
+      (asset) => {
+        const meta = getOutputAssetMetadata(asset.user_metadata)
+        const resolved = meta
+          ? resolvedByJobId.value.get(meta.jobId)?.items
+          : undefined
+        return resolved ?? [asset]
+      }
+    )
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      if (getAssetMediaType(asset) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputSubfolder(asset.user_metadata)
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const rootFolder = isGeneratedTempOutput(asset) ? 'temp' : 'output'
+      const annotatedPath = `${pathWithSubfolder} [${rootFolder}]`
       if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [${rootFolder}]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : isHdrImageFilename(asset.name)
+              ? getHdrOutputPreviewUrl(asset)
+              : asset.preview_url ||
+                getMediaUrl(filenameForUrl, rootFolder, kind, subfolder),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })
@@ -273,18 +332,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (existsInInputs || existsInOutputs) return undefined
 
-    const isOutput = currentValue.endsWith(' [output]')
-    const strippedValue = isOutput
-      ? currentValue.replace(' [output]', '')
-      : currentValue
-
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
-      ),
+      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }

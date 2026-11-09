@@ -1,3 +1,11 @@
+import type {
+  OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
+  OAuthConsentChallengeWorkspace
+} from '@comfyorg/ingest-types'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+
+import { isLoopbackHost } from '@/utils/hostWhitelist'
+
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
 // same-host ingress), so the Set-Cookie response lands on the FE origin. A
@@ -7,32 +15,51 @@
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
 
-export type OAuthWorkspace = {
-  id: string
-  name: string
-  type: 'personal' | 'team'
-  role: 'owner' | 'member'
+export type OAuthWorkspace = OAuthConsentChallengeWorkspace
+
+/**
+ * The spec marks these required, but backends predating them omit them, so the
+ * consent screen degrades instead of rejecting the challenge. Presence is all
+ * that deviates — the field types still come from the generated contract.
+ */
+type SurfacedOnlyByNewerBackends =
+  | 'resource_display_name'
+  | 'redirect_uri'
+  | 'client_provenance'
+
+export type OAuthConsentChallenge = Omit<
+  GeneratedOAuthConsentChallenge,
+  SurfacedOnlyByNewerBackends
+> &
+  Partial<Pick<GeneratedOAuthConsentChallenge, SurfacedOnlyByNewerBackends>> & {
+    /**
+     * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect)
+     * or "web" (HTTPS-hosted). Absent for legacy seeded clients. Used to render
+     * a Native / Web badge so users know what kind of app they're authorizing.
+     * Not in the spec yet.
+     */
+    client_application_type?: 'native' | 'web'
+    user_email?: string
+    user_display_name?: string
+  }
+
+export function isFirstPartyClient(
+  challenge: Pick<OAuthConsentChallenge, 'client_provenance'>
+): boolean {
+  return challenge.client_provenance === 'first_party'
 }
 
-export type OAuthConsentChallenge = {
-  oauth_request_id: string
-  csrf_token: string
-  client_display_name: string
-  resource_display_name?: string
-  /**
-   * Exact registered redirect URI the OAuth client will be sent to on
-   * success/deny. Surfaced verbatim so users can verify the destination
-   * (RFC 8252 loopback for CLIs, HTTPS for web clients).
-   */
-  redirect_uri?: string
-  /**
-   * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect)
-   * or "web" (HTTPS-hosted). Absent for legacy seeded clients. Used to render
-   * a Native / Web badge so users know what kind of app they're authorizing.
-   */
-  client_application_type?: 'native' | 'web'
-  scopes: string[]
-  workspaces: OAuthWorkspace[]
+export function redirectHost(uri: string | undefined): string | undefined {
+  if (!uri) return undefined
+  try {
+    const { protocol, hostname } = new URL(uri)
+    const isWebHost =
+      (protocol === 'https:' || protocol === 'http:') &&
+      !isLoopbackHost(hostname)
+    return isWebHost ? hostname : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export type OAuthConsentDecisionParams = {
@@ -51,10 +78,6 @@ export type OAuthConsentDecisionParams = {
   expectedRedirectUri?: string
 }
 
-export type OAuthConsentDecision = (
-  params: OAuthConsentDecisionParams
-) => Promise<void>
-
 // Schemes that execute in our origin if navigated. Never navigable,
 // regardless of what the backend returns. Everything else is governed
 // by binding to the challenge's registered redirect_uri — no per-client
@@ -70,17 +93,22 @@ const EXECUTABLE_SCHEMES: ReadonlySet<string> = new Set([
 export class OAuthApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly code?: string
   ) {
     super(message)
     this.name = 'OAuthApiError'
   }
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readApiError(response: Response): Promise<OAuthApiError> {
   const body: unknown = await response.json().catch(() => null)
-  const message = (body as { message?: unknown } | null)?.message
-  return typeof message === 'string' ? message : response.statusText
+  const parsed = zErrorResponse.partial().safeParse(body).data
+  return new OAuthApiError(
+    parsed?.message ?? response.statusText,
+    response.status,
+    parsed?.code
+  )
 }
 
 function assertChallenge(
@@ -98,10 +126,16 @@ function assertChallenge(
     !Array.isArray(challenge.scopes) ||
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
-    !challenge.workspaces.every(isValidWorkspace)
+    !challenge.workspaces.every(isValidWorkspace) ||
+    !isOptionalString(challenge.user_email) ||
+    !isOptionalString(challenge.user_display_name)
   ) {
     throw new Error('OAuth consent challenge is invalid')
   }
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
 }
 
 function isValidWorkspace(value: unknown): value is OAuthWorkspace {
@@ -127,7 +161,7 @@ export async function fetchOAuthConsentChallenge(
   )
 
   if (!response.ok) {
-    throw new OAuthApiError(await readErrorMessage(response), response.status)
+    throw await readApiError(response)
   }
 
   const challenge: unknown = await response.json()
@@ -157,7 +191,7 @@ export async function submitOAuthConsentDecision({
   })
 
   if (!response.ok) {
-    throw new OAuthApiError(await readErrorMessage(response), response.status)
+    throw await readApiError(response)
   }
 
   const body: unknown = await response.json()

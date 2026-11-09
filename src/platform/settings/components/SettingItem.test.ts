@@ -1,22 +1,19 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { i18n } from '@/i18n'
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const mockGet = vi.fn()
-const mockSet = vi.fn()
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: mockGet,
-    set: mockSet
-  })
-}))
+const mockSet = vi.fn<ReturnType<typeof useSettingStore>['set']>(
+  async () => undefined
+)
 
 let emitFormValue: ((value: unknown) => void) | null = null
 
@@ -33,9 +30,13 @@ const FormItemUpdateStub = defineComponent({
   template: '<div data-testid="form-item-stub" />'
 })
 
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(mockGet)
+  vi.mocked(useSettingStore().set).mockImplementation(mockSet)
+})
+
 describe('SettingItem', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     emitFormValue = null
   })
 
@@ -44,8 +45,7 @@ describe('SettingItem', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormItem: FormItemUpdateStub,
-          Tag: true
+          FormItem: FormItemUpdateStub
         }
       },
       props: {
@@ -56,7 +56,7 @@ describe('SettingItem', () => {
 
   it('persists setting updates through the setting store', async () => {
     const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
+      id: 'Comfy.Locale',
       name: 'Visible Setting',
       type: 'text',
       defaultValue: 'default'
@@ -71,6 +71,6 @@ describe('SettingItem', () => {
 
     await flushPromises()
 
-    expect(mockSet).toHaveBeenCalledWith('main.sub.setting.name', 'newvalue')
+    expect(mockSet).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
   })
 })

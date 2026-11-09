@@ -2,27 +2,31 @@
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import { st } from '@/i18n'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { getControlWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedWidget,
+  WidgetValue as SimplifiedWidgetValue
+} from '@/types/simplifiedWidget'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -61,6 +65,7 @@ const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const linkStore = useLinkStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -69,16 +74,14 @@ const widgetComponent = computed(() => {
 })
 
 const isLinked = computed(() => {
-  const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(node.id)
-    ?.widgets?.find((w) => w.name === widget.name)
-  return safeWidget?.slotMetadata
-    ? !!safeWidget.slotMetadata.linked
-    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+  const graph = node.graph
+  const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
+  if (!graph || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
@@ -93,9 +96,16 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   return {
     name: widgetName,
     type: widgetType,
-    value: widgetState?.value ?? widget.value,
+    value: (widgetState
+      ? widgetState.value
+      : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
+    callback:
+      typeof widgetType === 'string' && widgetType.toLowerCase() === 'button'
+        ? (value) =>
+            widget.callback?.(value, canvasStore.canvas ?? undefined, node)
+        : undefined,
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }
@@ -106,12 +116,11 @@ const displayNodeName = computed((): string | null => {
   const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
   return resolveNodeDisplayName(node, {
     emptyLabel: fallbackNodeTitle,
-    untitledLabel: fallbackNodeTitle,
-    st
+    untitledLabel: fallbackNodeTitle
   })
 })
 
-const hasParents = computed(() => parents?.length > 0)
+const hasParents = computed(() => parents.length > 0)
 const favoriteNode = computed(() =>
   isShownOnParents && hasParents.value ? parents[0] : node
 )
@@ -134,7 +143,7 @@ const displayLabel = customRef((track, trigger) => {
 
       const trimmedLabel = newValue.trim()
 
-      const success = renameWidget(widget, node, trimmedLabel, parents)
+      const success = renameWidget(widget, node, trimmedLabel)
 
       if (success) {
         canvasStore.canvas?.setDirty(true)
@@ -150,12 +159,13 @@ const displayLabel = customRef((track, trigger) => {
     :class="
       cn(
         'widget-item group col-span-full grid grid-cols-subgrid rounded-lg',
-        isDraggable &&
-          'draggable-item drag-handle cursor-grab bg-comfy-menu-bg outline-comfy-menu-bg will-change-auto! [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+        isDraggable && [
+          draggableItemClass,
+          'bg-background outline-background will-change-auto [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4'
+        ]
       )
     "
   >
-    <!-- widget header -->
     <div
       :class="
         cn(
@@ -167,7 +177,7 @@ const displayLabel = customRef((track, trigger) => {
       <EditableText
         v-if="widget.name"
         :model-value="displayLabel"
-        :is-editing="isEditing"
+        :is-editing
         :input-attrs="{ placeholder: widget.name }"
         class="pointer-events-auto m-0 cursor-text truncate p-0 text-sm/8"
         @edit="displayLabel = $event"
@@ -177,7 +187,7 @@ const displayLabel = customRef((track, trigger) => {
 
       <span
         v-if="(showNodeName || hasParents) && displayNodeName"
-        class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
+        class="mx-1 my-0 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
       </span>
@@ -187,15 +197,14 @@ const displayLabel = customRef((track, trigger) => {
       >
         <WidgetActions
           v-model:label="displayLabel"
-          :widget="widget"
-          :node="node"
-          :parents="parents"
-          :is-shown-on-parents="isShownOnParents"
+          :widget
+          :node
+          :parents
+          :is-shown-on-parents
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
     </div>
-    <!-- favorite indicator -->
     <div
       v-if="
         !hiddenFavoriteIndicator &&
@@ -207,21 +216,25 @@ const displayLabel = customRef((track, trigger) => {
         class="pi pi-star-fill pointer-events-none absolute -top-1 -right-1 text-xs text-muted-foreground"
       />
     </div>
-    <!-- widget content -->
     <component
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
       :node-id="node.id"
       :node-type="node.type"
-      :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
+      :node-title="displayNodeName ?? undefined"
+      :class="
+        cn(
+          'col-span-1 text-xs text-node-foreground',
+          shouldExpand(widget.type) && 'min-h-36'
+        )
+      "
     />
-    <!-- Drag handle -->
     <div
       :class="
         cn(
           'pointer-events-none mx-auto mt-1.5 h-1 w-1/2 max-w-40 rounded-lg bg-transparent transition-colors duration-150',
-          'group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted',
+          'group-hover:bg-border group-[.is-draggable]:bg-muted-foreground',
           !isDraggable && 'opacity-0'
         )
       "

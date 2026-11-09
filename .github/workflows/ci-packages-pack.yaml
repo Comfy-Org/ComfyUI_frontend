@@ -1,0 +1,54 @@
+name: 'CI: Publishable Packages Pack Check'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'packages/account-core/**'
+      - 'packages/account-ui/**'
+      - 'packages/billing-contract/**'
+      - 'packages/ingest-types/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pack-contents:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [account-core, account-ui, billing-contract, ingest-types]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Typecheck
+        run: pnpm -C packages/${{ matrix.package }} typecheck
+
+      - name: Build package
+        run: pnpm -C packages/${{ matrix.package }} build
+
+      - name: Verify the packed tarball is publishable
+        run: |
+          pnpm -C packages/account-core run check:pack \
+            "$GITHUB_WORKSPACE/packages/${{ matrix.package }}"
+
+  smoke-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Install the packed tarballs into a clean consumer and import every entry
+        run: pnpm --filter @comfyorg/account-core smoke:pack

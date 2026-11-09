@@ -1,16 +1,19 @@
 <template>
-  <div class="comfyui-body grid size-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
+  <div class="comfyui-body isolate grid size-full overflow-hidden">
+    <div id="comfyui-body-top" class="comfyui-body-top z-3" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom z-2" />
+    <div id="comfyui-body-left" class="comfyui-body-left z-1" />
+    <div id="comfyui-body-right" class="comfyui-body-right z-1" />
     <div
       v-show="!linearMode"
       id="graph-canvas-container"
-      ref="graphCanvasContainerRef"
-      class="graph-canvas-container"
+      class="graph-canvas-container isolate"
     >
-      <GraphCanvas @ready="onGraphReady" />
+      <GraphCanvas @ready="onGraphReady">
+        <template #legacy-menu>
+          <div ref="legacyMenuContainerRef" />
+        </template>
+      </GraphCanvas>
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -20,15 +23,17 @@
     </template>
   </div>
 
-  <GlobalToast />
-  <InviteAcceptedToast />
-  <RerouteMigrationToast />
-  <ModelImportProgressDialog />
-  <AssetExportProgressDialog />
-  <ManagerProgressToast />
-  <DesktopCloudNotificationController />
+  <AppToaster />
+  <ToastDock>
+    <ModelImportProgressDialog />
+    <AssetExportProgressDialog />
+    <ManagerProgressToast />
+  </ToastDock>
+  <PartnerNodesEducationCard v-if="!isCloud" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
+  <TourOverlay v-if="graphReady" />
+  <FirstRunTour />
 </template>
 
 <script setup lang="ts">
@@ -49,60 +54,93 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
-import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
-import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
+import AppToaster from '@/components/common/AppToaster.vue'
+import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
+import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
+import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { ServerConfigValue } from '@comfyorg/settings-core/types'
 import { setActiveLocale } from '@/i18n'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import { createUuidv4 } from '@/utils/uuid'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
-import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  onBeforeUnmount(
+    setMissingNodesNotice(
+      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+    )
+  )
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
@@ -110,9 +148,50 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
+const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const templateInputGraphSync = startTemplateInputDownloadGraphSync({
+  getReferencedInputNames: () =>
+    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
+  refreshGraphBindings: async (completedInputNames) => {
+    try {
+      await app.reloadNodeDefs()
+      refreshDownloadedTemplateInputBindings(
+        app.rootGraph,
+        scanAllMediaCandidates(app.rootGraph),
+        new Set(completedInputNames)
+      )
+      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    } finally {
+      // The transfers finished even if rebinding them did not. Releasing them
+      // either way keeps a failed rebind from holding the run action behind a
+      // permanent finalizing state; the failure is reported separately.
+      templateInputDownloadStore.completeGraphSync(completedInputNames)
+    }
+  },
+  reportError: (error) => {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_template_input_refresh_failed'
+    })
+  }
+})
+const stopTemplateInputDownloadTracking =
+  (isDesktop &&
+    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
+      templateInputDownloadStore.updateProgress(progress)
+      templateInputGraphSync.handleProgress(progress)
+    })) ||
+  (() => undefined)
+
+onBeforeUnmount(() => {
+  stopTemplateInputDownloadTracking()
+  templateInputGraphSync.dispose()
+  templateInputDownloadStore.clear()
+})
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
@@ -124,15 +203,12 @@ const telemetry = useTelemetry()
 const authStore = useAuthStore()
 let hasTrackedLogin = false
 
+// Learn which developer-platform deployment this page booted on (FE-2434).
+if (isCloud) void useDeploymentPickAtBoot()
+
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.documentElement.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.documentElement.classList.add(DARK_THEME_CLASS)
-    }
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
@@ -184,7 +260,7 @@ watchEffect(() => {
 watchEffect(() => {
   const padding = settingStore.get('Comfy.TreeExplorer.ItemPadding')
   document.documentElement.style.setProperty(
-    '--comfy-tree-explorer-item-padding',
+    '--tree-item-padding',
     `${padding}px`
   )
 })
@@ -225,37 +301,32 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
-void useBottomPanelStore().registerCoreBottomPanelTabs()
+registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
+registerAssetBrowserModalComponent(AssetBrowserModal)
+void registerCoreBottomPanelTabs()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const sidebarTabStore = useSidebarTabStore()
 
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 const refreshOnReconnect = useReconnectQueueRefresh()
+const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
 
 const handleReconnected = async () => {
   onReconnected()
+  void refreshNodeDefinitionsOnReconnect()
   await refreshOnReconnect()
 }
 
@@ -268,8 +339,7 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    // Relocate the legacy menu container to the graph canvas container so it is below other elements
-    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
@@ -294,6 +364,7 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
+  graphReady.value = true
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
@@ -304,9 +375,11 @@ const onGraphReady = () => {
     // Set up page visibility tracking (cloud only)
     if (isCloud && telemetry) {
       useEventListener(document, 'visibilitychange', () => {
-        telemetry.trackPageVisibilityChanged({
-          visibility_state: document.visibilityState as 'visible' | 'hidden'
-        })
+        telemetry.trackPageVisibilityChanged(
+          getPageVisibilityMetadata(
+            document.visibilityState as 'visible' | 'hidden'
+          )
+        )
       })
     }
 
@@ -314,7 +387,7 @@ const onGraphReady = () => {
     if (isCloud && telemetry) {
       const tabCountChannel = new BroadcastChannel('comfyui-tab-count')
       const activeTabs = new Map<string, number>()
-      const currentTabId = crypto.randomUUID()
+      const currentTabId = createUuidv4()
 
       // Listen for heartbeats from other tabs
       tabCountChannel.onmessage = (event) => {
@@ -418,15 +491,8 @@ const onGraphReady = () => {
 
 .comfyui-body-top {
   order: -5;
-  /* Span across all columns */
   grid-column: 1/-1;
-  /* Position at the first row */
   grid-row: 1;
-  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
-  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
-  is located in body-top. */
-  z-index: 1001;
   display: flex;
   flex-direction: column;
 }
@@ -437,7 +503,6 @@ const onGraphReady = () => {
   grid-column: 1;
   /* Position below the top element */
   grid-row: 2;
-  z-index: 10;
   display: flex;
 }
 
@@ -453,18 +518,14 @@ const onGraphReady = () => {
 
 .comfyui-body-right {
   order: -2;
-  z-index: 10;
   grid-column: 3;
   grid-row: 2;
 }
 
 .comfyui-body-bottom {
   order: 4;
-  /* Span across all columns */
   grid-column: 1/-1;
   grid-row: 3;
-  /* Bottom menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
   display: flex;
   flex-direction: column;
 }

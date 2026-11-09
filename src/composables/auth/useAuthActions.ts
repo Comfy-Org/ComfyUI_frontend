@@ -1,21 +1,56 @@
 import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  authErrorMessage,
+  classifyAuthError,
+  severityForAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
+import type {
+  AuthErrorClassification,
+  AuthErrorCopy
+} from '@comfyorg/account-core/firebaseAuthError'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AuthFlowAction } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AuthFlowAction } from '@comfyorg/telemetry/types'
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  clearAllWorkspaceStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
-import type { BillingPortalTargetTier } from '@/stores/authStore'
-import { usdToMicros } from '@/utils/formatUtil'
+import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
+import type { SocialSignInOptions } from '@/stores/authStore'
+
+/**
+ * The app's own auth.errors table, read through vue-i18n at resolution time.
+ * The key set is the app's, so a code added to main.json renders without the
+ * package having to know it.
+ */
+export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+  ...Object.fromEntries(
+    Object.keys(enMessages.auth.errors).map((key) => [
+      key,
+      st(`auth.errors.${key}`, t('auth.errors.generic'))
+    ])
+  ),
+  generic: t('auth.errors.generic'),
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
+})
+
+const isPopupTakenOverByDesktop = (
+  classification: AuthErrorClassification
+): boolean =>
+  !!window.__comfyDesktop2 &&
+  classification.kind === 'popup-dismissed' &&
+  classification.code === 'auth/popup-blocked'
 
 /**
  * Service for Firebase Auth actions.
@@ -24,7 +59,7 @@ import { usdToMicros } from '@/utils/formatUtil'
  */
 export const useAuthActions = () => {
   const authStore = useAuthStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -38,156 +73,127 @@ export const useAuthActions = () => {
       reportError(error)
     }
 
+  /** Sends an account its SSO organization refused to SSO instead of a failure toast. */
+  const presentSsoRefusal = (error: SsoRequiredAuthError): boolean => {
+    const presented = presentSsoRequired('customer_create', {
+      email: authStore.userEmail ?? undefined,
+      organizationId: error.organizationId
+    })
+    if (presented) void authStore.logout().catch(toastErrorHandler)
+    return presented
+  }
+
   const reportError = (error: unknown) => {
+    if (error instanceof SsoRequiredAuthError && presentSsoRefusal(error)) {
+      return
+    }
+    const classification = classifyAuthError(error)
+    if (isPopupTakenOverByDesktop(classification)) {
+      toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
+      return
+    }
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
+    const kind = severityForAuthError(classification)
+    const notify = (description: string) =>
+      toast[kind](t(`g.${kind}`), { description })
+    if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.unauthorizedDomain', {
+      notify(
+        t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
-      })
-    } else if (
-      error instanceof FirebaseError &&
-      error.message.toLowerCase().includes('signup_blocked')
-    ) {
-      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
-      // rejections collapse the thrown code into a generic `auth/internal-error`,
-      // so the message is the only reliable channel. `signup_blocked` is a
-      // cross-repo contract token; matched case-insensitively.
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
-      })
+      )
+    } else if (classification.kind !== 'unknown') {
+      notify(authErrorMessage(classification, localizedAuthErrorCopy()))
     } else if (error instanceof FirebaseError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
+      toast.error(t('g.error'), {
+        description: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else {
       toastErrorHandler(error)
     }
   }
 
-  const logout = wrapWithErrorHandlingAsync(async () => {
-    const workflowStore = useWorkflowStore()
-    const modifiedWorkflows = workflowStore.modifiedWorkflows
-    if (modifiedWorkflows.length > 0) {
-      const dialogService = useDialogService()
-      const confirmed = await dialogService.confirm({
-        title: t('auth.signOut.unsavedChangesTitle'),
-        message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose',
-        denyLabel: t('auth.signOut.signOutAnyway')
-      })
-      if (confirmed === null) return
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
+  const logout = wrapWithErrorHandlingAsync(
+    async ({
+      beforeSignOut,
+      signInPath = '/cloud/login'
+    }: {
+      beforeSignOut?: () => Promise<boolean>
+      signInPath?: string
+    } = {}): Promise<boolean> => {
+      if (isCloud) {
+        const workflowStore = useWorkflowStore()
+        const modifiedWorkflows = workflowStore.modifiedWorkflows
+        if (modifiedWorkflows.length > 0) {
+          const dialogService = useDialogService()
+          const confirmed = await dialogService.confirm({
+            title: t('auth.signOut.unsavedChangesTitle'),
+            message: t('auth.signOut.unsavedChangesMessage'),
+            type: 'dirtyClose',
+            denyLabel: t('auth.signOut.signOutAnyway')
+          })
+          if (confirmed === null) return false
 
-      if (confirmed === true) {
-        const workflowService = useWorkflowService()
-        for (const workflow of modifiedWorkflows) {
-          try {
-            const saved = await workflowService.saveWorkflow(workflow)
-            if (!saved) return
-          } catch {
-            throw new Error(
-              t('auth.signOut.saveFailed', { workflow: workflow.path })
-            )
+          if (confirmed) {
+            const workflowService = useWorkflowService()
+            for (const workflow of modifiedWorkflows) {
+              try {
+                const saved = await workflowService.saveWorkflow(workflow)
+                if (!saved) return false
+              } catch {
+                throw new Error(
+                  t('auth.signOut.saveFailed', { workflow: workflow.path })
+                )
+              }
+            }
           }
         }
       }
-    }
 
-    await authStore.logout()
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.signOut.success'),
-      detail: t('auth.signOut.successDetail'),
-      life: 5000
-    })
+      if (beforeSignOut && !(await beforeSignOut())) return false
 
-    if (isCloud) {
-      try {
-        window.location.href = '/cloud/login'
-      } catch (error) {
-        // needed for local development until we bring in cloud login pages.
-        window.location.reload()
+      await authStore.logout()
+      if (isCloud) {
+        prepareWorkflowLogoutTransition()
+        clearAllWorkspaceStorage()
       }
-    }
-  }, reportError)
+
+      toast.success(t('auth.signOut.success'), {
+        description: t('auth.signOut.successDetail'),
+        duration: 5000
+      })
+
+      if (isCloud) {
+        try {
+          window.location.href = signInPath
+        } catch {
+          // needed for local development until we bring in cloud login pages.
+          window.location.reload()
+        }
+      }
+      return true
+    },
+    reportError
+  )
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
     async (email: string) => {
       await authStore.sendPasswordReset(email)
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.login.passwordResetSent'),
-        detail: t('auth.login.passwordResetSentDetail'),
-        life: 5000
+      toast.success(t('auth.login.passwordResetSent'), {
+        description: t('auth.login.passwordResetSentDetail'),
+        duration: 5000
       })
+      return true
     },
     reportAuthFlowError('password_reset')
   )
 
-  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription } = useBillingContext()
-    if (!isActiveSubscription.value) return
-
-    const response = await authStore.initiateCreditPurchase({
-      amount_micros: usdToMicros(amount),
-      currency: 'usd'
-    })
-
-    if (!response.checkout_url) {
-      throw new Error(
-        t('toastMessages.failedToPurchaseCredits', {
-          error: 'No checkout URL returned'
-        })
-      )
-    }
-
-    useTelemetry()?.startTopupTracking()
-    window.open(response.checkout_url, '_blank')
-  }, reportError)
-
-  const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
-    boolean
-  >(async (targetTier, openInNewTab = true) => {
-    const response = await authStore.accessBillingPortal(targetTier)
-    if (!response.billing_portal_url) {
-      throw new Error(
-        t('toastMessages.failedToAccessBillingPortal', {
-          error: 'No billing portal URL returned'
-        })
-      )
-    }
-    if (openInNewTab) {
-      return window.open(response.billing_portal_url, '_blank') !== null
-    }
-
-    globalThis.location.href = response.billing_portal_url
-    return true
-  }, reportError)
-
-  const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    const result = await authStore.fetchBalance()
-    // Top-up completion tracking happens in UsageLogsTable when events are fetched
-    return result
-  }, reportError)
-
-  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGoogle = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGoogle(options),
       reportAuthFlowError(
@@ -195,7 +201,7 @@ export const useAuthActions = () => {
       )
     )()
 
-  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGithub = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGithub(options),
       reportAuthFlowError(
@@ -217,73 +223,13 @@ export const useAuthActions = () => {
     reportAuthFlowError('email_sign_up')
   )
 
-  /**
-   * Recovery strategy for Firebase auth/requires-recent-login errors.
-   * Prompts user to reauthenticate and retries the operation after successful login.
-   */
-  const createReauthenticationRecovery = <
-    TArgs extends unknown[],
-    TReturn
-  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
-    const dialogService = useDialogService()
-
-    return {
-      shouldHandle: (error: unknown) =>
-        error instanceof FirebaseError &&
-        error.code === AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
-
-      recover: async (
-        _error: unknown,
-        retry: (...args: TArgs) => Promise<TReturn> | TReturn,
-        args: TArgs
-      ) => {
-        const confirmed = await dialogService.confirm({
-          title: t('auth.reauthRequired.title'),
-          message: t('auth.reauthRequired.message'),
-          type: 'default'
-        })
-
-        if (!confirmed) {
-          return
-        }
-
-        await authStore.logout()
-
-        const signedIn = await dialogService.showSignInDialog()
-
-        if (signedIn) {
-          await retry(...args)
-        }
-      }
-    }
-  }
-
-  const updatePassword = wrapWithErrorHandlingAsync(
-    async (newPassword: string) => {
-      await authStore.updatePassword(newPassword)
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.passwordUpdate.success'),
-        detail: t('auth.passwordUpdate.successDetail'),
-        life: 5000
-      })
-    },
-    reportError,
-    undefined,
-    [createReauthenticationRecovery<[string], void>()]
-  )
-
   return {
     logout,
     sendPasswordReset,
-    purchaseCredits,
-    accessBillingPortal,
-    fetchBalance,
     signInWithGoogle,
     signInWithGithub,
     signInWithEmail,
     signUpWithEmail,
-    updatePassword,
     accessError,
     reportError
   }

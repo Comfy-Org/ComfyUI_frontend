@@ -1,10 +1,17 @@
-import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  assetItemSchema,
+  assetFilenameSchema
+} from '@/platform/assets/schemas/assetSchema'
+import type { ModelBrowserAsset } from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetFilename,
+  getAssetNodeCategoryCandidates
+} from '@/platform/assets/utils/assetMetadataUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
@@ -30,12 +37,12 @@ type Result<T, E> = { success: true; value: T } | { success: false; error: E }
  * throwing, so callers can degrade gracefully in UI contexts.
  */
 export function resolveModelNodeFromAsset(
-  asset: AssetItem
+  asset: ModelBrowserAsset
 ): Result<ResolvedModelNode, ResolveModelNodeError> {
   const validatedAsset = assetItemSchema.safeParse(asset)
 
   if (!validatedAsset.success) {
-    const errorMessage = validatedAsset.error.errors
+    const errorMessage = validatedAsset.error.issues
       .map((e) => `${e.path.join('.')}: ${e.message}`)
       .join(', ')
     console.error('Invalid asset item:', errorMessage)
@@ -44,7 +51,7 @@ export function resolveModelNodeFromAsset(
       error: {
         code: 'INVALID_ASSET',
         message: 'Asset schema validation failed',
-        assetId: typeof asset?.id === 'string' ? asset.id : 'unknown',
+        assetId: typeof asset.id === 'string' ? asset.id : 'unknown',
         details: { validationErrors: errorMessage }
       }
     }
@@ -52,16 +59,19 @@ export function resolveModelNodeFromAsset(
 
   const validAsset = validatedAsset.data
 
-  const filename = getAssetFilename(validAsset)
-  if (filename.length === 0) {
-    console.error(
-      `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
-    )
+  const filename = validAsset.loader_path ?? getAssetFilename(validAsset)
+  if (
+    filename.length === 0 ||
+    (validAsset.loader_path != null &&
+      !assetFilenameSchema.safeParse(validAsset.loader_path).success)
+  ) {
+    console.error(`Asset ${validAsset.id} has an invalid loader filename`)
     return {
       success: false,
       error: {
         code: 'INVALID_ASSET',
-        message: `Invalid filename (expected non-empty string, got ${typeof filename})`,
+        message:
+          'Invalid filename (expected non-empty string and a safe relative loader path)',
         assetId: validAsset.id
       }
     }
@@ -81,10 +91,12 @@ export function resolveModelNodeFromAsset(
     }
   }
 
-  const category = validAsset.tags.find(
-    (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+  const { flags } = useFeatureFlags()
+  const candidates = getAssetNodeCategoryCandidates(
+    { ...validAsset, browserCategories: asset.browserCategories },
+    flags.supportsModelTypeTags
   )
-  if (!category) {
+  if (candidates.length === 0) {
     console.error(
       `Asset ${validAsset.id} has no valid category tag. Available tags: ${validAsset.tags.join(', ')} (expected tag other than '${MODELS_TAG}' or '${MISSING_TAG}')`
     )
@@ -99,19 +111,28 @@ export function resolveModelNodeFromAsset(
     }
   }
 
-  const provider = useModelToNodeStore().getNodeProvider(category)
-  if (!provider) {
-    console.error(`No node provider registered for category: ${category}`)
+  const modelToNodeStore = useModelToNodeStore()
+  const resolved = candidates
+    .map((category) => ({
+      category,
+      provider: modelToNodeStore.getNodeProvider(category)
+    }))
+    .find((candidate) => candidate.provider !== undefined)
+
+  if (!resolved?.provider) {
+    console.error(
+      `No node provider registered for category: ${candidates.join(', ')}`
+    )
     return {
       success: false,
       error: {
         code: 'NO_PROVIDER',
-        message: `No node provider registered for category: ${category}`,
+        message: `No node provider registered for category: ${candidates.join(', ')}`,
         assetId: validAsset.id,
-        details: { category }
+        details: { candidates }
       }
     }
   }
 
-  return { success: true, value: { provider, filename } }
+  return { success: true, value: { provider: resolved.provider, filename } }
 }

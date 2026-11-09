@@ -1,6 +1,6 @@
-import { useStorage } from '@vueuse/core'
+import { StorageSerializers, createGlobalState, useStorage } from '@vueuse/core'
 
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
 /**
  * Remote configuration service
@@ -26,18 +26,25 @@ import type { RemoteConfig } from './types'
  * - 'error': Failed to load config
  */
 type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
+export type AuthenticatedRemoteConfigState =
+  | 'unloaded'
+  | 'loading'
+  | 'authenticated'
+  | 'error'
 
 /**
  * Current load state of remote configuration
  */
 export const remoteConfigState = ref<RemoteConfigState>('unloaded')
+export const authenticatedRemoteConfigState =
+  ref<AuthenticatedRemoteConfigState>('unloaded')
+export const remoteConfigRevision = ref(0)
 
-/**
- * Whether the authenticated config has been loaded.
- * Use this to gate access to user-specific feature flags like teamWorkspacesEnabled.
- */
+export const remoteConfigErrorStatus = ref<number | null>(null)
+
+/** Whether the authenticated config has been loaded. */
 export const isAuthenticatedConfigLoaded = computed(
-  () => remoteConfigState.value === 'authenticated'
+  () => authenticatedRemoteConfigState.value === 'authenticated'
 )
 
 /**
@@ -55,12 +62,26 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   return configValue || defaultValue
 }
 
-export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
-  'team_workspaces_enabled' satisfies `${ServerFeatureFlag.TEAM_WORKSPACES_ENABLED}`,
-  undefined
-)
+/** Last authenticated agent-allowlist answer, kept in memory for this session and never persisted. */
+export const sessionAgentGrant = ref<boolean | undefined>()
+export const sessionAgentGrantValidUntil = ref<number | undefined>()
 
-export const cachedConsolidatedBillingEnabled = useStorage<boolean | undefined>(
-  'consolidated_billing_enabled' satisfies `${ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED}`,
-  undefined
-)
+function createRemoteConfigCache() {
+  return {
+    cachedBillingControlEnabled: useStorage<boolean | undefined>(
+      'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
+    ),
+    cachedV1PaymentRecovery: useStorage<boolean | undefined>(
+      'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
+    )
+  }
+}
+
+/** Persisted server-flag cache, created on first use and shared by every caller. */
+export const useRemoteConfigCache = createGlobalState(createRemoteConfigCache)

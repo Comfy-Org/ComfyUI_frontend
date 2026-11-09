@@ -1,0 +1,51 @@
+{
+  "id": "spooky",
+  "name": "Spooky",
+  "colors": {
+    "node_slot": {
+      "CLIP": "#ffb020",
+      "CLIP_VISION": "#9ad1d4",
+      "CLIP_VISION_OUTPUT": "#b0764e",
+      "CONDITIONING": "#ff7518",
+      "CONTROL_NET": "#7cf29a",
+      "IMAGE": "#6fa8ff",
+      "LATENT": "#e07bff",
+      "MASK": "#9be564",
+      "MODEL": "#a78bfa",
+      "STYLE_MODEL": "#d4f58a",
+      "VAE": "#ff4d5e",
+      "NOISE": "#b8aec4",
+      "GUIDER": "#5ef2e6",
+      "SAMPLER": "#f2a7c3",
+      "SIGMAS": "#c9f7c4",
+      "TAESD": "#e3c26b"
+    },
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/spooky-webs.png",
+      "CLEAR_BACKGROUND_COLOR": "#0c0910",
+      "LINK_COLOR": "#b48ad8",
+      "CONNECTING_LINK_COLOR": "#ffb020"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#0c0910",
+      "foreground": "#f4e9dc",
+      "card": "#19121f",
+      "primary": "#e35d12",
+      "secondary": "#22182c",
+      "muted": "#3b2452",
+      "muted-foreground": "#a894b8",
+      "accent": "#2c1e3a",
+      "destructive": "#c2253c",
+      "border": "#45305a",
+      "input": "#140e1a",
+      "ring": "#ff8a2b",
+      "node": "#140f19",
+      "node-foreground": "#c8b6d6",
+      "node-header": "#2b1640",
+      "node-border": "#5a3a7a",
+      "warning": "#ffb020",
+      "shadow-color": "rgb(18 0 32 / 0.6)"
+    }
+  }
+}

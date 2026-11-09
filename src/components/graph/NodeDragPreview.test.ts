@@ -1,14 +1,15 @@
 import { render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
+
   () => ({
     default: { template: '<div data-testid="node-preview" />' }
   })
@@ -26,13 +27,8 @@ function ghostElement() {
 }
 
 describe('NodeDragPreview', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
     useNodeDragToCanvas().cancelDrag()
-    vi.useRealTimers()
   })
 
   it('shows no ghost when nothing is being dragged', async () => {

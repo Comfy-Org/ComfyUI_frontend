@@ -1,15 +1,20 @@
+import type { MinBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useExecutionStore } from '@/stores/executionStore'
 
-import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
-import type { UpdateFlags } from '../types'
+import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapRenderContext,
+  UpdateFlags
+} from '@/renderer/extensions/minimap/types'
 
 export function useMinimapRenderer(
   canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,
   graph: Ref<LGraph | null>,
-  bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
+  bounds: Ref<MinBounds>,
   scale: Ref<number>,
   updateFlags: Ref<UpdateFlags>,
   settings: {
@@ -20,8 +25,10 @@ export function useMinimapRenderer(
     renderError: Ref<boolean>
   },
   width: number,
-  height: number
+  height: number,
+  decorations: Ref<MinimapRenderContext['decorations']> = ref([])
 ) {
+  const executionStore = useExecutionStore()
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
 
@@ -32,8 +39,7 @@ export function useMinimapRenderer(
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
 
-    // Fast path for 0 nodes - just show background
-    if (!g._nodes || g._nodes.length === 0) {
+    if (g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
     }
@@ -55,7 +61,10 @@ export function useMinimapRenderer(
           renderError: settings.renderError.value
         },
         width,
-        height
+        height,
+        decorations: decorations.value,
+        nodeProgressStates: executionStore.nodeLocationProgressStates,
+        now: performance.now()
       })
 
       needsFullRedraw.value = false
@@ -73,7 +82,7 @@ export function useMinimapRenderer(
       needsBoundsUpdate.value = false
       updateFlags.value.bounds = false
       needsFullRedraw.value = true
-      // When bounds change, we need to update the viewport position
+
       updateFlags.value.viewport = true
     }
 
@@ -85,7 +94,6 @@ export function useMinimapRenderer(
       renderMinimap()
     }
 
-    // Update viewport if needed (e.g., after bounds change)
     if (updateFlags.value.viewport) {
       updateViewport()
       updateFlags.value.viewport = false

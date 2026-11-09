@@ -1,6 +1,9 @@
+import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
-import { formatDuration } from '@/utils/formatUtil'
+import { formatDuration, formatSize } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
 export type BuildJobDisplayCtx = {
@@ -14,6 +17,8 @@ export type BuildJobDisplayCtx = {
   showAddedHint?: boolean
   /** Whether the app is running in cloud distribution */
   isCloud?: boolean
+  /** The model file the job is downloading before it runs */
+  modelDownload?: Omit<JobModelDownload, 'progress'>
 }
 
 type JobDisplay = {
@@ -43,7 +48,7 @@ export const iconForJobState = (state: JobState): string => {
 
 const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
   const prefix = t('g.job')
-  const shortId = String(task.jobId ?? '').split('-')[0]
+  const shortId = task.jobId.split('-')[0]
   const idx = task.job.priority
   if (typeof idx === 'number') return `${prefix} #${idx}`
   if (shortId) return `${prefix} ${shortId}`
@@ -56,7 +61,7 @@ const buildQueuedTime = (
   formatClockTimeFn: (ts: number, locale: string) => string
 ): string => {
   const ts = task.createTime
-  return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
+  return formatClockTimeFn(ts, locale)
 }
 
 export const buildJobDisplay = (
@@ -64,6 +69,25 @@ export const buildJobDisplay = (
   state: JobState,
   ctx: BuildJobDisplayCtx
 ): JobDisplay => {
+  if (ctx.modelDownload) {
+    const { name, index, count, bytesDownloaded, bytesTotal } =
+      ctx.modelDownload
+    return {
+      iconName: 'icon-[lucide--download]',
+      primary:
+        count > 1
+          ? ctx.t('queue.downloadingModelOf', { name, index, count })
+          : ctx.t('queue.downloadingModel', { name }),
+      secondary:
+        bytesTotal === null
+          ? formatSize(bytesDownloaded)
+          : ctx.t('queue.downloadedOfTotal', {
+              downloaded: formatSize(bytesDownloaded),
+              total: formatSize(bytesTotal)
+            }),
+      showClear: true
+    }
+  }
   if (state === 'pending') {
     if (ctx.showAddedHint) {
       return {
@@ -124,7 +148,8 @@ export const buildJobDisplay = (
   if (state === 'completed') {
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
-    const iconImageUrl = preview && preview.isImage ? preview.url : undefined
+    const iconImageUrl =
+      preview && isImageResult(preview) ? resultItemUrl(preview) : undefined
 
     // Cloud shows "Completed in Xh Ym Zs", non-cloud shows filename
     const primary = ctx.isCloud
@@ -143,18 +168,10 @@ export const buildJobDisplay = (
       showClear: false
     }
   }
-  if (state === 'failed') {
-    return {
-      iconName: iconForJobState(state),
-      primary: ctx.t('g.failed'),
-      secondary: ctx.t('g.failed'),
-      showClear: true
-    }
-  }
   return {
     iconName: iconForJobState(state),
-    primary: buildTitle(task, ctx.t),
-    secondary: '',
+    primary: ctx.t('g.failed'),
+    secondary: ctx.t('g.failed'),
     showClear: true
   }
 }

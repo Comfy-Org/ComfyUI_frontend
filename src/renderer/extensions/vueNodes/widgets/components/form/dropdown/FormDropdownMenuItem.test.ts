@@ -17,12 +17,12 @@ const intersectionCallbacks = vi.hoisted(
   () => [] as Array<(entries: Array<{ isIntersecting: boolean }>) => void>
 )
 
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name),
   isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useIntersectionObserver: (
     _ref: unknown,
     cb: (entries: Array<{ isIntersecting: boolean }>) => void
@@ -54,8 +54,7 @@ function renderItem(
   return render(FormDropdownMenuItem, {
     global: {
       plugins: [i18n],
-      provide: { [AssetKindKey as symbol]: kind },
-      directives: { tooltip: () => {} }
+      provide: { [AssetKindKey as symbol]: kind }
     },
     props: {
       index: 0,
@@ -82,7 +81,6 @@ async function flushPromises() {
 describe('FormDropdownMenuItem', () => {
   beforeEach(() => {
     intersectionCallbacks.length = 0
-    mockFindServerPreviewUrl.mockReset()
     mockIsAssetPreviewSupported.mockReset().mockReturnValue(true)
   })
 

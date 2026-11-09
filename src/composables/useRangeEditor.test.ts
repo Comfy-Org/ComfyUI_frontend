@@ -4,7 +4,7 @@ import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useRangeEditor } from '@/composables/useRangeEditor'
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 const TRACK_RECT: DOMRect = {
   left: 0,
@@ -50,6 +50,9 @@ interface HarnessOptions {
   valueMax?: number
   showMidpoint?: boolean
   track?: HTMLElement | null
+  contentInsetX?: number
+  handleCenterOffsetX?: number
+  onEditEnd?: () => void
 }
 
 interface Harness {
@@ -72,6 +75,8 @@ const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
   const valueMin = ref(opts.valueMin ?? 0)
   const valueMax = ref(opts.valueMax ?? 100)
   const showMidpoint = ref(opts.showMidpoint ?? true)
+  const contentInsetX = ref(opts.contentInsetX ?? 0)
+  const handleCenterOffsetX = ref(opts.handleCenterOffsetX ?? 0)
 
   let api: ReturnType<typeof useRangeEditor> | undefined
   const TestComponent = defineComponent({
@@ -81,7 +86,10 @@ const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
         modelValue,
         valueMin,
         valueMax,
-        showMidpoint
+        showMidpoint,
+        contentInsetX,
+        handleCenterOffsetX,
+        onEditEnd: opts.onEditEnd
       })
       return () => null
     }
@@ -109,8 +117,6 @@ describe('useRangeEditor', () => {
 
   afterEach(() => {
     harness?.unmount()
-    document.body.innerHTML = ''
-    vi.restoreAllMocks()
   })
 
   it('does nothing when trackRef is null', () => {
@@ -152,6 +158,64 @@ describe('useRangeEditor', () => {
 
     expect(harness.modelValue.value.min).toBe(0)
     expect(harness.modelValue.value.max).toBe(80)
+  })
+
+  it('shifts min handle drags by the handle-center offset', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      handleCenterOffsetX: 8
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 32 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 92 })
+    )
+
+    expect(harness.modelValue.value.min).toBe(50)
+  })
+
+  it('shifts max handle drags by the handle-center offset', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      handleCenterOffsetX: 8
+    })
+
+    harness.api.startDrag(
+      'max',
+      createPointerEvent('pointerdown', { clientX: 168 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 108 })
+    )
+
+    expect(harness.modelValue.value.max).toBe(50)
+  })
+
+  it('combines the handle-center offset with the content inset', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      contentInsetX: 16,
+      handleCenterOffsetX: 8
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 40 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 92 })
+    )
+
+    expect(harness.modelValue.value.min).toBe(50)
   })
 
   it('drags the max handle and clamps to the configured ceiling', () => {
@@ -277,6 +341,23 @@ describe('useRangeEditor', () => {
     expect(harness.modelValue.value).toEqual(afterUp)
   })
 
+  it('reports the end of an edit once when a drag finishes', () => {
+    const onEditEnd = vi.fn()
+    harness = mountRangeEditor({ onEditEnd })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 20 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 40 })
+    )
+    expect(onEditEnd).not.toHaveBeenCalled()
+
+    harness.trackRef.value!.dispatchEvent(createPointerEvent('pointerup'))
+    expect(onEditEnd).toHaveBeenCalledOnce()
+  })
+
   it('releases the prior drag when starting a new one', () => {
     harness = mountRangeEditor({
       initial: { min: 20, max: 80, midpoint: 0.5 },
@@ -322,5 +403,154 @@ describe('useRangeEditor', () => {
     expect(removedTypes).toEqual(
       expect.arrayContaining(['pointermove', 'pointerup', 'lostpointercapture'])
     )
+  })
+
+  it('maps pointer at content inset to valueMin when contentInsetX is set', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      showMidpoint: false,
+      contentInsetX: 16
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 16 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 16 })
+    )
+
+    expect(harness.modelValue.value.min).toBe(0)
+  })
+
+  it('maps pointer at right content inset to valueMax when contentInsetX is set', () => {
+    harness = mountRangeEditor({
+      initial: { min: 0, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      showMidpoint: false,
+      contentInsetX: 16
+    })
+
+    harness.api.startDrag(
+      'max',
+      createPointerEvent('pointerdown', { clientX: 184 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 184 })
+    )
+
+    expect(harness.modelValue.value.max).toBe(100)
+  })
+
+  it('clamps pointers outside the content insets to the value range', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      showMidpoint: false,
+      contentInsetX: 16
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 2 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 2 })
+    )
+    expect(harness.modelValue.value.min).toBe(0)
+
+    harness.trackRef.value!.dispatchEvent(createPointerEvent('pointerup'))
+
+    harness.api.startDrag(
+      'max',
+      createPointerEvent('pointerdown', { clientX: 198 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 198 })
+    )
+    expect(harness.modelValue.value.max).toBe(100)
+  })
+
+  it('treats invalid content insets as zero', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      showMidpoint: false,
+      contentInsetX: NaN
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 100 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 100 })
+    )
+
+    expect(harness.modelValue.value.min).toBe(50)
+  })
+
+  it('bounds oversized content insets to half the track width', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      showMidpoint: false,
+      contentInsetX: 1000
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 50 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 50 })
+    )
+
+    expect(Number.isFinite(harness.modelValue.value.min)).toBe(true)
+    expect(harness.modelValue.value.min).toBeGreaterThanOrEqual(0)
+    expect(harness.modelValue.value.min).toBeLessThanOrEqual(80)
+  })
+
+  it('tracks the active handle through the drag lifecycle', () => {
+    harness = mountRangeEditor({ showMidpoint: false })
+
+    expect(harness.api.activeHandle.value).toBeNull()
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 40 })
+    )
+    expect(harness.api.activeHandle.value).toBe('min')
+
+    harness.trackRef.value!.dispatchEvent(createPointerEvent('pointerup'))
+    expect(harness.api.activeHandle.value).toBeNull()
+  })
+
+  it('clears the active handle on lost pointer capture', () => {
+    harness = mountRangeEditor({ showMidpoint: false })
+
+    harness.api.startDrag(
+      'max',
+      createPointerEvent('pointerdown', { clientX: 160 })
+    )
+    expect(harness.api.activeHandle.value).toBe('max')
+
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('lostpointercapture')
+    )
+    expect(harness.api.activeHandle.value).toBeNull()
+  })
+
+  it('does not set the active handle when the track is missing', () => {
+    harness = mountRangeEditor({ track: null })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 40 })
+    )
+
+    expect(harness.api.activeHandle.value).toBeNull()
   })
 })

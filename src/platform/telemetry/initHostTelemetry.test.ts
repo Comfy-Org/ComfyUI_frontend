@@ -1,19 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
+import { setTelemetryRegistry, useTelemetry } from '@comfyorg/telemetry'
 import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-
-const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 describe('initHostTelemetry', () => {
   afterEach(() => {
-    vi.clearAllMocks()
     remoteConfig.value = {}
     setTelemetryRegistry(null)
-    localStorage.clear()
     delete window.__comfyDesktop2
   })
 
@@ -23,7 +18,7 @@ describe('initHostTelemetry', () => {
     initHostTelemetry()
 
     expect(useTelemetry()).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('leaves the registry untouched when enable_telemetry is off', () => {
@@ -49,6 +44,32 @@ describe('initHostTelemetry', () => {
     expect(capture).toHaveBeenCalledWith(
       TelemetryEvents.USER_SIGN_UP_OPENED,
       undefined
+    )
+  })
+
+  it('dispatches canonical billing events through the host registry', () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = { isRemote: () => false, Telemetry: { capture } }
+    remoteConfig.value = { enable_telemetry: true }
+
+    initHostTelemetry()
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1',
+      tier: 'pro'
+    })
+
+    expect(capture).toHaveBeenCalledWith(
+      TelemetryEvents.BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED,
+      {
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        tier: 'pro'
+      }
     )
   })
 })

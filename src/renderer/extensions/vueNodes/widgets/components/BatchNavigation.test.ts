@@ -12,13 +12,6 @@ const i18n = createI18n({
   messages: { en: { batch: { index: '{current} / {total}' } } }
 })
 
-const ButtonStub = defineComponent({
-  inheritAttrs: false,
-  props: { disabled: { type: Boolean, default: false } },
-  template:
-    '<button v-bind="$attrs" :disabled="disabled" type="button"><slot /></button>'
-})
-
 function renderBatch(count: number, initialIndex = 0) {
   const index = ref(initialIndex)
   const Harness = defineComponent({
@@ -27,7 +20,7 @@ function renderBatch(count: number, initialIndex = 0) {
     template: '<BatchNavigation v-model="index" :count="count" />'
   })
   const utils = render(Harness, {
-    global: { plugins: [i18n], stubs: { Button: ButtonStub } }
+    global: { plugins: [i18n] }
   })
   return { ...utils, index }
 }

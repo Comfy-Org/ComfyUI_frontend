@@ -12,7 +12,7 @@
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
-          <span class="text-muted">{{
+          <span class="text-muted-foreground">{{
             isSignIn
               ? t('auth.login.newUser')
               : t('auth.signup.alreadyHaveAccount')
@@ -27,29 +27,56 @@
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message v-if="!isSecureContext" severity="warning" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
       <!-- Form -->
       <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
       <template v-else>
-        <Message v-if="userIsInChina" severity="warn" class="mb-4">
+        <div
+          v-if="regionStatus === 'pending'"
+          data-testid="region-check-pending"
+          class="flex flex-col gap-6"
+        >
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+        </div>
+        <Message
+          v-else-if="regionStatus === 'blocked'"
+          severity="warning"
+          class="mb-4"
+        >
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
         <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
+      <div class="my-8 flex items-center gap-3">
+        <div class="grow border-t" />
+        <span class="shrink-0 text-muted-foreground">{{
+          t('auth.login.orContinueWith')
+        }}</span>
+        <div class="grow border-t" />
+      </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
+        <Button
+          v-if="desktopHostSso"
+          type="button"
+          class="h-10"
+          variant="secondary"
+          data-testid="desktop-host-sso"
+          @click="signInWithDesktopHost"
+        >
+          <i class="mr-2 icon-[lucide--building-2] size-5" aria-hidden="true" />
+          {{ t('auth.sso.continueWithSso') }}
+        </Button>
+
         <template v-if="ssoAllowed">
           <Button
-            v-if="!googleSsoBlockedReason"
             type="button"
             class="h-10"
             variant="secondary"
@@ -69,13 +96,21 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="mr-2 icon-[lucide--github]"></i>
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
                 : t('auth.signup.signUpWithGithub')
             }}
           </Button>
+
+          <p
+            v-if="showGoogleSsoInAppBrowserNotice"
+            class="my-0 text-xs text-muted-foreground"
+            data-testid="google-sso-in-app-browser-notice"
+          >
+            {{ t('auth.login.googleSsoInAppBrowserNotice') }}
+          </p>
         </template>
 
         <template v-if="!isCloud">
@@ -92,7 +127,7 @@
             />
             {{ t('auth.login.useApiKey') }}
           </Button>
-          <small class="text-center text-muted">
+          <small class="text-center text-muted-foreground">
             {{ t('auth.apiKey.helpText') }}
             <a
               :href="`${comfyPlatformBaseUrl}/login`"
@@ -104,21 +139,23 @@
           </small>
         </template>
         <Message
-          v-if="authActions.accessError.value"
+          v-model:visible="authActions.accessError.value"
+          :close-label="$t('g.close')"
           severity="info"
-          icon="pi pi-info-circle"
-          variant="outlined"
           closable
         >
+          <template #icon>
+            <i class="icon-[lucide--info]" />
+          </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
       </div>
 
       <!-- Terms & Contact -->
-      <p class="mt-8 text-xs text-muted">
+      <p class="mt-8 text-xs text-muted-foreground">
         {{ t('auth.login.termsText') }}
         <a
-          href="https://www.comfy.org/terms-of-service"
+          href="https://comfy.org/terms-of-service/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -126,7 +163,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy"
+          href="https://comfy.org/privacy-policy/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -142,23 +179,31 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import Message from 'primevue/message'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import {
+  desktopHostReportsSignInFailures,
+  isDesktopHostSessionActive,
+  requestDesktopHostSignIn
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
-import { isInChina } from '@/utils/networkUtil'
-import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
@@ -174,7 +219,27 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
-const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
+const desktopHostSso = isDesktopHostSessionActive()
+
+const signInWithDesktopHost = async () => {
+  if (desktopHostReportsSignInFailures()) {
+    if (await requestDesktopHostSignIn()) onSuccess()
+    return
+  }
+  const toast = useToast()
+  const continueInBrowser = toast.info(
+    t('auth.desktopHost.continueInBrowser'),
+    { duration: 6000 }
+  )
+  const signedIn = await requestDesktopHostSignIn()
+  toast.dismiss(continueInBrowser)
+  if (signedIn) {
+    onSuccess()
+    return
+  }
+  toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
+}
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,
@@ -188,17 +253,10 @@ const toggleState = () => {
   showApiKeyForm.value = false
 }
 
-const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
-    onSuccess()
-  }
-}
-
-const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
-    onSuccess()
-  }
-}
+const { signInWithGoogle, signInWithGithub } = useSocialSignIn({
+  isNewUser: () => !isSignIn.value,
+  onSignedIn: onSuccess
+})
 
 const signInWithEmail = async (values: SignInData) => {
   if (await authActions.signInWithEmail(values.email, values.password)) {
@@ -224,10 +282,7 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   }
 }
 
-const userIsInChina = ref(false)
-onMounted(async () => {
-  userIsInChina.value = await isInChina()
-})
+const { status: regionStatus } = useRegionGate()
 
 onUnmounted(() => {
   authActions.accessError.value = false

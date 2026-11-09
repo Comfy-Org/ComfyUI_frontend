@@ -2,7 +2,7 @@
  * Utilities for working with asset types
  */
 
-import type { AssetItem } from '../schemas/assetSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 /**
  * Extract asset type from an asset's tags array
@@ -23,5 +23,5 @@ export function getAssetType(
   const urlType = new URLSearchParams(
     (asset.preview_url ?? '').split('?')[1] ?? ''
   ).get('type')
-  return urlType || asset.tags?.[0] || defaultType
+  return urlType || asset.tags[0] || defaultType
 }

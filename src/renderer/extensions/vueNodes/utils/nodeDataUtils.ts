@@ -1,5 +1,8 @@
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { useLinkStore } from '@/stores/linkStore'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
@@ -15,22 +18,28 @@ function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
 function inputHasWidget(input: INodeInputSlot) {
   return isSlotObject(input) && 'widget' in input && input.widget
 }
-export function nonWidgetedInputs(
-  nodeData: VueNodeData | undefined
-): INodeSlot[] {
-  if (!nodeData?.inputs) return []
 
-  return nodeData.inputs
-    .filter((input) => !inputHasWidget(input))
-    .map(coerceINodeSlot)
+export function nonWidgetedInputs(
+  inputs: INodeInputSlot[] | undefined
+): INodeSlot[] {
+  if (!inputs) return []
+
+  return inputs.filter((input) => !inputHasWidget(input)).map(coerceINodeSlot)
 }
 
 export function linkedWidgetedInputs(
-  nodeData: VueNodeData | undefined
+  nodeId: NodeId,
+  inputs: INodeInputSlot[] | undefined,
+  scope: GraphScope
 ): INodeSlot[] {
-  if (!nodeData?.inputs) return []
+  if (!inputs) return []
 
-  return nodeData.inputs
-    .filter((input) => inputHasWidget(input) && !!input.link)
+  const linkStore = useLinkStore()
+  return inputs
+    .filter(
+      (input, index) =>
+        inputHasWidget(input) &&
+        linkStore.isInputSlotConnected(scope, nodeId, index)
+    )
     .map(coerceINodeSlot)
 }

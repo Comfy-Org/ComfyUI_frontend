@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 const GROUP_TITLE_CLICK_OFFSET_X = 50
@@ -9,7 +10,7 @@ const GROUP_TITLE_CLICK_OFFSET_Y = 15
 export async function getGroupTitlePosition(
   comfyPage: ComfyPage,
   title: string
-): Promise<{ x: number; y: number }> {
+): Promise<Point2D> {
   const pos = await comfyPage.page.evaluate(
     ({ title, offsetX, offsetY }) => {
       const app = window.app!
@@ -31,4 +32,23 @@ export async function getGroupTitlePosition(
   )
   if (!pos) throw new Error(`Group "${title}" not found`)
   return pos
+}
+
+/**
+ * Sets a group's color via its real context menu: right-click the title bar,
+ * open "Edit Group" > "Color", then pick the named color option.
+ */
+export async function setGroupColor(
+  comfyPage: ComfyPage,
+  title: string,
+  colorName: string
+): Promise<void> {
+  const titlePos = await getGroupTitlePosition(comfyPage, title)
+  await comfyPage.page.mouse.click(titlePos.x, titlePos.y, {
+    button: 'right'
+  })
+  await comfyPage.contextMenu.clickLitegraphMenuItem('Edit Group')
+  await comfyPage.contextMenu.clickLitegraphMenuItem('Color')
+  await comfyPage.contextMenu.clickLitegraphMenuItem(colorName)
+  await comfyPage.contextMenu.waitForHidden()
 }

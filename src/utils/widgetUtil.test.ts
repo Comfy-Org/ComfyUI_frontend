@@ -1,14 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('getWidgetDefaultValue', () => {
@@ -71,11 +69,6 @@ function makeNode({
 }
 
 describe('renameWidget', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('writes the label to the widget and the input matched by widgetId', () => {
     const id = 'graph-id:1:seed' as WidgetId
     const widget = makeWidget({ name: 'seed', widgetId: id })

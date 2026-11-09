@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -71,7 +71,7 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
 
       // Connection should be cleaned up
       expect(subgraphNode.inputs.length).toBe(0)
-      expect(externalNode.outputs[0].links).toHaveLength(0)
+      expect(externalNode.outputs[0].links).toBeNull()
     }
   )
 
@@ -316,7 +316,7 @@ describe('SubgraphIO - Boundary Connection Management', () => {
       complexSubgraph.removeInput(inputToRemove)
 
       expect(subgraphNode.inputs.findIndex((i) => i.name === 'data')).toBe(-1)
-      expect(externalSource.outputs[0].links).toHaveLength(0)
+      expect(externalSource.outputs[0].links).toBeNull()
 
       const outputToRemove = complexSubgraph.outputs[0]
       complexSubgraph.removeOutput(outputToRemove)

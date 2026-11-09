@@ -1,11 +1,11 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { toRef } from 'vue'
 
-import type { JobAction } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { setMockJobActions } from '@/storybook/mocks/useJobActions'
 import { setMockJobItems } from '@/storybook/mocks/useJobList'
 import { iconForJobState } from '@/utils/queueDisplay'
 
@@ -15,13 +15,12 @@ type StoryArgs = {
   assets: AssetItem[]
   jobs: JobListItem[]
   selectedAssetIds?: string[]
-  actionsByJobId?: Record<string, JobAction[]>
 }
 
 function baseDecorator() {
   return {
     template: `
-        <div class="bg-base-background p-6">
+        <div class="bg-background p-6">
           <story />
         </div>
       `
@@ -72,7 +71,7 @@ const sampleJobs: JobListItem[] = [
 ]
 
 const sampleAssets: AssetItem[] = [
-  {
+  fromPartial({
     id: 'asset-image-1',
     name: 'image-032.png',
     created_at: baseTimestamp,
@@ -84,8 +83,8 @@ const sampleAssets: AssetItem[] = [
       nodeId: 12,
       executionTimeInSeconds: 1.84
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-video-1',
     name: 'clip-01.mp4',
     created_at: baseTimestamp,
@@ -95,8 +94,8 @@ const sampleAssets: AssetItem[] = [
     user_metadata: {
       duration: 132000
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-audio-1',
     name: 'soundtrack-01.mp3',
     created_at: baseTimestamp,
@@ -105,47 +104,36 @@ const sampleAssets: AssetItem[] = [
     user_metadata: {
       duration: 200000
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-3d-1',
     name: 'scene-01.glb',
     created_at: baseTimestamp,
     size: 134217728,
     tags: []
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-text-1',
     name: 'generation-notes.txt',
     created_at: baseTimestamp,
     preview_url: '/assets/images/default-template.png',
     size: 2048,
     tags: []
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-other-1',
     name: 'workflow-payload.bin',
     created_at: baseTimestamp,
     preview_url: '/assets/images/default-template.png',
     size: 4096,
     tags: []
-  }
+  })
 ]
-
-const cancelAction: JobAction = {
-  icon: 'icon-[lucide--x]',
-  label: 'Cancel',
-  variant: 'destructive'
-}
 
 export const RunningAndGenerated: Story = {
   args: {
     assets: sampleAssets,
-    jobs: sampleJobs,
-    actionsByJobId: {
-      'job-pending-1': [cancelAction],
-      'job-init-1': [cancelAction],
-      'job-running-1': [cancelAction]
-    }
+    jobs: sampleJobs
   },
   render: renderAssetsSidebarListView
 }
@@ -165,7 +153,6 @@ function renderAssetsSidebarListView(args: StoryArgs) {
     components: { AssetsSidebarListView },
     setup() {
       setMockJobItems(args.jobs)
-      setMockJobActions(args.actionsByJobId ?? {})
       const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
         useOutputStacks({
           assets: toRef(args, 'assets')

@@ -7,11 +7,9 @@
     data-testid="apps-sidebar"
   >
     <template #alt-title>
-      <span
-        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
-      >
+      <Badge variant="pill" severity="default" class="ml-2 px-1.5 uppercase">
         {{ $t('g.beta') }}
-      </span>
+      </Badge>
     </template>
     <template #header-actions="{ hasResults }">
       <Button
@@ -20,7 +18,7 @@
         size="md"
         @click="createApp"
       >
-        <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--plus]" aria-hidden="true" />
         {{ $t('linearMode.appModeToolbar.create') }}
       </Button>
     </template>
@@ -38,11 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const commandStore = useCommandStore()
 

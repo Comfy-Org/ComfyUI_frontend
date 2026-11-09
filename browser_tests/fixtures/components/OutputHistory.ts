@@ -58,6 +58,14 @@ export class OutputHistoryComponent {
     )
   }
 
+  get selectedImageOutput(): Locator {
+    return this.selectedInProgressItem.getByTestId(ids.imageOutput)
+  }
+
+  async selectInProgressItem(index: number) {
+    await this.inProgressItems.nth(index).click()
+  }
+
   /** The currently selected (checked) history item. */
   get selectedHistoryItem(): Locator {
     return this.page.locator(

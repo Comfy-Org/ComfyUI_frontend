@@ -1,8 +1,10 @@
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -10,56 +12,21 @@ import { useAssetsStore } from '@/stores/assetsStore'
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, params?: Record<string, string>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key,
-  d: (date: Date) => date.toLocaleDateString()
-}))
-
-vi.mock('@/stores/assetsStore', () => {
-  const getAssets = vi.fn((key: string) => mockAssetsByKey.get(key) ?? [])
-  const isModelLoading = vi.fn(
-    (key: string) => mockLoadingByKey.get(key) ?? false
-  )
-  const updateModelsForNodeType = vi.fn()
-  const updateModelsForTag = vi.fn()
-  return {
-    useAssetsStore: () => ({
-      getAssets,
-      isModelLoading,
-      updateModelsForNodeType,
-      updateModelsForTag
-    })
-  }
-})
-
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({
-    getCategoryForNodeType: () => 'checkpoints'
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
+  useModelTypes: () => ({
+    fetchModelTypes: vi.fn().mockResolvedValue(undefined)
   })
 }))
 
-vi.mock('@/components/common/SearchBox.vue', () => ({
-  default: {
-    name: 'SearchBox',
-    props: ['modelValue', 'size', 'placeholder', 'class'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        :value="modelValue"
-        @input="$emit('update:modelValue', $event.target.value)"
-        data-testid="search-box"
-      />
-    `
-  }
-}))
-
-vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
-  default: {
-    name: 'BaseModalLayout',
-    props: ['contentTitle'],
-    emits: ['close'],
-    template: `
+vi.mock<unknown>(
+  import('@comfyorg/design-system/layout/BaseModalLayout'),
+  () => ({
+    default: {
+      name: 'BaseModalLayout',
+      props: ['contentTitle'],
+      emits: ['close'],
+      template: `
       <div data-testid="base-modal-layout">
         <span data-testid="modal-title">{{ contentTitle }}</span>
         <div v-if="$slots.leftPanel" data-testid="left-panel">
@@ -74,17 +41,21 @@ vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
         <div data-testid="content">
           <slot name="content" />
         </div>
+        <slot name="rightPanel" />
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
-  default: {
-    name: 'LeftSidePanel',
-    props: ['modelValue', 'navItems'],
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@comfyorg/design-system/navigation/LeftSidePanel'),
+  () => ({
+    default: {
+      name: 'LeftSidePanel',
+      props: ['modelValue', 'navItems'],
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="left-side-panel">
         <div v-if="$slots['header-title']" data-testid="header-title">
           <slot name="header-title" />
@@ -112,33 +83,38 @@ vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
         </template>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/platform/assets/components/AssetFilterBar.vue', () => ({
-  default: {
-    name: 'AssetFilterBar',
-    props: ['assets'],
-    emits: ['filter-change'],
-    template: `
+vi.mock<unknown>(
+  import('@/platform/assets/components/AssetFilterBar.vue'),
+  () => ({
+    default: {
+      name: 'AssetFilterBar',
+      props: ['assets'],
+      emits: ['filter-change'],
+      template: `
       <div data-testid="asset-filter-bar">
         Filter bar with {{ assets?.length ?? 0 }} assets
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
+vi.mock<unknown>(import('@/platform/assets/components/AssetGrid.vue'), () => ({
   default: {
     name: 'AssetGrid',
     props: ['assets', 'loading'],
-    emits: ['asset-select'],
+    emits: ['asset-select', 'asset-show-info'],
     template: `
       <div data-testid="asset-grid">
         <div
           v-for="asset in assets"
           :key="asset.id"
           @click="$emit('asset-select', asset)"
+          @dblclick.stop="$emit('asset-show-info', asset)"
           :data-testid="'asset-' + asset.id"
           class="asset-card"
         >
@@ -152,21 +128,37 @@ vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string>) =>
-      params ? `${key}:${JSON.stringify(params)}` : key
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string, params?: Record<string, string>) =>
-        params ? `${key}:${JSON.stringify(params)}` : key
+vi.mock<unknown>(
+  import('@/platform/assets/components/modelInfo/ModelInfoPanel.vue'),
+  () => ({
+    default: {
+      props: ['asset'],
+      template: '<div data-testid="model-info">{{ asset.name }}</div>'
     }
   })
-}))
+)
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+beforeEach(() => {
+  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
+    () => 'checkpoints'
+  )
+})
+
+beforeEach(() => {
+  const getAssets = vi.fn((key: string) => mockAssetsByKey.get(key) ?? [])
+  const isModelLoading = vi.fn(
+    (key: string) => mockLoadingByKey.get(key) ?? false
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(getAssets)
+  vi.mocked(useAssetsStore().isModelLoading).mockImplementation(isModelLoading)
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockResolvedValue(
+    undefined
+  )
+  vi.mocked(useAssetsStore().updateModelsForTag).mockResolvedValue(undefined)
+})
 
 describe('AssetBrowserModal', () => {
   const createTestAsset = (
@@ -191,29 +183,49 @@ describe('AssetBrowserModal', () => {
   })
 
   function renderModal(props: Record<string, unknown>) {
-    const pinia = createPinia()
-    setActivePinia(pinia)
-
     return render(AssetBrowserModal, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [i18n],
         stubs: {
           'i-lucide:folder': {
             template: '<div data-testid="folder-icon"></div>'
           }
-        },
-        mocks: {
-          $t: (key: string) => key
         }
       }
     })
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
+  })
+
+  it('removes focused model details when the accessible inventory changes', async () => {
+    const user = userEvent.setup()
+    const model = createTestAsset('private', 'Private workspace model', 'loras')
+    const { rerender } = renderModal({ overrideAssets: [model] })
+
+    await user.dblClick(screen.getByTestId('asset-private'))
+    expect(screen.getByTestId('model-info')).toHaveTextContent(model.name)
+
+    await rerender({ overrideAssets: [] })
+
+    expect(screen.queryByTestId('asset-private')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('model-info')).not.toBeInTheDocument()
+  })
+
+  it('shows a list error alongside the available Release cards', async () => {
+    mockAssetsByKey.set('tag:models', [
+      createTestAsset('release', 'Release model', 'loras')
+    ])
+    vi.mocked(useAssetsStore().getError).mockReturnValue(
+      new Error('library unavailable')
+    )
+    renderModal({ assetType: 'models' })
+    await flushPromises()
+    expect(screen.getByRole('alert')).toHaveTextContent('Some models')
+    expect(screen.getByTestId('asset-release')).toBeDefined()
   })
 
   describe('Integration with useAssetBrowser', () => {
@@ -229,11 +241,11 @@ describe('AssetBrowserModal', () => {
 
       expect(screen.getByTestId('asset-asset1')).toBeDefined()
       expect(screen.getByTestId('asset-asset2')).toBeDefined()
-      /* eslint-disable testing-library/no-node-access */
+      /* oxlint-disable testing-library/no-node-access */
       expect(
         screen.getByTestId('asset-grid').querySelectorAll('.asset-card')
       ).toHaveLength(2)
-      /* eslint-enable testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-node-access */
     })
 
     it('passes category-filtered assets to AssetFilterBar', async () => {
@@ -417,7 +429,22 @@ describe('AssetBrowserModal', () => {
       await flushPromises()
 
       expect(screen.getByTestId('modal-title').textContent).toBe(
-        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+        'All Checkpoints'
+      )
+    })
+
+    it('strips the model_type: prefix from the title when the flag is on', async () => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
+      const assets = [
+        createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
+      ]
+      mockAssetsByKey.set('CheckpointLoaderSimple', assets)
+
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      expect(screen.getByTestId('modal-title').textContent).toBe(
+        'All Checkpoints'
       )
     })
   })

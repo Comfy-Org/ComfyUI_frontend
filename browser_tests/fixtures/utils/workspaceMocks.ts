@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
 
 import type {
   Member,
@@ -38,14 +38,15 @@ export function member(
  * this the mint fails and auth cannot resolve the active workspace.
  */
 export async function mockWorkspaceTokenMint(
-  page: Page,
+  routeTarget: Page | BrowserContext,
   ws: Pick<WorkspaceWithRole, 'id' | 'name' | 'type' | 'role'>
 ) {
-  await page.route('**/api/auth/token', (r) =>
+  await routeTarget.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: ws.id, name: ws.name, type: ws.type },
         role: ws.role,
         permissions: []
@@ -55,25 +56,49 @@ export async function mockWorkspaceTokenMint(
 }
 
 /**
+ * Stub `GET /api/workspaces` with the given roster. Reusable across specs that
+ * need to (re)mock the workspace list, including mid-test overrides ahead of a
+ * reload.
+ */
+export async function mockWorkspaceList(
+  routeTarget: Page | BrowserContext,
+  workspaces: WorkspaceWithRole[]
+): Promise<void> {
+  await routeTarget.route('**/api/workspaces', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill(jsonRoute({ workspaces }))
+  })
+}
+
+/**
  * Stub the workspace resolution + members list so the cloud app boots into the
  * given workspace with the given roster (drives the original-owner gate).
  */
 export async function mockWorkspace(
-  page: Page,
+  routeTarget: Page | BrowserContext,
   ws: WorkspaceWithRole,
   members: Member[]
 ) {
-  await page.route('**/api/workspaces', async (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    await route.fulfill(jsonRoute({ workspaces: [ws] }))
-  })
-  await mockWorkspaceTokenMint(page, ws)
-  await page.route('**/api/workspace/members**', (r) =>
+  await mockWorkspaceList(routeTarget, [ws])
+  await mockWorkspaceTokenMint(routeTarget, ws)
+  await routeTarget.route('**/api/workspace/members**', (r) =>
     r.fulfill(
       jsonRoute({
         members,
         pagination: { offset: 0, limit: 50, total: members.length }
       })
     )
+  )
+}
+
+/** Refuse the deployment listing the way a workspace outside the rollout sees it. */
+export async function mockDeploymentRolloutRefusal(
+  routeTarget: Page | BrowserContext
+): Promise<void> {
+  await routeTarget.route('**/api/workspaces/*/deployments', (route) =>
+    route.fulfill({
+      ...jsonRoute({ error: 'Deployment selection is outside the rollout' }),
+      status: 403
+    })
   )
 }

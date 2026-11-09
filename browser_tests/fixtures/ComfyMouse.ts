@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Mouse } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -76,7 +77,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
 
   async middleDragFromCenter(
     locator: Locator,
-    delta: { x: number; y: number },
+    delta: Point2D,
     options: Omit<DragOptions, 'button'> = {}
   ) {
     await locator.waitFor({ state: 'visible' })
@@ -111,6 +112,13 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
       { x: cx, y: cy },
       { x: cx + (x ?? 0), y: cy + (y ?? 0) }
     )
+  }
+
+  async hold(...args: Parameters<Mouse['down']>) {
+    await this.mouse.down(...args)
+    const release = new AsyncDisposableStack()
+    release.defer(() => this.mouse.up(...args))
+    return release
   }
 
   //#region Pass-through

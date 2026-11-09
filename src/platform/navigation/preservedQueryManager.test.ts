@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   capturePreservedQuery,
@@ -13,7 +13,6 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
 describe('preservedQueryManager', () => {
   beforeEach(() => {
-    sessionStorage.clear()
     clearPreservedQuery(NAMESPACE)
   })
 
@@ -170,6 +169,15 @@ describe('preservedQueryManager', () => {
     })
 
     expect(merged).toEqual({ template: 'flux' })
+  })
+
+  it('reads no stash, without throwing, when sessionStorage is blocked', () => {
+    vi.spyOn(globalThis, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+
+    expect(() => hydratePreservedQuery(NAMESPACE)).not.toThrow()
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBeUndefined()
   })
 
   it('clears cached payload', () => {

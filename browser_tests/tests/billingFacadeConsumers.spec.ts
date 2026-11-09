@@ -1,16 +1,17 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -19,11 +20,9 @@ import {
 /**
  * Billing facade consumers — FE-933 (B3) regression.
  *
- * The repointed surfaces (avatar popover tier badge / balance, free-tier
- * dialog renewal date) must keep rendering from `useBillingContext`. The facade
- * selects its backend by flag: `team_workspaces_enabled: false` routes through
- * the legacy `/customers/*` endpoints, while `true` routes a personal workspace
- * through the workspace `/api/billing/*` endpoints. Both shapes are mocked here.
+ * The repointed surfaces (avatar popover balance, free-tier dialog renewal
+ * date) must keep rendering from `useBillingContext`. Cloud
+ * personal workspaces route through the workspace `/api/billing/*` endpoints.
  * Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
  * against fully mocked endpoints — same pattern as creditsTile.spec.ts.
  */
@@ -35,30 +34,34 @@ const jsonRoute = (body: unknown) => ({
   body: JSON.stringify(body)
 })
 
-// The workspace `/api/billing/status` shape mirrors the legacy subscription
-// status; map the fields so a single test fixture drives both backends.
-const toWorkspaceStatus = (
-  s: CloudSubscriptionStatusResponse
-): BillingStatusResponse => ({
-  is_active: s.is_active ?? false,
-  subscription_tier: s.subscription_tier ?? undefined,
-  subscription_duration: s.subscription_duration ?? undefined,
-  renewal_date: s.renewal_date ?? undefined,
-  cancel_at: s.end_date ?? undefined,
-  has_funds: s.has_fund ?? true
-})
-
-const mockBalance: BillingBalanceResponse = {
-  amount_micros: 6000, // -> 12,660 credits
+const mockWorkspaceBalance: BillingBalanceResponse = {
+  amount_micros: 0,
   currency: 'usd',
-  effective_balance_micros: 6000
+  effective_balance_micros: 0
 }
 
 async function mockCloudBoot(
   page: Page,
-  subscriptionStatus: CloudSubscriptionStatusResponse,
-  remoteConfig: RemoteConfig = { team_workspaces_enabled: false }
+  subscriptionStatus: Partial<BillingStatusResponse>,
+  remoteConfig: RemoteConfig = {}
 ) {
+  const resolvedSubscriptionStatus: BillingStatusResponse = {
+    billing_rail: 'stripe',
+    is_active: false,
+    has_funds: false,
+    max_seats: 0,
+    occupied_seats: 0,
+    ended_at: null,
+    team_credit_stop: null,
+    scheduled_change: null,
+    next_charge: null,
+    ...subscriptionStatus
+  }
+  const billingRequests = {
+    workspaceStatus: 0,
+    workspaceBalance: 0
+  }
+
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
@@ -104,25 +107,23 @@ async function mockCloudBoot(
     )
   )
 
-  // Legacy backend (team_workspaces_enabled: false).
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(jsonRoute(subscriptionStatus))
-  )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute(mockBalance))
-  )
-
-  // Workspace backend (team_workspaces_enabled: true) — a personal workspace
-  // now routes through `/api/billing/*`.
-  await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(toWorkspaceStatus(subscriptionStatus)))
-  )
-  await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute(mockBalance))
-  )
+  // Cloud personal workspaces route through `/api/billing/*`.
+  await page.route('**/api/billing/status', (r) => {
+    billingRequests.workspaceStatus++
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
+  })
+  await page.route('**/api/billing/balance', (r) => {
+    billingRequests.workspaceBalance++
+    return r.fulfill(jsonRoute(mockWorkspaceBalance))
+  })
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
+  )
+
+  return billingRequests
 }
 
 async function bootApp(page: Page) {
@@ -140,38 +141,15 @@ async function bootApp(page: Page) {
 }
 
 test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
-  test('avatar popover renders tier badge and balance from the facade', async ({
+  test('subscribe-to-run routes an inactive FREE user to the platform Plans page', async ({
     page
   }) => {
     test.setTimeout(60_000)
 
-    await mockCloudBoot(page, {
-      is_active: true,
-      subscription_tier: 'PRO',
-      subscription_duration: 'MONTHLY',
-      renewal_date: '2099-02-20T10:00:00Z',
-      end_date: null
-    })
-    await bootApp(page)
-
-    await page.getByRole('button', { name: 'Current user' }).click()
-    const popover = page.locator('.current-user-popover')
-    await expect(popover).toBeVisible()
-
-    await expect(popover.getByText('Pro', { exact: true })).toBeVisible()
-    await expect(popover.getByText('12,660')).toBeVisible()
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
-  })
-
-  test('free-tier dialog shows the renewal date from the facade', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-
-    // Boots with team workspaces enabled (production shape); the facade routes a
-    // personal workspace through the workspace `/api/billing/*` endpoints. With
+    // The facade routes a personal workspace through the workspace
+    // `/api/billing/*` endpoints. With
     // subscription gating on, an inactive FREE user gets the "Subscribe to run"
-    // button, which opens the free-tier dialog on click. (refreshRemoteConfig
+    // button, which opens the pricing table on click. (refreshRemoteConfig
     // overwrites window.__CONFIG__ from /api/features, so the flags must come
     // from the features mock, not an init script.)
     await mockCloudBoot(
@@ -182,18 +160,63 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         subscription_duration: 'MONTHLY',
         // 10:00Z keeps the en-US calendar date stable across CI timezones.
         renewal_date: '2099-02-20T10:00:00Z',
-        end_date: null
+        has_funds: false
       },
-      { team_workspaces_enabled: true, subscription_required: true }
+      {
+        subscription_required: true
+      }
     )
     await bootApp(page)
 
-    await page.getByTestId('subscribe-to-run-button').click()
+    await expectPlatformPlansOpened(page, () =>
+      page.getByTestId('subscribe-to-run-button').click()
+    )
+  })
 
-    // T5: the dialog must source the date from facade renewalDate — when this
-    // line read the legacy store it silently vanished for team users.
-    await expect(
-      page.getByText('Your credits refresh on Feb 20, 2099.')
-    ).toBeVisible()
+  test('keeps the free-tier quota inside the top action bars', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const freeTierRemoteConfig = {
+      subscription_required: true,
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    } satisfies RemoteConfig
+
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      freeTierRemoteConfig
+    )
+    await bootApp(page)
+
+    const actionBars = page.getByTestId('top-menu-actionbars')
+    const quota = actionBars.getByTestId('free-tier-quota')
+    await expect(quota).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const [quotaBox, actionBarsBox] = await Promise.all([
+          quota.boundingBox(),
+          actionBars.boundingBox()
+        ])
+        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
+
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
+          quotaBox.y +
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
+        )
+      })
+      .toBeLessThanOrEqual(0)
   })
 })

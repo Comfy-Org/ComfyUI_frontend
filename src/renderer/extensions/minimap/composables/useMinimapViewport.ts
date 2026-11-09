@@ -7,9 +7,13 @@ import {
   calculateMinimapScale,
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
-import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 
-import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
+import type {
+  SizedExtents as MinimapBounds,
+  Bounds as ViewportTransform
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,
@@ -44,7 +48,7 @@ export function useMinimapViewport(
     if (!c) return
 
     const canvasEl = c.canvas
-    const dpr = window.devicePixelRatio || 1
+    const dpr = c.dpr
 
     canvasDimensions.value = {
       width: canvasEl.clientWidth || canvasEl.width / dpr,
@@ -53,8 +57,7 @@ export function useMinimapViewport(
   }
 
   const calculateGraphBounds = (): MinimapBounds => {
-    // Use unified data source
-    const dataSource = MinimapDataSourceFactory.create(graph.value)
+    const dataSource = new MinimapDataSource(graph.value)
 
     if (!dataSource.hasData()) {
       return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }

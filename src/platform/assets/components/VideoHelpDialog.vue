@@ -1,7 +1,7 @@
 <template>
   <Dialog v-model:open="isVisible">
     <DialogPortal>
-      <DialogOverlay class="bg-black/70" />
+      <DialogOverlay />
       <DialogContent
         size="full"
         class="w-[90vw] border-0 bg-transparent p-0 shadow-none"
@@ -19,7 +19,7 @@
             :aria-label="$t('g.close')"
             @click="isVisible = false"
           >
-            <i class="pi pi-times text-sm" />
+            <i class="icon-[lucide--x] size-3.5" />
           </Button>
           <video
             autoplay
@@ -40,12 +40,12 @@
 <script setup lang="ts">
 import { VisuallyHidden } from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 
 const isVisible = defineModel<boolean>({ required: true })
 

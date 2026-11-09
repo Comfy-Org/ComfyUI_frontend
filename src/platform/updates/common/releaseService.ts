@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
@@ -14,27 +14,15 @@ type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
 type ErrorResponse = components['schemas']['ErrorResponse']
 
 const releaseApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Release service for fetching release notes
 export const useReleaseService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  watch(
-    () => getComfyApiBaseUrl(),
-    (url) => {
-      releaseApiClient.defaults.baseURL = url
-    }
-  )
-
-  // No transformation needed - API response matches the generated type
-
-  // Handle API errors with context
   const handleApiError = (
     err: unknown,
     context: string,
@@ -55,24 +43,23 @@ export const useReleaseService = () => {
 
       switch (status) {
         case 400:
-          return `Bad request: ${data?.message || 'Invalid input'}`
+          return `Bad request: ${data.message || 'Invalid input'}`
         case 401:
           return 'Unauthorized: Authentication required'
         case 403:
-          return `Forbidden: ${data?.message || 'Access denied'}`
+          return `Forbidden: ${data.message || 'Access denied'}`
         case 404:
-          return `Not found: ${data?.message || 'Resource not found'}`
+          return `Not found: ${data.message || 'Resource not found'}`
         case 500:
-          return `Server error: ${data?.message || 'Internal server error'}`
+          return `Server error: ${data.message || 'Internal server error'}`
         default:
-          return `${context}: ${data?.message || axiosError.message}`
+          return `${context}: ${data.message || axiosError.message}`
       }
     }
 
     return `${context}: ${axiosError.message}`
   }
 
-  // Execute API request with error handling
   const executeApiRequest = async <T>(
     apiCall: () => Promise<AxiosResponse<T>>,
     errorContext: string,
@@ -85,7 +72,6 @@ export const useReleaseService = () => {
       const response = await apiCall()
       return response.data
     } catch (err) {
-      // Don't treat cancellations as errors
       if (isAbortError(err)) return null
 
       error.value = handleApiError(err, errorContext, routeSpecificErrors)
@@ -95,7 +81,6 @@ export const useReleaseService = () => {
     }
   }
 
-  // Fetch release notes from API
   const getReleases = async (
     params: GetReleasesParams,
     options: { signal?: AbortSignal; deployEnvironment?: string } = {}
@@ -110,6 +95,7 @@ export const useReleaseService = () => {
     const apiResponse = await executeApiRequest(
       () =>
         releaseApiClient.get<ReleaseNote[]>(endpoint, {
+          baseURL: getComfyApiBaseUrl(),
           params,
           signal,
           headers: deployEnvironment

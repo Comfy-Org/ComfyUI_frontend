@@ -1,4 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -64,27 +63,6 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
-export function highlightQuery(
-  text: string,
-  query: string,
-  sanitize: boolean = true
-) {
-  if (!query) return text
-  if (sanitize) {
-    text = DOMPurify.sanitize(text)
-  }
-
-  // Escape special regex characters, then join with an optional single
-  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
-  // highlighted without spanning tabs, newlines, or multi-space gaps.
-  const pattern = Array.from(query)
-    .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('[ ]?')
-
-  const regex = new RegExp(`(${pattern})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
-}
-
 export function formatNumberWithSuffix(
   num: number,
   {
@@ -105,7 +83,7 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatSize(value?: number) {
+export function formatSize(value?: number | null) {
   if (value === null || value === undefined) {
     return '-'
   }
@@ -176,6 +154,33 @@ export function getPathDetails(path: string) {
  */
 export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
+}
+
+const VUE_I18N_BACKSLASH = /\\/g
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
+
+/**
+ * Escapes vue-i18n message syntax so arbitrary text can be stored as a locale
+ * message and rendered verbatim by `t()`.
+ *
+ * Backslash is doubled rather than wrapped in a literal interpolation: since
+ * vue-i18n 11 the message compiler reads `\` as an escape introducer, so a
+ * backslash before an escaped character would swallow the `{` this emits, and
+ * `{'\'}` would escape its own closing quote. Doubling must therefore run
+ * first; the literal interpolations it emits contain no backslashes.
+ *
+ * Apply exactly once. This is NOT idempotent, because the escape output itself
+ * contains `{`/`}`.
+ *
+ * Apply only to values read back through `t()`/`st()`. Values read through
+ * `tm()`/`stRaw()` are never compiled, so escaping them renders the escape
+ * syntax literally.
+ */
+export function escapeI18nMessage(text: string): string {
+  if (typeof text !== 'string') return ''
+  return text
+    .replace(VUE_I18N_BACKSLASH, '\\\\')
+    .replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
 }
 
 /**
@@ -297,7 +302,7 @@ export function parseFilePath(filepath: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath?.trim()) return { filename: '', subfolder: '' }
+  if (!filepath.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
@@ -357,6 +362,13 @@ export const paramsToCacheKey = (params: unknown): string => {
 
   return String(params)
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accepts canonical UUIDs of any version or variant for legacy compatibility. */
+export const isValidUuid = (value: unknown): value is string =>
+  typeof value === 'string' && UUID_PATTERN.test(value)
 
 /**
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
@@ -420,7 +432,7 @@ export const isCivitaiModelUrl = (url: string): boolean => {
 /**
  * Converts a Hugging Face download URL to a repository page URL
  * @param url The download URL to convert
- * @returns The repository page URL or the original URL if conversion fails
+ * @returns The repository page URL or the Hugging Face root if conversion fails
  * @example
  * downloadUrlToHfRepoUrl(
  *  'https://huggingface.co/bfl/FLUX.1/resolve/main/flux1-canny-dev.safetensors?download=true'
@@ -439,8 +451,8 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
     const repoPath = repoPathMatch?.[1]?.replace(/^\//, '') || ''
 
     return `https://huggingface.co/${repoPath}`
-  } catch (error) {
-    return url
+  } catch {
+    return 'https://huggingface.co/'
   }
 }
 
@@ -486,7 +498,7 @@ export function usdToMicros(usd: number): number {
  * @param text - The string to convert
  * @returns The string with URLs converted to HTML links
  * @example
- * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">https://example.com</a> for more info'
  */
 export function linkifyHtml(text: string): string {
   if (!text) return ''
@@ -495,7 +507,7 @@ export function linkifyHtml(text: string): string {
   return text.replace(urlRegex, (_match, p1, _p2, p3) => {
     const url = p1 || p3
     const href = p3 ? `http://${url}` : url
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">${url}</a>`
   })
 }
 
@@ -590,7 +602,7 @@ const IMAGE_EXTENSIONS = [
   'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const
 const THREE_D_EXTENSIONS = [
   'obj',
   'fbx',
@@ -598,7 +610,10 @@ const THREE_D_EXTENSIONS = [
   'glb',
   'stl',
   'usdz',
-  'ply'
+  'ply',
+  'spz',
+  'splat',
+  'ksplat'
 ] as const
 const TEXT_EXTENSIONS = [
   'txt',
@@ -617,7 +632,7 @@ export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
-type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
+export type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
 type TextExtension = (typeof TEXT_EXTENSIONS)[number]

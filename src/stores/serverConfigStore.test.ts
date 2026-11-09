@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import type { FormItem } from '@/platform/settings/types'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { FormItem, ServerConfigValue } from '@comfyorg/settings-core/types'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 
 const dummyFormItem: FormItem = {
@@ -15,7 +13,6 @@ describe('useServerConfigStore', () => {
   let store: ReturnType<typeof useServerConfigStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useServerConfigStore()
   })
 

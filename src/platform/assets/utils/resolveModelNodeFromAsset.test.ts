@@ -1,20 +1,23 @@
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-123',
     name: 'test-model.safetensors',
     size: 1024,
     created_at: '2025-10-01T00:00:00Z',
+    updated_at: '2025-10-01T00:00:00Z',
     tags: ['models', 'checkpoints'],
     user_metadata: {
       filename: 'models/checkpoints/test-model.safetensors'
@@ -45,13 +48,59 @@ function mockProvider(
   mockGetNodeProvider.mockReturnValue(provider)
 }
 
+beforeEach(() => {
+  vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
+    mockGetNodeProvider
+  )
+})
+
 describe('resolveModelNodeFromAsset', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+  it.for([
+    '../private.safetensors',
+    '/absolute.safetensors',
+    'folder\\model.safetensors'
+  ])('refuses unsafe server loader path %s', (loader_path) => {
+    mockProvider(createMockNodeProvider())
+    expect(
+      resolveModelNodeFromAsset(createMockAsset({ loader_path }))
+    ).toMatchObject({
+      success: false,
+      error: { code: 'INVALID_ASSET' }
+    })
+  })
+
+  it('selects the loader for the unshadowed category of a shared model', () => {
+    const provider = createMockNodeProvider({
+      nodeDef: { name: 'VAELoader', display_name: 'Load VAE' },
+      key: 'vae_name'
+    })
+    mockGetNodeProvider.mockImplementation((category) =>
+      category === 'vae' ? provider : createMockNodeProvider()
+    )
+    const asset: ModelBrowserAsset = {
+      ...createMockAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    expect(resolveModelNodeFromAsset(asset)).toMatchObject({
+      success: true,
+      value: { provider }
+    })
   })
 
   describe('valid assets', () => {
+    it('uses the server loader path instead of the uploaded display filename', () => {
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          loader_path: 'artist/style.safetensors',
+          user_metadata: { filename: 'style.safetensors' }
+        })
+      )
+      expect(result.success && result.value.filename).toBe(
+        'artist/style.safetensors'
+      )
+    })
+
     it('resolves the provider for the asset category and the filename', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(createMockAsset())
@@ -66,6 +115,48 @@ describe('resolveModelNodeFromAsset', () => {
           'models/checkpoints/test-model.safetensors'
         )
       }
+    })
+
+    it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({ tags: ['models', 'model_type:vae'] })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('vae')
+    })
+
+    it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
+      mockGetNodeProvider.mockImplementation((category: string) =>
+        category === 'vae' ? createMockNodeProvider() : undefined
+      )
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({ tags: ['models', 'model_type:vae', 'foo/bar'] })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('foo/bar')
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('vae')
+    })
+
+    it('prefers the deepest resolvable path over a flat model_type value', () => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
+      mockGetNodeProvider.mockImplementation((category: string) =>
+        category === 'LLM/Qwen-VL/Qwen3-0.6B'
+          ? createMockNodeProvider()
+          : undefined
+      )
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          tags: ['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B']
+        })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('LLM/Qwen-VL/Qwen3-0.6B')
     })
 
     it('falls back to metadata.filename when user_metadata.filename missing', () => {
@@ -201,7 +292,7 @@ describe('resolveModelNodeFromAsset', () => {
       if (!result.success) {
         expect(result.error.code).toBe('NO_PROVIDER')
         expect(result.error.message).toContain('checkpoints')
-        expect(result.error.details?.category).toBe('checkpoints')
+        expect(result.error.details?.candidates).toEqual(['checkpoints'])
       }
     })
   })

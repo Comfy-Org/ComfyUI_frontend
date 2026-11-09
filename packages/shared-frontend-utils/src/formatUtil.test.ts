@@ -2,22 +2,41 @@ import { describe, expect, it } from 'vitest'
 
 import {
   appendWorkflowJsonExt,
+  downloadUrlToHfRepoUrl,
   ensureWorkflowSuffix,
+  escapeI18nMessage,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
+  generateUUID,
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
-  highlightQuery,
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
+  isValidUuid,
   joinFilePath,
   truncateFilename
 } from './formatUtil'
 
 describe('formatUtil', () => {
+  describe('downloadUrlToHfRepoUrl', () => {
+    it('converts a download URL to its Hugging Face repository URL', () => {
+      expect(
+        downloadUrlToHfRepoUrl(
+          'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+        )
+      ).toBe('https://huggingface.co/bfl/FLUX.1')
+    })
+
+    it('returns the Hugging Face root for malformed input', () => {
+      expect(downloadUrlToHfRepoUrl('not a url')).toBe(
+        'https://huggingface.co/'
+      )
+    })
+  })
+
   describe('truncateFilename', () => {
     it('should not truncate short filenames', () => {
       expect(truncateFilename('test.png')).toBe('test.png')
@@ -103,6 +122,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('music.ogg')).toBe('audio')
         expect(getMediaTypeFromFilename('audio.flac')).toBe('audio')
         expect(getMediaTypeFromFilename('music.opus')).toBe('audio')
+        expect(getMediaTypeFromFilename('voice.m4a')).toBe('audio')
       })
     })
 
@@ -115,6 +135,12 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('print.stl')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
         expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
+      })
+
+      it('should identify Gaussian splat extensions that Load3D accepts', () => {
+        expect(getMediaTypeFromFilename('scene.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
       })
     })
 
@@ -173,66 +199,6 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
-    })
-  })
-
-  describe('highlightQuery', () => {
-    it('should return text unchanged when query is empty', () => {
-      expect(highlightQuery('Hello World', '')).toBe('Hello World')
-    })
-
-    it('should wrap matching text in highlight span', () => {
-      const result = highlightQuery('Hello World', 'World')
-      expect(result).toBe('Hello <span class="highlight">World</span>')
-    })
-
-    it('should be case-insensitive', () => {
-      const result = highlightQuery('Hello World', 'hello')
-      expect(result).toBe('<span class="highlight">Hello</span> World')
-    })
-
-    it('should sanitize text by default', () => {
-      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
-      expect(result).not.toContain('<script>')
-    })
-
-    it('should skip sanitization when sanitize is false', () => {
-      const result = highlightQuery('<b>bold</b>', 'bold', false)
-      expect(result).toContain('<b>')
-    })
-
-    it('should escape special regex characters in query', () => {
-      const result = highlightQuery('price is $10.00', '$10')
-      expect(result).toContain('<span class="highlight">$10</span>')
-    })
-
-    it('should highlight multiple occurrences', () => {
-      const result = highlightQuery('foo bar foo', 'foo')
-      expect(result).toBe(
-        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
-      )
-    })
-
-    it('should highlight cross-word matches', () => {
-      const result = highlightQuery('convert image to mask', 'geto', false)
-      expect(result).toBe(
-        'convert ima<span class="highlight">ge to</span> mask'
-      )
-    })
-
-    it('should not match across line breaks', () => {
-      const result = highlightQuery('ge\nto', 'geto', false)
-      expect(result).toBe('ge\nto')
-    })
-
-    it('should not match across tabs', () => {
-      const result = highlightQuery('ge\tto', 'geto', false)
-      expect(result).toBe('ge\tto')
-    })
-
-    it('should not match across multiple spaces', () => {
-      const result = highlightQuery('ge  to', 'geto', false)
-      expect(result).toBe('ge  to')
     })
   })
 
@@ -475,6 +441,62 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('isValidUuid', () => {
+    it.for([
+      ['lowercase', '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['uppercase', '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'],
+      ['nil', '00000000-0000-0000-0000-000000000000'],
+      ['arbitrary version and variant', 'ffffffff-ffff-7fff-ffff-ffffffffffff'],
+      ['generated', generateUUID()]
+    ])('accepts a %s UUID', ([, value]) => {
+      expect(isValidUuid(value)).toBe(true)
+    })
+
+    it.for([
+      ['legacy slug', 'video-point-prompt-example'],
+      ['missing value', undefined],
+      ['null', null],
+      ['empty string', ''],
+      ['non-string', 123],
+      ['wrong length', '9cea40bb-b0cf-4b40-a758-8935cfe8d52'],
+      ['missing separators', '9cea40bbb0cf4b40a7588935cfe8d52f'],
+      ['surrounding whitespace', ' 9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['non-hex character', 'gcea40bb-b0cf-4b40-a758-8935cfe8d52f']
+    ])('rejects a %s', ([, value]) => {
+      expect(isValidUuid(value)).toBe(false)
+    })
+  })
+
+  describe('escapeI18nMessage', () => {
+    it('wraps message-syntax characters in literal interpolations', () => {
+      expect(escapeI18nMessage('a@b')).toBe("a{'@'}b")
+      expect(escapeI18nMessage('{x}')).toBe("{'{'}x{'}'}")
+      expect(escapeI18nMessage('a|b')).toBe("a{'|'}b")
+      expect(escapeI18nMessage('50%')).toBe("50{'%'}")
+      expect(escapeI18nMessage('$5')).toBe("{'$'}5")
+    })
+
+    it('doubles backslashes rather than interpolating them', () => {
+      expect(escapeI18nMessage('\\')).toBe('\\\\')
+      expect(escapeI18nMessage('C:\\@home')).toBe("C:\\\\{'@'}home")
+    })
+
+    it('leaves text without message syntax untouched', () => {
+      expect(escapeI18nMessage('plain name')).toBe('plain name')
+      expect(escapeI18nMessage('')).toBe('')
+    })
+
+    it('is not idempotent, so it must be applied exactly once', () => {
+      const once = escapeI18nMessage('a@b')
+      expect(escapeI18nMessage(once)).not.toBe(once)
+    })
+
+    it('returns an empty string for non-string input', () => {
+      expect(escapeI18nMessage(42 as unknown as string)).toBe('')
+      expect(escapeI18nMessage(null as unknown as string)).toBe('')
     })
   })
 })

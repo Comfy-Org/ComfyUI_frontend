@@ -21,10 +21,10 @@ Testing Vue composables requires handling reactivity correctly:
 // Example from a colocated composable unit test
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
 
 // Mock dependencies
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn()
   }
@@ -130,7 +130,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 // Mock the api object
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn(),
     addEventListener: vi.fn(),
@@ -155,7 +155,7 @@ Mocking utility functions like debounce:
 // Mock debounce to execute immediately
 import { debounce } from 'es-toolkit/compat'
 
-vi.mock('es-toolkit/compat', () => ({
+vi.mock(import('es-toolkit/compat'), () => ({
   debounce: vi.fn((fn) => {
     // Return function that calls the input function immediately
     const mockDebounced = (...args: any[]) => fn(...args)
@@ -225,10 +225,8 @@ Creating mock node definitions for testing:
 ```typescript
 // Example from a colocated schema unit test
 import { describe, expect, it } from 'vitest'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { validateComfyNodeDef } from '@comfyorg/object-info-parser'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
@@ -267,7 +265,7 @@ When mocking composables that return reactive refs, define the mock implementati
 2. **Use singleton pattern** — The factory runs once; all calls to the composable return the same mock object
 3. **Access mocks per-test** — Call the composable directly in each test to get the singleton instance rather than storing in a shared variable
 4. **Wrap in `vi.mocked()` for type safety** — Use `vi.mocked(service.method).mockResolvedValue(...)` when configuring
-5. **Rely on `vi.resetAllMocks()`** — Resets call counts without recreating instances; ref values may need manual reset if mutated
+5. **Rely on automatic mock reset** — Vitest resets call counts without recreating instances; ref values may need manual reset if mutated
 
 ### Pattern
 
@@ -275,7 +273,7 @@ When mocking composables that return reactive refs, define the mock implementati
 // Example from: src/platform/updates/common/releaseStore.test.ts
 import { ref } from 'vue'
 
-vi.mock('@/path/to/composable', () => {
+vi.mock(import('@/path/to/composable'), () => {
   const doSomething = vi.fn()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -289,10 +287,6 @@ vi.mock('@/path/to/composable', () => {
 })
 
 describe('MyStore', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should call the composable method', async () => {
     const service = useMyComposable()
     vi.mocked(service.doSomething).mockResolvedValue({ data: 'test' })
@@ -325,7 +319,7 @@ beforeEach(() => {
 })
 
 // ❌ Don't auto-mock then override — reactive refs won't work correctly
-vi.mock('@/path/to/composable')
+vi.mock(import('@/path/to/composable'))
 vi.mocked(useMyComposable).mockReturnValue({ isLoading: ref(false) })
 ```
 

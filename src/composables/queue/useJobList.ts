@@ -4,11 +4,12 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
@@ -21,11 +22,11 @@ import {
 } from '@/utils/dateTimeUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
-import { jobStateFromTask } from '@/utils/queueUtil'
+import { isActiveJobState, jobStateFromTask } from '@/utils/queueUtil'
 
-/** Tabs for job list filtering */
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
-export type JobTab = (typeof jobTabs)[number]
+import type { JobTab } from '@/composables/queue/jobTabs'
+
+export type { JobTab } from '@/composables/queue/jobTabs'
 
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 export type JobSortMode = (typeof jobSortModes)[number]
@@ -57,8 +58,10 @@ export type JobGroup = {
 
 const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+const optionalValue = <T>(value: T | null | undefined): T | undefined =>
+  value ?? undefined
 const taskIdToKey = (id: string | number | undefined) => {
-  if (id === null || id === undefined) return null
+  if (id === undefined) return null
   const key = String(id)
   return key.length ? key : null
 }
@@ -91,6 +94,10 @@ type TaskWithState = {
   state: JobState
 }
 
+function downloadPercent({ progress }: JobModelDownload) {
+  return progress === null ? undefined : progress * 100
+}
+
 /**
  * Builds the reactive job list, filters, and grouped view for the queue overlay.
  */
@@ -98,6 +105,7 @@ export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
+  const modelDownloadStore = useJobModelDownloadStore()
   const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
 
@@ -190,8 +198,7 @@ export function useJobList() {
   const currentNodeName = computed(() => {
     return resolveNodeDisplayName(executionStore.executingNode, {
       emptyLabel: t('g.emDash'),
-      untitledLabel: t('g.untitled'),
-      st
+      untitledLabel: t('g.untitled')
     })
   })
 
@@ -201,7 +208,8 @@ export function useJobList() {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
-  const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
+  const mostRecentTimestamp = (task: TaskItemImpl) =>
+    optionalValue(task.createTime) ?? 0
 
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
@@ -215,7 +223,7 @@ export function useJobList() {
   const tasksWithJobState = computed<TaskWithState[]>(() =>
     allTasksSorted.value.map((task) => ({
       task,
-      state: jobStateFromTask(task, isJobInitializing(task?.jobId))
+      state: jobStateFromTask(task, isJobInitializing(task.jobId))
     }))
   )
 
@@ -241,7 +249,13 @@ export function useJobList() {
     }
 
     if (selectedWorkflowFilter.value === 'current') {
-      const activeId = workflowStore.activeWorkflow?.activeState?.id
+      const activeWorkflow = optionalValue<
+        typeof workflowStore.activeWorkflow | null
+      >(workflowStore.activeWorkflow)
+      if (!activeWorkflow) return []
+      const activeId = optionalValue<typeof activeWorkflow.activeState | null>(
+        activeWorkflow.activeState
+      )?.id
       if (!activeId) return []
       entries = entries.filter(({ task }) => {
         const wid = task.workflowId
@@ -259,10 +273,34 @@ export function useJobList() {
     searchableTaskEntries.value.map(({ task }) => task)
   )
 
+  function activeDownload(jobId: string, state: JobState) {
+    return isActiveJobState(state)
+      ? modelDownloadStore.downloadFor(jobId)
+      : undefined
+  }
+
+  function progressFills(
+    state: JobState,
+    isActive: boolean,
+    modelDownload: JobModelDownload | undefined
+  ) {
+    if (modelDownload) {
+      return {
+        progressTotalPercent: undefined,
+        progressCurrentPercent: downloadPercent(modelDownload)
+      }
+    }
+    const running = state === 'running' && isActive
+    return {
+      progressTotalPercent: running ? totalPercent.value : undefined,
+      progressCurrentPercent: running ? currentNodePercent.value : undefined
+    }
+  }
+
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive =
-        String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
+      const isActive = task.jobId === (executionStore.activeJobId ?? '')
+      const modelDownload = activeDownload(task.jobId, state)
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
@@ -279,11 +317,12 @@ export function useJobList() {
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
         showAddedHint,
-        isCloud
+        isCloud,
+        modelDownload
       })
 
       return {
-        id: String(task.jobId),
+        id: task.jobId,
         title: display.primary,
         meta: display.secondary,
         state,
@@ -291,12 +330,7 @@ export function useJobList() {
         iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
-        progressTotalPercent:
-          state === 'running' && isActive ? totalPercent.value : undefined,
-        progressCurrentPercent:
-          state === 'running' && isActive
-            ? currentNodePercent.value
-            : undefined,
+        ...progressFills(state, isActive, modelDownload),
         runningNodeName:
           state === 'running' && isActive ? currentNodeName.value : undefined,
         executionTimeMs: task.executionTime,
@@ -304,7 +338,7 @@ export function useJobList() {
           task.executionTime !== undefined
             ? task.executionTime / 3_600_000
             : undefined
-      } as JobListItem
+      }
     })
   })
 
@@ -318,8 +352,8 @@ export function useJobList() {
     if (!normalizedSearchQuery.value) return filteredTaskEntries.value
 
     return filteredTaskEntries.value.filter(({ task }) => {
-      const taskId = String(task.jobId ?? '').toLocaleLowerCase()
-      const item = jobItemById.value.get(String(task.jobId))
+      const taskId = task.jobId.toLocaleLowerCase()
+      const item = jobItemById.value.get(task.jobId)
       if (!item) {
         return taskId.includes(normalizedSearchQuery.value)
       }
@@ -341,9 +375,9 @@ export function useJobList() {
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
-        ts = task.executionEndTimestamp ?? task.createTime
+        ts = optionalValue(task.executionEndTimestamp ?? task.createTime)
       } else {
-        ts = task.createTime
+        ts = optionalValue(task.createTime)
       }
       const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
@@ -360,7 +394,7 @@ export function useJobList() {
         groupIdx = groups.length - 1
         index.set(key, groupIdx)
       }
-      const ji = jobItemById.value.get(String(task.jobId))
+      const ji = jobItemById.value.get(task.jobId)
       if (ji) groups[groupIdx].items.push(ji)
     }
 

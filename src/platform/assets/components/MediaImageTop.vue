@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="relative size-full overflow-hidden rounded-sm bg-modal-card-placeholder-background"
-    @dblclick="emit('view')"
-  >
+  <div class="relative size-full overflow-hidden rounded-sm bg-muted">
     <img
       v-if="!error"
       :src="asset.src"
@@ -12,9 +9,11 @@
     />
     <div
       v-else
-      class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+      role="img"
+      :aria-label="$t('g.imageFailedToLoad')"
+      class="flex size-full items-center justify-center bg-muted"
     >
-      <i class="pi pi-image text-3xl text-muted-foreground" />
+      <i class="icon-[lucide--image] size-7.5 text-muted-foreground" />
     </div>
   </div>
 </template>
@@ -23,8 +22,8 @@
 import { whenever } from '@vueuse/core'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 
 const { asset } = defineProps<{
   asset: AssetMeta
@@ -32,7 +31,6 @@ const { asset } = defineProps<{
 
 const emit = defineEmits<{
   'image-loaded': [width: number, height: number]
-  view: []
 }>()
 
 const { state, error, isReady } = useImageQuiet({

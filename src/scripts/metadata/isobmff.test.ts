@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -49,19 +49,18 @@ describe('ISOBMFF (MP4) metadata', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     const file = new File([new Uint8Array(16)], 'test.mp4')
 
     it('resolves empty when the FileReader fires error', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromIsobmffFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromIsobmffFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
   })
 })

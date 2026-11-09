@@ -12,7 +12,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/basic-subgraph-zero-uuid'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const assertInSubgraph = async (inSubgraph: boolean) => {
         await expect
@@ -21,7 +20,7 @@ test.describe(
       }
 
       // Root graph has 1 subgraph node, rendered in the DOM
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await comfyPage.expectNodeCount(1)
       await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
 
       await comfyPage.vueNodes.enterSubgraph()
@@ -35,7 +34,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // After undo, the subgraph node is still visible and rendered
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await comfyPage.expectNodeCount(1)
       await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     })
   }

@@ -1,27 +1,105 @@
-import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import {
-  onRekaFocusOutside,
-  onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
-import UiDialog from '@/components/ui/dialog/Dialog.vue'
-import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
+import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogStore } from '@/stores/dialogStore'
+
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
+  async () => {
+    const { computed, ref } = await import('vue')
+
+    return {
+      useSubscriptionCheckout: () => ({
+        checkoutStep: ref('pricing'),
+        isLoadingPreview: ref(false),
+        loadingTier: ref(null),
+        isSubscribing: ref(false),
+        isResubscribing: ref(false),
+        previewData: ref(null),
+        reactivationRequired: ref(false),
+        selectedTierKey: ref(null),
+        selectedTeamStop: ref(null),
+        selectedBillingCycle: ref('yearly'),
+        activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        isPolling: ref(false),
+        isTeamCheckout: computed(() => false),
+        previewVariant: computed(() => null),
+        handleSubscribeClick: vi.fn(),
+        handleSubscribeTeamClick: vi.fn(),
+        handleBackToPricing: vi.fn(),
+        handleSuccessClose: vi.fn(),
+        handleAddCreditCard: vi.fn(),
+        handleConfirmTransition: vi.fn(),
+        handleTeamSubscribe: vi.fn(),
+        handleResubscribe: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn()
+    })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { close: 'Close', maximizeDialog: 'Maximize' } }
+    en: {
+      g: {
+        cancel: 'Cancel',
+        close: 'Close',
+        maximizeDialog: 'Maximize',
+        restoreDialog: 'Restore',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
+      },
+      workspacePanel: {
+        members: {
+          creditLimitDialog: {
+            title: 'Set a monthly credit limit for {name}',
+            description: 'Description',
+            limitOption: 'Limit monthly credit usage to:',
+            noLimit: 'No limit',
+            warning: 'Already spent {credits}',
+            invalidLimit: 'Invalid limit',
+            update: 'Update limit'
+          }
+        }
+      }
+    }
   },
   missingWarn: false,
   fallbackWarn: false
@@ -32,101 +110,13 @@ const Body = defineComponent({
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
 
-const ClosedNonModalDialog = defineComponent({
-  name: 'ClosedNonModalDialog',
-  setup: () => () =>
-    h(UiDialog, { open: false, modal: false }, () =>
-      h(UiDialogPortal, null, () => h(UiDialogOverlay))
-    )
-})
-
 function mountDialog() {
   return render(GlobalDialog, {
-    global: { plugins: [PrimeVue, i18n] }
+    global: { plugins: [i18n] }
   })
 }
 
-describe('GlobalDialog renderer branching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
-  it('renders the Reka branch when renderer is omitted (default)', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'renderer-default',
-      title: 'Default renderer dialog',
-      component: Body
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.length).toBeGreaterThan(0)
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
-  })
-
-  it("renders the legacy PrimeVue branch when renderer is 'primevue'", async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'primevue-escape-hatch',
-      title: 'PrimeVue dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'primevue' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(true)
-  })
-
-  it('renders the Reka branch when renderer is reka', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-opt-in',
-      title: 'Reka dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.length).toBeGreaterThan(0)
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
-  })
-
-  it('preserves the renderer flag on the dialog stack item', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-flag-check',
-      title: 'Reka',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    await screen.findByRole('dialog')
-    const item = store.dialogStack.find((d) => d.key === 'reka-flag-check')
-    expect(item?.dialogComponentProps.renderer).toBe('reka')
-  })
-})
-
-describe('GlobalDialog Reka parity with PrimeVue', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
+describe('GlobalDialog', () => {
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -135,7 +125,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-not-closable',
       title: 'No close',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -149,8 +139,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-closable',
       title: 'Closable',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -165,7 +154,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-headless',
       title: 'Hidden title',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', headless: true }
+      dialogComponentProps: { headless: true }
     })
 
     await screen.findByRole('dialog')
@@ -179,12 +168,82 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-titled',
       title: 'Visible title',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
     expect(screen.getByText('Visible title')).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      frame: 'DialogPanel',
+      component: SetMemberCreditLimitDialogContent,
+      props: {
+        memberId: 'member-1',
+        memberName: 'Jane',
+        creditsUsed: 645,
+        currentLimit: 3000
+      },
+      name: 'Set a monthly credit limit for Jane'
+    },
+    {
+      frame: 'a custom layout',
+      component: CancellationStepLayout,
+      props: { title: 'Cancel your plan', onClose: () => {} },
+      name: 'Cancel your plan'
+    }
+  ])(
+    'names a headless dialog by the DialogTitle in $frame',
+    async ({ component, props, name }) => {
+      mountDialog()
+
+      useDialogStore().showDialog({
+        key: 'headless-named',
+        component,
+        props,
+        dialogComponentProps: { headless: true }
+      })
+
+      expect(await screen.findByRole('dialog', { name })).toBeInTheDocument()
+    }
+  )
+
+  it('names an untitled framed dialog by the DialogTitle in its content', async () => {
+    mountDialog()
+    const contentTitle = ref('Original title')
+    const TitledBody = defineComponent({
+      name: 'TitledBody',
+      setup: () => () => h(DialogTitle, () => contentTitle.value)
+    })
+
+    useDialogStore().showDialog({
+      key: 'framed-content-titled',
+      component: TitledBody
+    })
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Original title'
+    })
+    contentTitle.value = 'Translated title'
+    await waitFor(() => expect(dialog).toHaveAccessibleName('Translated title'))
+  })
+
+  it('opens the save dialog with an accessible name and description', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: { headless: true }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {
@@ -195,14 +254,53 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-esc-default',
       title: 'Esc closes',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
     await user.keyboard('{Escape}')
 
     expect(store.isDialogOpen('reka-esc-default')).toBe(false)
+  })
+
+  it('closes the top dialog on Escape when dialogs are stacked', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+
+    store.showDialog({
+      key: 'reka-esc-lower',
+      title: 'Lower',
+      component: Body,
+      priority: 1
+    })
+    await screen.findByRole('dialog', { name: 'Lower' })
+    store.showDialog({
+      key: 'reka-esc-active',
+      title: 'Active',
+      component: Body,
+      priority: 2
+    })
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('dialog', { hidden: true })).toHaveLength(2)
+    )
+    await user.keyboard('{Escape}')
+
+    expect(store.isDialogOpen('reka-esc-active')).toBe(false)
+    expect(store.isDialogOpen('reka-esc-lower')).toBe(true)
+
+    store.showDialog({
+      key: 'reka-esc-active',
+      title: 'Active',
+      component: Body
+    })
+    await screen.findByRole('dialog', { name: 'Active', hidden: true })
+    store.riseDialog({ key: 'reka-esc-lower' })
+    await user.keyboard('{Escape}')
+
+    expect(store.isDialogOpen('reka-esc-active')).toBe(false)
+    expect(store.isDialogOpen('reka-esc-lower')).toBe(true)
   })
 
   it('does not close on Escape when closable is false', async () => {
@@ -214,7 +312,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-esc-blocked',
       title: 'Esc blocked',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -223,78 +321,34 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     expect(store.isDialogOpen('reka-esc-blocked')).toBe(true)
   })
 
-  it('applies headerClass and bodyClass on the non-headless path', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-section-classes',
-      title: 'Section classes',
-      component: Body,
-      dialogComponentProps: {
-        renderer: 'reka',
-        headerClass: 'p-2',
-        bodyClass: 'p-0'
-      }
-    })
-
-    await screen.findByRole('dialog')
-
-    // eslint-disable-next-line testing-library/no-node-access
-    const header = screen.getByText('Section classes').parentElement
-    expect(header?.classList.contains('p-2')).toBe(true)
-    // twMerge drops the default header padding in favor of headerClass
-    expect(header?.classList.contains('px-4')).toBe(false)
-
-    // eslint-disable-next-line testing-library/no-node-access
-    const body = screen.getByTestId('body').parentElement
-    expect(body?.classList.contains('p-0')).toBe(true)
-    expect(body?.classList.contains('px-4')).toBe(false)
-  })
-
-  it('maximize overrides custom dimension classes from contentClass', async () => {
+  it('toggles maximize through the header control and tells the content', async () => {
     mountDialog()
     const store = useDialogStore()
     const user = userEvent.setup()
-
-    store.showDialog({
-      key: 'reka-maximize-wins',
-      title: 'Maximize wins',
-      component: Body,
-      dialogComponentProps: {
-        renderer: 'reka',
-        maximizable: true,
-        contentClass:
-          'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
-      }
+    const MaximizeAwareBody = defineComponent({
+      props: { maximized: Boolean },
+      setup: (props) => () => h('p', props.maximized ? 'maximized' : 'framed')
     })
 
-    const dialog = await screen.findByRole('dialog')
-    expect(dialog.classList.contains('w-[80vw]')).toBe(true)
+    store.showDialog({
+      key: 'reka-maximize',
+      title: 'Maximizable',
+      component: MaximizeAwareBody,
+      dialogComponentProps: { maximizable: true }
+    })
 
-    await user.click(screen.getByRole('button', { name: 'Maximize' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Maximizable' })
+    expect(within(dialog).getByText('framed')).toBeInTheDocument()
 
-    // Maximized dimensions win over the caller's fixed dimensions,
-    // mirroring PrimeVue's `.p-dialog-maximized` !important behavior.
-    expect(dialog.classList.contains('size-auto')).toBe(true)
-    expect(dialog.classList.contains('max-h-none')).toBe(true)
-    expect(dialog.classList.contains('w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
+    await user.click(within(dialog).getByRole('button', { name: 'Maximize' }))
+    expect(within(dialog).getByText('maximized')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
+    expect(within(dialog).getByText('framed')).toBeInTheDocument()
   })
 })
 
 describe('GlobalDialog Reka overlay scrim', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders a backdrop scrim for modal Reka dialogs', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -302,42 +356,11 @@ describe('GlobalDialog Reka overlay scrim', () => {
     store.showDialog({
       key: 'reka-modal-scrim',
       title: 'Modal',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
     expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
-  })
-
-  it('shows a backdrop scrim while a non-modal Reka dialog is open', async () => {
-    // Reka's own DialogOverlay renders nothing when the root is non-modal,
-    // which silently dropped the scrim behind Settings/Manager (modal: false).
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-non-modal-scrim',
-      title: 'Non-modal',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
-    })
-
-    await screen.findByRole('dialog')
-    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
-
-    store.closeDialog({ key: 'reka-non-modal-scrim' })
-    await waitFor(() =>
-      expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
-    )
-  })
-
-  it('renders no scrim for a mounted but closed non-modal dialog', async () => {
-    // CustomizationDialog mounts its non-modal Dialog root with open=false;
-    // the scrim must stay gated on open, not just on mount.
-    render(ClosedNonModalDialog)
-    await nextTick()
-    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
   })
 
   it('dismisses the dialog on a scrim pointerdown', async () => {
@@ -347,9 +370,8 @@ describe('GlobalDialog Reka overlay scrim', () => {
 
     store.showDialog({
       key: 'reka-scrim-dismiss',
-      title: 'Non-modal',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      title: 'Scrim',
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -358,6 +380,52 @@ describe('GlobalDialog Reka overlay scrim', () => {
     await waitFor(() =>
       expect(store.isDialogOpen('reka-scrim-dismiss')).toBe(false)
     )
+  })
+
+  it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
+    render(GlobalDialog, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          UnifiedPricingTable: true,
+          SubscriptionAddPaymentPreviewWorkspace: true,
+          SubscriptionTransitionPreviewWorkspace: true,
+          SubscriptionSuccessWorkspace: true
+        }
+      }
+    })
+    const store = useDialogStore()
+    const user = userEvent.setup()
+    const key = 'subscription-required'
+
+    function openDialog() {
+      store.showDialog({
+        key,
+        component: SubscriptionRequiredDialogContentUnified,
+        props: { onClose: () => store.closeDialog({ key }) },
+        dialogComponentProps: {
+          headless: true,
+          dismissOnPointerDownOutside: false
+        }
+      })
+    }
+
+    openDialog()
+    const dialog = await screen.findByRole('dialog')
+    await user.click(screen.getByTestId('dialog-overlay'))
+    await nextTick()
+
+    expect(dialog).toHaveAttribute('data-state', 'open')
+    expect(store.isDialogOpen(key)).toBe(true)
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
+
+    openDialog()
+    await screen.findByRole('dialog')
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
   })
 })
 
@@ -377,93 +445,79 @@ describe('shouldPreventRekaDismiss', () => {
     }
   }
 
-  it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
+  function appendLayer(mark: (layer: HTMLElement) => void) {
+    const layer = document.createElement('div')
+    mark(layer)
     const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+    layer.appendChild(inner)
+    document.body.appendChild(layer)
+    onTestFinished(() => {
+      layer.remove()
+    })
+    return inner
+  }
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+  function pointerDownOn(target: Element | null) {
+    const event = makeEvent(target)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
+    return event
+  }
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
+  it.for([
+    {
+      name: 'a Reka dismissable layer',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-dismissable-layer', '')
+    },
+    {
+      name: 'a Reka popper content wrapper',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-reka-popper-content-wrapper', '')
+    },
+    {
+      name: 'a toast',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-toast-kind', 'info')
+    },
+    {
+      name: 'the toast dock',
+      mark: (layer: HTMLElement) => layer.setAttribute('data-toast-dock', '')
+    }
+  ])('prevents dismiss when the target is inside $name', ({ mark }) => {
+    expect(pointerDownOn(appendLayer(mark)).defaultPrevented).toBe(true)
   })
 
-  it('allows dismiss when target is outside any PrimeVue overlay', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
-    expect(event.defaultPrevented).toBe(false)
-  })
-
-  it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
-    // A backgrounded dialog must never dismiss on an outside pointer — the
-    // pointer belongs to the dialog stacked above it (e.g. Edit Keybinding
-    // opening over Settings). Target is outside any overlay, so only the
-    // is-active gate can prevent it.
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event, false)
-    expect(event.defaultPrevented).toBe(true)
-  })
-
-  it('allows the top-most dialog to dismiss on a true outside pointer', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event, true)
-    expect(event.defaultPrevented).toBe(false)
-  })
-
-  it('prevents dismiss when dismissableMask is false even outside an overlay', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: false }, event)
-    expect(event.defaultPrevented).toBe(true)
-  })
-
-  it.for(['p-dialog', 'p-select-overlay'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
-      const overlay = document.createElement('div')
-      overlay.className = className
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
-
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
-
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
+  it.for(['dialog', 'menu', 'listbox', 'tooltip'])(
+    'allows dismiss from app markup with role=%s that no overlay owns',
+    (role) => {
+      const target = appendLayer((layer) => layer.setAttribute('role', role))
+      expect(pointerDownOn(target).defaultPrevented).toBe(false)
     }
   )
 
-  it('focus-outside still dismisses when focus moves to a non-portal element', () => {
-    const event = makeEvent(document.body)
-    onRekaFocusOutside(event)
-    expect(event.defaultPrevented).toBe(false)
+  it('allows dismiss from a dialog scrim', () => {
+    const target = appendLayer((layer) => {
+      layer.dataset.slot = 'dialog-overlay'
+    })
+    expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })
 
-  it('focus-outside never dismisses when dismissOnFocusOutside is false', () => {
-    const event = makeEvent(document.body)
-    onRekaFocusOutside(event, { dismissOnFocusOutside: false })
-    expect(event.defaultPrevented).toBe(true)
+  it('allows dismiss when target is outside any portaled layer', () => {
+    expect(pointerDownOn(document.body).defaultPrevented).toBe(false)
   })
 
-  it('focus-outside on a sibling Reka portal does not dismiss the parent', () => {
-    const portal = document.createElement('div')
-    portal.setAttribute('role', 'dialog')
-    document.body.appendChild(portal)
+  it('allows dismiss from the empty space beside a toast message', () => {
+    const container = document.createElement('ol')
+    container.setAttribute('data-testid', 'toast-viewport')
+    document.body.appendChild(container)
+    onTestFinished(() => container.remove())
 
-    const event = makeEvent(portal)
-    onRekaFocusOutside(event)
+    expect(pointerDownOn(container).defaultPrevented).toBe(false)
+  })
 
+  it('prevents dismiss when dismissOnPointerDownOutside is false even outside an overlay', () => {
+    const event = makeEvent(document.body)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: false }, event)
     expect(event.defaultPrevented).toBe(true)
-    portal.remove()
   })
 })

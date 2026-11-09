@@ -16,11 +16,14 @@ yarn.lock
 .eslintcache
 .prettiercache
 .stylelintcache
+.fallow/
+*.tsbuildinfo
 
 node_modules
 .pnpm-store
 .nx
 dist
+dist-types
 dist-ssr
 *.local
 # Claude configuration
@@ -29,6 +32,9 @@ dist-ssr
 .claude/*.local.txt
 .claude/worktrees
 CLAUDE.local.md
+
+# Glary agent artifacts
+.glary/
 
 # Editor directories and files
 .vscode/*
@@ -52,6 +58,7 @@ tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
 coverage/
+.vitest/
 
 # Browser tests
 /test-results/
@@ -59,7 +66,11 @@ coverage/
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser_tests/**/*-darwin.png
 browser_tests/local/
+browser_tests/tests/_recording-session.spec.ts
+browser_tests/tests/_recorded-code.txt
+browser_tests/**/*.raw.spec.ts
 
 .env
 
@@ -96,4 +107,18 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp
+# Amp local state stays ignored; the tracked orb service config must stay addable
+.amp/*
+!.amp/services.yaml
+# Registry census working tree (scripts/registry-census) - corpus, lockfile, results
+.census/
+# Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
+src/__ecs_matrix__/
+# Per-pack result rows written by a local detection-proof run
+matrix-proof/
+
+# Agent telemetry working files
+/telemetry/
+
+# Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
+browser_tests/fixtures/data/agent/conversations/recordings/

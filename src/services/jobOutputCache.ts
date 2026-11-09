@@ -8,24 +8,41 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { JobDetail, JobOutputAsset } from '@comfyorg/api-client/jobTypes'
+import {
+  extractApiPrompt,
+  extractWorkflow
+} from '@comfyorg/api-client/fetchJobs'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import { ResultItemImpl } from '@/stores/queueStore'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { findResultIndexByUrl } from '@/utils/resultItemUrl'
+import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
+
+/** The part of `TaskItemImpl` this cache reads; `queueStore` imports this module. */
+interface OutputsTask {
+  readonly jobId: string
+  readonly outputsCount: number | undefined
+  readonly previewableOutputs: readonly AugmentedResultItem[]
+  loadFullOutputs(): Promise<OutputsTask>
+}
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
+const MAX_JOB_ASSETS_CACHE_SIZE = 50
 
-const taskCache = new QuickLRU<string, TaskItemImpl>({
+const taskCache = new QuickLRU<string, OutputsTask>({
   maxSize: MAX_TASK_CACHE_SIZE
 })
 const jobDetailCache = new QuickLRU<string, JobDetail>({
   maxSize: MAX_JOB_DETAIL_CACHE_SIZE
 })
+const jobAssetsCache = new QuickLRU<string, JobOutputAsset[]>({
+  maxSize: MAX_JOB_ASSETS_CACHE_SIZE
+})
+const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 
 // Track latest request to dedupe stale responses
 let latestTaskRequestId: string | null = null
@@ -33,10 +50,10 @@ let latestTaskRequestId: string | null = null
 // ===== Task Output Caching =====
 
 export function findActiveIndex(
-  items: readonly ResultItemImpl[],
+  items: readonly AugmentedResultItem[],
   url?: string
 ): number {
-  return ResultItemImpl.findByUrl(items, url)
+  return findResultIndexByUrl(items, url)
 }
 
 /**
@@ -44,9 +61,9 @@ export function findActiveIndex(
  * Returns null if a newer request superseded this one while loading.
  */
 export async function getOutputsForTask(
-  task: TaskItemImpl
-): Promise<ResultItemImpl[] | null> {
-  const requestId = String(task.jobId)
+  task: OutputsTask
+): Promise<AugmentedResultItem[] | null> {
+  const requestId = task.jobId
   latestTaskRequestId = requestId
 
   const outputsCount = task.outputsCount ?? 0
@@ -72,19 +89,20 @@ export async function getOutputsForTask(
     taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
+    if (latestTaskRequestId !== requestId) return null
     console.warn('Failed to load full outputs, using preview:', error)
     return [...task.previewableOutputs]
   }
 }
 
-function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
+function getPreviewableOutputs(outputs?: TaskOutput): AugmentedResultItem[] {
   if (!outputs) return []
-  return ResultItemImpl.filterPreviewable(parseTaskOutput(outputs))
+  return filterPreviewableResults(parseTaskOutput(outputs))
 }
 
 export function getPreviewableOutputsFromJobDetail(
   jobDetail?: JobDetail
-): ResultItemImpl[] {
+): AugmentedResultItem[] {
   return getPreviewableOutputs(jobDetail?.outputs)
 }
 
@@ -108,9 +126,44 @@ export async function getJobDetail(
   }
 }
 
+/**
+ * Gets a job's output assets with LRU caching and in-flight request dedupe,
+ * so N concurrent resolutions of the same job issue one network request.
+ * Only complete, non-empty results are cached: an empty list usually means the
+ * endpoint is unavailable or the assets are not yet persisted, and a truncated
+ * one means a page failed mid-pagination. Caching either would pin an
+ * under-resolved set until LRU eviction, long after the endpoint recovered.
+ */
+export async function getJobAssets(jobId: string): Promise<JobOutputAsset[]> {
+  const cached = jobAssetsCache.get(jobId)
+  if (cached) return cached
+
+  const inFlight = inFlightJobAssets.get(jobId)
+  if (inFlight) return inFlight
+
+  const request = api
+    .getJobAssets(jobId)
+    .then(({ assets, complete }) => {
+      if (complete && assets.length) jobAssetsCache.set(jobId, assets)
+      return assets
+    })
+    .finally(() => inFlightJobAssets.delete(jobId))
+  inFlightJobAssets.set(jobId, request)
+  return request
+}
+
 export async function getJobWorkflow(
   jobId: string
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
   return await extractWorkflow(detail)
+}
+
+/**
+ * The API-format graph a job stores, available only for jobs that embed no
+ * editor workflow. Returned unvalidated — see `extractApiPrompt`.
+ */
+export async function getJobApiPrompt(jobId: string): Promise<unknown> {
+  const detail = await getJobDetail(jobId)
+  return extractApiPrompt(detail)
 }

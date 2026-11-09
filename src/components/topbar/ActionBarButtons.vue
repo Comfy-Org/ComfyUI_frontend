@@ -6,7 +6,8 @@
     <Button
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"
-      v-tooltip.bottom="button.tooltip"
+      :tooltip="button.tooltip"
+      tooltip-side="bottom"
       :aria-label="button.tooltip || button.label"
       :class="button.class"
       variant="muted-textonly"
@@ -23,7 +24,7 @@
 <script lang="ts" setup>
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 
 const actionBarButtonStore = useActionBarButtonStore()

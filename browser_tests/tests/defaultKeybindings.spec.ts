@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
 
 async function pressKeyAndExpectRequest(
   comfyPage: ComfyPage,
@@ -33,17 +34,15 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
     for (const { key, tabId, label } of sidebarTabs) {
       test(`'${key}' toggles ${label} sidebar`, async ({ comfyPage }) => {
-        const selectedButton = comfyPage.page.locator(
-          `.${tabId}-tab-button.side-bar-button-selected`
-        )
+        const { selectedTabButton } = new SidebarTab(comfyPage.page, tabId)
 
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeVisible()
+        await expect(selectedTabButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
       })
     }
   })
@@ -237,6 +236,38 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.keyboard.press('Escape')
     })
 
+    for (const { label, key } of [
+      { label: 'Ctrl+s', key: 'Control+s' },
+      { label: 'Cmd+s', key: 'Meta+s' }
+    ]) {
+      test(`'${label}' does not fall through to the browser while a dialog is open`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.keyboard.press('Control+s')
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+
+        await comfyPage.command.mockCommand('Comfy.SaveWorkflow')
+
+        await comfyPage.page.evaluate(() => {
+          window.TestCommand = false
+          window.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.key === 's') window.TestCommand = event.defaultPrevented
+          })
+        })
+
+        await comfyPage.keyboard.press(key)
+
+        await expect
+          .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+          .toBe(true)
+        expect(
+          await comfyPage.command.getExecutionCount('Comfy.SaveWorkflow')
+        ).toBe(0)
+
+        await comfyPage.keyboard.press('Escape')
+      })
+    }
+
     test("'Ctrl+o' triggers open workflow", async ({ comfyPage }) => {
       // Ctrl+o calls app.ui.loadFile() which clicks a hidden file input.
       // Detect the file input click via an event listener.
@@ -263,25 +294,36 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+Shift+e' converts selection to subgraph", async ({
       comfyPage
     }) => {
-      await expect
-        .poll(
-          () => comfyPage.nodeOps.getGraphNodesCount(),
-          'Default workflow should have multiple nodes'
-        )
-        .toBeGreaterThan(1)
+      await comfyPage.expectNodeCountMinimum(
+        2,
+        'Default workflow should have multiple nodes'
+      )
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      // Select all nodes
       await comfyPage.keyboard.press('Control+a')
 
       await comfyPage.keyboard.press('Control+Shift+KeyE')
 
-      // After conversion, node count should decrease
-      // (multiple nodes replaced by single subgraph node)
+      await comfyPage.expectNodeCountMaximum(initialCount - 1)
+    })
+
+    test('Select-all still reaches the canvas after the settings dialog closes', async ({
+      comfyPage
+    }) => {
+      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(nodeCount).toBeGreaterThan(1)
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.close()
+
+      await comfyPage.keyboard.press('Control+a')
+
       await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeLessThan(initialCount)
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
+        )
+        .toBe(nodeCount)
     })
 
     test("'r' refreshes node definitions", async ({ comfyPage }) => {

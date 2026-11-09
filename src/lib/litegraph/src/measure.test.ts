@@ -1,7 +1,10 @@
 // TODO: Fix these tests after migration
 import { test as baseTest } from 'vitest'
 
-import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import {
   addDirectionalOffset,
   containsCentre,
@@ -9,6 +12,7 @@ import {
   createBounds,
   dist2,
   distance,
+  expandRectToGrid,
   findPointOnCurve,
   getOrientation,
   isInRect,
@@ -19,7 +23,7 @@ import {
   rotateLink,
   snapPoint
 } from '@/lib/litegraph/src/measure'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 const test = baseTest.extend({})
 
@@ -142,6 +146,24 @@ test('snapPoint correctly snaps points to grid using ceil', ({ expect }) => {
   const point3: Point = [15.1, -18.7]
   expect(snapPoint(point3, 10, 'ceil')).toBe(true)
   expect(point3).toEqual([20, -10])
+})
+
+test('expandRectToGrid grows every edge out to the grid', ({ expect }) => {
+  const rect: Rect = [12.3, 18.7, 20, 20]
+  expect(expandRectToGrid(rect, 10)).toBe(true)
+  expect(rect).toEqual([10, 10, 30, 30])
+
+  const alreadyAligned: Rect = [10, 20, 30, 40]
+  expect(expandRectToGrid(alreadyAligned, 10)).toBe(true)
+  expect(alreadyAligned).toEqual([10, 20, 30, 40])
+
+  const negative: Rect = [-12.3, -18.7, 5, 5]
+  expect(expandRectToGrid(negative, 10)).toBe(true)
+  expect(negative).toEqual([-20, -20, 20, 10])
+
+  const unsnapped: Rect = [12.3, 18.7, 20, 20]
+  expect(expandRectToGrid(unsnapped, 0)).toBe(false)
+  expect(unsnapped).toEqual([12.3, 18.7, 20, 20])
 })
 
 test('snapPoint correctly snaps points to grid using floor', ({ expect }) => {

@@ -1,30 +1,55 @@
-import { useAsyncState, whenever } from '@vueuse/core'
-import { difference } from 'es-toolkit'
+import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
+import { delay, difference, uniqBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  computed,
+  effectScope,
+  reactive,
+  ref,
+  shallowReactive,
+  toValue,
+  watch
+} from 'vue'
+import type { EffectScope } from 'vue'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
+  AssetResponse,
+  ModelBrowserAsset,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  INPUT_TAG,
-  OUTPUT_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
-import type { PaginationOptions } from '@/platform/assets/services/assetService'
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
 import { isCloud } from '@/platform/distribution/types'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  getAssetCategories,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
+import { assetService } from '@/platform/assets/services/assetService'
+import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
+import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
-
-const INPUT_LIMIT = 100
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -44,15 +69,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
-}
-
-/**
- * Fetch input files from cloud service
- */
-async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag(INPUT_TAG, false, {
-    limit: INPUT_LIMIT
-  })
 }
 
 /**
@@ -77,7 +93,10 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
     assetItem.user_metadata = {
       ...assetItem.user_metadata,
-      outputCount: task.outputsCount ?? task.previewableOutputs.length,
+      outputCount:
+        task.previewableOutputsCount ??
+        task.outputsCount ??
+        task.previewableOutputs.length,
       allOutputs: task.previewableOutputs
     }
 
@@ -86,18 +105,20 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() -
-      new Date(a.created_at ?? 0).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
-const FLAT_OUTPUT_PAGE_SIZE = 200
+const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const toast = useToast()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -114,23 +135,11 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state
-  const historyOffset = ref(0)
-  const hasMoreHistory = ref(true)
-  const isLoadingMore = ref(false)
-
-  const allHistoryItems = ref<AssetItem[]>([])
-
-  const loadedIds = shallowReactive(new Set<string>())
-
-  const fetchInputFiles = isCloud
-    ? fetchInputFilesFromCloud
-    : fetchInputFilesFromAPI
+  const fetchInputFiles = fetchInputFilesFromAPI
 
   const {
-    state: inputAssets,
+    state: rawInputAssets,
     isLoading: inputLoading,
-    error: inputError,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
@@ -140,221 +149,234 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
-    const result = await executeUpdateInputs()
-    assetService.invalidateInputAssetsIncludingPublic()
-    return result
+  const historyInputs: PagedList<AssetItem> = {
+    hasMore: false,
+    invalidate: async () => {
+      await executeUpdateInputs()
+    },
+    isLoading: inputLoading,
+    items: rawInputAssets,
+    loadMore: async () => false,
+    loadNew: async () => undefined
   }
 
-  /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
-   */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
-    if (!loadMore) {
-      historyOffset.value = 0
-      hasMoreHistory.value = true
-      allHistoryItems.value = []
-      loadedIds.clear()
-    }
+  function useHistoryAssets(): PagedList<AssetItem> {
+    // Pagination state
+    const historyOffset = ref(0)
+    const hasMoreHistory = ref(true)
+    const isLoadingMore = ref(false)
+    const allHistoryItems = ref<AssetItem[]>([])
+    const loadedIds = shallowReactive(new Set<string>())
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    /**
+     * Fetch history assets with pagination support
+     * @param loadMore - true for pagination (append), false for initial load (replace)
+     */
+    const fetchHistoryAssets = async (
+      loadMore = false
+    ): Promise<AssetItem[]> => {
+      // Reset state for initial load
+      if (!loadMore) {
+        historyOffset.value = 0
+        hasMoreHistory.value = true
+        allHistoryItems.value = []
+        loadedIds.clear()
+      }
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+      // Fetch from server with offset
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset: historyOffset.value
+      })
 
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
+      // Convert JobListItems to AssetItems
+      const newAssets = mapHistoryToAssets(history)
+
+      if (loadMore) {
+        // Filter out duplicates and insert in sorted order
+        for (const asset of newAssets) {
+          if (loadedIds.has(asset.id)) {
+            continue // Skip duplicates
+          }
+          loadedIds.add(asset.id)
+
+          // Find insertion index to maintain sorted order (newest first)
+          const assetTime = new Date(asset.created_at).getTime()
+          const insertIndex = allHistoryItems.value.findIndex(
+            (item) => new Date(item.created_at).getTime() < assetTime
+          )
+
+          if (insertIndex === -1) {
+            // Asset is oldest, append to end
+            allHistoryItems.value.push(asset)
+          } else {
+            // Insert at the correct position
+            allHistoryItems.value.splice(insertIndex, 0, asset)
+          }
         }
-        loadedIds.add(asset.id)
+      } else {
+        // Initial load: replace all
+        allHistoryItems.value = newAssets
+        newAssets.forEach((asset) => loadedIds.add(asset.id))
+      }
 
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+      // Update pagination state
+      historyOffset.value += BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+
+      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+        allHistoryItems.value = allHistoryItems.value.slice(
+          0,
+          MAX_HISTORY_ITEMS
         )
 
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
+        // Clean up Set
+        removed.forEach((item) => loadedIds.delete(item.id))
       }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
+
+      return allHistoryItems.value
     }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
+    const historyAssets = ref<AssetItem[]>([])
+    const historyLoading = ref(false)
+    const historyError = ref<unknown>(null)
+    let historyQueue = Promise.resolve()
+    let refreshPromise: Promise<void> | undefined
+    let loadMorePromise: Promise<boolean> | undefined
 
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
-
-    return allHistoryItems.value
-  }
-
-  const historyAssets = ref<AssetItem[]>([])
-  const historyLoading = ref(false)
-  const historyError = ref<unknown>(null)
-
-  /**
-   * Initial load of history assets
-   */
-  const updateHistory = async () => {
-    historyLoading.value = true
-    historyError.value = null
-    try {
-      await fetchHistoryAssets(false)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      historyError.value = err
-      // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      historyLoading.value = false
-    }
-  }
-
-  /**
-   * Load more history items (infinite scroll)
-   */
-  const loadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
-    if (!hasMoreHistory.value || isLoadingMore.value) return
-
-    isLoadingMore.value = true
-    historyError.value = null
-
-    try {
-      await fetchHistoryAssets(true)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      isLoadingMore.value = false
-    }
-  }
-
-  const flatOutputAssets = ref<AssetItem[]>([])
-  const flatOutputLoading = ref(false)
-  const flatOutputError = ref<unknown>(null)
-  const flatOutputOffset = ref(0)
-  const flatOutputHasMore = ref(true)
-  const flatOutputIsLoadingMore = ref(false)
-  const flatOutputSeenIds = new Set<string>()
-  let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
-
-  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
-    if (loadMore) {
-      if (!flatOutputHasMore.value) return flatOutputAssets.value
-      flatOutputIsLoadingMore.value = true
-    } else {
-      flatOutputLoading.value = true
-      flatOutputOffset.value = 0
-      flatOutputNextCursor = undefined
-      flatOutputHasMore.value = true
-      flatOutputSeenIds.clear()
-    }
-    flatOutputError.value = null
-
-    flatOutputInFlight = (async () => {
-      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
+    /**
+     * Initial load of history assets
+     */
+    const doUpdateHistory = async () => {
+      historyLoading.value = true
+      historyError.value = null
       try {
-        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
-          limit: FLAT_OUTPUT_PAGE_SIZE,
-          ...(requestedAfter
-            ? { after: requestedAfter }
-            : { offset: flatOutputOffset.value })
-        })
-        const batch = page.assets
-        const fresh = loadMore
-          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : batch
-        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
-        flatOutputAssets.value = loadMore
-          ? [...flatOutputAssets.value, ...fresh]
-          : batch
-        flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor || undefined
-        const cursorStuck =
-          nextCursor !== undefined && nextCursor === requestedAfter
-        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
-        flatOutputHasMore.value =
-          fresh.length > 0 && page.has_more && !cursorStuck
-        return flatOutputAssets.value
+        await fetchHistoryAssets(false)
+        historyAssets.value = allHistoryItems.value
       } catch (err) {
-        flatOutputError.value = err
-        console.error('Failed to fetch output assets:', err)
-        return loadMore ? flatOutputAssets.value : []
+        console.error('Error fetching history assets:', err)
+        historyError.value = err
+        // Keep existing data when error occurs
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
-      }
-    })()
-
-    return flatOutputInFlight
-  }
-
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
-    if (flatOutputIsLoadingMore.value) return
-    await fetchFlatOutputs(true)
-  }
-
-  /**
-   * Patch preview_id/preview_url for a single asset already in memory,
-   * matched by name. Used after persistThumbnail succeeds so an open Asset
-   * panel reflects the new thumbnail without refetching the whole history.
-   * Match by name because the cloud assets API and the history API use
-   * different id spaces; name is the stable cross-API identifier.
-   */
-  const setAssetPreview = (
-    name: string,
-    previewId: string,
-    previewUrl: string
-  ) => {
-    const patch = (list: AssetItem[]) => {
-      const idx = list.findIndex((a) => a.name === name)
-      if (idx < 0) return
-      list[idx] = {
-        ...list[idx],
-        preview_id: previewId,
-        preview_url: previewUrl
+        historyLoading.value = false
       }
     }
-    patch(historyAssets.value)
-    patch(allHistoryItems.value)
-    patch(inputAssets.value)
+
+    const updateHistory = () => {
+      if (!refreshPromise) {
+        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
+          refreshPromise = undefined
+        })
+        historyQueue = refreshPromise
+      }
+      return refreshPromise
+    }
+
+    /**
+     * Load more history items (infinite scroll)
+     */
+    const doLoadMoreHistory = async () => {
+      isLoadingMore.value = true
+      historyError.value = null
+
+      try {
+        await fetchHistoryAssets(true)
+        historyAssets.value = allHistoryItems.value
+        return true
+      } catch (err) {
+        console.error('Error loading more history:', err)
+        historyError.value = err
+        // Keep existing data when error occurs (consistent with updateHistory)
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
+        return false
+      } finally {
+        isLoadingMore.value = false
+      }
+    }
+
+    const loadMoreHistory = () => {
+      if (!loadMorePromise) {
+        const operation = historyQueue.then(() =>
+          hasMoreHistory.value ? doLoadMoreHistory() : false
+        )
+        loadMorePromise = operation.finally(() => {
+          loadMorePromise = undefined
+        })
+        historyQueue = operation.then(() => undefined)
+      }
+      return loadMorePromise
+    }
+
+    return {
+      hasMore: hasMoreHistory,
+      invalidate: updateHistory,
+      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
+      items: historyAssets,
+      loadMore: loadMoreHistory,
+      loadNew: updateHistory
+    }
   }
+
+  const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let assetsScope: EffectScope | undefined
+  watch(
+    () => flags.assetsEnabled,
+    (isAssets) => {
+      if (assetsScope) assetsScope.stop()
+      assetsScope = undefined
+
+      if (isAssets) {
+        assetsScope = effectScope()
+        assetsScope.run(() => {
+          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          outputAssets.value = new WrappedList(
+            flatAssets,
+            unflattenOutputAssets
+          )
+        })
+      } else {
+        inputAssets.value = historyInputs
+        outputAssets.value = useHistoryAssets()
+      }
+    },
+    { immediate: true }
+  )
+
+  async function loadOutputAsset(assetId: string): Promise<boolean> {
+    const assets = outputAssets.value
+    const hasAsset = () =>
+      toValue(assets.items).some(({ id }) => id === assetId)
+
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
+    ) {
+      if (!(await assets.loadMore())) break
+    }
+    return hasAsset()
+  }
+  useEventListener(
+    api,
+    'assets.seed.completed',
+    async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
+      if (detail.phase !== 'fast') {
+        await outputAssets.value.invalidate()
+        await inputAssets.value.invalidate()
+      } else if (detail.created) {
+        await outputAssets.value.loadNew()
+        await inputAssets.value.loadNew()
+      }
+    }
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -362,7 +384,7 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
-    for (const asset of inputAssets.value) {
+    for (const asset of toValue(inputAssets.value.items)) {
       const hash = asset.hash
       if (hash) {
         map.set(hash, asset)
@@ -381,12 +403,31 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const MODEL_BATCH_SIZE = 500
 
+  // Defensive backstop against a server that never signals exhaustion (e.g.
+  // emits an unbounded stream of unique cursors). At MODEL_BATCH_SIZE per
+  // batch this caps a single walk at 500k assets — far beyond any real
+  // category — so it only ever trips on pathological pagination.
+  const MAX_PAGINATION_BATCHES = 1000
+
   interface ModelPaginationState {
     assets: Map<string, AssetItem>
+    /**
+     * Count of assets fetched so far. Only drives the request `offset` when
+     * the backend is cursor-less (no `next_cursor` in responses).
+     */
     offset: number
+    /**
+     * Keyset cursor from the latest response's `next_cursor`. When set,
+     * subsequent batches resume with `after` instead of `offset`.
+     */
+    nextCursor?: string
     hasMore: boolean
     isLoading: boolean
     error?: Error
+  }
+
+  interface ModelRefreshOptions {
+    restart?: boolean
   }
 
   /**
@@ -394,421 +435,605 @@ export const useAssetsStore = defineStore('assets', () => {
    * Multiple node types sharing the same category share the same cache entry.
    * Public API accepts nodeType for backwards compatibility but translates
    * to category internally using modelToNodeStore.getCategoryForNodeType().
-   * Cloud-only feature - empty Maps in desktop builds
+   *
+   * Runs on every distribution; whether anything fetches through it is
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
-    if (isCloud) {
-      const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
+    const libraryCategory = 'library:models'
+    const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
 
-      const assetsArrayCache = new Map<
-        string,
-        { source: Map<string, AssetItem>; array: AssetItem[] }
-      >()
+    function includesLibrary(): boolean {
+      return (
+        isCloud &&
+        flags.runtimeLibraryModelsEnabled &&
+        !!workspaceStore.workspaceId &&
+        !!useDeploymentPickStore().bootDeployment
+      )
+    }
 
-      const pendingRequestByCategory = new Map<string, ModelPaginationState>()
-      const pendingPromiseByCategory = new Map<string, Promise<void>>()
-
-      function createState(
-        existingAssets?: Map<string, AssetItem>
-      ): ModelPaginationState {
-        const assets = new Map(existingAssets)
-        return reactive({
-          assets,
-          offset: 0,
-          hasMore: true,
-          isLoading: true
-        })
-      }
-
-      function isStale(category: string, state: ModelPaginationState): boolean {
-        const committed = modelStateByCategory.value.get(category)
-        const pending = pendingRequestByCategory.get(category)
-        return committed !== state && pending !== state
-      }
-
-      const EMPTY_ASSETS: AssetItem[] = []
-
-      /**
-       * Resolve a key to a category. Handles both nodeType and tag:xxx formats.
-       * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
-       * @returns The category or undefined if not resolvable
-       */
-      function resolveCategory(key: string): string | undefined {
-        if (key.startsWith('tag:')) {
-          return key
-        }
-        return modelToNodeStore.getCategoryForNodeType(key)
-      }
-
-      /**
-       * Get assets by nodeType or tag key.
-       * Translates nodeType to category internally for cache lookup.
-       * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
-       */
-      function getAssets(key: string): AssetItem[] {
-        const category = resolveCategory(key)
-        if (!category) return EMPTY_ASSETS
-
-        const state = modelStateByCategory.value.get(category)
-        const assetsMap = state?.assets
-        if (!assetsMap) return EMPTY_ASSETS
-
-        const cached = assetsArrayCache.get(category)
-        if (cached && cached.source === assetsMap) {
-          return cached.array
-        }
-
-        const array = Array.from(assetsMap.values())
-        assetsArrayCache.set(category, { source: assetsMap, array })
-        return array
-      }
-
-      function isLoading(key: string): boolean {
-        const category = resolveCategory(key)
-        if (!category) return false
-        return modelStateByCategory.value.get(category)?.isLoading ?? false
-      }
-
-      function getError(key: string): Error | undefined {
-        const category = resolveCategory(key)
-        if (!category) return undefined
-        return modelStateByCategory.value.get(category)?.error
-      }
-
-      function hasMore(key: string): boolean {
-        const category = resolveCategory(key)
-        if (!category) return false
-        return modelStateByCategory.value.get(category)?.hasMore ?? false
-      }
-
-      function hasAssetKey(key: string): boolean {
-        const category = resolveCategory(key)
-        if (!category) return false
-        return modelStateByCategory.value.has(category)
-      }
-
-      /**
-       * Check if a category exists in the cache.
-       * Checks both direct category keys and tag-prefixed keys.
-       * @param category The category to check (e.g., 'checkpoints', 'loras')
-       */
-      function hasCategory(category: string): boolean {
-        return (
-          modelStateByCategory.value.has(category) ||
-          modelStateByCategory.value.has(`tag:${category}`)
+    const mergedAssets = computed<ModelBrowserAsset[]>(() => {
+      const release = Array.from(
+        modelStateByCategory.value.get('tag:models')?.assets.values() ?? []
+      )
+      const library = Array.from(
+        modelStateByCategory.value.get(libraryCategory)?.assets.values() ?? []
+      ).sort(
+        (a, b) =>
+          Date.parse(b.created_at) - Date.parse(a.created_at) ||
+          (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+      )
+      const keyFor = (category: string, asset: AssetItem) =>
+        JSON.stringify([category, asset.loader_path ?? getAssetFilename(asset)])
+      const releaseKeys = new Set(
+        release.flatMap((asset) =>
+          getAssetCategories(asset, flags.supportsModelTypeTags).map(
+            (category) => keyFor(category, asset)
+          )
         )
+      )
+      const releaseIds = new Set(release.map((asset) => asset.id))
+      const libraryKeys = new Set<string>()
+      const visibleLibrary = library.flatMap((asset): ModelBrowserAsset[] => {
+        if (releaseIds.has(asset.id)) return []
+        const filename = asset.loader_path ?? getAssetFilename(asset)
+        const categories = getAssetCategories(
+          asset,
+          flags.supportsModelTypeTags
+        )
+        const browserCategories = categories.filter((category) => {
+          const key = keyFor(category, asset)
+          return (
+            deploymentDownloads(category, filename) &&
+            !releaseKeys.has(key) &&
+            !libraryKeys.has(key)
+          )
+        })
+        if (browserCategories.length === 0) return []
+        browserCategories.forEach((category) =>
+          libraryKeys.add(keyFor(category, asset))
+        )
+        return [
+          {
+            ...asset,
+            isWorkspaceLibrary: true,
+            ...(browserCategories.length < categories.length
+              ? { browserCategories }
+              : {})
+          }
+        ]
+      })
+      return [...release, ...visibleLibrary]
+    })
+
+    const assetsArrayCache = new Map<
+      string,
+      { source: Map<string, AssetItem>; array: AssetItem[] }
+    >()
+
+    const pendingRequestByCategory = new Map<string, ModelPaginationState>()
+    const pendingPromiseByCategory = new Map<string, Promise<void>>()
+    const abortByCategory = new Map<string, AbortController>()
+    const replacementBySupersededFetch = new WeakMap<
+      AbortController,
+      Promise<void>
+    >()
+
+    watch(
+      [
+        () => workspaceStore.workspaceId,
+        () => workspaceStore.identityGeneration
+      ],
+      () => {
+        for (const controller of abortByCategory.values()) controller.abort()
+        abortByCategory.clear()
+        pendingRequestByCategory.clear()
+        pendingPromiseByCategory.clear()
+        assetsArrayCache.clear()
+        modelStateByCategory.value.clear()
+      },
+      { flush: 'sync' }
+    )
+
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      () => invalidateCategory(libraryCategory),
+      { flush: 'sync' }
+    )
+
+    function createState(
+      existingAssets?: Map<string, AssetItem>
+    ): ModelPaginationState {
+      const assets = new Map(existingAssets)
+      return reactive({
+        assets,
+        offset: 0,
+        nextCursor: undefined,
+        hasMore: true,
+        isLoading: true
+      })
+    }
+
+    function isStale(category: string, state: ModelPaginationState): boolean {
+      const committed = modelStateByCategory.value.get(category)
+      const pending = pendingRequestByCategory.get(category)
+      return committed !== state && pending !== state
+    }
+
+    const EMPTY_ASSETS: AssetItem[] = []
+
+    /**
+     * Resolve a key to a category. Handles both nodeType and tag:xxx formats.
+     * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
+     * @returns The category or undefined if not resolvable
+     */
+    function resolveCategory(key: string): string | undefined {
+      if (key.startsWith('tag:')) {
+        return key
+      }
+      if (key === libraryCategory) return key
+      return modelToNodeStore.getCategoryForNodeType(key)
+    }
+
+    /**
+     * Get assets by nodeType or tag key.
+     * Translates nodeType to category internally for cache lookup.
+     * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
+     */
+    function getAssets(key: string): ModelBrowserAsset[] {
+      return key === 'tag:models' && includesLibrary()
+        ? mergedAssets.value
+        : getCachedAssets(key)
+    }
+
+    function getCachedAssets(key: string): AssetItem[] {
+      const category = resolveCategory(key)
+      if (!category) return EMPTY_ASSETS
+
+      const state = modelStateByCategory.value.get(category)
+      const assetsMap = state?.assets
+      if (!assetsMap) return EMPTY_ASSETS
+
+      const cached = assetsArrayCache.get(category)
+      if (cached && cached.source === assetsMap) {
+        return cached.array
       }
 
-      /**
-       * Internal helper to fetch and cache assets for a category.
-       * Loads first batch immediately, then progressively loads remaining batches.
-       * Keeps existing data visible until new data is successfully fetched.
-       *
-       * Concurrent calls for the same category are short-circuited: if a request
-       * is already in progress (tracked via pendingRequestByCategory), subsequent
-       * calls return immediately to avoid redundant work.
-       */
-      async function updateModelsForCategory(
-        category: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
-      ): Promise<void> {
-        if (pendingPromiseByCategory.has(category)) {
-          return pendingPromiseByCategory.get(category)!
-        }
+      const array = Array.from(assetsMap.values())
+      assetsArrayCache.set(category, { source: assetsMap, array })
+      return array
+    }
 
-        const existingState = modelStateByCategory.value.get(category)
-        const state = createState(existingState?.assets)
+    function sourceCategories(category: string): string[] {
+      return category === 'tag:models' && includesLibrary()
+        ? [category, libraryCategory]
+        : [category]
+    }
 
-        const seenIds = new Set<string>()
+    function isLoading(key: string): boolean {
+      const category = resolveCategory(key)
+      if (!category) return false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.isLoading ?? false
+      )
+    }
 
-        const hasExistingData = modelStateByCategory.value.has(category)
-        if (hasExistingData) {
-          pendingRequestByCategory.set(category, state)
-        } else {
-          // Also track in pending map for initial loads to prevent concurrent calls
-          pendingRequestByCategory.set(category, state)
-          modelStateByCategory.value.set(category, state)
-        }
+    function getError(key: string): Error | undefined {
+      const category = resolveCategory(key)
+      if (!category) return undefined
+      return sourceCategories(category)
+        .map((source) => modelStateByCategory.value.get(source)?.error)
+        .find((error) => error !== undefined)
+    }
 
-        async function loadBatches(): Promise<void> {
-          while (state.hasMore) {
-            try {
-              const newAssets = await fetcher({
-                limit: MODEL_BATCH_SIZE,
-                offset: state.offset
-              })
+    function hasMore(key: string): boolean {
+      const category = resolveCategory(key)
+      if (!category) return false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.hasMore ?? false
+      )
+    }
 
-              if (isStale(category, state)) return
+    function hasAssetKey(key: string): boolean {
+      const category = resolveCategory(key)
+      if (!category) return false
+      return modelStateByCategory.value.has(category)
+    }
 
-              const isFirstBatch = state.offset === 0
-              if (isFirstBatch) {
-                assetsArrayCache.delete(category)
-                if (hasExistingData) {
-                  pendingRequestByCategory.delete(category)
-                  modelStateByCategory.value.set(category, state)
-                }
+    /**
+     * Check if a category exists in the cache.
+     * Checks both direct category keys and tag-prefixed keys.
+     * @param category The category to check (e.g., 'checkpoints', 'loras')
+     */
+    function hasCategory(category: string): boolean {
+      return (
+        modelStateByCategory.value.has(category) ||
+        modelStateByCategory.value.has(`tag:${category}`)
+      )
+    }
+
+    async function updateModelsForCategory(
+      category: string,
+      fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>,
+      { restart = false }: ModelRefreshOptions = {}
+    ): Promise<void> {
+      if (!restart && pendingPromiseByCategory.has(category)) {
+        return pendingPromiseByCategory.get(category)!
+      }
+
+      const existingState = modelStateByCategory.value.get(category)
+      const state = createState(existingState?.assets)
+
+      const supersededFetch = abortByCategory.get(category)
+      supersededFetch?.abort()
+      const controller = new AbortController()
+      abortByCategory.set(category, controller)
+
+      const seenIds = new Set<string>()
+
+      const hasExistingData = existingState?.isLoading === false
+      pendingRequestByCategory.set(category, state)
+      if (!hasExistingData) {
+        modelStateByCategory.value.set(category, state)
+      }
+
+      async function loadBatches(): Promise<void> {
+        let isFirstBatch = true
+        let walkCompleted = false
+        const seenCursors = new Set<string>()
+        let batchCount = 0
+        while (state.hasMore) {
+          if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+            state.hasMore = false
+            break
+          }
+          try {
+            const after = state.nextCursor
+            const response = await fetcher(
+              after !== undefined
+                ? {
+                    limit: MODEL_BATCH_SIZE,
+                    after,
+                    signal: controller.signal
+                  }
+                : {
+                    limit: MODEL_BATCH_SIZE,
+                    offset: state.offset,
+                    signal: controller.signal
+                  }
+            )
+
+            if (controller.signal.aborted || isStale(category, state)) return
+
+            const newAssets = response.assets
+
+            if (isFirstBatch) {
+              assetsArrayCache.delete(category)
+              if (hasExistingData) {
+                pendingRequestByCategory.delete(category)
+                modelStateByCategory.value.set(category, state)
               }
+            }
 
-              // Merge new assets into existing map and track seen IDs
-              for (const asset of newAssets) {
-                seenIds.add(asset.id)
-                state.assets.set(asset.id, asset)
-              }
-              state.assets = new Map(state.assets)
+            for (const asset of newAssets) {
+              seenIds.add(asset.id)
+              state.assets.set(asset.id, asset)
+            }
+            state.assets = new Map(state.assets)
 
-              state.offset += newAssets.length
-              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+            state.offset += newAssets.length
 
-              if (isFirstBatch) {
-                state.isLoading = false
-              }
-
-              if (state.hasMore) {
-                await new Promise((resolve) => setTimeout(resolve, 50))
-              }
-            } catch (err) {
-              if (isStale(category, state)) return
-              console.error(`Error loading batch for ${category}:`, err)
-
-              state.error = err instanceof Error ? err : new Error(String(err))
+            if (!response.has_more) {
               state.hasMore = false
-              state.isLoading = false
-              pendingRequestByCategory.delete(category)
+              walkCompleted = true
+            } else if (newAssets.length === 0) {
+              state.hasMore = false
+            } else if (response.next_cursor !== undefined) {
+              if (seenCursors.has(response.next_cursor)) {
+                state.hasMore = false
+              } else {
+                seenCursors.add(response.next_cursor)
+                state.nextCursor = response.next_cursor
+              }
+            } else {
+              state.nextCursor = undefined
+              if (newAssets.length < MODEL_BATCH_SIZE) {
+                state.hasMore = false
+                walkCompleted = true
+              }
+            }
 
+            if (isFirstBatch) {
+              state.isLoading = false
+              isFirstBatch = false
+            }
+
+            if (state.hasMore) {
+              await delay(50, { signal: controller.signal })
+            }
+          } catch (err) {
+            if (controller.signal.aborted) {
+              if (isFirstBatch) state.isLoading = false
               return
             }
-          }
+            if (isStale(category, state)) return
+            console.error(`Error loading batch for ${category}:`, err)
 
+            if (category === libraryCategory) {
+              reportError(err, {
+                surface: 'assets',
+                errorType: 'error_loading_workspace_library_models'
+              })
+            }
+            state.error = err instanceof Error ? err : new Error(String(err))
+            state.hasMore = false
+            state.isLoading = false
+            const committed = modelStateByCategory.value.get(category)
+            if (committed && committed !== state) {
+              committed.error = state.error
+            }
+            if (pendingRequestByCategory.get(category) === state) {
+              pendingRequestByCategory.delete(category)
+            }
+
+            return
+          }
+        }
+
+        if (walkCompleted) {
           const staleIds = [...state.assets.keys()].filter(
             (id) => !seenIds.has(id)
           )
           for (const id of staleIds) {
             state.assets.delete(id)
           }
-          assetsArrayCache.delete(category)
+        }
+        assetsArrayCache.delete(category)
+        if (pendingRequestByCategory.get(category) === state) {
           pendingRequestByCategory.delete(category)
         }
+      }
 
-        const promise = loadBatches().finally(() => {
-          pendingPromiseByCategory.delete(category)
-        })
-        pendingPromiseByCategory.set(category, promise)
+      const promise = loadBatches().then(() =>
+        replacementBySupersededFetch.get(controller)
+      )
+      if (supersededFetch) {
+        replacementBySupersededFetch.set(supersededFetch, promise)
+      }
+      pendingPromiseByCategory.set(category, promise)
+      try {
         await promise
-      }
-
-      /**
-       * Fetch and cache model assets for a specific node type.
-       * Translates nodeType to category internally - multiple node types
-       * sharing the same category will share the same cache entry.
-       * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
-       */
-      async function updateModelsForNodeType(nodeType: string): Promise<void> {
-        const category = modelToNodeStore.getCategoryForNodeType(nodeType)
-        if (!category) return
-
-        // Use category as cache key but fetch using nodeType for API compatibility
-        await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsForNodeType(nodeType, opts)
-        )
-      }
-
-      /**
-       * Fetch and cache model assets for a specific tag
-       * @param tag The tag to fetch assets for (e.g., 'models')
-       */
-      async function updateModelsForTag(tag: string): Promise<void> {
-        const category = `tag:${tag}`
-        await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsByTag(tag, true, opts)
-        )
-      }
-
-      /**
-       * Invalidate the cache for a specific category.
-       * Forces a refetch on next access.
-       * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
-       */
-      function invalidateCategory(category: string): void {
-        modelStateByCategory.value.delete(category)
-        assetsArrayCache.delete(category)
-        pendingRequestByCategory.delete(category)
-        pendingPromiseByCategory.delete(category)
-      }
-
-      /**
-       * Optimistically update an asset in the cache
-       * @param assetId The asset ID to update
-       * @param updates Partial asset data to merge
-       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
-       */
-      function updateAssetInCache(
-        assetId: string,
-        updates: Partial<AssetItem>,
-        cacheKey?: string
-      ) {
-        const category = cacheKey ? resolveCategory(cacheKey) : undefined
-        if (cacheKey && !category) return
-
-        const categoriesToCheck = category
-          ? [category]
-          : Array.from(modelStateByCategory.value.keys())
-
-        for (const cat of categoriesToCheck) {
-          const state = modelStateByCategory.value.get(cat)
-          if (!state?.assets) continue
-
-          const existingAsset = state.assets.get(assetId)
-          if (existingAsset) {
-            const updatedAsset = { ...existingAsset, ...updates }
-            state.assets.set(assetId, updatedAsset)
-            assetsArrayCache.delete(cat)
-            if (cacheKey) return
-          }
+      } finally {
+        if (pendingPromiseByCategory.get(category) === promise) {
+          pendingPromiseByCategory.delete(category)
+        }
+        if (abortByCategory.get(category) === controller) {
+          abortByCategory.delete(category)
         }
       }
+    }
 
-      /**
-       * Update asset metadata with optimistic cache update
-       * @param asset The asset to update
-       * @param userMetadata The user_metadata to save
-       * @param cacheKey Optional cache key to target for optimistic update
-       */
-      async function updateAssetMetadata(
-        asset: AssetItem,
-        userMetadata: Record<string, unknown>,
-        cacheKey?: string
-      ) {
-        const originalMetadata = asset.user_metadata
-        updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
+    /**
+     * Fetch and cache model assets for a specific node type.
+     * Translates nodeType to category internally - multiple node types
+     * sharing the same category will share the same cache entry.
+     * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
+     */
+    async function updateModelsForNodeType(
+      nodeType: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
+      const category = modelToNodeStore.getCategoryForNodeType(nodeType)
+      if (!category) return
 
-        try {
-          const updatedAsset = await assetService.updateAsset(asset.id, {
-            user_metadata: userMetadata
-          })
-          updateAssetInCache(asset.id, updatedAsset, cacheKey)
-        } catch (error) {
-          console.error('Failed to update asset metadata:', error)
-          updateAssetInCache(
-            asset.id,
-            { user_metadata: originalMetadata },
-            cacheKey
+      await updateModelsForCategory(
+        category,
+        (opts) => assetService.getAssetsPageForNodeType(nodeType, opts),
+        options
+      )
+    }
+
+    /**
+     * Fetch and cache model assets for a specific tag
+     * @param tag The tag to fetch assets for (e.g., 'models')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
+     */
+    async function updateModelsForTag(
+      tag: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
+      const category = `tag:${tag}`
+      await Promise.all(
+        sourceCategories(category).map((source) =>
+          updateModelsForCategory(
+            source,
+            source === libraryCategory
+              ? (opts) => assetService.getWorkspaceLibraryAssetsPage(opts)
+              : (opts) => assetService.getAssetsPageByTag(tag, true, opts),
+            options
           )
+        )
+      )
+    }
+
+    /**
+     * Invalidate the cache for a specific category.
+     * Forces a refetch on next access.
+     * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
+     */
+    function invalidateCategory(category: string): void {
+      if (category === 'tag:models') invalidateCategory(libraryCategory)
+      abortByCategory.get(category)?.abort()
+      abortByCategory.delete(category)
+      modelStateByCategory.value.delete(category)
+      assetsArrayCache.delete(category)
+      pendingRequestByCategory.delete(category)
+      pendingPromiseByCategory.delete(category)
+    }
+
+    /**
+     * Optimistically update an asset in the cache
+     * @param assetId The asset ID to update
+     * @param updates Partial asset data to merge
+     * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+     */
+    function updateAssetInCache(
+      assetId: string,
+      updates: Partial<AssetItem>,
+      cacheKey?: string
+    ) {
+      const category = cacheKey ? resolveCategory(cacheKey) : undefined
+      if (cacheKey && !category) return
+
+      const categoriesToCheck = category
+        ? sourceCategories(category)
+        : Array.from(modelStateByCategory.value.keys())
+
+      for (const cat of categoriesToCheck) {
+        const state = modelStateByCategory.value.get(cat)
+        if (!state?.assets) continue
+
+        const existingAsset = state.assets.get(assetId)
+        if (existingAsset) {
+          const updatedAsset = { ...existingAsset, ...updates }
+          state.assets.set(assetId, updatedAsset)
+          assetsArrayCache.delete(cat)
+          if (cacheKey) return
         }
       }
+    }
 
-      /**
-       * Update asset tags using add/remove endpoints
-       * @param asset The asset to update (used to read current tags)
-       * @param newTags The desired tags array
-       * @param cacheKey Optional cache key to target for optimistic update
-       */
-      async function updateAssetTags(
-        asset: AssetItem,
-        newTags: string[],
-        cacheKey?: string
-      ) {
-        const originalTags = asset.tags
-        const tagsToAdd = difference(newTags, originalTags)
-        const tagsToRemove = difference(originalTags, newTags)
+    async function updateAssetMetadata(
+      asset: AssetItem,
+      userMetadata: Record<string, unknown>,
+      cacheKey?: string
+    ) {
+      const originalMetadata = asset.user_metadata
+      updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
-        if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+      try {
+        const updatedAsset = await assetService.updateAsset(asset.id, {
+          user_metadata: userMetadata
+        })
+        updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        return true
+      } catch (error) {
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_metadata'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
+        updateAssetInCache(
+          asset.id,
+          { user_metadata: originalMetadata },
+          cacheKey
+        )
+        return false
+      }
+    }
 
-        updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+    /**
+     * Update asset tags using add/remove endpoints
+     * @param asset The asset to update (used to read current tags)
+     * @param newTags The desired tags array
+     * @param cacheKey Optional cache key to target for optimistic update
+     */
+    async function updateAssetTags(
+      asset: AssetItem,
+      newTags: string[],
+      cacheKey?: string
+    ) {
+      const originalTags = asset.tags
+      const tagsToAdd = difference(newTags, originalTags)
+      const tagsToRemove = difference(originalTags, newTags)
 
-        let removedTagsOnServer: string[] = []
-        try {
-          let removeResult: TagsOperationResult | undefined
-          if (tagsToRemove.length > 0) {
-            removeResult = await assetService.removeAssetTags(
-              asset.id,
-              tagsToRemove
+      if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+
+      updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+
+      let removedTagsOnServer: string[] = []
+      try {
+        let removeResult: TagsOperationResult | undefined
+        if (tagsToRemove.length > 0) {
+          removeResult = await assetService.removeAssetTags(
+            asset.id,
+            tagsToRemove
+          )
+          removedTagsOnServer = removeResult.removed ?? tagsToRemove
+        }
+
+        const addResult =
+          tagsToAdd.length > 0
+            ? await assetService.addAssetTags(asset.id, tagsToAdd)
+            : undefined
+
+        const finalTags = (addResult ?? removeResult)?.total_tags
+        if (finalTags) {
+          updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+        }
+      } catch (error) {
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_tags'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
+        updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+
+        if (removedTagsOnServer.length > 0) {
+          try {
+            await assetService.addAssetTags(asset.id, removedTagsOnServer)
+          } catch (compensationError) {
+            console.error(
+              'Failed to restore tags after partial failure; invalidating cache to force refetch:',
+              compensationError
             )
-            removedTagsOnServer = removeResult.removed ?? tagsToRemove
-          }
-
-          const addResult =
-            tagsToAdd.length > 0
-              ? await assetService.addAssetTags(asset.id, tagsToAdd)
-              : undefined
-
-          const finalTags = (addResult ?? removeResult)?.total_tags
-          if (finalTags) {
-            updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
-          }
-        } catch (error) {
-          console.error('Failed to update asset tags:', error)
-          updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
-
-          if (removedTagsOnServer.length > 0) {
-            try {
-              await assetService.addAssetTags(asset.id, removedTagsOnServer)
-            } catch (compensationError) {
-              console.error(
-                'Failed to restore tags after partial failure; invalidating cache to force refetch:',
-                compensationError
-              )
-              const categoriesToInvalidate = new Set<string>()
-              const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
-              if (resolved) {
-                categoriesToInvalidate.add(resolved)
+            const categoriesToInvalidate = new Set<string>()
+            const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+            if (resolved) {
+              categoriesToInvalidate.add(resolved)
+            }
+            for (const [
+              category,
+              state
+            ] of modelStateByCategory.value.entries()) {
+              if (state.assets.has(asset.id)) {
+                categoriesToInvalidate.add(category)
               }
-              for (const [
-                category,
-                state
-              ] of modelStateByCategory.value.entries()) {
-                if (state.assets?.has(asset.id)) {
-                  categoriesToInvalidate.add(category)
-                }
-              }
-              for (const category of categoriesToInvalidate) {
-                invalidateCategory(category)
-              }
+            }
+            for (const category of categoriesToInvalidate) {
+              invalidateCategory(category)
             }
           }
         }
       }
-
-      /**
-       * Invalidate model caches for a given category (e.g., 'checkpoints', 'loras')
-       * Clears the category cache and tag-based caches so next access triggers refetch
-       * @param category The model category to invalidate (e.g., 'checkpoints')
-       */
-      function invalidateModelsForCategory(category: string): void {
-        invalidateCategory(category)
-        invalidateCategory(`tag:${category}`)
-        invalidateCategory('tag:models')
-      }
-
-      return {
-        getAssets,
-        isLoading,
-        getError,
-        hasMore,
-        hasAssetKey,
-        hasCategory,
-        updateModelsForNodeType,
-        updateModelsForTag,
-        invalidateCategory,
-        updateAssetMetadata,
-        updateAssetTags,
-        invalidateModelsForCategory
-      }
     }
 
-    const emptyAssets: AssetItem[] = []
+    /**
+     * Invalidate model caches for a given category (e.g., 'checkpoints', 'loras')
+     * Clears the category cache and tag-based caches so next access triggers refetch
+     * @param category The model category to invalidate (e.g., 'checkpoints')
+     */
+    function invalidateModelsForCategory(category: string): void {
+      invalidateCategory(category)
+      invalidateCategory(`tag:${category}`)
+      invalidateCategory('tag:models')
+    }
+
     return {
-      getAssets: () => emptyAssets,
-      isLoading: () => false,
-      getError: () => undefined,
-      hasMore: () => false,
-      hasAssetKey: () => false,
-      hasCategory: () => false,
-      updateModelsForNodeType: async () => {},
-      invalidateCategory: () => {},
-      updateModelsForTag: async () => {},
-      updateAssetMetadata: async () => {},
-      updateAssetTags: async () => {},
-      invalidateModelsForCategory: () => {}
+      getAssets,
+      isLoading,
+      getError,
+      hasMore,
+      hasAssetKey,
+      hasCategory,
+      updateModelsForNodeType,
+      updateModelsForTag,
+      invalidateCategory,
+      updateAssetMetadata,
+      updateAssetTags,
+      invalidateModelsForCategory
     }
   }
 
@@ -835,18 +1060,22 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
-        .filter((provider) => provider.nodeDef?.name)
+        .filter((provider) => provider.nodeDef.name)
 
-      const nodeTypeUpdates = providers.map((provider) =>
-        updateModelsForNodeType(provider.nodeDef.name).then(
-          () => provider.nodeDef.name
+      const firstProviderOfEachCategory = new Set(
+        uniqBy(providers, (provider) =>
+          modelToNodeStore.getCategoryForNodeType(provider.nodeDef.name)
         )
       )
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name, {
+          restart: firstProviderOfEachCategory.has(provider)
+        }).then(() => provider.nodeDef.name)
+      )
 
-      // Also update by tag in case modal was opened with assetType
       const tagUpdates = [
-        updateModelsForTag(modelType),
-        updateModelsForTag('models')
+        updateModelsForTag(modelType, { restart: true }),
+        updateModelsForTag('models', { restart: true })
       ]
 
       const results = await Promise.allSettled([
@@ -867,33 +1096,14 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
-    historyAssets,
-    inputLoading,
-    historyLoading,
-    inputError,
-    historyError,
-    hasMoreHistory,
-    isLoadingMore,
+    outputAssets,
+    invalidateAll,
+    loadOutputAsset,
 
     // Deletion tracking
     deletingAssetIds,
     setAssetDeleting,
     isAssetDeleting,
-
-    // Actions
-    updateInputs,
-    updateHistory,
-    loadMoreHistory,
-    setAssetPreview,
-
-    // Flat output assets (cloud-only, tag-based)
-    flatOutputAssets,
-    flatOutputLoading,
-    flatOutputError,
-    flatOutputHasMore,
-    flatOutputIsLoadingMore,
-    updateFlatOutputs,
-    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

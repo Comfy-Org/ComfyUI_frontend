@@ -1,0 +1,95 @@
+import { describe, expect, it } from 'vitest'
+import { isFlagOn, parseFlags, parseTags } from './flags'
+
+describe('parseFlags', () => {
+  it('separates positional arguments from flags', () => {
+    const { positional, flags } = parseFlags(
+      ['a.ts', '--name', 'thing'],
+      ['name']
+    )
+    expect(positional).toEqual(['a.ts'])
+    expect(flags.name).toBe('thing')
+  })
+
+  it('accepts --key=value', () => {
+    expect(parseFlags(['--workflow=default']).flags.workflow).toBe('default')
+  })
+
+  it('treats a trailing flag with no value as empty, not as the next flag', () => {
+    const { flags } = parseFlags(['--tags', '--name', 'x'], ['tags', 'name'])
+    expect(flags.tags).toBe('')
+    expect(flags.name).toBe('x')
+  })
+
+  it('leaves a positional alone after a flag that takes no value', () => {
+    const { positional, flags } = parseFlags(['--dry-run', 'a.ts'], ['name'])
+    expect(flags['dry-run']).toBe('')
+    expect(positional).toEqual(['a.ts'])
+  })
+
+  it.for(['true', 'false'])(
+    'reads a separated %s as the value of a flag that takes none',
+    (value) => {
+      const { positional, flags } = parseFlags(
+        ['a.ts', '--force', value],
+        [],
+        ['force']
+      )
+      expect(flags.force).toBe(value)
+      expect(positional).toEqual(['a.ts'])
+    }
+  )
+
+  it('leaves separated booleans positional for flags not declared boolean-valued', () => {
+    const { positional, flags } = parseFlags(['--headed', 'false'])
+    expect(flags.headed).toBe('')
+    expect(positional).toEqual(['false'])
+  })
+
+  it('keeps a value that contains an equals sign intact', () => {
+    expect(parseFlags(['--output=a=b.ts']).flags.output).toBe('a=b.ts')
+  })
+
+  it('returns empty positional and flags collections for no arguments', () => {
+    expect(parseFlags([])).toEqual({ positional: [], flags: {} })
+  })
+})
+
+describe('parseTags', () => {
+  it('trims whitespace around each comma-separated tag', () => {
+    expect(parseTags('@canvas, @widget ,@smoke')).toEqual([
+      '@canvas',
+      '@widget',
+      '@smoke'
+    ])
+  })
+
+  it('drops empty entries from trailing or doubled commas', () => {
+    expect(parseTags('@canvas,,@widget,')).toEqual(['@canvas', '@widget'])
+  })
+
+  it('returns undefined for an undefined value', () => {
+    expect(parseTags(undefined)).toBeUndefined()
+  })
+
+  it('returns undefined when nothing survives filtering', () => {
+    expect(parseTags(' , , ')).toBeUndefined()
+  })
+})
+
+describe('isFlagOn', () => {
+  it.for([
+    { value: undefined, expected: false },
+    { value: 'false', expected: false },
+    { value: 'true', expected: true }
+  ])('reads $value as $expected', ({ value, expected }) => {
+    expect(isFlagOn(value, 'force')).toBe(expected)
+  })
+
+  it.for(['', '1', 'yes', 'TRUE'])(
+    'rejects the malformed value %s',
+    (value) => {
+      expect(() => isFlagOn(value, 'force')).toThrow(/Invalid --force value/)
+    }
+  )
+})

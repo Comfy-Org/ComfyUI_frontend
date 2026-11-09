@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 
+import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 
 /**
  * Expanded folder view must drop output records that resolve to the same
@@ -11,7 +12,7 @@ import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
  * neighbours while scrolling.
  */
 
-const STACK_JOB_ID = 'job-output-dedupe'
+const STACK_JOB_ID = '00000000-0000-4000-a000-000000000001'
 const COVER_NODE_ID = '9'
 const COVER_FILENAME = 'cover_00001_.png'
 const DUPLICATE_FILENAME = 'duplicate_00002_.png'
@@ -29,6 +30,22 @@ const STACK_JOB_OUTPUTS = [
   { filename: DUPLICATE_FILENAME, subfolder: '', type: 'output' as const },
   { filename: DUPLICATE_FILENAME, subfolder: '', type: 'output' as const }
 ]
+
+const CLOUD_ASSETS: Asset[] = [
+  COVER_FILENAME,
+  ...DISTINCT_FILENAMES,
+  DUPLICATE_FILENAME,
+  DUPLICATE_FILENAME
+].map((filename, i) => ({
+  id: `asset-dedupe-${i}`,
+  name: filename,
+  job_id: STACK_JOB_ID,
+  mime_type: 'image/png',
+  tags: ['output'],
+  preview_url: `/api/view?filename=${filename}&type=output`,
+  created_at: new Date(5000 + i).toISOString(),
+  updated_at: new Date(5000 + i).toISOString()
+}))
 
 const STACK_JOB = createMockJob({
   id: STACK_JOB_ID,
@@ -52,22 +69,26 @@ const STACK_JOB_DETAIL: JobDetail = {
   }
 }
 
-const EXPECTED_TOTAL_TILES = 4
-
 test.describe(
   'Expanded folder view dedupes duplicate composite output keys',
   { tag: '@cloud' },
   () => {
-    // @cloud comfyPage already navigates with Firebase auth seeded; a second
-    // setup() call would clear localStorage and bounce to /cloud/login.
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.assets.mockOutputHistory([STACK_JOB])
-      await comfyPage.assets.mockInputFiles([])
-      await comfyPage.assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
+    test.use({
+      viewport: { width: 1280, height: 1080 },
+      initialLocalStorage: {
+        'Comfy.Assets.Sidebar.ViewMode': 'grid-small'
+      }
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.assets.clearMocks()
+    test.beforeEach(async ({ page }) => {
+      const assets = new AssetsHelper(page)
+      await assets.mockCloudAssets({
+        assets: CLOUD_ASSETS,
+        total: CLOUD_ASSETS.length,
+        has_more: false
+      })
+      await assets.mockInputFiles([])
+      await assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
     })
 
     test('renders one tile per unique composite key', async ({
@@ -83,14 +104,22 @@ test.describe(
         .click()
       await expect(tab.backToAssetsButton).toBeVisible()
 
-      await expect(tab.assetCards).toHaveCount(EXPECTED_TOTAL_TILES)
-
-      const labels = await tab.assetCards.evaluateAll((nodes) =>
-        nodes
-          .map((el) => el.getAttribute('aria-label'))
-          .filter((v): v is string => v !== null)
-      )
-      expect(new Set(labels).size).toBe(labels.length)
+      await expect
+        .poll(() =>
+          tab.assetCards
+            .getByRole('button', { name: / - image asset$/ })
+            .evaluateAll((nodes) =>
+              nodes
+                .map((el) => el.getAttribute('aria-label') ?? '')
+                .sort((left, right) => left.localeCompare(right))
+            )
+        )
+        .toEqual([
+          'cover_00001_.png - image asset',
+          'distinct_00003_.png - image asset',
+          'distinct_00004_.png - image asset',
+          'duplicate_00002_.png - image asset'
+        ])
 
       await testInfo.attach('expanded-folder-view.png', {
         body: await comfyPage.page.screenshot({ fullPage: false }),

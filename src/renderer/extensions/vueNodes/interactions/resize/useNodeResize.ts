@@ -1,8 +1,12 @@
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
-import type { Point, Size } from '@/renderer/core/layout/types'
+import type {
+  CompassCorners,
+  Point2D as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
@@ -12,7 +16,7 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -44,7 +48,6 @@ export function useNodeResize(
   const { trackShiftKey } = useShiftKeySync()
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
-    event.preventDefault()
     event.stopPropagation()
 
     const target = event.currentTarget
@@ -77,13 +80,16 @@ export function useNodeResize(
       return measured / currentScale
     }
 
-    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+    const { rootGraphId } = useCanvasStore()
+    const nodeLayout = rootGraphId
+      ? layoutStore.getNodeLayout(rootGraphId, nodeId)
+      : null
     const startPosition: Point = nodeLayout
       ? { ...nodeLayout.position }
       : { x: 0, y: 0 }
 
     // Track shift key state and sync to canvas for snap preview
-    const stopShiftSync = trackShiftKey(event)
+    const stopShiftSync = trackShiftKey(event.shiftKey)
 
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)

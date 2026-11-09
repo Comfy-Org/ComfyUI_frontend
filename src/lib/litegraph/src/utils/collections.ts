@@ -1,7 +1,14 @@
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
 import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
-import type { ISlotType, Positionable } from '../interfaces'
+import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
+
+let isGraphNode: (item: Positionable) => item is LGraphNode
+
+export function provideGraphNodeGuard(guard: typeof isGraphNode): void {
+  isGraphNode = guard
+}
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
@@ -14,9 +21,7 @@ export function getAllNestedItems(
   items: ReadonlySet<Positionable>
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
-  if (items) {
-    for (const item of items) addRecursively(item, allItems)
-  }
+  for (const item of items) addRecursively(item, allItems)
   return allItems
 
   function addRecursively(
@@ -32,6 +37,25 @@ export function getAllNestedItems(
 }
 
 /**
+ * Resolves which items a drag gesture should move, honouring the
+ * "move group without its contents" modifier.
+ *
+ * Holding Ctrl (Windows/Linux) or Meta/Cmd (macOS) moves the selected items
+ * on their own, leaving nodes nested inside a dragged group in place.
+ * Without the modifier, a dragged group carries its contents with it.
+ * @param selected The currently selected items being dragged
+ * @param event The pointer event driving the drag
+ * @returns The items to move for this drag frame
+ */
+export function getDraggedItems(
+  selected: Set<Positionable>,
+  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>
+): Set<Positionable> {
+  const moveGroupOnly = event.ctrlKey || event.metaKey
+  return moveGroupOnly ? selected : getAllNestedItems(selected)
+}
+
+/**
  * Iterates through a collection of {@link Positionable} items, returning the first {@link LGraphNode}.
  * @param items The items to search through
  * @returns The first node found in {@link items}, otherwise `undefined`
@@ -40,7 +64,7 @@ export function findFirstNode(
   items: Iterable<Positionable>
 ): LGraphNode | undefined {
   for (const item of items) {
-    if (item instanceof LGraphNode) return item
+    if (isGraphNode(item)) return item
   }
 }
 
@@ -63,9 +87,9 @@ type FreeSlotResult<T extends { type: ISlotType }> =
 export function findFreeSlotOfType<T extends { type: ISlotType }>(
   slots: T[],
   type: ISlotType,
-  hasNoLinks: (slot: T) => boolean
+  hasNoLinks: (slot: T, index: number) => boolean
 ) {
-  if (!slots?.length) return
+  if (!slots.length) return
 
   let occupiedSlot: FreeSlotResult<T>
   let wildSlot: FreeSlotResult<T>
@@ -79,7 +103,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
     for (const validType of validTypes) {
       for (const slotType of slotTypes) {
         if (slotType === validType) {
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             // Exact match - short circuit
             return { index, slot }
           }
@@ -87,7 +111,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
           occupiedSlot ??= { index, slot }
         } else if (!wildSlot && (validType === '*' || slotType === '*')) {
           // Save the first free wildcard slot as a fallback
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             wildSlot = { index, slot }
           } else {
             occupiedWildSlot ??= { index, slot }

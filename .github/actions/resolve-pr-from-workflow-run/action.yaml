@@ -20,16 +20,31 @@ outputs:
   base:
     description: The PR base branch (empty when skip is true)
     value: ${{ steps.resolve.outputs.base }}
+  base-sha:
+    description: The PR base SHA (empty when skip is true)
+    value: ${{ steps.resolve.outputs.base-sha }}
+  head-ref:
+    description: The PR head branch (empty when skip is true)
+    value: ${{ steps.resolve.outputs.head-ref }}
   head-sha:
     description: The PR head SHA (empty when skip is true)
     value: ${{ steps.resolve.outputs.head-sha }}
+  head-repository:
+    description: The PR head repository (empty when skip is true)
+    value: ${{ steps.resolve.outputs.head-repository }}
+  maintainer-can-modify:
+    description: Whether maintainers may modify the PR branch
+    value: ${{ steps.resolve.outputs.maintainer-can-modify }}
+  author:
+    description: The PR author's login (empty when skip is true)
+    value: ${{ steps.resolve.outputs.author }}
 
 runs:
   using: composite
   steps:
     - name: Resolve PR
       id: resolve
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ inputs.token }}
         script: |
@@ -83,6 +98,11 @@ runs:
           }
 
           core.setOutput('base', livePr.base.ref);
+          core.setOutput('base-sha', livePr.base.sha);
+          core.setOutput('head-ref', livePr.head.ref);
           core.setOutput('head-sha', livePr.head.sha);
+          core.setOutput('head-repository', livePr.head.repo?.full_name ?? '');
+          core.setOutput('maintainer-can-modify', String(livePr.maintainer_can_modify));
+          core.setOutput('author', livePr.user?.login ?? '');
           core.setOutput('skip', 'false');
           core.setOutput('number', String(pr.number));

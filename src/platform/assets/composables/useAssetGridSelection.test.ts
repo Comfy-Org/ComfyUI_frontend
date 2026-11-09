@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -8,9 +8,9 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetGridSelection } from './useAssetGridSelection'
 
 const assets: AssetItem[] = [
-  { id: 'a', name: 'a.png', tags: [] },
-  { id: 'b', name: 'b.png', tags: [] },
-  { id: 'c', name: 'c.png', tags: [] }
+  fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+  fromPartial({ id: 'b', name: 'b.png', tags: [] }),
+  fromPartial({ id: 'c', name: 'c.png', tags: [] })
 ]
 
 const cardBoxes: Record<string, { left: number; right: number }> = {
@@ -100,10 +100,6 @@ const panel = () => screen.getByTestId('panel')
 const card = (id: string) => screen.getByTestId(`card-${id}`)
 
 describe('useAssetGridSelection', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('marquee', () => {
     it('selects intersecting cards when dragging from empty space', async () => {
       const callbacks = createCallbacks()

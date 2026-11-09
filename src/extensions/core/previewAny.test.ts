@@ -1,37 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyExtension } from '@/types/comfy'
+
+import { previewAnyExtension } from './previewAny'
 
 const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
   addTextPreviewWidgets: vi.fn(),
   updateTextPreviewWidgets: vi.fn()
 }))
 
-vi.mock('@/extensions/core/textPreviewWidgets', () => ({
+vi.mock(import('@/extensions/core/textPreviewWidgets'), () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 }))
 
-const capturedExtensions: ComfyExtension[] = []
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>
 
 async function setupNode() {
-  const ext = capturedExtensions.find((e) => e.name === 'Comfy.PreviewAny')
-  expect(ext).toBeDefined()
-
   const nodeType = { prototype: {} } as unknown as Parameters<BeforeRegister>[0]
   const nodeData = { name: 'PreviewAny' } as Parameters<BeforeRegister>[1]
-  await ext!.beforeRegisterNodeDef!(
+  await previewAnyExtension.beforeRegisterNodeDef!(
     nodeType,
     nodeData,
     {} as Parameters<BeforeRegister>[2]
@@ -46,14 +37,6 @@ async function setupNode() {
 }
 
 describe('PreviewAny extension', () => {
-  beforeEach(async () => {
-    capturedExtensions.length = 0
-    addTextPreviewWidgets.mockClear()
-    updateTextPreviewWidgets.mockClear()
-    vi.resetModules()
-    await import('./previewAny')
-  })
-
   it('adds the shared text preview widgets on node creation', async () => {
     const { node, proto } = await setupNode()
 
