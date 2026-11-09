@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-/** What the Desktop host was asked to do, and how often the page reloaded. */
+/** What the Desktop host was asked to do, and how many times the page loaded. */
 export interface HostAuthActivity {
   switches: string[]
   signOuts: number
@@ -23,12 +23,7 @@ const HOST_USER_ID = 'host-user-e2e'
 export const HOST_PERSONAL_WORKSPACE = workspace('personal', 'owner')
 export const HOST_TEAM_WORKSPACE = workspace('team', 'member')
 
-/**
- * Boots the full screen on the localhost distribution inside a Comfy Desktop
- * host: `window.__comfyDesktop2.Auth` is signed in to the personal workspace
- * and can switch workspaces, and every switch and sign-out it receives is
- * recorded on `hostAuth`.
- */
+/** Full screen inside a signed-in Desktop host whose Auth bridge can switch workspaces, with every switch and sign-out recorded on `hostAuth`. */
 export const agentFullscreenDesktopTest = agentFullscreenTest.extend<{
   hostAuth: HostAuthActivity
 }>({
