@@ -59,12 +59,14 @@ edit protocol does:
 - fires one `change` event;
 - advances graph change state.
 
-Writing an equal value is a no-op. A programmatic commit never fires
-`activate`; that event represents a user act.
+Writing an equal value is a no-op. `WidgetHandle.setValue()` never fires
+`activate`.
 
 The `value.set()` accessor passed to mounted controls and registered widget
-type renderers uses this same commit protocol. It invokes the legacy node's
-`onWidgetChanged` hook as well as widget callbacks. Remove any manual callback,
+type renderers uses this same commit protocol, but a changed value can fire
+`activate` even when the accessor is called without a user action. It invokes
+the legacy node's `onWidgetChanged` hook as well as widget callbacks.
+Remove any manual callback,
 property synchronization, or graph-version update that your renderer performed
 after `value.set()` to compensate for the previous assignment-only behavior.
 Use `value.onChange()` to refresh the control when its value changes.
@@ -85,13 +87,13 @@ const stopRemoved = widget.on('removed', () => {
 })
 ```
 
-| Event             | Use it for                                                                                   |
-| ----------------- | -------------------------------------------------------------------------------------------- |
-| `change`          | A committed value changed. Receives new and old values.                                      |
-| `activate`        | The user acted: clicked a button or committed a control. Programmatic writes do not fire it. |
-| `removed`         | The widget left the node.                                                                    |
-| `textInteraction` | Caret, input, keyboard, selection, and wheel behavior for a host-owned multiline editor.     |
-| `beforeSerialize` | Synchronously replace the value for workflow, prompt, or embedded serialization.             |
+| Event             | Use it for                                                                                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `change`          | A committed value changed. Receives new and old values.                                                                      |
+| `activate`        | A button was clicked or a control committed a value. `WidgetHandle.setValue()` does not fire it; renderer `value.set()` can. |
+| `removed`         | The widget left the node.                                                                                                    |
+| `textInteraction` | Caret, input, keyboard, selection, and wheel behavior for a host-owned multiline editor.                                     |
+| `beforeSerialize` | Synchronously replace the value for workflow, prompt, or embedded serialization.                                             |
 
 Listeners are additive. Do not capture or replace `widget.callback`.
 
