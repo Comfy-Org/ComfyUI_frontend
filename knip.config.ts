@@ -102,7 +102,6 @@ const config: KnipConfig = {
     // packs import from, so knip cannot see a consumer.
     'public/comfy/api/v2.js',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
