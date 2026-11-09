@@ -62,3 +62,20 @@ describe('extension path setting', () => {
     })
   })
 })
+
+describe('color palette setting', () => {
+  it.for([
+    { saved: 'spooky', expected: 'dark' },
+    { saved: 'skeleton', expected: 'dark' },
+    { saved: 'witch', expected: 'dark' },
+    { saved: 'zombie', expected: 'dark' },
+    { saved: 'fennec', expected: 'fennec' },
+    { saved: 'light', expected: 'light' },
+    { saved: 'my-palette', expected: 'my-palette' },
+    { saved: 'custom_my-palette', expected: 'my-palette' }
+  ])('migrates saved palette $saved to $expected', ({ saved, expected }) => {
+    const setting = CORE_SETTINGS.find(({ id }) => id === 'Comfy.ColorPalette')
+
+    expect(setting?.migrateDeprecatedValue?.(saved)).toBe(expected)
+  })
+})
