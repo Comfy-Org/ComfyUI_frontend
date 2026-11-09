@@ -121,11 +121,11 @@ import {
 
 const { t } = useI18n()
 
-type ActivityEvent = AuditLog & {
-  member_display_name?: string
-  member_email?: string
-  member_former?: boolean
-}
+type BillingEvent = NonNullable<
+  Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+>['events'][number]
+type ActivityEvent = AuditLog &
+  Pick<BillingEvent, 'member_display_name' | 'member_email' | 'member_former'>
 
 const events = ref<ActivityEvent[]>([])
 const loading = ref(true)
