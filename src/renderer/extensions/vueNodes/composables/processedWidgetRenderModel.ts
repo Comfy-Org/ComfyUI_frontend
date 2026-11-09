@@ -443,6 +443,7 @@ function processWidget(
       const result = live ? getWidgetSizing(live.widget, live.node) : undefined
       return result?.kind === 'failed' ? undefined : result
     },
+    height: renderState?.height,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,

@@ -20,6 +20,7 @@ export {
   getExecutionIdsForSelectedNodes,
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
+  getNodeByState,
   getRootGraph,
   getRootParentNode,
   getSubgraphPathFromExecutionId,

@@ -34,6 +34,8 @@ interface ConvertedRestoredValue {
 }
 
 export interface WidgetRenderState {
+  /** Row height a growable widget owns after the user resized its node. */
+  height?: number
   isDOMWidget?: boolean
   tooltip?: string
 }
@@ -353,6 +355,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgets.value.get(graphId)?.get(widgetId)?.render
   }
 
+  function setWidgetHeight(widgetId: WidgetId, height: number): void {
+    const render = getWidgetRenderState(widgetId)
+    if (render) render.height = height
+  }
+
   function getWidgetVisibility(
     widgetId: WidgetId
   ): WidgetVisibilityComponent | undefined {
@@ -609,6 +616,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    setWidgetHeight,
     getWidgetVisibility,
     setValue,
     restoreValue,

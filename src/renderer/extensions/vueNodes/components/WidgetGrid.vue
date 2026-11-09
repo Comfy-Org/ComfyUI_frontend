@@ -112,8 +112,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  isGrowableWidgetRow,
+  ownedHeightTrack
+} from '@/renderer/extensions/vueNodes/layout/ownedWidgetHeights'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
-import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -123,6 +126,11 @@ const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
+
+function rowTrack(widget: WidgetGridItem, showsControl: boolean) {
+  if (!showsControl || !isGrowableWidgetRow(widget)) return 'min-content'
+  return widget.height === undefined ? 'auto' : ownedHeightTrack(widget.height)
+}
 
 const {
   processedWidgets,
@@ -169,10 +177,7 @@ const renderedRows = computed(() =>
         minHeight: sizing
           ? `${sizing.kind === 'fixed' ? sizing.height : sizing.minHeight}px`
           : undefined,
-        rowSize:
-          showsControl && shouldExpand(widget.simplified.type, sizing)
-            ? 'auto'
-            : 'min-content'
+        rowSize: rowTrack(widget, showsControl)
       }
     ]
   })

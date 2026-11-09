@@ -27,6 +27,7 @@ export interface WidgetGridItem {
   handleContextMenu?: (e: PointerEvent) => void
   hasError?: boolean
   readonly sizing?: WidgetSizing
+  height?: number
   slotMetadata?: WidgetSlotMetadata
   /**
    * The widget's input is satisfied by an upstream link; the row renders
