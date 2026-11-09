@@ -20,6 +20,7 @@
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :style="{ minHeight: row.minHeight }"
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
@@ -157,9 +158,13 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
+        minHeight:
+          showsControl && widget.layoutSize
+            ? `${widget.layoutSize.minHeight}px`
+            : undefined,
         rowSize:
           showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+          (shouldExpand(widget.simplified.type) || widget.layoutSize)
             ? 'auto'
             : 'min-content'
       }

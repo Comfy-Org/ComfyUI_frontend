@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetLayoutSize } from '@comfyorg/graph-model/widgets'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -25,7 +26,7 @@ export interface WidgetGridItem {
   vueComponent: Component
   handleContextMenu?: (e: PointerEvent) => void
   hasError?: boolean
-  hasLayoutSize?: boolean
+  layoutSize?: WidgetLayoutSize
   slotMetadata?: WidgetSlotMetadata
   /**
    * The widget's input is satisfied by an upstream link; the row renders

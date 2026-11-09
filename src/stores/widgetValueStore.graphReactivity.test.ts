@@ -140,10 +140,8 @@ describe('Widget input link reactivity', () => {
 
     expect(valueState?.name).toBe('value')
     expect(valueState?.value).toBe('hello')
-    expect(renderState).toMatchObject({
-      hasLayoutSize: false,
-      isDOMWidget: false
-    })
+    expect(renderState).toMatchObject({ isDOMWidget: false })
+    expect(renderState?.layoutSize).toBeUndefined()
     expect(renderState).not.toHaveProperty('sourceWidgetName')
     expect(subgraphNode.inputs[0].widget?.name).toBe('value')
   })
@@ -249,10 +247,8 @@ describe('Promoted widget render state', () => {
       widgetId(graph.id, subgraphNode.id, 'ckpt_input')
     )
 
-    expect(renderState).toMatchObject({
-      hasLayoutSize: false,
-      isDOMWidget: false
-    })
+    expect(renderState).toMatchObject({ isDOMWidget: false })
+    expect(renderState?.layoutSize).toBeUndefined()
     expect(renderState).not.toHaveProperty('sourceWidgetName')
     expect(renderState).not.toHaveProperty('sourceExecutionId')
   })

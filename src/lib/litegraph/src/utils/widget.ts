@@ -78,10 +78,11 @@ function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
 }
 
 export function deriveWidgetRenderState(
-  widget: Readonly<IBaseWidget>
+  widget: Readonly<IBaseWidget>,
+  node: LGraphNode
 ): WidgetRenderState {
   return {
-    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+    layoutSize: widget.computeLayoutSize?.(node),
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }

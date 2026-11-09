@@ -527,6 +527,14 @@ export interface WidgetCallbackOptions {
   isPartialExecution?: boolean
 }
 
+/** The space a widget asks its node for; the row it occupies never shrinks below the minimums. */
+export interface WidgetLayoutSize {
+  minHeight: number
+  maxHeight?: number
+  minWidth: number
+  maxWidth?: number
+}
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -683,15 +691,7 @@ export interface IBaseWidget<
    * @param node The node this widget belongs to.
    * @returns The layout size of the widget.
    */
-  computeLayoutSize?(
-    this: IBaseWidget,
-    node: LGraphNode
-  ): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  }
+  computeLayoutSize?(this: IBaseWidget, node: LGraphNode): WidgetLayoutSize
 
   /**
    * Callback for pointerdown events, allowing custom widgets to register callbacks to occur

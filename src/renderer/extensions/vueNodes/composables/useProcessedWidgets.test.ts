@@ -685,7 +685,7 @@ describe('computeProcessedWidgets', () => {
         options: { advanced: true }
       },
       {
-        hasLayoutSize: true,
+        layoutSize: { minHeight: 60, minWidth: 0 },
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'
       }
@@ -698,7 +698,7 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      hasLayoutSize: true,
+      layoutSize: { minHeight: 60 },
       simplified: {
         name: 'display_slot',
         borderStyle: 'ring ring-primary'
