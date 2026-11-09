@@ -104,36 +104,48 @@ export async function measureZoom(comfyPage: ComfyPage, name: string) {
   return comfyPage.perf.stopMeasuring(name)
 }
 
+const PROGRESS_JOB_ID = 'pan-zoom-perf-job'
+
 export async function measureProgress(comfyPage: ComfyPage, name: string) {
   const nodeIds = await comfyPage.page.evaluate(() =>
     window.app!.graph.nodes.slice(0, 8).map((node) => String(node.id))
   )
-  return measureCadence(comfyPage, name, (update) =>
-    comfyPage.page.evaluate(
-      ({ nodeIds, update }) => {
-        const api = window.app?.api
-        if (!api) throw new Error('window.app.api is not available')
-        const nodes = Object.fromEntries(
-          nodeIds.map((nodeId) => [
-            nodeId,
-            {
-              value: update,
-              max: 20,
-              state: 'running' as const,
-              node_id: nodeId,
-              display_node_id: nodeId,
-              prompt_id: 'pan-zoom-perf-job'
-            }
-          ])
-        )
-        api.dispatchCustomEvent('progress_state', {
-          prompt_id: 'pan-zoom-perf-job',
-          nodes
-        })
-      },
-      { nodeIds, update }
+  await comfyPage.page.evaluate((jobId) => {
+    window.app!.api.dispatchCustomEvent('execution_start', {
+      prompt_id: jobId,
+      timestamp: Date.now()
+    })
+  }, PROGRESS_JOB_ID)
+  try {
+    return await measureCadence(comfyPage, name, (update) =>
+      comfyPage.page.evaluate(
+        ({ nodeIds, update, jobId }) => {
+          const nodes = Object.fromEntries(
+            nodeIds.map((nodeId) => [
+              nodeId,
+              {
+                value: update,
+                max: 20,
+                state: 'running' as const,
+                node_id: nodeId,
+                display_node_id: nodeId,
+                prompt_id: jobId
+              }
+            ])
+          )
+          window.app!.api.dispatchCustomEvent('progress_state', {
+            prompt_id: jobId,
+            nodes
+          })
+        },
+        { nodeIds, update, jobId: PROGRESS_JOB_ID }
+      )
     )
-  )
+  } finally {
+    await comfyPage.page.evaluate(() => {
+      window.app!.api.dispatchCustomEvent('executing', null)
+    })
+  }
 }
 
 export function reportPerf(label: string, m: PerfMeasurement) {
