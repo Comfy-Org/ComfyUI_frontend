@@ -11,11 +11,11 @@ import {
   waitForMeasuredVueNodes
 } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 
-const NODE_SCALES = [60, 245] as const
+const NODE_COUNTS = [60, 245] as const
 const TEST_TIMEOUT_MS = 300_000
 
-function defineArms(renderer: 'vue' | 'litegraph') {
-  for (const nodeCount of NODE_SCALES) {
+function definePanZoomTests(renderer: 'vue' | 'litegraph') {
+  for (const nodeCount of NODE_COUNTS) {
     test(`${renderer} ${nodeCount} nodes`, async ({ comfyPage }) => {
       await loadLargeGraph(comfyPage)
       if (nodeCount < 245) await trimGraphTo(comfyPage, nodeCount)
@@ -47,10 +47,10 @@ test.use({ trace: 'off', video: 'off' })
 
 test.describe('Vue nodes pan/zoom', { tag: ['@perf', '@vue-nodes'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)
-  defineArms('vue')
+  definePanZoomTests('vue')
 })
 
 test.describe('LiteGraph pan/zoom', { tag: ['@perf'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)
-  defineArms('litegraph')
+  definePanZoomTests('litegraph')
 })
