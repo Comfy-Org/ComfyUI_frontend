@@ -42,13 +42,13 @@ export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
 }
 
 export class CanvasHelper {
-  readonly navigationWidgets: Locator
+  readonly textareaWidgets: Locator
 
   constructor(
     private page: Page,
     private canvas: Locator
   ) {
-    this.navigationWidgets = page.getByTestId('dom-widget-textarea')
+    this.textareaWidgets = page.getByTestId('dom-widget-textarea')
   }
 
   async getMinimapRightInset(): Promise<number> {
@@ -232,7 +232,7 @@ export class CanvasHelper {
   }
 
   async getNavigationWidgetHitTargets() {
-    return this.navigationWidgets.evaluateAll((elements) => {
+    return this.textareaWidgets.evaluateAll((elements) => {
       const canvas = window.app!.canvas.canvas.getBoundingClientRect()
       return elements.map((element) => {
         const rect = element.getBoundingClientRect()
@@ -258,7 +258,7 @@ export class CanvasHelper {
 
   async snapshotNavigation() {
     await this.waitForViewToSettle()
-    const prompts = await this.navigationWidgets.evaluateAll((elements) =>
+    const prompts = await this.textareaWidgets.evaluateAll((elements) =>
       elements.map((element) => {
         if (!(element instanceof HTMLTextAreaElement))
           throw new Error('Expected a prompt textarea')

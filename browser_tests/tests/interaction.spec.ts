@@ -796,7 +796,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     comfyPage
   }) => {
     const before = await comfyPage.canvasOps.snapshotNavigation()
-    const prompts = comfyPage.canvasOps.navigationWidgets
+    const prompts = comfyPage.canvasOps.textareaWidgets
     await comfyPage.page.evaluate(() => {
       const { canvas } = window.app!
       canvas.ds.changeScale(0.25, [233, 177])
@@ -930,7 +930,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
         { visible: true, leftClipped: true, hits: [true, true] }
       ])
     await comfyPage.canvasOps.setOffset([-3200, -2500])
-    const prompts = comfyPage.canvasOps.navigationWidgets
+    const prompts = comfyPage.canvasOps.textareaWidgets
     await expect(prompts.first()).toBeHidden()
     await expect(prompts.last()).toBeHidden()
     await expectElementScreenshot(comfyPage.canvas, 'panned-far-away.png')
