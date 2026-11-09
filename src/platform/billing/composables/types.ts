@@ -62,6 +62,10 @@ export interface SubscriptionDialogOptions {
   refusalType?: string
   /** Reopens the in-app table to restore a failed checkout instead of handing off to the platform Plans page. */
   resumingCheckout?: boolean
+  /** A run was refused without a click, so a dialog explains why and links to the Plans page. */
+  runRefused?: boolean
+  /** Opened on page load, so the Plans page replaces this tab. */
+  sameTab?: boolean
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
