@@ -7,11 +7,16 @@ import type {
 
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFullscreen } from '@e2e/fixtures/components/AgentFullscreen'
 import { EMPTY_AGENT_THREADS } from '@e2e/fixtures/data/agent/agentFullscreen'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import {
+  mockWorkspaceList,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 type AgentFullscreenFixtures = {
   chatRedesignEnabled: boolean
@@ -19,6 +24,7 @@ type AgentFullscreenFixtures = {
   agentTranscripts: Record<string, AgentMessage[]>
   agentOutputs: ListAssetsResponse | undefined
   agentSavedWorkflows: Record<string, ComfyWorkflowJSON>
+  agentWorkspaces: WorkspaceWithRole[]
   agentFullscreen: AgentFullscreen
 }
 
@@ -28,6 +34,7 @@ export const agentFullscreenTest = agentTest.extend<AgentFullscreenFixtures>({
   agentTranscripts: [{}, { option: true }],
   agentOutputs: [undefined, { option: true }],
   agentSavedWorkflows: [{}, { option: true }],
+  agentWorkspaces: [[workspace('personal', 'owner')], { option: true }],
   agentFullscreen: async (
     {
       page,
@@ -36,7 +43,8 @@ export const agentFullscreenTest = agentTest.extend<AgentFullscreenFixtures>({
       agentThreads,
       agentTranscripts,
       agentOutputs,
-      agentSavedWorkflows
+      agentSavedWorkflows,
+      agentWorkspaces
     },
     use
   ) => {
@@ -66,6 +74,7 @@ export const agentFullscreenTest = agentTest.extend<AgentFullscreenFixtures>({
       features: { 'agent-chat-redesign': chatRedesignEnabled },
       assets: agentOutputs,
       beforeNavigate: async (page) => {
+        await mockWorkspaceList(page, agentWorkspaces)
         if (savedFiles.length === 0) return
         await page.route('**/api/userdata?*', (route) => {
           const dir = new URL(route.request().url()).searchParams.get('dir')
