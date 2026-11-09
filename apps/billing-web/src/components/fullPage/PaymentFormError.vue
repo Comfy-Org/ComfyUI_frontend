@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
 /**
  * `column` is the element down with no saved method to fall back on,
  * `element` the element down beside live saved methods, `saved` the saved
@@ -34,7 +37,12 @@ const { t } = useI18n()
     </div>
     <button
       type="button"
-      class="h-10 w-full cursor-pointer rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-secondary focus-visible:outline-none"
+      :class="
+        cn(
+          buttonVariants({ variant: 'inverted', size: 'lg' }),
+          'w-full font-semibold'
+        )
+      "
       @click="emit('retry')"
     >
       {{ t('checkout.fullPage.railFailed.retry') }}

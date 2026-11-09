@@ -5,9 +5,8 @@ import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
   billingControlEnabled: true,
-  isTeamPlan: true,
-  isEnterprise: false,
-  isKnownPersonalTier: false,
+  audience: 'team',
+  enterpriseEndingNotice: null,
   isLoaded: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
@@ -27,8 +26,8 @@ const funded: BillingBannerInputs = {
   isActive: true
 }
 
-function derive(overrides: Partial<BillingBannerInputs>, now?: number) {
-  return deriveBillingBanner({ ...funded, ...overrides }, now)
+function derive(overrides: Partial<BillingBannerInputs>) {
+  return deriveBillingBanner({ ...funded, ...overrides })
 }
 
 describe('deriveBillingBanner', () => {
@@ -52,10 +51,13 @@ describe('deriveBillingBanner', () => {
       },
       { name: 'a scheduled change', inputs: { hasScheduledChange: true } },
       {
-        name: 'a known personal tier',
-        inputs: { isTeamPlan: false, isKnownPersonalTier: true }
+        name: 'the personal audience',
+        inputs: { audience: 'personal' }
       },
-      { name: 'an Enterprise plan', inputs: { isEnterprise: true } },
+      {
+        name: 'a started Enterprise ending notice',
+        inputs: { audience: null, enterpriseEndingNotice: 'started' }
+      },
       { name: 'a member', inputs: { canManage: false } },
       {
         name: 'billing control rolled back',
@@ -85,14 +87,12 @@ describe('deriveBillingBanner', () => {
 
   describe('personal plan', () => {
     const personal: Partial<BillingBannerInputs> = {
-      isTeamPlan: false,
-      isKnownPersonalTier: true
+      audience: 'personal'
     }
     const endingSoon: Partial<BillingBannerInputs> = {
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
-    // usePlanEnded leaves personal plans out; only the terminal test applies.
     const terminal: Partial<BillingBannerInputs> = {
       isPlanTerminal: true,
       canAccessSubscriptionFeatures: false
@@ -106,7 +106,7 @@ describe('deriveBillingBanner', () => {
       },
       { name: 'an ending plan', inputs: endingSoon, kind: 'ending' },
       { name: 'an ended plan', inputs: terminal, kind: 'planEnded' }
-    ] as const)('shows $name to a known personal tier', ({ inputs, kind }) => {
+    ] as const)('shows $name to the personal audience', ({ inputs, kind }) => {
       expect(derive({ ...personal, ...inputs })).toBe(kind)
     })
 
@@ -114,10 +114,8 @@ describe('deriveBillingBanner', () => {
       { name: 'out of credits', inputs: { hasFunds: false } },
       { name: 'an ending plan', inputs: endingSoon },
       { name: 'an ended plan', inputs: terminal }
-    ])('fails closed on $name for an unrecognized tier', ({ inputs }) => {
-      expect(
-        derive({ ...inputs, isTeamPlan: false, isKnownPersonalTier: false })
-      ).toBeNull()
+    ])('fails closed on $name with no served audience', ({ inputs }) => {
+      expect(derive({ ...inputs, audience: null })).toBeNull()
     })
 
     it('keeps out of credits and ending behind billing control', () => {
@@ -236,9 +234,13 @@ describe('deriveBillingBanner', () => {
     it('shows for team and Enterprise, owners and members alike', () => {
       expect(derive(ended)).toBe('planEnded')
       expect(derive({ ...ended, canManage: false })).toBe('planEnded')
-      expect(derive({ ...ended, isTeamPlan: false, isEnterprise: true })).toBe(
-        'planEnded'
-      )
+      expect(
+        derive({
+          ...ended,
+          audience: null,
+          enterpriseEndingNotice: 'started'
+        })
+      ).toBe('planEnded')
     })
 
     it('ships without the billing control flag', () => {
@@ -357,132 +359,59 @@ describe('deriveBillingBanner', () => {
     )
   })
 
-  describe('enterprise ending notice window', () => {
-    const NOW = new Date('2026-09-03T12:00:00Z').getTime()
-
-    function daysFromNow(days: number): string {
-      return new Date(NOW + days * 24 * 60 * 60 * 1000).toISOString()
-    }
-
+  describe('enterprise ending notice', () => {
     const enterprise: Partial<BillingBannerInputs> = {
-      isTeamPlan: false,
-      isEnterprise: true
+      audience: null,
+      isCancelled: true,
+      endDate: '2026-09-13T12:00:00Z'
     }
 
-    it('stays quiet while the end date is beyond the notice window', () => {
-      expect(
-        derive(
-          { ...enterprise, isCancelled: true, endDate: daysFromNow(30) },
-          NOW
-        )
-      ).toBeNull()
+    it.for([
+      {
+        case: 'before the served start',
+        inputs: { enterpriseEndingNotice: 'scheduled' },
+        kind: null
+      },
+      {
+        case: 'once the served start passes',
+        inputs: { enterpriseEndingNotice: 'started' },
+        kind: 'ending'
+      },
+      {
+        case: 'once started for a member',
+        inputs: { enterpriseEndingNotice: 'started', canManage: false },
+        kind: 'ending'
+      },
+      {
+        case: 'once started after access is gone',
+        inputs: {
+          enterpriseEndingNotice: 'started',
+          canAccessSubscriptionFeatures: false
+        },
+        kind: null
+      },
+      {
+        case: 'out of credits before the start',
+        inputs: { enterpriseEndingNotice: 'scheduled', hasFunds: false },
+        kind: null
+      },
+      {
+        case: 'when a team audience is also served',
+        inputs: { enterpriseEndingNotice: 'scheduled', audience: 'team' },
+        kind: null
+      }
+    ] as const)('shows $kind $case', ({ inputs, kind }) => {
+      expect(derive({ ...enterprise, ...inputs })).toBe(kind)
     })
 
-    it('surfaces the ending notice once the end date is near', () => {
+    it('gives no banner when no audience and no ending notice are served', () => {
+      expect(derive(enterprise)).toBeNull()
+    })
+
+    it('shows a self-serve team cancellation without a served start', () => {
       expect(
-        derive(
-          { ...enterprise, isCancelled: true, endDate: daysFromNow(10) },
-          NOW
-        )
+        derive({ isCancelled: true, endDate: '2026-11-02T12:00:00Z' })
       ).toBe('ending')
-    })
-
-    it('includes the window boundary itself', () => {
-      expect(
-        derive(
-          { ...enterprise, isCancelled: true, endDate: daysFromNow(14) },
-          NOW
-        )
-      ).toBe('ending')
-    })
-
-    it('shows the notice to members inside the window', () => {
-      expect(
-        derive(
-          {
-            ...enterprise,
-            isCancelled: true,
-            endDate: daysFromNow(10),
-            canManage: false
-          },
-          NOW
-        )
-      ).toBe('ending')
-    })
-
-    it('needs a populated end date, like the self-serve notice', () => {
-      expect(derive({ ...enterprise, isCancelled: true }, NOW)).toBeNull()
-    })
-
-    it('shows nothing for a passed end date once access is gone', () => {
-      // The window is unbounded below by design; this is the upstream gate
-      // that keeps a stale payload from pinning a perpetual past-date banner.
-      expect(
-        derive(
-          {
-            ...enterprise,
-            isCancelled: true,
-            endDate: daysFromNow(-5),
-            canAccessSubscriptionFeatures: false
-          },
-          NOW
-        )
-      ).toBeNull()
-    })
-
-    it('does not leak team-only banners into enterprise workspaces', () => {
-      expect(derive({ ...enterprise, hasFunds: false }, NOW)).toBeNull()
-    })
-
-    it('lets enterprise take precedence if a subscription reads as both', () => {
-      expect(
-        derive(
-          {
-            ...enterprise,
-            isTeamPlan: true,
-            isCancelled: true,
-            endDate: daysFromNow(60)
-          },
-          NOW
-        )
-      ).toBeNull()
-      expect(
-        derive({ ...enterprise, isTeamPlan: true, hasFunds: false }, NOW)
-      ).toBeNull()
-    })
-
-    it('gives an unrecognized tier no banner at all, as before this window', () => {
-      expect(
-        derive(
-          {
-            isTeamPlan: false,
-            isEnterprise: false,
-            isCancelled: true,
-            endDate: daysFromNow(10)
-          },
-          NOW
-        )
-      ).toBeNull()
-    })
-
-    it('reverts cleanly when a webhook outage clears the end date', () => {
-      // cancel_at can disappear between polls; nothing latches, so the same
-      // inputs minus the cancellation must derive back to no banner.
-      expect(
-        derive(
-          { ...enterprise, isCancelled: true, endDate: daysFromNow(10) },
-          NOW
-        )
-      ).toBe('ending')
-      expect(
-        derive({ ...enterprise, isCancelled: false, endDate: null }, NOW)
-      ).toBeNull()
-    })
-
-    it('never applies the window to a self-serve team cancellation', () => {
-      expect(derive({ isCancelled: true, endDate: daysFromNow(60) }, NOW)).toBe(
-        'ending'
-      )
     })
   })
 })

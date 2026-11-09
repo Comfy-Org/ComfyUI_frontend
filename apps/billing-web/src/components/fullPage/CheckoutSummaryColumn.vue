@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { OperationPlanLabel } from '@/checkout/operationPlan'
@@ -44,7 +45,12 @@ const SKELETON_BAR = 'block rounded-full bg-muted motion-safe:animate-pulse'
           v-if="!locked"
           type="button"
           :aria-label="t('checkout.back')"
-          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-lg:static max-lg:mr-2 max-lg:size-10"
+          :class="
+            cn(
+              buttonVariants({ variant: 'muted-textonly', size: 'icon' }),
+              'absolute -left-10 max-lg:static max-lg:mr-2 max-lg:size-10'
+            )
+          "
           @click="emit('back')"
         >
           <i class="icon-[lucide--arrow-left]" aria-hidden="true" />
