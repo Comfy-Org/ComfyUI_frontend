@@ -1,4 +1,4 @@
-<!-- fallow-ignore-file complexity -->
+<!-- fallow-ignore-next-line complexity -->
 <template>
   <Card class="flex min-h-[500px] w-[min(512px,95vw)] flex-col shadow-md">
     <div class="flex items-center justify-between p-8">
@@ -710,6 +710,7 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
+// fallow-ignore-next-line complexity
 async function handleBuy() {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
