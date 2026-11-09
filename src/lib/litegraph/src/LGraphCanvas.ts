@@ -754,13 +754,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _maximumFrameGap = 0
   /** Maximum frames per second to render. 0: unlimited. Default: 0 */
-  public get maximumFps() {
-    return this._maximumFrameGap > Number.EPSILON
-      ? this._maximumFrameGap / 1000
-      : 0
-  }
-
-  public set maximumFps(value) {
+  public set maximumFps(value: number) {
     this._maximumFrameGap = value > Number.EPSILON ? 1000 / value : 0
   }
 
