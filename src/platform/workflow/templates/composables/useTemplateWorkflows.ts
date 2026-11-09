@@ -1,3 +1,4 @@
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -19,6 +20,7 @@ import type {
   WorkflowTemplates
 } from '@comfyorg/api-client/templateTypes'
 import {
+  getPendingTemplateSampleInputs,
   resolveTemplateInputAssets,
   startMissingTemplateInputDownloads
 } from '@/platform/workflow/templates/utils/templateInputAssets'
@@ -363,7 +365,8 @@ export function useTemplateWorkflows() {
   async function prepareWorkflowTemplateInputs(
     data: PreparedWorkflowTemplate['data'],
     sourceModule: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    inputAssets: readonly ComfyTemplateInputAsset[]
   ) {
     const inputs = data.template?.io?.inputs
     if (
@@ -376,13 +379,23 @@ export function useTemplateWorkflows() {
 
     return {
       ...data,
-      json: await withPreparedSampleInputs(data.json, inputs, signal)
+      json: await withPreparedSampleInputs(
+        data.json,
+        getPendingTemplateSampleInputs(inputs, inputAssets),
+        signal
+      )
     }
   }
 
   async function openPreparedWorkflowTemplate(
     prepared: PreparedWorkflowTemplate,
-    { downloadAssets }: { downloadAssets?: boolean } = {}
+    {
+      downloadAssets,
+      inputAssets = []
+    }: {
+      downloadAssets?: boolean
+      inputAssets?: readonly ComfyTemplateInputAsset[]
+    } = {}
   ): Promise<TemplateLoadResult> {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
@@ -392,7 +405,8 @@ export function useTemplateWorkflows() {
         ? await prepareWorkflowTemplateInputs(
             data,
             sourceModule,
-            controller.signal
+            controller.signal,
+            inputAssets
           )
         : data
       controller.signal.throwIfAborted()

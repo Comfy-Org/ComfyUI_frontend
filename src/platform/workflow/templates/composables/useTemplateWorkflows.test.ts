@@ -969,6 +969,53 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).toHaveBeenCalledOnce()
   })
 
+  it('opens with present samples unchanged while downloading another missing native input', async () => {
+    const bridge = createDesktopBridge()
+    const inputAssets: NonNullable<
+      Awaited<ReturnType<typeof bridge.getTemplateInputAssets>>
+    > = [
+      {
+        assetId: 'kitten-video',
+        filename: 'kitten_cop.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/kitten_cop.mp4',
+        availability: 'present'
+      },
+      {
+        assetId: 'other-video',
+        filename: 'other.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/other.mp4',
+        availability: 'missing'
+      }
+    ]
+    bridge.getTemplateInputAssets.mockResolvedValue(inputAssets)
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const graph = addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true,
+        inputAssets
+      })
+    ).toBe('loaded')
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, 'video', {
+      openSource: 'template'
+    })
+    await vi.waitFor(() =>
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledExactlyOnceWith(
+        'video',
+        'other-video'
+      )
+    )
+  })
+
   it.for([
     { restoreNamed: false, positional: 'kitten_cop.mp4', named: 'stale.mp4' },
     { restoreNamed: true, positional: 'stale.mp4', named: 'kitten_cop.mp4' }

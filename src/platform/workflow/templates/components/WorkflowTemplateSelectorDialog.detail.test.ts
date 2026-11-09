@@ -1,3 +1,4 @@
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -122,9 +123,7 @@ const mocks = vi.hoisted(() => ({
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   getTemplateInputAssets: vi.fn(
-    async (): Promise<(typeof fixtures.inputAsset)[] | null> => [
-      fixtures.inputAsset
-    ]
+    async (): Promise<ComfyTemplateInputAsset[] | null> => [fixtures.inputAsset]
   ),
   isModelDownloadable: vi.fn(() => true),
   loadTemplates: vi.fn(async () => true),
@@ -322,6 +321,7 @@ function samplePrepared({
   nodeType?: string
   sourceRevision?: string | null
 } = {}) {
+  const models: ModelFile[] = []
   return {
     ...fixtures.prepared,
     data: {
@@ -331,7 +331,7 @@ function samplePrepared({
           {
             ...fixtures.prepared.data.json.nodes[0],
             type: nodeType,
-            properties: { models: [] },
+            properties: { models },
             widgets_values: ['subject.png']
           }
         ],
@@ -636,7 +636,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
     expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
       fixtures.prepared,
-      { downloadAssets: true }
+      { downloadAssets: true, inputAssets: [fixtures.inputAsset] }
     )
     expect(mocks.rowDownloadRequest.mock.calls).toEqual([
       [fixtures.activeModel],
@@ -665,10 +665,105 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
         fixtures.prepared,
-        { downloadAssets: true }
+        { downloadAssets: true, inputAssets: [fixtures.inputAsset] }
       )
     })
     expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+  })
+
+  it('opens directly when the host already has the bound pinned sample', async () => {
+    mocks.getTemplateInputAssets.mockResolvedValueOnce([
+      { ...fixtures.inputAsset, availability: 'present' }
+    ])
+    mocks.resolveAvailability.mockResolvedValueOnce([])
+    const prepared = samplePrepared()
+    mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
+
+    await clickTemplateCardAfterRender()
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        prepared,
+        { downloadAssets: false }
+      )
+    })
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'missing',
+      asset: { ...fixtures.inputAsset, availability: 'missing' as const }
+    },
+    {
+      name: 'unknown',
+      asset: { ...fixtures.inputAsset, availability: 'unknown' as const }
+    },
+    {
+      name: 'different filename',
+      asset: {
+        ...fixtures.inputAsset,
+        filename: 'other.png',
+        availability: 'present' as const
+      }
+    },
+    {
+      name: 'different media type',
+      asset: {
+        ...fixtures.inputAsset,
+        mediaType: 'video' as const,
+        availability: 'present' as const
+      }
+    }
+  ])(
+    'keeps sample preparation available for $name native inventory',
+    async ({ asset }) => {
+      mocks.getTemplateInputAssets.mockResolvedValueOnce([asset])
+      mocks.resolveAvailability.mockResolvedValueOnce([])
+      const prepared = samplePrepared()
+      mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
+      const { user } = await clickTemplateCardAfterRender()
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Download assets & open' })
+      )
+
+      await waitFor(() => {
+        expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+          prepared,
+          { downloadAssets: true, inputAssets: [asset] }
+        )
+      })
+    }
+  )
+
+  it('shows only the remaining model size when the sample is already present', async () => {
+    const inputAsset = {
+      ...fixtures.inputAsset,
+      availability: 'present' as const
+    }
+    mocks.getTemplateInputAssets.mockResolvedValueOnce([inputAsset])
+    const prepared = samplePrepared()
+    prepared.data.json.nodes.push({
+      ...fixtures.prepared.data.json.nodes[0],
+      id: 2
+    })
+    mocks.prepareWorkflowTemplate.mockResolvedValueOnce(prepared)
+    const { user } = await clickTemplateCardAfterRender()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /Download assets & open.*1 KB/
+      })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        prepared,
+        { downloadAssets: true, inputAssets: [inputAsset] }
+      )
+    })
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(fixtures.activeModel)
   })
 
   it('offers the asset choice for catalog samples when the native bridge has no assets', async () => {

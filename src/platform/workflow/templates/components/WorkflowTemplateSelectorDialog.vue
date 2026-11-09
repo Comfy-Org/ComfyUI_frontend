@@ -521,7 +521,10 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
-import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
+import {
+  getPendingTemplateSampleInputs,
+  resolveTemplateInputAssets
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import type {
   NavGroupData,
   NavItemData
@@ -1097,14 +1100,21 @@ function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
   }
 }
 
-function getPreparedSampleInputs(prepared: PreparedWorkflowTemplate) {
+function getPreparedSampleInputs(
+  prepared: PreparedWorkflowTemplate,
+  inputAssets: readonly ComfyTemplateInputAsset[] = []
+) {
   const { data, sourceModule } = prepared
   const inputs = data.template?.io?.inputs
   if (sourceModule !== 'default' || !data.strict || !inputs?.length) return []
 
-  const { files } = getTemplateInputPlan(data.json, inputs, {
-    restoreNamed: useSettingStore().get('Comfy.Workflow.NamedValuesRestore')
-  })
+  const { files } = getTemplateInputPlan(
+    data.json,
+    getPendingTemplateSampleInputs(inputs, inputAssets),
+    {
+      restoreNamed: useSettingStore().get('Comfy.Workflow.NamedValuesRestore')
+    }
+  )
   return [...files.keys()]
 }
 
@@ -1176,7 +1186,7 @@ const activeDetailHasInputDownloads = computed(() => {
   const detail = activeDetail.value
   return Boolean(
     detail &&
-    (getPreparedSampleInputs(detail.prepared).length ||
+    (getPreparedSampleInputs(detail.prepared, detail.inputAssets).length ||
       detail.inputAssets.some(({ availability }) => availability === 'missing'))
   )
 })
@@ -1267,14 +1277,16 @@ async function updateTemplateModelMetadata(
 async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
   generation: number,
-  downloadAssets: boolean
+  downloadAssets: boolean,
+  inputAssets?: readonly ComfyTemplateInputAsset[]
 ): Promise<void> {
   if (openPending.value || generation !== detailGeneration) return
 
   openPending.value = true
   try {
     const result = await openPreparedWorkflowTemplate(prepared, {
-      downloadAssets
+      downloadAssets,
+      ...(inputAssets && { inputAssets })
     })
     if (result === 'not-started') return
 
@@ -1316,7 +1328,8 @@ async function showAssetSetupIfNeeded(
   const { requirements, availability, folderPaths, inputAssets } =
     await resolveTemplateAssetInventory(template.name, prepared)
   if (generation !== detailGeneration) return true
-  const hasSampleInputs = getPreparedSampleInputs(prepared).length > 0
+  const hasSampleInputs =
+    getPreparedSampleInputs(prepared, inputAssets).length > 0
   if (
     !availability.some(({ status }) => status === 'missing') &&
     !inputAssets.some(({ availability }) => availability === 'missing') &&
@@ -1443,7 +1456,12 @@ async function onDownloadAssetsAndOpen() {
     setup.rowDownloads.request(row.model)
   }
 
-  await openPreparedTemplate(detail.prepared, detailGeneration, true)
+  await openPreparedTemplate(
+    detail.prepared,
+    detailGeneration,
+    true,
+    detail.inputAssets
+  )
 }
 
 function onSelectNavItem(value: string | null) {
