@@ -62,6 +62,13 @@ edit protocol does:
 Writing an equal value is a no-op. A programmatic commit never fires
 `activate`; that event represents a user act.
 
+The `value.set()` accessor passed to mounted controls and registered widget
+type renderers uses this same commit protocol. It invokes the legacy node's
+`onWidgetChanged` hook as well as widget callbacks. Remove any manual callback,
+property synchronization, or graph-version update that your renderer performed
+after `value.set()` to compensate for the previous assignment-only behavior.
+Use `value.onChange()` to refresh the control when its value changes.
+
 ## Widget events
 
 ```js

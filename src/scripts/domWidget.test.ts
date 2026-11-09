@@ -75,6 +75,37 @@ test.for([
   }
 )
 
+test('nested property commits notify once each and preserve callback assignments', () => {
+  const node = new LGraphNode('test')
+  let current = 'before'
+  const widget = node.addDOMWidget(
+    'text',
+    'custom',
+    document.createElement('input'),
+    {
+      getValue: () => current,
+      setValue: (value: string) => {
+        current = value
+      }
+    }
+  )
+  widget.options.property = 'text'
+  node.properties.text = 'before'
+  node.onPropertyChanged = (_name, value) => {
+    if (value === 'outer') commitWidgetValue(widget, 'inner', { node })
+    return true
+  }
+  const seen: unknown[] = []
+  widget.callback = (value) => {
+    seen.push(value)
+    if (value === 'inner') widget.value = 'assigned'
+  }
+
+  commitWidgetValue(widget, 'outer', { node })
+
+  expect(seen).toEqual(['inner', 'assigned', 'outer'])
+})
+
 describe('DOMWidget Y Position Preservation', () => {
   test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
     const mockNode = new LGraphNode('test-node')

@@ -27,6 +27,7 @@ export function commitWidgetValue(
   const isNumber = widget.type === 'number'
   const v = isNumber ? Number(value) : value
   if (v === oldValue || (isNumber && Number.isNaN(v))) return
+  const wasCommitting = committingWidgets.has(widget)
   committingWidgets.add(widget)
   try {
     widget.value = v
@@ -34,11 +35,18 @@ export function commitWidgetValue(
     if (property && node.properties[property] !== undefined) {
       node.setProperty(property, v)
     }
-  } finally {
     committingWidgets.delete(widget)
-  }
-  widget.callback?.(widget.value, canvas, node, canvas?.graph_mouse, e)
+    widget.callback?.(widget.value, canvas, node, canvas?.graph_mouse, e)
 
-  node.onWidgetChanged?.(extensionValue(widget.name) ?? '', v, oldValue, widget)
-  if (node.graph) node.graph.incrementVersion()
+    node.onWidgetChanged?.(
+      extensionValue(widget.name) ?? '',
+      v,
+      oldValue,
+      widget
+    )
+    if (node.graph) node.graph.incrementVersion()
+  } finally {
+    if (wasCommitting) committingWidgets.add(widget)
+    else committingWidgets.delete(widget)
+  }
 }
