@@ -163,19 +163,25 @@ describe('AutoPanController', () => {
   })
 
   it.for([
-    [10, 9],
-    [40, 36],
-    [500, 45]
-  ])('pans %s ms by %s pixels, bounding stalls', ([elapsed, distance]) => {
-    controller.updatePointer(0, 300)
-    controller.start()
+    [10, 0, 9],
+    [40, 0, 36],
+    [500, 0, 45],
+    [100, 100, 90],
+    [1000, 1000, 900],
+    [2000, 1000, 900]
+  ])(
+    'pans %s ms at a %s ms frame interval by %s pixels, bounding stalls',
+    ([elapsed, frameInterval, distance]) => {
+      controller.updatePointer(0, 300)
+      controller.start()
 
-    vi.advanceTimersByTime(elapsed)
-    runCanvasFramePhase(mockCanvas, 'update')
+      vi.advanceTimersByTime(elapsed)
+      runCanvasFramePhase(mockCanvas, 'update', frameInterval)
 
-    expect(mockDs.offset[0]).toBeCloseTo(distance)
-    expect(mockDs.offset[1]).toBe(0)
-  })
+      expect(mockDs.offset[0]).toBeCloseTo(distance)
+      expect(mockDs.offset[1]).toBe(0)
+    }
+  )
 
   it('accounts for zoom level in offset changes', () => {
     controller.updatePointer(0, 300)

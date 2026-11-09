@@ -2566,7 +2566,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         try {
-          runCanvasFramePhase(this.canvas, 'update')
+          runCanvasFramePhase(this.canvas, 'update', this._maximumFrameGap)
           layoutStore.flushPendingChanges()
           const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
           this.draw()
@@ -5225,7 +5225,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
-    runCanvasFramePhase(this.canvas, 'present')
+    runCanvasFramePhase(this.canvas, 'present', this._maximumFrameGap)
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
   }

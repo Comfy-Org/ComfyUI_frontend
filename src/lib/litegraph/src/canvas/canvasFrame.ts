@@ -1,14 +1,16 @@
 type FramePhase = 'update' | 'present'
 
+type FrameCallback = (frameIntervalMs: number) => void
+
 const frames = new WeakMap<
   HTMLCanvasElement,
-  Record<FramePhase, Set<() => void>>
+  Record<FramePhase, Set<FrameCallback>>
 >()
 
 export function onCanvasFrame(
   canvas: HTMLCanvasElement,
   phase: FramePhase,
-  callback: () => void
+  callback: FrameCallback
 ): () => void {
   let frame = frames.get(canvas)
   if (!frame) {
@@ -24,9 +26,10 @@ export function onCanvasFrame(
 
 export function runCanvasFramePhase(
   canvas: HTMLCanvasElement,
-  phase: FramePhase
+  phase: FramePhase,
+  frameIntervalMs = 0
 ): void {
   const callbacks = frames.get(canvas)?.[phase]
   if (!callbacks) return
-  for (const callback of callbacks) callback()
+  for (const callback of callbacks) callback(frameIntervalMs)
 }
