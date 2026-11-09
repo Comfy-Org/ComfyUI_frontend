@@ -42,10 +42,14 @@ export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
 }
 
 export class CanvasHelper {
+  readonly navigationWidgets: Locator
+
   constructor(
     private page: Page,
     private canvas: Locator
-  ) {}
+  ) {
+    this.navigationWidgets = page.getByTestId('dom-widget-textarea')
+  }
 
   async getMinimapRightInset(): Promise<number> {
     const canvasRight = await this.canvas.evaluate(
@@ -228,44 +232,40 @@ export class CanvasHelper {
   }
 
   async getNavigationWidgetHitTargets() {
-    return this.page
-      .getByPlaceholder('text', { exact: true })
-      .evaluateAll((elements) => {
-        const canvas = window.app!.canvas.canvas.getBoundingClientRect()
-        return elements.map((element) => {
-          const rect = element.getBoundingClientRect()
-          const left = Math.max(rect.left, canvas.left)
-          const right = Math.min(rect.right, canvas.right)
-          const top = Math.max(rect.top, canvas.top)
-          const bottom = Math.min(rect.bottom, canvas.bottom)
-          return {
-            visible: element.checkVisibility(),
-            leftClipped: rect.left < canvas.left,
-            hits: [0.25, 0.75].map((fraction) =>
-              document
-                .elementsFromPoint(
-                  left + (right - left) * fraction,
-                  (top + bottom) / 2
-                )
-                .includes(element)
-            )
-          }
-        })
+    return this.navigationWidgets.evaluateAll((elements) => {
+      const canvas = window.app!.canvas.canvas.getBoundingClientRect()
+      return elements.map((element) => {
+        const rect = element.getBoundingClientRect()
+        const left = Math.max(rect.left, canvas.left)
+        const right = Math.min(rect.right, canvas.right)
+        const top = Math.max(rect.top, canvas.top)
+        const bottom = Math.min(rect.bottom, canvas.bottom)
+        return {
+          visible: element.checkVisibility(),
+          leftClipped: rect.left < canvas.left,
+          hits: [0.25, 0.75].map((fraction) =>
+            document
+              .elementsFromPoint(
+                left + (right - left) * fraction,
+                (top + bottom) / 2
+              )
+              .includes(element)
+          )
+        }
       })
+    })
   }
 
   async snapshotNavigation() {
     await this.waitForViewToSettle()
-    const prompts = await this.page
-      .getByPlaceholder('text', { exact: true })
-      .evaluateAll((elements) =>
-        elements.map((element) => {
-          if (!(element instanceof HTMLTextAreaElement))
-            throw new Error('Expected a prompt textarea')
-          const { x, y, width, height } = element.getBoundingClientRect()
-          return { x, y, width, height, value: element.value }
-        })
-      )
+    const prompts = await this.navigationWidgets.evaluateAll((elements) =>
+      elements.map((element) => {
+        if (!(element instanceof HTMLTextAreaElement))
+          throw new Error('Expected a prompt textarea')
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height, value: element.value }
+      })
+    )
     return this.page.evaluate((prompts) => {
       const { canvas, graph } = window.app!
       const element = canvas.canvas
