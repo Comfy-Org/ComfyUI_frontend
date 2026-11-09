@@ -107,7 +107,6 @@ export function useTopupOperation() {
     else operationStore.dismissOperation(operationId)
   }
 
-  /** Adopts a top-up left pending so the caller hears when it settles; the SDK rail adopted it on issue. */
   async function adoptPendingOperation(
     operationId: string,
     metadata: {

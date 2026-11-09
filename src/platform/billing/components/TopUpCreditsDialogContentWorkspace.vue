@@ -1,6 +1,5 @@
 <template>
   <Card class="flex min-h-[500px] w-[min(512px,95vw)] flex-col shadow-md">
-    <!-- Header -->
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
@@ -151,7 +150,6 @@
       @credits="creditsModel = $event"
     />
 
-    <!-- Warnings -->
 
     <p
       v-if="negativeBalanceCredits !== null && step === 'amount'"
@@ -495,9 +493,6 @@ const {
   dismissOperation,
   adoptPendingOperation
 } = useTopupOperation()
-// Start over invalidates the attempt in flight: on the SDK rail the purchase
-// call resolves only at settlement, so a superseded attempt must not unlock
-// or close the dialog for the attempt that replaced it.
 let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
@@ -506,15 +501,6 @@ const topupAuthenticationError = computed(
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
-// Parked on the customer with no link to send them to. The operation stays open
-// server-side, and that also refuses a replacement purchase, so this state
-// explains the wait rather than offering a restart that would be rejected.
-// Leaving this screen keeps the pending-top-up marker: the copy sends the
-// customer off to pay elsewhere, and the marker outlives the wait, so it is
-// what refreshes the balance when they come back to a settled purchase.
-// Latent on this rail today — only the legacy hosted-checkout path sets the
-// marker, so usually there is none here to keep. Preserving it is still right,
-// and it starts paying off if this rail ever sets one when it parks.
 const topupIsParkedWithoutLink = computed(
   () =>
     !topupActionUrl.value &&
@@ -541,7 +527,6 @@ const verifyingBody = computed(() => {
   })
 })
 
-// Constants
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 const DEFAULT_AMOUNT = 50
@@ -552,7 +537,6 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   return Number.isInteger(dollars) ? dollars : null
 }
 
-// State
 const suggestedAmount = computed(() =>
   wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
 )
@@ -584,7 +568,6 @@ const step = ref<
   | 'defaultCardBlocked'
 >(topupOperation.value && canTopUp.value ? 'verifying' : 'amount')
 
-// Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
@@ -671,12 +654,10 @@ watch(
   }
 )
 
-// Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
 }
 
-// Event handlers
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
@@ -776,9 +757,6 @@ async function handleBuy() {
       return
     }
 
-    // Only correlate the response to the journey that submitted it: the user
-    // may have closed this dialog and started another journey while the
-    // request was in flight, and that later journey must not be bound here.
     const submittingJourneyStillActive =
       submittingJourney !== null &&
       getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
@@ -1063,11 +1041,6 @@ async function openCheckoutInReservedTab(): Promise<
   }
 }
 
-/**
- * The terminal a response's status implies. A synchronous `failed` is a
- * declined charge, not a pre-attempt rejection; a `pending` one is the
- * poller's to report once it settles.
- */
 const RESPONSE_TERMINALS: Record<
   CreateTopupResponse['status'],
   BillingOperationTerminal | undefined
@@ -1103,7 +1076,6 @@ function reportTerminal(
     ...(billingOpId ? { billing_op_id: billingOpId } : {}),
     duration_ms: Date.now() - attemptStartedAt
   }
-  // No timeout stage on the top-up funnel; the poller reports it as failed too.
   telemetry?.trackBillingEvent(
     terminal.stage === 'succeeded'
       ? {
@@ -1143,8 +1115,6 @@ function purchaseErrorDetail(error?: unknown): string {
   const refusal = purchaseRefusalMessage(error)
   if (refusal !== null) return refusal
   const code = error instanceof WorkspaceApiError ? error.code : undefined
-  // Only one billing operation is open at a time, so this refusal means the
-  // previous purchase has not settled or expired yet — not that anything failed.
   if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
     return t('credits.topUp.changeInProgressError')
   }
