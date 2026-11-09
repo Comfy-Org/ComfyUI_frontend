@@ -14,6 +14,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+import type { DetachedWindowAPI } from 'happy-dom'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -62,10 +63,13 @@ vi.mock(
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const distribution = vi.hoisted(() => ({ isCloud: false }))
+const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
+  },
+  get isDesktop() {
+    return distribution.isDesktop
   },
   isNightly: false
 }))
@@ -736,6 +740,89 @@ describe('TopMenuSection', () => {
     ).toBeInTheDocument()
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
+    )
+  })
+
+  describe('Cloud button', () => {
+    function servedFrom(origin: string) {
+      const { happyDOM } = window as unknown as { happyDOM: DetachedWindowAPI }
+      const previous = window.location.href
+      happyDOM.setURL(`${origin}/`)
+      onTestFinished(() => happyDOM.setURL(previous))
+    }
+
+    it.for([
+      { origin: 'http://127.0.0.1:8188', count: 1 },
+      { origin: 'http://192.168.1.20:8188', count: 1 },
+      { origin: 'https://comfy.example.com', count: 0 }
+    ])(
+      'renders $count Cloud button when ComfyUI is served from $origin',
+      ({ origin, count }) => {
+        servedFrom(origin)
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
+          count
+        )
+      }
+    )
+
+    it.for([
+      {
+        host: 'the Desktop distribution',
+        enter: () => {
+          distribution.isDesktop = true
+        },
+        leave: () => {
+          distribution.isDesktop = false
+        }
+      },
+      {
+        host: 'a Desktop 2 host serving a localhost build',
+        enter: () => {
+          window.__comfyDesktop2 = {}
+        },
+        leave: () => {
+          delete window.__comfyDesktop2
+        }
+      }
+    ])(
+      'renders no Cloud button on $host until its relay ships',
+      ({ enter, leave }) => {
+        enter()
+        onTestFinished(leave)
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+      }
+    )
+
+    it.for([
+      { openOnCloudEnabled: false, cloud: 0, deploy: 1 },
+      { openOnCloudEnabled: true, cloud: 1, deploy: 0 }
+    ])(
+      'renders $cloud Cloud and $deploy deploy buttons when the Open on Cloud gate is $openOnCloudEnabled',
+      ({ openOnCloudEnabled, cloud, deploy }) => {
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, {
+          openOnCloudEnabled,
+          deployToCloud: true
+        })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
+          cloud
+        )
+        expect(
+          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+        ).toHaveLength(deploy)
+      }
     )
   })
 
