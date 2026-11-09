@@ -5925,7 +5925,7 @@
         "enterpriseBody": "I membri manterranno l'accesso completo fino ad allora. Contatta il nostro team vendite per estenderlo.",
         "enterpriseTitle": "Il tuo piano Enterprise termina il {date}",
         "memberBody": "Puoi eseguire workflow fino ad allora.",
-        "personalBody": "Non ti verrà addebitato altro. Riattiva il tuo piano per continuare a ricevere crediti.",
+        "personalBody": "Non ti verrà addebitato altro. Riattiva il tuo piano per conservare i crediti mensili.",
         "personalTitle": "Il tuo piano {plan} termina il {date}",
         "reactivate": "Riprendi il piano",
         "title": "Il tuo piano Team termina il {date}"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "Contatta le vendite per avviare un nuovo piano Enterprise.",
         "enterpriseTitle": "Il tuo piano Enterprise è terminato il {date}",
-        "personalBody": "Abbonati di nuovo per eseguire workflow e ricevere nuovamente crediti.",
+        "personalBody": "Abbonati di nuovo per eseguire workflow e ricevere nuovamente crediti mensili.",
         "personalTitle": "Il tuo piano {plan} è terminato il {date}",
         "personalTitleNoDate": "Il tuo piano {plan} è terminato",
         "planTitle": "Il tuo piano è terminato il {date}",

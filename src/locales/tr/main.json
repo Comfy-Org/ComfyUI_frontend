@@ -5925,7 +5925,7 @@
         "enterpriseBody": "Üyeler o zamana kadar tam erişimi korur. Uzatmak için satış ekibimizle iletişime geçin.",
         "enterpriseTitle": "Enterprise planınız {date} tarihinde sona eriyor",
         "memberBody": "O zamana kadar iş akışlarını çalıştırabilirsiniz.",
-        "personalBody": "Tekrar ücretlendirilmeyeceksiniz. Kredi almaya devam etmek için planınıza devam edin.",
+        "personalBody": "Tekrar ücretlendirilmeyeceksiniz. Aylık kredilerinizi korumak için planınıza devam edin.",
         "personalTitle": "{plan} planınız {date} tarihinde sona eriyor",
         "reactivate": "Planı yeniden etkinleştir",
         "title": "Team planınız {date} tarihinde sona eriyor"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "Yeni bir Enterprise planı başlatmak için satış ekibiyle iletişime geçin.",
         "enterpriseTitle": "Enterprise planınız {date} tarihinde sona erdi",
-        "personalBody": "İş akışlarını çalıştırmak ve yeniden kredi almak için tekrar abone olun.",
+        "personalBody": "İş akışlarını çalıştırmak ve aylık kredileri yeniden almak için tekrar abone olun.",
         "personalTitle": "{plan} planınız {date} tarihinde sona erdi",
         "personalTitleNoDate": "{plan} planınız sona erdi",
         "planTitle": "Planınız {date} tarihinde sona erdi",

@@ -5925,7 +5925,7 @@
         "enterpriseBody": "Les membres conservent un accès complet jusque-là. Contactez notre équipe commerciale pour le prolonger.",
         "enterpriseTitle": "Votre forfait Enterprise prend fin le {date}",
         "memberBody": "Vous pouvez exécuter des workflows jusqu’à cette date.",
-        "personalBody": "Vous ne serez plus facturé. Reprenez votre abonnement pour continuer à recevoir des crédits.",
+        "personalBody": "Vous ne serez plus facturé. Reprenez votre abonnement pour conserver vos crédits mensuels.",
         "personalTitle": "Votre abonnement {plan} se termine le {date}",
         "reactivate": "Reprendre le forfait",
         "title": "Votre forfait Team se termine le {date}"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "Contactez le service commercial pour souscrire un nouveau forfait Enterprise.",
         "enterpriseTitle": "Votre forfait Enterprise a pris fin le {date}",
-        "personalBody": "Réabonnez-vous pour exécuter des workflows et recevoir à nouveau des crédits.",
+        "personalBody": "Réabonnez-vous pour exécuter des workflows et recevoir à nouveau des crédits mensuels.",
         "personalTitle": "Votre abonnement {plan} a pris fin le {date}",
         "personalTitleNoDate": "Votre abonnement {plan} a pris fin",
         "planTitle": "Votre forfait a pris fin le {date}",

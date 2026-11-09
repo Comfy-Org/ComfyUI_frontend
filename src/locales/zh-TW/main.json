@@ -5925,7 +5925,7 @@
         "enterpriseBody": "在此之前，成員可保有完整存取權。請聯絡我們的業務團隊以延長方案。",
         "enterpriseTitle": "您的 Enterprise 方案將於 {date} 結束",
         "memberBody": "在此之前，您可以執行工作流程。",
-        "personalBody": "您不會再被收費。恢復您的方案以繼續取得點數。",
+        "personalBody": "您不會再被收費。恢復您的方案以保留每月點數。",
         "personalTitle": "您的 {plan} 方案將於 {date} 結束",
         "reactivate": "恢復方案",
         "title": "您的團隊方案將於 {date} 結束"
@@ -5978,7 +5978,7 @@
       "planEnded": {
         "enterpriseBody": "請聯絡業務人員以啟用新的企業方案。",
         "enterpriseTitle": "您的企業方案已於 {date} 結束",
-        "personalBody": "重新訂閱以再次執行工作流程並取得點數。",
+        "personalBody": "重新訂閱以再次執行工作流程並取得每月點數。",
         "personalTitle": "您的 {plan} 方案已於 {date} 結束",
         "personalTitleNoDate": "您的 {plan} 方案已結束",
         "planTitle": "您的方案已於 {date} 結束",
