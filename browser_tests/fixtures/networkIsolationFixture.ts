@@ -145,9 +145,11 @@ export const networkIsolationFixture = base.extend<{
     },
     use
   ) => {
-    await context.addInitScript(installSeededServerFlags, {
-      billing_new_ux_enabled: billingNewUx
-    })
+    if (billingNewUx) {
+      await context.addInitScript(installSeededServerFlags, {
+        billing_new_ux_enabled: billingNewUx
+      })
+    }
     const { origins, unexpected } = networkPolicy
     const restore = guardApiRequests(
       context.request,
