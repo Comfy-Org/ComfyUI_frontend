@@ -322,18 +322,26 @@ describe('parseComfyWorkflow', () => {
   describe('workflow.nodes.properties.aux_id', () => {
     const validAuxIds = [
       'valid/valid',
-      'valid-username-with-dash/valid_github-repo-name-with-underscore'
+      'valid-username-with-dash/valid_github-repo-name-with-underscore',
+      'private-node-pack.git',
+      'https://gitlab.example.test/team/plugins/private-node-pack.git',
+      'http://git.example.test:3000/team/private-node-pack'
     ]
-    it.for(validAuxIds)('valid aux_id: %s', async (aux_id) => {
+    it.for(validAuxIds)('preserves aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.aux_id = aux_id
-      await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
+      const validated = await validateComfyWorkflow(workflow)
+      expect(validated?.nodes[0].properties.aux_id).toBe(aux_id)
     })
     const invalidAuxIds = [
       'invalid spaces in username/repo',
       'invalid-chars-name-$/repo',
       'github-name/invalid spaces in repo',
-      'not-both-names-with-slash'
+      'owner/repo/extra',
+      'https:private-node-pack',
+      'https://git.example.test',
+      'https://user:token@git.example.test/team/private-node-pack',
+      'file:///tmp/private-node-pack.git'
     ]
     it.for(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))

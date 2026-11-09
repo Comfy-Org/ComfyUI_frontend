@@ -194,7 +194,7 @@ const zGithubUsername = z
   .regex(githubUsernamePattern, 'Invalid GitHub username/org')
 
 // Auxiliary ID identifies node packs not installed via the Comfy Node Registry
-const zAuxId = z
+const zGithubAuxId = z
   .string()
   .regex(/^[^/]+\/[^/]+$/, "Invalid format. Must be 'github-user/repo-name'")
   .transform((id) => id.split('/'))
@@ -205,6 +205,19 @@ const zAuxId = z
     "Invalid aux_id: Must be valid 'github-username/github-repo-name'"
   )
   .transform(([username, repo]) => `${username}/${repo}`)
+
+const zGitRemoteAuxId = z.string().refine((remote) => {
+  if (!/^https?:\/\/[^/\s\\][^\s\\]*$/i.test(remote)) return false
+
+  try {
+    const { pathname, username, password } = new URL(remote)
+    return pathname !== '/' && !username && !password
+  } catch {
+    return false
+  }
+}, 'Invalid HTTP(S) git remote')
+
+const zAuxId = z.union([zGithubAuxId, zRepoLikeId, zGitRemoteAuxId])
 
 const zGitHash = z.string().superRefine((val: string, ctx) => {
   if (!gitHashPattern.test(val)) {
