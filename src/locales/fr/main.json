@@ -5346,7 +5346,7 @@
       "percentOff": "{percent}% de réduction",
       "pricePerMonth": "{price}/mois",
       "refreshFailed": "Votre remise a été appliquée. Actualisez la page pour voir votre forfait mis à jour.",
-      "renewsAfterOffer": "À la fin de l'offre, votre abonnement se renouvelle à {regular}/mois.",
+      "renewsAt": "Renouvellement à {regular} le {date}.",
       "savings": "Vous économiserez {savings} sur ce paiement. | Vous économiserez {savings} sur ces {months} paiements.",
       "stayOnPlan": "Rester sur {plan}",
       "subtitle": "Voici une offre pendant que vous réfléchissez",

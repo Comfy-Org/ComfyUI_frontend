@@ -5346,7 +5346,7 @@
       "percentOff": "خصم {percent}%",
       "pricePerMonth": "{price}/شهر",
       "refreshFailed": "تم تطبيق خصمك. حدّث الصفحة لرؤية خطتك المحدّثة.",
-      "renewsAfterOffer": "بعد انتهاء العرض، تتجدد خطتك بسعر {regular}/شهريًا.",
+      "renewsAt": "يتجدد بسعر {regular} في {date}.",
       "savings": "ستوفر {savings} في هذه الدفعة. | ستوفر {savings} عبر هذه الدفعات {months}.",
       "stayOnPlan": "ابقَ على {plan}",
       "subtitle": "إليك عرضًا بينما تقرر",

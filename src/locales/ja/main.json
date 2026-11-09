@@ -5346,7 +5346,7 @@
       "percentOff": "{percent}% オフ",
       "pricePerMonth": "{price}/月",
       "refreshFailed": "割引が適用されました。ページを更新して、更新後のプランを確認してください。",
-      "renewsAfterOffer": "オファー終了後、プランは {regular}/月で更新されます。",
+      "renewsAt": "{date} に {regular} で更新されます。",
       "savings": "今回のお支払いで {savings} 節約できます。 | この {months} 回のお支払いで合計 {savings} 節約できます。",
       "stayOnPlan": "{plan} を継続する",
       "subtitle": "ご検討中の方へ、特別オファーをご用意しました",

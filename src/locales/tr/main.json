@@ -5346,7 +5346,7 @@
       "percentOff": "%{percent} indirim",
       "pricePerMonth": "{price}/ay",
       "refreshFailed": "İndiriminiz uygulandı. Güncellenmiş planınızı görmek için sayfayı yenileyin.",
-      "renewsAfterOffer": "Teklif sona erdikten sonra planınız aylık {regular} ücretle yenilenir.",
+      "renewsAt": "{date} tarihinde {regular} tutarından yenilenir.",
       "savings": "Bu ödemede {savings} tasarruf edeceksiniz. | Bu {months} ödeme genelinde {savings} tasarruf edeceksiniz.",
       "stayOnPlan": "{plan} planında kalın",
       "subtitle": "Karar verirken değerlendirebileceğiniz bir teklif var",

@@ -5346,7 +5346,7 @@
       "percentOff": "{percent}% 할인",
       "pricePerMonth": "{price}/월",
       "refreshFailed": "할인이 적용되었습니다. 업데이트된 요금제를 보려면 페이지를 새로고침하세요.",
-      "renewsAfterOffer": "혜택이 끝나면 요금제가 월 {regular}로 갱신됩니다.",
+      "renewsAt": "{date}에 {regular}로 갱신됩니다.",
       "savings": "이번 결제에서 {savings}을(를) 절약합니다. | 이 {months}회 결제에서 총 {savings}을(를) 절약합니다.",
       "stayOnPlan": "{plan} 유지하기",
       "subtitle": "결정하시는 동안 이용할 수 있는 혜택입니다",

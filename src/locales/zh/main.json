@@ -5346,7 +5346,7 @@
       "percentOff": "优惠 {percent}%",
       "pricePerMonth": "{price}/月",
       "refreshFailed": "你的折扣已应用。刷新页面以查看更新后的套餐。",
-      "renewsAfterOffer": "优惠结束后，您的套餐将以每月 {regular} 续订。",
+      "renewsAt": "将于 {date} 以 {regular} 续订。",
       "savings": "此次付款您将节省 {savings}。 | 这 {months} 次付款共可节省 {savings}。",
       "stayOnPlan": "继续使用 {plan}",
       "subtitle": "在您决定期间，这里有一项优惠",
