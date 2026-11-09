@@ -334,7 +334,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return writeUserBinding(currentChoices(), keybinding, options)
   }
 
-  function savedChoices({
+  function userChoicesFromSaved({
     newBindings,
     unsetBindings
   }: SavedChoices): UserChoices {
@@ -351,12 +351,12 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     const conflict = findSavedChoiceConflicts(newBindings).at(0)
     if (conflict) return refuseConflict(conflict.existing, conflict.incoming)
 
-    commitChoices(savedChoices({ newBindings, unsetBindings }))
+    commitChoices(userChoicesFromSaved({ newBindings, unsetBindings }))
     return { ok: true, changed: true }
   }
 
   function restoreSavedChoices(saved: SavedChoices): KeybindingConflict[] {
-    commitChoices(savedChoices(saved))
+    commitChoices(userChoicesFromSaved(saved))
     return findSavedChoiceConflicts(saved.newBindings)
   }
 
@@ -426,12 +426,12 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     }
 
     const keymap = effectiveKeymap(candidate)
-    const blocked = defaultBindings.find(
-      (defaultBinding) =>
-        !keymap[defaultBinding.combo.serialize()]?.equals(defaultBinding)
-    )
-    const existing = blocked && keymap[blocked.combo.serialize()]
-    if (blocked && existing) return refuseConflict(existing, blocked)
+    for (const defaultBinding of defaultBindings) {
+      const holder = keymap[defaultBinding.combo.serialize()]
+      if (holder && !holder.equals(defaultBinding)) {
+        return refuseConflict(holder, defaultBinding)
+      }
+    }
 
     commitChoices(candidate)
     return { ok: true, changed: true }

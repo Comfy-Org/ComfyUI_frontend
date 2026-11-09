@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -275,6 +276,9 @@ describe('useKeybindingPresetService', () => {
 
       expect(api.storeUserData).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('default')
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
     })
 
     it('saves preset to storage and switches to it', async () => {
@@ -528,6 +532,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.currentPresetName).toBe('default')
       expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
       expect(mockSettingSet).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
     })
 
     it('discards unsaved changes when dialog returns false', async () => {

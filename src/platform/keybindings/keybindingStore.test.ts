@@ -487,13 +487,13 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybindingsByCommandId('command1')).toHaveLength(0)
   })
 
-  it('should return false when no default or current keybinding exists during reset', () => {
+  it('should report no change when no default or current keybinding exists during reset', () => {
     const store = useKeybindingStore()
     const result = store.resetKeybindingForCommand('nonexistent.command')
     expect(result).toEqual({ ok: true, changed: false })
   })
 
-  it('should return false when current keybinding equals default keybinding', () => {
+  it('should report no change when current keybinding equals default keybinding', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',

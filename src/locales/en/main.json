@@ -107,7 +107,7 @@
     "resetAllKeybindingsTitle": "Reset all keybindings?",
     "resetAllKeybindingsMessage": "All keybindings will be reset to their default values. This cannot be undone.",
     "allKeybindingsReset": "All keybindings reset to default",
-    "keybindingResetConflict": "Can't reset: {key} is assigned to {command}. Change or remove that shortcut, then try again.",
+    "keybindingResetConflict": "Can't reset: {key} is assigned to {command}. Assign {key} to this command to overwrite it, or remove it from {command} first.",
     "removeAllKeybindingsTitle": "Remove all keybindings?",
     "removeAllKeybindingsMessage": "All keybindings for this command will be removed",
     "removeAll": "Remove all",
