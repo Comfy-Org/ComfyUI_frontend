@@ -15,6 +15,7 @@ import {
 const FIFTY = { kind: 'preset', cents: 5000 } as const
 const FAILED = { kind: 'checkout_failed' } as const
 const URL = 'https://billing.comfy.org/topup?session=1'
+const SETUP_URL = 'https://platform.comfy.org/profile/billing?auto_top_up=setup'
 
 const STATES = {
   amount: { step: 'amount', amount: FIFTY },
@@ -46,6 +47,7 @@ const STATES = {
     amountCents: 5000,
     checkoutUrl: URL
   },
+  autoTopUpOffer: { step: 'auto_top_up_offer', setupUrl: SETUP_URL },
   landed: { step: 'landed' }
 } as const satisfies Record<string, AddCreditsState>
 
@@ -63,7 +65,11 @@ const EVENTS = {
   refused: { type: 'checkout_refused', refusal: FAILED },
   abandoned: { type: 'checkout_abandoned' },
   followed: { type: 'blocked_link_followed' },
-  landed: { type: 'payment_landed' }
+  landed: { type: 'payment_landed' },
+  landedOfferingAutoTopUp: {
+    type: 'payment_landed',
+    autoTopUpSetupUrl: SETUP_URL
+  }
 } as const satisfies Record<string, AddCreditsEvent>
 
 type EventName = keyof typeof EVENTS
@@ -80,22 +86,33 @@ const TRANSITIONS: Partial<
     created: STATES.opened,
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
-    landed: STATES.landed
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer
   },
   openingWithoutTab: {
     created: STATES.blocked,
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
-    landed: STATES.landed
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer
   },
   reopening: {
     created: STATES.opened,
     refused: { ...STATES.opened, refusal: FAILED },
     abandoned: STATES.opened,
-    landed: STATES.landed
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer
   },
-  opened: { requested: STATES.reopening, landed: STATES.landed },
-  blocked: { followed: STATES.opened, landed: STATES.landed }
+  opened: {
+    requested: STATES.reopening,
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+  },
+  blocked: {
+    followed: STATES.opened,
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+  }
 }
 
 const PAIRS = Object.keys(STATES).flatMap((state) =>

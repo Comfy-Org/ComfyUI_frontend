@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   autoTopUpOffView,
+  canSetUpAutoTopUp,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './autoTopUpCard'
-import type { AutoTopUpSectionFacts } from './autoTopUpCard'
+import type {
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
+} from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
   card_expiry: null,
@@ -128,4 +132,46 @@ describe('autoTopUpOffView', () => {
       )
     }
   )
+})
+
+describe('canSetUpAutoTopUp', () => {
+  const manager: AutoTopUpSetupFacts = {
+    autoTopUpEnabled: true,
+    canManageAutoTopUp: true,
+    setup: { state: 'ready' }
+  }
+
+  it.for<{ name: string; facts: Partial<AutoTopUpSetupFacts>; can: boolean }>([
+    { name: 'a manager with a ready setup', facts: {}, can: true },
+    {
+      name: 'a setup frozen for a missing default card',
+      facts: {
+        setup: { state: 'frozen', reason: 'default_payment_method_missing' }
+      },
+      can: true
+    },
+    {
+      name: 'auto top-up not served',
+      facts: { autoTopUpEnabled: false },
+      can: false
+    },
+    {
+      name: 'no can_manage_auto_top_up',
+      facts: { canManageAutoTopUp: false },
+      can: false
+    },
+    { name: 'no served setup', facts: { setup: null }, can: false },
+    {
+      name: 'an unavailable setup',
+      facts: { setup: { state: 'unavailable' } },
+      can: false
+    },
+    {
+      name: 'a setup frozen for past due',
+      facts: { setup: { state: 'frozen', reason: 'payment_past_due' } },
+      can: false
+    }
+  ])('$name: $can', ({ facts, can }) => {
+    expect(canSetUpAutoTopUp({ ...manager, ...facts })).toBe(can)
+  })
 })

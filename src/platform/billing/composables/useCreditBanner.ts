@@ -38,8 +38,13 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const billing = useBillingContext()
   const { flags } = useFeatureFlags()
   const { workspaceType } = useBillingUI()
-  const { canTopUp, topUpDenial, hasResolvedCapabilities, canManageBilling } =
-    useBillingCapabilities()
+  const {
+    canTopUp,
+    topUpDenial,
+    hasResolvedCapabilities,
+    canManageBilling,
+    runDeniedPaymentPastDue
+  } = useBillingCapabilities()
   const { showTopUpCreditsDialog } = useBillingDialogs()
   const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
   const { t, locale } = useI18n()
@@ -154,7 +159,10 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   }
 
   function outOfCreditsView(): BillingBannerView | null {
-    if (isTopUpDeniedPastDue(topUpDenial.value)) {
+    if (
+      runDeniedPaymentPastDue.value ||
+      isTopUpDeniedPastDue(topUpDenial.value)
+    ) {
       return creditView(
         'outOfCredits',
         t(pastDueBodyKey()),

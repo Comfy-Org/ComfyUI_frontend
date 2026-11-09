@@ -61,7 +61,10 @@ async function readCapabilitiesFromWire() {
     : result
 }
 
-function capabilitiesBody(deniedReasons: Record<string, string>) {
+function capabilitiesBody(
+  deniedReasons: Record<string, string>,
+  { canManageBilling = true } = {}
+) {
   return {
     capabilities: {
       can_cancel: false,
@@ -74,7 +77,7 @@ function capabilitiesBody(deniedReasons: Record<string, string>) {
       can_manage_auto_top_up: false,
       can_view_auto_top_up: false,
       can_view_auto_top_up_member_notice: false,
-      can_manage_billing: true,
+      can_manage_billing: canManageBilling,
       can_manage_members: false,
       can_manage_partner_node_access: false,
       can_manage_subscription: true,
@@ -148,6 +151,37 @@ beforeEach(() => {
 })
 
 describe('useCreditBanner from a served capabilities read', () => {
+  it('asks a member of a past-due team to have the owner update the payment method', async () => {
+    wire.body = capabilitiesBody(
+      {
+        can_top_up: 'not_workspace_owner',
+        can_run_workflows: 'payment_past_due'
+      },
+      { canManageBilling: false }
+    )
+    await useBillingCapabilities().refresh()
+
+    render(CreditBannerHarness, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
+    })
+
+    const banner = await screen.findByTestId('billing-banner-credit')
+    expect(banner).toHaveTextContent(
+      'Your team has used all its credits. Ask your workspace owner to update the payment method.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
+  })
+
   it('shows the purchases-paused owner banner from the wire reason', async () => {
     wire.body = capabilitiesBody({ can_top_up: 'topup_purchases_paused' })
     await useBillingCapabilities().refresh()

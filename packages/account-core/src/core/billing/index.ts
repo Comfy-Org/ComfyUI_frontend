@@ -392,10 +392,12 @@ export type {
   AutoTopUpOffView,
   AutoTopUpOffViewFacts,
   AutoTopUpSection,
-  AutoTopUpSectionFacts
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
 } from './billingTab/autoTopUpCard'
 export {
   autoTopUpOffView,
+  canSetUpAutoTopUp,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'

@@ -174,7 +174,7 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it('explains instead of opening the dialog when Cloud is missing nodes or models', async () => {
+  it('opens the dialog when Cloud is missing nodes or models', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'missing',
       gaps: { nodePacks: ['ImpactWildcard'], models: [] }
@@ -185,16 +185,11 @@ describe('Cloud button compatibility checks', () => {
     await user.click(screen.getByTestId('cloud-button'))
 
     await waitFor(() =>
-      expect(useToast().toasts).toEqual([
-        expect.objectContaining({
-          kind: 'error',
-          title: 'Comfy Cloud is missing nodes or models this workflow uses.'
-        })
-      ])
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        true
+      )
     )
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
+    expect(useToast().toasts).toEqual([])
   })
 
   it('opens nothing when the button unmounts while the dialog loads', async () => {
