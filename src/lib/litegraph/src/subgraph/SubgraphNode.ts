@@ -178,7 +178,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(subgraphInput, existingInput, widget, input.widget)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              widget,
+              inputNode,
+              input.widget
+            )
           return
         }
         const input = this.addInput(name, type, {
@@ -335,6 +341,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           subgraphInput,
           input,
           e.detail.widget,
+          e.detail.node,
           e.detail.input.widget
         )
       },
@@ -636,7 +643,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
-        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          inputNode,
+          targetInput.widget
+        )
         break
       }
 
@@ -645,7 +658,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // still receives widget state and a widgetId.
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
-        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          nested.widget,
+          nested.node,
+          targetInput.widget
+        )
         break
       }
     }
@@ -672,6 +691,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     interiorWidget: Readonly<IBaseWidget>,
+    interiorNode: LGraphNode,
     inputWidget: IWidgetLocator | undefined
   ) {
     this.invalidatePromotedViews()
@@ -708,7 +728,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget),
+      deriveWidgetRenderState(interiorWidget, interiorNode),
       visibility
     )
     if (!registered) {

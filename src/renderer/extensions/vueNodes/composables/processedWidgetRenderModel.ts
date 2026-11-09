@@ -70,7 +70,6 @@ interface WidgetErrorTarget {
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
-  hasLayoutSize: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
   widgetId: WidgetId
@@ -439,7 +438,7 @@ function processWidget(
 
   return {
     handleContextMenu,
-    hasLayoutSize: renderState?.hasLayoutSize ?? false,
+    layoutSize: renderState?.layoutSize,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,

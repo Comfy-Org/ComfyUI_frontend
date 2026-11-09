@@ -24,7 +24,11 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions,
+  WidgetLayoutSize
+} from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 
 interface ConvertedRestoredValue {
@@ -34,7 +38,7 @@ interface ConvertedRestoredValue {
 }
 
 export interface WidgetRenderState {
-  hasLayoutSize?: boolean
+  layoutSize?: WidgetLayoutSize
   isDOMWidget?: boolean
   tooltip?: string
 }
