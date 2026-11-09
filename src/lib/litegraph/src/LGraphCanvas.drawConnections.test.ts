@@ -132,6 +132,22 @@ describe('drawConnections', () => {
     expect(input.pos![1]).toBe(widget.y + offset)
   })
 
+  it('clears the pass link render context when the pass throws', () => {
+    const node = new LGraphNode('Throws')
+    node.addWidget('text', 'value', '', null)
+    node.addInput('value', 'STRING').widget = { name: 'value' }
+    node.arrange = () => {
+      throw new Error('arrange failed')
+    }
+    graph.add(node)
+
+    expect(() => canvas.drawConnections(createMockCtx())).toThrow(
+      'arrange failed'
+    )
+
+    expect(canvas['_passLinkRenderContext']).toBeNull()
+  })
+
   it('does not re-arrange nodes whose widget-input slots already have positions', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [0, 100]
