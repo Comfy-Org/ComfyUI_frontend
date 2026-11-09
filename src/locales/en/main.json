@@ -3080,7 +3080,11 @@
       "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
       "paymentProcessingTitle": "A {amount} payment is still processing",
       "paymentProcessingTitleNoAmount": "A payment is still processing",
-      "paymentProcessingBody": "No need to pay again."
+      "paymentProcessingBody": "No need to pay again.",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      }
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
