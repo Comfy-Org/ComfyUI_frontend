@@ -334,10 +334,7 @@ function transferReason({
 /** Best effort: it never throws, and the caller never waits for it. */
 function reportTransferStop(uploadId: string, report: TransferReport): void {
   const controller = new AbortController()
-  const timer = setTimeout(
-    () => controller.abort(),
-    TRANSFER_REPORT_TIMEOUT_MS
-  )
+  const timer = setTimeout(() => controller.abort(), TRANSFER_REPORT_TIMEOUT_MS)
   void postJson(
     `${UPLOADS_ENDPOINT}/${encodeURIComponent(uploadId)}/events`,
     report,
