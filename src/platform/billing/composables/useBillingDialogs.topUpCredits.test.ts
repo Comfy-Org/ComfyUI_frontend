@@ -7,6 +7,8 @@ import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/clou
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
@@ -17,6 +19,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 vi.mock(import('@/i18n'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -242,17 +245,24 @@ describe('showTopUpCreditsDialog', () => {
     })
   })
 
-  it('opens the workspace content, never the legacy one, while routing is unknown', async () => {
-    useBillingContext().type = computed(() => 'unknown')
+  it.for([
+    { flag: true, component: AddCreditsDialogContent },
+    { flag: false, component: TopUpCreditsDialogContentWorkspace }
+  ])(
+    'opens the purchase dialog billing_new_ux_enabled=$flag picks, even while routing is unknown',
+    async ({ flag, component }) => {
+      useFeatureFlags().flags.billingNewUxEnabled = flag
+      useBillingContext().type = computed(() => 'unknown')
 
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true,
-      source: 'agent_paywall'
-    })
+      await useBillingDialogs().showTopUpCreditsDialog({
+        isInsufficientCredits: true,
+        source: 'agent_paywall'
+      })
 
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.component).toBe(AddCreditsDialogContent)
-  })
+      const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+      expect(args.component).toBe(component)
+    }
+  )
 
   describe('add-credits entries reported to Datadog', () => {
     beforeEach(() => {
