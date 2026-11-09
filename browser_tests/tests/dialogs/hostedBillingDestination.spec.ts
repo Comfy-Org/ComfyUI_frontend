@@ -238,8 +238,7 @@ async function openedBillingEntry(page: Page) {
   }
 }
 
-/** Settings ▸ Plan & Credits ▸ Upgrade Plan, which opens the pricing table in place. */
-async function clickPlansAndPricing(page: Page) {
+async function openPricingFromPlanAndCredits(page: Page) {
   const content = await openPlanAndCredits(page)
   await content.getByRole('button', { name: /Upgrade Plan|Change plan/ }).click()
 }
@@ -411,7 +410,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -443,7 +442,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -458,7 +457,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await mockStandardPlan(page)
     await bootApp(page)
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
