@@ -100,14 +100,9 @@ describe('keybindingService - registerUserKeybindings', () => {
     )
   })
 
-  it('reports saved bindings that claim one combo and leaves defaults active', () => {
+  it('reports saved bindings that claim one combo and keeps the last one active', () => {
     const keybindingStore = useKeybindingStore()
     const combo = { key: 'k', ctrl: true, alt: false, shift: false }
-    const defaultBinding = new KeybindingImpl({
-      commandId: 'Comfy.Test.Default',
-      combo: { key: 'd', ctrl: true, alt: false, shift: false }
-    })
-    keybindingStore.addDefaultKeybinding(defaultBinding)
     useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = [
       { commandId: 'Comfy.Test.First', combo },
       { commandId: 'Comfy.Test.Second', combo }
@@ -115,14 +110,45 @@ describe('keybindingService - registerUserKeybindings', () => {
 
     useKeybindingService().registerUserKeybindings()
 
-    expect(keybindingStore.getUserKeybindingValues()).toEqual([])
-    expect(keybindingStore.getKeybinding(defaultBinding.combo)).toEqual(
-      defaultBinding
-    )
+    expect(
+      keybindingStore.getUserKeybindingValues().map((b) => b.commandId)
+    ).toEqual(['Comfy.Test.Second'])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
         errorType: 'failure_restoring_user_keybindings'
+      })
+    )
+  })
+
+  it('keeps other saved shortcuts when an edit persists after a clashing restore', async () => {
+    const settingStore = useSettingStore()
+    vi.mocked(settingStore.setMany).mockResolvedValue(undefined)
+    const clashing = { key: 'k', ctrl: true, alt: false, shift: false }
+    const unrelated = { key: 'l', ctrl: true, alt: false, shift: false }
+    settingStore.settingValues['Comfy.Keybinding.NewBindings'] = [
+      { commandId: 'Comfy.Test.First', combo: clashing },
+      { commandId: 'Comfy.Test.Second', combo: clashing },
+      { commandId: 'Comfy.Test.Unrelated', combo: unrelated }
+    ]
+
+    const keybindingService = useKeybindingService()
+    keybindingService.registerUserKeybindings()
+    useKeybindingStore().addUserKeybinding(
+      new KeybindingImpl({
+        commandId: 'Comfy.Test.Edited',
+        combo: { key: 'm', ctrl: true, alt: false, shift: false }
+      })
+    )
+    await keybindingService.persistUserKeybindings()
+
+    expect(settingStore.setMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Comfy.Keybinding.NewBindings': [
+          expect.objectContaining({ commandId: 'Comfy.Test.Second' }),
+          expect.objectContaining({ commandId: 'Comfy.Test.Unrelated' }),
+          expect.objectContaining({ commandId: 'Comfy.Test.Edited' })
+        ]
       })
     )
   })

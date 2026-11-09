@@ -361,7 +361,7 @@ describe('KeybindingPanel', () => {
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
           kind: 'error',
-          title: expect.stringContaining('command-holder')
+          title: expect.stringContaining('Holder command')
         })
       ])
     )

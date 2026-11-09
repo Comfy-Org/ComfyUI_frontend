@@ -227,7 +227,13 @@ const menuEntries = computed<MenuItem[]>(() => [
   }
 ])
 
-// Keybinding table logic
+function commandLabel(commandId: string) {
+  return t(
+    `commands.${normalizeI18nKey(commandId)}.label`,
+    commandStore.getCommand(commandId)?.label ?? commandId
+  )
+}
+
 const commandsData = computed<KeybindingCommand[]>(() => {
   return Object.values(commandStore.commands).map((command) => {
     const keybindings = keybindingStore.getKeybindingsByCommandId(command.id)
@@ -236,10 +242,7 @@ const commandsData = computed<KeybindingCommand[]>(() => {
       id: command.id,
       isModified: keybindingStore.isCommandKeybindingModified(command.id),
       keybindings,
-      label: t(
-        `commands.${normalizeI18nKey(command.id)}.label`,
-        command.label ?? command.id
-      ),
+      label: commandLabel(command.id),
       rowId: `keybinding-row-${command.id}`,
       source: command.source
     }
@@ -442,7 +445,7 @@ async function resetKeybinding(command: KeybindingCommand) {
     toast.error(
       t('g.keybindingResetConflict', {
         key: reset.conflict.incoming.combo.toString(),
-        command: reset.conflict.existing.commandId
+        command: commandLabel(reset.conflict.existing.commandId)
       })
     )
     return

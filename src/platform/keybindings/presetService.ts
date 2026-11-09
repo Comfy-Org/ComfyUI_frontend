@@ -16,21 +16,17 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from './keybindingService'
 import {
-  findSavedChoiceConflict,
+  findSavedChoiceConflicts,
   useKeybindingStore
 } from '@comfyorg/keybindings/keybindingStore'
 import type {
   KeybindingConflict,
   KeymapChange
 } from '@comfyorg/keybindings/keybindingStore'
-import type { Keybinding, KeybindingPreset } from '@comfyorg/keybindings/types'
+import type { KeybindingPreset } from '@comfyorg/keybindings/types'
 import { zKeybindingPreset } from '@comfyorg/keybindings/types'
 
 const PRESETS_DIR = 'keybindings'
-
-function toKeybindingImpl(binding: Keybinding): KeybindingImpl {
-  return new KeybindingImpl(binding)
-}
 
 function presetFilePath(name: string): string {
   const trimmed = name.trim()
@@ -124,8 +120,8 @@ export function useKeybindingPresetService() {
 
   function applyPreset(preset: KeybindingPreset): KeymapChange {
     const applied = keybindingStore.applySavedChoices({
-      newBindings: preset.newBindings.map(toKeybindingImpl),
-      unsetBindings: preset.unsetBindings.map(toKeybindingImpl)
+      newBindings: preset.newBindings.map((b) => new KeybindingImpl(b)),
+      unsetBindings: preset.unsetBindings.map((b) => new KeybindingImpl(b))
     })
     if (!applied.ok) return applied
 
@@ -215,9 +211,9 @@ export function useKeybindingPresetService() {
     }
     const preset = result.data
 
-    const conflict = findSavedChoiceConflict(
-      preset.newBindings.map(toKeybindingImpl)
-    )
+    const conflict = findSavedChoiceConflicts(
+      preset.newBindings.map((b) => new KeybindingImpl(b))
+    ).at(0)
     if (conflict) {
       notifyPresetConflict(preset.name, conflict)
       return

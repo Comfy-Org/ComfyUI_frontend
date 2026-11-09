@@ -28,6 +28,11 @@ interface KeymapWriteOptions {
   replaceConflicts?: boolean
 }
 
+interface SavedChoices {
+  newBindings: KeybindingImpl[]
+  unsetBindings: KeybindingImpl[]
+}
+
 const EMPTY_USER_CHOICES: UserChoices = {
   user: {},
   unset: {},
@@ -52,17 +57,20 @@ function refuseConflict(
   return { ok: false, reason: 'conflict', conflict: { existing, incoming } }
 }
 
-export function findSavedChoiceConflict(
+export function findSavedChoiceConflicts(
   bindings: KeybindingImpl[]
-): KeybindingConflict | undefined {
+): KeybindingConflict[] {
   const claimed = new Map<string, KeybindingImpl>()
+  const conflicts: KeybindingConflict[] = []
   for (const incoming of bindings) {
     const serializedCombo = incoming.combo.serialize()
     const existing = claimed.get(serializedCombo)
-    if (existing && !existing.equals(incoming)) return { existing, incoming }
+    if (existing && !existing.equals(incoming)) {
+      conflicts.push({ existing, incoming })
+    }
     claimed.set(serializedCombo, incoming)
   }
-  return undefined
+  return conflicts
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {
@@ -326,23 +334,30 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return writeUserBinding(currentChoices(), keybinding, options)
   }
 
+  function savedChoices({
+    newBindings,
+    unsetBindings
+  }: SavedChoices): UserChoices {
+    return newBindings.reduce(
+      withUserBinding,
+      unsetBindings.reduce(withUnsetChoice, EMPTY_USER_CHOICES)
+    )
+  }
+
   function applySavedChoices({
     newBindings,
     unsetBindings
-  }: {
-    newBindings: KeybindingImpl[]
-    unsetBindings: KeybindingImpl[]
-  }): KeymapChange {
-    const conflict = findSavedChoiceConflict(newBindings)
+  }: SavedChoices): KeymapChange {
+    const conflict = findSavedChoiceConflicts(newBindings).at(0)
     if (conflict) return refuseConflict(conflict.existing, conflict.incoming)
 
-    commitChoices(
-      newBindings.reduce(
-        withUserBinding,
-        unsetBindings.reduce(withUnsetChoice, EMPTY_USER_CHOICES)
-      )
-    )
+    commitChoices(savedChoices({ newBindings, unsetBindings }))
     return { ok: true, changed: true }
+  }
+
+  function restoreSavedChoices(saved: SavedChoices): KeybindingConflict[] {
+    commitChoices(savedChoices(saved))
+    return findSavedChoiceConflicts(saved.newBindings)
   }
 
   function unsetKeybinding(keybinding: KeybindingImpl) {
@@ -471,6 +486,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addDefaultKeybinding,
     addUserKeybinding,
     applySavedChoices,
+    restoreSavedChoices,
     unsetKeybinding,
     updateKeybindingOnCommand,
     resetAllKeybindings,

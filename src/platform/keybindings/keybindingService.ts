@@ -13,6 +13,12 @@ import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 
+function restorableBindings(bindings: Keybinding[]): KeybindingImpl[] {
+  return bindings
+    .filter((binding) => !isExcludedFromDistribution(binding))
+    .map((binding) => new KeybindingImpl(binding))
+}
+
 function isExcludedFromDistribution(keybinding: { commandId: string }) {
   return (
     isCloud &&
@@ -149,27 +155,24 @@ export function useKeybindingService() {
   }
 
   function registerUserKeybindings() {
-    const restoreBindings = (bindings: Keybinding[]) =>
-      bindings
-        .filter((binding) => !isExcludedFromDistribution(binding))
-        .map((binding) => new KeybindingImpl(binding))
-
-    const restored = keybindingStore.applySavedChoices({
-      unsetBindings: restoreBindings(
+    const conflicts = keybindingStore.restoreSavedChoices({
+      unsetBindings: restorableBindings(
         settingStore.get('Comfy.Keybinding.UnsetBindings')
       ),
-      newBindings: restoreBindings(
+      newBindings: restorableBindings(
         settingStore.get('Comfy.Keybinding.NewBindings')
       )
     })
-    if (!restored.ok) {
+    const conflict = conflicts.at(0)
+    if (conflict) {
       reportError(new Error('Saved keybindings claim the same key combo'), {
         errorType: 'failure_restoring_user_keybindings',
         surface: 'platform',
         context: {
-          combo: restored.conflict.incoming.combo.serialize(),
-          existingCommandId: restored.conflict.existing.commandId,
-          incomingCommandId: restored.conflict.incoming.commandId
+          combo: conflict.incoming.combo.serialize(),
+          existingCommandId: conflict.existing.commandId,
+          incomingCommandId: conflict.incoming.commandId,
+          conflictCount: conflicts.length
         }
       })
     }
