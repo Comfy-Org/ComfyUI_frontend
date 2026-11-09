@@ -78,7 +78,7 @@ describe('CustomDeploymentCard', () => {
 
     expect(link).toHaveAttribute(
       'href',
-      'https://platform.comfy.org/profile/builds'
+      'https://platform.comfy.org/profile/builds?return_to=comfyui_local'
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')

@@ -83,7 +83,7 @@ describe('ApiKeyForm', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get one here' })).toHaveAttribute(
       'href',
-      `${getComfyPlatformBaseUrl()}/login`
+      `${getComfyPlatformBaseUrl()}/login?return_to=comfyui_local`
     )
     expect(
       screen.getByRole('link', { name: 'About non-whitelisted sites' })

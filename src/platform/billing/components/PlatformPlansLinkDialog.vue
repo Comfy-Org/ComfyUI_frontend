@@ -33,17 +33,19 @@
 <script setup lang="ts">
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@comfyorg/design-system/button/Button'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { platformPlansLink } from '@/platform/billing/openPlatformPlans'
 
-const { title, body, linkLabel, onClose } = defineProps<{
+const { title, body, linkLabel, source, onClose } = defineProps<{
   title: string
   body: string
   linkLabel: string
+  source?: PaymentIntentSource
   onClose: () => void
 }>()
 
-const link = platformPlansLink()
+const link = platformPlansLink(source)
 
 function follow() {
   link.onFollow()

@@ -37,10 +37,10 @@
 <script setup lang="ts">
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()
 const emit = defineEmits<{ createCustomDeployment: [] }>()
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
+const buildsUrl = platformLink('/profile/builds')
 </script>
