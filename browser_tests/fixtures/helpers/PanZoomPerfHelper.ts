@@ -1,12 +1,8 @@
-import { readFileSync } from 'fs'
-
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   logMeasurement,
@@ -18,7 +14,7 @@ const ZOOM_STEPS = 40
 const IDLE_MS = 1500
 const VIEW_SCALE = 0.6
 
-const FIELDS: (keyof PerfMeasurement)[] = [
+const FIELDS = [
   'frameDurationMs',
   'p95FrameDurationMs',
   'totalBlockingTimeMs',
@@ -29,14 +25,7 @@ const FIELDS: (keyof PerfMeasurement)[] = [
   'layouts',
   'layoutDurationMs',
   'durationMs'
-]
-
-export async function loadLargeGraph(comfyPage: ComfyPage) {
-  const workflow = zComfyWorkflow.parse(
-    JSON.parse(readFileSync(assetPath('large-graph-workflow.json'), 'utf-8'))
-  )
-  await comfyPage.workflow.loadGraphData(workflow)
-}
+] as const satisfies readonly (keyof PerfMeasurement)[]
 
 export async function trimGraphTo(comfyPage: ComfyPage, nodeCount: number) {
   await comfyPage.page.evaluate((keep) => {

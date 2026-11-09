@@ -1,7 +1,6 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   centerOnGraph,
-  loadLargeGraph,
   measureIdle,
   measurePan,
   measureProgress,
@@ -17,7 +16,7 @@ const TEST_TIMEOUT_MS = 300_000
 function definePanZoomTests(renderer: 'vue' | 'litegraph') {
   for (const nodeCount of NODE_COUNTS) {
     test(`${renderer} ${nodeCount} nodes`, async ({ comfyPage }) => {
-      await loadLargeGraph(comfyPage)
+      await comfyPage.workflow.loadWorkflowData('large-graph-workflow')
       if (nodeCount < 245) await trimGraphTo(comfyPage, nodeCount)
       await centerOnGraph(comfyPage)
       await comfyPage.expectNodeCount(nodeCount)
