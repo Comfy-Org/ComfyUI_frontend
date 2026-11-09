@@ -1,9 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -26,6 +31,8 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/account/composables/useAccountUI'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
 
+const SCOPE_CAPTION = 'Workspaces only affect which credits you use.'
+
 function expectTracked(buttonId: string): void {
   expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
     button_id: buttonId,
@@ -35,6 +42,10 @@ function expectTracked(buttonId: string): void {
 
 function workspaceItem(name: string): HTMLElement {
   return screen.getByRole('menuitemradio', { name: new RegExp(`^${name}`) })
+}
+
+function createWorkspaceItem(): HTMLElement | null {
+  return screen.queryByRole('menuitem', { name: 'Create workspace' })
 }
 
 describe('AccountWorkspaceGroup', () => {
@@ -110,6 +121,17 @@ describe('AccountWorkspaceGroup', () => {
     expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
+  it('holds the workspaces while a switch is in flight', async () => {
+    const store = seedWorkspaces()
+    store.$patch({ isSwitching: true })
+    await renderInOpenMenu(AccountWorkspaceGroup)
+
+    await userEvent.click(workspaceItem('Studio'))
+
+    expect(workspaceItem('Studio')).toHaveAttribute('aria-disabled', 'true')
+    expect(store.switchWorkspace).not.toHaveBeenCalled()
+  })
+
   it('starts creating a workspace', async () => {
     seedWorkspaces()
     await renderInOpenMenu(AccountWorkspaceGroup)
@@ -129,9 +151,73 @@ describe('AccountWorkspaceGroup', () => {
     await renderInOpenMenu(AccountWorkspaceGroup)
 
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
-    expect(
-      screen.queryByRole('menuitem', { name: 'Create workspace' })
-    ).not.toBeInTheDocument()
+    expect(createWorkspaceItem()).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      distribution: 'on Cloud',
+      isCloud: true,
+      offersCreate: true,
+      showsCaption: false
+    },
+    {
+      distribution: 'off Cloud',
+      isCloud: false,
+      offersCreate: false,
+      showsCaption: true
+    }
+  ])(
+    '$distribution offers Create workspace: $offersCreate and explains the scope: $showsCaption',
+    async ({ isCloud, offersCreate, showsCaption }) => {
+      distribution.isCloud = isCloud
+      seedWorkspaces()
+      await renderInOpenMenu(AccountWorkspaceGroup)
+
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+      expect(createWorkspaceItem() !== null).toBe(offersCreate)
+      expect(screen.queryByText(SCOPE_CAPTION) !== null).toBe(showsCaption)
+    }
+  )
+
+  describe('with a Desktop host session', () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      workspaceId: personalWorkspace.id
+    } as const
+    const hostBridge = (canSwitch: boolean): DesktopHostAuthBridge => ({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      ...(canSwitch && { switchWorkspace: async () => signedIn }),
+      onChanged: () => () => {}
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it.for([
+      {
+        scenario: 'offers the switcher when Desktop can switch',
+        canSwitch: true,
+        radios: 2
+      },
+      {
+        scenario: 'pins the current workspace on an older Desktop',
+        canSwitch: false,
+        radios: 0
+      }
+    ])('$scenario', async ({ canSwitch, radios }) => {
+      distribution.isCloud = false
+      seedWorkspaces()
+      await startDesktopHostSession(hostBridge(canSwitch))
+      await renderInOpenMenu(AccountWorkspaceGroup)
+
+      expect(screen.queryAllByRole('menuitemradio')).toHaveLength(radios)
+      expect(screen.getByText('Personal Workspace')).toBeVisible()
+      expect(screen.queryByRole('menuitem')).not.toBeInTheDocument()
+    })
   })
 
   it.for([

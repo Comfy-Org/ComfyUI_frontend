@@ -179,7 +179,6 @@ describe('AgentAccountMenu', () => {
       entries: [
         'Personal Workspace',
         'Studio',
-        'Create workspace',
         'Workspace settings',
         'Usage',
         'View all plans',
