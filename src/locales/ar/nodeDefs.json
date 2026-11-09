@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "اكتشاف WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "مربعات مرجعية لـ visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "مُرمِّز نصوص WeVisOne-VL."
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "يُخرج قناعًا واحدًا لكل مربع، بترتيب bboxes مع الإطارات بالتسلسل، بدلًا من اتحاد واحد لكل إطار."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "ما الذي تريد العثور عليه. يرسله freeform كمطالبة كاملة."
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation: مربعات وأقنعة ألفا. يأخذ detection وpoint تسمية واحدة لكل سطر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "النقاط بصيغة JSON [{\"x\", \"y\", \"label\", \"frame\"}] بالبكسل، لمهمتَي point وcount_point."
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "الإجابة الخام."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "التقاط كاميرا ويب",
     "inputs": {

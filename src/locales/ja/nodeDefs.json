@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 検出",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "visual_prompt 用の参照ボックス。"
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL テキストエンコーダー。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "フレームごとに1つの統合マスクではなく、bboxes の順序およびフレームの並びに従って、ボックスごとに1つの mask を出力します。"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "検索対象。freeform はこれをプロンプト全体として送信します。"
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation：ボックスとアルファマット。detection と point では、1行につき1つのラベルを指定します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "point および count_point タスク用の、ピクセル単位の JSON [{\"x\", \"y\", \"label\", \"frame\"}] 形式のポイント。"
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "生の回答。"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "ウェブカメラキャプチャ",
     "inputs": {

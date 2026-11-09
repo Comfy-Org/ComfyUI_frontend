@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "Detección WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Cajas de referencia para visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Un codificador de texto WeVisOne-VL."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Genera una máscara por caja, en el orden de bboxes y con los fotogramas en secuencia, en vez de una unión por fotograma."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "consulta",
+        "tooltip": "Qué buscar. freeform lo envía como el prompt completo."
+      },
+      "task": {
+        "name": "tarea",
+        "tooltip": "segmentation: cajas delimitadoras y máscaras alfa. detection y point aceptan una etiqueta por línea."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "puntos",
+        "tooltip": "Puntos como JSON [{\"x\", \"y\", \"label\", \"frame\"}] en píxeles, para las tareas point y count_point."
+      },
+      "3": {
+        "name": "texto",
+        "tooltip": "La respuesta sin procesar."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Captura de Webcam",
     "inputs": {

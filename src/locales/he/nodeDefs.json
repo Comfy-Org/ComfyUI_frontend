@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "זיהוי WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "תיבות ייחוס עבור visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד טקסט WeVisOne-VL."
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "פלט של מסכה אחת לכל תיבה, בסדר של bboxes ועם המסגרות ברצף, במקום איחוד אחד לכל מסגרת."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "שאילתה",
+        "tooltip": "מה לחפש. freeform שולח אותה כפרומפט המלא."
+      },
+      "task": {
+        "name": "משימה",
+        "tooltip": "segmentation: תיבות ומסכות אלפא. detection ו-point מקבלים תווית אחת בכל שורה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מסכות",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נקודות",
+        "tooltip": "נקודות כ-JSON [{\"x\", \"y\", \"label\", \"frame\"}] בפיקסלים, עבור המשימות point ו-count_point."
+      },
+      "3": {
+        "name": "טקסט",
+        "tooltip": "התשובה הגולמית."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "צילום מצלמת רשת",
     "inputs": {

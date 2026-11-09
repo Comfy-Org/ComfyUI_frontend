@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL تشخیص",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "جعبه‌های مرجع برای visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "یک رمزگذار متن WeVisOne-VL."
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "به‌جای یک اجتماع برای هر فریم، یک mask برای هر جعبه خروجی می‌دهد؛ به‌ترتیب bboxes و با فریم‌ها به‌صورت ترتیبی."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "چه چیزی پیدا شود. freeform آن را به‌صورت کل prompt ارسال می‌کند."
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation: جعبه‌ها و مت‌های آلفا. detection و point برای هر خط یک برچسب می‌پذیرند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "نقاط به‌صورت JSON [{\"x\", \"y\", \"label\", \"frame\"}] بر حسب پیکسل، برای وظایف point و count_point."
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "پاسخ خام."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "دریافت از وب‌کم",
     "inputs": {

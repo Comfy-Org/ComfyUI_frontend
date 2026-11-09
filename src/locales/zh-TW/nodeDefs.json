@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 偵測",
+    "inputs": {
+      "bboxes": {
+        "name": "邊界框",
+        "tooltip": "供 visual_prompt 使用的參考邊界框。"
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL 文字編碼器。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "individual_masks": {
+        "name": "個別遮罩",
+        "tooltip": "依照 bboxes 順序並依序排列影格，為每個邊界框輸出一個遮罩，而非每個影格輸出一個聯集遮罩。"
+      },
+      "max_length": {
+        "name": "最大長度"
+      },
+      "query": {
+        "name": "查詢",
+        "tooltip": "要尋找的內容。freeform 會將其作為完整提示詞傳送。"
+      },
+      "task": {
+        "name": "任務",
+        "tooltip": "segmentation：邊界框與 Alpha 遮罩。detection 和 point 每行接受一個標籤。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "遮罩",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "點",
+        "tooltip": "以像素為單位的 JSON [{\"x\", \"y\", \"label\", \"frame\"}] 點座標，供 point 和 count_point 任務使用。"
+      },
+      "3": {
+        "name": "文字",
+        "tooltip": "原始回答。"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "網路攝影機擷取",
     "inputs": {

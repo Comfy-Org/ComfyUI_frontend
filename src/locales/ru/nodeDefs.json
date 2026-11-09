@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "Обнаружение WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Опорные рамки для visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Текстовый кодировщик WeVisOne-VL."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Выводить по одной маске на каждую рамку в порядке bboxes, последовательно по кадрам, вместо одной объединённой маски на кадр."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "запрос",
+        "tooltip": "Что искать. freeform отправляет это как весь промпт."
+      },
+      "task": {
+        "name": "задача",
+        "tooltip": "segmentation: рамки и альфа-маты. detection и point принимают по одной метке на строку."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "маски",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "точки",
+        "tooltip": "Точки в виде JSON [{\"x\", \"y\", \"label\", \"frame\"}] в пикселях для задач point и count_point."
+      },
+      "3": {
+        "name": "текст",
+        "tooltip": "Необработанный ответ."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Захват с веб-камеры",
     "inputs": {

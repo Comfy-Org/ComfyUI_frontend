@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 检测",
+    "inputs": {
+      "bboxes": {
+        "name": "边界框",
+        "tooltip": "用于 visual_prompt 的参考边界框。"
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL 文本编码器。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "individual_masks": {
+        "name": "单独蒙版",
+        "tooltip": "按 bboxes 顺序为每个边界框输出一个蒙版，帧按顺序排列，而非每帧输出一个合并蒙版。"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "query": {
+        "name": "查询",
+        "tooltip": "要查找的内容。freeform 会将其作为整个提示词发送。"
+      },
+      "task": {
+        "name": "任务",
+        "tooltip": "segmentation：边界框和 Alpha 蒙版。detection 和 point 每行接受一个标签。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "蒙版",
+        "tooltip": null
+      },
+      "1": {
+        "name": "边界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "点",
+        "tooltip": "以像素为单位的 JSON 点 [{\"x\", \"y\", \"label\", \"frame\"}]，用于 point 和 count_point 任务。"
+      },
+      "3": {
+        "name": "文本",
+        "tooltip": "原始回答。"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "网络摄像头捕获",
     "inputs": {

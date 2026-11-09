@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL Rilevamento",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Riquadri di riferimento per visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Un codificatore di testo WeVisOne-VL."
+      },
+      "image": {
+        "name": "immagine"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Emette una mask per riquadro, nell'ordine di bboxes con i fotogrammi in sequenza, anziché un'unione per fotogramma."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "Cosa trovare. freeform lo invia come prompt completo."
+      },
+      "task": {
+        "name": "attività",
+        "tooltip": "segmentazione: riquadri e matte alfa. detection e point accettano un'etichetta per riga."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "punti",
+        "tooltip": "Punti come JSON [{\"x\", \"y\", \"label\", \"frame\"}] in pixel, per le attività point e count_point."
+      },
+      "3": {
+        "name": "testo",
+        "tooltip": "La risposta grezza."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Cattura Webcam",
     "inputs": {

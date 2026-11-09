@@ -32826,6 +32826,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL Detect",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "A WeVisOne-VL text encoder."
+      },
+      "image": {
+        "name": "image"
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation: boxes and alpha mattes. detection and point take one label per line."
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "What to find. freeform sends it as the whole prompt."
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Output one mask per box, in bboxes order with the frames in sequence, instead of one union per frame."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Reference boxes for visual_prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "Points as JSON [{\"x\", \"y\", \"label\", \"frame\"}] in pixels, for the point and count_point tasks."
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "The raw answer."
+      }
+    }
+  },
   "YuE2GenerateABC": {
     "display_name": "YuE2 Generate ABC",
     "description": "Generates the ABC notation of a song from style and lyrics. Connect abc to YuE2 Generate Music node.",

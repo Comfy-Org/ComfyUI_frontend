@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 감지",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "visual_prompt용 참조 박스입니다."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL 텍스트 인코더입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "프레임당 하나의 통합 mask 대신, 프레임 순서에 따라 bboxes 순서대로 각 박스마다 하나의 mask를 출력합니다."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "찾을 대상입니다. freeform은 이를 전체 프롬프트로 전송합니다."
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation: 박스와 알파 매트. detection 및 point에는 줄마다 하나의 레이블을 입력합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "point 및 count_point 작업용 픽셀 단위의 JSON [{\"x\", \"y\", \"label\", \"frame\"}] 포인트입니다."
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "원시 응답입니다."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "웹캠 캡처",
     "inputs": {

@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL Detect",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Referenzboxen für visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Ein WeVisOne-VL-Text-Encoder."
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Gibt eine Maske pro Box aus, in der Reihenfolge von bboxes und mit den Frames in Sequenz, statt einer zusammengefassten Maske pro Frame."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "Abfrage",
+        "tooltip": "Was gefunden werden soll. freeform sendet es als gesamten Prompt."
+      },
+      "task": {
+        "name": "Aufgabe",
+        "tooltip": "Segmentierung: Boxen und Alpha-Mattes. detection und point akzeptieren ein Label pro Zeile."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Masken",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Punkte",
+        "tooltip": "Punkte als JSON [{\"x\", \"y\", \"label\", \"frame\"}] in Pixeln für die Aufgaben point und count_point."
+      },
+      "3": {
+        "name": "Text",
+        "tooltip": "Die Rohantwort."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Webcam-Aufnahme",
     "inputs": {

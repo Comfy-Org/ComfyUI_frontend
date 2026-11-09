@@ -32746,6 +32746,55 @@
       }
     }
   },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL Algılama",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "visual_prompt için başvuru kutuları."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Bir WeVisOne-VL metin kodlayıcısı."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Kare başına tek bir birleşim yerine, kareler sıralı olacak şekilde bboxes sırasına göre kutu başına bir mask çıktısı verir."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "sorgu",
+        "tooltip": "Ne bulunacağı. freeform, bunu tüm istem olarak gönderir."
+      },
+      "task": {
+        "name": "görev",
+        "tooltip": "segmentasyon: kutular ve alfa matları. detection ve point, satır başına bir etiket alır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "noktalar",
+        "tooltip": "point ve count_point görevleri için piksel cinsinden JSON [{\"x\", \"y\", \"label\", \"frame\"}] olarak noktalar."
+      },
+      "3": {
+        "name": "metin",
+        "tooltip": "Ham yanıt."
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Webcam Yakalama",
     "inputs": {
