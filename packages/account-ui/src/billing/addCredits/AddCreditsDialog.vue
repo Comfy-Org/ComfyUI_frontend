@@ -72,6 +72,14 @@
       @reopen="dialog.reopenCheckout"
       @close="emit('close')"
     />
+    <AddCreditsAutoTopUpOfferStep
+      v-else-if="state.step === 'auto_top_up_offer'"
+      :setup-url="state.setupUrl"
+      :translate
+      :ui
+      @set-up="setUpAutoTopUp"
+      @close="declineAutoTopUp"
+    />
   </div>
 </template>
 
@@ -98,6 +106,7 @@ import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AddCreditsAmountStep from './AddCreditsAmountStep.vue'
+import AddCreditsAutoTopUpOfferStep from './AddCreditsAutoTopUpOfferStep.vue'
 import AddCreditsBlockedStep from './AddCreditsBlockedStep.vue'
 import AddCreditsOpenedStep from './AddCreditsOpenedStep.vue'
 import type { AddCreditsUi } from './addCreditsPresentation'
@@ -139,7 +148,21 @@ const {
   ui?: AddCreditsUi
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  setUpAutoTopUp: []
+  declineAutoTopUp: []
+}>()
+
+function setUpAutoTopUp() {
+  emit('setUpAutoTopUp')
+  emit('close')
+}
+
+function declineAutoTopUp() {
+  emit('declineAutoTopUp')
+  emit('close')
+}
 
 const bounds = computed<AddCreditsBounds>(() => ({
   minCents: minTopupCents ?? ADD_CREDITS_FALLBACK_BOUNDS.minCents,
