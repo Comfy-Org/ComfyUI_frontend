@@ -5,15 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
-  setViewport,
-  setupTestPinia,
-  testI18n
+  setViewport
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
@@ -23,7 +22,6 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    setupTestPinia()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
@@ -110,7 +108,7 @@ describe('NodeSearchContent', () => {
         createMockNodeDef({ name: 'RareNode', display_name: 'Rare Node' })
       ])
 
-      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+      vi.spyOn(useNodeDefStore(), 'topNodeDefs', 'get').mockReturnValue([
         useNodeDefStore().nodeDefsByName['FrequentNode']
       ])
 
@@ -265,7 +263,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+      vi.spyOn(useNodeDefStore(), 'topNodeDefs', 'get').mockReturnValue([
         useNodeDefStore().nodeDefsByName['CoreNode'],
         useNodeDefStore().nodeDefsByName['CustomNode']
       ])

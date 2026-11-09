@@ -5,7 +5,6 @@ test(
   { tag: '@vue-nodes' },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-    await comfyPage.vueNodes.waitForNodes()
 
     const [rootNodeId] = await comfyPage.vueNodes.getNodeIds()
     await comfyPage.vueNodes.expectGraphSizeGrowth(
@@ -21,14 +20,12 @@ test(
     )
 
     await comfyPage.subgraph.exitViaBreadcrumb()
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.vueNodes.expectGraphSizeGrowth(
       rootNodeId,
       'back at the root graph after leaving the subgraph'
     )
 
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.vueNodes.waitForNodes()
     const [reloadedNodeId] = await comfyPage.vueNodes.getNodeIds()
     await comfyPage.vueNodes.expectGraphSizeGrowth(
       reloadedNodeId,

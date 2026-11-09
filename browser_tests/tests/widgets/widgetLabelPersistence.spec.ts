@@ -21,8 +21,9 @@ import type { WorkspaceStore } from '@e2e/types/globals'
  * `text` widget through the real app.
  */
 test.describe('Widget label persistence (regression #13861)', () => {
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.nextFrame()
   })

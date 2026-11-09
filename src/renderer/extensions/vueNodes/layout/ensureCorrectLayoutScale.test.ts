@@ -1,17 +1,18 @@
-import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined }
 }))
 
@@ -70,10 +71,6 @@ function snapshotGeometry(nodes: MockNode[]) {
 }
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('normalizes legacy Vue-scaled graph once', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {

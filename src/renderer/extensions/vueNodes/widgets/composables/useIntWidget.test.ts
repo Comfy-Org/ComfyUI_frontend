@@ -1,20 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import {
   _for_testing,
   useIntWidget
 } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
   addValueControlWidget: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => false)
-  })
 }))
 
 const { onValueChange } = _for_testing

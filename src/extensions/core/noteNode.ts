@@ -1,12 +1,16 @@
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
-import { ComfyWidgets } from '../../scripts/widgets'
+import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Node that add notes to your project
 
-app.registerExtension({
+export const noteNodeExtension: ComfyExtension = {
   name: 'Comfy.NoteNode',
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
@@ -23,9 +27,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.STRING(
           this,
           'text',
@@ -63,9 +64,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.MARKDOWN(
           this,
           'text',
@@ -81,4 +79,4 @@ app.registerExtension({
     LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
     MarkdownNoteNode.category = 'utilities'
   }
-})
+}

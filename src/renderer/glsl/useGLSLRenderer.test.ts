@@ -4,7 +4,7 @@ import { detectPassCount } from '@/renderer/glsl/glslUtils'
 import { useGLSLRenderer } from '@/renderer/glsl/useGLSLRenderer'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 
-vi.mock('@/renderer/glsl/glslUtils', () => ({
+vi.mock(import('@/renderer/glsl/glslUtils'), () => ({
   detectPassCount: vi.fn().mockReturnValue(1)
 }))
 

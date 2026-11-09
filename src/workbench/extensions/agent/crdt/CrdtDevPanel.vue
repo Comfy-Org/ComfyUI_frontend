@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard } from '@vueuse/core'
+import Button from '@comfyorg/design-system/button/Button'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -8,35 +9,50 @@ import {
   onMounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
-import { reportError } from '@/platform/telemetry/reportError'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
-import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
+import type {
+  CrdtDebugReportInput,
+  ReportIdentifiers,
+  ReportSources
+} from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import {
+  DEV_EVENT_KINDS,
+  clearDevEvents,
+  devEventReplacer,
+  devEvents,
+  stringifyDevEvents
+} from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 /**
  * The CRDT debug instrument.
@@ -68,6 +84,8 @@ const { status, snapshot } = defineProps<{
   snapshot?: () => CrdtDebugSnapshot
 }>()
 
+const { t } = useI18n()
+
 // Script-side strings: this is a dev instrument, deliberately kept out of
 // src/locales so it cannot leak into the product's translation surface.
 const S = {
@@ -90,6 +108,8 @@ const S = {
   copy: 'Copy',
   copyDocumentId: 'Copy document id',
   copyLogDetail: 'Copy log detail',
+  moreNodeIds: (count: number) => `+${count} more`,
+  unserializableDetail: '[unserializable detail]',
   copyLog: 'Copy log',
   copyReport: 'Copy full report',
   copying: 'Collecting…',
@@ -112,7 +132,6 @@ const S = {
   survivingNodes: 'nodes left',
   survivingWidgets: 'widget values left',
   verbosity: 'console',
-  sectionInclude: 'Also include in the report (off by default)',
   includeLogs: 'Server logs',
   includeSettings: 'Settings',
   includeWorkflow: 'Workflow JSON',
@@ -153,29 +172,12 @@ const STATUS_ROWS = [
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
 
-const EVENT_KINDS: readonly DevEventKind[] = [
-  'ws_out',
-  'doc_subscribed',
-  'doc_update',
-  'doc_ops_result',
-  'human_ops_settled',
-  'doc_reset',
-  'doc_nodes_changed',
-  'schema_error',
-  'reconnected',
-  'subscribe_retry',
-  'stale_probe',
-  'rebind',
-  'doc_gap',
-  'doc_stale'
-]
-
 const VERDICT_TONE: Record<string, string> = {
-  applied: 'text-agent-success border-agent-success',
-  'lww-dropped': 'text-agent-fg-muted border-agent-border-strong',
-  'no-op': 'text-agent-fg-muted border-agent-border-strong',
-  rejected: 'text-agent-danger border-agent-danger',
-  'not-reached': 'text-agent-fg-muted border-agent-border'
+  applied: 'text-success border-success',
+  'lww-dropped': 'text-muted-foreground border-border',
+  'no-op': 'text-muted-foreground border-border',
+  rejected: 'text-destructive border-destructive',
+  'not-reached': 'text-muted-foreground border-border'
 }
 
 // ── open/close state, persisted ───────────────────────────────────────────
@@ -185,6 +187,8 @@ const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
 const dismissed = ref(readHidden())
+const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
+const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function readOpen(): boolean {
   try {
@@ -220,6 +224,15 @@ function setOpen(value: boolean) {
   }
 }
 
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (!open.value || event.key !== 'Escape') return
+  event.stopPropagation()
+  if (event.target instanceof HTMLSelectElement) return
+  setOpen(false)
+}
+
+useEventListener(document, 'keydown', onDocumentKeydown)
+
 // ── live document facts ───────────────────────────────────────────────────
 const docState = shallowRef<CrdtDebugSnapshot | null>(null)
 let pollHandle: ReturnType<typeof setInterval> | undefined
@@ -238,12 +251,28 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  itemCopyRequest++
   if (pollHandle !== undefined) clearInterval(pollHandle)
   clearTimeout(logCopyReset)
   clearTimeout(reportCopyReset)
   clearTimeout(itemCopyReset)
 })
 
+watch(
+  open,
+  (value) => {
+    const control = value ? closeButton.value : chipButton.value
+    control?.focus()
+  },
+  { flush: 'post' }
+)
+watch(
+  closeButton,
+  (button) => {
+    if (open.value) button?.focus()
+  },
+  { flush: 'post' }
+)
 watch(tab, poll)
 
 const docRows = computed<readonly (readonly [string, string])[]>(() => {
@@ -281,19 +310,28 @@ interface LogRow {
   detail: string
   excerpt: string
   nodeIds: readonly string[]
+  hiddenNodeIdCount: number
 }
+
+const MAX_RETAINED_DETAIL_CODE_POINTS = 20_000
+const MAX_NODE_ID_BUTTONS = 50
 
 const visibleLogRows = computed<readonly LogRow[]>(() =>
   [...matchingEvents.value]
     .reverse()
     .slice(0, 150)
     .map((event) => {
-      const detail = stringifyDetail(event.detail)
+      const detail = truncateDetail(
+        stringifyDetail(event.detail),
+        MAX_RETAINED_DETAIL_CODE_POINTS
+      )
+      const allNodeIds = eventNodeIds(event)
       return {
         event,
         detail,
         excerpt: truncateDetail(detail),
-        nodeIds: eventNodeIds(event)
+        nodeIds: allNodeIds.slice(0, MAX_NODE_ID_BUTTONS),
+        hiddenNodeIdCount: Math.max(0, allNodeIds.length - MAX_NODE_ID_BUTTONS)
       }
     })
 )
@@ -366,15 +404,20 @@ function verdictLabel(entry: MergeTraceEntry): string {
 // ── copy actions ──────────────────────────────────────────────────────────
 type CopyState = 'idle' | 'busy' | 'done' | 'failed'
 const logCopyState = ref<CopyState>('idle')
-const reportCopyState = ref<CopyState>('idle')
+const reportCopyState = ref<
+  | { status: 'idle' | 'busy' | 'done' }
+  | { status: 'failed'; report: string | null }
+>({ status: 'idle' })
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
+let itemCopyRequest = 0
 
 const copyReportLabel = computed(() => {
-  if (reportCopyState.value === 'busy') return S.copying
-  if (reportCopyState.value === 'done') return S.copied
-  if (reportCopyState.value === 'failed') return S.copyFailed
+  if (reportCopyState.value.status === 'busy') return S.copying
+  if (reportCopyState.value.status === 'done') return S.copied
+  if (reportCopyState.value.status === 'failed')
+    return t('agent.diagnosticReport.retry')
   return S.copyReport
 })
 
@@ -388,13 +431,19 @@ async function writeClipboard(text: string): Promise<boolean> {
   try {
     await copy(text)
     return true
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_clipboard_write_failed'
+    })
     return false
   }
 }
 
 async function copyItem(key: string, text: string) {
+  const request = ++itemCopyRequest
   const ok = await writeClipboard(text)
+  if (request !== itemCopyRequest) return
   itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
   itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
@@ -411,12 +460,6 @@ function flashLogCopyState(ok: boolean) {
   logCopyReset = setTimeout(() => (logCopyState.value = 'idle'), 1600)
 }
 
-function flashReportCopyState(ok: boolean) {
-  clearTimeout(reportCopyReset)
-  reportCopyState.value = ok ? 'done' : 'failed'
-  reportCopyReset = setTimeout(() => (reportCopyState.value = 'idle'), 1600)
-}
-
 async function copyLog() {
   try {
     flashLogCopyState(
@@ -429,25 +472,69 @@ async function copyLog() {
 
 async function copyReport() {
   clearTimeout(reportCopyReset)
-  reportCopyState.value = 'busy'
+  const retainedReport =
+    reportCopyState.value.status === 'failed'
+      ? reportCopyState.value.report
+      : null
+  reportCopyState.value = { status: 'busy' }
+  if (retainedReport !== null) {
+    await copyCollectedReport(retainedReport)
+    return
+  }
   try {
     const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
+      agentMessages: useAgentConversationStore().messages,
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
+      mediaUiDiagnostics: collectCurrentMediaUiDiagnostics(),
       sources: reportSources.value,
-      workflow: reportSources.value.workflow
-        ? serializeActiveWorkflow()
-        : undefined
+      ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
-    flashReportCopyState(await writeClipboard(report))
+    await copyCollectedReport(report)
   } catch (error) {
-    reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
-    flashReportCopyState(false)
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_report_copy_failed'
+    })
+    reportCopyState.value = { status: 'failed', report: null }
   }
+}
+
+function collectCurrentMediaUiDiagnostics() {
+  try {
+    const nodeOutputStore = useNodeOutputStore()
+    return collectMediaUiDiagnostics({
+      nodes: collectAllNodes(app.rootGraph),
+      getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
+      getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
+      root: document
+    })
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_crdt_media_ui_diagnostics_failed',
+      level: 'warning'
+    })
+    return undefined
+  }
+}
+
+async function copyCollectedReport(report: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(report)
+  } catch {
+    reportCopyState.value = { status: 'failed', report }
+    return
+  }
+  reportCopyState.value = { status: 'done' }
+  reportCopyReset = setTimeout(
+    () => (reportCopyState.value = { status: 'idle' }),
+    1600
+  )
 }
 
 function fallbackSnapshot(): CrdtDebugSnapshot {
@@ -464,11 +551,14 @@ function fallbackSnapshot(): CrdtDebugSnapshot {
   }
 }
 
-function serializeActiveWorkflow(): unknown {
+function serializeActiveWorkflow(): Pick<
+  CrdtDebugReportInput,
+  'workflow' | 'workflowError'
+> {
   try {
-    return app.rootGraph.serialize()
+    return { workflow: app.rootGraph.serialize() }
   } catch (error) {
-    return { error: String(error) }
+    return { workflowError: String(error) }
   }
 }
 
@@ -559,28 +649,42 @@ const chipLabel = computed(
 
 function stringifyDetail(detail: unknown): string {
   try {
-    const raw = JSON.stringify(detail, (_key, value) =>
-      value instanceof Uint8Array ? `Uint8Array(${value.length})` : value
-    )
-    return raw ?? ''
+    return JSON.stringify(detail, devEventReplacer()) ?? ''
   } catch {
-    return String(detail)
+    return S.unserializableDetail
   }
 }
 
 function truncateDetail(detail: string, limit = 200): string {
-  return detail.length > limit ? `${detail.slice(0, limit)}…` : detail
+  if (detail.length <= limit) return detail
+  let end = 0
+  let count = 0
+  for (const codePoint of detail) {
+    if (count === limit) break
+    end += codePoint.length
+    count++
+  }
+  return end < detail.length ? `${detail.slice(0, end)}…` : detail
+}
+
+function readNodeIdList(detail: object, key: 'added' | 'removed'): unknown[] {
+  const value: unknown = Reflect.get(detail, key)
+  return Array.isArray(value) ? value : []
 }
 
 function eventNodeIds(event: DevEvent): string[] {
   if (event.kind !== 'doc_nodes_changed') return []
-  const detail = event.detail as {
-    added?: unknown[]
-    removed?: unknown[]
-  } | null
-  return [...(detail?.added ?? []), ...(detail?.removed ?? [])].filter(
-    (id): id is string => typeof id === 'string'
-  )
+  const detail = event.detail
+  if (typeof detail !== 'object' || detail === null) return []
+  const added = readNodeIdList(detail, 'added')
+  const removed = readNodeIdList(detail, 'removed')
+  return [
+    ...new Set(
+      [...added, ...removed].filter(
+        (id): id is string => typeof id === 'string'
+      )
+    )
+  ]
 }
 
 function fmtTime(at: number): string {
@@ -594,19 +698,20 @@ function fmtTime(at: number): string {
       v-if="dismissed"
       type="button"
       :title="S.restore"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
-      <span class="icon-[lucide--eye] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--eye] size-3" />
       {{ S.restore }}
     </button>
 
     <button
       v-else-if="!open"
+      ref="chipButton"
       type="button"
       :title="S.open"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -614,7 +719,7 @@ function fmtTime(at: number): string {
         :class="
           cn(
             'size-1.5 rounded-full',
-            status.connected ? 'bg-agent-success' : 'bg-agent-danger'
+            status.connected ? 'bg-success' : 'bg-destructive'
           )
         "
       />
@@ -623,18 +728,16 @@ function fmtTime(at: number): string {
 
     <section
       v-else
-      class="bg-agent-surface border-agent-border text-agent-fg flex min-h-0 grow flex-col overflow-hidden border-y"
+      class="flex min-h-0 grow flex-col overflow-hidden border-y bg-background text-foreground"
       data-testid="crdt-dev-panel"
     >
-      <header
-        class="border-agent-border flex h-8 shrink-0 items-center gap-2 border-b px-2"
-      >
+      <header class="flex h-8 shrink-0 items-center gap-2 border-b px-2">
         <span class="font-bold">{{ S.title }}</span>
-        <label class="text-agent-fg-muted ml-auto flex items-center gap-1">
+        <label class="ml-auto flex items-center gap-1 text-muted-foreground">
           {{ S.verbosity }}
           <select
             v-model="level"
-            class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+            class="rounded-sm border bg-secondary px-1 py-0.5"
             data-testid="crdt-dev-panel-verbosity"
             @change="onLevelChange(level)"
           >
@@ -650,24 +753,25 @@ function fmtTime(at: number): string {
         <button
           type="button"
           :title="S.hide"
-          class="text-agent-fg-muted hover:text-agent-danger cursor-pointer"
+          class="cursor-pointer text-muted-foreground hover:text-destructive"
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
-          <span class="icon-[lucide--eye-off] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--eye-off]" />
         </button>
         <button
+          ref="closeButton"
           type="button"
           :title="S.close"
-          class="text-agent-fg-muted hover:text-agent-fg cursor-pointer"
+          class="cursor-pointer text-muted-foreground hover:text-foreground"
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
-          <span class="icon-[lucide--x] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--x]" />
         </button>
       </header>
 
-      <nav class="border-agent-border flex shrink-0 border-b">
+      <nav class="flex shrink-0 border-b">
         <button
           v-for="entry in [
             ['status', S.tabStatus],
@@ -680,8 +784,8 @@ function fmtTime(at: number): string {
             cn(
               'flex-1 cursor-pointer px-2 py-1 transition-colors',
               tab === entry[0]
-                ? 'text-agent-fg border-agent-accent border-b-2'
-                : 'text-agent-fg-muted hover:text-agent-fg'
+                ? 'border-b-2 border-primary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           :data-testid="`crdt-dev-panel-tab-${entry[0]}`"
@@ -694,28 +798,29 @@ function fmtTime(at: number): string {
       <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-2">
         <template v-if="tab === 'status'">
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionFollower }}
             </div>
             <table class="w-full">
               <tbody>
                 <tr v-for="row in STATUS_ROWS" :key="row[0]">
-                  <td class="text-agent-fg-muted pr-2 align-top">
+                  <td class="pr-2 align-top text-muted-foreground">
                     {{ row[0] }}
                   </td>
                   <td class="break-all">
                     {{ row[1]() }}
-                    <button
+                    <Button
                       v-if="row[0] === 'doc id' && status.workflowId"
-                      type="button"
-                      class="border-agent-border hover:bg-agent-surface-hover ml-1 cursor-pointer rounded-sm border px-1.5 py-0.5"
+                      variant="outline"
+                      size="sm"
+                      class="ml-1"
                       :aria-label="S.copyDocumentId"
                       @click="
                         copyItem(`doc:${status.workflowId}`, status.workflowId)
                       "
                     >
                       {{ itemCopyLabel(`doc:${status.workflowId}`) }}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               </tbody>
@@ -723,13 +828,13 @@ function fmtTime(at: number): string {
           </section>
 
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionDoc }}
             </div>
             <table class="w-full">
               <tbody>
                 <tr v-for="row in docRows" :key="row[0]">
-                  <td class="text-agent-fg-muted pr-2 align-top">
+                  <td class="pr-2 align-top text-muted-foreground">
                     {{ row[0] }}
                   </td>
                   <td class="break-all">{{ row[1] }}</td>
@@ -738,11 +843,11 @@ function fmtTime(at: number): string {
             </table>
           </section>
 
-          <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+          <section class="text-muted-foreground">
+            <div class="mb-1 font-bold">
               {{ S.sectionProxy }}
             </div>
-            <div class="text-agent-fg-muted break-all">{{ proxyTarget }}</div>
+            <div class="break-all">{{ proxyTarget }}</div>
           </section>
         </template>
 
@@ -750,7 +855,7 @@ function fmtTime(at: number): string {
           <div class="flex flex-wrap items-center gap-1">
             <select
               v-model="scopeFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border bg-secondary px-1 py-0.5"
               data-testid="crdt-dev-panel-scope-filter"
             >
               <option value="">{{ S.allScopes }}</option>
@@ -760,7 +865,7 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="levelFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border bg-secondary px-1 py-0.5"
             >
               <option value="">{{ S.allLevels }}</option>
               <option
@@ -773,86 +878,84 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="kindFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border bg-secondary px-1 py-0.5"
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
-              <option v-for="kind in EVENT_KINDS" :key="kind" :value="kind">
+              <option v-for="kind in DEV_EVENT_KINDS" :key="kind" :value="kind">
                 {{ kind }}
               </option>
             </select>
-            <span class="text-agent-fg-muted ml-auto"
+            <span class="ml-auto text-muted-foreground"
               >{{ matchingEvents.length }} {{ S.events }}</span
             >
-            <button
-              type="button"
-              class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
-              @click="clearDevEvents()"
-            >
+            <Button variant="outline" size="sm" @click="clearDevEvents()">
               {{ S.clear }}
-            </button>
+            </Button>
           </div>
 
           <div class="space-y-1" data-testid="crdt-dev-panel-log">
             <div
               v-for="row in visibleLogRows"
               :key="row.event.seq"
-              class="border-agent-border border-b pb-1"
+              class="border-b pb-1"
             >
               <button
                 type="button"
-                class="hover:bg-agent-surface-hover block w-full cursor-pointer text-left"
+                class="block w-full cursor-pointer text-left hover:bg-accent"
                 @click="
                   expanded = expanded === row.event.seq ? null : row.event.seq
                 "
               >
                 <div class="flex items-baseline gap-1">
-                  <span class="text-agent-fg-muted">{{
+                  <span class="text-muted-foreground">{{
                     fmtTime(row.event.at)
                   }}</span>
                   <span
                     :class="
                       cn(
-                        'border-agent-border rounded-sm border px-1',
+                        'rounded-sm border px-1',
                         row.event.level === 'warn' &&
-                          'text-agent-danger border-agent-danger'
+                          'border-destructive text-destructive'
                       )
                     "
                     >{{ row.event.scope }}</span
                   >
                   <span class="font-bold">{{ row.event.kind }}</span>
                 </div>
-                <div class="text-agent-fg-muted break-all">
-                  {{
-                    expanded === row.event.seq
-                      ? truncateDetail(row.detail, 20_000)
-                      : row.excerpt
-                  }}
+                <div class="break-all text-muted-foreground">
+                  {{ expanded === row.event.seq ? row.detail : row.excerpt }}
                 </div>
               </button>
               <div
                 v-if="row.detail || row.nodeIds.length"
                 class="mt-1 flex flex-wrap gap-1"
               >
-                <button
+                <Button
                   v-if="row.detail"
-                  type="button"
-                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  variant="outline"
+                  size="sm"
                   :aria-label="S.copyLogDetail"
                   @click="copyItem(`detail:${row.event.seq}`, row.detail)"
                 >
                   {{ itemCopyLabel(`detail:${row.event.seq}`) }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-for="nodeId in row.nodeIds"
                   :key="nodeId"
-                  type="button"
-                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  variant="outline"
+                  size="sm"
                   :aria-label="`${S.copy} node id ${nodeId}`"
                   @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
                   {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
-                </button>
+                </Button>
+                <span
+                  v-if="row.hiddenNodeIdCount"
+                  class="px-1.5 py-0.5 text-muted-foreground"
+                >
+                  {{ S.moreNodeIds(row.hiddenNodeIdCount) }}
+                </span>
               </div>
             </div>
           </div>
@@ -860,14 +963,14 @@ function fmtTime(at: number): string {
 
         <template v-else>
           <div
-            class="border-agent-border bg-agent-surface-raised text-agent-fg-muted rounded-sm border px-2 py-1 font-bold"
+            class="rounded-sm border bg-secondary px-2 py-1 font-bold text-muted-foreground"
             data-testid="crdt-dev-panel-simulation-label"
           >
             {{ S.simulated }}
           </div>
 
           <select
-            class="border-agent-border bg-agent-surface-raised w-full rounded-sm border p-1"
+            class="w-full rounded-sm border bg-secondary p-1"
             data-testid="crdt-dev-panel-scenario"
             @change="selectScenario(($event.target as HTMLSelectElement).value)"
           >
@@ -881,18 +984,19 @@ function fmtTime(at: number): string {
             </option>
           </select>
 
-          <p class="text-agent-fg-muted">
+          <p class="text-muted-foreground">
             {{ S.question }}: {{ scenario.question }}
           </p>
 
-          <button
-            type="button"
-            class="border-agent-accent text-agent-fg hover:bg-agent-surface-hover w-full cursor-pointer rounded-sm border px-2 py-1"
+          <Button
+            variant="outline"
+            size="sm"
+            class="w-full border-primary"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
             {{ S.run }}
-          </button>
+          </Button>
 
           <template v-if="simulation">
             <ol
@@ -902,14 +1006,14 @@ function fmtTime(at: number): string {
               <li
                 v-for="entry in simulation.entries"
                 :key="entry.index"
-                class="border-agent-border border-l-2 pl-2"
+                class="border-l-2 pl-2"
               >
                 <div class="flex flex-wrap items-baseline gap-1">
-                  <span class="text-agent-fg-muted"
+                  <span class="text-muted-foreground"
                     >{{ entry.index + 1 }}.</span
                   >
                   <span class="font-bold">{{ entry.kind }}</span>
-                  <span class="text-agent-fg-muted">{{ entry.actor }}</span>
+                  <span class="text-muted-foreground">{{ entry.actor }}</span>
                   <span
                     :class="
                       cn(
@@ -920,20 +1024,22 @@ function fmtTime(at: number): string {
                     >{{ verdictLabel(entry) }}</span
                   >
                 </div>
-                <div class="text-agent-fg-muted">{{ registerLine(entry) }}</div>
+                <div class="text-muted-foreground">
+                  {{ registerLine(entry) }}
+                </div>
                 <p class="mt-0.5 mb-0">{{ entry.explanation }}</p>
               </li>
             </ol>
 
             <section>
-              <div class="text-agent-fg-muted mb-1 font-bold">
+              <div class="mb-1 font-bold text-muted-foreground">
                 {{ S.sectionOutcome }}
               </div>
               <div>
                 {{ simulation.survivingNodeIds.length }} {{ S.survivingNodes }}:
                 {{ simulation.survivingNodeIds.join(', ') || S.none }}
               </div>
-              <div class="text-agent-fg-muted break-all">
+              <div class="break-all text-muted-foreground">
                 {{ S.survivingWidgets }}:
                 {{
                   truncateDetail(stringifyDetail(simulation.survivingWidgets))
@@ -942,7 +1048,7 @@ function fmtTime(at: number): string {
             </section>
 
             <section v-if="registerGroups.length">
-              <div class="text-agent-fg-muted mb-1 font-bold">
+              <div class="mb-1 font-bold text-muted-foreground">
                 {{ S.sectionByRegister }}
               </div>
               <div v-for="group in registerGroups" :key="group.register">
@@ -950,7 +1056,7 @@ function fmtTime(at: number): string {
                 <div
                   v-for="entry in group.entries"
                   :key="entry.index"
-                  class="text-agent-fg-muted pl-2"
+                  class="pl-2 text-muted-foreground"
                 >
                   {{ entry.kind }} · {{ entry.actor }} ·
                   {{ verdictLabel(entry) }}
@@ -958,14 +1064,13 @@ function fmtTime(at: number): string {
               </div>
             </section>
 
-            <section v-if="lifecycle.length">
-              <div class="text-agent-fg-muted mb-1 font-bold">
+            <section v-if="lifecycle.length" class="text-muted-foreground">
+              <div class="mb-1 font-bold">
                 {{ S.sectionLifecycle }}
               </div>
               <div
                 v-for="row in lifecycle"
                 :key="`${row.nodeId}-${row.entry.index}`"
-                class="text-agent-fg-muted"
               >
                 {{ lifecycleLine(row) }}
               </div>
@@ -973,13 +1078,13 @@ function fmtTime(at: number): string {
           </template>
 
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionVocab }}
             </div>
             <dl class="space-y-1">
               <div v-for="item in MERGE_VOCABULARY" :key="item.term">
                 <dt class="font-bold">{{ item.term }}</dt>
-                <dd class="text-agent-fg-muted ml-0">{{ item.meaning }}</dd>
+                <dd class="ml-0 text-muted-foreground">{{ item.meaning }}</dd>
               </div>
             </dl>
           </section>
@@ -987,7 +1092,7 @@ function fmtTime(at: number): string {
           <section>
             <label
               for="crdt-tester-note"
-              class="text-agent-fg-muted mb-1 block font-bold"
+              class="mb-1 block font-bold text-muted-foreground"
               >{{ S.notePrompt }}</label
             >
             <textarea
@@ -995,15 +1100,17 @@ function fmtTime(at: number): string {
               v-model="testerNote"
               rows="3"
               :placeholder="S.notePlaceholder"
-              class="border-agent-border bg-agent-surface-raised text-agent-fg w-full rounded-sm border p-1"
+              class="w-full rounded-sm border bg-secondary p-1"
               data-testid="crdt-dev-panel-note"
             />
           </section>
         </template>
       </div>
 
-      <footer class="border-agent-border shrink-0 border-t p-2">
-        <div class="text-agent-fg-muted mb-1">{{ S.sectionInclude }}</div>
+      <footer class="shrink-0 border-t p-2">
+        <div class="mb-1 text-muted-foreground">
+          {{ t('agent.diagnosticReport.includedSources') }}
+        </div>
         <div class="mb-1 flex flex-wrap gap-1">
           <button
             v-for="source in REPORT_SOURCE_LABELS"
@@ -1015,17 +1122,18 @@ function fmtTime(at: number): string {
               cn(
                 'flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 transition-colors',
                 reportSources[source.key]
-                  ? 'border-agent-accent text-agent-fg'
-                  : 'border-agent-border text-agent-fg-muted'
+                  ? 'border-primary text-foreground'
+                  : 'border-border text-muted-foreground'
               )
             "
             :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
             @click="reportSources[source.key] = !reportSources[source.key]"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
-                  'size-3 shrink-0',
+                  'size-3',
                   reportSources[source.key]
                     ? 'icon-[lucide--check]'
                     : 'icon-[lucide--minus] opacity-50'
@@ -1035,24 +1143,38 @@ function fmtTime(at: number): string {
             {{ source.label }}
           </button>
         </div>
-        <p class="text-agent-fg-muted mt-0 mb-2">{{ S.includeHint }}</p>
+        <p class="mt-0 mb-2 text-muted-foreground">{{ S.includeHint }}</p>
         <div class="flex gap-1">
-          <button
-            type="button"
-            class="border-agent-border hover:bg-agent-surface-hover flex-1 cursor-pointer rounded-sm border px-2 py-1"
-            @click="copyLog"
-          >
+          <Button variant="outline" size="sm" class="flex-1" @click="copyLog">
             {{ copyLogLabel }}
-          </button>
-          <button
-            type="button"
-            :disabled="reportCopyState === 'busy'"
-            class="border-agent-accent hover:bg-agent-surface-hover flex-2 cursor-pointer rounded-sm border px-2 py-1 disabled:cursor-default"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="reportCopyState.status === 'busy'"
+            class="flex-2 border-primary"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >
             {{ copyReportLabel }}
-          </button>
+          </Button>
+        </div>
+        <div v-if="reportCopyState.status === 'failed'" class="mt-2">
+          <p role="alert" class="m-0 text-destructive">
+            {{
+              reportCopyState.report === null
+                ? t('agent.diagnosticReport.collectionFailed')
+                : t('agent.diagnosticReport.clipboardFailed')
+            }}
+          </p>
+          <textarea
+            v-if="reportCopyState.report !== null"
+            :aria-label="t('agent.diagnosticReport.manualCopy')"
+            :value="reportCopyState.report"
+            readonly
+            rows="3"
+            class="mt-1 w-full rounded-sm border bg-secondary p-1"
+          />
         </div>
       </footer>
     </section>

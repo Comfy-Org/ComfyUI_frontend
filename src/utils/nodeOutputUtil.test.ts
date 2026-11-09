@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 
 import { isInputPreviewOutput } from './nodeOutputUtil'
 

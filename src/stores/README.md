@@ -129,7 +129,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | modelToNodeStore.ts          | useModelToNodeStore           | Maps models to compatible nodes                         | Models     |
 | nodeBookmarkStore.ts         | useNodeBookmarkStore          | Manages node bookmarks and favorites                    | Nodes      |
 | nodeDefStore.ts              | useNodeDefStore               | Manages node definitions and schemas                    | Nodes      |
-| nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
+| nodeFrequencyStore.ts        | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
 | queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
 | queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
 | queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
@@ -138,7 +138,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
 | subgraphNavigationStore.ts   | useSubgraphNavigationStore    | Handles subgraph navigation state                       | Navigation |
 | systemStatsStore.ts          | useSystemStatsStore           | Tracks system performance statistics                    | System     |
-| toastStore.ts                | useToastStore                 | Manages toast notifications                             | UI         |
+| toastStore.ts                | useToast                      | Manages toast notifications                             | UI         |
 | userFileStore.ts             | useUserFileStore              | Manages user file operations                            | Files      |
 | userStore.ts                 | useUserStore                  | Manages user data and preferences                       | User       |
 | versionCompatibilityStore.ts | useVersionCompatibilityStore  | Manages frontend/backend version compatibility warnings | Core       |
@@ -167,7 +167,7 @@ When developing or modifying stores, follow these best practices:
 1. **Define clear purpose**: Each store should have a specific responsibility
 2. **Use actions for async operations**: Encapsulate asynchronous logic in actions
 3. **Keep stores focused**: Each store should manage related state
-4. **Document public API**: Add comments for state properties, actions, and getters
+4. **Name the public API clearly**: Names should make state, actions, and getters self-explanatory. Add curt JSDoc only where an exported action's contract is not obvious, and no other comments
 5. **Use getters for derived state**: Compute derived values using getters
 6. **Test store functionality**: Write unit tests for stores
 
@@ -180,16 +180,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export const useExampleStore = defineStore('example', () => {
-  // State
   const items = ref([])
   const isLoading = ref(false)
   const error = ref(null)
 
-  // Getters
   const itemCount = computed(() => items.value.length)
   const hasError = computed(() => error.value !== null)
 
-  // Actions
   function addItem(item) {
     items.value.push(item)
   }
@@ -209,18 +206,12 @@ export const useExampleStore = defineStore('example', () => {
     }
   }
 
-  // Expose state, getters, and actions
   return {
-    // State
     items,
     isLoading,
     error,
-
-    // Getters
     itemCount,
     hasError,
-
-    // Actions
     addItem,
     fetchItems
   }
@@ -331,10 +322,13 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
 ## Testing Stores
 
-Stores should be tested to ensure they behave as expected. Here's an example of how to test a store:
+Stores should be tested to ensure they behave as expected. `vitest.setup.ts`
+activates a fresh testing Pinia before every test, so a store test never
+creates its own — the `comfy/use-global-pinia` oxlint rule fails any test file
+that imports `createPinia`/`createTestingPinia`. Vitest is also configured with
+`mockReset`/`restoreMocks`, so per-test mock cleanup is unnecessary.
 
 ```typescript
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -342,7 +336,7 @@ import { api } from '@/scripts/api'
 import { useExampleStore } from '@/stores/exampleStore'
 
 // Mock API dependencies
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     getData: vi.fn()
   }
@@ -352,12 +346,8 @@ describe('useExampleStore', () => {
   let store: ReturnType<typeof useExampleStore>
 
   beforeEach(() => {
-    // Create a fresh pinia instance and make it active
-    setActivePinia(createPinia())
+    // The global testing Pinia is already active; just resolve the store
     store = useExampleStore()
-
-    // Clear all mocks
-    vi.clearAllMocks()
   })
 
   it('should initialize with default state', () => {

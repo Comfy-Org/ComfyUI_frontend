@@ -1,22 +1,38 @@
 import { computed, reactive, ref } from 'vue'
 
+import type { ServedNoticePlan } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
+import {
+  servedBillingNoticeAudience,
+  servedEndingNoticeStartsAt
+} from '@/platform/billing/composables/__mocks__/servedBillingNotices'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+
 interface BillingCapabilitiesMockState {
   canSubscribeSelfServe: boolean
   canCancel: boolean
   canReactivate: boolean
   canChangeSeats: boolean
+  canManageMembers: boolean
   canInviteMembers: boolean
+  canLeaveWorkspace: boolean
+  canManageSubscription: boolean
   canDowngradeToPersonal: boolean
+  canOpenPlans: boolean
 }
 
 const canTopUpState = ref(true)
+const noticePlan = ref<ServedNoticePlan>({ isTeamPlan: true })
 const defaultCapabilityState: BillingCapabilitiesMockState = {
   canSubscribeSelfServe: false,
   canCancel: true,
   canReactivate: true,
   canChangeSeats: true,
+  canManageMembers: true,
   canInviteMembers: true,
-  canDowngradeToPersonal: true
+  canLeaveWorkspace: true,
+  canManageSubscription: true,
+  canDowngradeToPersonal: true,
+  canOpenPlans: true
 }
 const capabilityState = reactive<BillingCapabilitiesMockState>({
   ...defaultCapabilityState
@@ -36,6 +52,10 @@ export function setCanSubscribeSelfServeMock(canSubscribeSelfServe: boolean) {
   capabilityState.canSubscribeSelfServe = canSubscribeSelfServe
 }
 
+export function setBillingNoticePlanMock(plan: ServedNoticePlan) {
+  noticePlan.value = plan
+}
+
 export function useBillingCapabilities() {
   return {
     canTopUp: computed(() => canTopUpState.value),
@@ -45,9 +65,47 @@ export function useBillingCapabilities() {
     canCancel: computed(() => capabilityState.canCancel),
     canReactivate: computed(() => capabilityState.canReactivate),
     canChangeSeats: computed(() => capabilityState.canChangeSeats),
-    canInviteMembers: computed(() => capabilityState.canInviteMembers),
+    canManageMembers: computed(() =>
+      receiveServerFact('can_manage_members', capabilityState.canManageMembers)
+    ),
+    canInviteMembers: computed(() =>
+      receiveServerFact('can_invite_members', capabilityState.canInviteMembers)
+    ),
+    canLeaveWorkspace: computed(() =>
+      receiveServerFact(
+        'can_leave_workspace',
+        capabilityState.canLeaveWorkspace
+      )
+    ),
+    canManageSubscription: computed(() =>
+      receiveServerFact(
+        'can_manage_subscription',
+        capabilityState.canManageSubscription
+      )
+    ),
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
+    ),
+    topUpDenial: computed<string | undefined>(() => undefined),
+    canManageBilling: computed(() => capabilityState.canManageSubscription),
+    canOpenPlans: computed(() =>
+      receiveServerFact('can_open_plans', capabilityState.canOpenPlans)
+    ),
+    runDeniedPaymentPastDue: computed(() => false),
+    autoTopUpMemberView: computed(() =>
+      receiveServerFact('auto_top_up_member_view', null)
+    ),
+    billingNoticeAudience: computed(() =>
+      receiveServerFact(
+        'billing_notice_audience',
+        servedBillingNoticeAudience(noticePlan.value)
+      )
+    ),
+    endingNoticeStartsAt: computed(() =>
+      receiveServerFact(
+        'ending_notice_starts_at',
+        servedEndingNoticeStartsAt(noticePlan.value)
+      )
     ),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),

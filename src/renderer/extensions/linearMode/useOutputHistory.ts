@@ -13,14 +13,14 @@ import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export function useOutputHistory(): {
   outputs: PagedList<AssetItem>
-  allOutputs: (item?: AssetItem) => ResultItemImpl[]
+  allOutputs: (item?: AssetItem) => AugmentedResultItem[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
   isWorkflowActive: ComputedRef<boolean>
@@ -61,7 +61,9 @@ export function useOutputHistory(): {
       hasActiveWorkflowJobs()
   )
 
-  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
+  function filterByOutputNodes(
+    items: AugmentedResultItem[]
+  ): AugmentedResultItem[] {
     const nodeIds = appModeStore.selectedOutputs
     if (!nodeIds.length) return []
     return items.filter((r) =>
@@ -84,10 +86,10 @@ export function useOutputHistory(): {
   const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
     string,
-    ReturnType<typeof useAsyncState<ResultItemImpl[]>>['state']
+    ReturnType<typeof useAsyncState<AugmentedResultItem[]>>['state']
   >()
 
-  function allOutputs(item?: AssetItem): ResultItemImpl[] {
+  function allOutputs(item?: AssetItem): AugmentedResultItem[] {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
@@ -117,7 +119,7 @@ export function useOutputHistory(): {
         user_metadata.outputCount <= user_metadata.allOutputs.length) &&
       item.preview_url
     ) {
-      const reversed = user_metadata.allOutputs.toReversed()
+      const reversed = [...user_metadata.allOutputs].reverse()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
@@ -133,7 +135,7 @@ export function useOutputHistory(): {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
-          .toReversed()
+          .reverse()
         resolvedCache.set(itemId, results)
         return results
       }),

@@ -1,7 +1,4 @@
-/**
- * Type definitions for spatial indexing system
- */
-import type { Bounds } from '@/renderer/core/spatial/QuadTree'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Debug information for a single QuadTree node

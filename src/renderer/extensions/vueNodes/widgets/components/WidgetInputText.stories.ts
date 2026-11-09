@@ -144,9 +144,7 @@ export const WithPlaceholder: Story = {
         name: 'prompt',
         type: 'STRING',
         value: '',
-        options: {
-          ...(placeholder.value ? { placeholder: placeholder.value } : {})
-        }
+        options: placeholder.value ? { placeholder: placeholder.value } : {}
       }))
       return { value, widget }
     },

@@ -5,7 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const domPreviewSelector = '.image-preview'
 
@@ -234,8 +234,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       }
     }
 
+    test.use({ initialSettings: { 'Comfy.RightSidePanel.IsOpen': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', true)
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )

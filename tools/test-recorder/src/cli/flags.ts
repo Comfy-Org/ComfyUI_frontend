@@ -4,14 +4,16 @@ export interface ParsedArgs {
 }
 
 /**
- * Only the named flags take a value, so a positional argument following a
- * flag that takes none is never swallowed.
+ * Named flags take a following value. Selected boolean flags may also take a
+ * separated `true` or `false`; other flags never swallow the next argument.
  */
 export function parseFlags(
   args: string[],
-  flagsTakingValue: readonly string[] = []
+  flagsTakingValue: readonly string[] = [],
+  booleanFlagsTakingValue: readonly string[] = []
 ): ParsedArgs {
   const takesValue = new Set(flagsTakingValue)
+  const takesBooleanValue = new Set(booleanFlagsTakingValue)
   const positional: string[] = []
   const flags: Record<string, string | undefined> = {}
 
@@ -29,12 +31,15 @@ export function parseFlags(
       continue
     }
 
-    const next = args[i + 1]
-    if (takesValue.has(body) && next !== undefined && !next.startsWith('--')) {
+    const next = args.at(i + 1)
+    if (
+      (takesValue.has(body) && next !== undefined && !next.startsWith('--')) ||
+      (takesBooleanValue.has(body) && (next === 'true' || next === 'false'))
+    ) {
       flags[body] = next
       i++
     } else {
-      flags[body] = ''
+      flags[body] = takesBooleanValue.has(body) ? 'true' : ''
     }
   }
 
@@ -48,4 +53,16 @@ export function parseTags(value: string | undefined): string[] | undefined {
     .map((tag) => tag.trim())
     .filter(Boolean)
   return tags && tags.length > 0 ? tags : undefined
+}
+
+/** Reads a strict boolean flag value and rejects malformed explicit values. */
+export function isFlagOn(
+  value: string | undefined,
+  flagName = 'flag'
+): boolean {
+  if (value === undefined || value === 'false') return false
+  if (value === 'true') return true
+  throw new Error(
+    `Invalid --${flagName} value "${value}". Use --${flagName}, --${flagName}=true, or --${flagName}=false.`
+  )
 }

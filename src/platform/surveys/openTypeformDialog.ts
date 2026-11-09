@@ -22,7 +22,6 @@ export function openTypeformDialog({
     component: TypeformDialogContent,
     props: { typeformId, hiddenFields },
     dialogComponentProps: {
-      renderer: 'reka',
       size: 'lg'
     }
   })

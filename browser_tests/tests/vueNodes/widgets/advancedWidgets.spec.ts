@@ -10,11 +10,6 @@ const FLOAT_SOURCE_POSITION_LEFT_OF_NODE = { x: 100, y: 200 }
 
 test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Node.AlwaysShowAdvancedWidgets',
-      false
-    )
-
     // Add a ModelSamplingFlux node which has both advanced (max_shift,
     // base_shift) and non-advanced (width, height) widgets.
     await comfyPage.page.evaluate(() => {
@@ -22,7 +17,6 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
       node.pos = [500, 200]
       window.app!.graph.add(node)
     })
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   function getNode(comfyPage: ComfyPage) {
@@ -87,7 +81,7 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
     await expect(widgets).toHaveCount(2)
   })
 
-  test('should keep connected advanced widgets visible when advanced inputs are hidden', async ({
+  test('should suppress connected advanced widgets regardless of the advanced toggle', async ({
     comfyPage
   }) => {
     const node = getNode(comfyPage)
@@ -122,9 +116,16 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
       )
       .not.toBeNull()
 
+    // Once connected, only the standalone socket row carries the accessible
+    // name: the input control is suppressed regardless of the advanced toggle.
+    await expect(maxShiftWidget).toHaveCount(1)
+    await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
 
-    await expect(maxShiftWidget).toBeVisible()
+    await expect(maxShiftWidget).toHaveCount(1)
+    await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await expect(baseShiftWidget).toBeHidden()
   })
 

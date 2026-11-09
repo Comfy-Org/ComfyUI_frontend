@@ -10,19 +10,31 @@ intro(pc.bgCyan(pc.black(' 🎭 ComfyUI Test Recorder ')))
 
 try {
   switch (command) {
-    case 'record': {
+    case 'record':
+    case 'recorder': {
       const { parseFlags } = await import('./cli/flags')
-      const { flags } = parseFlags(args.slice(1), [
-        'distribution',
-        'backend',
-        'workflow',
-        'tags',
-        'feature-flags',
-        'use-case',
-        'description',
-        'name',
-        'pr'
-      ])
+      const { positional, flags } = parseFlags(
+        args.slice(1),
+        [
+          'distribution',
+          'backend',
+          'workflow',
+          'tags',
+          'feature-flags',
+          'use-case',
+          'description',
+          'name',
+          'pr'
+        ],
+        ['force']
+      )
+      if (positional.length > 0) {
+        console.log(
+          pc.red(`  Unexpected record argument: ${positional.join(' ')}`)
+        )
+        process.exitCode = 1
+        break
+      }
       const { resolveRecordPrefill } = await import('./commands/recordPrefill')
       const { runRecord } = await import('./commands/record')
       await runRecord(resolveRecordPrefill(flags))
@@ -43,22 +55,29 @@ try {
       break
     }
     case 'transform': {
-      const { parseFlags, parseTags } = await import('./cli/flags')
-      const { positional, flags } = parseFlags(args.slice(1), [
-        'name',
-        'tags',
-        'workflow',
-        'output',
-        'feature-flags'
-      ])
+      const { isFlagOn, parseFlags, parseTags } = await import('./cli/flags')
+      const { positional, flags } = parseFlags(
+        args.slice(1),
+        ['name', 'tags', 'workflow', 'output', 'feature-flags'],
+        ['force']
+      )
       const filePath = positional[0]
       if (!filePath) {
         console.log(
           pc.red(
-            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>]'
+            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>] [--force]'
           )
         )
         process.exit(1)
+      }
+      if (positional.length > 1) {
+        console.log(
+          pc.red(
+            `  Unexpected transform argument: ${positional.slice(1).join(' ')}`
+          )
+        )
+        process.exitCode = 1
+        break
       }
       const { parseFeatureFlagSpecs } = await import('./featureFlags')
       const { runTransform } = await import('./commands/transform')
@@ -67,6 +86,7 @@ try {
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
         output: flags.output,
+        force: isFlagOn(flags.force, 'force'),
         featureFlags: flags['feature-flags']
           ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
           : undefined
@@ -174,6 +194,11 @@ try {
       }
       break
     }
+    case 'agent-replay': {
+      const { agentReplayCli } = await import('./commands/agentReplay')
+      process.exitCode = await agentReplayCli(args.slice(1))
+      break
+    }
     case 'list': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), ['filter'])
@@ -194,7 +219,7 @@ try {
     default: {
       // Help is a successful request; a typo is not.
       const askedForHelp =
-        command === undefined || command === '--help' || command === 'help'
+        !command || command === '--help' || command === 'help'
       if (!askedForHelp) {
         console.log(pc.red(`  Unknown command: ${command}`))
         process.exitCode = 1
@@ -203,17 +228,23 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record [--distribution <id>] [--backend <url>] [--workflow <name>]
+  record (alias: recorder) [--distribution <id>] [--backend <url>] [--workflow <name>]
          [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
-         [--description <text>] [--name <slug>] [--pr <number>]
+         [--description <text>] [--name <slug>] [--pr <number>] [--force]
               Record a browser test; supplied answers skip setup prompts
+              --backend <url> points the dev server at any backend host, such
+              as a nightly environment, instead of a named distribution
   add-workflow <file> [--name <n>]
               Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
-  transform   Transform raw codegen output to conventions
+  transform   Transform raw codegen output to conventions (--force to overwrite)
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
+  agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video] [--help]
+              Replay the recorded agent conversations as tests against a
+              running dev server; --spec replays them through another spec
+              (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings
@@ -221,6 +252,12 @@ Commands:
 
 Options:
   --help      Show help
+
+Environment:
+  DEV_SERVER_CF_ACCESS_CLIENT_ID, DEV_SERVER_CF_ACCESS_CLIENT_SECRET
+              Cloudflare Access service token forwarded to a gated backend.
+              Without it, a gated host bounces every request to the Access
+              login page and the app never finishes loading.
 
 If you are an agent helping a HUMAN record a test: run 'comfy-test guide'
 first and follow it — it tells you what to say and what never to say.
@@ -236,7 +273,7 @@ Transform flags:
   --feature-flags <specs>
               Seed comma-separated feature flags in the generated test
 
-'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
+'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', 'tags', and 'agent-replay' work non-interactively.
 `)
       break
     }

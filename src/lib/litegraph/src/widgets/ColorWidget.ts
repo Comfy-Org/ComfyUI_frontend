@@ -1,5 +1,5 @@
-import type { IColorWidget } from '../types/widgets'
-import { hexToInt, intToHex } from '@/utils/colorUtil'
+import type { IColorWidget } from '@comfyorg/graph-model/widgets'
+import { hexToInt, intToHex } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 import { BaseWidget } from './BaseWidget'
 
@@ -27,8 +27,6 @@ export class ColorWidget
   extends BaseWidget<IColorWidget>
   implements IColorWidget
 {
-  override type = 'color' as const
-
   private get hexValue(): string {
     return typeof this.value === 'number'
       ? intToHex(this.value)

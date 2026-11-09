@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
@@ -11,14 +9,14 @@ import type {
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -237,9 +235,7 @@ function scopesOf(graph: LGraph): { name: string; graph: LGraph | Subgraph }[] {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
 describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {

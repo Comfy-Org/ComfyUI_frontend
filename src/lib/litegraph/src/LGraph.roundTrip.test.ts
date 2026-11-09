@@ -259,12 +259,12 @@ describe('LGraph round trip preserves the input', () => {
 
         expect(twice).toEqual(once)
       })
+
+      test('keeps every group, by identity and bounds', () => {
+        const grouped = withGroups(graph)
+
+        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
+      })
     })
   }
-
-  test('keeps every group, by identity and bounds', () => {
-    const grouped = withGroups(fixtures[0].graph)
-
-    expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
-  })
 })
