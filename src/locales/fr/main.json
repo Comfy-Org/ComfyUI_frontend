@@ -6095,7 +6095,6 @@
         },
         "scheduledChange": "Passage à {plan} le {date}.",
         "stayConfirm": {
-          "body": "Vous resterez sur {current}, qui se renouvelle le {date}. Vous pourrez planifier un changement à tout moment.",
           "bodyNoAmount": "Vous resterez sur {current}. Vous pouvez planifier un changement à nouveau à tout moment.",
           "title": "Annuler votre changement vers {plan} ?"
         },

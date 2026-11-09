@@ -6095,7 +6095,6 @@
         },
         "scheduledChange": "将于 {date} 更改为 {plan}。",
         "stayConfirm": {
-          "body": "您将继续使用 {current}，并于 {date} 续订。您可以随时再次安排变更。",
           "bodyNoAmount": "你将继续使用 {current}。你可以随时再次安排更改。",
           "title": "取消更改为 {plan}？"
         },

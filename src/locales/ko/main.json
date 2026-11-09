@@ -6095,7 +6095,6 @@
         },
         "scheduledChange": "{date}에 {plan}(으)로 변경됩니다.",
         "stayConfirm": {
-          "body": "{current} 요금제가 유지되며 {date}에 갱신됩니다. 언제든지 다시 변경을 예약할 수 있습니다.",
           "bodyNoAmount": "{current} 요금제를 유지합니다. 언제든지 다시 변경 일정을 예약할 수 있습니다.",
           "title": "{plan}(으)로 변경을 취소하시겠습니까?"
         },

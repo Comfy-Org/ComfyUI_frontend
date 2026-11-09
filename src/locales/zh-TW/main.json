@@ -6095,7 +6095,6 @@
         },
         "scheduledChange": "將於 {date} 變更為 {plan}。",
         "stayConfirm": {
-          "body": "您將繼續使用 {current}，並於 {date} 續訂。您可以隨時再次安排變更。",
           "bodyNoAmount": "您將繼續使用 {current}。您隨時可以再次排程變更。",
           "title": "要取消變更為 {plan} 的操作嗎？"
         },
