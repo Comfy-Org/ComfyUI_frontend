@@ -6,6 +6,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
@@ -338,6 +339,36 @@ describe('KeybindingPanel', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('names the holder and persists nothing when a reset is refused', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-default', 'Default command', ['R'])
+    registerCommand('command-holder', 'Holder command')
+    useKeybindingStore().addUserKeybinding(
+      new KeybindingImpl({
+        commandId: 'command-holder',
+        combo: { key: 'R', ctrl: true }
+      }),
+      { replaceConflicts: true }
+    )
+    renderPanel()
+
+    const row = screen.getByRole('row', { name: /Default command/ })
+    await user.click(within(row).getByRole('button', { name: 'Reset' }))
+
+    await waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: expect.stringContaining('command-holder')
+        })
+      ])
+    )
+    expect(useSettingStore().setMany).not.toHaveBeenCalled()
+    expect(
+      useKeybindingStore().getKeybindingsByCommandId('command-holder')
+    ).toHaveLength(1)
   })
 
   it('closes the reset-all confirmation when saving fails', async () => {

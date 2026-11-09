@@ -107,6 +107,7 @@
     "resetAllKeybindingsTitle": "Reset all keybindings?",
     "resetAllKeybindingsMessage": "All keybindings will be reset to their default values. This cannot be undone.",
     "allKeybindingsReset": "All keybindings reset to default",
+    "keybindingResetConflict": "Can't reset: {key} is assigned to {command}. Change or remove that shortcut, then try again.",
     "removeAllKeybindingsTitle": "Remove all keybindings?",
     "removeAllKeybindingsMessage": "All keybindings for this command will be removed",
     "removeAll": "Remove all",
@@ -358,6 +359,7 @@
     "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "keybindingPresets": {
+      "presetConflict": "Preset \"{name}\" wasn't applied because it assigns {key} to more than one command. Your keybindings are unchanged.",
       "importPreset": "Import preset",
       "importKeybindingPreset": "Import keybinding preset",
       "exportPreset": "Export preset",

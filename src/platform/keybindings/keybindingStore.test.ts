@@ -42,11 +42,15 @@ describe('useKeybindingStore', () => {
     ])
   })
 
-  it('should override default keybindings with user keybindings', () => {
+  it('should replace a default keybinding when replacement is explicit', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command1',
       combo: { key: 'C', ctrl: true }
+    })
+    const unrelatedKeybinding = new KeybindingImpl({
+      commandId: 'test.unrelated',
+      combo: { key: 'U', ctrl: true }
     })
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command2',
@@ -54,10 +58,189 @@ describe('useKeybindingStore', () => {
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
-    store.addUserKeybinding(userKeybinding)
+    store.addDefaultKeybinding(unrelatedKeybinding)
+    const result = store.addUserKeybinding(userKeybinding, {
+      replaceConflicts: true
+    })
 
-    expect(store.keybindings).toHaveLength(1)
+    expect(result).toEqual({ ok: true, changed: true })
     expect(store.getKeybinding(userKeybinding.combo)).toEqual(userKeybinding)
+    expect(store.getKeybindingsByCommandId('test.command1')).toEqual([])
+    expect(store.getKeybinding(unrelatedKeybinding.combo)).toEqual(
+      unrelatedKeybinding
+    )
+  })
+
+  describe('writes that claim an occupied combo without explicit replacement', () => {
+    function holderOnCtrlC() {
+      return new KeybindingImpl({
+        commandId: 'test.holder',
+        combo: { key: 'C', ctrl: true }
+      })
+    }
+    function incomingOnCtrlC() {
+      return new KeybindingImpl({
+        commandId: 'test.incoming',
+        combo: { key: 'C', ctrl: true }
+      })
+    }
+
+    it.for([
+      {
+        name: 'a default holds the combo',
+        hold: (holder: KeybindingImpl) =>
+          useKeybindingStore().addDefaultKeybinding(holder)
+      },
+      {
+        name: 'a user binding holds the combo',
+        hold: (holder: KeybindingImpl) =>
+          useKeybindingStore().addUserKeybinding(holder)
+      }
+    ])('refuses an added binding when $name', ({ hold }) => {
+      const store = useKeybindingStore()
+      const holder = holderOnCtrlC()
+      const incoming = incomingOnCtrlC()
+      hold(holder)
+
+      const result = store.addUserKeybinding(incoming)
+
+      expect(result).toEqual({
+        ok: false,
+        reason: 'conflict',
+        conflict: { existing: holder, incoming }
+      })
+      expect(store.getKeybinding(holder.combo)).toEqual(holder)
+      expect(store.getKeybindingsByCommandId('test.incoming')).toEqual([])
+    })
+
+    it('keeps the old binding when moving a specific binding is refused', () => {
+      const store = useKeybindingStore()
+      const holder = holderOnCtrlC()
+      const original = new KeybindingImpl({
+        commandId: 'test.incoming',
+        combo: { key: 'D', ctrl: true }
+      })
+      store.addDefaultKeybinding(holder)
+      store.addDefaultKeybinding(original)
+
+      const result = store.updateSpecificKeybinding(original, incomingOnCtrlC())
+
+      expect(result.ok).toBe(false)
+      expect(store.getKeybinding(original.combo)).toEqual(original)
+      expect(store.getKeybinding(holder.combo)).toEqual(holder)
+      expect(store.getUserUnsetKeybindingValues()).toEqual([])
+    })
+
+    it('keeps the current binding when changing a command binding is refused', () => {
+      const store = useKeybindingStore()
+      const holder = holderOnCtrlC()
+      const original = new KeybindingImpl({
+        commandId: 'test.incoming',
+        combo: { key: 'D', ctrl: true }
+      })
+      store.addDefaultKeybinding(holder)
+      store.addUserKeybinding(original)
+
+      const result = store.updateKeybindingOnCommand(incomingOnCtrlC())
+
+      expect(result.ok).toBe(false)
+      expect(store.getKeybinding(original.combo)).toEqual(original)
+      expect(store.getKeybinding(holder.combo)).toEqual(holder)
+    })
+  })
+
+  describe('applySavedChoices', () => {
+    it('leaves the live keymap unchanged when a later entry conflicts', () => {
+      const store = useKeybindingStore()
+      const live = new KeybindingImpl({
+        commandId: 'test.live',
+        combo: { key: 'L', ctrl: true }
+      })
+      store.addUserKeybinding(live)
+
+      const result = store.applySavedChoices({
+        unsetBindings: [],
+        newBindings: [
+          new KeybindingImpl({
+            commandId: 'test.first',
+            combo: { key: 'F', ctrl: true }
+          }),
+          new KeybindingImpl({
+            commandId: 'test.second',
+            combo: { key: 'F', ctrl: true }
+          })
+        ]
+      })
+
+      expect(result.ok).toBe(false)
+      expect(store.getUserKeybindingValues()).toEqual([live])
+      expect(store.getKeybindingsByCommandId('test.first')).toEqual([])
+    })
+
+    it('lets a saved choice keep a combo a default also claims', () => {
+      const store = useKeybindingStore()
+      const proposed = new KeybindingImpl({
+        commandId: 'test.default',
+        combo: { key: 'K', ctrl: true }
+      })
+      const saved = new KeybindingImpl({
+        commandId: 'test.saved',
+        combo: { key: 'K', ctrl: true }
+      })
+      store.addDefaultKeybinding(proposed)
+
+      const result = store.applySavedChoices({
+        unsetBindings: [],
+        newBindings: [saved]
+      })
+
+      expect(result).toEqual({ ok: true, changed: true })
+      expect(store.getKeybinding(saved.combo)).toEqual(saved)
+    })
+
+    it('replaces every earlier user choice', () => {
+      const store = useKeybindingStore()
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.previous',
+          combo: { key: 'P', ctrl: true }
+        })
+      )
+      const saved = new KeybindingImpl({
+        commandId: 'test.saved',
+        combo: { key: 'S', ctrl: true }
+      })
+
+      store.applySavedChoices({ unsetBindings: [], newBindings: [saved] })
+
+      expect(store.getUserKeybindingValues()).toEqual([saved])
+    })
+  })
+
+  describe('resetKeybindingForCommand with an occupied default combo', () => {
+    it('refuses and keeps both bindings when another command holds the combo', () => {
+      const store = useKeybindingStore()
+      const defaultBinding = new KeybindingImpl({
+        commandId: 'test.default',
+        combo: { key: 'R', ctrl: true }
+      })
+      const overwriting = new KeybindingImpl({
+        commandId: 'test.overwriting',
+        combo: { key: 'R', ctrl: true }
+      })
+      store.addDefaultKeybinding(defaultBinding)
+      store.addUserKeybinding(overwriting, { replaceConflicts: true })
+
+      const result = store.resetKeybindingForCommand('test.default')
+
+      expect(result).toEqual({
+        ok: false,
+        reason: 'conflict',
+        conflict: { existing: overwriting, incoming: defaultBinding }
+      })
+      expect(store.getKeybinding(overwriting.combo)).toEqual(overwriting)
+      expect(store.getUserUnsetKeybindingValues()).toEqual([defaultBinding])
+    })
   })
 
   it('Should allow binding to unsetted default keybindings', () => {
@@ -118,7 +301,7 @@ describe('useKeybindingStore', () => {
     expect(() => store.addDefaultKeybinding(keybinding)).toThrow()
   })
 
-  it('should allow adding duplicate user keybindings', () => {
+  it('should replace a user keybinding when replacement is explicit', () => {
     const store = useKeybindingStore()
     const keybinding1 = new KeybindingImpl({
       commandId: 'test.command1',
@@ -130,7 +313,7 @@ describe('useKeybindingStore', () => {
     })
 
     store.addUserKeybinding(keybinding1)
-    store.addUserKeybinding(keybinding2)
+    store.addUserKeybinding(keybinding2, { replaceConflicts: true })
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(keybinding2.combo)).toEqual(keybinding2)
@@ -265,7 +448,7 @@ describe('useKeybindingStore', () => {
       combo: { key: 'A', ctrl: true }
     })
 
-    store.updateKeybindingOnCommand(newKeybinding)
+    store.updateKeybindingOnCommand(newKeybinding, { replaceConflicts: true })
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(newKeybinding.combo)).toMatchObject({
@@ -277,7 +460,7 @@ describe('useKeybindingStore', () => {
   it('should return false when no default or current keybinding exists during reset', () => {
     const store = useKeybindingStore()
     const result = store.resetKeybindingForCommand('nonexistent.command')
-    expect(result).toBe(false)
+    expect(result).toEqual({ ok: true, changed: false })
   })
 
   it('should return false when current keybinding equals default keybinding', () => {
@@ -290,7 +473,7 @@ describe('useKeybindingStore', () => {
     store.addDefaultKeybinding(defaultKeybinding)
     const result = store.resetKeybindingForCommand('test.command')
 
-    expect(result).toBe(false)
+    expect(result).toEqual({ ok: true, changed: false })
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
@@ -309,7 +492,7 @@ describe('useKeybindingStore', () => {
 
     const result = store.resetKeybindingForCommand('test.command')
 
-    expect(result).toBe(true)
+    expect(result).toEqual({ ok: true, changed: true })
     expect(store.keybindings).toHaveLength(0)
   })
 
@@ -336,7 +519,7 @@ describe('useKeybindingStore', () => {
 
     const result = store.resetKeybindingForCommand('test.command')
 
-    expect(result).toBe(true)
+    expect(result).toEqual({ ok: true, changed: true })
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
@@ -362,7 +545,7 @@ describe('useKeybindingStore', () => {
 
     const result = store.resetKeybindingForCommand('test.command')
 
-    expect(result).toBe(true)
+    expect(result).toEqual({ ok: true, changed: true })
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
@@ -395,7 +578,7 @@ describe('useKeybindingStore', () => {
 
     const result = store.resetKeybindingForCommand('test.command')
 
-    expect(result).toBe(true)
+    expect(result).toEqual({ ok: true, changed: true })
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
@@ -518,7 +701,7 @@ describe('useKeybindingStore', () => {
 
       const result = store.resetKeybindingForCommand('test.command')
 
-      expect(result).toBe(true)
+      expect(result).toEqual({ ok: true, changed: true })
       expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
     })
 
@@ -539,7 +722,7 @@ describe('useKeybindingStore', () => {
 
       const result = store.resetKeybindingForCommand('test.command')
 
-      expect(result).toBe(true)
+      expect(result).toEqual({ ok: true, changed: true })
       expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(0)
     })
   })

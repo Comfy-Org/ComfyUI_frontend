@@ -255,6 +255,28 @@ describe('useKeybindingPresetService', () => {
       )
     })
 
+    it('stores nothing when the imported preset conflicts with itself', async () => {
+      const conflicting: KeybindingPreset = {
+        name: 'broken',
+        newBindings: [
+          { commandId: 'first.cmd', combo: { key: 'A', ctrl: true } },
+          { commandId: 'second.cmd', combo: { key: 'A', ctrl: true } }
+        ],
+        unsetBindings: []
+      }
+      mockUploadFile.mockResolvedValue(
+        new File([JSON.stringify(conflicting)], 'broken.json', {
+          type: 'application/json'
+        })
+      )
+
+      const service = await getPresetService()
+      await service.importPreset()
+
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(store.currentPresetName).toBe('default')
+    })
+
     it('saves preset to storage and switches to it', async () => {
       const validPreset: KeybindingPreset = {
         name: 'imported',
@@ -442,6 +464,30 @@ describe('useKeybindingPresetService', () => {
       ).toEqual(['test.selectAll'])
     })
 
+    it('leaves the keymap and preset name unchanged when a later entry conflicts', async () => {
+      const live = new KeybindingImpl({
+        commandId: 'live.cmd',
+        combo: { key: 'Z', ctrl: true }
+      })
+      store.addUserKeybinding(live)
+      const preset: KeybindingPreset = {
+        name: 'broken',
+        newBindings: [
+          { commandId: 'first.cmd', combo: { key: 'A', ctrl: true } },
+          { commandId: 'second.cmd', combo: { key: 'A', ctrl: true } }
+        ],
+        unsetBindings: []
+      }
+
+      const service = await getPresetService()
+      const applied = service.applyPreset(preset)
+
+      expect(applied.ok).toBe(false)
+      expect(store.getUserKeybindingValues()).toEqual([live])
+      expect(store.currentPresetName).toBe('default')
+      expect(store.savedPresetData).toBeNull()
+    })
+
     it('keeps an unset for a binding that registers after the preset is applied', async () => {
       const combo = { key: 'd', ctrl: true }
       const preset: KeybindingPreset = {
@@ -463,6 +509,27 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('switchPreset', () => {
+    it('persists nothing when the target preset conflicts with itself', async () => {
+      const conflicting: KeybindingPreset = {
+        name: 'broken',
+        newBindings: [
+          { commandId: 'first.cmd', combo: { key: 'A', ctrl: true } },
+          { commandId: 'second.cmd', combo: { key: 'A', ctrl: true } }
+        ],
+        unsetBindings: []
+      }
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response(JSON.stringify(conflicting), { status: 200 })
+      )
+
+      const service = await getPresetService()
+      await service.switchPreset('broken')
+
+      expect(store.currentPresetName).toBe('default')
+      expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
+      expect(mockSettingSet).not.toHaveBeenCalled()
+    })
+
     it('discards unsaved changes when dialog returns false', async () => {
       store.addUserKeybinding(
         new KeybindingImpl({

@@ -9,10 +9,60 @@ import type { KeybindingPreset } from './types'
 
 type KeybindingMap = Partial<Record<string, KeybindingImpl>>
 
+interface UserChoices {
+  user: KeybindingMap
+  unset: KeybindingMap
+  pendingUnset: KeybindingImpl[]
+}
+
+export interface KeybindingConflict {
+  existing: KeybindingImpl
+  incoming: KeybindingImpl
+}
+
+export type KeymapChange =
+  | { ok: true; changed: boolean }
+  | { ok: false; reason: 'conflict'; conflict: KeybindingConflict }
+
+interface KeymapWriteOptions {
+  replaceConflicts?: boolean
+}
+
+const EMPTY_USER_CHOICES: UserChoices = {
+  user: {},
+  unset: {},
+  pendingUnset: []
+}
+
 function keybindingValues(keybindings: KeybindingMap): KeybindingImpl[] {
   return Object.values(keybindings).filter(
     (keybinding): keybinding is KeybindingImpl => keybinding !== undefined
   )
+}
+
+function withoutCombo(keybindings: KeybindingMap, serializedCombo: string) {
+  const { [serializedCombo]: _removed, ...remaining } = keybindings
+  return remaining
+}
+
+function refuseConflict(
+  existing: KeybindingImpl,
+  incoming: KeybindingImpl
+): KeymapChange {
+  return { ok: false, reason: 'conflict', conflict: { existing, incoming } }
+}
+
+export function findSavedChoiceConflict(
+  bindings: KeybindingImpl[]
+): KeybindingConflict | undefined {
+  const claimed = new Map<string, KeybindingImpl>()
+  for (const incoming of bindings) {
+    const serializedCombo = incoming.combo.serialize()
+    const existing = claimed.get(serializedCombo)
+    if (existing && !existing.equals(incoming)) return { existing, incoming }
+    claimed.set(serializedCombo, incoming)
+  }
+  return undefined
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {
@@ -83,12 +133,12 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     ]
   }
 
-  const keybindingByKeyCombo = computed<KeybindingMap>(() => {
+  function effectiveKeymap(choices: UserChoices): KeybindingMap {
     const result: KeybindingMap = {
       ...defaultKeybindings.value
     }
 
-    for (const keybinding of keybindingValues(userUnsetKeybindings.value)) {
+    for (const keybinding of keybindingValues(choices.unset)) {
       const serializedCombo = keybinding.combo.serialize()
       if (result[serializedCombo]?.equals(keybinding)) {
         delete result[serializedCombo]
@@ -97,9 +147,121 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
     return {
       ...result,
-      ...userKeybindings.value
+      ...choices.user
     }
-  })
+  }
+
+  function currentChoices(): UserChoices {
+    return {
+      user: userKeybindings.value,
+      unset: userUnsetKeybindings.value,
+      pendingUnset: pendingUnsetKeybindings.value
+    }
+  }
+
+  function commitChoices(choices: UserChoices) {
+    userKeybindings.value = choices.user
+    userUnsetKeybindings.value = choices.unset
+    pendingUnsetKeybindings.value = choices.pendingUnset
+  }
+
+  function withUnsetChoice(
+    choices: UserChoices,
+    keybinding: KeybindingImpl
+  ): UserChoices {
+    const serializedCombo = keybinding.combo.serialize()
+    const registeredDefault = defaultKeybindings.value[serializedCombo]
+    if (registeredDefault) {
+      return registeredDefault.equals(keybinding)
+        ? {
+            ...choices,
+            unset: { ...choices.unset, [serializedCombo]: keybinding }
+          }
+        : choices
+    }
+    return choices.pendingUnset.some((unset) => unset.equals(keybinding))
+      ? choices
+      : { ...choices, pendingUnset: [...choices.pendingUnset, keybinding] }
+  }
+
+  function withUserBinding(
+    choices: UserChoices,
+    keybinding: KeybindingImpl
+  ): UserChoices {
+    const serializedCombo = keybinding.combo.serialize()
+    const defaultKeybinding = defaultKeybindings.value[serializedCombo]
+    const userUnsetKeybinding = choices.unset[serializedCombo]
+
+    if (
+      keybinding.equals(defaultKeybinding) &&
+      keybinding.equals(userUnsetKeybinding)
+    ) {
+      return {
+        ...choices,
+        unset: withoutCombo(choices.unset, serializedCombo)
+      }
+    }
+
+    return {
+      ...choices,
+      unset:
+        defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)
+          ? { ...choices.unset, [serializedCombo]: defaultKeybinding }
+          : choices.unset,
+      user: { ...choices.user, [serializedCombo]: keybinding }
+    }
+  }
+
+  function withoutBinding(
+    choices: UserChoices,
+    keybinding: KeybindingImpl
+  ): UserChoices {
+    const serializedCombo = keybinding.combo.serialize()
+    if (!(serializedCombo in effectiveKeymap(choices))) {
+      console.warn(
+        `Trying to unset non-exist keybinding: ${JSON.stringify(keybinding)}`
+      )
+      return choices
+    }
+
+    if (choices.user[serializedCombo]?.equals(keybinding)) {
+      return { ...choices, user: withoutCombo(choices.user, serializedCombo) }
+    }
+
+    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
+      return {
+        ...choices,
+        unset: { ...choices.unset, [serializedCombo]: keybinding }
+      }
+    }
+
+    console.warn(`Unset unknown keybinding: ${JSON.stringify(keybinding)}`)
+    return choices
+  }
+
+  function withoutBindings(
+    choices: UserChoices,
+    keybindings: KeybindingImpl[]
+  ): UserChoices {
+    return keybindings.reduce(withoutBinding, choices)
+  }
+
+  function writeUserBinding(
+    base: UserChoices,
+    keybinding: KeybindingImpl,
+    { replaceConflicts = false }: KeymapWriteOptions
+  ): KeymapChange {
+    const existing = effectiveKeymap(base)[keybinding.combo.serialize()]
+    if (existing && !existing.equals(keybinding) && !replaceConflicts) {
+      return refuseConflict(existing, keybinding)
+    }
+    commitChoices(withUserBinding(base, keybinding))
+    return { ok: true, changed: true }
+  }
+
+  const keybindingByKeyCombo = computed<KeybindingMap>(() =>
+    effectiveKeymap(currentChoices())
+  )
 
   const keybindings = computed<KeybindingImpl[]>(() =>
     keybindingValues(keybindingByKeyCombo.value)
@@ -156,136 +318,107 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
   }
 
-  function addUserUnsetKeybinding(keybinding: KeybindingImpl) {
-    const registeredDefault =
-      defaultKeybindings.value[keybinding.combo.serialize()]
-    if (registeredDefault) {
-      if (registeredDefault.equals(keybinding)) {
-        addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
-      }
-      return
-    }
-    if (pendingUnsetKeybindings.value.some((unset) => unset.equals(keybinding)))
-      return
-    pendingUnsetKeybindings.value = [
-      ...pendingUnsetKeybindings.value,
-      keybinding
-    ]
+  function addUserKeybinding(
+    keybinding: KeybindingImpl,
+    options: KeymapWriteOptions = {}
+  ): KeymapChange {
+    return writeUserBinding(currentChoices(), keybinding, options)
   }
 
-  function addUserKeybinding(keybinding: KeybindingImpl) {
-    const serializedCombo = keybinding.combo.serialize()
-    const defaultKeybinding = defaultKeybindings.value[serializedCombo]
-    const userUnsetKeybinding = userUnsetKeybindings.value[serializedCombo]
+  function applySavedChoices({
+    newBindings,
+    unsetBindings
+  }: {
+    newBindings: KeybindingImpl[]
+    unsetBindings: KeybindingImpl[]
+  }): KeymapChange {
+    const conflict = findSavedChoiceConflict(newBindings)
+    if (conflict) return refuseConflict(conflict.existing, conflict.incoming)
 
-    if (
-      keybinding.equals(defaultKeybinding) &&
-      keybinding.equals(userUnsetKeybinding)
-    ) {
-      const updated = { ...userUnsetKeybindings.value }
-      delete updated[keybinding.combo.serialize()]
-      userUnsetKeybindings.value = updated
-      return
-    }
-
-    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)) {
-      unsetKeybinding(defaultKeybinding)
-    }
-
-    addKeybinding(userKeybindings, keybinding, { existOk: true })
+    commitChoices(
+      newBindings.reduce(
+        withUserBinding,
+        unsetBindings.reduce(withUnsetChoice, EMPTY_USER_CHOICES)
+      )
+    )
+    return { ok: true, changed: true }
   }
 
   function unsetKeybinding(keybinding: KeybindingImpl) {
-    const serializedCombo = keybinding.combo.serialize()
-    if (!(serializedCombo in keybindingByKeyCombo.value)) {
-      console.warn(
-        `Trying to unset non-exist keybinding: ${JSON.stringify(keybinding)}`
-      )
-      return
-    }
-
-    if (userKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      const updated = { ...userKeybindings.value }
-      delete updated[serializedCombo]
-      userKeybindings.value = updated
-      return
-    }
-
-    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      addKeybinding(userUnsetKeybindings, keybinding, { existOk: false })
-      return
-    }
-
-    console.warn(`Unset unknown keybinding: ${JSON.stringify(keybinding)}`)
+    commitChoices(withoutBinding(currentChoices(), keybinding))
   }
 
-  function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
+  function updateKeybindingOnCommand(
+    keybinding: KeybindingImpl,
+    options: KeymapWriteOptions = {}
+  ): KeymapChange {
     const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
     if (currentKeybinding?.equals(keybinding)) {
-      return false
+      return { ok: true, changed: false }
     }
-    if (currentKeybinding) {
-      unsetKeybinding(currentKeybinding)
-    }
-    addUserKeybinding(keybinding)
-    return true
+    const base = currentKeybinding
+      ? withoutBinding(currentChoices(), currentKeybinding)
+      : currentChoices()
+    return writeUserBinding(base, keybinding, options)
   }
 
   function resetAllKeybindings() {
-    userKeybindings.value = {}
-    userUnsetKeybindings.value = {}
-    pendingUnsetKeybindings.value = []
+    commitChoices(EMPTY_USER_CHOICES)
   }
 
   function removeAllKeybindingsForCommand(commandId: string): boolean {
     const currentBindings = getKeybindingsByCommandId(commandId)
     if (currentBindings.length === 0) return false
-    for (const binding of currentBindings) {
-      unsetKeybinding(binding)
-    }
+    commitChoices(withoutBindings(currentChoices(), currentBindings))
     return true
   }
 
   function updateSpecificKeybinding(
     oldBinding: KeybindingImpl,
-    newBinding: KeybindingImpl
-  ) {
-    unsetKeybinding(oldBinding)
-    addUserKeybinding(newBinding)
+    newBinding: KeybindingImpl,
+    options: KeymapWriteOptions = {}
+  ): KeymapChange {
+    return writeUserBinding(
+      withoutBinding(currentChoices(), oldBinding),
+      newBinding,
+      options
+    )
   }
 
-  function resetKeybindingForCommand(commandId: string): boolean {
+  function resetKeybindingForCommand(commandId: string): KeymapChange {
     const currentBindings = getKeybindingsByCommandId(commandId)
     const defaultBindings = defaultKeybindingsByCommandId.value[commandId] ?? []
 
     if (defaultBindings.length === 0) {
-      if (currentBindings.length > 0) {
-        for (const binding of currentBindings) {
-          unsetKeybinding(binding)
-        }
-        return true
-      }
-      return false
+      if (currentBindings.length === 0) return { ok: true, changed: false }
+      commitChoices(withoutBindings(currentChoices(), currentBindings))
+      return { ok: true, changed: true }
     }
 
     if (!isCommandKeybindingModified(commandId)) {
-      return false
+      return { ok: true, changed: false }
     }
 
-    for (const binding of currentBindings) {
-      unsetKeybinding(binding)
+    const withoutCurrent = withoutBindings(currentChoices(), currentBindings)
+    const candidate: UserChoices = {
+      ...withoutCurrent,
+      unset: defaultBindings.reduce(
+        (unset, defaultBinding) =>
+          withoutCombo(unset, defaultBinding.combo.serialize()),
+        withoutCurrent.unset
+      )
     }
 
-    const updatedUnset = { ...userUnsetKeybindings.value }
-    for (const defaultBinding of defaultBindings) {
-      const serializedCombo = defaultBinding.combo.serialize()
-      if (updatedUnset[serializedCombo]?.equals(defaultBinding)) {
-        delete updatedUnset[serializedCombo]
-      }
-    }
-    userUnsetKeybindings.value = updatedUnset
+    const keymap = effectiveKeymap(candidate)
+    const blocked = defaultBindings.find(
+      (defaultBinding) =>
+        !keymap[defaultBinding.combo.serialize()]?.equals(defaultBinding)
+    )
+    const existing = blocked && keymap[blocked.combo.serialize()]
+    if (blocked && existing) return refuseConflict(existing, blocked)
 
-    return true
+    commitChoices(candidate)
+    return { ok: true, changed: true }
   }
 
   const modifiedCommandIds = computed<Set<string>>(() => {
@@ -336,7 +469,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     getKeybindingByCommandId,
     addDefaultKeybinding,
     addUserKeybinding,
-    addUserUnsetKeybinding,
+    applySavedChoices,
     unsetKeybinding,
     updateKeybindingOnCommand,
     resetAllKeybindings,

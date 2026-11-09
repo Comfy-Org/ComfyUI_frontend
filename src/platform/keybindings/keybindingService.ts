@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -9,6 +11,7 @@ import { consultEscapeOverride } from './escapeOverride'
 import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 
 function isExcludedFromDistribution(keybinding: { commandId: string }) {
   return (
@@ -146,15 +149,29 @@ export function useKeybindingService() {
   }
 
   function registerUserKeybindings() {
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      if (isExcludedFromDistribution(keybinding)) continue
-      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(keybinding))
-    }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      if (isExcludedFromDistribution(keybinding)) continue
-      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+    const restoreBindings = (bindings: Keybinding[]) =>
+      bindings
+        .filter((binding) => !isExcludedFromDistribution(binding))
+        .map((binding) => new KeybindingImpl(binding))
+
+    const restored = keybindingStore.applySavedChoices({
+      unsetBindings: restoreBindings(
+        settingStore.get('Comfy.Keybinding.UnsetBindings')
+      ),
+      newBindings: restoreBindings(
+        settingStore.get('Comfy.Keybinding.NewBindings')
+      )
+    })
+    if (!restored.ok) {
+      reportError(new Error('Saved keybindings claim the same key combo'), {
+        errorType: 'failure_restoring_user_keybindings',
+        surface: 'platform',
+        context: {
+          combo: restored.conflict.incoming.combo.serialize(),
+          existingCommandId: restored.conflict.existing.commandId,
+          incomingCommandId: restored.conflict.incoming.commandId
+        }
+      })
     }
   }
 

@@ -2,8 +2,13 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('keybindingService - registerUserKeybindings', () => {
   beforeEach(() => {
@@ -92,6 +97,33 @@ describe('keybindingService - registerUserKeybindings', () => {
     expect(keybindingStore.isCurrentPresetModified).toBe(false)
     expect(settingStore.setMany).toHaveBeenCalledWith(
       expect.objectContaining({ 'Comfy.Keybinding.UnsetBindings': [] })
+    )
+  })
+
+  it('reports saved bindings that claim one combo and leaves defaults active', () => {
+    const keybindingStore = useKeybindingStore()
+    const combo = { key: 'k', ctrl: true, alt: false, shift: false }
+    const defaultBinding = new KeybindingImpl({
+      commandId: 'Comfy.Test.Default',
+      combo: { key: 'd', ctrl: true, alt: false, shift: false }
+    })
+    keybindingStore.addDefaultKeybinding(defaultBinding)
+    useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = [
+      { commandId: 'Comfy.Test.First', combo },
+      { commandId: 'Comfy.Test.Second', combo }
+    ]
+
+    useKeybindingService().registerUserKeybindings()
+
+    expect(keybindingStore.getUserKeybindingValues()).toEqual([])
+    expect(keybindingStore.getKeybinding(defaultBinding.combo)).toEqual(
+      defaultBinding
+    )
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_restoring_user_keybindings'
+      })
     )
   })
 

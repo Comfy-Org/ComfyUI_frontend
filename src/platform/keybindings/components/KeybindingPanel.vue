@@ -437,7 +437,17 @@ function changeKeybinding(command: KeybindingCommand) {
 }
 
 async function resetKeybinding(command: KeybindingCommand) {
-  if (keybindingStore.resetKeybindingForCommand(command.id)) {
+  const reset = keybindingStore.resetKeybindingForCommand(command.id)
+  if (!reset.ok) {
+    toast.error(
+      t('g.keybindingResetConflict', {
+        key: reset.conflict.incoming.combo.toString(),
+        command: reset.conflict.existing.commandId
+      })
+    )
+    return
+  }
+  if (reset.changed) {
     expandedCommandIds.value.delete(command.id)
     await keybindingService.persistUserKeybindings()
   } else {

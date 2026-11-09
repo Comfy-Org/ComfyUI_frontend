@@ -57,20 +57,25 @@ async function handleSave() {
   const commandId = dialogState.commandId
   if (!combo || !commandId) return
 
-  dialogStore.closeDialog({ key: EDIT_KEYBINDING_DIALOG_KEY })
+  const saved = saveBinding(new KeybindingImpl({ commandId, combo }))
+  if (!saved.ok) return
 
+  dialogStore.closeDialog({ key: EDIT_KEYBINDING_DIALOG_KEY })
+  await keybindingService.persistUserKeybindings()
+}
+
+function saveBinding(binding: KeybindingImpl) {
+  const options = { replaceConflicts: Boolean(existingKeybindingOnCombo) }
   if (dialogState.mode === 'add') {
-    keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))
-  } else if (dialogState.existingBinding) {
-    keybindingStore.updateSpecificKeybinding(
+    return keybindingStore.addUserKeybinding(binding, options)
+  }
+  if (dialogState.existingBinding) {
+    return keybindingStore.updateSpecificKeybinding(
       dialogState.existingBinding,
-      new KeybindingImpl({ commandId, combo })
-    )
-  } else {
-    keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({ commandId, combo })
+      binding,
+      options
     )
   }
-  await keybindingService.persistUserKeybindings()
+  return keybindingStore.updateKeybindingOnCommand(binding, options)
 }
 </script>
