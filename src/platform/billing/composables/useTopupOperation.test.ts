@@ -178,8 +178,6 @@ describe('useTopupOperation', () => {
       flagState.billingSdkTopupEnabled = flagOn
       const store = useBillingOperationStore()
 
-      // Not awaited: the legacy registration settles only when the operation
-      // does, which is the reason the dialog holds it as a promise.
       void useTopupOperation()
         .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
         .catch(() => {})
