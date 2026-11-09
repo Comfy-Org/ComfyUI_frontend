@@ -63,29 +63,34 @@ export function layoutNodeBody(
   return { rows: placed, contentHeight: y, freeSpace }
 }
 
-/** Reads each legacy widget's sizing contract into a row spec. */
+interface WidgetRowMetrics {
+  widgetHeight: number
+  rowGap: number
+}
+
+/** Reads each legacy widget's sizing contract into a row spec; fixed rows include the row gap. */
 export function widgetRowSpecs(
   widgets: readonly IBaseWidget[],
   node: LGraphNode,
-  defaultFixedHeight: number
+  metrics: WidgetRowMetrics
 ): RowSpec[] {
   return widgets.map((widget) => ({
     name: widget.name,
-    sizing: widgetRowSizing(widget, node, defaultFixedHeight)
+    sizing: widgetRowSizing(widget, node, metrics)
   }))
 }
 
 function widgetRowSizing(
   widget: IBaseWidget,
   node: LGraphNode,
-  defaultFixedHeight: number
+  { widgetHeight, rowGap }: WidgetRowMetrics
 ): RowSizing {
   if (widget.computeSize) {
-    return { kind: 'fixed', height: widget.computeSize()[1] + 4 }
+    return { kind: 'fixed', height: widget.computeSize()[1] + rowGap }
   }
   if (widget.computeLayoutSize) {
     const { minHeight, maxHeight } = widget.computeLayoutSize(node)
     return { kind: 'growable', minHeight, maxHeight }
   }
-  return { kind: 'fixed', height: defaultFixedHeight }
+  return { kind: 'fixed', height: widgetHeight + rowGap }
 }

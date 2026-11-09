@@ -89,6 +89,10 @@ export function applyPaletteTheme(
       style.removeProperty(`--${key}`)
     }
   }
+  style.setProperty(
+    '--node-widget-gap',
+    `${palette.colors.litegraph_base.NODE_WIDGET_GAP}px`
+  )
   style.colorScheme = paletteColorScheme(palette)
 }
 

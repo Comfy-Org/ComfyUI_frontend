@@ -24,7 +24,8 @@
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget my-0.5'
+              row.showsControl &&
+                'lg-node-widget my-[calc(var(--node-widget-gap)/2)]'
             )
           "
         >

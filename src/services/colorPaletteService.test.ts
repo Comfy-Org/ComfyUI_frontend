@@ -5,6 +5,7 @@ import { basename, join } from 'node:path'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { themeSchema } from '@comfyorg/settings-core/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -370,6 +371,40 @@ describe('useColorPaletteService', () => {
     expect([customValue, readRootProperty(SHADOW_PROPERTY)]).toEqual([
       customShadow,
       ''
+    ])
+  })
+
+  it('applies a palette widget gap to both renderers and restores the default', async () => {
+    clearRootThemeAfterTest()
+    onTestFinished(() => {
+      document.documentElement.style.removeProperty('--node-widget-gap')
+    })
+    const store = useColorPaletteStore()
+    const dark = store.palettesLookup.dark
+    assert.exists(dark)
+    store.addCustomPalette({
+      ...dark,
+      id: 'custom-gap',
+      colors: {
+        ...dark.colors,
+        litegraph_base: { ...dark.colors.litegraph_base, NODE_WIDGET_GAP: 10 }
+      }
+    })
+    const service = useColorPaletteService()
+
+    await service.loadColorPalette('custom-gap')
+    const custom = [
+      readRootProperty('--node-widget-gap'),
+      LiteGraph.NODE_WIDGET_GAP
+    ]
+    await service.loadColorPalette('dark')
+
+    expect([
+      custom,
+      [readRootProperty('--node-widget-gap'), LiteGraph.NODE_WIDGET_GAP]
+    ]).toEqual([
+      ['10px', 10],
+      ['4px', 4]
     ])
   })
 })
