@@ -13620,6 +13620,10 @@ export type GetFeaturesResponses = {
      */
     new_free_tier_subscriptions?: boolean
     /**
+     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     */
+    open_on_cloud_enabled?: boolean
+    /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
     private_workflow_links_enabled?: boolean
