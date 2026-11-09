@@ -222,7 +222,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary/50"
+            class="group/card h-full hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"

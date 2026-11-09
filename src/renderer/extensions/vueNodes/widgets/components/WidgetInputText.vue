@@ -14,7 +14,7 @@
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
             !isReadOnly && 'hover:bg-muted',
-            size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            size === 'large' ? 'py-3' : 'text-xs',
             loading && 'pl-9'
           )
         "

@@ -185,12 +185,7 @@
         v-if="addCredits.kind !== 'hidden'"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
-        :class="
-          cn(
-            'w-full font-normal',
-            !isOutOfCredits && 'bg-muted text-foreground'
-          )
-        "
+        :class="cn('w-full font-normal', !isOutOfCredits && 'bg-muted')"
         :disabled="addCredits.kind === 'disabled'"
         :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"

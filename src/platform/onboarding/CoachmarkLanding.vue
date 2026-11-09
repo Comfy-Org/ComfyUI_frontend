@@ -4,7 +4,7 @@
       <DialogOverlay data-testid="coach-landing-overlay" class="bg-black/60" />
       <DialogContent
         data-testid="coach-landing"
-        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl bg-secondary p-0 shadow-2xl md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
+        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden bg-secondary p-0 shadow-2xl md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >

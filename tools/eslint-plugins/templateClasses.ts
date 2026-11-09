@@ -9,6 +9,10 @@ import {
   buttonVariants
 } from '@comfyorg/design-system/button.variants'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import type { BadgeVariants } from '@comfyorg/design-system/lib/badge/badge.variants'
+import { badgeVariants } from '@comfyorg/design-system/lib/badge/badge.variants'
+import type { MessageVariants } from '@comfyorg/design-system/lib/message/message.variants'
+import { messageVariants } from '@comfyorg/design-system/lib/message/message.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Category } from '@comfyorg/design-system-audits/textCategories'
@@ -327,7 +331,6 @@ const componentDefaultsCache = new Map<string, string | null>()
 const appSourceRoot = path.join(repoRoot, 'src')
 
 function uiComponentFile(source: string, importer: string) {
-  if (!importer.startsWith(appSourceRoot + path.sep)) return null
   if (source.startsWith('@comfyorg/design-system/')) {
     try {
       const resolved = createRequire(importer).resolve(source)
@@ -336,6 +339,7 @@ function uiComponentFile(source: string, importer: string) {
       return null
     }
   }
+  if (!importer.startsWith(appSourceRoot + path.sep)) return null
   const match = source.match(/^@\/(components\/ui\/.+\.vue)$/)
   return match ? path.join(appSourceRoot, match[1]) : null
 }
@@ -414,7 +418,9 @@ function isButtonVariant(
 function isButtonSize(
   value: string | undefined
 ): value is ButtonVariants['size'] {
-  return value === undefined || buttonSizeNames.includes(value)
+  return (
+    value === undefined || value === 'unset' || buttonSizeNames.includes(value)
+  )
 }
 
 function buttonDefaultClasses(node: VElement) {
@@ -424,6 +430,80 @@ function buttonDefaultClasses(node: VElement) {
   const size = staticAttributeValue(node, 'size')
   if (!isButtonVariant(variant) || !isButtonSize(size)) return null
   return buttonVariants({ variant, size })
+}
+
+function isMessageSeverity(
+  value: string | undefined
+): value is MessageVariants['severity'] {
+  return (
+    value === undefined ||
+    value === 'error' ||
+    value === 'warning' ||
+    value === 'info' ||
+    value === 'success' ||
+    value === 'secondary'
+  )
+}
+
+function isBadgeVariant(
+  value: string | undefined
+): value is BadgeVariants['variant'] {
+  return (
+    value === undefined ||
+    value === 'tag' ||
+    value === 'chip' ||
+    value === 'badge' ||
+    value === 'compact' ||
+    value === 'label' ||
+    value === 'circle' ||
+    value === 'outline' ||
+    value === 'square' ||
+    value === 'pill' ||
+    value === 'dot'
+  )
+}
+
+function isBadgeSeverity(
+  value: string | undefined
+): value is BadgeVariants['severity'] {
+  return (
+    value === undefined ||
+    value === 'default' ||
+    value === 'contrast' ||
+    value === 'primary' ||
+    value === 'secondary' ||
+    value === 'muted' ||
+    value === 'danger' ||
+    value === 'info' ||
+    value === 'success' ||
+    value === 'warning'
+  )
+}
+
+function badgeDefaultClasses(node: VElement) {
+  if (hasBoundAttribute(node, 'variant') || hasBoundAttribute(node, 'severity'))
+    return null
+  const variant = staticAttributeValue(node, 'variant')
+  const severity = staticAttributeValue(node, 'severity')
+  if (!isBadgeVariant(variant) || !isBadgeSeverity(severity)) return null
+  return badgeVariants({ variant, severity })
+}
+
+function resolvedComponentDefaults(file: string, node: VElement) {
+  const componentsRoot = path.join(
+    repoRoot,
+    'packages/design-system/src/components'
+  )
+  if (file === path.join(componentsRoot, 'button/Button.vue'))
+    return buttonDefaultClasses(node)
+  if (file === path.join(componentsRoot, 'badge/Badge.vue'))
+    return badgeDefaultClasses(node)
+  if (file === path.join(componentsRoot, 'message/Message.vue')) {
+    if (hasBoundAttribute(node, 'severity')) return null
+    const severity = staticAttributeValue(node, 'severity')
+    return isMessageSeverity(severity) ? messageVariants({ severity }) : null
+  }
+  return componentDefaultClasses(file)
 }
 
 function importedUiComponents(context: Rule.RuleContext) {
@@ -445,6 +525,74 @@ function sortedClassSet(classes: string) {
   return [...new Set(classes.split(/\s+/).filter(Boolean))].sort().join(' ')
 }
 
+function componentClassLiterals(node: VElement) {
+  const attributes = node.startTag.attributes.filter((attribute) => {
+    if (!attribute.directive) return attribute.key.name === 'class'
+    return (
+      attribute.key.name.name === 'bind' &&
+      (attribute.key.argument?.type !== 'VIdentifier' ||
+        attribute.key.argument.name === 'class')
+    )
+  })
+  if (attributes.length !== 1) return []
+  const attribute = attributes[0]
+  if (!attribute.directive) return attribute.value ? [attribute.value] : []
+  if (
+    attribute.key.argument?.type !== 'VIdentifier' ||
+    attribute.key.argument.name !== 'class'
+  )
+    return []
+  const expression = attribute.value?.expression
+  const alternatives =
+    expression?.type === 'ConditionalExpression'
+      ? [expression.consequent, expression.alternate]
+      : [expression]
+  return alternatives.every(
+    (alternative): alternative is AST.ESLintLiteral =>
+      alternative?.type === 'Literal' && typeof alternative.value === 'string'
+  )
+    ? alternatives
+    : []
+}
+
+function checkComponentLiteral(
+  context: Rule.RuleContext,
+  node: VElement,
+  literal: AST.VLiteral | AST.ESLintLiteral,
+  defaults: string
+) {
+  if (typeof literal.value !== 'string') return
+  const raw = context.sourceCode.text.slice(...literal.range)
+  if (raw.slice(1, -1) !== literal.value) return
+  const tokens = literal.value.split(/\s+/).filter(Boolean)
+  const defaultTokens = new Set(cn(defaults).split(/\s+/))
+  const merged = sortedClassSet(cn(defaults, tokens.join(' ')))
+  const redundant = new Set<string>()
+  let kept = tokens
+  for (const token of tokens) {
+    if (!defaultTokens.has(token)) continue
+    const without = kept.filter((other) => other !== token)
+    if (sortedClassSet(cn(defaults, without.join(' '))) !== merged) continue
+    redundant.add(token)
+    kept = without
+  }
+  for (const token of redundant) {
+    context.report({
+      node: literal,
+      messageId: 'redundant',
+      data: { token, component: node.rawName },
+      fix:
+        literal.type === 'VLiteral'
+          ? removeTokensFix(context, literal.parent, redundant)
+          : (fixer) =>
+              fixer.replaceTextRange(
+                literal.range,
+                raw[0] + kept.join(' ') + raw[0]
+              )
+    })
+  }
+}
+
 const noRedundantComponentClasses: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
@@ -459,35 +607,18 @@ const noRedundantComponentClasses: Rule.RuleModule = {
     schema: []
   },
   create(context) {
+    if (hasStyleBlock(context)) return {}
     const components = importedUiComponents(context)
     if (!components.size) return {}
     return templateVisitor(context, (node) => {
       const file = components.get(node.rawName)
       if (!file) return
-      const attribute = staticClassAttribute(node)
-      if (!attribute) return
-      const defaults =
-        path.basename(file) === 'Button.vue'
-          ? buttonDefaultClasses(node)
-          : componentDefaultClasses(file)
+      const literals = componentClassLiterals(node)
+      if (!literals.length) return
+      const defaults = resolvedComponentDefaults(file, node)
       if (!defaults) return
-      const tokens = classTokens(attribute)
-      const merged = sortedClassSet(cn(defaults, tokens.join(' ')))
-      const redundant = new Set<string>()
-      let kept = tokens
-      for (const token of tokens) {
-        const without = kept.filter((other) => other !== token)
-        if (sortedClassSet(cn(defaults, without.join(' '))) !== merged) continue
-        redundant.add(token)
-        kept = without
-      }
-      for (const token of redundant) {
-        context.report({
-          node: attribute,
-          messageId: 'redundant',
-          data: { token, component: node.rawName },
-          fix: removeTokensFix(context, attribute, redundant)
-        })
+      for (const literal of literals) {
+        checkComponentLiteral(context, node, literal, defaults)
       }
     })
   }

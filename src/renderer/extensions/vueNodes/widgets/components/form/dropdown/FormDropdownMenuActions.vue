@@ -304,12 +304,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :title="t('assetBrowser.listView')"
         variant="textonly"
         size="unset"
-        :class="
-          cn(
-            layoutSwitchItemStyle,
-            layoutMode === 'list' && 'bg-muted text-foreground'
-          )
-        "
+        :class="cn(layoutSwitchItemStyle, layoutMode === 'list' && 'bg-muted')"
         @click="layoutMode = 'list'"
       >
         <i class="icon-[lucide--list]" />
@@ -319,12 +314,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :title="t('assetBrowser.gridView')"
         variant="textonly"
         size="unset"
-        :class="
-          cn(
-            layoutSwitchItemStyle,
-            layoutMode === 'grid' && 'bg-muted text-foreground'
-          )
-        "
+        :class="cn(layoutSwitchItemStyle, layoutMode === 'grid' && 'bg-muted')"
         @click="layoutMode = 'grid'"
       >
         <i class="icon-[lucide--layout-grid]" />
