@@ -188,7 +188,6 @@ const TELEMETRY_EVENT_SET = new Set<string>([
 interface QueuedEvent {
   eventName: TelemetryEventName
   properties?: TelemetryEventProperties
-  onRejected?: () => void
 }
 
 interface DesktopEntryProps {
@@ -331,10 +330,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
-        if (!this.posthog.capture(event.eventName, event.properties || {}))
-          event.onRejected?.()
+        this.posthog.capture(event.eventName, event.properties || {})
       } catch (error) {
-        event.onRejected?.()
         console.error('Failed to track queued PostHog event:', error)
       }
     }
@@ -404,8 +401,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   private captureRaw(
     eventName: TelemetryEventName,
-    properties?: Record<string, unknown>,
-    onRejected?: () => void
+    properties?: Record<string, unknown>
   ): boolean {
     if (!this.isEnabled) return false
     if (this.disabledEvents.has(eventName)) return false
@@ -418,11 +414,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         return false
       }
     } else {
-      return this.enqueueEvent({
-        eventName,
-        properties,
-        onRejected
-      })
+      return this.enqueueEvent({ eventName, properties })
     }
   }
 
@@ -926,26 +918,27 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackProactiveGreetingEnrolled(
     metadata: ProactiveGreetingEnrolledMetadata
-  ): void {
+  ): boolean {
     if (
       !this.isEnabled ||
+      !this.isInitialized ||
+      !this.posthog ||
+      this.posthog.has_opted_out_capturing() ||
       this.disabledEvents.has(TelemetryEvents.EXPERIMENT_EXPOSURE)
     )
-      return
+      return false
     const enrollment = JSON.stringify([metadata.group_key, metadata.variant])
-    if (this.proactiveEnrollments.has(enrollment)) return
-    const accepted = this.captureRaw(
-      TelemetryEvents.EXPERIMENT_EXPOSURE,
-      {
-        ...proactiveGreetingProperties(metadata),
-        $feature_flag: PROACTIVE_GREETING_FLAG,
-        $feature_flag_response: metadata.variant,
-        proactive_greeting_enrollment: true,
-        canvas_state: metadata.canvas_state
-      },
-      () => this.proactiveEnrollments.delete(enrollment)
-    )
+    if (this.proactiveEnrollments.has(enrollment)) return true
+    const accepted = this.captureRaw(TelemetryEvents.EXPERIMENT_EXPOSURE, {
+      ...proactiveGreetingProperties(metadata),
+      $feature_flag: PROACTIVE_GREETING_FLAG,
+      $feature_flag_response: metadata.variant,
+      proactive_greeting_enrollment: true,
+      canvas_state: metadata.canvas_state,
+      ...(metadata.copy_locale && { copy_locale: metadata.copy_locale })
+    })
     if (accepted) this.proactiveEnrollments.add(enrollment)
+    return accepted
   }
 
   trackAgentStarterPromptClicked(

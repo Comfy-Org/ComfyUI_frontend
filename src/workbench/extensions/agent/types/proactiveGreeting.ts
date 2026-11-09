@@ -5,6 +5,7 @@ type AgentGreetingVariant = 'A' | 'B' | 'C' | 'D'
 export interface AgentGreeting {
   variant: AgentGreetingVariant
   canvas: 'empty' | 'workflow'
+  copyLocale?: string
 }
 
 export interface AgentGreetingAssignment {

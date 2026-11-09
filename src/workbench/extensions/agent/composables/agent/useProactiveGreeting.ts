@@ -13,7 +13,7 @@ import type {
 
 type UsageState =
   | { status: 'unknown' }
-  | { status: 'never-sent'; scope: string }
+  | { status: 'never-sent'; scope: string; copyLocale?: string }
   | { status: 'has-sent'; scope: string }
 
 interface Options {
@@ -21,12 +21,14 @@ interface Options {
   identity: () => { userId: string | null; workspaceId: string | null }
   active: () => boolean
   canvas: () => AgentGreeting['canvas']
+  copyLocale?: (greeting: AgentGreeting) => string | undefined
   getUsageStatus: (options: {
     signal: AbortSignal
   }) => Promise<AgentUsageStatusResponse>
   requireLocalInstallation?: boolean
-  canEnroll?: () => Promise<boolean>
-  onEnrolled?: (metadata: ProactiveGreetingEnrolledMetadata) => void
+  onEnrolled: (
+    metadata: ProactiveGreetingEnrolledMetadata
+  ) => boolean | Promise<boolean>
 }
 
 export function useProactiveGreeting(options: Options) {
@@ -65,7 +67,7 @@ export function useProactiveGreeting(options: Options) {
     const currentScope = scope.value
     if (state.value.status === 'has-sent' && state.value.scope === currentScope)
       return
-    if (!options.active() || !assignment.value || !currentScope) {
+    if (!options.active() || !assignment.value?.telemetry || !currentScope) {
       state.value = { status: 'unknown' }
       return
     }
@@ -83,13 +85,12 @@ export function useProactiveGreeting(options: Options) {
       currentScope !== scope.value
     try {
       const result = await options.getUsageStatus({ signal: request.signal })
-      if (isStale()) return
-      if (!matchesUsageScope(result)) return
-      if (!result.has_used_agent && options.canEnroll) {
-        if (!(await options.canEnroll())) return
-        if (isStale()) return
+      if (isStale() || !matchesUsageScope(result)) return
+      if (result.has_used_agent) {
+        state.value = { status: 'has-sent', scope: currentScope }
+        return
       }
-      applyUsageStatus(result, currentScope)
+      await enroll(currentScope, isStale)
     } catch (error) {
       if (isStale()) return
       state.value = { status: 'unknown' }
@@ -107,18 +108,32 @@ export function useProactiveGreeting(options: Options) {
     )
   }
 
-  function applyUsageStatus(
-    result: AgentUsageStatusResponse,
-    currentScope: string
-  ): void {
-    state.value = {
-      status: result.has_used_agent ? 'has-sent' : 'never-sent',
-      scope: currentScope
+  async function enroll(
+    currentScope: string,
+    isStale: () => boolean
+  ): Promise<void> {
+    const current = assignment.value
+    if (!current?.telemetry) return
+    const candidate = { variant: current.variant, canvas: options.canvas() }
+    const copyLocale = options.copyLocale?.(candidate)
+    const admitted = await options.onEnrolled({
+      ...current.telemetry,
+      canvas_state: candidate.canvas,
+      ...(copyLocale && { copy_locale: copyLocale })
+    })
+    if (isStale()) return
+    if (!admitted) {
+      if (enrollment.value?.scope === currentScope) enrollment.value = undefined
+      return
     }
-    const telemetry = assignment.value?.telemetry
-    if (!result.has_used_agent && telemetry && options.onEnrolled) {
-      options.onEnrolled({ ...telemetry, canvas_state: options.canvas() })
-      enrollment.value = { scope: currentScope, telemetry: { ...telemetry } }
+    enrollment.value = {
+      scope: currentScope,
+      telemetry: { ...current.telemetry }
+    }
+    state.value = {
+      status: 'never-sent',
+      scope: currentScope,
+      copyLocale
     }
   }
 
@@ -144,7 +159,12 @@ export function useProactiveGreeting(options: Options) {
       state.value.scope !== scope.value
     )
       return
-    return { variant: assignment.value.variant, canvas: options.canvas() }
+    const { copyLocale } = state.value
+    return {
+      variant: assignment.value.variant,
+      canvas: options.canvas(),
+      ...(copyLocale && { copyLocale })
+    }
   })
   const attribution = computed(() => {
     const enrolled = enrollment.value

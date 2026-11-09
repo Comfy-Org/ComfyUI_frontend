@@ -85,10 +85,9 @@ import {
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
 import {
-  hostProactiveGreetingProperties,
-  supportsHostProactiveGreeting
+  getHostProactiveGreetingBridge,
+  hostProactiveGreetingProperties
 } from '@/platform/telemetry/hostProactiveGreeting'
-import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -121,6 +120,46 @@ function toHostTelemetryProperties(
   }
 
   return out
+}
+
+export async function enrollHostProactiveGreeting(
+  metadata: ProactiveGreetingEnrolledMetadata
+): Promise<boolean> {
+  const telemetry = getHostProactiveGreetingBridge()
+  if (!telemetry) return false
+  const { canvas_state, copy_locale } = metadata
+  try {
+    const admitted: unknown = await telemetry.enrollProactiveGreeting({
+      ...hostProactiveGreetingProperties(metadata),
+      canvas_state,
+      ...(copy_locale && { copy_locale })
+    })
+    return admitted === true
+  } catch {
+    return false
+  }
+}
+
+/** Returns true when the host owns this event's delivery. */
+export function trackHostProactiveGreetingMessage(
+  metadata: AgentMessageSentMetadata
+): boolean {
+  const { proactive_greeting: context, ...properties } = metadata
+  if (!context) return false
+  const telemetry = getHostProactiveGreetingBridge()
+  if (!telemetry) return false
+  try {
+    telemetry.capture(
+      TelemetryEvents.AGENT_MESSAGE_SENT,
+      toHostTelemetryProperties({
+        ...properties,
+        ...hostProactiveGreetingProperties(context)
+      })
+    )
+  } catch {
+    return true
+  }
+  return true
 }
 
 export class HostTelemetrySink implements TelemetryProvider {
@@ -390,24 +429,15 @@ export class HostTelemetrySink implements TelemetryProvider {
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
-    const { proactive_greeting: context, ...properties } = metadata
-    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, {
-      ...properties,
-      ...(context &&
-        isHostTelemetryEnabled() &&
-        supportsHostProactiveGreeting() &&
-        hostProactiveGreetingProperties(context))
-    })
+    if (trackHostProactiveGreetingMessage(metadata)) return
+    const { proactive_greeting: _, ...properties } = metadata
+    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, properties)
   }
 
   trackProactiveGreetingEnrolled(
     metadata: ProactiveGreetingEnrolledMetadata
-  ): void {
-    if (!isHostTelemetryEnabled() || !supportsHostProactiveGreeting()) return
-    this.capture(TelemetryEvents.EXPERIMENT_EXPOSURE, {
-      ...hostProactiveGreetingProperties(metadata),
-      canvas_state: metadata.canvas_state
-    })
+  ): Promise<boolean> {
+    return enrollHostProactiveGreeting(metadata)
   }
 
   trackAgentStarterPromptClicked(

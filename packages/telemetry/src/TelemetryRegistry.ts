@@ -483,12 +483,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
   }
 
-  trackProactiveGreetingEnrolled(
+  async trackProactiveGreetingEnrolled(
     metadata: ProactiveGreetingEnrolledMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackProactiveGreetingEnrolled?.(metadata)
+  ): Promise<boolean> {
+    const owner = this.providers.find(
+      (provider) => provider.trackProactiveGreetingEnrolled !== undefined
     )
+    try {
+      return (await owner?.trackProactiveGreetingEnrolled?.(metadata)) === true
+    } catch (error) {
+      console.error('[Telemetry] Provider dispatch failed', error)
+      return false
+    }
   }
 
   trackAgentStarterPromptClicked(

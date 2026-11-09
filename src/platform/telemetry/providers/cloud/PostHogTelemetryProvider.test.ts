@@ -23,6 +23,7 @@ import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
+  const mockHasOptedOutCapturing = vi.fn(() => false)
   const mockInit = vi.fn<PostHog['init']>()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
@@ -53,6 +54,7 @@ const hoisted = vi.hoisted(() => {
 
   return {
     mockCapture,
+    mockHasOptedOutCapturing,
     mockInit,
     mockIdentify,
     mockPeopleSet,
@@ -68,6 +70,7 @@ const hoisted = vi.hoisted(() => {
       default: {
         init: mockInit,
         capture: mockCapture,
+        has_opted_out_capturing: mockHasOptedOutCapturing,
         identify: mockIdentify,
         register: mockRegister,
         get_property: mockGetProperty,
@@ -2101,7 +2104,8 @@ describe('PostHogTelemetryProvider', () => {
       workspace_id: 'workspace-a',
       group_key: '["user-before","workspace-a"]',
       variant: 'generic' as const,
-      canvas_state: 'empty' as const
+      canvas_state: 'empty' as const,
+      copy_locale: 'en'
     }
 
     beforeEach(() => {
@@ -2128,46 +2132,31 @@ describe('PostHogTelemetryProvider', () => {
         const provider = createProvider()
         await vi.dynamicImportSettled()
         hoisted.mockCapture.mockImplementationOnce(capture)
-        provider.trackProactiveGreetingEnrolled(enrollment)
-        provider.trackProactiveGreetingEnrolled(enrollment)
-        provider.trackProactiveGreetingEnrolled(enrollment)
+        expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
+        expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
+        expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
         expect(hoisted.mockCapture).toHaveBeenCalledTimes(2)
         expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
           TelemetryEvents.EXPERIMENT_EXPOSURE,
           expect.objectContaining({
-            $groups: { user_workspace: enrollment.group_key }
+            $groups: { user_workspace: enrollment.group_key },
+            copy_locale: 'en'
           })
         )
       }
     )
 
-    it.for(captureFailures)(
-      'allows enrollment retry after queued $failure capture',
-      async ({ capture }) => {
-        const provider = createProvider()
-        hoisted.mockCapture.mockImplementationOnce(capture)
-        provider.trackProactiveGreetingEnrolled(enrollment)
-        await vi.dynamicImportSettled()
-        provider.trackProactiveGreetingEnrolled(enrollment)
-        provider.trackProactiveGreetingEnrolled(enrollment)
-        expect(hoisted.mockCapture).toHaveBeenCalledTimes(2)
-        expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
-          TelemetryEvents.EXPERIMENT_EXPOSURE,
-          expect.objectContaining({
-            $groups: { user_workspace: enrollment.group_key }
-          })
-        )
-      }
-    )
-
-    it('allows enrollment retry after the pre-initialization queue was full', async () => {
+    it('does not queue an exposure before initialization and admits a later retry', async () => {
       const provider = createProvider()
-      trackSurveys(provider, surveyIds(100))
-      provider.trackProactiveGreetingEnrolled(enrollment)
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
       await vi.dynamicImportSettled()
-      hoisted.mockCapture.mockClear()
-      provider.trackProactiveGreetingEnrolled(enrollment)
-      provider.trackProactiveGreetingEnrolled(enrollment)
+      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
+        TelemetryEvents.EXPERIMENT_EXPOSURE,
+        expect.anything()
+      )
+
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
       expect(hoisted.mockCapture).toHaveBeenCalledOnce()
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.EXPERIMENT_EXPOSURE,
@@ -2177,19 +2166,30 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('allows enrollment after its event is re-enabled', async () => {
+    it('rejects enrollment while disabled even for an already enrolled pair', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
+      hoisted.mockCapture.mockClear()
       remoteConfig.value = {
         telemetry_disabled_events: [TelemetryEvents.EXPERIMENT_EXPOSURE]
       }
       await nextTick()
-      provider.trackProactiveGreetingEnrolled(enrollment)
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
       remoteConfig.value = { telemetry_disabled_events: [] }
       await nextTick()
-      provider.trackProactiveGreetingEnrolled(enrollment)
-      provider.trackProactiveGreetingEnrolled(enrollment)
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+    })
+
+    it('rejects an already enrolled pair after SDK opt-out', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(true)
+
+      hoisted.mockHasOptedOutCapturing.mockReturnValue(true)
+      expect(provider.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
       expect(hoisted.mockCapture).toHaveBeenCalledOnce()
     })
 
@@ -2227,6 +2227,7 @@ describe('PostHogTelemetryProvider', () => {
 
     it('enrolls each pair once and pins delayed sends to the originating user', async () => {
       const provider = createProvider()
+      await vi.dynamicImportSettled()
       const context = {
         user_id: 'user-before',
         workspace_id: 'workspace-a',
@@ -2241,7 +2242,6 @@ describe('PostHogTelemetryProvider', () => {
         ...context,
         canvas_state: 'empty'
       })
-      await vi.dynamicImportSettled()
       provider.trackProactiveGreetingEnrolled({
         ...context,
         canvas_state: 'workflow'

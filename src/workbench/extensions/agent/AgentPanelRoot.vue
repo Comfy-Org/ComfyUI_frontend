@@ -3,6 +3,7 @@ import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorCont
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
+import { resolveProactiveGreetingCopyLocale } from './utils/proactiveGreetingCopy'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard, useEventListener } from '@vueuse/core'
@@ -84,10 +85,13 @@ import {
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import {
-  canEnrollHostProactiveGreeting,
   requiresHostProactiveGreetingAdmission,
   supportsHostProactiveGreeting
 } from '@/platform/telemetry/hostProactiveGreeting'
+import {
+  enrollHostProactiveGreeting,
+  trackHostProactiveGreetingMessage
+} from '@/platform/telemetry/providers/host/HostTelemetrySink'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -213,7 +217,7 @@ const { proactiveAssignment } = defineProps<{
   proactiveAssignment?: AgentGreetingAssignment
 }>()
 
-const { t } = useI18n()
+const { t, locale, te } = useI18n()
 const toast = useToast()
 let errorAttachRun = 0
 onBeforeUnmount(() => {
@@ -1079,10 +1083,12 @@ function reportPendingSend(): void {
   const sent = pendingSend
   if (!sent) return
   pendingSend = null
-  useTelemetry()?.trackAgentMessageSent({
+  const metadata = {
     ...sent.metadata,
     workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
-  })
+  }
+  if (!trackHostProactiveGreetingMessage(metadata))
+    useTelemetry()?.trackAgentMessageSent(metadata)
 }
 
 function registerAgentRunJobOwner(event: AgentWsEvent): void {
@@ -1418,15 +1424,16 @@ const proactive = useProactiveGreeting({
     workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
   }),
   requireLocalInstallation: !isCloud,
-  canEnroll: !requiresHostProactiveGreetingAdmission()
-    ? undefined
-    : () => canEnrollHostProactiveGreeting(resolvedUserInfo.value?.id ?? ''),
   active: () =>
     agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
   canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
+  copyLocale: (greeting) =>
+    resolveProactiveGreetingCopyLocale(greeting.variant, locale.value, te),
   getUsageStatus: (options) => rest.getUsageStatus(options),
   onEnrolled: (metadata) =>
-    useTelemetry()?.trackProactiveGreetingEnrolled(metadata)
+    requiresHostProactiveGreetingAdmission()
+      ? enrollHostProactiveGreeting(metadata)
+      : (useTelemetry()?.trackProactiveGreetingEnrolled(metadata) ?? false)
 })
 
 const completedTurnClaimedCanvasContent = ref(false)

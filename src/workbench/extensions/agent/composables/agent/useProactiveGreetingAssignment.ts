@@ -1,7 +1,8 @@
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { once } from 'es-toolkit'
-import { computed, shallowRef, watch } from 'vue'
+import type { User } from 'firebase/auth'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -9,10 +10,10 @@ import {
   requestAuth
 } from '@/platform/remote/ingest/ingestApi'
 import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
-import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import {
-  canEnrollHostProactiveGreeting,
-  requiresHostProactiveGreetingAdmission
+  getHostProactiveGreetingAdmission,
+  requiresHostProactiveGreetingAdmission,
+  subscribeToHostProactiveGreetingAdmission
 } from '@/platform/telemetry/hostProactiveGreeting'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud } from '@/platform/distribution/types'
@@ -21,6 +22,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { AgentGreetingAssignment } from '@/workbench/extensions/agent/types/proactiveGreeting'
 
 const assignmentConfig = zGetFeaturesResponse.pick({
@@ -64,29 +66,54 @@ type HostAssignment = {
   assignment?: AgentGreetingAssignment
 }
 
-async function loadHostAssignment(
+async function verifyHostFirebaseUser(
+  userId: string,
+  firebaseUser: () => User | null,
+  signal: AbortSignal
+): Promise<boolean> {
+  const user = firebaseUser()
+  if (user?.uid !== userId) return false
+  const isStale = () => signal.aborted || firebaseUser() !== user
+  const token = await user.getIdToken()
+  if (!token || isStale()) return false
+  const admission = await getHostProactiveGreetingAdmission(userId, token)
+  return admission === 'allowed' && !isStale()
+}
+
+async function readLocalAssignment(
   userId: string,
   workspaceId: string,
   signal: AbortSignal
-): Promise<HostAssignment | undefined> {
-  const isAborted = (): boolean => signal.aborted
-  if (!(await canEnrollHostProactiveGreeting(userId))) return
-  if (isAborted()) return
-  if (isCloud) return { userId, workspaceId }
+): Promise<AgentGreetingAssignment | undefined> {
   const auth = await requestAuth()
-  if (isAborted()) return
+  if (signal.aborted) return
   const { data } = await ingestApiClient.get<unknown>(
     ingestApiUrl('/features'),
     { ...auth, signal, timeout: 10_000 }
   )
-  return {
-    userId,
-    workspaceId,
-    assignment: resolveProactiveGreetingAssignment(data, {
-      userId,
-      workspaceId
-    })
-  }
+  return resolveProactiveGreetingAssignment(data, { userId, workspaceId })
+}
+
+async function loadHostAssignment(
+  userId: string,
+  workspaceId: string,
+  firebaseUser: () => User | null,
+  signal: AbortSignal
+): Promise<HostAssignment | undefined> {
+  const isAborted = (): boolean => signal.aborted
+  const admission = await getHostProactiveGreetingAdmission(userId)
+  if (isAborted() || admission === 'denied') return
+  if (isCloud)
+    return admission === 'allowed' ? { userId, workspaceId } : undefined
+
+  const assignment = await readLocalAssignment(userId, workspaceId, signal)
+  if (!assignment || isAborted()) return
+  if (
+    admission === 'verify-firebase' &&
+    !(await verifyHostFirebaseUser(userId, firebaseUser, signal))
+  )
+    return
+  return { userId, workspaceId, assignment }
 }
 
 function sameAssignment(
@@ -104,6 +131,8 @@ function sameAssignment(
 
 export function useProactiveGreetingAssignment() {
   const { resolvedUserInfo } = useCurrentUser()
+  const authStore = useAuthStore()
+  const firebaseUser = () => authStore.currentUser
   const workspace = useTeamWorkspaceStore()
   const panel = useAgentPanelStore()
   const requiresHostAdmission = requiresHostProactiveGreetingAdmission()
@@ -119,17 +148,25 @@ export function useProactiveGreetingAssignment() {
     userId: resolvedUserInfo.value?.id ?? null,
     workspaceId: workspace.activeWorkspaceId ?? null
   }))
-  if (requiresHostAdmission) {
+  const admissionRevision = ref(0)
+  const unsubscribe = requiresHostAdmission
+    ? subscribeToHostProactiveGreetingAdmission(() => {
+        admissionRevision.value++
+      })
+    : undefined
+  if (unsubscribe) {
+    onScopeDispose(unsubscribe)
     watch(
       [
         () => identity.value.userId,
         () => identity.value.workspaceId,
         () => panel.isOpen,
-        isHostTelemetryEnabled
+        firebaseUser,
+        admissionRevision
       ],
-      async ([userId, workspaceId, open, telemetryEnabled], _, onCleanup) => {
+      async ([userId, workspaceId, open], _, onCleanup) => {
         hostAssignment.value = undefined
-        if (!telemetryEnabled || !open || !userId || !workspaceId) return
+        if (!open || !userId || !workspaceId) return
         const controller = new AbortController()
         const isAborted = (): boolean => controller.signal.aborted
         onCleanup(() => controller.abort())
@@ -137,6 +174,7 @@ export function useProactiveGreetingAssignment() {
           const admitted = await loadHostAssignment(
             userId,
             workspaceId,
+            firebaseUser,
             controller.signal
           )
           if (!isAborted()) hostAssignment.value = admitted

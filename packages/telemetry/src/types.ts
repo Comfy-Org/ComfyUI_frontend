@@ -1084,6 +1084,7 @@ export interface ProactiveGreetingTelemetryContext {
 
 export interface ProactiveGreetingEnrolledMetadata extends ProactiveGreetingTelemetryContext {
   canvas_state: 'empty' | 'workflow'
+  copy_locale?: string
 }
 
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
@@ -1712,7 +1713,7 @@ export interface TelemetryProvider {
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
   trackProactiveGreetingEnrolled?(
     metadata: ProactiveGreetingEnrolledMetadata
-  ): void
+  ): boolean | Promise<boolean>
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
@@ -1768,7 +1769,14 @@ export interface TelemetryProvider {
  * All methods are required - the registry implements all methods and dispatches
  * to registered providers using optional chaining.
  */
-export type TelemetryDispatcher = Required<TelemetryProvider>
+export type TelemetryDispatcher = Omit<
+  Required<TelemetryProvider>,
+  'trackProactiveGreetingEnrolled'
+> & {
+  trackProactiveGreetingEnrolled(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): Promise<boolean>
+}
 
 /**
  * Telemetry event constants
