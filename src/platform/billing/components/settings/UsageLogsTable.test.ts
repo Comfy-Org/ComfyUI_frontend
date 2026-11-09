@@ -3,7 +3,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import {
@@ -301,8 +301,11 @@ describe('UsageLogsTable', () => {
         expect(
           screen.getByRole('columnheader', { name: 'Member' })
         ).toBeInTheDocument()
-        expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
-        expect(screen.getByText('-')).toBeInTheDocument()
+        const [, firstRow, secondRow] = screen.getAllByRole('row')
+        expect(firstRow).toHaveTextContent('Ada Lovelace')
+        expect(within(secondRow).getAllByRole('cell')[3]).toHaveTextContent(
+          /^-$/
+        )
       })
 
       it('falls back to the email when there is no display name', async () => {
@@ -326,6 +329,45 @@ describe('UsageLogsTable', () => {
         expect(
           screen.getByText('Ada Lovelace (former member)')
         ).toBeInTheDocument()
+      })
+
+      it('marks a former member known only by email', async () => {
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
+          withMember({ member_email: 'ada@example.com', member_former: true })
+        )
+        await renderLoaded()
+
+        expect(
+          screen.getByText('ada@example.com (former member)')
+        ).toBeInTheDocument()
+      })
+
+      it('follows the rows on the current page', async () => {
+        const user = userEvent.setup()
+        vi.mocked(billingApi.getBillingEvents).mockImplementation(
+          async (params) =>
+            params?.page === 2
+              ? makeEventsResponse(mockEventsResponse.events, {
+                  page: 2,
+                  total: 20
+                })
+              : {
+                  ...withMember({ member_display_name: 'Ada Lovelace' }),
+                  total: 20
+                }
+        )
+        await renderLoaded()
+        expect(
+          screen.getByRole('columnheader', { name: 'Member' })
+        ).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: 'Page 2' }))
+
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('columnheader', { name: 'Member' })
+          ).not.toBeInTheDocument()
+        )
       })
 
       it('shows the column for rows read through the billing rail', async () => {
