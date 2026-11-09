@@ -181,7 +181,7 @@ describe('AgentAccountMenu', () => {
         'Studio',
         'Workspace settings',
         'Usage',
-        'View all plans',
+        'Plans and credits',
         'Settings',
         'Language',
         'Get help',
@@ -208,7 +208,7 @@ describe('AgentAccountMenu', () => {
       signedIn: false,
       isCloud: false,
       entries: [
-        'View all plans',
+        'Plans and credits',
         'Settings',
         'Language',
         'Get help',
@@ -361,6 +361,23 @@ describe('AgentAccountMenu', () => {
       expectTracked(buttonId)
     }
   )
+
+  it('opens Plans and credits in the workspace settings off Cloud', async () => {
+    distribution.isCloud = false
+    signIn()
+    mount()
+    await openMenu()
+
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Plans and credits' })
+    )
+
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expectTracked('agent_account_menu_plans_clicked')
+  })
 
   it('says where the API key entry leads and that it opens a new tab', async () => {
     mount()
