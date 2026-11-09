@@ -21,6 +21,7 @@ export class VueNodeFixture {
   public readonly content: Locator
   public readonly priceBadge: Locator
   public readonly stateOutline: Locator
+  public readonly executionOutline: Locator
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -38,6 +39,9 @@ export class VueNodeFixture {
     this.content = locator.locator('.lg-node-content')
     this.priceBadge = locator.getByTestId('node-badge-group-credits')
     this.stateOutline = locator.getByTestId('node-state-outline-overlay')
+    this.executionOutline = this.stateOutline.and(
+      locator.page().locator('.border-primary')
+    )
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }
