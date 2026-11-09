@@ -319,6 +319,36 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybinding(keybinding2.combo)).toEqual(keybinding2)
   })
 
+  it('takes a combo back from its holder when explicitly moving a command onto its own unset default', () => {
+    const store = useKeybindingStore()
+    const combo = { key: 'S', ctrl: true }
+    const defaultBinding = new KeybindingImpl({
+      commandId: 'test.save',
+      combo
+    })
+    const holder = new KeybindingImpl({ commandId: 'test.rename', combo })
+    const customBinding = new KeybindingImpl({
+      commandId: 'test.save',
+      combo: { key: 'X', ctrl: true, shift: true }
+    })
+    store.addDefaultKeybinding(defaultBinding)
+    store.addUserKeybinding(holder, { replaceConflicts: true })
+    store.addUserKeybinding(customBinding)
+
+    const moved = store.updateSpecificKeybinding(
+      customBinding,
+      defaultBinding,
+      { replaceConflicts: true }
+    )
+
+    expect(moved).toEqual({ ok: true, changed: true })
+    expect(store.getKeybinding(defaultBinding.combo)).toEqual(defaultBinding)
+    expect(store.getKeybindingsByCommandId('test.rename')).toEqual([])
+    expect(store.getKeybindingsByCommandId('test.save')).toEqual([
+      defaultBinding
+    ])
+  })
+
   it('should not throw an error when unsetting non-existent keybindings', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({

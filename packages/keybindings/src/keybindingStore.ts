@@ -198,6 +198,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     ) {
       return {
         ...choices,
+        user: withoutCombo(choices.user, serializedCombo),
         unset: withoutCombo(choices.unset, serializedCombo)
       }
     }
