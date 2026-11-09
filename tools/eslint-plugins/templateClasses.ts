@@ -450,16 +450,18 @@ function isBadgeVariant(
 ): value is BadgeVariants['variant'] {
   return (
     value === undefined ||
-    value === 'tag' ||
-    value === 'chip' ||
-    value === 'badge' ||
-    value === 'compact' ||
-    value === 'label' ||
-    value === 'circle' ||
-    value === 'outline' ||
-    value === 'square' ||
-    value === 'pill' ||
-    value === 'dot'
+    [
+      'tag',
+      'chip',
+      'badge',
+      'compact',
+      'label',
+      'circle',
+      'outline',
+      'square',
+      'pill',
+      'dot'
+    ].includes(value)
   )
 }
 
@@ -468,15 +470,17 @@ function isBadgeSeverity(
 ): value is BadgeVariants['severity'] {
   return (
     value === undefined ||
-    value === 'default' ||
-    value === 'contrast' ||
-    value === 'primary' ||
-    value === 'secondary' ||
-    value === 'muted' ||
-    value === 'danger' ||
-    value === 'info' ||
-    value === 'success' ||
-    value === 'warning'
+    [
+      'default',
+      'contrast',
+      'primary',
+      'secondary',
+      'muted',
+      'danger',
+      'info',
+      'success',
+      'warning'
+    ].includes(value)
   )
 }
 
@@ -525,6 +529,21 @@ function sortedClassSet(classes: string) {
   return [...new Set(classes.split(/\s+/).filter(Boolean))].sort().join(' ')
 }
 
+function literalClassAlternatives(
+  expression: AST.VExpressionContainer['expression'] | undefined
+) {
+  const alternatives =
+    expression?.type === 'ConditionalExpression'
+      ? [expression.consequent, expression.alternate]
+      : [expression]
+  return alternatives.every(
+    (alternative): alternative is AST.ESLintLiteral =>
+      alternative?.type === 'Literal' && typeof alternative.value === 'string'
+  )
+    ? alternatives
+    : []
+}
+
 function componentClassLiterals(node: VElement) {
   const attributes = node.startTag.attributes.filter((attribute) => {
     if (!attribute.directive) return attribute.key.name === 'class'
@@ -542,17 +561,7 @@ function componentClassLiterals(node: VElement) {
     attribute.key.argument.name !== 'class'
   )
     return []
-  const expression = attribute.value?.expression
-  const alternatives =
-    expression?.type === 'ConditionalExpression'
-      ? [expression.consequent, expression.alternate]
-      : [expression]
-  return alternatives.every(
-    (alternative): alternative is AST.ESLintLiteral =>
-      alternative?.type === 'Literal' && typeof alternative.value === 'string'
-  )
-    ? alternatives
-    : []
+  return literalClassAlternatives(attribute.value?.expression)
 }
 
 function checkComponentLiteral(

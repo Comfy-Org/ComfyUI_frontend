@@ -123,7 +123,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :aria-label="t('agent.switchWorkflow')"
           :class="
             cn(
-              'group h-7 min-w-0 justify-start px-2.5 text-left text-xs/4 font-normal',
+              'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
               current && 'flex-1'
             )
           "
