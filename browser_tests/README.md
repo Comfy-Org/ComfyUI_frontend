@@ -813,6 +813,12 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud 
   pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
 ```
 
+`vueDirectiveSentryAttribution.spec.ts` needs the same production build for the
+same kind of reason: the dev server initialises Sentry with `enabled: false`, so
+no envelope is ever sent and the spec waits out its timeout. CI runs it in the
+`mobile-safari` project against the `frontend-dist-cloud` artifact. Locally,
+build and serve as above and run it with `--project=mobile-safari`.
+
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:

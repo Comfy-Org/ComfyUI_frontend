@@ -373,7 +373,8 @@ export default defineConfig([
         rules: {
           'template-classes/no-default-utilities': 'error',
           'template-classes/no-redundant-component-classes': 'error',
-          'template-classes/no-inherited-utilities': 'error'
+          'template-classes/no-inherited-utilities': 'error',
+          'template-classes/prefer-design-system-button': 'error'
         }
       },
       // Disables ESLint rules that conflict with formatters
@@ -399,6 +400,8 @@ export default defineConfig([
           'vue/multi-word-component-names': 'off', // TODO: fix
           'vue/no-template-shadow': 'off', // TODO: fix
           'vue/match-component-import-name': 'error',
+          'vue/no-content-outside-block': 'error',
+          'vue/no-props-shadow': 'error',
           'vue/no-unused-properties': 'error',
           'vue/no-unused-refs': 'error',
           'vue/no-useless-mustaches': 'error',

@@ -4507,10 +4507,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
     } catch (error) {
       localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
-      reportError(error, {
-        errorType: 'error_writing_clipboard_storage',
-        surface: 'graph'
-      })
+      if (
+        !(error instanceof DOMException && error.name === 'QuotaExceededError')
+      ) {
+        reportError(error, {
+          errorType: 'error_writing_clipboard_storage',
+          surface: 'graph'
+        })
+      }
     }
     return serializedData
   }
