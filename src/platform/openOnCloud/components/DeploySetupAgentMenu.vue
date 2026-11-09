@@ -19,7 +19,7 @@
         </template>
         <template v-else>
           <DesktopAgentMarks />
-          {{ $t('deployToComfyApi.deployWithAgent') }}
+          {{ $t('openOnCloud.deployWithAgent') }}
         </template>
         <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
       </Button>
