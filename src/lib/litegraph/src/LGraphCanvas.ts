@@ -6211,208 +6211,210 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
     this._passLinkRenderContext = this.buildLinkRenderContext()
+    try {
+      for (const node of nodes) {
+        if (node.flags.collapsed || !node._widgetSlotsDirty) continue
 
-    for (const node of nodes) {
-      if (node.flags.collapsed || !node._widgetSlotsDirty) continue
+        node._setConcreteSlots()
+        node.arrange()
+      }
 
-      node._setConcreteSlots()
-      node.arrange()
-    }
+      const hiddenLinkLayouts = layoutGraphLinkBadges(
+        this,
+        ctx,
+        graph,
+        LGraphCanvas.link_type_colors,
+        this.default_link_color
+      )
+      const renderedRerouteSegments = new Set<Reroute>()
+      const snappingLinks: SnappingLink[] = []
 
-    const hiddenLinkLayouts = layoutGraphLinkBadges(
-      this,
-      ctx,
-      graph,
-      LGraphCanvas.link_type_colors,
-      this.default_link_color
-    )
-    const renderedRerouteSegments = new Set<Reroute>()
-    const snappingLinks: SnappingLink[] = []
-
-    const renderConnection = (
-      link: LLink,
-      startPos: Point,
-      endPos: Point,
-      startDirection?: LinkDirection,
-      endDirection?: LinkDirection
-    ): void => {
-      const hiddenLayout = hiddenLinkLayouts.get(link.id)
-      if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
-        cancelLinkHideTransition(graphScope.rootGraphId, link.id)
-      } else if (hiddenLayout) {
-        const snap = linkHideSnap(graphScope.rootGraphId, link.id, now)
-        if (snap === undefined) return
-        if (this.links_render_mode !== LinkRenderType.SPLINE_LINK) {
+      const renderConnection = (
+        link: LLink,
+        startPos: Point,
+        endPos: Point,
+        startDirection?: LinkDirection,
+        endDirection?: LinkDirection
+      ): void => {
+        const hiddenLayout = hiddenLinkLayouts.get(link.id)
+        if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
           cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+        } else if (hiddenLayout) {
+          const snap = linkHideSnap(graphScope.rootGraphId, link.id, now)
+          if (snap === undefined) return
+          if (this.links_render_mode !== LinkRenderType.SPLINE_LINK) {
+            cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+            return
+          }
+
+          snappingLinks.push({
+            link,
+            snap,
+            startPos,
+            endPos,
+            startDirection,
+            endDirection
+          })
           return
         }
 
-        snappingLinks.push({
+        this._renderAllLinkSegments(
+          ctx,
           link,
-          snap,
-          startPos,
-          endPos,
+          hiddenLayout?.output.tip ?? startPos,
+          hiddenLayout?.input.tip ?? endPos,
+          visibleReroutes,
+          renderedRerouteSegments,
+          now,
           startDirection,
-          endDirection
-        })
-        return
+          endDirection,
+          false,
+          hiddenLayout !== undefined
+        )
       }
 
-      this._renderAllLinkSegments(
-        ctx,
-        link,
-        hiddenLayout?.output.tip ?? startPos,
-        hiddenLayout?.input.tip ?? endPos,
-        visibleReroutes,
-        renderedRerouteSegments,
-        now,
-        startDirection,
-        endDirection,
-        false,
-        hiddenLayout !== undefined
-      )
-    }
-
-    const topologiesByTarget = new Map<string, LinkTopology[]>()
-    for (const topology of linkStore.graphTopologies(graphScope)) {
-      const key = String(topology.targetNodeId)
-      const grouped = topologiesByTarget.get(key)
-      if (grouped) grouped.push(topology)
-      else topologiesByTarget.set(key, [topology])
-    }
-
-    for (const node of nodes) {
-      const topologies = topologiesByTarget.get(String(node.id))
-      if (!topologies) continue
-      topologies.sort((a, b) => a.targetSlot - b.targetSlot)
-
-      for (const topology of topologies) {
-        const inputSlot = topology.targetSlot
-        const input = node.inputs.at(inputSlot)
-        const link = graph.getLink(topology.id)
-        if (!input || !link) continue
-
-        const endPos: Point = LiteGraph.vueNodesMode
-          ? getSlotPosition(node, inputSlot, true)
-          : node.getInputPos(inputSlot)
-
-        const start_node = graph.getNodeById(link.origin_id)
-        if (start_node == null) continue
-
-        const outputId = link.origin_slot
-        const startPos: Point =
-          outputId === -1
-            ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-            : LiteGraph.vueNodesMode
-              ? getSlotPosition(start_node, outputId, false)
-              : start_node.getOutputPos(outputId)
-
-        const output =
-          outputId === -1 ? undefined : start_node.outputs[outputId]
-        if (!output) continue
-
-        renderConnection(link, startPos, endPos, output.dir, input.dir)
+      const topologiesByTarget = new Map<string, LinkTopology[]>()
+      for (const topology of linkStore.graphTopologies(graphScope)) {
+        const key = String(topology.targetNodeId)
+        const grouped = topologiesByTarget.get(key)
+        if (grouped) grouped.push(topology)
+        else topologiesByTarget.set(key, [topology])
       }
-    }
 
-    if (subgraph) {
-      for (const output of subgraph.inputNode.slots) {
-        if (!output.linkIds.length) continue
+      for (const node of nodes) {
+        const topologies = topologiesByTarget.get(String(node.id))
+        if (!topologies) continue
+        topologies.sort((a, b) => a.targetSlot - b.targetSlot)
 
-        for (const linkId of output.linkIds) {
-          const resolved = LLink.resolve(linkId, graph)
-          if (!resolved) continue
+        for (const topology of topologies) {
+          const inputSlot = topology.targetSlot
+          const input = node.inputs.at(inputSlot)
+          const link = graph.getLink(topology.id)
+          if (!input || !link) continue
 
-          const { link, inputNode, input } = resolved
-          if (!inputNode || !input) continue
+          const endPos: Point = LiteGraph.vueNodesMode
+            ? getSlotPosition(node, inputSlot, true)
+            : node.getInputPos(inputSlot)
 
-          const endPos = LiteGraph.vueNodesMode
-            ? getSlotPosition(inputNode, link.target_slot, true)
-            : inputNode.getInputPos(link.target_slot)
+          const start_node = graph.getNodeById(link.origin_id)
+          if (start_node == null) continue
 
-          renderConnection(link, output.pos, endPos, input.dir, input.dir)
+          const outputId = link.origin_slot
+          const startPos: Point =
+            outputId === -1
+              ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
+              : LiteGraph.vueNodesMode
+                ? getSlotPosition(start_node, outputId, false)
+                : start_node.getOutputPos(outputId)
+
+          const output =
+            outputId === -1 ? undefined : start_node.outputs[outputId]
+          if (!output) continue
+
+          renderConnection(link, startPos, endPos, output.dir, input.dir)
         }
       }
 
-      for (const input of subgraph.outputNode.slots) {
-        if (!input.linkIds.length) continue
+      if (subgraph) {
+        for (const output of subgraph.inputNode.slots) {
+          if (!output.linkIds.length) continue
 
-        const resolved = LLink.resolve(input.linkIds[0], graph)
-        if (!resolved) continue
+          for (const linkId of output.linkIds) {
+            const resolved = LLink.resolve(linkId, graph)
+            if (!resolved) continue
 
-        const { link, outputNode, output } = resolved
-        if (!outputNode || !output) continue
+            const { link, inputNode, input } = resolved
+            if (!inputNode || !input) continue
 
-        const startPos = LiteGraph.vueNodesMode
-          ? getSlotPosition(outputNode, link.origin_slot, false)
-          : outputNode.getOutputPos(link.origin_slot)
+            const endPos = LiteGraph.vueNodesMode
+              ? getSlotPosition(inputNode, link.target_slot, true)
+              : inputNode.getInputPos(link.target_slot)
 
-        renderConnection(link, startPos, input.pos, output.dir, input.dir)
+            renderConnection(link, output.pos, endPos, input.dir, input.dir)
+          }
+        }
+
+        for (const input of subgraph.outputNode.slots) {
+          if (!input.linkIds.length) continue
+
+          const resolved = LLink.resolve(input.linkIds[0], graph)
+          if (!resolved) continue
+
+          const { link, outputNode, output } = resolved
+          if (!outputNode || !output) continue
+
+          const startPos = LiteGraph.vueNodesMode
+            ? getSlotPosition(outputNode, link.origin_slot, false)
+            : outputNode.getOutputPos(link.origin_slot)
+
+          renderConnection(link, startPos, input.pos, output.dir, input.dir)
+        }
       }
-    }
 
-    for (const snapping of snappingLinks)
-      this._renderSnappingLink(ctx, snapping)
+      for (const snapping of snappingLinks)
+        this._renderSnappingLink(ctx, snapping)
 
-    if (graph.floatingLinks.size > 0) {
-      this._renderFloatingLinks(
-        ctx,
-        graph,
-        visibleReroutes,
-        renderedRerouteSegments,
-        now
+      if (graph.floatingLinks.size > 0) {
+        this._renderFloatingLinks(
+          ctx,
+          graph,
+          visibleReroutes,
+          renderedRerouteSegments,
+          now
+        )
+      }
+
+      const rerouteSet = this._visibleReroutes
+      rerouteSet.clear()
+
+      visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
+      const drawSnapGuides = this._snapToGrid && this.isDragging
+      const { selectedItems } = this
+      for (const reroute of visibleReroutes) {
+        rerouteSet.add(reroute)
+
+        if (drawSnapGuides && selectedItems.has(reroute)) {
+          this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
+            offsetToSlot: true
+          })
+        }
+        reroute.draw(ctx, this._pattern)
+
+        if (!this.pointer.isDown) reroute.drawSlots(ctx)
+      }
+
+      this.linkConnector.renderLinks.forEach((link: RenderLink) => {
+        if (!link.disconnectOnDrop || !link.disconnectOrigin) return
+
+        const [originX, originY] = link.disconnectOrigin
+        const radius = 35
+        const to = this._getHighlightPosition()
+        const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
+
+        ctx.save()
+        ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(originX + radius, originY)
+        ctx.arc(originX, originY, radius, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+
+        link.disconnectOnDrop = distSquared < radius ** 2
+      })
+
+      drawHiddenLinkBadges(ctx, this, margin_area, (linkId) =>
+        linkHideLabelScale(graphScope.rootGraphId, linkId, now)
       )
-    }
 
-    const rerouteSet = this._visibleReroutes
-    rerouteSet.clear()
-
-    visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
-    const drawSnapGuides = this._snapToGrid && this.isDragging
-    const { selectedItems } = this
-    for (const reroute of visibleReroutes) {
-      rerouteSet.add(reroute)
-
-      if (drawSnapGuides && selectedItems.has(reroute)) {
-        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
-          offsetToSlot: true
-        })
+      if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
+        this.dirty_bgcanvas = true
       }
-      reroute.draw(ctx, this._pattern)
 
-      if (!this.pointer.isDown) reroute.drawSlots(ctx)
+      ctx.globalAlpha = 1
+    } finally {
+      this._passLinkRenderContext = null
     }
-
-    this.linkConnector.renderLinks.forEach((link: RenderLink) => {
-      if (!link.disconnectOnDrop || !link.disconnectOrigin) return
-
-      const [originX, originY] = link.disconnectOrigin
-      const radius = 35
-      const to = this._getHighlightPosition()
-      const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
-
-      ctx.save()
-      ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(originX + radius, originY)
-      ctx.arc(originX, originY, radius, 0, Math.PI * 2)
-      ctx.stroke()
-      ctx.restore()
-
-      link.disconnectOnDrop = distSquared < radius ** 2
-    })
-
-    drawHiddenLinkBadges(ctx, this, margin_area, (linkId) =>
-      linkHideLabelScale(graphScope.rootGraphId, linkId, now)
-    )
-
-    if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
-      this.dirty_bgcanvas = true
-    }
-
-    this._passLinkRenderContext = null
-    ctx.globalAlpha = 1
   }
 
   private getNodeModeAlpha(node: LGraphNode) {
