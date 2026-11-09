@@ -1,7 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 
+type FeaturesRouteHandler = (route: Route) => Promise<void>
+
 export class FeatureFlagHelper {
-  private featuresRouteHandler: ((route: Route) => Promise<void>) | null = null
+  private readonly featuresRouteHandlers: FeaturesRouteHandler[] = []
 
   constructor(private readonly page: Page) {}
 
@@ -195,31 +197,34 @@ export class FeatureFlagHelper {
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {
-    this.featuresRouteHandler = (route: Route) =>
+    await this.routeFeatures((route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(features)
       })
-    await this.page.route('**/api/features', this.featuresRouteHandler)
+    )
   }
 
   /** Merge features into the real /api/features response. */
   async mergeServerFeatures(features: Record<string, unknown>): Promise<void> {
-    this.featuresRouteHandler = async (route: Route) => {
+    await this.routeFeatures(async (route) => {
       const response = await route.fetch()
       await route.fulfill({
         response,
         json: { ...(await response.json()), ...features }
       })
-    }
-    await this.page.route('**/api/features', this.featuresRouteHandler)
+    })
   }
 
   async clearMocks(): Promise<void> {
-    if (this.featuresRouteHandler) {
-      await this.page.unroute('**/api/features', this.featuresRouteHandler)
-      this.featuresRouteHandler = null
-    }
+    const handlers = this.featuresRouteHandlers.splice(0)
+    for (const handler of handlers)
+      await this.page.unroute('**/api/features', handler)
+  }
+
+  private async routeFeatures(handler: FeaturesRouteHandler): Promise<void> {
+    this.featuresRouteHandlers.push(handler)
+    await this.page.route('**/api/features', handler)
   }
 }
