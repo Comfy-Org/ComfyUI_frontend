@@ -755,7 +755,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Maximum frames per second to render. 0: unlimited. Default: 0 */
   public get maximumFps() {
     return this._maximumFrameGap > Number.EPSILON
-      ? this._maximumFrameGap / 1000
+      ? 1000 / this._maximumFrameGap
       : 0
   }
 
@@ -2476,8 +2476,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: () => {
         const rect = this.canvas.getBoundingClientRect()
@@ -2564,7 +2563,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         try {
-          runCanvasFramePhase(this.canvas, 'update')
+          runCanvasFramePhase(this, 'update')
           layoutStore.flushPendingChanges()
           const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
           this.draw()
@@ -4022,8 +4021,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _startNodeAutoPan(): void {
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
@@ -5219,7 +5217,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
-    runCanvasFramePhase(this.canvas, 'present')
+    runCanvasFramePhase(this, 'present')
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
   }

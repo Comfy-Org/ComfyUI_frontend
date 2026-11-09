@@ -98,6 +98,12 @@ describe('useNodeLayout', () => {
     await nextTick()
     expect(container.textContent).toBe('100')
 
+    canvas.setCanvas(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      }),
+      true
+    )
     canvas.draw()
     await nextTick()
     expect(container.textContent).toBe('137')

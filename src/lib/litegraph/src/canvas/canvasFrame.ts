@@ -1,20 +1,17 @@
 type FramePhase = 'update' | 'present'
 
-const frames = new WeakMap<
-  HTMLCanvasElement,
-  Record<FramePhase, Set<() => void>>
->()
+const frames = new WeakMap<object, Record<FramePhase, Set<() => void>>>()
 
 export function onCanvasFrame(
-  canvas: HTMLCanvasElement,
+  canvas: object,
   phase: FramePhase,
   callback: () => void
 ): () => void {
-  let frame = frames.get(canvas)
-  if (!frame) {
-    frame = { update: new Set(), present: new Set() }
-    frames.set(canvas, frame)
+  const frame = frames.get(canvas) ?? {
+    update: new Set<() => void>(),
+    present: new Set<() => void>()
   }
+  frames.set(canvas, frame)
   const callbacks = frame[phase]
   callbacks.add(callback)
   return () => {
@@ -22,10 +19,7 @@ export function onCanvasFrame(
   }
 }
 
-export function runCanvasFramePhase(
-  canvas: HTMLCanvasElement,
-  phase: FramePhase
-): void {
+export function runCanvasFramePhase(canvas: object, phase: FramePhase): void {
   const callbacks = frames.get(canvas)?.[phase]
   if (!callbacks) return
   for (const callback of callbacks) callback()
