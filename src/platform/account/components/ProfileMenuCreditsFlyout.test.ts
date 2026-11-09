@@ -91,6 +91,27 @@ describe('ProfileMenuCreditsFlyout', () => {
     )
   })
 
+  it('dims Add credits and says to update payment while paused or payment is due', async () => {
+    const user = userEvent.setup()
+    renderFlyout({ canTopUp: false, denial: 'payment_past_due' })
+    const reason = 'Update your payment method to add credits.'
+
+    expect(addCredits()).toBeDisabled()
+    expect(addCredits()).toHaveAccessibleDescription(reason)
+    await user.hover(screen.getByTestId('add-credits-trigger'))
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      reason
+    )
+  })
+
+  it('shows no tooltip on Add credits while purchases are stopped', async () => {
+    const user = userEvent.setup()
+    renderFlyout({ canTopUp: false, denial: 'topup_purchases_paused' })
+
+    await user.hover(screen.getByTestId('add-credits-trigger'))
+    expect(screen.queryByTestId('tooltip-content')).not.toBeInTheDocument()
+  })
+
   it.for([
     { name: 'offers Update payment when recovery is served', served: true },
     { name: 'offers no Update payment otherwise', served: false }

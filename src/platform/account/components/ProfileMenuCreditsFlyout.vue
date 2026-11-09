@@ -8,18 +8,24 @@
     >
       {{ $t('credits.topUp.paymentProcessingFlyout') }}
     </p>
-    <Button
-      v-if="addCredits.kind !== 'hidden'"
-      variant="secondary"
-      size="md"
-      data-testid="add-credits-button"
-      :disabled="addCredits.kind === 'disabled'"
-      :aria-describedby="refusalReason ? refusalReasonId : undefined"
-      :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
-      @click="handleTopUp"
-    >
-      {{ $t('subscription.addCredits') }}
-    </Button>
+    <Tooltip v-if="addCredits.kind !== 'hidden'" :disabled="!paymentPastDue">
+      <TooltipTrigger as-child>
+        <span class="flex flex-col" data-testid="add-credits-trigger">
+          <Button
+            variant="secondary"
+            size="md"
+            data-testid="add-credits-button"
+            :disabled="addCredits.kind === 'disabled'"
+            :aria-describedby="refusalReason ? refusalReasonId : undefined"
+            :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+            @click="handleTopUp"
+          >
+            {{ $t('subscription.addCredits') }}
+          </Button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="left">{{ refusalReason }}</TooltipContent>
+    </Tooltip>
     <p
       v-if="refusalReason"
       :id="refusalReasonId"
@@ -51,6 +57,9 @@
 <script setup lang="ts">
 import { addCreditsAvailability } from '@comfyorg/account-core/billing'
 import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -84,6 +93,11 @@ const addCredits = computed(() =>
     canTopUp: canTopUp.value,
     denial: topUpDenial.value
   })
+)
+const paymentPastDue = computed(
+  () =>
+    addCredits.value.kind === 'disabled' &&
+    topUpDenial.value === 'payment_past_due'
 )
 const refusalReasonId = useId()
 const refusalReason = computed(() =>
