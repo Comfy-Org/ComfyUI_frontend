@@ -238,9 +238,10 @@ async function openedBillingEntry(page: Page) {
   }
 }
 
-/** The pricing deep link. */
+/** Settings ▸ Plan & Credits ▸ Upgrade Plan, which opens the pricing table in place. */
 async function clickPlansAndPricing(page: Page) {
-  await page.goto(`${APP_URL}/?pricing=1`)
+  const content = await openPlanAndCredits(page)
+  await content.getByRole('button', { name: /Upgrade Plan|Change plan/ }).click()
 }
 
 const pricingHeading = (page: Page) =>
@@ -423,7 +424,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
           return_to: 'comfyui_workspace',
           plan: 'standard-yearly',
           workspace: 'ws-personal',
-          source: 'avatar_menu_plans'
+          source: 'settings_billing_panel'
         },
         carriesReadableJourney: true
       })
