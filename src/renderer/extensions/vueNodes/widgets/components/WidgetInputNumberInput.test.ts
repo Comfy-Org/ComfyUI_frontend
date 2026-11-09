@@ -76,6 +76,57 @@ describe('WidgetInputNumberInput Value Binding', () => {
     expect(emitted()['update:modelValue']).toEqual([[123456789]])
   })
 
+  it('starts label scrubbing from the pending typed value', async () => {
+    const user = userEvent.setup()
+    const { rerender } = renderComponent(
+      createNumberInputWidget(37, 'int', { step2: 1 }),
+      37
+    )
+    await rerender({
+      'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
+    })
+    const input = screen.getByRole('spinbutton')
+    const row = screen.getByTestId('widget-number-row')
+    const label = screen.getByText('test_input_number')
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 300, 24)
+    )
+
+    await user.clear(input)
+    await user.type(input, '1000')
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: label,
+        coords: { clientX: 20, clientY: 10 }
+      },
+      { target: label, coords: { clientX: 40, clientY: 10 } },
+      { keys: '[/MouseLeft]', target: label }
+    ])
+
+    expect(input).toHaveValue('1133')
+  })
+
+  it.for(['', '{Enter}'])(
+    'Escape restores the value before focus after typing with %s',
+    async (commitKey) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(createNumberInputWidget(37), 37)
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const input = screen.getByRole('spinbutton')
+
+      await user.clear(input)
+      await user.type(input, `1000${commitKey}{Escape}`)
+
+      expect(input).toHaveValue('37')
+      expect(input).toHaveAttribute('aria-valuenow', '37')
+      expect(input).not.toHaveFocus()
+    }
+  )
+
   it.for([
     { target: 'row', disabled: false, expected: 157 },
     { target: 'label', disabled: false, expected: 157 },
