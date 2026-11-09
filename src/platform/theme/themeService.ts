@@ -1,9 +1,16 @@
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
+import {
+  BUILT_IN_THEME_PRESETS,
+  DEFAULT_THEME_PRESET
+} from '@comfyorg/theme-core/builtInThemePresets'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
 import { themePresetSchema } from '@comfyorg/theme-core/themePresetSchema'
-import type { ThemePreset } from '@comfyorg/theme-core/themePresetSchema'
+import type {
+  ThemePreset,
+  ThemePresets
+} from '@comfyorg/theme-core/themePresetSchema'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -16,6 +23,18 @@ import { applyTheme } from './applyTheme'
 import { useThemeStore } from './themeStore'
 
 let latestThemeSwitch = 0
+
+function availableCustomPresetId(id: string, presets: ThemePresets) {
+  let candidate = `${id}-custom`
+  let suffix = 2
+  while (
+    Object.hasOwn(presets, candidate) ||
+    Object.hasOwn(BUILT_IN_THEME_PRESETS, candidate)
+  ) {
+    candidate = `${id}-custom-${suffix++}`
+  }
+  return candidate
+}
 
 function persistSplashColors() {
   try {
@@ -42,6 +61,33 @@ export const useThemeService = () => {
       'Comfy.CustomColorPalettes',
       themeStore.customPresets
     )
+  }
+
+  async function loadCustomThemePresets() {
+    const presets = settingStore.exists('Comfy.CustomColorPalettes')
+      ? settingStore.get('Comfy.CustomColorPalettes')
+      : {}
+    const conflicts = Object.keys(presets).filter((id) =>
+      Object.hasOwn(BUILT_IN_THEME_PRESETS, id)
+    )
+    const migrated = { ...presets }
+    const previousId = settingStore.exists('Comfy.ColorPalette')
+      ? settingStore.get('Comfy.ColorPalette')
+      : DEFAULT_THEME_PRESET.id
+    let activeId = previousId
+    for (const id of conflicts) {
+      const newId = availableCustomPresetId(id, migrated)
+      migrated[newId] = { ...migrated[id], id: newId }
+      delete migrated[id]
+      if (activeId === id) activeId = newId
+    }
+    themeStore.customPresets = migrated
+    if (!conflicts.length) return
+
+    await settingStore.setMany({
+      'Comfy.CustomColorPalettes': migrated,
+      ...(activeId !== previousId ? { 'Comfy.ColorPalette': activeId } : {})
+    })
   }
 
   async function deleteCustomThemePreset(id: string) {
@@ -123,6 +169,7 @@ export const useThemeService = () => {
 
   return {
     getActiveTheme: () => themeStore.activeTheme,
+    loadCustomThemePresets: wrapWithErrorHandlingAsync(loadCustomThemePresets),
     addCustomThemePreset: wrapWithErrorHandlingAsync(addCustomThemePreset),
     deleteCustomThemePreset: wrapWithErrorHandlingAsync(
       deleteCustomThemePreset
