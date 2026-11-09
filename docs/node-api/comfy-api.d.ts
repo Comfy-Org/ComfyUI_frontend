@@ -2691,11 +2691,6 @@ interface MountDef {
 /** What a mounted control can hold. @knipIgnoreUnusedButUsedByCustomNodes */
 type MountedData = string | number | boolean | object | null
 
-/**
- * Reading and writing a mounted widget's value.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
 interface MountedValue {
   get(): MountedData
   set(value: MountedData): void
@@ -2950,11 +2945,6 @@ type WidgetTextInteractionEvent =
 /** What a pack-declared widget can hold. */
 type WidgetTypeData = string | number | boolean | object | null
 
-/**
- * Reading and writing the widget's value, for the renderer to bind to.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
 interface WidgetTypeValue {
   get(): WidgetTypeData
   set(value: WidgetTypeData): void

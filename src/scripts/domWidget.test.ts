@@ -2,6 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
+import type { DOMWidgetOptions } from '@/types/domWidget'
 import {
   addWidget,
   ComponentWidgetImpl,
@@ -12,6 +14,66 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 vi.mock(import('@/utils/formatUtil'), () => ({
   generateUUID: () => 'test-uuid'
 }))
+
+test.for([
+  {
+    name: 'registered DOM widget',
+    create: (node: LGraphNode, options: DOMWidgetOptions<string>) =>
+      node.addDOMWidget(
+        'text',
+        'custom',
+        document.createElement('input'),
+        options
+      )
+  },
+  {
+    name: 'DOM widget instance',
+    create: (node: LGraphNode, options: DOMWidgetOptions<string>) =>
+      new DOMWidgetImpl({
+        node,
+        name: 'text',
+        type: 'custom',
+        element: document.createElement('input'),
+        options
+      })
+  },
+  {
+    name: 'component widget',
+    create: (node: LGraphNode, options: DOMWidgetOptions<string>) =>
+      new ComponentWidgetImpl({
+        node,
+        name: 'text',
+        component: {},
+        inputSpec: { name: 'text', type: 'string' },
+        options
+      })
+  }
+])(
+  '$name notifies once per commit and still notifies on direct assignment',
+  ({ create }) => {
+    const node = new LGraphNode('test')
+    let current = 'before'
+    const widget = create(node, {
+      getValue: () => current,
+      setValue: (value) => {
+        current = value
+      }
+    })
+    const seen = vi.fn()
+    widget.callback = seen
+
+    commitWidgetValue(widget, 'committed', { node })
+
+    expect(widget.value).toBe('committed')
+    expect(seen).toHaveBeenCalledTimes(1)
+
+    widget.value = 'assigned'
+
+    expect(widget.value).toBe('assigned')
+    expect(seen).toHaveBeenCalledTimes(2)
+    expect(seen).toHaveBeenLastCalledWith('assigned')
+  }
+)
 
 describe('DOMWidget Y Position Preservation', () => {
   test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
