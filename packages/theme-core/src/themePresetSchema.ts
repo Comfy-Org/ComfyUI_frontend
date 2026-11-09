@@ -103,6 +103,9 @@ export const themeSchema = z
     ['node-foreground']: z.string(),
     ['node-header']: z.string(),
     ['node-border']: z.string(),
+    ['node-radius']: z.string(),
+    ['node-title-font-size']: z.string(),
+    ['node-icon-style']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })

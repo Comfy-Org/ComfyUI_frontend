@@ -37,6 +37,37 @@ function clearRootThemeAfterTest() {
 }
 
 describe('useThemeService theme variables', () => {
+  it('applies Classic colors and node shapes, then restores default shapes', async () => {
+    clearRootThemeAfterTest()
+    const service = useThemeService()
+
+    await service.setActiveTheme('classic')
+
+    expect({
+      node: readRootProperty('--node'),
+      header: readRootProperty('--node-header'),
+      foreground: readRootProperty('--node-foreground'),
+      radius: readRootProperty('--node-radius'),
+      titleSize: readRootProperty('--node-title-font-size'),
+      icons: readRootProperty('--node-icon-style')
+    }).toEqual({
+      node: '#353535',
+      header: '#333',
+      foreground: '#AAA',
+      radius: '8px',
+      titleSize: '14px',
+      icons: 'triangle'
+    })
+
+    await service.setActiveTheme('dark')
+
+    expect([
+      readRootProperty('--node-radius'),
+      readRootProperty('--node-title-font-size'),
+      readRootProperty('--node-icon-style')
+    ]).toEqual(['', '', ''])
+  })
+
   it.for([
     {
       paletteId: 'dark',

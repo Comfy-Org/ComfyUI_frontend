@@ -1,4 +1,5 @@
 import arc from './presets/arc.json' with { type: 'json' }
+import classic from './presets/classic.json' with { type: 'json' }
 import dark from './presets/dark.json' with { type: 'json' }
 import fennec from './presets/fennec.json' with { type: 'json' }
 import github from './presets/github.json' with { type: 'json' }
@@ -10,6 +11,7 @@ import type { CompletedThemePreset, ThemePresets } from './themePresetSchema'
 export const BUILT_IN_THEME_PRESETS: ThemePresets = {
   dark,
   light,
+  classic,
   solarized,
   arc,
   nord,

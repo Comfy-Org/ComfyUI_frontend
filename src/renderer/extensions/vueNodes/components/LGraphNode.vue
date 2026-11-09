@@ -493,16 +493,16 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-br-xl',
-    default: 'rounded-b-xl'
+    card: 'rounded-br-(--node-radius)',
+    default: 'rounded-b-(--node-radius)'
   })
 )
 
 const shapeClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-tl-xl rounded-br-xl',
-    default: 'rounded-xl'
+    card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
+    default: 'rounded-(--node-radius)'
   })
 )
 
@@ -516,13 +516,14 @@ const isTransparentHeaderless = computed(
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
-  const isExpanded = hasAnyError.value
   return shapeVariantClass(nodeData.shape, {
     box: '',
-    card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+    card: hasAnyError.value
+      ? 'rounded-tl-[calc(var(--node-radius)+11px)] rounded-br-[calc(var(--node-radius)+11px)]'
+      : 'rounded-tl-[calc(var(--node-radius)+7px)] rounded-br-[calc(var(--node-radius)+7px)]',
+    default: hasAnyError.value
+      ? 'rounded-[calc(var(--node-radius)+7px)]'
+      : 'rounded-[calc(var(--node-radius)+3px)]'
   })
 })
 
@@ -532,16 +533,16 @@ const BEFORE_OVERLAY_BASE =
 const bypassOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
   })
 )
 
 const mutedOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: BEFORE_OVERLAY_BASE,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE}`
   })
 )
 

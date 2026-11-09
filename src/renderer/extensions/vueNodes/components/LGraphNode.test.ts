@@ -757,8 +757,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-[calc(var(--node-radius)+7px)]')
+    expect(overlay).not.toHaveClass('rounded-[calc(var(--node-radius)+3px)]')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {
@@ -776,7 +776,7 @@ describe('LGraphNode', () => {
     })
 
     const wrapper = screen.getByTestId('node-inner-wrapper')
-    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).toHaveClass('before:rounded-(--node-radius)')
     expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
 
