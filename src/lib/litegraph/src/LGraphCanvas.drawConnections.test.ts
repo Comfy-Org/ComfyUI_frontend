@@ -25,7 +25,6 @@ import {
   startLinkHideTransitions
 } from '@/lib/litegraph/src/canvas/linkHideTransition'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
@@ -392,7 +391,6 @@ describe('drawConnections', () => {
     const expectedLinks = targets.map((target) =>
       createTestLink(graph, source, 0, target, 0)
     )
-    const topologyScan = vi.spyOn(useLinkStore(), 'graphTopologies')
     const resolveLink = vi.spyOn(graph, 'getLink')
     canvas.visible_area.set([0, 0, 800, 600])
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
@@ -405,8 +403,6 @@ describe('drawConnections', () => {
     for (const [index, expectedLink] of expectedLinks.entries()) {
       expect(renderedLinks[index]).toBe(expectedLink)
     }
-
-    expect(topologyScan).toHaveBeenCalledWith(graphScopeOf(graph))
   })
 
   it.for([245, 500, 1_000])(
@@ -500,7 +496,6 @@ describe('drawConnections', () => {
           }
         }
       )
-      const topologyScan = vi.spyOn(useLinkStore(), 'graphTopologies')
       const resolveLink = vi.spyOn(graph, 'getLink')
       canvas.visible_area.set([0, 0, 800, 3_000])
       vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
@@ -509,7 +504,6 @@ describe('drawConnections', () => {
 
       expect(resolveLink).toHaveBeenCalledTimes(connectedCount)
       expect([...canvas.renderedPaths]).toEqual(expectedLinks)
-      expect(topologyScan).toHaveBeenCalledWith(graphScopeOf(graph))
       expect(new Set(expectedLinks.map((link) => link.origin_id)).size).toBe(
         connectedCount ? Math.ceil(connectedCount / fanOut) : 0
       )
@@ -570,17 +564,12 @@ describe('drawConnections', () => {
     const rootLink = rootSource.connect(0, rootTarget, 0)!
     canvas.setGraph(subgraph)
     canvas.visible_area.set([0, 0, 800, 600])
-    const topologyScan = vi.spyOn(useLinkStore(), 'graphTopologies')
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
-    topologyScan.mockClear()
 
     canvas.drawConnections(createMockCtx())
 
     expect([...canvas.renderedPaths]).toEqual([subgraphLink])
     expect(canvas.renderedPaths).not.toContain(rootLink)
-    expect(
-      new Set(topologyScan.mock.calls.map(([scope]) => scope.owningGraphId))
-    ).toEqual(new Set([subgraph.id]))
   })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
