@@ -24,7 +24,8 @@ import { useAgentConsent } from './useAgentConsent'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test',
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -626,7 +627,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://api.comfy.test/api/global-settings',
+        'https://cloud.comfy.test/api/global-settings',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -899,7 +900,7 @@ describe('useAgentConsent', () => {
     expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/global-settings',
+      'https://cloud.comfy.test/api/global-settings',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ key: stored.key, value: true })

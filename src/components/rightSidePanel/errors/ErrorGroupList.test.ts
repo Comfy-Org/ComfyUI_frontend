@@ -369,7 +369,7 @@ describe('ErrorGroupList selection emphasis', () => {
       ).toBe(sendsToBuild)
       expect(
         within(hero).queryByRole('button', {
-          name: /Build with your agent/
+          name: /Deploy with your agent/
         }) !== null
       ).toBe(sendsToBuild)
     }
@@ -406,7 +406,7 @@ describe('ErrorGroupList selection emphasis', () => {
       )
     ).toBeInTheDocument()
     expect(
-      within(hero).queryByRole('button', { name: /Build with your agent/ })
+      within(hero).queryByRole('button', { name: /Deploy with your agent/ })
     ).not.toBeInTheDocument()
   })
 
