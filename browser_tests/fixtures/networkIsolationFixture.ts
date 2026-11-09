@@ -3,6 +3,7 @@ import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { installSeededServerFlags } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
@@ -144,9 +145,9 @@ export const networkIsolationFixture = base.extend<{
     },
     use
   ) => {
-    await context.addInitScript((enabled: boolean) => {
-      localStorage.setItem('ff:billing_new_ux_enabled', JSON.stringify(enabled))
-    }, billingNewUx)
+    await context.addInitScript(installSeededServerFlags, {
+      billing_new_ux_enabled: billingNewUx
+    })
     const { origins, unexpected } = networkPolicy
     const restore = guardApiRequests(
       context.request,
