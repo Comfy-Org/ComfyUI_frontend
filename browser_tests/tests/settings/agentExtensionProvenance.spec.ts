@@ -9,6 +9,16 @@ test.describe(
   'Agent-created extension provenance',
   { tag: '@settings' },
   () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/extensions', (route) =>
+        route.fulfill({
+          json: [
+            '/extensions/ComfyUI_devtools/legacyCompatibility.js'
+          ] satisfies GetExtensionsResponse
+        })
+      )
+    })
+
     test(
       'shows agent attribution and filters the extension list',
       {

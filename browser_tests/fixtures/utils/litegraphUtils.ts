@@ -188,7 +188,11 @@ class NodeWidgetReference {
    * @returns The position of the widget's center
    */
   async getPosition(): Promise<Position> {
-    if (this.node.comfyPage.isVueNodes) {
+    if (
+      await this.node.comfyPage.settings.getSetting<boolean>(
+        'Comfy.VueNodes.Enabled'
+      )
+    ) {
       const selector = await this.node.comfyPage.page.evaluate(
         ([id, index]) => {
           const widget = window
