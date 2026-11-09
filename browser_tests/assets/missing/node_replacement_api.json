@@ -1,0 +1,23 @@
+{
+  "1": {
+    "class_type": "E2E_OldSampler",
+    "inputs": {
+      "seed": 42,
+      "steps": 20,
+      "cfg": 7,
+      "sampler_name": "euler",
+      "scheduler": "normal"
+    },
+    "_meta": {
+      "title": "Imported sampler",
+      "cnr_id": "old-pack",
+      "ver": "1.0.0"
+    }
+  },
+  "2": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "replacement-%KSampler.cfg%"
+    }
+  }
+}

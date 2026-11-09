@@ -1,4 +1,8 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { Size2D as ImageDimensions } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
@@ -183,6 +187,10 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
     .filter((tag) => tag.length > 0)
 }
 
+export function isModelTypeCovered(asset: AssetItem): boolean {
+  return getModelTypeTagValues(asset).length > 0
+}
+
 /**
  * The asset's primary `model_type:` membership: the lexicographically-first of
  * its stripped `model_type:` values, or `undefined` for an uncovered asset.
@@ -191,7 +199,7 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
  * re-type replaces and the value the edit dropdown / browser title reflect.
  */
 function getPrimaryModelType(asset: AssetItem): string | undefined {
-  return getModelTypeTagValues(asset).toSorted()[0]
+  return [...getModelTypeTagValues(asset)].sort()[0]
 }
 
 /**
@@ -278,14 +286,13 @@ function getBareTagCategories(asset: AssetItem): string[] {
  * the legacy bare-tag top-level grouping and `model_type:` is ignored.
  */
 export function getAssetCategories(
-  asset: AssetItem,
+  asset: ModelBrowserAsset,
   modelTypeMode: boolean
 ): string[] {
+  if (asset.browserCategories) return asset.browserCategories
   if (modelTypeMode) {
     const modelTypes = getModelTypeTagValues(asset)
     if (modelTypes.length > 0) return modelTypes
-    // Uncovered assets route by bare tags, but namespace residue (e.g. a
-    // malformed empty `model_type:`) must not surface as a raw category.
     return getBareTagCategories(asset).filter(
       (category) => !category.startsWith(MODEL_TYPE_TAG_PREFIX)
     )
@@ -338,9 +345,10 @@ export function stripModelTypePrefix(tag: string): string {
  * with bare hierarchical tags showing the segment after the first `/`.
  */
 export function getAssetTypeBadges(
-  asset: AssetItem,
+  asset: ModelBrowserAsset,
   modelTypeMode: boolean
 ): string[] {
+  if (asset.browserCategories) return asset.browserCategories
   if (modelTypeMode) {
     const modelTypes = getModelTypeTagValues(asset)
     if (modelTypes.length > 0) return modelTypes
@@ -376,9 +384,10 @@ export function getAssetTypeBadges(
  * used verbatim.
  */
 export function getAssetNodeCategoryCandidates(
-  asset: AssetItem,
+  asset: ModelBrowserAsset,
   modelTypeMode: boolean
 ): string[] {
+  if (asset.browserCategories) return asset.browserCategories
   if (!modelTypeMode) {
     const legacy = asset.tags.find(
       (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
@@ -396,7 +405,7 @@ export function getAssetNodeCategoryCandidates(
   const byDepthDesc = (a: string, b: string) => pathDepth(b) - pathDepth(a)
 
   const modelTypes = getModelTypeTagValues(asset)
-  if (modelTypes.length === 0) return bareTags.toSorted(byDepthDesc)
+  if (modelTypes.length === 0) return [...bareTags].sort(byDepthDesc)
 
   const isRelated = (tag: string) =>
     modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
@@ -470,11 +479,7 @@ export function getAssetCardTitle(asset: AssetItem): string {
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
 }
-
-export interface ImageDimensions {
-  width: number
-  height: number
-}
+export type { Size2D as ImageDimensions } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Type guard: a pixel dimension is a finite positive integer. `metadata` is
@@ -537,4 +542,12 @@ export function resolveDisplayImageDimensions(
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.hash ?? asset.name
+}
+
+/** `user_metadata.subfolder` when it is a string, whether or not the rest qualifies as output metadata. */
+export function getOutputSubfolder(
+  userMetadata: Record<string, unknown> | undefined
+): string | undefined {
+  const subfolder = userMetadata?.subfolder
+  return typeof subfolder === 'string' ? subfolder : undefined
 }

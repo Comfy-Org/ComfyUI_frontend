@@ -1,23 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => undefined })
-}))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({
-    isExtensionInstalled: () => false,
-    isExtensionEnabled: () => false
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -36,17 +25,8 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = Partial<ResultItemImpl> & {
-  filename: string
-  subfolder: string
-  type: string
-  nodeId: SerializedNodeId
-  mediaType: string
+type MockResultItem = AugmentedResultItem & {
   id?: string
-  url?: string
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
 }
 
 describe('MediaLightbox', () => {
@@ -77,9 +57,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '123',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image1.jpg',
       id: '1'
     },
@@ -89,9 +66,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image2.jpg',
       id: '2'
     },
@@ -101,9 +75,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '789',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image3.jpg',
       id: '3'
     }
@@ -126,7 +97,7 @@ describe('MediaLightbox', () => {
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as ResultItemImpl[],
+        allGalleryItems: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -155,7 +126,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
+      allGalleryItems: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -166,19 +137,19 @@ describe('MediaLightbox', () => {
   it('shows gallery when activeIndex changes from -1', async () => {
     const { rerender, container } = renderGallery({ activeIndex: -1 })
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(container.querySelector('[data-mask]')).not.toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
 
     await rerender({
-      allGalleryItems: mockGalleryItems as ResultItemImpl[],
+      allGalleryItems: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(container.querySelector('[data-mask]')).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('emits update:activeIndex with -1 when close button clicked', async () => {
@@ -192,35 +163,31 @@ describe('MediaLightbox', () => {
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(new Response(null, { status: 503 }))
-    )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 
     const { user } = renderGallery(
       {
         allGalleryItems: [
           {
             ...mockGalleryItems[0],
-            isImage: false,
-            isText: true,
+            filename: 'failed.txt',
             mediaType: 'text',
             url: '/api/view?filename=failed.txt'
           }
-        ] as ResultItemImpl[]
+        ]
       },
       { ResultText: false }
     )
 
     expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
+    expect(fetch).toHaveBeenCalledWith('/api/view?filename=failed.txt')
 
     await user.click(screen.getByLabelText('Close'))
 
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
-  /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
+  /* oxlint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
       const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
@@ -270,9 +237,9 @@ describe('MediaLightbox', () => {
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
     })
   })
-  /* eslint-enable testing-library/prefer-user-event */
+  /* oxlint-enable testing-library/prefer-user-event */
 
-  /* eslint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
+  /* oxlint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {
     const videoItem = (n: number): MockResultItem => ({
       filename: `v${n}.mp4`,
@@ -280,25 +247,27 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: `${n}`,
       mediaType: 'video',
-      isImage: false,
-      isVideo: true,
-      isAudio: false,
       url: `http://assets.test/v${n}.mp4`,
       id: `v${n}`
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (
+      items: MockResultItem[],
+      extraProps: { autoplayVideo?: boolean } = {}
+    ) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items as ResultItemImpl[],
-          activeIndex: 0
+          allGalleryItems: items,
+          activeIndex: 0,
+          ...extraProps
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
-          allGalleryItems: items as ResultItemImpl[],
-          activeIndex
+          allGalleryItems: items,
+          activeIndex,
+          ...extraProps
         })
         await nextTick()
       }
@@ -356,6 +325,39 @@ describe('MediaLightbox', () => {
       expect(video()).not.toBe(first)
     })
 
+    it('PM-1895 starts an opt-in video on open and again on return', async () => {
+      const { show, video } = renderTeleported(
+        [videoItem(1), mockGalleryItems[0]],
+        { autoplayVideo: true }
+      )
+      await nextTick()
+
+      const first = video()
+      expect(first?.autoplay).toBe(true)
+      expect(first?.paused).toBe(false)
+
+      first?.pause()
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(false)
+    })
+
+    it('leaves playback alone for callers that do not opt in', async () => {
+      const { show, video } = renderTeleported([
+        videoItem(1),
+        mockGalleryItems[0]
+      ])
+      await nextTick()
+
+      expect(video()?.autoplay).toBe(false)
+
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(true)
+    })
+
     it('drops retained videos when the lightbox closes', async () => {
       const { show, video } = renderTeleported([
         videoItem(1),
@@ -372,5 +374,5 @@ describe('MediaLightbox', () => {
       expect(reopened).not.toBe(first)
     })
   })
-  /* eslint-enable testing-library/no-node-access */
+  /* oxlint-enable testing-library/no-node-access */
 })

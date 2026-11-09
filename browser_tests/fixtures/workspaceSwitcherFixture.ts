@@ -1,3 +1,5 @@
+import type { ListMembersResponse } from '@comfyorg/ingest-types'
+
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -35,6 +37,15 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
 
+    await page.route('**/api/workspace/members**', (route) =>
+      route.fulfill({
+        json: {
+          members: [],
+          pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+        } satisfies ListMembersResponse
+      })
+    )
+
     await page.route('**/api/auth/token', async (route) => {
       const requestBody = route.request().postDataJSON() as {
         workspace_id?: string
@@ -51,6 +62,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       const response: WorkspaceTokenResponse = {
         token: `mock-workspace-token-${workspace.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: workspace.id,
           name: workspace.name,

@@ -30,6 +30,27 @@ describe('errorResponseFromBody', () => {
     )
   })
 
+  it('reads the code from the flat { error, message } shape', () => {
+    expect(
+      errorResponseFromBody(
+        {
+          error: 'WORKSPACE_BILLING_REQUIRED',
+          message: 'Use workspace billing'
+        },
+        'fallback'
+      )
+    ).toEqual({
+      code: 'WORKSPACE_BILLING_REQUIRED',
+      message: 'Use workspace billing'
+    })
+  })
+
+  it('ignores a prose `error` value that is not code-shaped', () => {
+    expect(
+      errorResponseFromBody({ error: 'Forbidden', message: 'nope' }, 'fallback')
+    ).toEqual({ code: 'UNKNOWN_ERROR', message: 'nope' })
+  })
+
   it('salvages a code-only body using the fallback message', () => {
     expect(errorResponseFromBody({ code: 'RATE_LIMITED' }, 'fallback')).toEqual(
       {
@@ -169,16 +190,6 @@ describe('parseErrorResponse', () => {
       code: 'INVALID_INPUT',
       message: 'Bad field',
       details: { field: 'name' }
-    })
-  })
-
-  it('salvages a legacy message-only body', async () => {
-    const response = makeResponse({
-      text: async () => JSON.stringify({ message: 'Nope' })
-    })
-    await expect(parseErrorResponse(response)).resolves.toEqual({
-      code: 'UNKNOWN_ERROR',
-      message: 'Nope'
     })
   })
 

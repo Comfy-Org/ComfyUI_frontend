@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -411,20 +411,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Legacy And Round-Trip Coverage', () => {
-    let previousUseNewMenu: unknown
-
-    test.beforeEach(async ({ comfyPage }) => {
-      previousUseNewMenu =
-        await comfyPage.settings.getSetting('Comfy.UseNewMenu')
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.UseNewMenu',
-        previousUseNewMenu
-      )
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
       comfyPage

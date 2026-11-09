@@ -1,0 +1,229 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+
+describe('extensionStore', () => {
+  describe('registerExtension', () => {
+    it('registers an extension by name', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'test.ext' })
+      expect(store.isExtensionInstalled('test.ext')).toBe(true)
+    })
+
+    it('throws for extension without name', () => {
+      const store = useExtensionStore()
+      expect(() => store.registerExtension({ name: '' })).toThrow(
+        "Extensions must have a 'name' property."
+      )
+    })
+
+    it('throws for duplicate registration', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'dup' })
+      expect(() => store.registerExtension({ name: 'dup' })).toThrow(
+        "Extension named 'dup' already registered."
+      )
+    })
+
+    it('warns when registering a disabled extension but still installs it', () => {
+      const store = useExtensionStore()
+      try {
+        store.loadDisabledExtensionNames(['disabled.ext'])
+        store.registerExtension({ name: 'disabled.ext' })
+        expect(console.warn).toHaveBeenCalledWith(
+          'Extension disabled.ext is disabled.'
+        )
+        expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
+        expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
+      } finally {
+        vi.mocked(console.warn).mockRestore()
+      }
+    })
+  })
+
+  describe('isExtensionInstalled', () => {
+    it('returns false for uninstalled extension', () => {
+      const store = useExtensionStore()
+      expect(store.isExtensionInstalled('missing')).toBe(false)
+    })
+  })
+
+  describe('agent provenance', () => {
+    it('attributes explicit provenance or an agent.<pack>. prefix, and nothing else', () => {
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'custom.toolbar',
+        provenance: { createdBy: 'comfy-agent' }
+      })
+      store.registerExtension({ name: 'agent.cushions.toolbar' })
+      store.registerExtension({ name: 'agentic.toolbar' })
+      store.registerExtension({ name: 'agent.tools' })
+      store.registerExtension({ name: 'agent..toolbar' })
+      store.registerExtension({ name: 'custom.manual' })
+
+      expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
+        'custom.toolbar',
+        'agent.cushions.toolbar'
+      ])
+    })
+  })
+
+  describe('extension paths', () => {
+    it('deduplicates discovered paths and snapshots disabled paths at boot', () => {
+      const store = useExtensionStore()
+      store.loadExtensionPaths(
+        ['/extensions/a/', '/extensions/a/', '/extensions/b/'],
+        ['/extensions/b/', '/extensions/missing/']
+      )
+
+      expect(store.extensionPaths).toEqual(['/extensions/a/', '/extensions/b/'])
+      expect(store.isExtensionPathEnabledAtBoot('/extensions/a/')).toBe(true)
+      expect(store.isExtensionPathEnabledAtBoot('/extensions/b/')).toBe(false)
+    })
+
+    it('restores a refused extension path change before a successful retry', async () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = [
+        '/extensions/a/',
+        '/extensions/missing/'
+      ]
+      vi.spyOn(api, 'storeSetting')
+        .mockResolvedValueOnce(new Response(null, { status: 400 }))
+        .mockResolvedValueOnce(new Response())
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', true)).toBe(
+        'refused'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/',
+        '/extensions/missing/'
+      ])
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', true)).toBe(
+        'saved'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/missing/'
+      ])
+      expect(api.storeSetting).toHaveBeenNthCalledWith(
+        2,
+        'Comfy.Extension.DisabledPacks',
+        ['/extensions/missing/']
+      )
+    })
+
+    it('retains an extension path change after an indeterminate response', async () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(
+        new Response(null, { status: 500 })
+      )
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', false)).toBe(
+        'indeterminate'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/'
+      ])
+    })
+  })
+
+  describe('isExtensionEnabled / loadDisabledExtensionNames', () => {
+    it('all extensions are enabled by default', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'fresh' })
+      expect(store.isExtensionEnabled('fresh')).toBe(true)
+    })
+
+    it('disables extensions from provided list', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames(['off.ext'])
+      store.registerExtension({ name: 'off.ext' })
+      expect(store.isExtensionEnabled('off.ext')).toBe(false)
+    })
+
+    it('always disables hardcoded extensions', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames([])
+      store.registerExtension({ name: 'pysssss.Locking' })
+      store.registerExtension({ name: 'regular.ext' })
+
+      expect(store.isExtensionEnabled('pysssss.Locking')).toBe(false)
+      expect(store.isExtensionEnabled('pysssss.SnapToGrid')).toBe(false)
+      expect(store.isExtensionEnabled('pysssss.FaviconStatus')).toBe(false)
+      expect(store.isExtensionEnabled('KJNodes.browserstatus')).toBe(false)
+      expect(store.isExtensionEnabled('regular.ext')).toBe(true)
+    })
+  })
+
+  describe('enabledExtensions', () => {
+    it('filters out disabled extensions', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames(['ext.off'])
+      store.registerExtension({ name: 'ext.on' })
+      store.registerExtension({ name: 'ext.off' })
+
+      const enabled = store.enabledExtensions
+      expect(enabled).toHaveLength(1)
+      expect(enabled[0].name).toBe('ext.on')
+    })
+  })
+
+  describe('isExtensionReadOnly', () => {
+    it('returns true for always-disabled extensions', () => {
+      const store = useExtensionStore()
+      expect(store.isExtensionReadOnly('pysssss.Locking')).toBe(true)
+    })
+
+    it('returns false for normal extensions', () => {
+      const store = useExtensionStore()
+      expect(store.isExtensionReadOnly('some.custom.ext')).toBe(false)
+    })
+  })
+
+  describe('inactiveDisabledExtensionNames', () => {
+    it('returns disabled names not currently installed', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames(['ghost.ext', 'installed.ext'])
+      store.registerExtension({ name: 'installed.ext' })
+
+      expect(store.inactiveDisabledExtensionNames).toContain('ghost.ext')
+      expect(store.inactiveDisabledExtensionNames).not.toContain(
+        'installed.ext'
+      )
+    })
+  })
+
+  describe('core extensions', () => {
+    it('captures current extensions as core', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'core.a' })
+      store.registerExtension({ name: 'core.b' })
+      store.captureCoreExtensions()
+
+      expect(store.isCoreExtension('core.a')).toBe(true)
+      expect(store.isCoreExtension('core.b')).toBe(true)
+    })
+
+    it('identifies third-party extensions registered after capture', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'core.x' })
+      store.captureCoreExtensions()
+
+      expect(store.hasThirdPartyExtensions).toBe(false)
+
+      store.registerExtension({ name: 'third.party' })
+      expect(store.hasThirdPartyExtensions).toBe(true)
+    })
+
+    it('returns false for isCoreExtension before capture', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'ext.pre' })
+      expect(store.isCoreExtension('ext.pre')).toBe(false)
+    })
+  })
+})

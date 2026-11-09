@@ -1,24 +1,35 @@
-import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent, nextTick, ref } from 'vue'
 
-import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import { i18n } from '@/i18n'
+import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import * as assetMetadataUtils from '@/platform/assets/utils/assetMetadataUtils'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
-
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key,
-  d: (date: Date) => date.toLocaleDateString()
-}))
 
 const ASSET_COUNT = 200
 const CATEGORIES = ['inputs', 'outputs'] as const
 const TAB_SWITCHES = 6
+const apps: App<Element>[] = []
+
+function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
+  let result: ReturnType<typeof createAssetBrowser> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createAssetBrowser(...args)
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Asset browser was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 function makeAsset(index: number): AssetItem {
   const category = CATEGORIES[index % CATEGORIES.length]

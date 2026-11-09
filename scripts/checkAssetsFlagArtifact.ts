@@ -34,15 +34,9 @@ const TEXT_ASSET_EXTENSIONS = new Set([
 /** Sourcemaps carry the gate's own source, which would count as a second gate. */
 const EXECUTABLE_ASSET_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.html'])
 
-/**
- * The whole compiled gate body, anchored: a substring search accepts a
- * `return true` sitting next to a mention of the setting key. The alternations
- * are what minification emits — `return!1`, a renamed getter, a re-quoted key.
- */
 const GATE_BODIES = {
   nonCloud: /^return\s*(?:false|!1)\s*;?$/,
-  cloud:
-    /^return\s*(?:!!\s*)?[\w$.]+(?:\(\))?\.get\(\s*(['"`])Comfy\.Assets\.UseAssetAPI\1\s*\)\s*;?$/
+  cloud: /^return\s*!useDeploymentPickStore\(\)\.bootDeployment\s*;?$/
 } as const
 
 function artifactFiles(directory: string): string[] {
@@ -56,8 +50,8 @@ function artifactFiles(directory: string): string[] {
 /**
  * Walk `chunk` from `start`, tracking brace depth until it returns to 0.
  * Skips braces inside string/template literals so a `{` in a quoted value
- * (e.g. a re-quoted setting key) can't desync the count. Returns the index
- * just past the matching `}`, or -1 if depth never returns to 0.
+ * can't desync the count. Returns the index just past the matching `}`, or
+ * -1 if depth never returns to 0.
  */
 function findMatchingBraceEnd(chunk: string, start: number): number {
   let depth = 1
@@ -80,7 +74,7 @@ function findMatchingBraceEnd(chunk: string, start: number): number {
 function assetApiGates(chunks: ReadonlyArray<string>): string {
   const gates = chunks.flatMap((chunk) => {
     const matches: string[] = []
-    const declaration = /function isAssetAPIEnabled\(\)\s*\{/g
+    const declaration = /function isWidgetAssetPickerEnabled\(\)\s*\{/g
     for (const match of chunk.matchAll(declaration)) {
       const start = match.index + match[0].length
       const end = findMatchingBraceEnd(chunk, start)
@@ -91,7 +85,7 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
 
   if (gates.length !== 1) {
     throw new Error(
-      `Expected one Asset API gate in the build, found ${gates.length}. ` +
+      `Expected one widget asset-picker gate in the build, found ${gates.length}. ` +
         'The gate is located by its declared name, which survives minification ' +
         'only while rolldown output.keepNames is set: check that flag, and ' +
         'that the gate was not renamed, inlined, or duplicated across chunks.'
@@ -101,7 +95,7 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
   return gates[0]
 }
 
-export function assertAssetApiGate(
+export function assertWidgetAssetPickerGate(
   chunks: ReadonlyArray<string>,
   distribution: string
 ): void {
@@ -115,7 +109,7 @@ export function assertAssetApiGate(
 
   if (!expected.test(body)) {
     throw new Error(
-      `Built Asset API gate is invalid for ${distribution}:\n${gate.trim()}`
+      `Built widget asset-picker gate is invalid for ${distribution}:\n${gate.trim()}`
     )
   }
 }
@@ -217,7 +211,7 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
     .flatMap(({ source }) => sourcemapSources(source))
 
   assertNoTestFixtures(chunks, sourcemapSourcePaths)
-  assertAssetApiGate(executableChunks, expectedDistribution)
+  assertWidgetAssetPickerGate(executableChunks, expectedDistribution)
 }
 
 const entrypoint = process.argv.at(1)

@@ -1,7 +1,7 @@
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * Tag names used in ComfyUI metadata
@@ -64,20 +64,6 @@ export type GltfHeader = {
 export type GltfChunkHeader = {
   chunkLengthBytes: number
   chunkTypeIdentifier: number
-}
-
-type GltfExtras = {
-  workflow?: string | object
-  prompt?: string | object
-  [key: string]: unknown
-}
-
-export type GltfJsonData = {
-  asset?: {
-    extras?: GltfExtras
-    [key: string]: unknown
-  }
-  [key: string]: unknown
 }
 
 /**

@@ -1,45 +1,40 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent, nextTick, ref } from 'vue'
 
-import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { i18n } from '@/i18n'
+import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+const apps: App<Element>[] = []
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      'assetBrowser.allModels': 'All Models',
-      'assetBrowser.imported': 'Imported',
-      'assetBrowser.byType': 'By type',
-      'assetBrowser.assets': 'Assets',
-      'assetBrowser.unknown': 'unknown'
-    }
-    return translations[key] || key
-  },
-  d: (date: Date) => date.toLocaleDateString()
-}))
-
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
+function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
+  let result: ReturnType<typeof createAssetBrowser> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createAssetBrowser(...args)
+        return () => null
       }
-    }
-  })
-}))
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Asset browser was not initialized')
+  return result
+}
+
+afterEach(() => {
+  apps.splice(0).forEach((app) => app.unmount())
+})
 
 describe('useAssetBrowser', () => {
-  beforeEach(() => {
-    mockSupportsModelTypeTags.value = false
-  })
-
   // Test fixtures - minimal data focused on functionality being tested
   const createApiAsset = (overrides: Partial<AssetItem> = {}): AssetItem => ({
     id: 'test-id',
@@ -83,6 +78,48 @@ describe('useAssetBrowser', () => {
       selectedNavItem.value = 'loras'
       expect(categoryFilteredAssets.value).toHaveLength(1)
       expect(categoryFilteredAssets.value[0].id).toBe('lora-1')
+    })
+  })
+
+  it('filters a shared model by its unshadowed browser categories', () => {
+    const shared: ModelBrowserAsset = {
+      ...createApiAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    const { filteredAssets, selectedNavItem } = useAssetBrowser(ref([shared]))
+    selectedNavItem.value = 'loras'
+    expect(filteredAssets.value).toEqual([])
+    selectedNavItem.value = 'vae'
+    expect(
+      filteredAssets.value.map(({ id, badges }) => ({ id, badges }))
+    ).toEqual([{ id: 'test-id', badges: [{ label: 'vae', type: 'type' }] }])
+  })
+
+  it('keeps uploaded model origin and loader values in All Models and Imported', () => {
+    const upload: ModelBrowserAsset = createApiAsset({
+      id: 'upload',
+      tags: ['models', 'loras'],
+      loader_path: 'artist/style.safetensors'
+    })
+    upload.isWorkspaceLibrary = true
+    const release = createApiAsset({
+      id: 'release',
+      tags: ['models', 'checkpoints'],
+      is_immutable: true
+    })
+    const { filteredAssets, selectedNavItem } = useAssetBrowser(
+      ref([release, upload])
+    )
+    expect(filteredAssets.value.map((row) => row.id)).toEqual(
+      expect.arrayContaining(['release', 'upload'])
+    )
+    selectedNavItem.value = 'imported'
+    expect(filteredAssets.value).toHaveLength(1)
+    expect(filteredAssets.value[0]).toMatchObject({
+      id: 'upload',
+      isWorkspaceLibrary: true,
+      loader_path: 'artist/style.safetensors',
+      is_immutable: false
     })
   })
 
@@ -148,7 +185,7 @@ describe('useAssetBrowser', () => {
     })
 
     it('strips the model_type: prefix from the badge when the flag is on', () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const apiAsset = createApiAsset({
         tags: ['models', 'model_type:checkpoints', 'sdxl']
       })
@@ -697,7 +734,7 @@ describe('useAssetBrowser', () => {
     })
 
     it('groups by model_type:* value and ignores other tags when the flag is on', () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const assets = [
         createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
         createApiAsset({ tags: ['models', 'model_type:LLM'] })

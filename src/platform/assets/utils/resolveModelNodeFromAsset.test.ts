@@ -1,25 +1,16 @@
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-123',
@@ -57,13 +48,59 @@ function mockProvider(
   mockGetNodeProvider.mockReturnValue(provider)
 }
 
+beforeEach(() => {
+  vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
+    mockGetNodeProvider
+  )
+})
+
 describe('resolveModelNodeFromAsset', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockSupportsModelTypeTags.value = false
+  it.for([
+    '../private.safetensors',
+    '/absolute.safetensors',
+    'folder\\model.safetensors'
+  ])('refuses unsafe server loader path %s', (loader_path) => {
+    mockProvider(createMockNodeProvider())
+    expect(
+      resolveModelNodeFromAsset(createMockAsset({ loader_path }))
+    ).toMatchObject({
+      success: false,
+      error: { code: 'INVALID_ASSET' }
+    })
+  })
+
+  it('selects the loader for the unshadowed category of a shared model', () => {
+    const provider = createMockNodeProvider({
+      nodeDef: { name: 'VAELoader', display_name: 'Load VAE' },
+      key: 'vae_name'
+    })
+    mockGetNodeProvider.mockImplementation((category) =>
+      category === 'vae' ? provider : createMockNodeProvider()
+    )
+    const asset: ModelBrowserAsset = {
+      ...createMockAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    expect(resolveModelNodeFromAsset(asset)).toMatchObject({
+      success: true,
+      value: { provider }
+    })
   })
 
   describe('valid assets', () => {
+    it('uses the server loader path instead of the uploaded display filename', () => {
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          loader_path: 'artist/style.safetensors',
+          user_metadata: { filename: 'style.safetensors' }
+        })
+      )
+      expect(result.success && result.value.filename).toBe(
+        'artist/style.safetensors'
+      )
+    })
+
     it('resolves the provider for the asset category and the filename', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(createMockAsset())
@@ -81,7 +118,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
         createMockAsset({ tags: ['models', 'model_type:vae'] })
@@ -92,7 +129,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'vae' ? createMockNodeProvider() : undefined
       )
@@ -106,7 +143,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('prefers the deepest resolvable path over a flat model_type value', () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'LLM/Qwen-VL/Qwen3-0.6B'
           ? createMockNodeProvider()

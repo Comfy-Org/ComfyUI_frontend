@@ -1,18 +1,47 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobOutputAsset } from '@comfyorg/api-client/jobTypes'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+
+const storedOutputIdentityKey = Symbol('storedOutputIdentity')
+
+type StoredOutputIdentity = {
+  type: ResultItemType
+  hash?: string
+}
+
+type WithStoredOutputIdentity = {
+  [storedOutputIdentityKey]?: StoredOutputIdentity
+}
+
+function withStoredOutputIdentity(
+  item: AssetItem,
+  { type, hash }: AugmentedResultItem
+): AssetItem {
+  if (!type) return item
+  const identity: StoredOutputIdentity = { type, hash }
+  return Object.assign(item, { [storedOutputIdentityKey]: identity })
+}
+
+/** Root and stored hash of the grouped output an expanded stack item was built from. */
+export function getStoredOutputIdentity(
+  asset: AssetItem & WithStoredOutputIdentity
+): StoredOutputIdentity | undefined {
+  return asset[storedOutputIdentityKey]
+}
 
 type OutputAssetMapOptions = {
   jobId: string
-  outputs: readonly ResultItemImpl[]
+  outputs: readonly AugmentedResultItem[]
   createdAt?: string
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
@@ -69,16 +98,16 @@ function mapOutputsToAssetItems({
     }
     seenOutputKeys.add(outputKey)
 
-    items.push({
-      id: `${jobId}-${outputKey}`,
+    const item: AssetItem = {
+      id: output.assetId || `${jobId}-${outputKey}`,
       name: output.filename,
       display_name: output.display_name,
       size: 0,
       created_at: createdAtValue,
       updated_at: createdAtValue,
       tags: ['output'],
-      thumbnail_url: output.previewUrl,
-      preview_url: output.url,
+      thumbnail_url: resultItemPreviewUrl(output),
+      preview_url: resultItemUrl(output),
       user_metadata: {
         jobId,
         nodeId: output.nodeId,
@@ -86,7 +115,8 @@ function mapOutputsToAssetItems({
         executionTimeInSeconds,
         workflow
       }
-    })
+    }
+    items.push(withStoredOutputIdentity(item, output))
 
     return items
   }, [])
@@ -240,7 +270,7 @@ export async function resolveOutputAssetItems(
   // Reverse so the most recent outputs appear first
   const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
-    outputs: outputsToDisplay.toReversed(),
+    outputs: [...outputsToDisplay].reverse(),
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,

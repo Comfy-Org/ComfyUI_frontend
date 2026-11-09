@@ -3,10 +3,11 @@
   <Message
     v-if="userStore.isMultiUserServer"
     severity="info"
-    icon="pi pi-user"
-    pt:text="w-full"
     data-testid="current-user-indicator"
   >
+    <template #icon>
+      <i class="icon-[lucide--user]" />
+    </template>
     <div class="flex items-center justify-between">
       <div class="tabular-nums">
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
@@ -18,16 +19,15 @@
         :aria-label="$t('menuLabels.Sign Out')"
         @click="logout"
       >
-        <i class="pi pi-sign-out" />
+        <i class="icon-[lucide--log-out]" />
       </Button>
     </div>
   </Message>
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
-
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()

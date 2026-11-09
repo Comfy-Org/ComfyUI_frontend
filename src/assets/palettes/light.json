@@ -66,11 +66,23 @@
       "content-hover-bg": "#adadad",
       "content-hover-fg": "#222",
       "bar-shadow": "rgba(16, 16, 16, 0.25) 0 0 0.5rem",
-      "interface-panel-box-shadow": "1px 1px 8px 0 rgba(0, 0, 0, 0.2)",
-      "interface-panel-drop-shadow": "1px 1px 4px rgba(0, 0, 0, 0.4)",
-      "interface-panel-hover-surface": "var(--color-gray-200)",
-      "interface-panel-selected-surface": "color-mix(in srgb, var(--interface-panel-surface) 78%, var(--contrast-mix-color))",
       "contrast-mix-color": "#000"
+    },
+    "theme": {
+      "background": "#ffffff",
+      "foreground": "#171718",
+      "card": "#ffffff",
+      "primary": "#31b9f4",
+      "secondary": "#e9e9e9",
+      "muted": "#d9d9d9",
+      "muted-foreground": "#494a50",
+      "accent": "#e1e1e1",
+      "destructive": "#f75951",
+      "border": "#b4b4b4",
+      "ring": "#8a8a8a",
+      "node-foreground": "#444444",
+      "warning": "#c77700",
+      "shadow-color": "rgb(0 0 0 / 0.15)"
     }
   }
 }

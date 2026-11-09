@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -11,7 +10,7 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
@@ -95,11 +94,12 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue: stringModelValue,
   dropdownItems,
-  widget: () => props.widget,
+  locatorId: props.widget.nodeLocatorId,
+  modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadSubfolder: () => props.uploadSubfolder,
+  widget: () => props.widget
 })
 
 const mediaPlaceholder = computed(() => {
@@ -151,10 +151,6 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (outputAssets.hasMore) await outputAssets.loadMore()
-}, 300)
-
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
   isUploading.value = true
@@ -185,10 +181,11 @@ async function updateFiles(files: File[]) {
       :is-uploading
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
+      :on-load-more="() => outputAssets.loadMore()"
+      :can-load-more="toValue(outputAssets.hasMore)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"
-      @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>
 </template>

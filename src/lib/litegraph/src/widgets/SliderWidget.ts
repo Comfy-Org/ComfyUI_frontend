@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ISliderWidget } from '@comfyorg/graph-model/widgets'
 import { coerceNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
@@ -10,8 +10,6 @@ export class SliderWidget
   extends BaseWidget<ISliderWidget>
   implements ISliderWidget
 {
-  override type = 'slider' as const
-
   marker?: number
 
   /**

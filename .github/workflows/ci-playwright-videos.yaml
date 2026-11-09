@@ -1,0 +1,314 @@
+name: 'CI: Playwright Videos'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      hits: ${{ steps.plan.outputs.hits }}
+      cache-run: ${{ steps.cache.outputs.run }}
+      projects: ${{ steps.plan.outputs.projects }}
+      has-specs: ${{ steps.plan.outputs.has-specs }}
+      has-tests: ${{ steps.plan.outputs.has-tests }}
+      playwright-version: ${{ steps.plan.outputs.playwright-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect changed specs
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bash scripts/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA" > /tmp/video-specs.txt
+          echo "files=$(jq -Rsc 'split("\n") | map(select(length > 0))' /tmp/video-specs.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Find previous recordings
+        id: cache
+        if: steps.detect.outputs.files != '[]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          touch /tmp/video-cache-index.txt
+          for RUN in $(gh api -X GET "repos/$GH_REPO/actions/workflows/ci-playwright-videos.yaml/runs" \
+            -f branch="$HEAD_REF" -f event=pull_request -f status=completed -F per_page=20 \
+            --jq ".workflow_runs[] | select(.head_repository.full_name == \"$GH_REPO\") | .id"); do
+            if gh run download "$RUN" --name video-cache-index --dir /tmp/video-cache-index; then
+              cp /tmp/video-cache-index/video-cache-index.txt /tmp/video-cache-index.txt
+              echo "run=$RUN" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+
+      - name: Setup frontend
+        if: steps.detect.outputs.files != '[]'
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Plan recording shards
+        id: plan
+        if: steps.detect.outputs.files != '[]'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          PLAYWRIGHT_VERSION=$(node -p 'require("@playwright/test/package.json").version')
+          export VIDEO_CACHE_INDEX=/tmp/video-cache-index.txt
+          VIDEO_CACHE_SALT=$({
+            echo "$PLAYWRIGHT_VERSION"
+            git ls-tree -r "$HEAD_SHA" -- browser_tests playwright.config.ts \
+              .github/workflows/ci-playwright-videos.yaml | grep -vE '\.spec\.ts$|\.spec\.ts-snapshots/'
+          } | sha256sum | cut -c1-32)
+          export VIDEO_CACHE_SALT
+          mapfile -t FILES < /tmp/video-specs.txt
+          PLAN=$(bash scripts/cicd/plan-playwright-videos.sh "${FILES[@]}")
+          echo "matrix=$(jq -c .matrix <<< "$PLAN")" >> "$GITHUB_OUTPUT"
+          echo "hits=$(jq -c .hits <<< "$PLAN")" >> "$GITHUB_OUTPUT"
+          echo "has-specs=$(jq '.hits + .matrix.include | length > 0' <<< "$PLAN")" >> "$GITHUB_OUTPUT"
+          echo "has-tests=$(jq '.matrix.include | length > 0' <<< "$PLAN")" >> "$GITHUB_OUTPUT"
+          echo "projects=$(jq -c '[.matrix.include[].project] | unique' <<< "$PLAN")" >> "$GITHUB_OUTPUT"
+          echo "playwright-version=$PLAYWRIGHT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "$PLAN" | jq . >> "$GITHUB_STEP_SUMMARY"
+
+  wait-for-e2e:
+    needs: plan
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for CI Tests E2E to finish
+        continue-on-error: true
+        timeout-minutes: 45
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          find_run() {
+            gh run list --workflow ci-tests-e2e.yaml --event pull_request \
+              --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty'
+          }
+          echo "Looking for the CI: Tests E2E run on $HEAD_SHA"
+          RUN_ID=$(find_run)
+          until [ -n "$RUN_ID" ]; do
+            sleep 30
+            RUN_ID=$(find_run)
+          done
+          echo "Waiting for https://github.com/$GH_REPO/actions/runs/$RUN_ID"
+          gh run watch "$RUN_ID" --interval 60 > /dev/null
+          gh run view "$RUN_ID" --json conclusion --jq '"CI: Tests E2E finished: \(.conclusion)"'
+
+  build:
+    needs: [plan, wait-for-e2e]
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Build and verify local frontend
+        if: matrix.project == 'chromium'
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+          EXPECTED_DISTRIBUTION: localhost
+          EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
+        run: |
+          pnpm build:dist
+          pnpm test:assets-flag-artifact
+
+      - name: Upload local frontend
+        if: matrix.project == 'chromium'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
+
+      - name: Build cloud frontend
+        if: matrix.project == 'cloud'
+        uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
+
+  playwright-video-new-tests:
+    needs: [plan, build]
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist${{ matrix.project == 'cloud' && '-cloud' || '' }}
+          path: dist/
+
+      - uses: ./.github/actions/start-comfyui-server
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Record changed tests
+        env:
+          RECORD_VIDEO: 'true'
+          SLOW_MO: '250'
+          PROJECT: ${{ matrix.project }}
+          SPECS_JSON: ${{ toJSON(matrix.specs) }}
+        run: |
+          SPECS=$(node -e 'for (const s of JSON.parse(process.env.SPECS_JSON)) console.log(`${s.key}\t${s.file}`)')
+          test -n "$SPECS"
+          mkdir -p blob-report
+          STATUS=0
+          while IFS=$'\t' read -r KEY FILE; do
+            if PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report PLAYWRIGHT_BLOB_OUTPUT_FILE="blob-report/$KEY.zip" \
+              pnpm exec playwright test --project="$PROJECT" --timeout=180000 --retries=0 "$FILE" < /dev/null \
+              && test -s "blob-report/$KEY.zip"; then
+              touch "blob-report/$KEY.pass"
+            else
+              STATUS=1
+            fi
+          done <<< "$SPECS"
+          exit "$STATUS"
+
+      - name: Upload recording shard
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: video-blob-${{ matrix.project }}-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  report:
+    needs: [plan, playwright-video-new-tests]
+    if: ${{ !cancelled() && needs.plan.outputs.has-specs == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: /package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Download recording shards
+        if: needs.plan.outputs.has-tests == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: video-blob-*
+          path: video-blobs
+          merge-multiple: true
+
+      - name: Download previous recordings
+        if: needs.plan.outputs.hits != '[]'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: video-cache
+          path: previous-cache
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.plan.outputs.cache-run }}
+
+      - name: Combine cached and new recordings
+        env:
+          HITS: ${{ needs.plan.outputs.hits }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p video-blobs video-cache
+          jq -r '.[] | [.key, .sha] | @tsv' <<< "$HITS" > video-cache-index.txt
+          for KEY in $(jq -r '.[].key' <<< "$HITS"); do
+            cp "previous-cache/$KEY.zip" video-blobs/
+            cp "previous-cache/$KEY.zip" video-cache/
+          done
+          for PASS in video-blobs/*.pass; do
+            [ -e "$PASS" ] || continue
+            cp "${PASS%.pass}.zip" video-cache/
+            printf '%s\t%s\n' "$(basename "$PASS" .pass)" "$HEAD_SHA" >> video-cache-index.txt
+          done
+
+      - name: Merge video reports
+        env:
+          PLAYWRIGHT_VERSION: ${{ needs.plan.outputs.playwright-version }}
+          HITS: ${{ needs.plan.outputs.hits }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html video-blobs
+          jq -r --arg head "$HEAD_SHA" '.[] | select(.sha != $head) | [.project, .file, .sha] | @tsv' \
+            <<< "$HITS" > playwright-report/reused-recordings.tsv
+
+      - name: Upload video report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report-new-tests
+          path: playwright-report/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload recording cache
+        id: upload-cache
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: video-cache
+          path: video-cache/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload recording cache index
+        if: steps.upload-cache.outputs.artifact-id != ''
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: video-cache-index
+          path: video-cache-index.txt
+          retention-days: 14

@@ -46,7 +46,7 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     for (const { fileName, parser } of FIXTURES) {
@@ -60,9 +60,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -85,9 +83,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -112,8 +108,6 @@ test.describe(
     }
 
     test('Can load from media dropped on topbar', async ({ comfyPage }) => {
-      // Regretfully, the dragAndDropFile mock uses synthetic events,
-      // so we need to manually validated that events are prevents
       const prevented = await comfyPage.menu.topbar
         .getActiveTab()
         .evaluate((el) => {
@@ -146,5 +140,24 @@ test.describe(
         ).toHaveLength(1)
       })
     })
+
+    test(
+      'uploads a PNG after skipping corrupt compressed metadata',
+      {
+        tag: '@canvas'
+      },
+      async ({ comfyPage, page }) => {
+        await comfyPage.dragDrop.dragAndDropFilePath(
+          metadataFixturePath('corrupt_compressed_itxt.png'),
+          { waitForUpload: true }
+        )
+
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        expect(
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        ).toHaveLength(1)
+        expect(await page.pageErrors()).toEqual([])
+      }
+    )
   }
 )

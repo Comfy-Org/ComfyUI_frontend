@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IKnobWidget } from '@comfyorg/graph-model/widgets'
 import {
   coerceNumericWidgetValue,
   getWidgetStep
@@ -10,8 +10,6 @@ import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
-  override type = 'knob' as const
-
   /**
    * Compute the layout size of the widget.
    * @returns The layout size of the widget.

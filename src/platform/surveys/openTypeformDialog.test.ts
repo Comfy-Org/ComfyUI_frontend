@@ -6,7 +6,7 @@ import TypeformDialogContent from './TypeformDialogContent.vue'
 import { openTypeformDialog } from './openTypeformDialog'
 
 describe('openTypeformDialog', () => {
-  it('opens the form embed in a Reka dialog with the given id and hidden fields', () => {
+  it('opens the form embed in a dialog with the given id and hidden fields', () => {
     const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
     openTypeformDialog({
@@ -20,8 +20,7 @@ describe('openTypeformDialog', () => {
         key: 'typeform-abc123',
         title: 'A Form',
         component: TypeformDialogContent,
-        props: { typeformId: 'abc123', hiddenFields: 'foo=bar' },
-        dialogComponentProps: expect.objectContaining({ renderer: 'reka' })
+        props: { typeformId: 'abc123', hiddenFields: 'foo=bar' }
       })
     )
   })

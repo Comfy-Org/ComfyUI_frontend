@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { IGradientSliderWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IGradientSliderWidget } from '@comfyorg/graph-model/widgets'
 import { coerceNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
@@ -10,8 +10,6 @@ export class GradientSliderWidget
   extends BaseWidget<IGradientSliderWidget>
   implements IGradientSliderWidget
 {
-  override type = 'gradientslider' as const
-
   override drawWidget(
     ctx: CanvasRenderingContext2D,
     { width, showText = true }: DrawWidgetOptions

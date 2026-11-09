@@ -12,8 +12,8 @@ Audit the current changes (or a specified PR) for compliance with Architecture D
 Read these documents for context:
 
 ```
-docs/adr/LAYOUT-crdt-layout-intent-and-local-measurement.md
-docs/adr/ECS-entity-component-system.md
+docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md
+docs/adr/ECS-0008-entity-component-system.md
 docs/architecture/ecs-target-architecture.md
 docs/architecture/ecs-migration-plan.md
 docs/architecture/appendix-critical-analysis.md
@@ -57,7 +57,7 @@ Reference: 40+ custom node repos depend on these (rgthree-comfy, ComfyUI-Impact-
 
 ## Step 3: Priority 2 — General ADR Compliance
 
-1. Read `docs/adr/README.md` for the full ADR index
+1. List `docs/adr/` for the full set of ADRs
 2. For each ADR (except skip list), read the Decision section
 3. Check the diff for contradictions
 4. Only flag ACTUAL violations in changed code
