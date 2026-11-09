@@ -26,7 +26,9 @@
           <Button
             variant="textonly"
             size="unset"
-            :class="cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')"
+            :class="
+              cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')
+            "
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
             data-testid="workspace-switcher-trigger"

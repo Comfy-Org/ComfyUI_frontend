@@ -151,7 +151,6 @@
       @credits="creditsModel = $event"
     />
 
-
     <p
       v-if="negativeBalanceCredits !== null && step === 'amount'"
       class="m-0 px-8 pt-4 text-sm text-muted-foreground"

@@ -263,8 +263,16 @@ describe('CurrentUserButton', () => {
   })
 
   it.for([
-    { flag: true, shown: 'New Profile Menu', hidden: 'Workspace Popover Content' },
-    { flag: false, shown: 'Workspace Popover Content', hidden: 'New Profile Menu' }
+    {
+      flag: true,
+      shown: 'New Profile Menu',
+      hidden: 'Workspace Popover Content'
+    },
+    {
+      flag: false,
+      shown: 'Workspace Popover Content',
+      hidden: 'New Profile Menu'
+    }
   ])(
     'opens the profile menu billing_new_ux_enabled=$flag picks',
     async ({ flag, shown, hidden }) => {
