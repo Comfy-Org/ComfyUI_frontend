@@ -13,6 +13,9 @@
             <TableHead>{{ $t('credits.eventType') }}</TableHead>
             <TableHead>{{ $t('credits.details') }}</TableHead>
             <TableHead>{{ $t('credits.time') }}</TableHead>
+            <TableHead v-if="showMemberColumn">{{
+              $t('credits.member')
+            }}</TableHead>
             <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,6 +63,9 @@
             <TableCell>
               {{ customerEventService.formatDate(event.createdAt ?? '') }}
             </TableCell>
+            <TableCell v-if="showMemberColumn">
+              {{ memberLabel(event) }}
+            </TableCell>
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
@@ -101,6 +107,7 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
+import type { BillingEvent } from '@comfyorg/ingest-types'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
@@ -115,7 +122,10 @@ import {
 
 const { t } = useI18n()
 
-const events = ref<AuditLog[]>([])
+type ActivityEvent = AuditLog &
+  Pick<BillingEvent, 'member_display_name' | 'member_email' | 'member_former'>
+
+const events = ref<ActivityEvent[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -129,6 +139,18 @@ const pagination = ref({
   limit: 7,
   total: 0
 })
+
+// Owners see every member's events; the column only appears once a row says
+// whose it is.
+const showMemberColumn = computed(() =>
+  events.value.some((e) => e.member_display_name || e.member_email)
+)
+
+function memberLabel(event: ActivityEvent) {
+  const name = event.member_display_name || event.member_email
+  if (!name) return '-'
+  return event.member_former ? t('credits.formerMember', { name }) : name
+}
 
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)

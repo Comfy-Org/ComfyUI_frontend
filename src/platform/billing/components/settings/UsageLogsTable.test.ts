@@ -268,6 +268,78 @@ describe('UsageLogsTable', () => {
   })
 
   describe('data rendering', () => {
+    describe('member column', () => {
+      const withMember = (member: Record<string, unknown>) =>
+        makeEventsResponse([
+          {
+            event_id: 'event-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            createdAt: '2024-01-01T10:00:00Z',
+            ...member
+          },
+          {
+            event_id: 'event-2',
+            event_type: EventType.API_USAGE_COMPLETED,
+            createdAt: '2024-01-02T10:00:00Z'
+          }
+        ])
+
+      it('is hidden when no row carries member info', async () => {
+        await renderLoaded()
+
+        expect(
+          screen.queryByRole('columnheader', { name: 'Member' })
+        ).not.toBeInTheDocument()
+      })
+
+      it('shows the display name, with a dash for rows without one', async () => {
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
+          withMember({ member_display_name: 'Ada Lovelace' })
+        )
+        await renderLoaded()
+
+        expect(
+          screen.getByRole('columnheader', { name: 'Member' })
+        ).toBeInTheDocument()
+        expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
+        expect(screen.getByText('-')).toBeInTheDocument()
+      })
+
+      it('falls back to the email when there is no display name', async () => {
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
+          withMember({ member_email: 'ada@example.com' })
+        )
+        await renderLoaded()
+
+        expect(screen.getByText('ada@example.com')).toBeInTheDocument()
+      })
+
+      it('marks a former member', async () => {
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
+          withMember({
+            member_display_name: 'Ada Lovelace',
+            member_former: true
+          })
+        )
+        await renderLoaded()
+
+        expect(
+          screen.getByText('Ada Lovelace (former member)')
+        ).toBeInTheDocument()
+      })
+
+      it('shows the column for rows read through the billing rail', async () => {
+        mockBillingReadRail.enabled = true
+        mockBillingReadRail.readEvents.mockResolvedValue({
+          status: 'ok',
+          value: withMember({ member_display_name: 'Ada Lovelace' })
+        })
+        await renderLoaded()
+
+        expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
+      })
+    })
+
     it('renders event type badges', async () => {
       await renderLoaded()
 
