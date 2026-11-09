@@ -9,6 +9,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -190,3 +191,77 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
       .toBe(true)
   })
 })
+
+test.describe(
+  'Current user popover credits row (previous menu)',
+  { tag: '@cloud' },
+  () => {
+    test.use({ billingNewUx: false })
+
+    test('keeps both action buttons inside the popover when cancelled but active', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+
+      const popover = page.locator('.current-user-popover')
+      await expect(popover).toBeVisible()
+
+      const addCredits = page.getByTestId('add-credits-button')
+      const resubscribe = page.getByRole('button', { name: 'Resubscribe' })
+      await expect(addCredits).toBeVisible()
+      await expect(resubscribe).toBeVisible()
+
+      const popoverBox = await popover.boundingBox()
+      const resubscribeBox = await resubscribe.boundingBox()
+      expect(popoverBox).not.toBeNull()
+      expect(resubscribeBox).not.toBeNull()
+
+      const popoverRight = popoverBox!.x + popoverBox!.width
+      const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
+      expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
+    })
+
+    test(
+      'renders Manage plan as a plain full-width menu row',
+      { tag: '@screenshot' },
+      async ({ page }) => {
+        test.setTimeout(60_000)
+        await setupCloudApp(page, {
+          workspace: workspace('personal', 'owner'),
+          features: { subscription_required: false }
+        })
+        await page.goto(APP_URL)
+        await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+          timeout: 45_000
+        })
+        await page.getByRole('button', { name: 'Close dialog' }).click()
+        await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+        await page.getByRole('button', { name: 'Current user' }).click()
+
+        const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+        await expect(workspaceSelector).toBeVisible()
+        await expectElementScreenshot(
+          workspaceSelector,
+          'workspace-selector-menu-item.png'
+        )
+
+        const managePlan = page.getByRole('button', { name: 'Manage plan' })
+        await expect(managePlan).toBeVisible()
+        await expectElementScreenshot(managePlan, 'manage-plan-menu-item.png')
+
+        await managePlan.focus()
+        await page.keyboard.press('Shift+Tab')
+        await page.keyboard.press('Tab')
+        await expect(managePlan).toBeFocused()
+        await expectElementScreenshot(
+          managePlan,
+          'manage-plan-menu-item-focused.png'
+        )
+      }
+    )
+  }
+)

@@ -1,161 +1,248 @@
+<!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    data-testid="current-user-popover"
-    class="current-user-popover flex flex-col p-1"
-  >
-    <template v-if="!accountActionsOnly">
+  <div data-testid="current-user-popover" class="current-user-popover p-2">
+    <!-- User Info Section -->
+    <div class="mb-4 flex flex-col items-center px-0 py-3">
+      <UserAvatar
+        :label="$t('auth.login.userAvatar')"
+        class="mb-1"
+        :photo-url="userPhotoUrl"
+        icon-class="size-6"
+        size="large"
+      />
+
+      <!-- User Details -->
+      <h3 class="my-0 mb-1 truncate text-base font-bold text-foreground">
+        {{ userDisplayName || $t('g.user') }}
+      </h3>
+      <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
+        {{ userEmail }}
+      </p>
+    </div>
+
+    <!-- Workspace Selector -->
+    <div v-if="!accountActionsOnly" class="relative">
+      <!-- An API-key session is bound to one server-resolved workspace, and a
+           Desktop build without workspace switching fixes the host session's;
+           neither exposes discovery or switching -->
       <div
         v-if="isApiKeyLogin || isDesktopHostWorkspaceFixed"
-        class="flex items-center gap-2 rounded-lg p-2"
+        class="flex w-full items-center gap-2 rounded-lg px-4 py-2"
         data-testid="workspace-context-row"
       >
-        <WorkspaceProfilePic class="size-8 shrink-0 text-sm" :workspace-name />
-        <div class="flex min-w-0 flex-1 flex-col">
-          <span class="truncate text-sm text-foreground">{{
-            workspaceName
-          }}</span>
-          <span
-            class="truncate text-2xs text-muted-foreground uppercase"
-            data-testid="workspace-plan-line"
-            >{{ planLine }}</span
-          >
-        </div>
+        <WorkspaceProfilePic class="size-6 shrink-0 text-xs" :workspace-name />
+        <span class="truncate text-sm text-foreground">
+          {{ workspaceName }}
+        </span>
       </div>
       <PopoverRoot v-else v-slot="{ close }">
         <PopoverTrigger as-child>
-          <button
-            type="button"
-            :class="cn(menuRowClass, 'data-[state=open]:bg-accent')"
-            :title="workspaceName"
-            :aria-label="$t('profileMenu.switchWorkspace')"
+          <Button
+            variant="muted-textonly"
+            class="flex h-auto w-full justify-between px-4 py-2"
+            :tooltip="workspaceName ?? ''"
             data-testid="workspace-switcher-trigger"
           >
-            <WorkspaceProfilePic
-              class="size-8 shrink-0 text-sm"
-              :workspace-name
-            />
-            <div class="flex min-w-0 flex-1 flex-col">
-              <span class="truncate text-foreground">{{ workspaceName }}</span>
-              <span
-                class="truncate text-2xs text-muted-foreground uppercase"
-                data-testid="workspace-plan-line"
-                >{{ planLine }}</span
-              >
+            <div class="flex w-0 flex-1 items-center gap-2">
+              <WorkspaceProfilePic
+                class="size-6 shrink-0 text-xs"
+                :workspace-name
+                :subscription-tier="activeWorkspaceSummary?.subscriptionTier"
+              />
+              <span class="truncate text-sm text-foreground">
+                {{ workspaceName }}
+              </span>
             </div>
-            <i class="icon-[lucide--arrow-left-right] text-muted-foreground" />
-          </button>
+            <i
+              class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
+            />
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           side="left"
           align="start"
-          :side-offset="8"
+          :side-offset="16"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2"
+          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
             @select="close"
             @create="(close(), handleCreateWorkspace())"
           />
+          <PopoverArrow class="fill-background stroke-border/50" />
         </PopoverContent>
       </PopoverRoot>
+    </div>
 
-      <HoverCard :open-delay="120">
-        <HoverCardTrigger as-child>
-          <button
-            type="button"
-            :class="menuRowClass"
-            data-testid="credits-menu-item"
-            @click="openSettings('workspace')"
-          >
-            <i class="icon-[lucide--coins] text-muted-foreground" />
-            <span class="flex-1 text-foreground">{{
-              $t('profileMenu.credits')
-            }}</span>
-            <Skeleton v-if="isLoading" class="h-4 w-12" />
-            <Tooltip v-else-if="!balance">
-              <TooltipTrigger as-child>
-                <span
-                  class="text-muted-foreground"
-                  data-testid="credits-balance-unavailable"
-                  >—</span
-                >
-              </TooltipTrigger>
-              <TooltipContent side="left">{{
-                $t('profileMenu.balanceUnavailable')
-              }}</TooltipContent>
-            </Tooltip>
-            <span
-              v-else
-              class="text-foreground"
-              data-testid="credits-balance"
-              >{{ displayedCredits }}</span
-            >
-          </button>
-        </HoverCardTrigger>
-        <HoverCardContent
-          side="left"
-          align="start"
-          :side-offset="12"
-          class="rounded-xl p-2"
-        >
-          <ProfileMenuCreditsFlyout
-            @open-billing="openSettings('workspace')"
-            @close="emit('close')"
-          />
-        </HoverCardContent>
-      </HoverCard>
+    <!-- Credits Section -->
 
-      <button
-        type="button"
-        :class="menuRowClass"
-        data-testid="workspace-settings-menu-item"
-        @click="openSettings('workspace')"
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--coins] text-sm text-credit" />
+      <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
+      <span v-else class="text-base font-semibold text-foreground">{{
+        displayedCredits
+      }}</span>
+      <Button
+        :tooltip="$t('credits.unified.tooltip')"
+        variant="muted-textonly"
+        size="icon-sm"
+        class="mr-auto"
+        :aria-label="$t('credits.unified.tooltip')"
+        data-testid="credits-info-button"
       >
-        <i class="icon-[lucide--settings] text-muted-foreground" />
-        <span class="flex-1 text-foreground">{{
-          $t('userSettings.workspaceSettings')
-        }}</span>
-      </button>
+        <i class="icon-[lucide--circle-help]" />
+      </Button>
+      <Button
+        v-if="addCredits.kind !== 'hidden'"
+        variant="secondary"
+        size="sm"
+        data-testid="add-credits-button"
+        :disabled="addCredits.kind === 'disabled'"
+        :aria-describedby="refusalReason ? refusalReasonId : undefined"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-if="paymentRecoveryAvailable"
+        variant="secondary"
+        size="sm"
+        :loading="isUpdatingPayment"
+        @click="updatePayment"
+      >
+        {{ $t('workspacePanel.billingStatus.updatePayment') }}
+      </Button>
+      <SubscribeButton
+        v-if="showSubscribeAction && isPersonalWorkspace"
+        :fluid="false"
+        :label="
+          isCancelled
+            ? $t('subscription.resubscribe')
+            : $t('workspaceSwitcher.subscribe')
+        "
+        size="sm"
+        button-variant="subscribe"
+      />
+      <Button
+        v-if="showSubscribeAction && !isPersonalWorkspace"
+        variant="primary"
+        size="sm"
+        @click="handleOpenSubscriptionAction"
+      >
+        {{
+          isCancelled
+            ? $t('subscription.resubscribe')
+            : $t('workspaceSwitcher.subscribe')
+        }}
+      </Button>
+    </div>
 
-      <div class="my-1 border-t" />
-    </template>
+    <p
+      v-if="!accountActionsOnly && refusalReason"
+      :id="refusalReasonId"
+      class="m-0 px-4 pb-2 text-xs text-muted-foreground"
+    >
+      {{ refusalReason }}
+    </p>
+
+    <p
+      v-if="processingPayment"
+      role="status"
+      class="m-0 px-4 pb-2 text-sm text-muted-foreground"
+      data-testid="topup-payment-processing-line"
+    >
+      {{ $t('credits.topUp.paymentProcessingFlyout') }}
+    </p>
+
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t" />
 
     <div
-      class="flex items-center gap-2 p-2"
-      data-testid="current-user-identity"
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
+      data-testid="plans-pricing-menu-item"
+      @click="handleOpenPlansAndPricing"
     >
-      <span
-        aria-hidden="true"
-        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase"
-        >{{ monogram }}</span
-      >
-      <div class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-sm text-foreground">{{
-          userDisplayName || $t('g.user')
-        }}</span>
-        <span v-if="userEmail" class="truncate text-xs text-muted-foreground">{{
-          userEmail
-        }}</span>
-      </div>
+      <i class="icon-[lucide--receipt-text] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
+        $t('subscription.plansAndPricing')
+      }}</span>
     </div>
 
     <button
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
-      :class="menuRowClass"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+      data-testid="manage-plan-menu-item"
+      :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
+      @click="handleOpenManagePlanSettings"
+    >
+      <i class="icon-[lucide--credit-card] text-muted-foreground" />
+      <span class="flex-1 text-sm text-foreground">{{
+        $t('subscription.managePlan')
+      }}</span>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenPlanCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] text-muted-foreground" />
+      <span class="flex-1 text-sm text-foreground">{{
+        $t('subscription.plansAndCredits')
+      }}</span>
+    </button>
+
+    <!-- Partner Nodes Pricing (always shown) -->
+    <div
+      v-if="!accountActionsOnly"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
+      data-testid="partner-nodes-menu-item"
+      @click="handleOpenPartnerNodesInfo"
+    >
+      <i class="icon-[lucide--tag] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
+        $t('subscription.partnerNodesCredits')
+      }}</span>
+    </div>
+
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t" />
+
+    <!-- Workspace Settings (always shown) -->
+    <div
+      v-if="!accountActionsOnly"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
+      data-testid="workspace-settings-menu-item"
+      @click="handleOpenWorkspaceSettings"
+    >
+      <i class="icon-[lucide--users] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
+        $t('userSettings.workspaceSettings')
+      }}</span>
+    </div>
+
+    <!-- Account Settings (always shown) -->
+    <div
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="user-settings-menu-item"
-      @click="openSettings('user')"
+      @click="handleOpenUserSettings"
     >
       <i class="icon-[lucide--settings-2] text-muted-foreground" />
       <span class="flex-1 text-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
-    </button>
+    </div>
 
-    <button
-      type="button"
-      :class="menuRowClass"
+    <div class="mx-0 my-2 border-t" />
+
+    <!-- Logout (always shown) -->
+    <div
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
@@ -163,100 +250,229 @@
       <span class="flex-1 text-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
-    </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { SettingPanelType } from '@comfyorg/settings-core/types'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
-import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
-import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
-import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
-import {
-  PROFILE_MENU_ROLE_KEY,
-  profileMenuPlanLabel
-} from '@/platform/account/components/profileMenuPlanLine'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import {
   canDesktopHostSwitchWorkspace,
   isDesktopHostSignedIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
+
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { addCreditsAvailability } from '@comfyorg/account-core/billing'
+import { useAccountUI } from '@/platform/account/composables/useAccountUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 
-const { accountActionsOnly = false } = defineProps<{
-  accountActionsOnly?: boolean
-}>()
+const workspaceStore = useTeamWorkspaceStore()
+const billingState = useWorkspaceBillingStateStore()
+const {
+  initState,
+  workspaceName,
+  isInPersonalWorkspace: isPersonalWorkspace,
+  activeWorkspace
+} = storeToRefs(workspaceStore)
+const activeWorkspaceSummary = computed(() =>
+  activeWorkspace.value ? billingState.getSummary(activeWorkspace.value) : null
+)
+const { permissions, canReactivatePlan, canOpenPricingSurface } = useAccountUI()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  canSubscribeSelfServe,
+  paymentRecoveryAvailable
+} = useBillingCapabilities()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const addCredits = computed(() =>
+  addCreditsAvailability({
+    resolved: hasResolvedCapabilities.value,
+    canTopUp: canTopUp.value,
+    denial: topUpDenial.value
+  })
+)
+const refusalReasonId = useId()
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const menuRowClass =
-  'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none'
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
+}>()
 
-const { t, locale } = useI18n()
-const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
-const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
-  useCurrentUser()
-const { balance, isLoading, fetchBalance } = useBillingContext()
-const settingsDialog = useSettingsDialog()
-const { showCreateWorkspaceDialog } = useWorkspaceDialogs()
+const { payment: processingPayment } = useProcessingTopupPayment(
+  () => !accountActionsOnly
+)
 
+const { buildDocsUrl, docsPaths } = useExternalLink()
+
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const isDesktopHostWorkspaceFixed = computed(
   () => isDesktopHostSignedIn() && !canDesktopHostSwitchWorkspace()
 )
+const settingsDialog = useSettingsDialog()
+const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showCreateWorkspaceDialog } = useWorkspaceDialogs()
+const {
+  billingStatus,
+  canAccessSubscriptionFeatures,
+  subscription,
+  balance,
+  isLoading,
+  fetchBalance
+} = useBillingContext()
 
-const planLine = computed(() => {
-  const workspace = activeWorkspace.value
-  if (!workspace) return ''
-  const role = t(PROFILE_MENU_ROLE_KEY[workspace.role])
-  const plan = profileMenuPlanLabel(workspace.plan_summary, t)
-  return plan ? `${plan} • ${role}` : role
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const subscriptionDialog = useSubscriptionDialog()
+
+const { locale, t } = useI18n()
+const refusalReason = computed(() =>
+  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+)
+const isLoadingBalance = isLoading
+
+const displayedCredits = computed(() => {
+  if (initState.value !== 'ready') return ''
+
+  // API field is named _micros but contains cents (naming inconsistency)
+  const cents =
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  })
 })
 
-const displayedCredits = computed(() =>
-  formatCreditsFromCents({
-    cents:
-      balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 2 }
-  })
+const showPlansAndPricing = canOpenPricingSurface
+// Subscribing is a Cloud-only concept: Local users manage plan/credits
+// through settings instead (see showLocalPlansAndCredits below), regardless
+// of subscription status.
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
+)
+const showManagePlan = computed(
+  () =>
+    permissions.value.canManageSubscription &&
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
 
-const monogram = computed(() =>
-  (userDisplayName.value || userEmail.value || '').trim().charAt(0)
+const showSubscribeAction = computed(
+  () =>
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud.
+    // Self-serve subscribe is server-authoritative; reactivation is not.
+    isCloud &&
+    ((isCancelled.value && canReactivatePlan.value) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        canSubscribeSelfServe.value &&
+        canTopUp.value))
 )
 
-function openSettings(panel: SettingPanelType) {
-  settingsDialog.show(panel)
+const handleOpenUserSettings = () => {
+  settingsDialog.show('user')
   emit('close')
 }
 
-async function handleLogout() {
+const handleOpenWorkspaceSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
+
+/**
+ * Plan selection stays in the app: billing-web's `/v1/pricing` has no
+ * personal/team tabs, cycle toggle, or credit slider (G7), and a per-credit
+ * Team plan 400s there (FE-2642). Only checkout hands off to billing-web,
+ * from inside the table (`useSubscriptionCheckout`'s `handleSubscribeClick`
+ * / `handleSubscribeTeamClick`).
+ */
+const handleOpenPlansAndPricing = () => {
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
+  emit('close')
+}
+
+const handleOpenSubscriptionAction = () => {
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
+  emit('close')
+}
+
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
+
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
+
+const handleTopUp = () => {
+  useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
+  showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('avatar_menu')
+  })
+  emit('close')
+}
+
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    '_blank'
+  )
+  emit('close')
+}
+
+const handleLogout = async () => {
   await handleSignOut()
   emit('close')
 }
 
-function handleCreateWorkspace() {
+const handleCreateWorkspace = () => {
   showCreateWorkspaceDialog()
   emit('close')
 }
