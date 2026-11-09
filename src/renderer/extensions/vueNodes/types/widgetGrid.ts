@@ -26,6 +26,7 @@ export interface WidgetGridItem {
   vueComponent: Component
   handleContextMenu?: (e: PointerEvent) => void
   hasError?: boolean
+  height?: number
   layoutSize?: WidgetLayoutSize
   slotMetadata?: WidgetSlotMetadata
   /**

@@ -300,6 +300,10 @@ import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+import {
+  distributeOwnedHeights,
+  isGrowableWidgetRow
+} from '@/renderer/extensions/vueNodes/layout/ownedWidgetHeights'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
@@ -458,11 +462,46 @@ const handleContextMenu = (event: MouseEvent) => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
-const { startResize } = useNodeResize((result) => {
+function marginBoxHeight(row: HTMLElement) {
+  const { marginTop, marginBottom } = getComputedStyle(row)
+  return (
+    row.offsetHeight +
+    (Number.parseFloat(marginTop) || 0) +
+    (Number.parseFloat(marginBottom) || 0)
+  )
+}
+
+function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
+  const growable = processedWidgets.value.flatMap((widget) => {
+    if (!widget.visible || !widget.widgetId || !isGrowableWidgetRow(widget))
+      return []
+    const row = element.querySelector<HTMLElement>(
+      `[data-widget-name="${CSS.escape(widget.simplified.name)}"]`
+    )
+    return row ? [{ widget, widgetId: widget.widgetId, row }] : []
+  })
+  if (growable.length === 0) return
+
+  const growableHeight = growable.reduce(
+    (sum, { row }) => sum + marginBoxHeight(row),
+    0
+  )
+  const fixedHeight = element.offsetHeight - growableHeight
+  const heights = distributeOwnedHeights(
+    nodeHeight - fixedHeight,
+    growable.map(({ widget }) => widget)
+  )
+  growable.forEach(({ widgetId }, index) =>
+    widgetValueStore.setWidgetHeight(widgetId, heights[index])
+  )
+}
+
+const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
   const node = resolveLGraphNode()
   if (!node) return
 
+  assignOwnedWidgetHeights(element, result.size.height)
   resizeNodeLayout(
     node,
     {
