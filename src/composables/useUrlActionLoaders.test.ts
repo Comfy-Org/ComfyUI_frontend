@@ -9,6 +9,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -16,6 +17,16 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockIsCloud.value
   }
 }))
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent')
+}))
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
+)
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
@@ -342,6 +353,83 @@ describe('useUrlActionLoaders', () => {
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
     ).toBeUndefined()
+  })
+
+  it.for(['deployment', 'workspace'] as const)(
+    'preserves the workflow-id link across a %s reload without opening it',
+    async (kind) => {
+      await router.replace({
+        query: { workflowId: 'workflow-id', workflows: 'ignored' }
+      })
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        { workflowId: 'workflow-id' },
+        ['workflowId']
+      )
+      const loader =
+        kind === 'deployment' ? mocks.loadDeployment : mocks.loadWorkspace
+      loader.mockResolvedValueOnce(true)
+
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expect(
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl
+      ).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.query.workflowId).toBe('workflow-id')
+      expect(
+        getPreservedQueryParam(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          'workflowId'
+        )
+      ).toBe('workflow-id')
+    }
+  )
+
+  it('finishes the workflow-id link after navigation and clears the URL and stash', async () => {
+    await router.replace({ query: { workflowId: 'workflow-id', keep: 'yes' } })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl
+    ).toHaveBeenCalledExactlyOnceWith(true)
+    expect(
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mock.invocationCallOrder[0]
+    ).toBeGreaterThan(mocks.loadWorkspace.mock.invocationCallOrder[0])
+    expect(router.currentRoute.value.query).toEqual({ keep: 'yes' })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBeUndefined()
+  })
+
+  it('retains a deferred workflow-id URL and stash after identity changes', async () => {
+    await router.replace({
+      query: { workflowId: 'workflow-id', workflows: 'ignored' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query.workflowId).toBe('workflow-id')
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-id')
   })
 
   it('clears a deployment param no loader acted on', async () => {

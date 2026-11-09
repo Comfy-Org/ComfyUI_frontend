@@ -14,6 +14,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
+import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
@@ -23,13 +24,11 @@ import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorks
 interface UrlActionStep {
   /** What the loader does, for the failure log — not shown to the customer. */
   readonly failureMessage: string
-  /** `true` means a reload is already in flight: the loop must stop, since
-   * `location.reload()` doesn't halt the current script and a later step's
-   * own URL cleanup could otherwise land on the still-live page. */
   readonly run: () => Promise<boolean | void> | boolean | void
 }
 
 type UrlActionLoaders = {
+  workflowLinkUrlLoader: ReturnType<typeof useWorkflowLinkUrlLoader> | null
   deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
   workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
   inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
@@ -65,6 +64,7 @@ const HANDLED_PARAMS = [
   'workspace',
   'deployment',
   'workflows',
+  'workflowId',
   'invite',
   'create_workspace',
   'pricing',
@@ -90,14 +90,19 @@ function deploymentLinkSteps(
   ]
 }
 
-/**
- * Orders the deep-link loaders: the deployment link first, since with
- * `?deployment` it owns `?workspace` too (it switches, then picks after the
- * reload); then workspace, so `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets` all act on the requested workspace rather
- * than the one the app happened to load with. Only the loaders present
- * (cloud-gated by the caller) become steps.
- */
+function workflowLinkSteps(
+  loader: UrlActionLoaders['workflowLinkUrlLoader']
+): UrlActionStep[] {
+  if (!loader) return []
+  return [
+    {
+      failureMessage: 'Failed to open the linked workflow from URL:',
+      run: async () =>
+        (await loader.openWorkflowLinkFromUrl(true)) === 'pending'
+    }
+  ]
+}
+
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
   router: ReturnType<typeof useRouter>
@@ -111,6 +116,7 @@ function buildUrlActionSteps(
       run: () => loader.loadWorkspaceFromUrl()
     })
   }
+  steps.push(...workflowLinkSteps(loaders.workflowLinkUrlLoader))
   if (loaders.inviteUrlLoader) {
     const loader = loaders.inviteUrlLoader
     steps.push({
@@ -132,7 +138,6 @@ function buildUrlActionSteps(
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     steps.push({
@@ -165,6 +170,7 @@ function buildUrlActionSteps(
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID)
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       if (!HANDLED_PARAMS.some((param) => param in query)) return
@@ -176,13 +182,6 @@ function buildUrlActionSteps(
   return steps
 }
 
-/**
- * Runs each step in order; one loader's failure never blocks the rest. Stops
- * immediately when a step reports a reload already in flight — no further
- * step's URL cleanup should run on a page that's about to be torn down.
- * Returns whether a reload is in flight, so the caller can skip work that
- * would otherwise run against the workspace the app is switching away from.
- */
 async function runUrlActionSteps(steps: UrlActionStep[]): Promise<boolean> {
   for (const step of steps) {
     try {
@@ -223,16 +222,11 @@ function useIfCloud<T>(create: () => T): T | null {
   return isCloud ? create() : null
 }
 
-/**
- * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?deployment`, `?workspace`, `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
- * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
- * `runUrlActionLoaders()` from `onMounted` once the app is ready.
- */
+/** Runs Cloud URL actions after workflow boot and recovers interrupted checkout. */
 export function useUrlActionLoaders() {
   const router = useRouter()
 
+  const workflowLinkUrlLoader = useIfCloud(useWorkflowLinkUrlLoader)
   const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
@@ -247,6 +241,7 @@ export function useUrlActionLoaders() {
   const steps = isCloud
     ? buildUrlActionSteps(
         {
+          workflowLinkUrlLoader,
           deploymentUrlLoader,
           workspaceUrlLoader,
           inviteUrlLoader,
@@ -262,12 +257,8 @@ export function useUrlActionLoaders() {
     : []
 
   async function runUrlActionLoaders() {
-    const reloading = await runUrlActionSteps(steps)
-    // A switch reload is already in flight: activeWorkspaceId and its auth
-    // context are already stale, so starting recovery here could adopt or
-    // poll the old workspace's pending checkout. The next boot, once the
-    // reload lands, gets a clean pass at it.
-    if (reloading) return
+    const interrupted = await runUrlActionSteps(steps)
+    if (interrupted) return
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }
 
