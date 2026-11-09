@@ -84,7 +84,7 @@
             class="w-full @xl:w-auto"
             data-testid="deploy-to-comfy-api-agent"
             :loading="isCopying"
-            @click="copyHandoff"
+            @click="copyWith(copyBrief)"
           >
             <template v-if="copied">
               <i class="icon-[lucide--check] size-4" aria-hidden="true" />
@@ -121,7 +121,7 @@
 
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -132,6 +132,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
 const {
   videoSources = [],
@@ -154,8 +155,7 @@ const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const { captureInputs, copyBrief } = useAgentHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const isCopying = ref(false)
-const copied = ref(false)
+const { isCopying, copied, copyWith } = useBriefCopy()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
@@ -168,15 +168,4 @@ const summary = computed(() =>
     t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
   ].join(' · ')
 )
-
-async function copyHandoff() {
-  if (isCopying.value) return
-  isCopying.value = true
-  copied.value = false
-  try {
-    copied.value = await copyBrief()
-  } finally {
-    isCopying.value = false
-  }
-}
 </script>
