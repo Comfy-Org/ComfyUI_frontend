@@ -51,7 +51,7 @@
   },
   "src/platform/account/components/CurrentUserPopoverWorkspace.vue": {
     "template-classes/prefer-design-system-button": {
-      "count": 1
+      "count": 2
     }
   },
   "src/platform/keybindings/components/KeybindingPresetToolbar.vue": {

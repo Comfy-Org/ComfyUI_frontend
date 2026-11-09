@@ -45,21 +45,13 @@
         :class="
           cn(
             'overflow-visible border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
-            !showWorkspacePopover
-              ? 'w-80 rounded-lg'
-              : newProfileMenu
-                ? 'w-72 rounded-xl'
-                : 'w-fit max-w-96 min-w-80 rounded-lg'
+            popoverSizeClass
           )
         "
       >
-        <ProfileMenuWorkspace
-          v-if="showWorkspacePopover && newProfileMenu"
-          :account-actions-only="initState !== 'ready'"
-          @close="closePopover"
-        />
-        <CurrentUserPopoverWorkspace
-          v-else-if="showWorkspacePopover"
+        <component
+          :is="workspaceMenu"
+          v-if="showWorkspacePopover"
           :account-actions-only="initState !== 'ready'"
           @close="closePopover"
         />
@@ -117,10 +109,18 @@ const showWorkspaceIcon = computed(
   () => initState.value === 'ready' && !isInPersonalWorkspace.value
 )
 const { flags } = useFeatureFlags()
-const newProfileMenu = computed(() => flags.billingNewUxEnabled)
+const workspaceMenu = computed(() =>
+  flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
+)
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
 )
+const popoverSizeClass = computed(() => {
+  if (!showWorkspacePopover.value) return 'w-80 rounded-lg'
+  return flags.billingNewUxEnabled
+    ? 'w-72 rounded-xl'
+    : 'w-fit max-w-96 min-w-80 rounded-lg'
+})
 
 const workspaceName = computed(() => {
   if (!showWorkspaceIcon.value) return ''

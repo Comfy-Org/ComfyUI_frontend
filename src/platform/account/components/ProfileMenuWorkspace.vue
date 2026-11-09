@@ -23,9 +23,10 @@
       </div>
       <PopoverRoot v-else v-slot="{ close }">
         <PopoverTrigger as-child>
-          <button
-            type="button"
-            :class="cn(menuRowClass, 'data-[state=open]:bg-accent')"
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')"
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
             data-testid="workspace-switcher-trigger"
@@ -43,7 +44,7 @@
               >
             </div>
             <i class="icon-[lucide--arrow-left-right] text-muted-foreground" />
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           side="left"
@@ -175,6 +176,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'

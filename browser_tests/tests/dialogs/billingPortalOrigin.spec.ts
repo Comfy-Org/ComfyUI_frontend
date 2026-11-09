@@ -127,7 +127,6 @@ async function setupRefusedPlanChange(page: Page, portalUrl: string) {
   return portalOpens
 }
 
-/** The pricing deep link, then the Standard tier's action. */
 async function changeToStandardYearly(page: Page) {
   await page.goto(`${APP_URL}/?pricing=1`)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {

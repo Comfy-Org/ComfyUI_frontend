@@ -268,7 +268,7 @@ describe('CurrentUserButton', () => {
   ])(
     'opens the profile menu billing_new_ux_enabled=$flag picks',
     async ({ flag, shown, hidden }) => {
-      useFeatureFlags().flags.billingNewUxEnabled = flag
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = flag
       useTeamWorkspaceStore().initState = 'ready'
       const { user } = renderComponent()
 
