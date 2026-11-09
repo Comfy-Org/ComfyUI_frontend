@@ -19,7 +19,7 @@ export interface HostAuthActivity {
   navigations: number
 }
 
-export const HOST_USER_ID = 'host-user-e2e'
+const HOST_USER_ID = 'host-user-e2e'
 export const HOST_PERSONAL_WORKSPACE = workspace('personal', 'owner')
 export const HOST_TEAM_WORKSPACE = workspace('team', 'member')
 
