@@ -34,8 +34,8 @@ export function useNumberScrub(
     },
     onSwipe: () => {
       if (toValue(disabled) || editingControl) return
-      if (!dragged && !['left', 'right'].includes(swipe.direction.value)) return
       if (!dragged) {
+        if (!['left', 'right'].includes(swipe.direction.value)) return
         startValue = toValue(value)
         const width = toValue(target)?.getBoundingClientRect().width ?? 0
         const span = Math.min(
