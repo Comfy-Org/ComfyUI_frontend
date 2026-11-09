@@ -231,7 +231,7 @@ export function installSeededServerFlags(
           ...window.__seededServerFlags
         }
       }
-      if (api.serverFeatureFlagsSettled.value) apply()
+      apply()
       api.addEventListener('feature_flags', apply)
     }
   })
