@@ -152,6 +152,14 @@ function tokenRequests(
   )
 }
 
+function revokedTokens(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+): string[] {
+  return env.fetchImpl.mock.calls
+    .filter(([url]) => String(url) === `${ISSUER}/oauth/revoke`)
+    .map(([, init]) => formOf(init).token)
+}
+
 function formOf(init: RequestInit | undefined): Record<string, string> {
   return Object.fromEntries(new URLSearchParams(String(init?.body)))
 }
@@ -750,9 +758,7 @@ describe('signOut', () => {
     await bridge.signOut()
 
     await vi.waitFor(() => {
-      const revoked = env.fetchImpl.mock.calls
-        .filter(([url]) => String(url) === `${ISSUER}/oauth/revoke`)
-        .map(([, init]) => formOf(init).token)
+      const revoked = revokedTokens(env)
       expect(revoked).toHaveLength(2)
       expect(revoked).toEqual(
         expect.arrayContaining(['refresh-1', 'refresh-ws2'])
@@ -767,6 +773,21 @@ describe('signOut', () => {
     await expect(bridge.signOut()).resolves.toEqual({ status: 'signed_out' })
 
     expect(tokens.read()).toBeUndefined()
+  })
+
+  it('ends the other workspaces when a dead refresh token signs this page out', async () => {
+    const { bridge, env, clock, states } = await signedInToBothWorkspaces()
+    clock.now += 3_600_000
+    env.fetchImpl.mockImplementation(async (url) =>
+      String(url) === `${ISSUER}/oauth/revoke`
+        ? new Response(null)
+        : oauthError('invalid_grant')
+    )
+
+    await expect(bridge.getWorkspaceToken('ws-2')).resolves.toBeNull()
+
+    expect(states.at(-1)).toEqual({ status: 'signed_out' })
+    await vi.waitFor(() => expect(revokedTokens(env)).toContain('refresh-1'))
   })
 
   it('discards a refresh that finishes after sign-out', async () => {
@@ -954,6 +975,12 @@ describe('switchWorkspace', () => {
       userId: 'user-2',
       workspaceId: 'ws-9'
     })
+    await vi.waitFor(() =>
+      expect(revokedTokens(env)).toEqual(
+        expect.arrayContaining(['refresh-1', 'refresh-ws2'])
+      )
+    )
+    expect(revokedTokens(env)).not.toContain('refresh-user-2')
   })
 
   it('does not go to consent when sign-out lands before a switch falls back to it', async () => {

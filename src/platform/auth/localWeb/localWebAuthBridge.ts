@@ -215,7 +215,8 @@ export function createLocalWebAuthBridge(
     const incoming = readAccessTokenIdentity(tokens.accessToken)?.userId
     const kept = activeTokens() ?? env.tokens.read()
     const previous = kept && readAccessTokenIdentity(kept.accessToken)?.userId
-    if (previous && incoming && previous !== incoming) env.tokens.clear()
+    if (previous && incoming && previous !== incoming)
+      revokeSignIns(env.tokens.clear())
   }
 
   function abandonSignIn(): void {
@@ -224,16 +225,11 @@ export function createLocalWebAuthBridge(
     signingIn = undefined
   }
 
-  function forgetTokens(): OAuthTokens[] {
+  function signOutLocally(): DesktopHostAuthState {
     abandonSignIn()
-    const forgotten = env.tokens.clear()
+    revokeSignIns(env.tokens.clear())
     pinTab(undefined)
     emit()
-    return forgotten
-  }
-
-  function signOutLocally(): DesktopHostAuthState {
-    forgetTokens()
     return currentState()
   }
 
@@ -523,11 +519,7 @@ export function createLocalWebAuthBridge(
       return currentState()
     },
 
-    signOut: () =>
-      env.withRefreshLock(async () => {
-        revokeSignIns(forgetTokens())
-        return currentState()
-      }),
+    signOut: () => env.withRefreshLock(async () => signOutLocally()),
 
     async completeSignIn() {
       const url = new URL(env.pageUrl())

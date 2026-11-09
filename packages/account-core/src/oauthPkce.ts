@@ -257,13 +257,13 @@ export async function revokeRefreshToken(
   refreshToken: string,
   options: TokenRequestOptions
 ): Promise<boolean> {
-  const endpoint = oauthEndpoint(REVOKE_PATH, options.issuer)
-  if (!endpoint) return false
   const { signal, release } = timedSignal(
     options.signal,
     options.timeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS
   )
   try {
+    const endpoint = oauthEndpoint(REVOKE_PATH, options.issuer)
+    if (!endpoint) return false
     const response = await options.fetchImpl(endpoint.href, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -273,7 +273,8 @@ export async function revokeRefreshToken(
         client_id: options.clientId
       }),
       signal,
-      keepalive: true
+      keepalive: true,
+      redirect: 'error'
     })
     return response.ok
   } catch {

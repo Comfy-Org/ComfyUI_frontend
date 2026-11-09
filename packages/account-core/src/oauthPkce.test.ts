@@ -307,7 +307,11 @@ describe('revokeRefreshToken', () => {
 
     const [url, init] = fetchImpl.mock.calls[0]
     expect(url).toBe(`${ISSUER}/oauth/revoke`)
-    expect(init).toMatchObject({ method: 'POST', keepalive: true })
+    expect(init).toMatchObject({
+      method: 'POST',
+      keepalive: true,
+      redirect: 'error'
+    })
     expect(Object.fromEntries(new URLSearchParams(String(init?.body)))).toEqual(
       {
         token: 'refresh-1',
@@ -334,6 +338,18 @@ describe('revokeRefreshToken', () => {
     await expect(
       revokeRefreshToken('refresh-1', tokenOptions(fetchImpl))
     ).resolves.toBe(false)
+  })
+
+  it('reports a malformed issuer as not revoked without throwing', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+
+    await expect(
+      revokeRefreshToken('refresh-1', {
+        ...tokenOptions(fetchImpl),
+        issuer: 'not a url'
+      })
+    ).resolves.toBe(false)
+    expect(fetchImpl).not.toHaveBeenCalled()
   })
 
   it('never sends a refresh token to a non-HTTPS issuer', async () => {
