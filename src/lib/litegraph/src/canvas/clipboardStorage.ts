@@ -1,3 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { createUuidv4 } from '@/utils/uuid'
+
 export const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 export const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
@@ -13,7 +17,7 @@ function removeQuietly(key: string): void {
   try {
     localStorage.removeItem(key)
   } catch {
-    // Storage is unreachable; the system clipboard write is the one that counts.
+    return
   }
 }
 
@@ -35,4 +39,29 @@ export function readClipboardId(): string | null {
   } catch {
     return null
   }
+}
+
+function reportStorageError(error: unknown): void {
+  if (isExpectedStorageError(error)) return
+  reportError(error, {
+    errorType: 'error_writing_clipboard_storage',
+    surface: 'graph'
+  })
+}
+
+export function writeClipboardStorage(serializedData: string): boolean {
+  try {
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+  } catch (error) {
+    discardClipboardStorage()
+    reportStorageError(error)
+    return false
+  }
+  try {
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+  } catch (error) {
+    discardClipboardId()
+    reportStorageError(error)
+  }
+  return true
 }

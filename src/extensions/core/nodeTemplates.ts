@@ -420,14 +420,9 @@ export const nodeTemplatesExtension: ComfyExtension = {
         if (!name?.trim()) return
 
         await clipboardAction(async () => {
-          // Use the returned payload rather than reading it back: the storage
-          // write is best-effort and saves an empty template when it is refused.
           const data = app.canvas.copyToClipboard()
 
-          await manage.store((templates) => [
-            ...templates,
-            { name, data: data || '{}' }
-          ])
+          await manage.store((templates) => [...templates, { name, data }])
         })
       }
     })

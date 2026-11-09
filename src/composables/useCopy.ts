@@ -95,7 +95,6 @@ export const useCopy = () => {
 
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
-      // Default system copy
       if (
         keyboardCopyId !== null &&
         hasTextSelection(e.target) &&
@@ -106,14 +105,12 @@ export const useCopy = () => {
       }
       return
     }
-    // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
       keyboardCopyId = readClipboardId()
       try {
         const base64Data = encodeClipboardData(serializedData)
-        // clearData doesn't remove images from clipboard
         e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {
         reportError(error, {

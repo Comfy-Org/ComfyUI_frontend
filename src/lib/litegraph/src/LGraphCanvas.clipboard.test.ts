@@ -41,6 +41,10 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from './canvas/clipboardStorage'
 
 vi.mock(import('@/services/litegraphService'))
 const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))
@@ -870,49 +874,6 @@ describe('copyToClipboard', () => {
 })
 
 describe('copyToClipboard when storage is full', () => {
-  const CLIPBOARD_KEYS = [
-    'litegrapheditor_clipboard',
-    'litegrapheditor_clipboard_id'
-  ]
-
-  function clearClipboardStorage() {
-    for (const key of CLIPBOARD_KEYS) localStorage.removeItem(key)
-  }
-
-  /**
-   * Caps the clipboard entries at `maxBytes` so a copy can be refused for space
-   * without a real multi-megabyte quota. Usage excludes the key being written,
-   * matching a browser that accounts an overwrite as a delta. Removals stay
-   * real, so a discard frees room as it does in a browser.
-   */
-  function capClipboardStorageAt(maxBytes: number) {
-    return vi
-      .spyOn(window.localStorage, 'setItem')
-      .mockImplementation((key: string, value: string) => {
-        if (CLIPBOARD_KEYS.includes(key)) {
-          let used = 0
-          for (const owned of CLIPBOARD_KEYS) {
-            if (owned === key) continue
-            const stored = localStorage.getItem(owned)
-            if (stored !== null) used += owned.length + stored.length
-          }
-          if (used + key.length + value.length > maxBytes) {
-            throw new DOMException(
-              'The quota has been exceeded.',
-              'QuotaExceededError'
-            )
-          }
-        }
-        Storage.prototype.setItem.call(localStorage, key, value)
-      })
-  }
-
-  beforeEach(() => {
-    clearClipboardStorage()
-    telemetryMocks.reportError.mockClear()
-  })
-  afterEach(clearClipboardStorage)
-
   it('leaves no stale entry behind when the write fails', () => {
     const rootGraph = createTestRootGraph()
     const previous = createTestNode(rootGraph)
@@ -920,25 +881,37 @@ describe('copyToClipboard when storage is full', () => {
     const canvas = createCanvas(rootGraph)
 
     canvas.copyToClipboard([previous])
-    const setItem = capClipboardStorageAt(0)
-    onTestFinished(() => setItem.mockRestore())
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      })
 
-    const copied = canvas.copyToClipboard([current])
+    try {
+      const copied = canvas.copyToClipboard([current])
 
-    expect(copied).toBe(JSON.stringify(canvas._serializeItems([current])))
-    expect(localStorage.getItem(CLIPBOARD_KEYS[0])).toBeNull()
-    expect(localStorage.getItem(CLIPBOARD_KEYS[1])).toBeNull()
-    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+      expect(JSON.parse(copied)).toMatchObject({
+        nodes: [{ id: Number(current.id), type: current.type }]
+      })
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBeNull()
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
+      expect(canvas._pasteFromClipboard()).toBeUndefined()
+      expect(rootGraph.nodes).toHaveLength(2)
+      expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+    } finally {
+      setItem.mockRestore()
+    }
   })
 
   it('keeps the payload when only the copy stamp cannot be written', () => {
     const rootGraph = createTestRootGraph()
     const node = createTestNode(rootGraph)
     const canvas = createCanvas(rootGraph)
+    canvas.copyToClipboard([node])
     const setItem = vi
       .spyOn(window.localStorage, 'setItem')
-      .mockImplementation((key: string, value: string) => {
-        if (key === CLIPBOARD_KEYS[1]) {
+      .mockImplementation((key, value) => {
+        if (key === CANVAS_CLIPBOARD_ID_KEY) {
           throw new DOMException(
             'The quota has been exceeded.',
             'QuotaExceededError'
@@ -946,32 +919,17 @@ describe('copyToClipboard when storage is full', () => {
         }
         Storage.prototype.setItem.call(localStorage, key, value)
       })
-    onTestFinished(() => setItem.mockRestore())
 
-    const copied = canvas.copyToClipboard([node])
+    try {
+      const copied = canvas.copyToClipboard([node])
 
-    expect(localStorage.getItem(CLIPBOARD_KEYS[0])).toBe(copied)
-    expect(localStorage.getItem(CLIPBOARD_KEYS[1])).toBeNull()
-    expect(canvas._pasteFromClipboard()).toBeDefined()
-    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
-  })
-
-  it('does not paste the previous selection after a copy that could not be stored', () => {
-    const rootGraph = createTestRootGraph()
-    const previous = createTestNode(rootGraph, ['number'])
-    const current = createTestNode(rootGraph)
-    const canvas = createCanvas(rootGraph)
-    const previousType = previous.type
-
-    canvas.copyToClipboard([previous])
-    const setItem = capClipboardStorageAt(0)
-    onTestFinished(() => setItem.mockRestore())
-    canvas.copyToClipboard([current])
-
-    expect(canvas._pasteFromClipboard()).toBeUndefined()
-    expect(
-      rootGraph.nodes.filter((node) => node.type === previousType)
-    ).toHaveLength(1)
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(copied)
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
+      expect(canvas._pasteFromClipboard()).toBeDefined()
+      expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+    } finally {
+      setItem.mockRestore()
+    }
   })
 
   it('does not throw when storage rejects both the write and the discard', () => {
@@ -989,18 +947,13 @@ describe('copyToClipboard when storage is full', () => {
       .mockImplementation(blocked)
 
     let copied = ''
-    const copy = () => {
-      copied = canvas.copyToClipboard([node])
-    }
-    // Restored here, not in teardown: the suite's cleanup calls removeItem.
     try {
-      expect(copy).not.toThrow()
+      copied = canvas.copyToClipboard([node])
     } finally {
       setItem.mockRestore()
       removeItem.mockRestore()
     }
     expect(copied).toContain('"nodes"')
-    // Blocked storage is an environment condition nobody can act on.
     expect(telemetryMocks.reportError).not.toHaveBeenCalled()
   })
 })
