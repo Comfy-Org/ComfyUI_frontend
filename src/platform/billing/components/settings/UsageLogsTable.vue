@@ -142,7 +142,6 @@ const pagination = ref({
   total: 0
 })
 
-// The column only appears once a row says whose it is.
 const showMemberColumn = computed(() =>
   events.value.some((e) => e.member_display_name || e.member_email)
 )
