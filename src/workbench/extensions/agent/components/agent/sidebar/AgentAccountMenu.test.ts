@@ -172,11 +172,14 @@ describe('AgentAccountMenu', () => {
       separators: 2
     },
     {
-      scenario: 'signed in outside cloud',
+      scenario: 'signed in outside cloud with workspaces',
       signedIn: true,
       isCloud: false,
       hasWorkspaces: true,
       entries: [
+        'Personal Workspace',
+        'Studio',
+        'Create workspace',
         'Workspace settings',
         'Usage',
         'View all plans',
@@ -186,7 +189,7 @@ describe('AgentAccountMenu', () => {
         'Get API Key',
         'Log out'
       ],
-      separators: 2
+      separators: 3
     },
     {
       scenario: 'signed out on cloud',

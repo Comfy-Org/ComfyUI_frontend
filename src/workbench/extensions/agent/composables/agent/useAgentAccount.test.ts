@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -12,11 +12,8 @@ import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { seedWorkspaces } from './agentWorkspaceTestSetup'
 import { useAgentAccount } from './useAgentAccount'
 
-const distribution = vi.hoisted(() => ({ isCloud: true }))
-
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/account/composables/useAccountUI'))
 
@@ -52,10 +49,6 @@ function mountAccount(): ReturnType<typeof useAgentAccount> {
 }
 
 describe('useAgentAccount', () => {
-  beforeEach(() => {
-    distribution.isCloud = true
-  })
-
   it.for([
     { displayName: 'Marwan Mostafa', expected: 'Marwan' },
     { displayName: '  Ada  ', expected: 'Ada' },
@@ -133,11 +126,15 @@ describe('useAgentAccount', () => {
   )
 
   it.for([
-    { scenario: 'on cloud once the workspaces load', expected: 'ws-personal' },
-    { scenario: 'outside cloud', isCloud: false, expected: undefined },
+    { scenario: 'once the workspaces load', expected: 'ws-personal' },
     {
       scenario: 'before the workspaces load',
       initState: 'loading',
+      expected: undefined
+    },
+    {
+      scenario: 'when the workspaces failed to load',
+      initState: 'error',
       expected: undefined
     },
     {
@@ -153,13 +150,11 @@ describe('useAgentAccount', () => {
   ] as const)(
     'resolves the active workspace to $expected $scenario',
     ({
-      isCloud = true,
       initState = 'ready' as const,
       isApiKeyLogin = false,
       activeWorkspaceId = 'ws-personal',
       expected
     }) => {
-      distribution.isCloud = isCloud
       useCurrentUser().isApiKeyLogin = computed(() => isApiKeyLogin)
       seedWorkspaces({ initState, activeWorkspaceId })
 

@@ -5,7 +5,6 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -49,7 +48,7 @@ export function useAgentAccount() {
   })
 
   const activeWorkspace = computed(() =>
-    isCloud && workspaceStore.initState === 'ready' && !isApiKeyLogin.value
+    workspaceStore.initState === 'ready' && !isApiKeyLogin.value
       ? (workspaceStore.activeWorkspace ?? undefined)
       : undefined
   )

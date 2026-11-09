@@ -135,22 +135,15 @@ describe('AccountWorkspaceGroup', () => {
   })
 
   it.for([
-    { scenario: 'outside cloud', isCloud: false, initState: 'ready' },
-    {
-      scenario: 'before the workspaces load',
-      isCloud: true,
-      initState: 'loading'
-    },
+    { scenario: 'before the workspaces load', initState: 'loading' },
     {
       scenario: 'on an API key session',
-      isCloud: true,
       initState: 'ready',
       isApiKeyLogin: true
     }
   ] as const)(
     'is absent $scenario',
-    async ({ isCloud, initState, isApiKeyLogin = false }) => {
-      distribution.isCloud = isCloud
+    async ({ initState, isApiKeyLogin = false }) => {
       useCurrentUser().isApiKeyLogin = computed(() => isApiKeyLogin)
       seedWorkspaces({ initState })
       await renderInOpenMenu(AccountWorkspaceGroup)
