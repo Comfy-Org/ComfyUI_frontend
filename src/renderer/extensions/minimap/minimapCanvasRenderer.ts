@@ -2,7 +2,7 @@ import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import { MinimapDataSource } from './data/MinimapDataSource'
 import type {
@@ -48,15 +48,15 @@ function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
 }
 
 function getMinimapColors(): MinimapColors {
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
-  const key = `${palette.id}:${colorPaletteStore.colorScheme}`
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
+  const key = `${palette.id}:${themeStore.colorScheme}`
   if (cachedColors?.key !== key) {
     cachedColors = {
       key,
       colors: readMinimapColors(
-        colorPaletteStore.colorScheme === 'light',
-        palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR
+        themeStore.colorScheme === 'light',
+        palette.canvas.nodeSelectedTitleColor
       )
     }
   }

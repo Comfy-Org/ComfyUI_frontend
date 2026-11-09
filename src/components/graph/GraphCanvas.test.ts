@@ -179,8 +179,9 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+vi.mock<unknown>(import('@/platform/theme/themeService'), () => ({
+  useThemeService: () => ({ setActiveTheme: vi.fn() }),
+  useLegacyColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))

@@ -192,7 +192,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
   collapseOutsideSelectionOnPrimaryPointerDown,
@@ -205,7 +205,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -246,8 +246,8 @@ const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toast = useToast()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
+const themeStore = useThemeStore()
+const themeService = useThemeService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()
 const { isI18nReady, i18nError } = storeToRefs(bootstrapStore)
@@ -359,9 +359,7 @@ watchEffect(() => {
 })
 watchEffect(() => {
   LiteGraph.nodeLightness =
-    colorPaletteStore.colorScheme === 'light'
-      ? LIGHT_THEME_NODE_LIGHTNESS
-      : undefined
+    themeStore.colorScheme === 'light' ? LIGHT_THEME_NODE_LIGHTNESS : undefined
 })
 
 watchEffect(() => {
@@ -416,7 +414,7 @@ watch(
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
   }
 )
 
@@ -424,17 +422,17 @@ watch(
   () => settingStore.get('Comfy.Canvas.BackgroundImage'),
   async () => {
     if (!canvasStore.canvas) return
-    const currentPaletteId = colorPaletteStore.activePaletteId
+    const currentPaletteId = themeStore.activePresetId
     if (!currentPaletteId) return
 
     // Reload color palette to apply background image
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
     // Mark background canvas as dirty
     canvasStore.canvas.setDirty(false, true)
   }
 )
 watch(
-  () => colorPaletteStore.activePaletteId,
+  () => themeStore.activePresetId,
   async (newValue) => {
     await settingStore.set('Comfy.ColorPalette', newValue)
   }
@@ -625,9 +623,7 @@ onMounted(async () => {
     }
 
     // Load color palette
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
+    themeStore.customPresets = settingStore.get('Comfy.CustomColorPalettes')
 
     // Restore saved workflow and workflow tabs state
     await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {

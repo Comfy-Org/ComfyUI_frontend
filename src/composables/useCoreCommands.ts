@@ -7,9 +7,9 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
-  DEFAULT_DARK_COLOR_PALETTE,
-  DEFAULT_LIGHT_COLOR_PALETTE
-} from '@/constants/coreColorPalettes'
+  DEFAULT_DARK_THEME_PRESET,
+  DEFAULT_LIGHT_THEME_PRESET
+} from '@comfyorg/theme-core/builtInThemePresets'
 
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
 import { t } from '@/i18n'
@@ -63,7 +63,7 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -124,7 +124,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const { showSignInDialog } = useAuthDialogs()
-  const colorPaletteStore = useColorPaletteStore()
+  const themeStore = useThemeStore()
   const authActions = useAuthActions()
   const toast = useToast()
   const canvasStore = useCanvasStore()
@@ -767,13 +767,13 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Theme (Dark/Light)',
       versionAdded: '1.3.12',
       function: (() => {
-        let previousDarkTheme: string = DEFAULT_DARK_COLOR_PALETTE.id
-        let previousLightTheme: string = DEFAULT_LIGHT_COLOR_PALETTE.id
+        let previousDarkTheme: string = DEFAULT_DARK_THEME_PRESET.id
+        let previousLightTheme: string = DEFAULT_LIGHT_THEME_PRESET.id
 
         return async () => {
           const settingStore = useSettingStore()
-          const theme = colorPaletteStore.completedActivePalette
-          if (theme.light_theme) {
+          const theme = themeStore.activeTheme
+          if (theme.colorScheme === 'light') {
             previousLightTheme = theme.id
             await settingStore.set('Comfy.ColorPalette', previousDarkTheme)
           } else {
