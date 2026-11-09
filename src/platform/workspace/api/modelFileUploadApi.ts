@@ -2,6 +2,7 @@ import type { z } from 'zod'
 
 import type {
   zCompleteModelUploadBody,
+  zReportModelUploadEventBody,
   zStartModelUploadBody
 } from '@comfyorg/ingest-types/zod'
 import {
@@ -14,6 +15,8 @@ import { api } from '@/scripts/api'
 
 const UPLOADS_ENDPOINT = '/assets/uploads'
 const STORAGE_OBJECT_ALREADY_WRITTEN = 412
+const UPLOAD_CLIENT = 'editor'
+const TRANSFER_REPORT_TIMEOUT_MS = 5_000
 
 type ModelFileUploadFailure =
   | 'unsupportedFile'
@@ -186,6 +189,7 @@ interface TransferPosition {
   offset: number
   query: boolean
   delay: number
+  resumed: boolean
 }
 
 async function sendPiece(
@@ -217,23 +221,35 @@ function nextPosition(
   return {
     offset: next,
     query: next >= size || (!previous.query && next <= previous.offset),
-    delay: next > previous.offset ? 1000 : previous.delay
+    delay: next > previous.offset ? 1000 : previous.delay,
+    resumed: previous.resumed || (previous.query && next > 0 && next < size)
   }
+}
+
+/** `resumed` is absent when the transfer could not observe a recovery. */
+interface Transfer {
+  stopped?: ModelFileUploadStopped
+  resumed?: boolean
 }
 
 async function putResumable(
   start: ReturnType<typeof zStartModelUploadResponse.parse>,
   file: File,
   options: ModelFileUploadOptions
-): Promise<ModelFileUploadStopped | undefined> {
-  let position: TransferPosition = { offset: 0, query: false, delay: 1000 }
+): Promise<Transfer> {
+  let position: TransferPosition = {
+    offset: 0,
+    query: false,
+    delay: 1000,
+    resumed: false
+  }
   while (!options.signal.aborted) {
     const outcome = await sendPiece(start, file, options, position)
-    if ('ok' in outcome) return outcome
+    if ('ok' in outcome) return { stopped: outcome, resumed: position.resumed }
     if (outcome.status === 'complete') {
       options.onProgress(file.size)
       options.onReconnecting?.(false)
-      return undefined
+      return { resumed: position.resumed }
     }
     if (outcome.status === 'held') {
       position = nextPosition(position, outcome.bytes, file.size)
@@ -248,7 +264,21 @@ async function putResumable(
       delay: Math.min(position.delay * 2, 60_000)
     }
   }
-  return { ok: false, reason: 'cancelled' }
+  return {
+    stopped: { ok: false, reason: 'cancelled' },
+    resumed: position.resumed
+  }
+}
+
+async function putOnce(
+  start: ReturnType<typeof zStartModelUploadResponse.parse>,
+  file: File,
+  options: ModelFileUploadOptions
+): Promise<Transfer> {
+  const answer = await putFile(start, file, options)
+  return {
+    stopped: 'status' in answer ? readStorageAnswer(answer.status) : answer
+  }
 }
 
 async function postJson(route: string, body: unknown, signal: AbortSignal) {
@@ -268,7 +298,8 @@ async function startFileUpload(
     filename: file.name,
     size_bytes: file.size,
     resumable: true,
-    tags: options.tags
+    tags: options.tags,
+    upload_analytics: { client: UPLOAD_CLIENT }
   } satisfies z.input<typeof zStartModelUploadBody>
   const response = await postJson(UPLOADS_ENDPOINT, body, options.signal)
   if (response.status !== 403) return response
@@ -287,24 +318,66 @@ async function startFileUpload(
   )
 }
 
+type TransferReport = z.input<typeof zReportModelUploadEventBody>
+
+function transferReason({
+  reason,
+  cause
+}: ModelFileUploadStopped): TransferReport['reason'] {
+  if (reason === 'cancelled') return 'canceled'
+  if (reason === 'sessionExpired') return 'session_expired'
+  const status = typeof cause === 'string' && /^storage (\d+)$/.exec(cause)
+  if (!status) return 'unknown'
+  return status[1] === '0' ? 'network' : 'http'
+}
+
+/** Best effort: it never throws, and the caller never waits for it. */
+function reportTransferStop(uploadId: string, report: TransferReport): void {
+  const controller = new AbortController()
+  const timer = setTimeout(
+    () => controller.abort(),
+    TRANSFER_REPORT_TIMEOUT_MS
+  )
+  void postJson(
+    `${UPLOADS_ENDPOINT}/${encodeURIComponent(uploadId)}/events`,
+    report,
+    controller.signal
+  )
+    .catch(() => undefined)
+    .finally(() => clearTimeout(timer))
+}
+
+interface StagedFile {
+  uploadId: string
+  resumed?: boolean
+}
+
 async function stageFile(
   file: File,
   options: ModelFileUploadOptions
-): Promise<string | ModelFileUploadStopped> {
+): Promise<StagedFile | ModelFileUploadStopped> {
   const startRes = await startFileUpload(file, options)
   if (!startRes.ok) return await readFailure(startRes)
   const start = zStartModelUploadResponse.safeParse(await startRes.json())
   if (!start.success) {
     return { ok: false, reason: 'failed', cause: start.error }
   }
-  if (start.data.upload_mode === 'resumable') {
-    return (
-      (await putResumable(start.data, file, options)) ?? start.data.upload_id
-    )
+  const uploadId = start.data.upload_id
+  const { stopped, resumed } =
+    start.data.upload_mode === 'resumable'
+      ? await putResumable(start.data, file, options)
+      : await putOnce(start.data, file, options)
+  if (!stopped) return { uploadId, resumed }
+  if (start.data.upload_analytics_version === 1) {
+    reportTransferStop(uploadId, {
+      client: UPLOAD_CLIENT,
+      size_bytes: file.size,
+      model_folder: options.tags.find((tag) => tag !== 'models') ?? '',
+      reason: transferReason(stopped),
+      resumed
+    })
   }
-  const answer = await putFile(start.data, file, options)
-  if (!('status' in answer)) return answer
-  return readStorageAnswer(answer.status) ?? start.data.upload_id
+  return stopped
 }
 
 async function uploadModelFile(
@@ -314,13 +387,15 @@ async function uploadModelFile(
   const { tags, signal } = options
   try {
     const staged = await stageFile(file, options)
-    if (typeof staged !== 'string') return staged
+    if ('ok' in staged) return staged
 
     const completeRes = await postJson(
-      `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged)}/complete`,
-      { filename: file.name, tags } satisfies z.input<
-        typeof zCompleteModelUploadBody
-      >,
+      `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged.uploadId)}/complete`,
+      {
+        filename: file.name,
+        tags,
+        upload_analytics: { client: UPLOAD_CLIENT, resumed: staged.resumed }
+      } satisfies z.input<typeof zCompleteModelUploadBody>,
       signal
     )
     if (!completeRes.ok) return await readFailure(completeRes)
