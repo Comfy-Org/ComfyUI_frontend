@@ -107,5 +107,17 @@ describe('useNodeLayout', () => {
     canvas.draw()
     await nextTick()
     expect(container.textContent).toBe('137')
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: FIRST_WORKFLOW,
+      nodeId: NODE,
+      position: { x: 174, y: 71 },
+      timestamp: 3,
+      source: LayoutSource.Vue
+    })
+    canvas.draw()
+    await nextTick()
+    expect(container.textContent).toBe('174')
   })
 })
