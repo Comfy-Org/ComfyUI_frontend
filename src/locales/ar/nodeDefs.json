@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "صيّر الفيديو النهائي بدقة 1080p لمسودة Seedance 2.5. يحتفظ الفيديو النهائي بمشهد المسودة وحركتها، ويعيد استخدام المطالبة والمراجع والمدة ونسبة العرض إلى الارتفاع وإعداد الصوت الخاصة بها.",
+    "description": "قم بإخراج الفيديو النهائي بدقة 1080p أو 4k لمسودة Seedance 2.5. يحتفظ الفيديو النهائي بالمشهد والحركة من المسودة، ويعيد استخدام الموجّه والمراجع والمدة ونسبة العرض إلى الارتفاع وإعداد الصوت الخاص بها.",
     "display_name": "ByteDance Seedance 2.5 من المسودة إلى الفيديو النهائي",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "خرج draft_task_id من عقدة Seedance 2.5 تم تشغيلها بنموذج Seedance 2.5 Draft، أو معرّف مهمة مسودة ملصق. اضبط التحكم بالبذرة في تلك العقدة على ثابت، وإلا فسيُنشئ التشغيل التالي مسودة جديدة بدلاً من إعادة استخدام المسودة التي راجعتها. يمكن تصيير المسودة لمدة 7 أيام بعد إنشائها."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة الفيديو النهائي. تتوفر 4k لحسابات المؤسسات فقط."
       },
       "watermark": {
         "name": "علامة مائية",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير النسخة النهائية بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأعلى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل مدتها إلى 30 ثانية، ودقة 4k لحسابات المؤسسات وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لتصيير النسخة النهائية بدقة 1080p."
+        "tooltip": "معرّف المهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لإخراج الفيديو النهائي بدقة 1080p أو 4k."
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير النسخة النهائية بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأعلى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل مدتها إلى 30 ثانية، ودقة 4k لحسابات المؤسسات وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير النسخة النهائية بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأعلى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل مدتها إلى 30 ثانية، ودقة 4k لحسابات المؤسسات وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لتصيير النسخة النهائية بدقة 1080p."
+        "tooltip": "معرّف المهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لإخراج الفيديو النهائي بدقة 1080p أو 4k."
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير النسخة النهائية بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأعلى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل مدتها إلى 30 ثانية، ودقة 4k لحسابات المؤسسات وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لتصيير النسخة النهائية بدقة 1080p."
+        "tooltip": "معرّف المهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لإخراج الفيديو النهائي بدقة 1080p أو 4k."
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو مقاطع فيديو مرجعية لتوجيه النتيجة أو تعديلها. صف المدة المطلوبة (3-10 ث) مباشرةً في المطالبة.",
+    "description": "أنشئ فيديو مع صوت من موجّه نصي باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو فيديوهات مرجعية لتوجيه النتيجة أو تحريرها. صف المدة المطلوبة مباشرةً في الموجّه (3-15s لـ Omni Flash 1.2، و3-10s للطرازات الأقدم).",
     "display_name": "Google Gemini Omni (فيديو)",
     "inputs": {
       "control_after_generate": {
@@ -7748,7 +7752,8 @@
         "name": "الصورة"
       },
       "model": {
-        "name": "النموذج"
+        "name": "النموذج",
+        "tooltip": "تم إيقاف grok-imagine-image-quality وgrok-imagine-image-pro من قِبل xAI، ويعملان الآن كـ grok-imagine-image-2.0 بجودة منخفضة."
       },
       "number_of_images": {
         "name": "عدد الصور",
@@ -7780,7 +7785,8 @@
         "name": "التحكم بعد التوليد"
       },
       "model": {
-        "name": "النموذج"
+        "name": "النموذج",
+        "tooltip": "تم إيقاف grok-imagine-image-quality وgrok-imagine-image-pro من قِبل xAI، ويعملان الآن كـ grok-imagine-image-2.0 بجودة منخفضة."
       },
       "model_aspect_ratio": {
         "name": "نسبة العرض إلى الارتفاع"
@@ -7820,7 +7826,8 @@
         "name": "التحكم بعد التوليد"
       },
       "model": {
-        "name": "النموذج"
+        "name": "النموذج",
+        "tooltip": "تم إيقاف grok-imagine-image-quality وgrok-imagine-image-pro من قِبل xAI، ويعملان الآن كـ grok-imagine-image-2.0 بجودة منخفضة."
       },
       "number_of_images": {
         "name": "عدد الصور",
@@ -10320,6 +10327,9 @@
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "model_audio": {
+        "name": "الصوت"
+      },
       "model_prompt": {
         "name": "الموجّه"
       },
@@ -10337,7 +10347,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "أنشئ فيديو مع صوت باستخدام ما يصل إلى 10 إطارات رئيسية. تتباعد الإطارات الوسطى بالتساوي؛ ويأخذ الفيديو نسبة العرض إلى الارتفاع للإطار الرئيسي الأول.",
+    "description": "أنشئ فيديو مع صوت باستخدام ما يصل إلى 10 إطارات رئيسية على kling-4.0، أو من إطار أول على kling-4.0-flash. تتباعد الإطارات الوسطى بالتساوي؛ ويأخذ الفيديو نسبة العرض إلى الارتفاع للإطار الرئيسي الأول.",
     "display_name": "Kling 4.0 صورة إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18760,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي يجريه النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: يدعم GPT-6 Astra النطاق low-max، وGPT-6 Sol/Luna وGPT-5.6 النطاق none-max (دون minimal)، وGPT-5.5 النطاق none-xhigh، وGPT-5.5 Pro النطاق medium-xhigh، وGPT-5 النطاق minimal-high، وسلسلة o النطاق low-high؛ لا يحتوي GPT-4.1 على استدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "تختلف المستويات المدعومة حسب الطراز. يؤدي المستوى غير المدعوم إلى إيقاف التشغيل وسرد المستويات الصالحة. يتيح 'default' للطراز الاختيار."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -18855,9 +18865,9 @@
       }
     }
   },
-  "OpenAIGPTImageNodeV2": {
-    "description": "توليد الصور عبر نقطة نهاية GPT Image من OpenAI.",
-    "display_name": "صورة OpenAI GPT 2.5",
+  "OpenAIGPTImageGIFNode": {
+    "description": "ينشئ GIF متحركًا عبر نقطة نهاية GPT Image من OpenAI، ويُخرج إطاراته ومعدل الإطارات.",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -18867,6 +18877,55 @@
       },
       "model_background": {
         "name": "الخلفية"
+      },
+      "model_complexity": {
+        "name": "التعقيد"
+      },
+      "model_frame_count": {
+        "name": "frame_count"
+      },
+      "model_frame_duration_ms": {
+        "name": "frame_duration_ms"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الإطارات",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "توليد الصور عبر نقطة نهاية GPT Image من OpenAI.",
+    "display_name": "OpenAI GPT Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_complexity": {
+        "name": "التعقيد"
       },
       "model_custom_height": {
         "name": "ارتفاع مخصص"
@@ -18891,6 +18950,82 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "لم يتم تطبيقها بعد في الخلفية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "ينشئ الصور ويحررها عبر نقطة نهاية GPT Image من OpenAI، مع تعديلات موجّهة بالتعليقات التوضيحية.",
+    "display_name": "OpenAI GPT Image 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_complexity": {
+        "name": "التعقيد"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "ينشئ SVG عبر نقطة نهاية GPT Image من OpenAI.",
+    "display_name": "OpenAI GPT Image 2.6 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_complexity": {
+        "name": "التعقيد"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
       }
     },
     "outputs": {
@@ -19010,6 +19145,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تحويل النص إلى صورة، أو، عند وجود صور، تحرير image_1 مع استخدام الصور الأخرى كمراجع. تشير المطالبة إليها بصيغة <Picture 1>، <Picture 2>، ... يتطلب النموذج ModelSamplingMiniMaxH3 بقيمة 1.0/1.0.",
+    "display_name": "تهيئة p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "تستخدم القيمة 0 ارتفاع image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "مع الصور، تُسبَق التعليمات القصيرة بـ \"Edit <Picture 1>. \"; وتُستخدم كما هي التعليمات التي تبدأ بـ \"Edit <Picture\" وموجز التحرير من مُحسِّن المطالبة."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE الخاص بـ p-h3-image، وهو مطلوب عند توصيل الصور."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "تستخدم القيمة 0 عرض image_1 بعد التحجيم، أو 2912 عند عدم وجود صور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19833,183 @@
       },
       "positive": {
         "name": "موجب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، إصدار MiniMax H3 المدرَّب لاحقًا من Pika. أنشئ الفيديو أو حرّره بصوت متزامن موجَّه بصور وفيديوهات وصوت مرجعية.",
+    "display_name": "Pika H3 Flex من مرجع إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto فيديو مرجعيًا، وإلا فيتبع المطالبة. لا تؤثر الصور المرجعية فيه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يتبع طول المخرجات شبكة إطارات: تمنح 5 ثوانٍ 124 إطارًا، أي نحو 5.17 ثوانٍ."
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "أشر إلى المراجع بصيغة @Image1 أو @Video1 أو @Audio1، أو بصيغة <Picture 1> أو <Video 1> أو <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حتى 3 مقاطع صوتية، يُشار إليها في المطالبة بالرموز @Audio1..@Audio3. مدة كل منها من 2 إلى 15 ثانية، وبإجمالي 15 ثانية. عند نسخها إلى المخرجات، تُشغَّل المقاطع وفق ترتيب الاتصال، قبل صوت مقاطع الفيديو المتصلة، بغض النظر عن الرقم المذكور في المطالبة."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 9 صور، يُشار إليها في المطالبة بالرموز @Image1..@Image9 وفق ترتيب الاتصال. يلزم وجود صورة واحدة أو فيديو واحد على الأقل."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "يُنسخ صوت الفيديوهات المتصلة إلى المخرجات. عطّل هذا للحصول على أجواء جديدة أو نقل الحركة مع موسيقى جديدة. عندئذٍ، يحصل الرأس المتحدث الذي لا حوار له في المطالبة على كلام مُبتكَر."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حتى 3 مقاطع فيديو، يُشار إليها في المطالبة بالرموز @Video1..@Video3 وفق ترتيب الاتصال. مدة كل منها من 2 إلى 15 ثانية، وبإجمالي 15 ثانية. تُحتسب التكلفة لكل ثانية."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "تُصيَّر دقة 1080p وما فوق بدقة 768p ثم تُرقّى مرة واحدة. تمنح البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "دع Pika يوسّع المطالبة أولاً. عندئذٍ، تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "عند إيقاف rewrite_prompt، تعيد البذرة نفسها إنتاج الفيديو نفسه تمامًا. يؤدي التشغيل المحلي باستخدام البذرة نفسها إلى نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، إصدار MiniMax H3 المدرَّب لاحقًا من Pika. أنشئ فيديو بصوت متزامن من نص، مع إطاري بداية ونهاية اختياريين.",
+    "display_name": "فيديو Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto أول إطار متصل، وإلا فيتبع المطالبة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يتبع طول المخرجات شبكة إطارات: 5 ثوانٍ تعطي 124 إطارًا، أي نحو 5.17 ثوانٍ."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "تُصيَّر دقة 1080p وما فوق بدقة 768p ثم تُرفع دقتها مرة واحدة. تعطي البذرة نفسها عند 480p فيديو مختلفًا."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "دع Pika يوسّع المطالبة أولاً. عندئذٍ، تعطي البذرة نفسها فيديو مختلفًا في كل تشغيل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "عند إيقاف rewrite_prompt، تعيد البذرة نفسها إنتاج الفيديو نفسه تمامًا. يؤدي التشغيل المحلي باستخدام البذرة نفسها إلى نتيجة مختلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "أنشئ موسيقى من وصف نصي وكلمات اختيارية، أو أنشئ غلافًا لأغنية، باستخدام Pika.",
+    "display_name": "موسيقى Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "mode_duration": {
+        "name": "المدة"
+      },
+      "mode_lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "mode_prompt": {
+        "name": "المطالبة"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "أنشئ مؤثرًا صوتيًا من وصف نصي باستخدام Pika.",
+    "display_name": "مؤثرات Pika الصوتية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "بذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "أنشئ موسيقى تصويرية متزامنة لفيديو باستخدام Pika. تُحفظ الصورة والمدة؛ ويُستبدل الصوت فقط.",
+    "display_name": "موسيقى تصويرية Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "instruction": {
+        "name": "تعليمات",
+        "tooltip": "ما ينبغي أن يكون عليه الصوت: مؤثرات صوتية، أو أجواء، أو موسيقى، أو أسلوب. اتركه فارغًا لاشتقاقه من الصورة."
+      },
+      "seed": {
+        "name": "بذرة"
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "حتى 10 دقائق."
       }
     },
     "outputs": {
@@ -21713,8 +22062,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "تكييف وlatent فارغ لترقية دقة فيديو RelayVSR؛ خذ عينة بخطوة واحدة عند cfg 1. يمر كل إطار خامس عشر فقط عبر النموذج، ويستعيد VSR Decode جميعها.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "الصور",
+        "tooltip": "الفيديو منخفض الجودة بدقته الأصلية؛ يحدد النموذج عامل الترقية."
+      },
+      "model": {
+        "name": "النموذج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "يعيد استخراج شبكة بتبليط موحّد عبر حقل مسافة ضيق النطاق + Dual Contouring، على جهاز الحوسبة النشط. يُطبّع طوبولوجيا فوضوية / غير متعددة الشعب / متقاطعة ذاتيًا؛ شغّله قبل Decimate Mesh للوصول إلى عدد وجوه دقيق. يبقى الإخراج ملتحمًا.",
+    "description": "يعيد استخراج شبكة ذات تثليث موحد عبر حقل مسافة ضيق النطاق + Dual Contouring، على جهاز الحوسبة النشط. يطبع البنية الطوبولوجية الفوضوية / غير متعددة الشعب / ذاتية التقاطع؛ شغّله قبل Decimate Mesh للوصول إلى عدد وجوه دقيق. يبقى الإخراج ملتحمًا. تُلائم الشبكات التي تمتد إلى ما بعد 0.51 أو يقل امتدادها عن 0.5 أولًا مع المكعب [-0.5,0.5] ثم تُعاد مطابقتها.",
     "display_name": "إعادة تشكيل الشبكة (DC للنطاق الضيق)",
     "inputs": {
       "band": {
@@ -24973,6 +25345,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "أنشئ أغنية بغناء صوتي من موجّه نصي باستخدام Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "يضبط 'auto' طول الأغنية وفقًا للكلمات. يؤدي الطول المخصص إلى قص الكلمات التي لا تتسع وتكرار القصيرة منها."
+      },
+      "prompt": {
+        "name": "موجّه",
+        "tooltip": "صِف الأغنية: النوع، والمزاج، والآلات، والغناء. لتحديد الكلمات، أضف كتلة 'Lyrics:' بعلامات [Verse] / [Chorus]؛ ومن دونها، يكتب النموذج كلماته الخاصة. الحد الأقصى: 2000 حرف."
+      },
+      "seed": {
+        "name": "بذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كانت العقدة ستُعاد تشغيلها؛ والنتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
     "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
@@ -25052,6 +25450,10 @@
         "name": "حدة اللون",
         "tooltip": "زيادة وضوح نسيج الرؤوس: 1.0 = دمج فيزيائي صحيح؛ القيم الأعلى تميل لون كل voxel نحو gaussian المهيمن بدلاً من متوسط الجيران (يزيل التمويه من النسيج). اللون فقط - الهندسة لا تتغير."
       },
+      "fill": {
+        "name": "ملء",
+        "tooltip": "للصلب فقط. تكلفة إغلاق فتحة مقارنةً باتباع السطح. القيمة الأقل تغلق فتحات أكبر: نحو 3 يسد الأجسام المجوفة، لكنه يضع أيضًا أغطية على الأكواب والياقات."
+      },
       "kernel": {
         "name": "النواة",
         "tooltip": "أقصى نصف عرض splat بوحدة voxels. كل gaussian يتم تحويله إلى صورة ضمن نافذة بحجم 3-سيغما الخاصة به، ويتم تحديد الحد الأعلى هنا - surfels الصغيرة تبقى منخفضة التكلفة، والكبيرة لا يتم اقتطاعها. زد القيمة إذا تركت splats المتفرقة فراغات."
@@ -25075,6 +25477,10 @@
       "smooth": {
         "name": "التنعيم",
         "tooltip": "عدد تكرارات تنعيم الشبكة (Taubin). ينعم السطح دون تقليصه (يحافظ على الحجم)، على عكس تمويه الكثافة. 0 = سطح خام."
+      },
+      "solid": {
+        "name": "صلب",
+        "tooltip": "املأ الداخل اعتمادًا على اتجاه الغاوسيات، للحصول على سطح مغلق واحد. إيقاف: حدّ الكثافة الخام، الذي يُبقي جدارًا داخليًا مخفيًا خلف السطح."
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26219,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "أنشئ استجابات نصية باستخدام نموذج Hy4 من Tencent. وفّر موجّهًا نصيًا، واختياريًا صورة واحدة أو أكثر للسياق.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_reasoning": {
+        "name": "استدلال"
+      },
+      "model_seed": {
+        "name": "بذرة"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {
@@ -26421,7 +26862,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "توليد نص",
+    "display_name": "توليد نص (مهجور)",
     "inputs": {
       "audio": {
         "name": "صوت"
@@ -26480,7 +26921,7 @@
       },
       "video": {
         "name": "فيديو",
-        "tooltip": "إطارات الفيديو كمجموعة صور. يُفترض أن يكون بمعدل ٢٤ إطارًا في الثانية؛ يتم أخذ عينة فرعية إلى ١ إطار في الثانية داخليًا."
+        "tooltip": "إطارات الفيديو كدفعة صور. يُفترض أن يكون بمعدل 24 إطارًا في الثانية؛ وتُؤخذ منه عينات فرعية داخليًا لتتوافق مع معدل إطارات النموذج."
       }
     },
     "outputs": {
@@ -26554,12 +26995,85 @@
       },
       "video": {
         "name": "فيديو",
-        "tooltip": "إطارات الفيديو كمجموعة صور. يُفترض أن يكون بمعدل ٢٤ إطارًا في الثانية؛ يتم أخذ عينة فرعية إلى ١ إطار في الثانية داخليًا."
+        "tooltip": "إطارات الفيديو كدفعة صور. يُفترض أن يكون بمعدل 24 إطارًا في الثانية؛ وتُؤخذ منه عينات فرعية داخليًا لتتوافق مع معدل إطارات النموذج."
       }
     },
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "توليد نص",
+    "inputs": {
+      "audios": {
+        "name": "المقاطع الصوتية"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز لنقطة التحقق. لا تأثير له دون أوزان MTP. يتكيف auto مع عمق واتساع المسودة وفقًا لتطابقات الرموز المرصودة وتكلفة التنفيذ؛ تثبّت 2-5 عمق مسودة ثابتًا؛ وتثبّت أوضاع الشجرة كلًا من الاتساع والعمق. يبقى توزيع المخرجات المعيّنة صحيحًا، لكنه يختلف عن المخرجات دون MTP للبذرة نفسها."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "البذرة"
+      },
+      "sampling_mode_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب محادثة النموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "اعمل في وضع التفكير إذا كان النموذج يدعمه."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "استخدم موجّه/قالب النظام المدمج إذا كان لدى النموذج واحد."
+      },
+      "videos": {
+        "name": "مقاطع الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -29083,6 +29597,31 @@
       },
       "steps": {
         "name": "الخطوات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "يفك ترميز تمثيلات RelayVSR الكامنة باستخدام مفكك ترميز RelayVSR Flash، الذي يقرأ أيضًا الإطارات منخفضة الجودة.",
+    "display_name": "فك ترميز VSR",
+    "inputs": {
+      "detail": {
+        "name": "التفاصيل",
+        "tooltip": "يحدد مقدار التفاصيل التي يضيفها مفكك الترميز إلى التكبير ثنائي التكعيب لكل إطار والتي يُحتفظ بها؛ القيمة 1 هي خرج النموذج الكامل."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "نفس الفيديو منخفض الجودة المُعطى لعقدة التكييف."
+      },
+      "samples": {
+        "name": "العينات"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

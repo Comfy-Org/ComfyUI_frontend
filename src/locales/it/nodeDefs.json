@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "Esegue il rendering del video finale a 1080p di un Draft di Seedance 2.5. Il finale mantiene la scena e il movimento del draft e riutilizza prompt, riferimenti, durata, rapporto d'aspetto e impostazione audio.",
+    "description": "Esegue il rendering del video finale in 1080p o 4k di una bozza di Seedance 2.5. Il finale mantiene la scena e il movimento della bozza e riutilizza prompt, riferimenti, durata, rapporto d'aspetto e impostazione audio.",
     "display_name": "ByteDance Seedance 2.5 Draft in Video finale",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "L'output draft_task_id di un nodo Seedance 2.5 eseguito con il modello Seedance 2.5 Draft, oppure un ID attività draft incollato. Imposta il controllo del seed di quel nodo su fisso, altrimenti l'esecuzione successiva genera un nuovo draft anziché riutilizzare quello esaminato. Un draft può essere sottoposto a rendering per 7 giorni dalla sua creazione."
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "Risoluzione del video finale. Il 4k è disponibile solo per gli account enterprise."
       },
       "watermark": {
         "name": "filigrana",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi, 4k per gli account enterprise e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce e a minor costo."
       },
       "model_duration": {
         "name": "durata"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale in 1080p o 4k."
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi, 4k per gli account enterprise e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce e a minor costo."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi, 4k per gli account enterprise e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce e a minor costo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale in 1080p o 4k."
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi, 4k per gli account enterprise e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce e a minor costo."
       },
       "model_duration": {
         "name": "durata"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale in 1080p o 4k."
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "Genera un video con audio da un prompt di testo usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi direttamente nel prompt la durata desiderata (3-10 s).",
+    "description": "Genera un video con audio da un prompt di testo usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi la durata desiderata direttamente nel prompt (3-15 s per Omni Flash 1.2, 3-10 s per i modelli precedenti).",
     "display_name": "Google Gemini Omni (Video)",
     "inputs": {
       "control_after_generate": {
@@ -7748,7 +7752,8 @@
         "name": "immagine"
       },
       "model": {
-        "name": "modello"
+        "name": "modello",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro sono stati ritirati da xAI e ora vengono eseguiti come grok-imagine-image-2.0 a bassa qualità."
       },
       "number_of_images": {
         "name": "numero_di_immagini",
@@ -7780,7 +7785,8 @@
         "name": "controllo dopo la generazione"
       },
       "model": {
-        "name": "modello"
+        "name": "modello",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro sono stati ritirati da xAI e ora vengono eseguiti come grok-imagine-image-2.0 a bassa qualità."
       },
       "model_aspect_ratio": {
         "name": "rapporto_d'aspetto"
@@ -7820,7 +7826,8 @@
         "name": "controllo dopo la generazione"
       },
       "model": {
-        "name": "modello"
+        "name": "modello",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro sono stati ritirati da xAI e ora vengono eseguiti come grok-imagine-image-2.0 a bassa qualità."
       },
       "number_of_images": {
         "name": "numero_di_immagini",
@@ -10320,6 +10327,9 @@
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "model_audio": {
+        "name": "audio"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -10337,7 +10347,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "Genera un video con audio usando fino a 10 fotogrammi chiave. I fotogrammi intermedi sono distribuiti uniformemente; il video assume il rapporto d'aspetto del primo fotogramma chiave.",
+    "description": "Genera un video con audio tramite fino a 10 fotogrammi chiave su kling-4.0 oppure da un primo fotogramma su kling-4.0-flash. I fotogrammi intermedi sono distanziati uniformemente; il video adotta il rapporto d'aspetto del primo fotogramma chiave.",
     "display_name": "Kling 4.0 Da immagine a video",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18760,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati differiscono in base al modello: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, serie o low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
+        "tooltip": "I livelli supportati variano in base al modello. Un livello non supportato interrompe l'esecuzione e indica quelli validi. 'default' lascia scegliere al modello."
       },
       "truncation": {
         "name": "troncamento",
@@ -18855,9 +18865,9 @@
       }
     }
   },
-  "OpenAIGPTImageNodeV2": {
-    "description": "Genera immagini tramite l'endpoint GPT Image di OpenAI.",
-    "display_name": "OpenAI GPT Image 2.5",
+  "OpenAIGPTImageGIFNode": {
+    "description": "Genera una GIF animata tramite l'endpoint GPT Image di OpenAI e restituisce i relativi fotogrammi e la frequenza dei fotogrammi.",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
     "inputs": {
       "control_after_generate": {
         "name": "controllo dopo la generazione"
@@ -18867,6 +18877,55 @@
       },
       "model_background": {
         "name": "sfondo"
+      },
+      "model_complexity": {
+        "name": "complessità"
+      },
+      "model_frame_count": {
+        "name": "frame_count"
+      },
+      "model_frame_duration_ms": {
+        "name": "frame_duration_ms"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "dimensione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fotogrammi",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Genera immagini tramite l'endpoint GPT Image di OpenAI.",
+    "display_name": "OpenAI GPT Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_background": {
+        "name": "sfondo"
+      },
+      "model_complexity": {
+        "name": "complessità"
       },
       "model_custom_height": {
         "name": "altezza_personalizzata"
@@ -18891,6 +18950,82 @@
       "seed": {
         "name": "seed",
         "tooltip": "non ancora implementato nel backend"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "Genera e modifica immagini tramite l'endpoint GPT Image di OpenAI, con modifiche guidate da annotazioni.",
+    "display_name": "OpenAI GPT Image 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_background": {
+        "name": "sfondo"
+      },
+      "model_complexity": {
+        "name": "complessità"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "Genera un SVG tramite l'endpoint GPT Image di OpenAI.",
+    "display_name": "OpenAI GPT Image 2.6 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_background": {
+        "name": "sfondo"
+      },
+      "model_complexity": {
+        "name": "complessità"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
       }
     },
     "outputs": {
@@ -19010,6 +19145,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Da testo a immagine oppure, con immagini, modifica image_1 usando le altre come riferimenti. Il prompt vi fa riferimento come <Picture 1>, <Picture 2>, ... Il modello richiede ModelSamplingMiniMaxH3 a 1.0/1.0.",
+    "display_name": "Condizionamento p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "altezza",
+        "tooltip": "0 usa l'altezza di image_1 dopo il ridimensionamento, oppure 2912 senza immagini."
+      },
+      "images": {
+        "name": "immagini"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Con le immagini, a un'istruzione breve viene anteposto \"Edit <Picture 1>. \"; un'istruzione che inizia con \"Edit <Picture\" e una richiesta di modifica dal prompt upsampler vengono usate così come sono."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Il VAE p-h3-image, necessario quando sono collegate immagini."
+      },
+      "width": {
+        "name": "larghezza",
+        "tooltip": "0 usa la larghezza di image_1 dopo il ridimensionamento, oppure 2912 senza immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19833,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, il MiniMax H3 post-addestrato di Pika. Genera o modifica video con audio sincronizzato guidato da immagini, video e audio di riferimento.",
+    "display_name": "Pika H3 Flex da riferimento a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto segue un video di riferimento, altrimenti il prompt. Le immagini di riferimento non lo influenzano."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata",
+        "tooltip": "La durata dell'output segue una griglia di fotogrammi: 5 secondi producono 124 fotogrammi, circa 5,17 secondi."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Fai riferimento ai riferimenti come @Image1, @Video1, @Audio1 oppure come <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "audio_di_riferimento",
+        "tooltip": "Fino a 3 clip, indicate nel prompt come @Audio1..@Audio3. 2-15 secondi ciascuno, 15 secondi in totale. Quando vengono copiati nell'output, i clip vengono riprodotti nell'ordine di connessione, prima dell'audio dei video connessi, indipendentemente dal numero indicato nel prompt."
+      },
+      "reference_images": {
+        "name": "immagini_di_riferimento",
+        "tooltip": "Fino a 9 immagini, indicate nel prompt come @Image1..@Image9 nell'ordine di connessione. È necessaria almeno un'immagine o un video."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "L'audio dei video collegati viene copiato nell'output. Disattiva questa opzione per una nuova atmosfera sonora o per il trasferimento del movimento con nuova musica. Un volto parlante senza dialogo nel prompt riceve quindi un parlato inventato."
+      },
+      "reference_videos": {
+        "name": "video_di_riferimento",
+        "tooltip": "Fino a 3 video, indicati nel prompt come @Video1..@Video3 nell'ordine di connessione. 2-15 secondi ciascuno, 15 secondi in totale. Fatturati al secondo."
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "1080p e superiori vengono renderizzati a 768p e ingranditi una volta. Lo stesso seme a 480p produce un video diverso."
+      },
+      "rewrite_prompt": {
+        "name": "riscrivi_prompt",
+        "tooltip": "Consenti prima a Pika di espandere il prompt. Lo stesso seed produce quindi un video diverso a ogni esecuzione."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Con rewrite_prompt disattivato, lo stesso seed ripete esattamente il video. Un'esecuzione locale con lo stesso seed produce un risultato diverso."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, il MiniMax H3 post-addestrato di Pika. Genera video con audio sincronizzato a partire da testo e fotogrammi iniziale e finale facoltativi.",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto_aspetto",
+        "tooltip": "auto segue il primo fotogramma connesso, altrimenti il prompt."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata",
+        "tooltip": "La durata dell'output segue una griglia di fotogrammi: 5 secondi generano 124 fotogrammi, circa 5.17 secondi."
+      },
+      "first_frame": {
+        "name": "primo_fotogramma"
+      },
+      "last_frame": {
+        "name": "ultimo_fotogramma"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "Le risoluzioni 1080p e superiori vengono renderizzate a 768p e sottoposte a upscaling una volta. Lo stesso seed a 480p produce un video diverso."
+      },
+      "rewrite_prompt": {
+        "name": "riscrivi_prompt",
+        "tooltip": "Consenti prima a Pika di espandere il prompt. Lo stesso seed produce quindi un video diverso a ogni esecuzione."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Con rewrite_prompt disattivato, lo stesso seed ripete esattamente il video. Un'esecuzione locale con lo stesso seed produce un risultato diverso."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Genera musica da una descrizione testuale e testo facoltativo, oppure crea una cover di una canzone, con Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "mode": {
+        "name": "modalità"
+      },
+      "mode_duration": {
+        "name": "durata"
+      },
+      "mode_lyrics": {
+        "name": "testo"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "riscrivi_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Genera un effetto sonoro da una descrizione testuale con Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Genera una colonna sonora sincronizzata per un video con Pika. L'immagine e la durata vengono mantenute; viene sostituito solo l'audio.",
+    "display_name": "Colonna sonora Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "instruction": {
+        "name": "istruzione",
+        "tooltip": "Come dovrebbe essere l'audio: effetti sonori, ambiente, musica o stile. Lascia vuoto per ricavarlo dall'immagine."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fino a 10 minuti."
       }
     },
     "outputs": {
@@ -21713,8 +22062,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "Conditioning e latent vuoto per l'upscaling video RelayVSR; esegui il campionamento con 1 passaggio a cfg 1. Solo un frame su 15 passa attraverso il modello; VSR Decode li ripristina tutti.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Il video a bassa qualità alla sua risoluzione nativa; il modello decide il fattore di upscaling."
+      },
+      "model": {
+        "name": "modello"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "Riestrae una mesh uniformemente tassellata tramite un campo di distanza a banda stretta + Dual Contouring, sul dispositivo di calcolo attivo. Normalizza topologie disordinate / non manifold / auto-intersecanti; esegui prima di Decimate Mesh per ottenere un numero esatto di facce. L'output rimane saldato.",
+    "description": "Ri-estrapola una mesh a tassellatura uniforme tramite un campo di distanza a banda stretta + Dual Contouring, sul dispositivo di calcolo attivo. Normalizza topologie disordinate / non manifold / auto-intersecanti; esegui prima di Decimate Mesh per ottenere un numero esatto di facce. L'output rimane saldato. Le mesh che si estendono oltre 0.51 o hanno un'estensione inferiore a 0.5 vengono prima adattate al cubo [-0.5,0.5] e poi rimappate.",
     "display_name": "Rigenera mesh (DC a banda stretta)",
     "inputs": {
       "band": {
@@ -24973,6 +25345,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Genera una canzone con voce cantata da un prompt di testo usando Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata",
+        "tooltip": "'auto' adatta la durata della canzone al testo. Una durata personalizzata taglia il testo che non entra e ripete quello breve."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrivi la canzone: genere, atmosfera, strumenti e voce. Per impostare le parole, aggiungi un blocco 'Lyrics:' con tag [Verse] / [Chorus]; senza di esso, il modello scrive il proprio testo. Massimo: 2000 caratteri."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Genera musica da un prompt testuale utilizzando il modello AI di Sonilo.",
     "display_name": "Sonilo Testo in Musica",
@@ -25052,6 +25450,10 @@
         "name": "affila_colore",
         "tooltip": "Rende più nitida la texture dei vertici: 1.0 = fusione fisicamente corretta; valori più alti spostano il colore di ogni voxel verso la sua gaussiana dominante invece di fare la media con i vicini (riduce la sfocatura della texture). Solo colore - la geometria non cambia."
       },
+      "fill": {
+        "name": "riempi",
+        "tooltip": "Solo solido. Costo della chiusura di un'apertura rispetto al seguire la superficie. Un valore più basso chiude aperture più grandi: circa 3 sigilla oggetti cavi, ma mette anche coperchi su tazze e colletti."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "Massima semi-larghezza dello splat in voxel. Ogni gaussiana viene rasterizzata su una finestra dimensionata in base al suo 3-sigma, limitata qui - i surfel piccoli restano economici, quelli grandi non vengono troncati. Aumenta se gli splat sparsi lasciano dei vuoti."
@@ -25075,6 +25477,10 @@
       "smooth": {
         "name": "smussa",
         "tooltip": "Iterazioni di smoothing mesh Taubin. Leviga la superficie senza ridurla (preserva il volume), a differenza della sfocatura della densità. 0 = superficie grezza."
+      },
+      "solid": {
+        "name": "solido",
+        "tooltip": "Riempie l'interno in base all'orientamento delle gaussiane, per una singola superficie chiusa. Disattivato: il contorno della densità grezza, che mantiene una parete interna nascosta dietro la superficie."
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26219,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Genera risposte testuali con il modello Hy4 di Tencent. Fornisci un prompt di testo e, facoltativamente, una o più immagini come contesto.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "ragionamento"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Da Immagine/i a Modello",
     "inputs": {
@@ -26421,7 +26862,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "Genera Testo",
+    "display_name": "Genera testo (DEPRECATO)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -26480,7 +26921,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Fotogrammi video come batch di immagini. Si presume 24 FPS; sottocampionati internamente a 1 FPS."
+        "tooltip": "Fotogrammi video come batch di immagini. Si presuppongono 24 FPS; il sottocampionamento alla frequenza dei fotogrammi del modello avviene internamente."
       }
     },
     "outputs": {
@@ -26554,12 +26995,85 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Fotogrammi video come batch di immagini. Si presume 24 FPS; sottocampionati internamente a 1 FPS."
+        "tooltip": "Fotogrammi video come batch di immagini. Si presuppongono 24 FPS; il sottocampionamento alla frequenza dei fotogrammi del modello avviene internamente."
       }
     },
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Genera testo",
+    "inputs": {
+      "audios": {
+        "name": "audio"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "immagini"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodifica speculativa con la testa di predizione multi-token del checkpoint. Non ha effetto senza pesi MTP. auto adatta la profondità e l'ampiezza della bozza alle corrispondenze dei token osservate e al costo di esecuzione; 2-5 imposta una profondità di bozza costante; le modalità ad albero impostano sia l'ampiezza sia la profondità. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output non MTP con lo stesso seed."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel modello di chat del modello. Ignorato quando non viene usato il modello predefinito."
+      },
+      "thinking": {
+        "name": "ragionamento",
+        "tooltip": "Opera in modalità di ragionamento se il modello la supporta."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Usa il prompt di sistema/modello integrato se il modello ne dispone."
+      },
+      "videos": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -29083,6 +29597,31 @@
       },
       "steps": {
         "name": "passi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "Decodifica i latent RelayVSR con il decoder RelayVSR Flash, che legge anche i fotogrammi a bassa qualità.",
+    "display_name": "Decodifica VSR",
+    "inputs": {
+      "detail": {
+        "name": "dettaglio",
+        "tooltip": "Quanto del dettaglio che il decoder aggiunge all'upscale bicubico di ciascun fotogramma viene mantenuto; 1 corrisponde all'output completo del modello."
+      },
+      "images": {
+        "name": "immagini",
+        "tooltip": "Lo stesso video a bassa qualità fornito al nodo di condizionamento."
+      },
+      "samples": {
+        "name": "campioni"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
