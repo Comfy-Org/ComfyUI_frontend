@@ -1,4 +1,4 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
 
 export function serializeRootGraph(): unknown {

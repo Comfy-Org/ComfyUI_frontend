@@ -8,8 +8,8 @@ import {
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const NONCE_ALPHABET =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'

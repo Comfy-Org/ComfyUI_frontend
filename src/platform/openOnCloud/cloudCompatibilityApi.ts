@@ -1,6 +1,6 @@
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {

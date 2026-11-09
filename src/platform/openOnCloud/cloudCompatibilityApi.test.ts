@@ -1,4 +1,4 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +19,7 @@ import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPo
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function node(
   comfyClass: string,

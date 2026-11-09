@@ -1,11 +1,11 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { app } from '@/scripts/app'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe(serializeRootGraph, () => {
   it('reports a graph that cannot be serialized and returns nothing', () => {

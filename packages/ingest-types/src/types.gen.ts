@@ -21612,3 +21612,83 @@ export type GetWebsocketErrors = {
 }
 
 export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]
+
+export type CloudCompatibility = {
+  cloud: CloudWorkflowCompatibility
+}
+
+export type CloudCompatibilityRequest = {
+  /**
+   * The workflow's models, each with the model folder its loader reads. Duplicates are dropped before counting; more than 500 distinct models is a 400. Leave it out to check node types only.
+   */
+  models?: Array<CompatibilityModel>
+  /**
+   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
+   */
+  node_types: Array<string>
+}
+
+export type CloudWorkflowCompatibility = {
+  /**
+   * The posted models Comfy Cloud's model list does not have in the posted folder and, for a signed-in caller, whose upload a run would pick (the newest with that name among the caller's own uploads and the public model catalog) is not in the posted folder either, in the order they were posted. Absent when the request has no `models`.
+   */
+  missing_models?: Array<CompatibilityModel>
+  /**
+   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
+   */
+  missing_node_types: Array<string>
+}
+
+export type CompatibilityModel = {
+  /**
+   * The model folder, such as `checkpoints` or `loras`.
+   */
+  folder: string
+  /**
+   * The file name, such as `sd_xl_base_1.0.safetensors`.
+   */
+  name: string
+}
+
+export type CheckCloudCompatibilityData = {
+  body: CloudCompatibilityRequest
+  path?: never
+  query?: never
+  url: '/api/cloud/compatibility'
+}
+
+export type CheckCloudCompatibilityErrors = {
+  /**
+   * No body, no `node_types` or a null `node_types` (an empty list is answered 200), more than 2,000 distinct node types, more than 500 distinct models, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
+   * The cloud_compatibility_check_enabled switch is off
+   */
+  404: ErrorResponse
+  /**
+   * Comfy Cloud's model list, or the signed-in caller's uploads and the public model catalog, could not be read
+   */
+  500: ErrorResponse
+  /**
+   * Comfy Cloud's node list is not loaded yet
+   */
+  503: ErrorResponse
+}
+
+export type CheckCloudCompatibilityError =
+  CheckCloudCompatibilityErrors[keyof CheckCloudCompatibilityErrors]
+
+export type CheckCloudCompatibilityResponses = {
+  /**
+   * The posted node types and models Comfy Cloud is missing
+   */
+  200: CloudCompatibility
+}
+
+export type CheckCloudCompatibilityResponse =
+  CheckCloudCompatibilityResponses[keyof CheckCloudCompatibilityResponses]

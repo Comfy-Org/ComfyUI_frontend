@@ -22,7 +22,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import {
