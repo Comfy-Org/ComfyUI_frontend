@@ -107,7 +107,6 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import type { BillingEvent } from '@comfyorg/ingest-types'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
@@ -122,8 +121,11 @@ import {
 
 const { t } = useI18n()
 
-type ActivityEvent = AuditLog &
-  Pick<BillingEvent, 'member_display_name' | 'member_email' | 'member_former'>
+type ActivityEvent = AuditLog & {
+  member_display_name?: string
+  member_email?: string
+  member_former?: boolean
+}
 
 const events = ref<ActivityEvent[]>([])
 const loading = ref(true)
