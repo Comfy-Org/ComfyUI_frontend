@@ -16,6 +16,8 @@
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
+        !isCollapsed &&
+          '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] data-measured:[content-visibility:auto]',
         cursorClass,
         isEmphasized && 'outline-foreground',
         executing && 'outline-primary',

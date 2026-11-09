@@ -55,6 +55,7 @@ import {
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
@@ -999,6 +1000,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * performant than {@link visible_nodes} for visibility checks.
    */
   private _visible_node_ids: Set<SerializedNodeId> = new Set()
+  private _passLinkRenderContext: LinkRenderContext | null = null
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
 
@@ -6203,25 +6205,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     margin_area[2] = visible_area[2] + 40
     margin_area[3] = visible_area[3] + 40
 
-    // draw connections
     ctx.lineWidth = this.connections_width
 
     ctx.fillStyle = '#AAA'
     ctx.strokeStyle = '#AAA'
     ctx.globalAlpha = this.editor_alpha
-    // for every node
     const nodes =
       graph === nodesGraph && nodesInFrameOrder
         ? nodesInFrameOrder
         : nodesInRenderOrder(graph)
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
+    this._passLinkRenderContext = this.buildLinkRenderContext()
 
-    // Ensure widget-input slot positions are computed before rendering links.
-    // arrange() sets input.pos for widget-backed slots, but is normally called
-    // in drawNode (foreground canvas). drawConnections runs on the background
-    // canvas, which may render before drawNode has executed for this frame.
-    // The dirty flag avoids a per-frame O(N) scan of all inputs.
     for (const node of nodes) {
       if (node.flags.collapsed || !node._widgetSlotsDirty) continue
 
@@ -6283,21 +6279,29 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       )
     }
 
-    for (const node of nodes) {
-      for (const [inputSlot, input] of node.inputs.entries()) {
-        const topology = linkStore.getInputSlotLink(
-          graphScope,
-          node.id,
-          inputSlot
-        )
-        const link = topology ? graph.getLink(topology.id) : undefined
-        if (!link) continue
+    const topologiesByTarget = new Map<string, LinkTopology[]>()
+    for (const topology of linkStore.graphTopologies(graphScope)) {
+      const key = String(topology.targetNodeId)
+      const grouped = topologiesByTarget.get(key)
+      if (grouped) grouped.push(topology)
+      else topologiesByTarget.set(key, [topology])
+    }
 
-        const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+    for (const node of nodes) {
+      const topologies = topologiesByTarget.get(String(node.id))
+      if (!topologies) continue
+      topologies.sort((a, b) => a.targetSlot - b.targetSlot)
+
+      for (const topology of topologies) {
+        const inputSlot = topology.targetSlot
+        const input = node.inputs.at(inputSlot)
+        const link = graph.getLink(topology.id)
+        if (!input || !link) continue
+
+        const endPos: Point = LiteGraph.vueNodesMode
           ? getSlotPosition(node, inputSlot, true)
           : node.getInputPos(inputSlot)
 
-        // find link info
         const start_node = graph.getNodeById(link.origin_id)
         if (start_node == null) continue
 
@@ -6305,7 +6309,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const startPos: Point =
           outputId === -1
             ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-            : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+            : LiteGraph.vueNodesMode
               ? getSlotPosition(start_node, outputId, false)
               : start_node.getOutputPos(outputId)
 
@@ -6321,7 +6325,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const output of subgraph.inputNode.slots) {
         if (!output.linkIds.length) continue
 
-        // find link info
         for (const linkId of output.linkIds) {
           const resolved = LLink.resolve(linkId, graph)
           if (!resolved) continue
@@ -6340,7 +6343,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const input of subgraph.outputNode.slots) {
         if (!input.linkIds.length) continue
 
-        // find link info
         const resolved = LLink.resolve(input.linkIds[0], graph)
         if (!resolved) continue
 
@@ -6371,7 +6373,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const rerouteSet = this._visibleReroutes
     rerouteSet.clear()
 
-    // Render reroutes, ordered by number of non-floating links
     visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
     const drawSnapGuides = this._snapToGrid && this.isDragging
     const { selectedItems } = this
@@ -6385,7 +6386,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       reroute.draw(ctx, this._pattern)
 
-      // Never draw slots when the pointer is down
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
 
@@ -6417,6 +6417,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.dirty_bgcanvas = true
     }
 
+    this._passLinkRenderContext = null
     ctx.globalAlpha = 1
   }
 
@@ -6764,7 +6765,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } = {}
   ): void {
     if (this.linkRenderer) {
-      const context = this.buildLinkRenderContext()
+      const context =
+        this._passLinkRenderContext ?? this.buildLinkRenderContext()
       this.linkRenderer.renderLinkDirect(
         ctx,
         a,
