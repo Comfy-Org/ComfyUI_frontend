@@ -7,14 +7,23 @@ import { withHdrImageType } from '@/utils/eventUtils'
 import { getPathDetails } from '@/utils/formatUtil'
 import { parseUrl } from '@/utils/urlSafety'
 
+const UNSAFE_FILENAME_CHARACTERS = /[\\:*?"<>|]/
+
+function getLowercaseSuffix(filename: string): string | undefined {
+  return getPathDetails(filename).suffix?.toLowerCase()
+}
+
 function getFetchedAssetFileName({
   filename,
   display_name
 }: ResultItem): string | undefined {
   if (!filename || !display_name) return filename
-  const label = getPathDetails(display_name)
-  return label.suffix && label.suffix === getPathDetails(filename).suffix
-    ? label.fullFilename
+  const label = getPathDetails(display_name).fullFilename
+  const labelSuffix = getLowercaseSuffix(label)
+  return labelSuffix &&
+    labelSuffix === getLowercaseSuffix(filename) &&
+    !UNSAFE_FILENAME_CHARACTERS.test(label)
+    ? label
     : filename
 }
 
