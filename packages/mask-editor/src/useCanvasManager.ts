@@ -114,7 +114,35 @@ export function useCanvasManager() {
     maskCtx.putImageData(maskData, 0, 0)
   }
 
+  const initializeImages = async (
+    baseImage: HTMLImageElement,
+    maskImage: HTMLImageElement,
+    paintImage: HTMLImageElement | null = null
+  ): Promise<HTMLImageElement> => {
+    const { imgCanvas, maskCanvas, rgbCanvas, imgCtx, maskCtx } = store
+
+    if (!imgCanvas || !maskCanvas || !rgbCanvas || !imgCtx || !maskCtx) {
+      throw new Error('Canvas elements or contexts not available')
+    }
+
+    imgCtx.clearRect(0, 0, imgCanvas.width, imgCanvas.height)
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
+
+    maskCanvas.width = baseImage.width
+    maskCanvas.height = baseImage.height
+    rgbCanvas.width = baseImage.width
+    rgbCanvas.height = baseImage.height
+
+    store.image = baseImage
+
+    await invalidateCanvas(baseImage, maskImage, paintImage)
+    await updateMaskColor()
+
+    return baseImage
+  }
+
   return {
+    initializeImages,
     invalidateCanvas,
     updateMaskColor
   }
