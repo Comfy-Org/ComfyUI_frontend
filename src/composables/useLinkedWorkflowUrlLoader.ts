@@ -1,5 +1,5 @@
+import { useWorkflowLinkUrlLoader } from '@/composables/useWorkflowLinkUrlLoader'
 import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
-import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 /** Opens the workflow a boot URL links to: a workflow id first, else a folder. */
 export function useLinkedWorkflowUrlLoader() {

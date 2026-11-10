@@ -13,6 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { NavigationFailure, RouteLocationNormalized } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLinkedWorkflowUrlLoader } from '@/composables/useLinkedWorkflowUrlLoader'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 import {
   capturePreservedQuery,
@@ -23,7 +24,6 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'

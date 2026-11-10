@@ -1,6 +1,7 @@
 import { useRouter } from 'vue-router'
-import type { LocationQuery } from 'vue-router'
 
+import { sweptWorkflowLinkParams } from '@/composables/sweptWorkflowLinkParams'
+import { useWorkflowLinkUrlLoader } from '@/composables/useWorkflowLinkUrlLoader'
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -10,16 +11,12 @@ import {
   STRIPE_RETURN_PARAMS
 } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  clearPreservedQuery,
-  getPreservedQueryParam
-} from '@/platform/navigation/preservedQueryManager'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
@@ -108,22 +105,6 @@ function workflowLinkSteps(
       }
     }
   ]
-}
-
-function sweptWorkflowLinkParams(
-  loader: UrlActionLoaders['workflowLinkUrlLoader'],
-  query: LocationQuery
-): string[] {
-  if (!loader) return []
-  const stashed = getPreservedQueryParam(
-    PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
-    'workflowId'
-  )
-  if (stashed !== undefined && loader.isLinkSettled(stashed))
-    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID)
-  return 'workflowId' in query && loader.isLinkSettled(query.workflowId)
-    ? ['workflowId']
-    : []
 }
 
 function sweepStep(

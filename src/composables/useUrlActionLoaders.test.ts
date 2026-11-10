@@ -9,7 +9,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
-import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
+import type { useWorkflowLinkUrlLoader } from '@/composables/useWorkflowLinkUrlLoader'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -29,10 +29,9 @@ const workflowLinkUrlLoader = vi.hoisted(() => ({
     ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
   >(() => false)
 }))
-vi.mock(
-  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
-  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
-)
+vi.mock(import('@/composables/useWorkflowLinkUrlLoader'), () => ({
+  useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader
+}))
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),

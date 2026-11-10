@@ -25,7 +25,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
-import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
+import type { useWorkflowLinkUrlLoader } from '@/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -75,10 +75,9 @@ const workflowLinkUrlLoader = vi.hoisted(() => ({
   >(() => false)
 }))
 
-vi.mock(
-  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
-  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
-)
+vi.mock(import('@/composables/useWorkflowLinkUrlLoader'), () => ({
+  useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader
+}))
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
   openFolderWorkflowsFromUrl: vi.fn(async () => false)
