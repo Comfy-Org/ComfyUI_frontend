@@ -355,6 +355,12 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_billing_settings
       )
     },
+    get pricingTableFallback() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
+        remoteConfig.value.pricing_table_fallback
+      )
+    },
     get oauthConsentSwitchAccountEnabled() {
       return resolveFlag(
         ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
@@ -445,6 +451,7 @@ export function startFeatureFlagTelemetry() {
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
       [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
         flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,

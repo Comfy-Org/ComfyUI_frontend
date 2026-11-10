@@ -3,7 +3,7 @@ import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
@@ -68,7 +68,7 @@ const i18n = createI18n({
 })
 
 function renderWidget(isLightTheme: boolean) {
-  useColorPaletteStore().activePaletteId = isLightTheme ? 'light' : 'dark'
+  useThemeStore().activePresetId = isLightTheme ? 'light' : 'dark'
   return render(TurnstileWidget, {
     global: { plugins: [i18n] }
   })
@@ -114,7 +114,7 @@ describe('TurnstileWidget app adapter', () => {
     const Host = defineComponent(
       () => () => h(TurnstileWidget, { ref: adapter })
     )
-    useColorPaletteStore().activePaletteId = 'light'
+    useThemeStore().activePresetId = 'light'
     render(Host, { global: { plugins: [i18n] } })
 
     adapter.value?.reset()

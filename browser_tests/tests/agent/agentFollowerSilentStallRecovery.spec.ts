@@ -37,7 +37,7 @@ test.describe(
 
       await test.step('keep the user selection while live document updates stop', async () => {
         await agent.vueNodes.selectNode(String(retainedNodeId))
-        await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
+        await expect(agent.vueNodes.emphasizedNodes).toHaveCount(1)
         await agent.node(retainedNodeId).evaluate((element) => {
           element.setAttribute('data-stall-identity', 'retained')
         })
@@ -55,9 +55,10 @@ test.describe(
           'data-stall-identity',
           'retained'
         )
-        await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(agent.node(retainedNodeId)).toHaveClass(
-          /outline-foreground/
+        await expect(agent.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(agent.node(retainedNodeId)).toHaveAttribute(
+          'data-emphasized',
+          'true'
         )
       })
     })
