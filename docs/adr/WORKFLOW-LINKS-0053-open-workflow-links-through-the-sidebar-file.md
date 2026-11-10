@@ -43,8 +43,11 @@ newer link in the stash while the URL still shows the old one. While the stash
 holds a link the loader never started and the URL does not show, the sweep
 makes no replace, so that link's navigation is not cancelled.
 
-The reply is typed in the loader until Cloud's generated types include the
-route.
+The reply and the 409 body are validated with the generated
+`@comfyorg/ingest-types` schemas. The spec types the 409 as `ErrorResponse` and
+lists the `details.reason` values only in prose, saying the set may grow. The
+loader keeps its list of known reasons as a telemetry classification and
+records any other value as `unknown`.
 
 ## Alternatives considered
 

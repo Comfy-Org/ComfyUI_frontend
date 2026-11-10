@@ -1,7 +1,10 @@
 import type { Page, Route } from '@playwright/test'
 
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
-import type { ErrorResponse } from '@comfyorg/ingest-types'
+import type {
+  ErrorResponse,
+  WorkflowSidebarFileResponse
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -50,7 +53,7 @@ const listedFile: UserDataFullInfo = {
   modified: 1_793_000_000_000
 }
 
-const sidebarFile: UserDataFullInfo = {
+const sidebarFile: WorkflowSidebarFileResponse = {
   ...listedFile,
   path: workflowLinkScenario.path
 }

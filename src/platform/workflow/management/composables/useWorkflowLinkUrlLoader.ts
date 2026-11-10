@@ -1,3 +1,7 @@
+import {
+  zErrorResponse,
+  zWorkflowSidebarFileResponse
+} from '@comfyorg/ingest-types/zod'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
@@ -26,21 +30,13 @@ import { api } from '@/scripts/api'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID
 const workflowIdSchema = z.uuid()
-const sidebarFileSchema = z.object({
-  path: z.string(),
-  size: z.number(),
-  modified: z.number()
-})
 const outOfSyncReasonSchema = z.enum([
   'no_sidebar_path',
   'name_ambiguous',
   'file_missing',
   'content_mismatch'
 ])
-const outOfSyncBodySchema = z.object({
-  code: z.literal('WORKFLOW_OUT_OF_SYNC'),
-  details: z.object({ reason: z.unknown() })
-})
+const outOfSyncBodySchema = zErrorResponse.pick({ code: true, details: true })
 
 type WorkflowLinkLoadStatus = 'absent' | 'pending' | 'opened' | 'failed'
 type LinkOutcome =
@@ -74,8 +70,9 @@ async function readOutOfSyncReason(
 ): Promise<WorkflowLinkOutOfSyncReason> {
   const body: unknown = await response.json().catch(() => undefined)
   const parsed = outOfSyncBodySchema.safeParse(body)
-  if (!parsed.success) return 'unknown'
-  const reason = outOfSyncReasonSchema.safeParse(parsed.data.details.reason)
+  if (!parsed.success || parsed.data.code !== 'WORKFLOW_OUT_OF_SYNC')
+    return 'unknown'
+  const reason = outOfSyncReasonSchema.safeParse(parsed.data.details?.reason)
   return reason.success ? reason.data : 'unknown'
 }
 
@@ -92,7 +89,7 @@ async function readLookupResponse(response: Response): Promise<LookupResult> {
     return { kind: 'error' }
   }
   const body: unknown = await response.json()
-  const parsed = sidebarFileSchema.safeParse(body)
+  const parsed = zWorkflowSidebarFileResponse.safeParse(body)
   if (!parsed.success || !isWorkflowPath(parsed.data.path)) {
     reportError(new Error('Invalid workflow link lookup response'), {
       surface: 'graph',
