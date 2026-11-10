@@ -10,7 +10,8 @@ function legacyWidget(node, inputName, _inputData) {
       ctx.fillRect(15, y, widget_width - 15 * 2, H)
       ctx.restore()
     },
-    mouse: function mouseAnnotated(_event, [x, _y], node) {
+    mouse: function mouseAnnotated(event, [x, _y], node) {
+      if (event.type !== 'pointerdown') return
       const widget_width = this.width || node.size[0]
       if (x < 30) {
         this.value--
