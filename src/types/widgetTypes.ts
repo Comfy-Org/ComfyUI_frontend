@@ -16,7 +16,7 @@ export function useHideLayoutField(): boolean {
 
 export const WidgetHeightKey: InjectionKey<string> = Symbol()
 export function useWidgetHeight(): string {
-  return inject(WidgetHeightKey, 'h-6')
+  return inject(WidgetHeightKey, 'h-(--node-widget-height)')
 }
 
 export const WidgetSpansNodeWidthKey: InjectionKey<boolean> = Symbol()
