@@ -69,6 +69,9 @@ const workflowLinkUrlLoader = vi.hoisted(() => ({
   >(async () => 'absent'),
   isLinkSettled: vi.fn<
     ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasNewerLink: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasNewerLink']
   >(() => false)
 }))
 

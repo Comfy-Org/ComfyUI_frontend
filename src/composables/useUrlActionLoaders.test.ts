@@ -24,6 +24,9 @@ const workflowLinkUrlLoader = vi.hoisted(() => ({
   >(async () => 'absent'),
   isLinkSettled: vi.fn<
     ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasNewerLink: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasNewerLink']
   >(() => false)
 }))
 vi.mock(
@@ -445,6 +448,24 @@ describe('useUrlActionLoaders', () => {
         'workflowId'
       )
     ).toBe('workflow-b')
+  })
+
+  it('skips the sweep when a newer workflow-id link arrives after the settled one', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+    workflowLinkUrlLoader.isLinkSettled.mockReturnValue(true)
+    workflowLinkUrlLoader.hasNewerLink
+      .mockReturnValueOnce(false)
+      .mockReturnValue(true)
+    const replace = vi.spyOn(router, 'replace')
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-a',
+      topup: '1'
+    })
   })
 
   it('retains a deferred workflow-id URL and stash after identity changes', async () => {

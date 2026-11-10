@@ -35,7 +35,8 @@ when it cannot be opened. Final handling clears both intents, and only for the
 link it handled: a newer link the browser navigated to meanwhile stays in the
 URL and the stash for its own run. A workflow that opened stays open when
 another navigation cancels that cleanup; the final URL-action sweep clears the
-link it left.
+link it left. While the URL or the stash names a newer link, the URL actions
+stop before any further replace, so that link's navigation is not cancelled.
 
 The reply is typed in the loader until Cloud's generated types include the
 route.

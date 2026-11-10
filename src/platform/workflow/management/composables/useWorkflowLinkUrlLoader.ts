@@ -331,7 +331,17 @@ function useWorkflowLinkUrlLoaderInternal() {
     )
   }
 
-  return { openWorkflowLinkFromUrl, isLinkSettled }
+  /** Whether the address bar or the stash names a link this loader has not
+   * settled. Its navigation can still be waiting in a guard, and any replace
+   * now would cancel it, so URL actions stop for it. */
+  function hasNewerLink(): boolean {
+    const { route, stash } = linkCarriers()
+    return [route, stash].some(
+      (value) => value !== undefined && !isLinkSettled(value)
+    )
+  }
+
+  return { openWorkflowLinkFromUrl, isLinkSettled, hasNewerLink }
 }
 
 export const useWorkflowLinkUrlLoader = createSharedComposable(

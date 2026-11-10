@@ -64,7 +64,8 @@ type UrlActionLoaders = {
  * it (and its preserved-query stash) beside a deployment link for the boot
  * after the pick's reload; a link that did not reload ends here, stash too.
  * `workflowId` is not here: the sweep strips it only as the link the
- * workflow-link loader settled (sweptWorkflowLinkParams).
+ * workflow-link loader settled (sweptWorkflowLinkParams), and does not run
+ * while a newer link waits, since its replace would cancel that navigation.
  */
 const HANDLED_PARAMS = [
   'workspace',
@@ -103,7 +104,8 @@ function workflowLinkSteps(
     {
       failureMessage: 'Failed to open the linked workflow from URL:',
       run: async () =>
-        (await loader.openWorkflowLinkFromUrl(true)) === 'pending'
+        (await loader.openWorkflowLinkFromUrl(true)) === 'pending' ||
+        loader.hasNewerLink()
     }
   ]
 }
@@ -137,6 +139,7 @@ function sweepStep(
   return {
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
+      if (loader?.hasNewerLink()) return true
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       const params = [

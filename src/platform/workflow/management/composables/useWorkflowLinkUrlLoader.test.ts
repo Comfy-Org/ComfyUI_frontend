@@ -15,6 +15,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { NavigationFailure, RouteLocationNormalized } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 import {
   capturePreservedQuery,
   clearPreservedQuery,
@@ -35,6 +36,20 @@ vi.mock(import('vue-router'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@/platform/workspace/composables/useDeploymentUrlLoader'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUrlLoader'))
+vi.mock(import('@/platform/account/composables/useInviteUrlLoader'))
+vi.mock(import('@/platform/account/composables/useCreateWorkspaceUrlLoader'))
+vi.mock(
+  import('@/platform/billing/subscription/composables/usePricingTableUrlLoader')
+)
+vi.mock(import('@/platform/billing/subscription/composables/useTopUpUrlLoader'))
+vi.mock(
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
+)
+vi.mock(import('@/platform/settings/composables/useSettingsUrlLoader'))
+vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'))
+vi.mock(import('@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -606,6 +621,59 @@ describe('workflow-id links', () => {
     expect(useRoute().query).toEqual({})
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
     expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
+  })
+
+  function runUrlActions() {
+    Object.assign(useRouter(), { currentRoute: { value: useRoute() } })
+    const urlActions = scope.run(useUrlActionLoaders)
+    assert.exists(urlActions)
+    return urlActions.runUrlActionLoaders()
+  }
+
+  function holdNewerLinkInGuard() {
+    vi.mocked(useRouter().replace).mockImplementation(async () => {
+      stashLink(NEXT_ID)
+      return cancelledNavigation()
+    })
+  }
+
+  it('stops the URL actions without another replace while a newer link waits in a navigation guard', async () => {
+    serveFile()
+    navigateToLink(ID)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    holdNewerLinkInGuard()
+
+    await runUrlActions()
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useRouter().replace).toHaveBeenCalledOnce()
+    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+  })
+
+  it('keeps a boot link opened and stops the URL actions without another replace while a newer link waits in a navigation guard', async () => {
+    serveFile()
+    navigateToLink(ID)
+    const { store } = await openExistingTab()
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+      async (workflow) => {
+        await store.openWorkflow(workflow)
+        return true
+      }
+    )
+    vi.mocked(useRouter().replace).mockResolvedValueOnce(cancelledNavigation())
+    const linkedLoader = scope.run(useLinkedWorkflowUrlLoader)
+    assert.exists(linkedLoader)
+    expect(await linkedLoader.openLinkedWorkflowFromUrl()).toBe('opened')
+    holdNewerLinkInGuard()
+
+    await runUrlActions()
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(store.activeWorkflow?.path).toBe(PATH)
+    expect(useRouter().replace).toHaveBeenCalledTimes(2)
+    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
   })
 
   it('keeps tabs unchanged when the sidebar file cannot be opened', async () => {
