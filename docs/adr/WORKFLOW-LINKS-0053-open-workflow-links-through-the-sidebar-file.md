@@ -52,6 +52,10 @@ lists the `details.reason` values only in prose, saying the set may grow. The
 loader keeps its list of known reasons as a telemetry classification and
 records any other value as `unknown`.
 
+Error reports for the link carry a fixed message, the error type and the
+failing error's class name. They never carry the caught error or its message:
+a failed file read names the file, and a parser error quotes the reply.
+
 ## Alternatives considered
 
 - Open the record's own content: rejected because Save would write to a file

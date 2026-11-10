@@ -498,6 +498,51 @@ describe('workflow-id links', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'the linked file cannot be read',
+      fail: () => {
+        serveFile('workflows/Customer Jane Doe.json')
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(
+          new Error(
+            "Failed to load file 'workflows/Customer Jane Doe.json': 500 Internal Server Error"
+          )
+        )
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'Error'
+    },
+    {
+      name: 'the lookup reply is not JSON',
+      fail: () => {
+        vi.spyOn(api, 'fetchApi').mockResolvedValue(
+          new Response('workflows/Customer Jane Doe.json')
+        )
+      },
+      reported: new Error('Could not read workflow link'),
+      errorType: 'error_loading_workflow_link',
+      errorName: 'SyntaxError'
+    }
+  ])(
+    'reports that $name without the file name or the error text',
+    async ({ fail, reported, errorType, errorName }) => {
+      fail()
+      await navigate({ workflowId: ID })
+
+      expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(reported, {
+        surface: 'graph',
+        errorType,
+        context: { error_name: errorName }
+      })
+      expect(vi.mocked(reportError).mock.calls[0]?.[0]).not.toHaveProperty(
+        'cause'
+      )
+    }
+  )
+
   it('keeps the intent if the workspace changes during the lookup', async () => {
     vi.spyOn(api, 'fetchApi').mockImplementation(async () => {
       Object.assign(useTeamWorkspaceStore(), {
