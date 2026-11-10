@@ -12,7 +12,9 @@ Rule 4 is implemented: `docFrameClient` sends `known_lineage_seq` on subscribe
 and `layoutFollowerBridge` keeps the `lineage_seq` it reads from every frame.
 The code treats any different lineage, older or newer, as a lineage break
 (`rejectForeignLineageUpdate`, `adoptSubscribedLineage`), where rule 5 discards
-older-lineage updates instead. Rule 6 no longer applies.
+older-lineage updates instead. Rule 6 no longer applies. The Context paragraph
+on the frontend not using lineage identity and the Consequences bullets on rule
+4 being unshipped describe the code before this change.
 
 ## Context
 

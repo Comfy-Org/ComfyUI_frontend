@@ -126,7 +126,8 @@ template flow. Otherwise the batch moves in either of two cases.
 
 **Collision.** The frame is a live write by an agent turn (its `actor` is
 `agent:…` and it is not a subscribe catch-up), and any incoming node or group
-intersects any existing node or group. A template inserted into a populated tab
+intersects any existing node or group. A new group that frames only existing
+nodes is not part of the incoming batch and stays where the document put it. A template inserted into a populated tab
 arrives at its baked-in coordinates, which commonly sit on top of the user's
 graph (PM-2232: the Z-Image template's nodes span x −420 to 1350, the same
 region as the default workflow). The agent does not overlap nodes on purpose,

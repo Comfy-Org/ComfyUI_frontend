@@ -11,7 +11,8 @@ Accepted
 Decision 1's store ownership is superseded by
 [ADR-AGENT-SELECTION-0040](AGENT-SELECTION-0040-composer-owns-node-references.md):
 `agentNodeSelectionStore` was deleted and `canvasStore.isPickingNodes` is the
-one fact that picking is on. The input guards in the other decisions stand.
+one fact that picking is on; the `agentNodeSelectionStore.isActive` reads in
+Decisions 3 and 4 now read it. The input guards in the other decisions stand.
 
 ## Context
 

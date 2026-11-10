@@ -32,7 +32,11 @@ history.
 3. **Stores key by the branded IDs in `@comfyorg/graph-model`.** Node, link
    and reroute records are bucketed by `RootGraphId`. `NodeId` is a branded
    string; `LinkId`, `RerouteId` and `GroupId` are branded numbers. Widgets key
-   by `WidgetId`, the composite string `graphId:nodeId:name`.
+   by `WidgetId`, which `widgetId()` builds by URI-encoding the node ID and
+   widget name and joining them as `graphId:nodeId:name`. The duplicate-name
+   rules in ECS-0008's
+   [Widget identity keys on `name`](ECS-0008-entity-component-system.md#widget-identity-keys-on-name)
+   still apply.
 4. **Components are plain data.** A component has no methods and no
    back-reference to its entity; behavior lives in systems and composables.
    Node slot records are the known exception: `NodeState` still holds the live

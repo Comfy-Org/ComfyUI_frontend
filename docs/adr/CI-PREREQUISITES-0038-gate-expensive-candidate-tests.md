@@ -19,8 +19,9 @@ A September 2026 sample of recent PR runs found prerequisite failures, mostly
 Fallow, on revisions whose core test suites kept running. Those runs were a
 counterfactual upper bound of under a tenth of the measured core-test
 runner-minutes. Queue evidence did not establish whether queueing dominates
-turnaround. The measurements, sampling method and the proposed turnaround
-experiments moved to [Linear](https://linear.app/comfyorg/issue/FRONT-3789/adr-hygiene-sweep-and-adrcheck-extensions#comment-79fb3815).
+turnaround. The measurements and sampling method are in
+[this ADR's earlier revision](https://github.com/Comfy-Org/ComfyUI_frontend/blob/1613c7bbec284cfde240d1d9c501186c6410c4b9/docs/adr/CI-PREREQUISITES-0038-gate-expensive-candidate-tests.md#context);
+the proposed turnaround experiments moved to [Linear](https://linear.app/comfyorg/issue/FRONT-3789/adr-hygiene-sweep-and-adrcheck-extensions#comment-79fb3815).
 
 ## Decision
 
