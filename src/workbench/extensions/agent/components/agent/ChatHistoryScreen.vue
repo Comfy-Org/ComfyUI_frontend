@@ -24,15 +24,13 @@ const {
   groups,
   workflowNameFor = () => undefined,
   loadingId = null,
-  failedId = null,
-  narrow = false
+  failedId = null
 } = defineProps<{
   groups: HistoryGroups
   /** Resolved workflow title for a session; undefined while unresolved. */
   workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null
-  narrow?: boolean
 }>()
 const emit = defineEmits<{
   back: []
@@ -367,7 +365,6 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               "
               :workflow-name="result?.workflowName"
               :ranges
-              :narrow
               :current="result?.isCurrent"
               :loading="loadingId === session.id"
               :failed="failedId === session.id"

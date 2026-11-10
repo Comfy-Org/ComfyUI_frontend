@@ -33,7 +33,6 @@ function renderScreen(
   sessions: ChatSession[],
   props: {
     workflowNameFor?: (s: { workflowId?: string }) => string | undefined
-    narrow?: boolean
   } = {}
 ) {
   return render(ChatHistoryScreen, {
@@ -143,20 +142,6 @@ describe('ChatHistoryScreen search match line', () => {
     expect(marks(row)).toEqual(['needle', 'needle'])
   })
 
-  it('shows a Workflow line instead of a tail highlight when the tail is dropped', async () => {
-    const user = userEvent.setup()
-    renderScreen([session({ id: 'a', title: 'Cats', workflowId: 'wf' })], {
-      workflowNameFor: () => LONG_WORKFLOW,
-      narrow: true
-    })
-
-    await search(user, 'portrait')
-
-    const row = screen.getByRole('button', { name: 'Cats' })
-    expect(within(row).getByText(/^Workflow:/)).toBeVisible()
-    expect(marks(row)).toEqual(['Portrait'])
-  })
-
   it('shows at most one match line, preferring title over message', async () => {
     const user = userEvent.setup()
     const title = `${'x'.repeat(DOCK_TITLE_CHARS + 5)} needle`
@@ -230,22 +215,6 @@ describe('ChatHistoryScreen search workflow tail', () => {
     const row = screen.getByRole('button', { name: 'Cats' })
     expect(marks(row)).toEqual(['copy'])
     expect(within(row).queryByText(/^Workflow:/)).toBeNull()
-  })
-
-  it('drops the workflow tail below the narrow dock but keeps the date', async () => {
-    const user = userEvent.setup()
-    renderScreen([session({ id: 'a', title: 'Cats', workflowId: 'wf' })], {
-      workflowNameFor: () => 'Portrait',
-      narrow: true
-    })
-
-    await search(user, 'cats')
-
-    const row = screen.getByRole('button', { name: 'Cats' })
-    expect(
-      within(row).queryByText('Portrait', { ignore: SCREEN_READER_ONLY })
-    ).toBeNull()
-    expect(within(row).getByText('Nov 10')).toBeVisible()
   })
 
   it('shrinks the workflow name while the current marker shares the line', async () => {

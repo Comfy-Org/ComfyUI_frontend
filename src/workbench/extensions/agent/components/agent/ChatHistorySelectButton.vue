@@ -19,7 +19,6 @@ const {
   date,
   workflowName,
   ranges = {},
-  narrow = false,
   current = false,
   loading = false,
   failed = false
@@ -29,7 +28,6 @@ const {
   date?: string
   workflowName?: string
   ranges?: Partial<Record<ChatSearchField, ChatSearchRange[]>>
-  narrow?: boolean
   current?: boolean
   loading?: boolean
   failed?: boolean
@@ -47,7 +45,7 @@ const describedBy = computed(
 )
 
 const plan = computed(() =>
-  planChatRow({ title, preview, workflowName, ranges, narrow, current })
+  planChatRow({ title, preview, workflowName, ranges, current })
 )
 const titleParts = computed(() =>
   plan.value.titleParts.length

@@ -86,8 +86,7 @@ export function matchWindow(
   return splitByRanges(prefix + text.slice(from, to) + suffix, inside)
 }
 
-function workflowTailChars(narrow: boolean, current: boolean): number {
-  if (narrow) return 0
+function workflowTailChars(current: boolean): number {
   return current ? WORKFLOW_TAIL_MIN_CHARS : WORKFLOW_TAIL_CHARS
 }
 
@@ -100,7 +99,6 @@ export interface ChatRowInput {
   preview?: string
   workflowName?: string
   ranges: FieldRanges
-  narrow: boolean
   current: boolean
 }
 
@@ -113,7 +111,7 @@ export interface ChatRowPlan {
 
 /** Plans a result row; one match line shows the first hidden match. */
 export function planChatRow(input: ChatRowInput): ChatRowPlan {
-  const { preview, workflowName, ranges, narrow, current } = input
+  const { preview, workflowName, ranges, current } = input
   const displayTitle = input.title.trim()
   const lead = input.title.length - input.title.trimStart().length
   const titleRanges = (ranges.title ?? []).map((r) => ({
@@ -123,7 +121,7 @@ export function planChatRow(input: ChatRowInput): ChatRowPlan {
   const previewRanges = ranges.preview ?? []
   const workflowRanges = ranges.workflowName ?? []
 
-  const tailChars = workflowName ? workflowTailChars(narrow, current) : 0
+  const tailChars = workflowName ? workflowTailChars(current) : 0
   const tail =
     workflowName && tailChars > 0
       ? middleTruncateWithRanges(workflowName, tailChars, workflowRanges)

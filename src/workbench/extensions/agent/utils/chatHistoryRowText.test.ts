@@ -98,7 +98,6 @@ describe('planChatRow', () => {
   const base = {
     title: 'Weekly plan',
     ranges: {},
-    narrow: false,
     current: false
   }
 
@@ -220,17 +219,6 @@ describe('planChatRow', () => {
     expect(plan.matchLine?.field).toBe('workflowName')
   })
 
-  it('drops the whole tail when narrow and uses the match line for workflow matches', () => {
-    const plan = planChatRow({
-      ...base,
-      narrow: true,
-      workflowName: 'Portrait upscale',
-      ranges: { workflowName: [{ start: 0, end: 8 }] }
-    })
-    expect(plan.workflowParts).toBeUndefined()
-    expect(plan.matchLine?.field).toBe('workflowName')
-  })
-
   it('omits the tail without a workflow name', () => {
     expect(planChatRow({ ...base }).workflowParts).toBeUndefined()
     expect(planChatRow({ ...base, workflowName: '' }).workflowParts).toBe(
@@ -241,6 +229,7 @@ describe('planChatRow', () => {
   it('picks one match line by priority: title, then workflow, then preview', () => {
     const longTitle = `${'t'.repeat(DOCK_TITLE_CHARS)}needle`
     const longPreview = `${'p'.repeat(DOCK_PREVIEW_CHARS)}needle`
+    const cutWorkflow = 'needle'.repeat(6)
     const ranges = (text: string) => [
       { start: text.length - 6, end: text.length }
     ]
@@ -248,12 +237,11 @@ describe('planChatRow', () => {
       ...base,
       title: longTitle,
       preview: longPreview,
-      narrow: true,
-      workflowName: 'needle',
+      workflowName: cutWorkflow,
       ranges: {
         title: ranges(longTitle),
         preview: ranges(longPreview),
-        workflowName: [{ start: 0, end: 6 }]
+        workflowName: [{ start: 0, end: cutWorkflow.length - 1 }]
       }
     })
     expect(all.matchLine?.field).toBe('title')
@@ -261,11 +249,10 @@ describe('planChatRow', () => {
     const noTitle = planChatRow({
       ...base,
       preview: longPreview,
-      narrow: true,
-      workflowName: 'needle',
+      workflowName: cutWorkflow,
       ranges: {
         preview: ranges(longPreview),
-        workflowName: [{ start: 0, end: 6 }]
+        workflowName: [{ start: 0, end: cutWorkflow.length - 1 }]
       }
     })
     expect(noTitle.matchLine?.field).toBe('workflowName')

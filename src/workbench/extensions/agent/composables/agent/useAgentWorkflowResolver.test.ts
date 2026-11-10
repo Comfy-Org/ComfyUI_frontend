@@ -97,16 +97,26 @@ describe('Agent workflow resolution', () => {
       )
     })
 
+    it('returns undefined, never the raw id, while the listing is pending', () => {
+      const { resolver } = setup(
+        [],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+
+      expect(
+        resolver.workflowNameFor({ workflowId: 'cloud-portrait' })
+      ).toBeUndefined()
+    })
+
     it.for([
-      { case: 'pending listing', refresh: false, workflowId: 'cloud-portrait' },
-      { case: 'unresolved id', refresh: true, workflowId: 'cloud-other' },
-      { case: 'no workflow id', refresh: true, workflowId: undefined }
+      { case: 'unresolved id', workflowId: 'cloud-other' },
+      { case: 'no workflow id', workflowId: undefined }
     ])('returns undefined, never the raw id, for $case', async (row) => {
       const { resolver } = setup(
         [],
         [{ id: 'cloud-portrait', name: 'Portrait' }]
       )
-      if (row.refresh) await resolver.refreshCloudWorkflowIds()
+      await resolver.refreshCloudWorkflowIds()
 
       expect(
         resolver.workflowNameFor({ workflowId: row.workflowId })

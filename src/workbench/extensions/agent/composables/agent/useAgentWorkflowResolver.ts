@@ -116,7 +116,6 @@ export function useAgentWorkflowResolver({
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
-  /** Display name of a chat's workflow, or undefined while it is unresolved. */
   function workflowNameFor(session: {
     workflowId?: string
   }): string | undefined {
