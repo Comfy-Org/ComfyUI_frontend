@@ -8,11 +8,12 @@ the old Add credits dialog, tier-based billing notices and Enterprise 14-day
 notice window, direct Plans hand-off with an in-app pricing-table fallback,
 static member auto top-up notice, and Activity without the member column.
 Turning it on selects the new dialog, served notice audience/start, refusal
-and blocked-tab explanations, same-tab Plans entry, locked-credit explanation,
+and blocked-tab explanations, same-tab Plans entry,
 member auto top-up status, and Activity member column. `pricing_table_fallback`
 continues to select the old Plans fallback while the new UX is enabled.
 
-SDK payment-rail flags remain independent. Behavior-preserving SDK rule moves
+The locked-credit Subscribe to Run entry already shipped in Cloud 1.60 and stays
+independent of this flag. SDK payment-rail flags remain independent. Behavior-preserving SDK rule moves
 do not change which billing behavior the rollout flag selects.
 
 Mocked browser tests opt in through the `billingNewUx` fixture option. Set it to
