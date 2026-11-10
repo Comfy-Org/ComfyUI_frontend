@@ -2719,6 +2719,18 @@ describe('useMediaAssetActions', () => {
           }
         )
 
+        it('drags a non-cover output with its hash as the attachment reference', async () => {
+          const dataTransfer = new DataTransfer()
+          const event = new DragEvent('dragstart')
+          Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+          startAssetDrag(event, await expandedFirstOutput())
+
+          expect(parseAssetInfo(dataTransfer)?.attachment_ref).toBe(
+            '1a2b3c4d.png'
+          )
+        })
+
         it('drops the cover card as the cover output by its hash', async () => {
           const [group] = unflattenOutputAssets([firstOutput, coverOutput])
 

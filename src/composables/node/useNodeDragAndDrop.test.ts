@@ -222,31 +222,40 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
   })
 
-  it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
-    const onDrop = vi.fn().mockResolvedValue([])
-    vi.mocked(fetch).mockResolvedValue(
-      fromAny<Response, unknown>({
-        ok: true,
-        blob: vi
-          .fn()
-          .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
-      })
-    )
+  it.for([
+    { assetInfo: { filename: 'clip.wav' }, name: 'clip.wav' },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'clip.wav' },
+      name: 'clip.wav'
+    }
+  ])(
+    'onDragDrop names a fetched asset-card file $name from asset info $assetInfo',
+    async ({ assetInfo, name }) => {
+      const onDrop = vi.fn().mockResolvedValue([])
+      vi.mocked(fetch).mockResolvedValue(
+        fromAny<Response, unknown>({
+          ok: true,
+          blob: vi
+            .fn()
+            .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
+        })
+      )
 
-    const node = createNode()
-    useNodeDragAndDrop(node, { onDrop })
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop })
 
-    const result = await node.onDragDrop?.(
-      createDragEvent({
-        uri: `${location.origin}/api/assets/asset-1/content`,
-        types: ['text/uri-list', MIME_ASSET_INFO],
-        assetInfo: JSON.stringify({ filename: 'clip.wav' })
-      })
-    )
+      const result = await node.onDragDrop?.(
+        createDragEvent({
+          uri: `${location.origin}/api/assets/asset-1/content`,
+          types: ['text/uri-list', MIME_ASSET_INFO],
+          assetInfo: JSON.stringify(assetInfo)
+        })
+      )
 
-    expect(result).toBe(true)
-    expect(onDrop.mock.calls[0][0][0].name).toBe('clip.wav')
-  })
+      expect(result).toBe(true)
+      expect(onDrop.mock.calls[0][0][0].name).toBe(name)
+    }
+  )
 
   it('onDragDrop returns false for cross-origin uri drops', async () => {
     const node = createNode()
