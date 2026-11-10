@@ -49,14 +49,20 @@ describe('useThemeService theme variables', () => {
       foreground: readRootProperty('--node-foreground'),
       radius: readRootProperty('--node-radius'),
       titleSize: readRootProperty('--node-title-font-size'),
-      icons: readRootProperty('--node-icon-style')
+      icons: readRootProperty('--node-icon-style'),
+      widgetHeight: readRootProperty('--node-widget-height'),
+      widgetRadius: readRootProperty('--node-widget-radius'),
+      widgetBorderWidth: readRootProperty('--node-widget-border-width')
     }).toEqual({
       node: '#353535',
       header: '#333',
       foreground: '#AAA',
       radius: '8px',
       titleSize: '14px',
-      icons: 'triangle'
+      icons: 'triangle',
+      widgetHeight: '20px',
+      widgetRadius: '9999px',
+      widgetBorderWidth: '1px'
     })
 
     await service.setActiveTheme('dark')
@@ -64,8 +70,11 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node-radius'),
       readRootProperty('--node-title-font-size'),
-      readRootProperty('--node-icon-style')
-    ]).toEqual(['', '', ''])
+      readRootProperty('--node-icon-style'),
+      readRootProperty('--node-widget-height'),
+      readRootProperty('--node-widget-radius'),
+      readRootProperty('--node-widget-border-width')
+    ]).toEqual(['', '', '', '', '', ''])
   })
 
   it.for([
