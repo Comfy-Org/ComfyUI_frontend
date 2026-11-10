@@ -410,6 +410,20 @@ describe('workflow-id links', () => {
     }
   )
 
+  it('rejects an empty workflowId while an older link is still stashed', async () => {
+    const request = vi.spyOn(api, 'fetchApi')
+    capturePreservedQuery(NAMESPACE, { workflowId: ID }, ['workflowId'])
+    await navigate({ workflowId: '' })
+
+    expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
+
+    expect(request).not.toHaveBeenCalled()
+    expect(useToast().toasts[0]?.title).toBe("Couldn't open this workflow")
+    expect(currentQuery()).toEqual({})
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(loader.hasLinkInFlight()).toBe(false)
+  })
+
   it.for(['workspace', 'deployment'])(
     'keeps a stashed link until the %s navigation finishes',
     async (namespace) => {
