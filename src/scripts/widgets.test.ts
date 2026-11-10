@@ -141,7 +141,7 @@ test.for([
       onInteraction: (interaction) => interactions.push(interaction)
     })
     await nextTick()
-    const target = screen.getByTestId('number-input-scrub')
+    const target = screen.getByText('Width')
     target.setPointerCapture = () => {}
     await user.pointer([
       { target, keys: '[MouseLeft>]', coords: { clientX: 100, clientY: 20 } },

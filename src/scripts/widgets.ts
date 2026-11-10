@@ -107,7 +107,8 @@ export function createNumberInput(options: NumberInputOptions) {
   const control = shallowRef<InstanceType<typeof ScrubableNumberInput>>()
   const element = document.createElement('div')
   const inputId = crypto.randomUUID()
-  element.className = 'h-full px-3 py-0.5 text-xs text-foreground'
+  element.className =
+    'h-full text-xs text-foreground in-[.dom-widget]:px-3 in-[.dom-widget]:py-0.5'
   let app: ReturnType<typeof createApp> | undefined
   function mount() {
     if (app) return
@@ -118,7 +119,7 @@ export function createNumberInput(options: NumberInputOptions) {
             ScrubableNumberInput,
             {
               ref: control,
-              class: 'h-full',
+              class: 'h-full cursor-ew-resize',
               modelValue: state.value,
               displayValue: state.displayValue,
               disabled: state.disabled,

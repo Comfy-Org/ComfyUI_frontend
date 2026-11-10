@@ -11,6 +11,7 @@
             className
           )
         "
+        @click="handleClick"
       >
         <slot name="background" />
         <Button
@@ -57,10 +58,8 @@
             @keydown.page-down.prevent="updateValueBy(-10 * step)"
           />
           <div
-            ref="swipeElement"
             data-testid="number-input-scrub"
             class="absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden"
-            @pointerup="handlePointerUp"
           />
         </div>
         <slot />
@@ -132,7 +131,6 @@ let valueBeforeEditing = modelValue.value
 
 const scrubElement = useTemplateRef<HTMLDivElement>('scrubElement')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
-const swipeElement = useTemplateRef('swipeElement')
 
 function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
@@ -207,22 +205,36 @@ function startTextEdit() {
   inputField.value?.select()
 }
 
-function handlePointerUp() {
-  if (onInteraction && !isSwiping.value) startTextEdit()
-}
-
 let dragDelta = 0
-const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
+let dragged = false
+let editingControl = false
+const { distanceX } = usePointerSwipe(scrubElement, {
   threshold: 1,
-  onSwipeStart: () => (dragDelta = 0),
+  onSwipeStart: (event) => {
+    dragDelta = 0
+    dragged = false
+    editingControl =
+      event.target instanceof Element && !!event.target.closest('button, input')
+  },
   onSwipe: () => {
-    if (!onInteraction || disabled) return
+    if (!onInteraction || disabled || editingControl) return
+    dragged = true
     const delta = dragDelta - distanceX.value
     dragDelta = distanceX.value
     if (delta) onInteraction({ kind: 'drag', delta })
   },
   onSwipeEnd: () => (dragDelta = 0)
 })
+
+function handleClick(event: MouseEvent) {
+  if (!onInteraction || disabled) return
+  if (dragged) event.preventDefault()
+  else if (
+    event.target instanceof Element &&
+    !event.target.closest('button, input')
+  )
+    startTextEdit()
+}
 
 useNumberScrub(scrubElement, {
   value: modelValue,
