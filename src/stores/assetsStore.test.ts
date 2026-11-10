@@ -1825,6 +1825,7 @@ describe('assetsStore - reset() on identity change', () => {
   describe('with the assets API', () => {
     beforeEach(() => {
       mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     })
 
     afterEach(() => {
