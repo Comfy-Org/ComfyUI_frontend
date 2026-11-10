@@ -52,6 +52,40 @@ function mergeRanges(ranges: ChatSearchRange[]): ChatSearchRange[] {
   return merged
 }
 
+type FieldRanges = ChatSearchResult<ChatSearchable>['ranges']
+
+function collectRanges(
+  session: ChatSearchable,
+  matchers: readonly RegExp[]
+): FieldRanges | undefined {
+  const collected: FieldRanges = {}
+  for (const matcher of matchers) {
+    let wordMatched = false
+    for (const field of FIELDS) {
+      const found = findOccurrences(session[field] ?? '', matcher)
+      if (found.length === 0) continue
+      wordMatched = true
+      collected[field] = [...(collected[field] ?? []), ...found]
+    }
+    if (!wordMatched) return undefined
+  }
+  return collected
+}
+
+function matchSession<T extends ChatSearchable>(
+  session: T,
+  matchers: readonly RegExp[]
+): ChatSearchResult<T> | undefined {
+  const collected = collectRanges(session, matchers)
+  if (!collected) return undefined
+  const matchedFields = FIELDS.filter((field) => collected[field])
+  const ranges: FieldRanges = {}
+  for (const field of matchedFields) {
+    ranges[field] = mergeRanges(collected[field] ?? [])
+  }
+  return { session, matchedFields, ranges }
+}
+
 /**
  * Case-insensitive substring search: every whitespace-separated word must
  * match the title, preview or workflow name. Returns `null` for a blank query.
@@ -65,34 +99,5 @@ export function searchChatHistory<T extends ChatSearchable>(
   if (words.some((word) => word.length > MAX_QUERY_WORD_LENGTH)) return []
 
   const matchers = words.map((word) => new RegExp(escapeRegExp(word), 'gi'))
-  const results: ChatSearchResult<T>[] = []
-
-  for (const session of sessions) {
-    const collected: Partial<Record<ChatSearchField, ChatSearchRange[]>> = {}
-    let everyWordMatched = true
-
-    for (const matcher of matchers) {
-      let wordMatched = false
-      for (const field of FIELDS) {
-        const found = findOccurrences(session[field] ?? '', matcher)
-        if (found.length === 0) continue
-        wordMatched = true
-        collected[field] = [...(collected[field] ?? []), ...found]
-      }
-      if (!wordMatched) {
-        everyWordMatched = false
-        break
-      }
-    }
-    if (!everyWordMatched) continue
-
-    const matchedFields = FIELDS.filter((field) => collected[field])
-    const ranges: ChatSearchResult<T>['ranges'] = {}
-    for (const field of matchedFields) {
-      ranges[field] = mergeRanges(collected[field] ?? [])
-    }
-    results.push({ session, matchedFields, ranges })
-  }
-
-  return results
+  return sessions.flatMap((session) => matchSession(session, matchers) ?? [])
 }

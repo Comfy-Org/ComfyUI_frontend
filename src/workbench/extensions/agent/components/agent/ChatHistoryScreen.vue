@@ -4,12 +4,12 @@ import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { cn } from '@comfyorg/tailwind-utils'
 import Input from '@comfyorg/design-system/input/Input'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
+import ChatHistorySearchStatus from './ChatHistorySearchStatus.vue'
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
 import { useChatHistorySearch } from '@/workbench/extensions/agent/composables/agent/useChatHistorySearch'
@@ -53,15 +53,23 @@ const search = useChatHistorySearch({
   workflowNameFor: (session) => workflowNameFor(session)
 })
 
+interface HistoryRow {
+  session: ChatSession
+  result?: { preview?: string; workflowName?: string; isCurrent: boolean }
+  ranges?: ChatHistorySearchResult['ranges']
+  date?: string
+}
+
 interface HistorySection {
   key: string
   label?: string
-  items: {
-    session: ChatSession
-    result?: { preview?: string; workflowName?: string; isCurrent: boolean }
-    ranges?: ChatHistorySearchResult['ranges']
-  }[]
+  listAttrs: { role?: 'list'; 'aria-label'?: string }
+  rowAttrs: { role?: 'listitem'; class: string }
+  items: HistoryRow[]
 }
+
+const ROW_ALIGN_START = 'items-start'
+const ROW_ALIGN_CENTER = 'items-center'
 
 const sections = computed<HistorySection[]>(() => {
   const results = search.results.value
@@ -71,10 +79,16 @@ const sections = computed<HistorySection[]>(() => {
       : [
           {
             key: 'results',
+            listAttrs: {
+              role: 'list',
+              'aria-label': t('agent.historyResultsLabel')
+            },
+            rowAttrs: { role: 'listitem', class: ROW_ALIGN_START },
             items: results.map(({ session, ranges }) => ({
               session,
               result: session,
-              ranges
+              ranges,
+              date: formatShortMonthDay(session.updatedAt, locale.value)
             }))
           }
         ]
@@ -91,6 +105,8 @@ const sections = computed<HistorySection[]>(() => {
     .map(([key, label, items]) => ({
       key,
       label,
+      listAttrs: {},
+      rowAttrs: { class: ROW_ALIGN_CENTER },
       items: items.map((session) => ({ session }))
     }))
 })
@@ -145,25 +161,31 @@ function isPlainCharacterKey(event: KeyboardEvent): boolean {
   )
 }
 
+function isResultButton(
+  target: EventTarget | null
+): target is HTMLButtonElement {
+  return (
+    target instanceof HTMLButtonElement &&
+    target.hasAttribute('data-history-result')
+  )
+}
+
+function stepResultFocus(event: KeyboardEvent, from: HTMLButtonElement): void {
+  event.preventDefault()
+  const buttons = resultButtons()
+  const next = buttons.indexOf(from) + (event.key === 'ArrowDown' ? 1 : -1)
+  if (next < 0) focusField()
+  else buttons[Math.min(next, buttons.length - 1)]?.focus()
+}
+
 function onResultsKeydown(event: KeyboardEvent): void {
   const target = event.target
-  if (
-    event.isComposing ||
-    !(target instanceof HTMLButtonElement) ||
-    !target.hasAttribute('data-history-result') ||
-    !search.results.value
-  )
+  if (event.isComposing || !search.results.value || !isResultButton(target))
     return
-  if (event.key === 'Escape') return escapeSearch(event)
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-    event.preventDefault()
-    const buttons = resultButtons()
-    const next = buttons.indexOf(target) + (event.key === 'ArrowDown' ? 1 : -1)
-    if (next < 0) focusField()
-    else buttons[Math.min(next, buttons.length - 1)]?.focus()
-    return
-  }
-  if (isPlainCharacterKey(event)) focusField()
+  if (event.key === 'Escape') escapeSearch(event)
+  else if (event.key === 'ArrowDown' || event.key === 'ArrowUp')
+    stepResultFocus(event, target)
+  else if (isPlainCharacterKey(event)) focusField()
 }
 
 function pick(session: ChatSession): void {
@@ -287,52 +309,33 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
-      <div role="status">
-        <p
-          v-if="search.isNoResults.value"
-          class="px-2 py-8 text-center text-sm text-muted-foreground"
-        >
-          {{ t('agent.historyNoResults', { query: search.text.value.trim() }) }}
-        </p>
-        <span v-else-if="search.results.value" class="sr-only">{{
-          t(
-            'agent.historySearchCount',
-            { count: search.results.value.length },
-            search.results.value.length
-          )
-        }}</span>
-      </div>
+      <ChatHistorySearchStatus
+        :query="search.text.value.trim()"
+        :count="search.results.value?.length"
+      />
       <p
-        v-if="isEmpty && !search.isNoResults.value"
+        v-if="isEmpty"
         class="px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.historyEmpty') }}
       </p>
 
       <section
-        v-for="{ key, label, items } in sections"
+        v-for="{ key, label, listAttrs, rowAttrs, items } in sections"
         :key
         ref="resultsList"
         class="mb-3"
-        :role="key === 'results' ? 'list' : undefined"
-        :aria-label="
-          key === 'results' ? t('agent.historyResultsLabel') : undefined
-        "
+        v-bind="listAttrs"
         @keydown="onResultsKeydown"
       >
         <p v-if="label" class="my-0 px-2 py-1 text-xs text-muted-foreground">
           {{ label }}
         </p>
         <div
-          v-for="{ session, result, ranges } in items"
+          v-for="{ session, result, ranges, date } in items"
           :key="session.id"
-          :role="key === 'results' ? 'listitem' : undefined"
-          :class="
-            cn(
-              'group flex gap-2 rounded-sm px-2 py-1 hover:bg-accent',
-              key === 'results' ? 'items-start' : 'items-center'
-            )
-          "
+          class="group flex gap-2 rounded-sm px-2 py-1 hover:bg-accent"
+          v-bind="rowAttrs"
         >
           <div
             v-if="renamingId === session.id"
@@ -357,11 +360,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
             <ChatHistorySelectButton
               :title="session.title"
               :preview="result?.preview"
-              :date="
-                result
-                  ? formatShortMonthDay(session.updatedAt, locale)
-                  : undefined
-              "
+              :date
               :workflow-name="result?.workflowName"
               :ranges
               :current="result?.isCurrent"
