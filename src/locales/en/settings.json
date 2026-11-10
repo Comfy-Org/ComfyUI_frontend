@@ -430,6 +430,10 @@
     "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Hide .safetensors and .sft extensions",
+    "tooltip": "Hide these extensions in closed model widgets. Other extensions remain visible; dropdown options and saved values keep full filenames."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",
     "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",

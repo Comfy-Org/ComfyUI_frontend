@@ -2,6 +2,7 @@ import { countBy } from 'es-toolkit'
 import { computed, ref, toRef } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -32,6 +33,7 @@ export function useComboOptions(
     onSelect: (option: ComboOption) => void
   }
 ) {
+  const settings = useSettingStore()
   const options = toRef(getOptions)
   const searchQuery = ref('')
   const directory = ref<string[]>([])
@@ -67,13 +69,17 @@ export function useComboOptions(
       Boolean(selectedValue.value) &&
       !option
     const label = option ? option.label : invalid ? String(value.value) : ''
+    const summarizeFilename =
+      config.filenameSummary() && !options.value?.getOptionLabel
+    const summary = summarizeFilename ? label.split(/[/\\]/).at(-1) : label
     return {
       option,
       invalid,
       summary:
-        config.filenameSummary() && !options.value?.getOptionLabel
-          ? label.split(/[/\\]/).at(-1)
-          : label
+        summarizeFilename &&
+        settings.get('Comfy.VueNodes.HideSafeModelExtensions')
+          ? summary?.replace(/^(.+)\.(?:safetensors|sft)$/i, '$1')
+          : summary
     }
   })
   const longestLabel = computed(() =>
