@@ -801,8 +801,10 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     ports.landed?.({ status: 'failed' })
 
     expect(
-      await screen.findByRole('heading', { name: 'Auto top-up didn’t turn on' })
+      await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeVisible()
+    expect(screen.getByText('Your credits were added.')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
       AUTO_TOP_UP_SETUP_URL

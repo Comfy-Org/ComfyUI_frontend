@@ -6631,8 +6631,8 @@
       "done": "Done"
     },
     "autoTopUpFailed": {
-      "title": "Auto top-up didn’t turn on",
-      "body": "Your credits were added. Set up auto top-up in Billing."
+      "title": "Auto top-up didn't turn on",
+      "body": "Your credits were added."
     }
   }
 }
