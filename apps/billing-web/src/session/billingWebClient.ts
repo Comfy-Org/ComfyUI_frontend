@@ -88,6 +88,18 @@ export function createBillingWebClient(
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 
+/** On a billing handoff: the scoped session's own workspace, never one a URL names. */
+export function createHandoffBillingClient(
+  session: BillingSession
+): BillingWebClient {
+  const transport = createSessionBillingTransport({
+    session,
+    resolveUrl,
+    workspaceId: () => pinnedWorkspaceId(session)
+  })
+  return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
 /**
  * On the shared web session: the cookie authorizes each request, and the
  * resolved workspace, which the entry link named, is its workspace header.
