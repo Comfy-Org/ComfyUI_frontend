@@ -24,6 +24,7 @@ function i18n() {
           redo: 'Redo',
           exportPsd: 'Export PSD',
           background: 'Background',
+          backgroundColor: 'Background color',
           dimensions: 'Dimensions',
           fill: 'Fill'
         },
@@ -82,7 +83,7 @@ it('edits background color and alpha through the translated picker', async () =>
     session.dispose()
   })
 
-  await user.click(screen.getByRole('button', { name: '#ffffff 100%' }))
+  await user.click(screen.getByRole('button', { name: 'Background color' }))
   const hex = screen.getByRole('textbox', { name: 'Hex' })
   await user.clear(hex)
   await user.paste('#ff0000')

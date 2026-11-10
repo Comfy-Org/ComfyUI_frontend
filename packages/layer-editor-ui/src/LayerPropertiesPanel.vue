@@ -183,6 +183,7 @@
           <ColorPicker
             v-model="backgroundColorModel"
             class="h-7"
+            :accessible-label="t('layerEditor.backgroundColor')"
             :hex-label="t('color.hex')"
             :rgba-label="t('color.rgba')"
             :hue-label="t('color.hue')"
