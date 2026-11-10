@@ -96,13 +96,6 @@ async function tourOnRunStep() {
   return { controller, started: await starting }
 }
 
-/**
- * The engine ending the tour and recording how, in the order `finish()` writes
- * them: `dispatch({ type: 'ended' })` returns the state machine to `IDLE` — so
- * `activeTour` and `step` fall together — and only then is `lastEnding`
- * assigned. Writing the ending first would leave anything watching the tour end
- * free to read it a flush early and still look correct.
- */
 function endTour(ending: TourEnding) {
   useOnboardingTourStore().activeTour = null
   Object.assign(useOnboardingTourStore(), { step: null })
