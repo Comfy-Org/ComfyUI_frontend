@@ -39,9 +39,12 @@ navigation cancels that cleanup; the final URL-action sweep clears the link it
 left. Only a reload in flight stops the URL actions. A link that is not settled
 does not stop them: the other loaders run, and the final sweep removes their
 params but leaves `workflowId` and its stash. A navigation guard can hold a
-newer link in the stash while the URL still shows the old one. While the stash
-holds a link the loader never started and the URL does not show, the sweep
-makes no replace, so that link's navigation is not cancelled.
+newer link in the stash while the URL still shows the old one. While the URL
+and the stash name different links, the loader treats the stash as a navigation
+still in flight: it makes no replace and clears neither carrier, even for a
+link it already opened. While the stash holds a link the loader never started
+and the URL does not show, the sweep makes no replace either, so that link's
+navigation is not cancelled.
 
 The reply and the 409 body are validated with the generated
 `@comfyorg/ingest-types` schemas. The spec types the 409 as `ErrorResponse` and

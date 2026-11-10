@@ -54,6 +54,17 @@ type Ownership = {
   unreplaced: () => boolean
 }
 
+function isWorkflowId(value: unknown): value is string {
+  return typeof value === 'string' && workflowIdSchema.safeParse(value).success
+}
+
+function isSameLink(carried: unknown, workflowId: unknown): boolean {
+  return (
+    carried === workflowId ||
+    (!isWorkflowId(carried) && !isWorkflowId(workflowId))
+  )
+}
+
 function isWorkflowPath(path: string): boolean {
   return (
     path.startsWith('workflows/') &&
@@ -221,8 +232,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     value: unknown,
     isCurrent: () => boolean
   ): Promise<ResolveOutcome> {
-    if (typeof value !== 'string' || !workflowIdSchema.safeParse(value).success)
-      return { kind: 'not_found' }
+    if (!isWorkflowId(value)) return { kind: 'not_found' }
     const result = await lookupSidebarFile(value)
     if (!isCurrent()) return { kind: 'pending' }
     return result.kind === 'found' ? openPath(result.path, isCurrent) : result
@@ -255,11 +265,11 @@ function useWorkflowLinkUrlLoaderInternal() {
     }
   }
 
-  function keepsCapturedLink(captured: LinkCarriers): boolean {
-    const current = linkCarriers()
+  function carriesOnly(workflowId: unknown): boolean {
+    const { route, stash } = linkCarriers()
     return (
-      (current.route === undefined || current.route === captured.route) &&
-      (current.stash === undefined || current.stash === captured.stash)
+      (route === undefined || isSameLink(route, workflowId)) &&
+      (stash === undefined || isSameLink(stash, workflowId))
     )
   }
 
@@ -268,12 +278,14 @@ function useWorkflowLinkUrlLoaderInternal() {
     return current.route !== undefined || current.stash !== undefined
   }
 
-  function attemptOwnership(workspaceId: string | null): Ownership {
-    const captured = linkCarriers()
+  function attemptOwnership(
+    workflowId: unknown,
+    workspaceId: string | null
+  ): Ownership {
     const unreplaced = () =>
       !disposed &&
       workspaceStore.activeWorkspaceId === workspaceId &&
-      keepsCapturedLink(captured)
+      carriesOnly(workflowId)
     return { owns: () => hasLink() && unreplaced(), unreplaced }
   }
 
@@ -302,7 +314,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
     startedLinks.add(workflowId)
-    const ownership = attemptOwnership(workspaceId)
+    const ownership = attemptOwnership(workflowId, workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
       await clearOwnedIntent(ownership)
