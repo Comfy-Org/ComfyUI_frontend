@@ -8,6 +8,12 @@ import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
+type DragDropOptions = {
+  dropPosition?: Position
+  waitForUpload?: boolean
+  preserveNativePropagation?: boolean
+}
+
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
 
@@ -39,10 +45,7 @@ export class DragDropHelper {
       filePath?: string
       generatedFile?: { name: string; type: string; byteLength: number }
       url?: string
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    } & DragDropOptions = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
@@ -187,42 +190,28 @@ export class DragDropHelper {
 
   async dragAndDropFile(
     fileName: string,
-    options: {
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }
 
   async dragAndDropFilePath(
     filePath: string,
-    options: {
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
   }
 
   async dragAndDropGeneratedFile(
     generatedFile: { name: string; type: string; byteLength: number },
-    options: {
-      dropPosition?: Position
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ generatedFile, ...options })
   }
 
   async dragAndDropURL(
     url: string,
-    options: {
-      dropPosition?: Position
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }
