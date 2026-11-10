@@ -9,6 +9,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditUsageExposureMetadata,
+  AgentStarterPromptPersonalizationMetadata,
   AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
@@ -384,6 +385,16 @@ describe('TelemetryRegistry', () => {
     const creditTransitionNoticeMetadata = {
       action: 'shown'
     } satisfies AgentCreditTransitionNoticeMetadata
+    const starterPromptPersonalizationMetadata = {
+      strategy: 'profile_canvas',
+      assignment_source: 'qa-override',
+      personalization_applied: true,
+      profile_source: 'survey',
+      canvas_presence: 'present',
+      catalog_version: 'v2.0-en-draft',
+      prompt_count: 5,
+      locale: 'en'
+    } satisfies AgentStarterPromptPersonalizationMetadata
     const creditUsageExposureMetadata = {
       variant: 'treatment',
       '$feature/agent-credit-usage-summary': 'treatment'
@@ -400,6 +411,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...freeUseExposureMetadata },
         invoke: (registry) =>
           registry.trackAgentFreeUseExposure(freeUseExposureMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptPersonalization',
+        expected: { ...starterPromptPersonalizationMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptPersonalization(
+            starterPromptPersonalizationMetadata
+          )
       },
       {
         method: 'trackAgentFreeUseNotice',
