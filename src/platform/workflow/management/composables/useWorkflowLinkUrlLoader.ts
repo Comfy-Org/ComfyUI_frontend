@@ -82,9 +82,8 @@ const BUILT_IN_ERROR_NAMES: ReadonlySet<string> = new Set([
 
 function failureContext(cause: unknown) {
   if (!(cause instanceof Error)) return { error_name: typeof cause }
-  return {
-    error_name: BUILT_IN_ERROR_NAMES.has(cause.name) ? cause.name : 'other'
-  }
+  const name = cause.name
+  return { error_name: BUILT_IN_ERROR_NAMES.has(name) ? name : 'other' }
 }
 
 function isWorkflowPath(path: string): boolean {
