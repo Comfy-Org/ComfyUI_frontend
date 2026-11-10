@@ -18,3 +18,8 @@ export const WidgetHeightKey: InjectionKey<string> = Symbol()
 export function useWidgetHeight(): string {
   return inject(WidgetHeightKey, 'h-6')
 }
+
+export const WidgetSpansNodeWidthKey: InjectionKey<boolean> = Symbol()
+export function useWidgetSpansNodeWidth(): boolean {
+  return inject(WidgetSpansNodeWidthKey, false)
+}
