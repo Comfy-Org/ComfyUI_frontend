@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -166,7 +166,7 @@ describe('useSubgraphStore', () => {
     expect(useCanvasStore().getCanvas).not.toHaveBeenCalled()
     expect(comfyApp.canvas.setGraph).not.toHaveBeenCalled()
   })
-  it.fails('should reject stale edit and delete requests without mutating', async () => {
+  it('should reject stale edit and delete requests without mutating', async () => {
     await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
     await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
     expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
@@ -200,14 +200,16 @@ describe('useSubgraphStore', () => {
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+    assert(first)
     first.nodes[0].id = -1
     first.definitions!.subgraphs[0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+    assert(second)
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
-  it.fails('should return undefined and log a stale blueprint lookup', () => {
+  it('should return undefined and log a stale blueprint lookup', () => {
     expect(
       store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
     ).toBeUndefined()
