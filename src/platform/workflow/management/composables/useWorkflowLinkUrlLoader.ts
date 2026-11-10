@@ -5,6 +5,7 @@ import type {
   WorkflowLinkOutOfSyncReason
 } from '@comfyorg/telemetry/types'
 import { createSharedComposable } from '@vueuse/core'
+import { onScopeDispose } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { z } from 'zod'
 
@@ -147,6 +148,10 @@ function useWorkflowLinkUrlLoaderInternal() {
         status: 'opened' | 'failed'
       }
     | undefined
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+  })
 
   async function clearIntent() {
     hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
@@ -223,6 +228,13 @@ function useWorkflowLinkUrlLoaderInternal() {
       : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)
   }
 
+  function attemptOwnership(workflowId: unknown, workspaceId: string | null) {
+    return () =>
+      !disposed &&
+      workspaceStore.activeWorkspaceId === workspaceId &&
+      linkQuery().workflowId === workflowId
+  }
+
   function completedStatus(value: unknown, workspaceId: string | null) {
     if (
       !completed ||
@@ -242,16 +254,17 @@ function useWorkflowLinkUrlLoaderInternal() {
     if (!afterNavigation && navigationPending(query)) return 'pending'
 
     const workspaceId = workspaceStore.activeWorkspaceId
-    const priorStatus = completedStatus(query.workflowId, workspaceId)
+    const workflowId = query.workflowId
+    const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
       await clearIntent()
       return priorStatus
     }
-    const isCurrent = () => workspaceStore.activeWorkspaceId === workspaceId
-    const outcome = await resolveLink(query.workflowId, isCurrent)
-    if (outcome.kind === 'pending' || !isCurrent()) return 'pending'
+    const ownsIntent = attemptOwnership(workflowId, workspaceId)
+    const outcome = await resolveLink(workflowId, ownsIntent)
+    if (outcome.kind === 'pending' || !ownsIntent()) return 'pending'
     const status = outcome.kind === 'opened' ? 'opened' : 'failed'
-    completed = { value: query.workflowId, workspaceId, status }
+    completed = { value: workflowId, workspaceId, status }
     await clearIntent()
     reportOutcome(outcome, workspaceId)
     return status

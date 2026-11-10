@@ -10,6 +10,7 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -41,6 +42,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 const ID = '82b98188-0c8f-41d2-9b91-617b9152b809'
+const NEXT_ID = '5d1c7f0e-3a4b-4c2d-8e9f-0a1b2c3d4e5f'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID
 const PATH = 'workflows/Car swap.json'
 const MODIFIED_MS = 1_793_000_000_000
@@ -57,6 +59,27 @@ function serveFile(path = PATH) {
   ])
 }
 
+function holdLookup() {
+  serveFile()
+  let respond: () => void = () => {}
+  vi.mocked(api.fetchApi).mockReturnValueOnce(
+    new Promise((resolve) => {
+      respond = () =>
+        resolve(Response.json({ path: PATH, size: 12, modified: MODIFIED_MS }))
+    })
+  )
+  return () => respond()
+}
+
+function navigateToLink(workflowId: string) {
+  const query = useRoute().query
+  Object.keys(query).forEach((key) => {
+    delete query[key]
+  })
+  query.workflowId = workflowId
+  capturePreservedQuery(NAMESPACE, { workflowId }, ['workflowId'])
+}
+
 function refuse(status: number, body: object) {
   vi.spyOn(api, 'fetchApi').mockResolvedValue(Response.json(body, { status }))
 }
@@ -70,8 +93,9 @@ async function openExistingTab() {
 
 describe('workflow-id links', () => {
   let loader: ReturnType<typeof useWorkflowLinkUrlLoader>
+  let scope: EffectScope
   beforeEach(() => {
-    const scope = effectScope()
+    scope = effectScope()
     onTestFinished(() => scope.stop())
     const scopedLoader = scope.run(useWorkflowLinkUrlLoader)
     assert.exists(scopedLoader)
@@ -429,6 +453,40 @@ describe('workflow-id links', () => {
     expect(await loader.openWorkflowLinkFromUrl()).toBe('pending')
 
     expect(useRoute().query.workflowId).toBe(ID)
+    expect(useToast().toasts).toEqual([])
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+  })
+
+  it('leaves a link the browser navigated to while an earlier lookup waited', async () => {
+    const respond = holdLookup()
+    navigateToLink(ID)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+
+    const attempt = loader.openWorkflowLinkFromUrl()
+    navigateToLink(NEXT_ID)
+    respond()
+
+    expect(await attempt).toBe('pending')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useRoute().query).toEqual({ workflowId: NEXT_ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    expect(useToast().toasts).toEqual([])
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+  })
+
+  it('opens and clears nothing when the editor unmounts while the lookup waits', async () => {
+    const respond = holdLookup()
+    navigateToLink(ID)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+
+    const attempt = loader.openWorkflowLinkFromUrl()
+    scope.stop()
+    respond()
+
+    expect(await attempt).toBe('pending')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(ID)
     expect(useToast().toasts).toEqual([])
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
   })
