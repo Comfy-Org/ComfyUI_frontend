@@ -446,9 +446,11 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
               }
             }),
             expect.objectContaining({
-              uses: './.github/actions/post-pr-report-comment',
+              uses: './.github/actions/upsert-comment-section',
               with: expect.objectContaining({
-                'pr-number': '${{ steps.pr.outputs.number }}'
+                'pr-number': '${{ steps.pr.outputs.number }}',
+                'section-name': 'playwright-videos',
+                'section-content-file': 'video-section.md'
               })
             })
           ])

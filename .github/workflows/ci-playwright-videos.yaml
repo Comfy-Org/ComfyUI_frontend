@@ -289,12 +289,25 @@ jobs:
             <<< "$HITS" > playwright-report/reused-recordings.tsv
 
       - name: Upload video report
+        id: upload-report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-new-tests
           path: playwright-report/
           retention-days: 30
           if-no-files-found: error
+
+      - name: Link video reports
+        env:
+          ARTIFACT_URL: ${{ steps.upload-report.outputs.artifact-url }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          {
+            echo '## Playwright video walkthroughs'
+            printf '\n[Download report with videos](%s).\n' "$ARTIFACT_URL"
+            printf '\nThe [PR: Playwright Videos publisher](%s/%s/actions/workflows/pr-playwright-videos.yaml) adds the hosted, playable report link to its summary and the unified PR status comment after this run completes.\n' "$SERVER_URL" "$REPOSITORY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload recording cache
         id: upload-cache
