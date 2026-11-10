@@ -56,7 +56,11 @@
         @loadeddata="handleVideoLoad"
         @error="handleVideoError"
       />
-
+      <span
+        v-if="currentItem?.preview_id && !videoError"
+        class="absolute top-2 left-2 rounded-sm bg-node/80 px-1.5 text-xs"
+        v-text="$t('g.preview')"
+      />
       <!-- Floating Action Buttons (appear on hover) -->
       <div
         v-if="isHovered || isFocused"
