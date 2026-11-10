@@ -21,7 +21,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const workflowLinkUrlLoader = vi.hoisted(() => ({
   openWorkflowLinkFromUrl: vi.fn<
     ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
-  >(async () => 'absent')
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false)
 }))
 vi.mock(
   import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
@@ -387,6 +390,7 @@ describe('useUrlActionLoaders', () => {
 
   it('finishes the workflow-id link after navigation and clears the URL and stash', async () => {
     await router.replace({ query: { workflowId: 'workflow-id', keep: 'yes' } })
+    workflowLinkUrlLoader.isLinkSettled.mockReturnValue(true)
     capturePreservedQuery(
       PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
       { workflowId: 'workflow-id' },
@@ -408,6 +412,39 @@ describe('useUrlActionLoaders', () => {
         'workflowId'
       )
     ).toBeUndefined()
+  })
+
+  it('leaves a workflow-id link the browser navigated to after the settled one', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', keep: 'yes' } })
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockImplementation(
+      async () => {
+        await router.replace({
+          query: { workflowId: 'workflow-b', keep: 'yes' }
+        })
+        capturePreservedQuery(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          { workflowId: 'workflow-b' },
+          ['workflowId']
+        )
+        return 'opened'
+      }
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b',
+      keep: 'yes'
+    })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-b')
   })
 
   it('retains a deferred workflow-id URL and stash after identity changes', async () => {

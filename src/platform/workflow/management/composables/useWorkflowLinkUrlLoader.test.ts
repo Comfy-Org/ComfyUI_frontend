@@ -12,6 +12,7 @@ import {
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { NavigationFailure, RouteLocationNormalized } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -78,6 +79,32 @@ function navigateToLink(workflowId: string) {
   })
   query.workflowId = workflowId
   capturePreservedQuery(NAMESPACE, { workflowId }, ['workflowId'])
+}
+
+function stashLink(workflowId: string) {
+  capturePreservedQuery(NAMESPACE, { workflowId }, ['workflowId'])
+}
+
+const HOME: RouteLocationNormalized = {
+  path: '/',
+  fullPath: '/',
+  name: undefined,
+  params: {},
+  query: {},
+  hash: '',
+  matched: [],
+  meta: {},
+  redirectedFrom: undefined
+}
+
+/** What router.replace resolves to when another navigation supersedes it. */
+function cancelledNavigation(): NavigationFailure {
+  const cancelled: NavigationFailure['type'] = 8
+  return Object.assign(new Error('Navigation cancelled'), {
+    type: cancelled,
+    from: HOME,
+    to: HOME
+  })
 }
 
 function refuse(status: number, body: object) {
@@ -489,6 +516,68 @@ describe('workflow-id links', () => {
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(ID)
     expect(useToast().toasts).toEqual([])
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'finished navigating there',
+      navigate: async () => navigateToLink(NEXT_ID),
+      route: NEXT_ID,
+      stash: NEXT_ID
+    },
+    {
+      name: 'holds it in a navigation guard',
+      navigate: async () => {
+        stashLink(NEXT_ID)
+        return cancelledNavigation()
+      },
+      route: ID,
+      stash: NEXT_ID
+    },
+    {
+      name: 'cancelled the cleanup first',
+      navigate: async () => cancelledNavigation(),
+      route: ID,
+      stash: ID
+    }
+  ])(
+    'leaves a newer link when the browser $name while an opened link cleared the URL',
+    async ({ navigate, route, stash }) => {
+      serveFile()
+      navigateToLink(ID)
+      vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+      vi.mocked(useRouter().replace).mockImplementation(navigate)
+
+      expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+
+      expect(useRoute().query.workflowId).toBe(route)
+      expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(stash)
+      expect(
+        useTelemetry()?.trackWorkflowLinkOpened
+      ).toHaveBeenCalledExactlyOnceWith({
+        outcome: 'opened',
+        workspace_id: 'workspace-1'
+      })
+    }
+  )
+
+  it('leaves a newer link the browser navigated to while a settled link cleared the URL again', async () => {
+    serveFile()
+    navigateToLink(ID)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    vi.mocked(useRouter().replace).mockRejectedValueOnce(new Error('cancelled'))
+    expect(await loader.openWorkflowLinkFromUrl()).toBe('opened')
+    vi.mocked(useRouter().replace).mockImplementation(async () => {
+      stashLink(NEXT_ID)
+      return cancelledNavigation()
+    })
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+    expect(useRoute().query.workflowId).toBe(ID)
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
   })
 
   it('keeps tabs unchanged when the sidebar file cannot be opened', async () => {

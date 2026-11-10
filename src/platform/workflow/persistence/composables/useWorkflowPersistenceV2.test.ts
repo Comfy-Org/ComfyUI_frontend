@@ -66,7 +66,10 @@ vi.mock(
 const workflowLinkUrlLoader = vi.hoisted(() => ({
   openWorkflowLinkFromUrl: vi.fn<
     ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
-  >(async () => 'absent')
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false)
 }))
 
 vi.mock(

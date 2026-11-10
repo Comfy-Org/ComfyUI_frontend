@@ -31,7 +31,9 @@ the record's own content, and restored tabs stay as they were.
 Preserve the query through sign-in and onboarding. Defer the lookup while a
 deployment or workspace link can reload the page, then resolve it after those
 loaders finish. A workflow-id link takes precedence over a folder link, even
-when it cannot be opened. Final handling clears both intents.
+when it cannot be opened. Final handling clears both intents, and only for the
+link it handled: a newer link the browser navigated to meanwhile stays in the
+URL and the stash for its own run.
 
 The reply is typed in the loader until Cloud's generated types include the
 route.

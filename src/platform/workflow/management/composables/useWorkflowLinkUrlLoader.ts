@@ -52,6 +52,16 @@ type ResolveOutcome = LinkOutcome | { kind: 'pending' }
 type LookupResult =
   | { kind: 'found'; path: string }
   | Exclude<LinkOutcome, { kind: 'opened' }>
+/** Where a link lives: the address bar, and the stash that carries it past
+ * navigations which drop the query (sign-in, a subgraph's hash replace). */
+type LinkCarriers = { route: unknown; stash: string | undefined }
+type Ownership = {
+  /** The link is still live and still the one this attempt captured. */
+  owns: () => boolean
+  /** Nothing replaced the captured link; a carrier that is gone, such as the
+   * address bar this attempt just stripped, does not count as a replacement. */
+  unreplaced: () => boolean
+}
 
 function isWorkflowPath(path: string): boolean {
   return (
@@ -153,21 +163,37 @@ function useWorkflowLinkUrlLoaderInternal() {
     disposed = true
   })
 
-  async function clearIntent() {
-    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+  /** Strips the link from the address bar. Returns false when another
+   * navigation superseded the replace: that navigation may carry a newer link
+   * the stash has not seen yet. Only a URL that still carries the link is
+   * replaced, so no failure here is a duplicated navigation. */
+  async function stripLinkFromUrl(): Promise<boolean> {
+    if (!('workflowId' in route.query) && !('workflows' in route.query))
+      return true
     const query = { ...route.query }
     delete query.workflowId
     delete query.workflows
     try {
-      await router.replace({ query })
+      return (await router.replace({ query })) === undefined
     } catch (cause) {
       reportError(new Error('Could not clear workflow link', { cause }), {
         surface: 'graph',
         errorType: 'error_clearing_workflow_link'
       })
+      return true
     }
+  }
+
+  /** Clears the link this attempt owns from the URL and stash. Returns false,
+   * clearing nothing more, when a newer link replaced it before or during the
+   * URL replace. */
+  async function clearOwnedIntent(ownership: Ownership) {
+    if (!ownership.owns()) return false
+    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+    if (!(await stripLinkFromUrl()) || !ownership.unreplaced()) return false
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+    return true
   }
 
   async function openPath(
@@ -228,11 +254,37 @@ function useWorkflowLinkUrlLoaderInternal() {
       : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)
   }
 
-  function attemptOwnership(workflowId: unknown, workspaceId: string | null) {
-    return () =>
+  function linkCarriers(): LinkCarriers {
+    return {
+      route: route.query.workflowId,
+      stash: getPreservedQueryParam(NAMESPACE, 'workflowId')
+    }
+  }
+
+  /** Each carrier is either gone (a hash-only replace drops the query) or
+   * still holds what it held when the attempt began. A navigation guard can
+   * hold a newer link in the stash while the address bar still shows this
+   * one, so both carriers are compared. */
+  function keepsCapturedLink(captured: LinkCarriers): boolean {
+    const current = linkCarriers()
+    return (
+      (current.route === undefined || current.route === captured.route) &&
+      (current.stash === undefined || current.stash === captured.stash)
+    )
+  }
+
+  function hasLink(): boolean {
+    const current = linkCarriers()
+    return current.route !== undefined || current.stash !== undefined
+  }
+
+  function attemptOwnership(workspaceId: string | null): Ownership {
+    const captured = linkCarriers()
+    const unreplaced = () =>
       !disposed &&
       workspaceStore.activeWorkspaceId === workspaceId &&
-      linkQuery().workflowId === workflowId
+      keepsCapturedLink(captured)
+    return { owns: () => hasLink() && unreplaced(), unreplaced }
   }
 
   function completedStatus(value: unknown, workspaceId: string | null) {
@@ -252,25 +304,39 @@ function useWorkflowLinkUrlLoaderInternal() {
     const query = linkQuery()
     if (!('workflowId' in query)) return 'absent'
     if (!afterNavigation && navigationPending(query)) return 'pending'
-
-    const workspaceId = workspaceStore.activeWorkspaceId
-    const workflowId = query.workflowId
-    const priorStatus = completedStatus(workflowId, workspaceId)
-    if (priorStatus) {
-      await clearIntent()
-      return priorStatus
-    }
-    const ownsIntent = attemptOwnership(workflowId, workspaceId)
-    const outcome = await resolveLink(workflowId, ownsIntent)
-    if (outcome.kind === 'pending' || !ownsIntent()) return 'pending'
-    const status = outcome.kind === 'opened' ? 'opened' : 'failed'
-    completed = { value: workflowId, workspaceId, status }
-    await clearIntent()
-    reportOutcome(outcome, workspaceId)
-    return status
+    return settleLink(query.workflowId, workspaceStore.activeWorkspaceId)
   }
 
-  return { openWorkflowLinkFromUrl }
+  /** Opens (or reports again) the link the URL carries now, then clears it
+   * only while this attempt still owns it; `pending` when a newer link or a
+   * workspace change took over, so callers leave that link alone. */
+  async function settleLink(
+    workflowId: unknown,
+    workspaceId: string | null
+  ): Promise<WorkflowLinkLoadStatus> {
+    const ownership = attemptOwnership(workspaceId)
+    const priorStatus = completedStatus(workflowId, workspaceId)
+    if (priorStatus)
+      return (await clearOwnedIntent(ownership)) ? priorStatus : 'pending'
+    const outcome = await resolveLink(workflowId, ownership.owns)
+    if (outcome.kind === 'pending' || !ownership.owns()) return 'pending'
+    const status = outcome.kind === 'opened' ? 'opened' : 'failed'
+    completed = { value: workflowId, workspaceId, status }
+    const cleared = await clearOwnedIntent(ownership)
+    reportOutcome(outcome, workspaceId)
+    return cleared ? status : 'pending'
+  }
+
+  /** Whether `workflowId` is the link this loader already settled, so a later
+   * sweep may strip it; a link it has not settled belongs to a later run. */
+  function isLinkSettled(workflowId: unknown): boolean {
+    return (
+      completedStatus(workflowId, workspaceStore.activeWorkspaceId) !==
+      undefined
+    )
+  }
+
+  return { openWorkflowLinkFromUrl, isLinkSettled }
 }
 
 export const useWorkflowLinkUrlLoader = createSharedComposable(

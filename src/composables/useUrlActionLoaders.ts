@@ -1,4 +1,5 @@
 import { useRouter } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
@@ -9,7 +10,10 @@ import {
   STRIPE_RETURN_PARAMS
 } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
-import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -59,12 +63,13 @@ type UrlActionLoaders = {
  * which also stops the loop first. `workflows` is opened at boot, which keeps
  * it (and its preserved-query stash) beside a deployment link for the boot
  * after the pick's reload; a link that did not reload ends here, stash too.
+ * `workflowId` is not here: the sweep strips it only as the link the
+ * workflow-link loader settled (sweptWorkflowLinkParams).
  */
 const HANDLED_PARAMS = [
   'workspace',
   'deployment',
   'workflows',
-  'workflowId',
   'invite',
   'create_workspace',
   'pricing',
@@ -101,6 +106,48 @@ function workflowLinkSteps(
         (await loader.openWorkflowLinkFromUrl(true)) === 'pending'
     }
   ]
+}
+
+/**
+ * The workflow-id part of the sweep, owned by the link the loader settled: a
+ * workflowId the browser navigated to after that link, in the URL or the
+ * stash, is a newer link and stays for its own run. Clears the settled stash
+ * and returns the URL params to strip.
+ */
+function sweptWorkflowLinkParams(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  query: LocationQuery
+): string[] {
+  if (!loader) return []
+  const stashed = getPreservedQueryParam(
+    PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+    'workflowId'
+  )
+  if (stashed !== undefined && loader.isLinkSettled(stashed))
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID)
+  return 'workflowId' in query && loader.isLinkSettled(query.workflowId)
+    ? ['workflowId']
+    : []
+}
+
+function sweepStep(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  router: ReturnType<typeof useRouter>
+): UrlActionStep {
+  return {
+    failureMessage: 'Failed to clear handled deep-link params from the URL:',
+    run: async () => {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+      const query = { ...router.currentRoute.value.query }
+      const params = [
+        ...HANDLED_PARAMS.filter((param) => param in query),
+        ...sweptWorkflowLinkParams(loader, query)
+      ]
+      if (params.length === 0) return
+      for (const param of params) delete query[param]
+      await router.replace({ query })
+    }
+  }
 }
 
 function buildUrlActionSteps(
@@ -167,17 +214,7 @@ function buildUrlActionSteps(
     })
   }
 
-  steps.push({
-    failureMessage: 'Failed to clear handled deep-link params from the URL:',
-    run: async () => {
-      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID)
-      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
-      const query = { ...router.currentRoute.value.query }
-      if (!HANDLED_PARAMS.some((param) => param in query)) return
-      for (const param of HANDLED_PARAMS) delete query[param]
-      await router.replace({ query })
-    }
-  })
+  steps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
 
   return steps
 }
