@@ -23,7 +23,7 @@ import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
 import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
 import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
 import {
-  endHandoff,
+  endHandoffSession,
   handoffTab,
   liveHandoffSession,
   sessionTabStorage
@@ -208,7 +208,7 @@ export function createModeBillingClient(): BillingWebClient {
   if (isHandoffTab())
     return createHandoffBillingClient(
       createHandoffBillingSession(sessionTabStorage),
-      () => endHandoff(sessionTabStorage, 'session_ended')
+      () => endHandoffSession(sessionTabStorage)
     )
   return mode.value === 'web-session'
     ? createWebSessionBillingClient(unifiedSession())

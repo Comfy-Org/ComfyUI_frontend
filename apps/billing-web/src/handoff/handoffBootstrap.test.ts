@@ -283,6 +283,38 @@ describe('runHandoffBootstrap', () => {
     expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
   })
 
+  it('restores an expired session with a payment still settling as checking that payment', async () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'comfy.billing-web.handoff.v1',
+      JSON.stringify({
+        kind: 'session',
+        exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' }
+      })
+    )
+    storage.setItem(
+      'comfy:billing:operation:user-1:ws-1',
+      JSON.stringify({
+        operationId: 'op-7',
+        kind: 'subscription',
+        presentation: 'hosted',
+        attemptStartedAt: NOW - 40 * 60_000,
+        awaited: true
+      })
+    )
+    const ended = {
+      kind: 'ended',
+      ending: 'payment_pending',
+      reference: 'op-7'
+    }
+
+    await runHandoffBootstrap(setup('/return/topup', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+
+    await runHandoffBootstrap(setup('/handoff', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+  })
+
   it('keeps a terminal state across a reload', async () => {
     const storage = memoryStorage()
     storage.setItem(

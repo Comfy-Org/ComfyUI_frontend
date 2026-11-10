@@ -10,7 +10,7 @@ import type { BillingSession } from '@comfyorg/account-core/billing'
 
 import type { HandoffSession, TabStorage } from '@/handoff/handoffTab'
 import {
-  endHandoff,
+  endHandoffSession,
   handoffTab,
   liveHandoffSession
 } from '@/handoff/handoffTab'
@@ -56,8 +56,7 @@ export function createHandoffBillingSession(
   function current(): SessionResult | undefined {
     const session = liveHandoffSession(now())
     if (session) return { status: 'ok', session: credentialOf(session) }
-    if (handoffTab.value?.kind === 'session')
-      endHandoff(storage, 'session_ended')
+    endHandoffSession(storage, now)
     return { status: 'error', code: 'NOT_AUTHENTICATED' }
   }
 
@@ -67,8 +66,7 @@ export function createHandoffBillingSession(
       watch(handoffTab, () => listener(getSnapshot()), { flush: 'sync' }),
     ensureFresh: async () => current(),
     remint: async () => {
-      if (handoffTab.value?.kind === 'session')
-        endHandoff(storage, 'session_ended')
+      endHandoffSession(storage, now)
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
   }

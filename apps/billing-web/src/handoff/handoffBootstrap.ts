@@ -10,6 +10,7 @@ import {
   handoffTab,
   readHandoffState,
   readTabMarker,
+  sessionEnding,
   writeHandoffState,
   writeTabMarker
 } from '@/handoff/handoffTab'
@@ -100,7 +101,7 @@ function fromMarker(
 
 function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
   return state.kind === 'session' && state.session.expiresAt <= env.now()
-    ? { kind: 'ended', ending: 'session_ended' }
+    ? sessionEnding(env.storage, state.session, env.now)
     : state
 }
 

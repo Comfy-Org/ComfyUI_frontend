@@ -70,6 +70,45 @@ describe('createHandoffBillingSession', () => {
     expect(session.getSnapshot().phase).toBe('signed-out')
   })
 
+  it.for([
+    {
+      name: 'a payment this tab started and has not seen settle',
+      pointer: { kind: 'topup' },
+      ended: {
+        kind: 'ended',
+        ending: 'payment_pending',
+        reference: 'op-1'
+      }
+    },
+    {
+      name: 'a payment that already settled',
+      pointer: { kind: 'subscription', settled: 'succeeded' },
+      ended: { kind: 'ended', ending: 'session_ended' }
+    },
+    {
+      name: 'a cancellation',
+      pointer: { kind: 'cancel' },
+      ended: { kind: 'ended', ending: 'session_ended' }
+    }
+  ])('ends on $name as $ended.ending', async ({ pointer, ended }) => {
+    const { session, storage, clock } = setup()
+    storage.setItem(
+      'comfy:billing:operation:user-1:ws-1',
+      JSON.stringify({
+        operationId: 'op-1',
+        presentation: 'embedded',
+        attemptStartedAt: NOW,
+        ...pointer
+      })
+    )
+    clock.now = NOW + 31 * 60_000
+
+    await session.ensureFresh()
+
+    expect(handoffTab.value).toEqual(ended)
+    expect(readHandoffState(storage)).toEqual(ended)
+  })
+
   it('ends the handoff when the server refuses the session instead of minting another', async () => {
     const { session } = setup()
     const listener = vi.fn()
