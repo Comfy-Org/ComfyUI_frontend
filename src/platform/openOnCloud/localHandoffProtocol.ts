@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 
 export const LOCAL_HANDOFF_PARAM = 'from_local'
 
@@ -64,5 +65,5 @@ export function isLocalOrigin(origin: string): boolean {
 
 /** The Cloud receiver accepts a browser handoff only from a local origin. */
 export function canHandOffToCloud(): boolean {
-  return isLocalOrigin(window.location.origin)
+  return handsPopupsToSystemBrowser() || isLocalOrigin(window.location.origin)
 }
