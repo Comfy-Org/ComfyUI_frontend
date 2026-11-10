@@ -80,6 +80,7 @@ const {
   customTitle,
   openingWorkflowName,
   historyGroups,
+  workflowNameFor,
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
@@ -125,6 +126,7 @@ const {
   customTitle?: string
   openingWorkflowName?: string
   historyGroups: HistoryGroups
+  workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -433,6 +435,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <ChatHistoryScreen
         :inert="blocked"
         :groups="historyGroups"
+        :workflow-name-for="workflowNameFor"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
         class="min-h-0 flex-1"

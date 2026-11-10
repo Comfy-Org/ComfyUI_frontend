@@ -536,7 +536,8 @@ const {
   storedWorkflowFor,
   openWorkflowFor,
   availableWorkflowReferences,
-  openTabsSnapshot
+  openTabsSnapshot,
+  workflowNameFor
 } = workflowResolver
 const {
   isSelecting: workflowSelecting,
@@ -2610,6 +2611,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="historyGroups"
+      :workflow-name-for="workflowNameFor"
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"

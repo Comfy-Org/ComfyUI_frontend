@@ -6,21 +6,27 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import Menu from '@comfyorg/design-system/menu/Menu'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
+import { useChatHistorySearch } from '@/workbench/extensions/agent/composables/agent/useChatHistorySearch'
 import type {
   ChatSession,
   HistoryGroups
 } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import { formatShortMonthDay } from '@/utils/dateTimeUtil'
 
 const {
   groups,
+  workflowNameFor = () => undefined,
   loadingId = null,
   failedId = null
 } = defineProps<{
   groups: HistoryGroups
+  /** Resolved workflow title for a session; undefined while unresolved. */
+  workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null
 }>()
@@ -32,20 +38,63 @@ const emit = defineEmits<{
   rename: [id: string, title: string]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const sections = computed(() =>
-  (
+// `groups` already carries the live current-chat title, so the search reads
+// the same displayed data; only recency order is rebuilt from the buckets.
+const search = useChatHistorySearch({
+  sessions: () =>
+    [
+      ...groups.current,
+      ...groups.today,
+      ...groups.yesterday,
+      ...groups.earlier
+    ].sort((a, b) => b.updatedAt - a.updatedAt),
+  currentSessionId: () => groups.current[0]?.id ?? null,
+  currentSessionTitle: () => undefined,
+  workflowNameFor: (session) => workflowNameFor(session)
+})
+
+interface HistorySection {
+  key: string
+  label?: string
+  items: {
+    session: ChatSession
+    result?: { preview?: string; workflowName?: string; isCurrent: boolean }
+  }[]
+}
+
+const sections = computed<HistorySection[]>(() => {
+  const results = search.results.value
+  if (results) {
+    return results.length === 0
+      ? []
+      : [
+          {
+            key: 'results',
+            items: results.map(({ session }) => ({ session, result: session }))
+          }
+        ]
+  }
+  return (
     [
       ['current', t('agent.historyCurrent'), groups.current],
       ['today', t('agent.historyToday'), groups.today],
       ['yesterday', t('agent.historyYesterday'), groups.yesterday],
       ['earlier', t('agent.historyEarlier'), groups.earlier]
     ] as const
-  ).filter(([, , items]) => items.length > 0)
-)
+  )
+    .filter(([, , items]) => items.length > 0)
+    .map(([key, label, items]) => ({
+      key,
+      label,
+      items: items.map((session) => ({ session }))
+    }))
+})
 
-const isEmpty = computed(() => sections.value.length === 0)
+const isEmpty = computed(
+  () => !search.isNoResults.value && sections.value.length === 0
+)
 
 function pick(session: ChatSession): void {
   emit('select', session.id)
@@ -155,20 +204,36 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
       </h2>
     </div>
 
+    <div class="shrink-0 px-2 pb-1">
+      <SearchInput
+        v-model="search.text.value"
+        :placeholder="t('agent.historySearchPlaceholder')"
+        :accessible-label="t('agent.historySearchLabel')"
+        :clear-label="t('agent.historySearchClear')"
+        size="sm"
+      />
+    </div>
+
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
       <p
-        v-if="isEmpty"
+        v-if="search.isNoResults.value"
+        class="px-2 py-8 text-center text-sm text-muted-foreground"
+      >
+        {{ t('agent.historyNoResults', { query: search.text.value.trim() }) }}
+      </p>
+      <p
+        v-else-if="isEmpty"
         class="px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.historyEmpty') }}
       </p>
 
-      <section v-for="[key, label, items] in sections" :key class="mb-3">
-        <p class="my-0 px-2 py-1 text-xs text-muted-foreground">
+      <section v-for="{ key, label, items } in sections" :key class="mb-3">
+        <p v-if="label" class="my-0 px-2 py-1 text-xs text-muted-foreground">
           {{ label }}
         </p>
         <div
-          v-for="session in items"
+          v-for="{ session, result } in items"
           :key="session.id"
           class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
         >
@@ -194,6 +259,14 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
           <template v-else>
             <ChatHistorySelectButton
               :title="session.title"
+              :preview="result?.preview"
+              :date="
+                result
+                  ? formatShortMonthDay(session.updatedAt, locale)
+                  : undefined
+              "
+              :workflow-name="result?.workflowName"
+              :current="result?.isCurrent"
               :loading="loadingId === session.id"
               :failed="failedId === session.id"
               @select="pick(session)"
