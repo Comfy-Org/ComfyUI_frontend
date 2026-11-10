@@ -28,9 +28,7 @@ export interface PreservedQueryDefinition {
    * becomes a bare `,`. Both are strings outside any real id's charset, so
    * they read back as invalid rather than resolving to one of several
    * colliding values or to "absent" (`capturePreservedQuery` itself drops a
-   * null/empty value as not worth capturing). A key present with an empty
-   * value (`?key=`) clears the namespace's stash instead, so an older stashed
-   * value never stands in for the newer, empty one the URL carries.
+   * null/empty value as not worth capturing).
    */
   rejectRepeated?: true
 }

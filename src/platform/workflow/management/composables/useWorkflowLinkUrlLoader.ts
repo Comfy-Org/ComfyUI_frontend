@@ -58,10 +58,6 @@ function isWorkflowId(value: unknown): value is string {
   return typeof value === 'string' && workflowIdSchema.safeParse(value).success
 }
 
-/** The value the preserved-query tracker stashes for a `workflowId` the
- * router hands over, so the URL and the stash compare as one link: a repeated
- * value joins with `,` and a bare `?workflowId` becomes `,` (`rejectRepeated`
- * in preservedQueryTracker). Any other value is its own link. */
 function linkIdentity(value: unknown): unknown {
   if (value === null) return ','
   if (!Array.isArray(value)) return value
@@ -73,8 +69,6 @@ function isSameLink(carried: unknown, workflowId: unknown): boolean {
   return linkIdentity(carried) === linkIdentity(workflowId)
 }
 
-/** Error classes whose name is safe to report. Loading a workflow runs custom
- * node code, which can throw an Error under any name, user data included. */
 const BUILT_IN_ERROR_NAMES: ReadonlySet<string> = new Set([
   'Error',
   'TypeError',
