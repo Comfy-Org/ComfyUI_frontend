@@ -7,37 +7,27 @@ import type {
 import { clamp } from 'es-toolkit'
 import { computed, reactive, ref } from 'vue'
 
-import {
-  BakeRasterCommand,
-  snapshotRaster
-} from '@comfyorg/layer-editor/commands/bakeContent'
-import { PropCommand } from '@comfyorg/layer-editor/commands/prop'
-import { SetTransformCommand } from '@comfyorg/layer-editor/commands/setTransform'
-import type { Compositor } from '@comfyorg/layer-editor/compositor'
-import { filterTopmost, findNode } from '@comfyorg/layer-editor/document'
-import type { AlphaSampler } from '@comfyorg/layer-editor/editor/pickOps'
-import { pickLayerAt } from '@comfyorg/layer-editor/editor/pickOps'
-import { Dirty } from '@comfyorg/layer-editor/history'
-import type { FillSpec } from '@comfyorg/layer-editor/fill'
-import { fillKind, rasterKind } from '@comfyorg/layer-editor/kinds'
-import type { BlendFn } from '@comfyorg/layer-editor/mode'
-import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
-import type {
-  FillData,
-  SceneNode,
-  Transform
-} from '@comfyorg/layer-editor/node'
-import { placedBounds } from '@comfyorg/layer-editor/render/bake'
-import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
-import { drawOutsideCanvasPreview } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
-import { createSession } from '@comfyorg/layer-editor/session'
-import type { CanvasItem } from '@comfyorg/layer-editor/tool'
-import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
-import {
-  hitHandle,
-  unionBounds
-} from '@comfyorg/layer-editor/tools/transformMath'
-import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
+import { BakeRasterCommand, snapshotRaster } from '#/commands/bakeContent'
+import { PropCommand } from '#/commands/prop'
+import { SetTransformCommand } from '#/commands/setTransform'
+import type { Compositor } from '#/compositor'
+import { filterTopmost, findNode } from '#/document'
+import type { AlphaSampler } from '#/editor/pickOps'
+import { pickLayerAt } from '#/editor/pickOps'
+import { Dirty } from '#/history'
+import type { FillSpec } from '#/fill'
+import { fillKind, rasterKind } from '#/kinds/index'
+import type { BlendFn } from '#/mode'
+import { LAYER_MODES, defaultMode } from '#/mode'
+import type { FillData, SceneNode, Transform } from '#/node'
+import { placedBounds } from '#/render/bake'
+import type { OutsideCanvasPreviewLayer } from '#/render/outsideCanvasPreview'
+import { drawOutsideCanvasPreview } from '#/render/outsideCanvasPreview'
+import { createSession } from '#/session'
+import type { CanvasItem } from '#/tool'
+import { canTransformNode } from '#/tools/transformTool'
+import { hitHandle, unionBounds } from '#/tools/transformMath'
+import { createPanZoom } from '#/viewport/panZoom'
 
 export type LayerEditorPointerMode = 'pointer' | 'hand'
 export type LayerEditorAlignOp =

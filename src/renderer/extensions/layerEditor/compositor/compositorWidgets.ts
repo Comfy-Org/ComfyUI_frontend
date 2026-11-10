@@ -6,8 +6,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   emptyCompositorWidgetValue,
   isCompositorWidgetValue
-} from '@/renderer/extensions/compositor/components/types'
-import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
+} from '@/renderer/extensions/layerEditor/compositor/widgetValue'
+import type { CompositorWidgetValue } from '@/renderer/extensions/layerEditor/compositor/widgetValue'
 
 const COMPOSITOR_WIDGET = 'compositor'
 

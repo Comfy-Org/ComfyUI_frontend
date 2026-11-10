@@ -66,12 +66,12 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useCompositorEditor } from '@/renderer/extensions/compositor/composables/useCompositorEditor'
+import { useCompositorEditor } from '@/renderer/extensions/layerEditor/compositor/useCompositorEditor'
 import {
   getCompositorPreviewOverride,
   hasCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/composables/useCompositorPsdDownload'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
+import { useCompositorPsdDownload } from '@/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

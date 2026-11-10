@@ -1,10 +1,10 @@
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
-import { extractLayerState } from '@/renderer/extensions/compositor/composables/compositorLayerState'
-import { setCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
+import { extractLayerState } from '@comfyorg/layer-editor/persistence/compositorLayerState'
+import { setCompositorWidgetValue } from '@/renderer/extensions/layerEditor/compositor/compositorWidgets'
 import {
   getCompositorInputsFingerprint,
   setCompositorPreviewOverride
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { SceneNode } from '@comfyorg/layer-editor/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 

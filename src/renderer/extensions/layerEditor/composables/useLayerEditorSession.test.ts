@@ -12,7 +12,7 @@ import {
   applyLayerState,
   extractLayerState,
   parseLayerState
-} from '@/renderer/extensions/compositor/composables/compositorLayerState'
+} from '@comfyorg/layer-editor/persistence/compositorLayerState'
 import type {
   CompositeInput,
   Compositor,
@@ -22,7 +22,7 @@ import type {
 import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { reorderDropIndex } from './layerPanelDnd'
-import { useLayerEditorSession } from './useLayerEditorSession'
+import { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
 
 class FakeCompositor implements Compositor {
   disposed = false

@@ -11,7 +11,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   clearCompositorLayers,
   setCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import WidgetCompositor from './WidgetCompositor.vue'
 
 vi.mock(import('@/scripts/app'))
@@ -19,13 +19,13 @@ vi.mock(import('@/scripts/app'))
 const openCompositorEditor = vi.hoisted(() => vi.fn())
 
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
+  import('@/renderer/extensions/layerEditor/compositor/useCompositorEditor'),
   () => ({
     useCompositorEditor: () => ({ openCompositorEditor })
   })
 )
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/useCompositorPsdDownload'),
+  import('@/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload'),
   () => ({
     useCompositorPsdDownload: () => ({
       exporting: ref(false),

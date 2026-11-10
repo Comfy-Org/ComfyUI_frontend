@@ -6,15 +6,11 @@ import type {
   CompositorLayerEntry,
   CompositorBackgroundEntry,
   CompositorLayerState
-} from '@comfyorg/graph-model/compositor'
-export type { CompositorLayerState } from '@comfyorg/graph-model/compositor'
-import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
-import type { BlendFn } from '@comfyorg/layer-editor/mode'
-import type {
-  FillData,
-  SceneNode,
-  Transform
-} from '@comfyorg/layer-editor/node'
+} from './compositorTypes'
+export type { CompositorLayerState } from './compositorTypes'
+import { LAYER_MODES } from '#/mode'
+import type { BlendFn } from '#/mode'
+import type { FillData, SceneNode, Transform } from '#/node'
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 

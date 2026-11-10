@@ -46,7 +46,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

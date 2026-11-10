@@ -36,13 +36,13 @@ import Button from '@comfyorg/design-system/button/Button'
 import {
   saveCompositorLayerState,
   saveCompositorPreview
-} from '@/renderer/extensions/compositor/composables/compositorSave'
-import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
-import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+} from '@/renderer/extensions/layerEditor/compositor/compositorSave'
+import { loadCompositorSession } from '@/renderer/extensions/layerEditor/compositor/compositorSession'
+import { useCompositorAutoSave } from '@/renderer/extensions/layerEditor/compositor/useCompositorAutoSave'
 import {
   isTextEditingTarget,
   useLayerEditorSession
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

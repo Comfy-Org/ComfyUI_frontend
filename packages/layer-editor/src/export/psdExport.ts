@@ -1,17 +1,14 @@
 import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
 
-import type { Compositor } from '@comfyorg/layer-editor/compositor'
-import type { ContentEntry, ContentStore } from '@comfyorg/layer-editor/content'
-import type { Document } from '@comfyorg/layer-editor/document'
-import type {
-  RasterData,
-  SceneNode,
-  Transform
-} from '@comfyorg/layer-editor/node'
+import type { Compositor } from '#/compositor'
+import type { ContentEntry, ContentStore } from '#/content'
+import type { Document } from '#/document'
+import type { Editor } from '#/editor/editor'
+import type { RasterData, SceneNode, Transform } from '#/node'
 import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
-import { getNodeKind } from '@comfyorg/layer-editor/nodeKind'
-import type { RenderNodeCtx } from '@comfyorg/layer-editor/nodeKind'
-import { placeBitmap } from '@comfyorg/layer-editor/render/place'
+import { getNodeKind } from '#/nodeKind'
+import type { RenderNodeCtx } from '#/nodeKind'
+import { placeBitmap } from '#/render/place'
 import { PSD_BLEND_MODES, fillToVectorContent } from './psdMapping'
 
 export interface PsdGuides {
@@ -303,4 +300,41 @@ export async function buildPsd(
     }
   }
   return psd
+}
+
+function readbackCanvas(compositor: Compositor): HTMLCanvasElement {
+  const img = compositor.readback()
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2d context unavailable')
+  ctx.putImageData(img, 0, 0)
+  return canvas
+}
+
+export async function buildSessionPsdBlob(session: {
+  editor: Editor
+  content: PsdContentSource
+  compositor: Compositor
+}): Promise<Blob> {
+  const { editor, content, compositor } = session
+  if (editor.floating()) editor.anchorFloating()
+  const guides = editor.guides()
+  const psd = await buildPsdFromEditor(
+    {
+      document: () => editor.document(),
+      render: () => editor.render(),
+      readbackCanvas: () => readbackCanvas(compositor)
+    },
+    content,
+    {
+      guides: {
+        horizontal: guides.filter((g) => g.axis === 'y').map((g) => g.pos),
+        vertical: guides.filter((g) => g.axis === 'x').map((g) => g.pos)
+      }
+    }
+  )
+  const { writePsd } = await import('ag-psd')
+  return new Blob([writePsd(psd)], { type: 'image/vnd.adobe.photoshop' })
 }

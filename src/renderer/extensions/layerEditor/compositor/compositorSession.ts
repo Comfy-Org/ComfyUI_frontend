@@ -2,16 +2,16 @@ import {
   applyLayerState,
   parseLayerState,
   resolveInitialLayerState
-} from '@/renderer/extensions/compositor/composables/compositorLayerState'
-import { imageRefViewQuery } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import { getCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
+} from '@comfyorg/layer-editor/persistence/compositorLayerState'
+import { imageRefViewQuery } from '@/renderer/extensions/layerEditor/compositor/compositorPaths'
+import { getCompositorWidgetValue } from '@/renderer/extensions/layerEditor/compositor/compositorWidgets'
 import {
   getCompositorBBoxes,
   getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

@@ -100,7 +100,7 @@ import {
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()

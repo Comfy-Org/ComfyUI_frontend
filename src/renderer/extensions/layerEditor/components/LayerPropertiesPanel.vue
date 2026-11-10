@@ -203,12 +203,12 @@ import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@comfyorg/layer-editor/vue'
 import {
   CANVAS_SIZE_MAX,
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@comfyorg/layer-editor/vue'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 

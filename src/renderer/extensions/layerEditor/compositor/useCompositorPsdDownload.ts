@@ -2,13 +2,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
-import {
-  buildSessionPsdBlob,
-  psdExportFilename
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import { loadCompositorSession } from '@/renderer/extensions/layerEditor/compositor/compositorSession'
+import { buildSessionPsdBlob } from '@comfyorg/layer-editor/export/psdExport'
+import { psdExportFilename } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
+import { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 

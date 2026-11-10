@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -21,7 +21,7 @@ const {
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/extensions/compositor/composables/compositorLayerState'),
+  import('@comfyorg/layer-editor/persistence/compositorLayerState'),
   () => ({
     applyLayerState,
     parseLayerState: () => null,
@@ -29,7 +29,7 @@ vi.mock<unknown>(
   })
 )
 vi.mock<unknown>(
-  import('@/renderer/extensions/compositor/composables/useCompositorLayers'),
+  import('@/renderer/extensions/layerEditor/compositor/useCompositorLayers'),
   () => ({
     getCompositorBBoxes: () => undefined,
     getCompositorCanvas,
@@ -38,7 +38,7 @@ vi.mock<unknown>(
   })
 )
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/compositorWidgets'),
+  import('@/renderer/extensions/layerEditor/compositor/compositorWidgets'),
   () => ({
     getCompositorWidgetValue: () => ({})
   })

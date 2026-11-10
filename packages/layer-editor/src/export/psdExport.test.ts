@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Document } from '@comfyorg/layer-editor/document'
-import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
-import { defaultMode } from '@comfyorg/layer-editor/mode'
-import type { GroupData, SceneNode } from '@comfyorg/layer-editor/node'
+import type { Document } from '#/document'
+import { registerBuiltinKinds } from '#/kinds/index'
+import { defaultMode } from '#/mode'
+import type { GroupData, SceneNode } from '#/node'
 import {
   buildPsd,
   leafPlacedBounds,

@@ -126,8 +126,8 @@ import {
   dropPositionFor,
   reorderDropIndex
 } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
-import { DEFAULT_BACKGROUND_COLOR } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import { DEFAULT_BACKGROUND_COLOR } from '@comfyorg/layer-editor/vue'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
 import { cn } from '@comfyorg/tailwind-utils'
 

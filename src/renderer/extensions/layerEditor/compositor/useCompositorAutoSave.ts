@@ -1,7 +1,7 @@
 import { debounce } from 'es-toolkit'
 
-import type { CompositorLayerStateSession } from '@/renderer/extensions/compositor/composables/compositorSave'
-import { saveCompositorLayerState } from '@/renderer/extensions/compositor/composables/compositorSave'
+import type { CompositorLayerStateSession } from '@/renderer/extensions/layerEditor/compositor/compositorSave'
+import { saveCompositorLayerState } from '@/renderer/extensions/layerEditor/compositor/compositorSave'
 import { Dirty } from '@comfyorg/layer-editor/history'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 

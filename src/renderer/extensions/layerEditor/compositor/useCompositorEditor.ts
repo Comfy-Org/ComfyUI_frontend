@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import {
   getCompositorInputsFingerprint,
   hasCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import {
   LayerEditorDialogContent,
   LayerEditorDialogHeader,
