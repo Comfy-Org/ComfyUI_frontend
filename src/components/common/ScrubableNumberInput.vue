@@ -149,6 +149,7 @@ function handleBlur(e: Event) {
     if (!textEdit.value) return
     textEdit.value = false
     onInteraction({ kind: 'text', value: target.value })
+    target.blur()
     return
   }
   const raw = target.value.trim()

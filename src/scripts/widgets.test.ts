@@ -47,9 +47,17 @@ test('extension policy commits once and preserves drafts across presentation upd
   await nextTick()
   await user.clear(screen.getByRole('textbox', { name: 'Width' }))
   await user.type(screen.getByRole('textbox', { name: 'Width' }), '13{Enter}')
+  expect(screen.getByRole('textbox', { name: 'Width' })).not.toHaveFocus()
   await user.tab()
   expect(changes).toEqual([16])
   expect(screen.getByRole('textbox', { name: 'Width' })).toHaveValue('16')
+  expect(screen.getByRole('textbox', { name: 'Width' })).not.toHaveProperty(
+    'readOnly',
+    true
+  )
+  await user.clear(screen.getByRole('textbox', { name: 'Width' }))
+  await user.type(screen.getByRole('textbox', { name: 'Width' }), '21{Enter}')
+  expect(changes).toEqual([16, 24])
 })
 
 test('buttons use extension policy and remain usable after removal and remount', async () => {
