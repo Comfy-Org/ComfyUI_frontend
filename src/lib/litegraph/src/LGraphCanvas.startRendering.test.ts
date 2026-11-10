@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createMockCanvasRenderingContext2D,
-  createTestCanvasElement
+  createTestCanvasElement,
+  stubCanvasGetContext
 } from '@/utils/__tests__/canvasTestUtils'
 
 function captureFrames() {
@@ -238,6 +240,52 @@ describe('LGraphCanvas.startRendering', () => {
         errorType: 'error_rendering_canvas_initial_frame'
       })
     )
+  })
+
+  it('hands the configured frame interval to update callbacks', () => {
+    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {})
+    const canvas = new LGraphCanvas(createTestCanvasElement(), new LGraph(), {
+      skip_events: true,
+      skip_render: true
+    })
+    canvas.maximumFps = 10
+    const intervals: number[] = []
+    onCanvasFrame(canvas.canvas, 'update', (ms) => intervals.push(ms))
+
+    canvas.startRendering()
+
+    expect(intervals).toEqual([100])
+  })
+
+  it('draws updated state before presenting it', () => {
+    captureFrames()
+    stubCanvasGetContext()
+    const element = createTestCanvasElement({
+      ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+    })
+    const canvas = new LGraphCanvas(element, new LGraph(), {
+      skip_events: true,
+      skip_render: true
+    })
+    canvas.maximumFps = 10
+    let drawnText = ''
+    canvas.onDrawForeground = () => {
+      drawnText = canvas.info_text ?? ''
+    }
+    const presentations: { drawnText: string; interval: number }[] = []
+    onCanvasFrame(canvas.canvas, 'update', () => {
+      canvas.info_text = 'updated'
+    })
+    const stopPresenting = onCanvasFrame(canvas.canvas, 'present', (interval) =>
+      presentations.push({ drawnText, interval })
+    )
+
+    canvas.startRendering()
+    stopPresenting()
+    canvas.draw(true, true)
+
+    expect(presentations).toEqual([{ drawnText: 'updated', interval: 100 }])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('keeps scheduling frames when the first frame succeeds', () => {
