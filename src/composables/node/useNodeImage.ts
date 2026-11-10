@@ -18,7 +18,13 @@ const VIDEO_DEFAULT_OPTIONS = {
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
-export const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+
+/** Message for a failed video load, from the media error codes of its attempts. */
+export const videoFailureMessageKey = (errorCodes: (number | undefined)[]) =>
+  errorCodes.includes(MEDIA_ERR_SRC_NOT_SUPPORTED)
+    ? 'g.videoFormatNotSupported'
+    : 'g.videoFailedToLoad'
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -175,7 +181,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = 0
-  let unsupportedSource = false
+  let errorCodes: (number | undefined)[] = []
 
   const { handleWheel, handlePointerDown, handlePointerMove } =
     useCanvasInteractions()
@@ -206,8 +212,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
         resolve(video)
       }
       video.onerror = () => {
-        if (video.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED)
-          unsupportedSource = true
+        errorCodes.push(video.error?.code)
         resolve(null)
       }
       video.src = url
@@ -247,7 +252,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     showInContainer(videoElements[0])
     const widget = findVideoWidget()
     if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
-    unsupportedSource = false
+    errorCodes = []
     callback?.()
   }
 
@@ -258,10 +263,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     onFailedLoading: () => {
       const message = document.createElement('p')
       message.className = 'p-2 text-center text-sm'
-      message.textContent = t(
-        unsupportedSource ? 'g.videoFormatNotSupported' : 'g.videoFailedToLoad'
-      )
-      unsupportedSource = false
+      message.textContent = t(videoFailureMessageKey(errorCodes))
+      errorCodes = []
       showInContainer(message)
       callback?.()
     }

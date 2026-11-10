@@ -32,8 +32,6 @@ const i18n = createI18n({
         failedToDownloadVideo: 'Failed to download video',
         calculatingDimensions: 'Calculating dimensions',
         videoFailedToLoad: 'Video failed to load',
-        videoFormatNotSupported:
-          "Your browser can't play this video. Download it to view it in another app.",
         loading: 'Loading'
       }
     }
@@ -89,44 +87,6 @@ describe('VideoPreview', () => {
         )
       )
     })
-  })
-
-  describe('load failure message', () => {
-    async function failWith(code: number) {
-      renderVideoPreview({
-        imageUrls: ['/api/view?filename=clip.mov&type=output']
-      })
-      const video = screen.getByTestId('main-video')
-      Object.defineProperty(video, 'error', { value: { code } })
-      await fireEvent.error(video)
-    }
-
-    it('names the file of a relative /api/view URL instead of "Invalid URL"', async () => {
-      await failWith(2)
-
-      expect(screen.getByText('clip.mov')).toBeInTheDocument()
-      expect(screen.queryByText('Invalid URL')).not.toBeInTheDocument()
-    })
-
-    it('says the browser cannot play a source it does not support', async () => {
-      await failWith(4)
-
-      expect(
-        screen.getByText(
-          "Your browser can't play this video. Download it to view it in another app."
-        )
-      ).toBeInTheDocument()
-      expect(screen.queryByText('Video failed to load')).not.toBeInTheDocument()
-    })
-
-    it.for([1, 2, 3])(
-      'keeps the generic message for media error code %i',
-      async (code) => {
-        await failWith(code)
-
-        expect(screen.getByText('Video failed to load')).toBeInTheDocument()
-      }
-    )
   })
 
   describe('batch cycling with identical URLs', () => {

@@ -15,27 +15,30 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const PLAYABLE = 'video-preview-square.webm'
 const UNDECODABLE = 'save-video-prores.mov'
+const SLOW = 'slow.webm'
+const IMAGE = 'ok.png'
 const CANT_PLAY_MESSAGE =
   "Your browser can't play this video. Download it to view it in another app."
 
-async function addSaveVideoNode(comfyPage: ComfyPage) {
-  const node = await comfyPage.nodeOps.addNode('SaveVideo', undefined, {
+async function addNode(comfyPage: ComfyPage, type: string) {
+  const node = await comfyPage.nodeOps.addNode(type, undefined, {
     x: 300,
     y: 150
   })
   return String(node.id)
 }
 
+const filenameOf = (url: string | URL) =>
+  new URL(url).searchParams.get('filename')
+
 const waitForServed = (page: Page, filename: string) =>
   page.waitForResponse(
-    (response) =>
-      response.ok() &&
-      new URL(response.url()).searchParams.get('filename') === filename
+    (response) => response.ok() && filenameOf(response.url()) === filename
   )
 
-const videoOutput = (filename: string) => ({
+const output = (filename: string, animated = true) => ({
   images: [{ filename, subfolder: '', type: 'output' }],
-  animated: [true]
+  animated: [animated]
 })
 
 function canvasPreviewVideo(page: Page) {
@@ -62,7 +65,8 @@ test.describe('Save Video preview of an undecodable output', () => {
       [UNDECODABLE]: {
         path: assetPath(`video/${UNDECODABLE}`),
         contentType: 'video/quicktime'
-      }
+      },
+      [IMAGE]: {}
     })
   })
 
@@ -71,15 +75,15 @@ test.describe('Save Video preview of an undecodable output', () => {
     getWebSocket
   }) => {
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-    const nodeId = await addSaveVideoNode(comfyPage)
+    const nodeId = await addNode(comfyPage, 'SaveVideo')
 
-    execution.executed('', nodeId, videoOutput(PLAYABLE))
+    execution.executed('', nodeId, output(PLAYABLE))
     await expect
       .poll(() => canvasPreviewVideo(comfyPage.page))
       .toEqual({ file: PLAYABLE, decoded: true })
 
     const undecodableServed = waitForServed(comfyPage.page, UNDECODABLE)
-    execution.executed('', nodeId, videoOutput(UNDECODABLE))
+    execution.executed('', nodeId, output(UNDECODABLE))
     await expect
       .poll(() => canvasPreviewVideo(comfyPage.page), {
         message: 'the previous run must not stay up as the new output preview'
@@ -91,45 +95,101 @@ test.describe('Save Video preview of an undecodable output', () => {
     ).toBeVisible()
   })
 
-  test.describe('Vue nodes renderer', { tag: '@vue-nodes' }, () => {
-    test('previews a playable output', async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = await addSaveVideoNode(comfyPage)
+  test('canvas renderer keeps the newer output when an older one fails late', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const { page } = comfyPage
+    let slowRequests = 0
+    let release!: () => void
+    const released = new Promise<void>((resolve) => (release = resolve))
+    await page.route(
+      (url) => filenameOf(url) === SLOW,
+      async (route) => {
+        slowRequests++
+        await released
+        await route.fulfill({ status: 404 })
+      }
+    )
+    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    const nodeId = await addNode(comfyPage, 'SaveVideo')
 
-      execution.executed('', nodeId, videoOutput(PLAYABLE))
+    execution.executed('', nodeId, output(SLOW))
+    await expect
+      .poll(async () => {
+        await canvasPreviewVideo(page)
+        return slowRequests
+      })
+      .toBeGreaterThan(0)
+    execution.executed('', nodeId, output(PLAYABLE))
+    await expect
+      .poll(() => canvasPreviewVideo(page))
+      .toEqual({ file: PLAYABLE, decoded: true })
 
-      const video = comfyPage.vueNodes
-        .getNodeLocator(nodeId)
-        .getByTestId('main-video')
-      await expect
-        .poll(() =>
-          video.evaluate(
-            (v: HTMLVideoElement) =>
-              v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-          )
-        )
-        .toBe(true)
+    // The failure probe is fetched once both load attempts are spent.
+    const failureProbed = page.waitForRequest(
+      (request) =>
+        request.resourceType() === 'fetch' && filenameOf(request.url()) === SLOW
+    )
+    release()
+    await failureProbed
+    await comfyPage.nextFrame()
+
+    expect(await canvasPreviewVideo(page)).toEqual({
+      file: PLAYABLE,
+      decoded: true
     })
+  })
 
-    test('says the browser cannot play the output', async ({
-      comfyPage,
-      getWebSocket
-    }) => {
+  test('canvas renderer drops the previous image when the new one fails to load', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    const nodeId = await addNode(comfyPage, 'SaveImage')
+    const loadedImages = () =>
+      comfyPage.page.evaluate((id) => {
+        window.app!.canvas.setDirty(true, true)
+        return window.app!.graph.getNodeById(id)?.imgs?.length ?? 0
+      }, nodeId)
+
+    execution.executed('', nodeId, output(IMAGE, false))
+    await expect.poll(loadedImages).toBe(1)
+
+    execution.executed('', nodeId, output('missing.png', false))
+    await expect.poll(loadedImages).toBe(0)
+  })
+
+  test(
+    'Vue nodes renderer says the browser cannot play the output, then plays the next one',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const nodeId = await addSaveVideoNode(comfyPage)
+      const nodeId = await addNode(comfyPage, 'SaveVideo')
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
+      const video = node.getByTestId('main-video')
+      const decoded = () =>
+        video.evaluate(
+          (v: HTMLVideoElement) =>
+            v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+        )
 
-      execution.executed('', nodeId, videoOutput(PLAYABLE))
-      await expect(node.getByTestId('main-video')).toBeVisible()
+      execution.executed('', nodeId, output(PLAYABLE))
+      await expect.poll(decoded).toBe(true)
 
       const undecodableServed = waitForServed(comfyPage.page, UNDECODABLE)
-      execution.executed('', nodeId, videoOutput(UNDECODABLE))
+      execution.executed('', nodeId, output(UNDECODABLE))
       await undecodableServed
-
       await expect(node.getByText(CANT_PLAY_MESSAGE)).toBeVisible()
       await expect(node.getByText(UNDECODABLE)).toBeVisible()
       await expect(node.getByText('Invalid URL')).toBeHidden()
-      await expect(node.getByTestId('main-video')).toHaveCount(0)
-    })
-  })
+      await expect(video).toHaveCount(0)
+
+      execution.executed('', nodeId, output(PLAYABLE))
+      await expect.poll(decoded).toBe(true)
+      await expect(node.getByText(CANT_PLAY_MESSAGE)).toBeHidden()
+    }
+  )
 })

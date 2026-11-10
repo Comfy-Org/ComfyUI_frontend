@@ -25,13 +25,7 @@
       >
         <i class="mb-2 icon-[lucide--video-off] size-12" />
         <p class="text-sm">
-          {{
-            $t(
-              unsupportedFormat
-                ? 'g.videoFormatNotSupported'
-                : 'g.videoFailedToLoad'
-            )
-          }}
+          {{ $t(videoFailureMessageKey([errorCode])) }}
         </p>
         <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
@@ -137,7 +131,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { MEDIA_ERR_SRC_NOT_SUPPORTED } from '@/composables/node/useNodeImage'
+import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -164,7 +158,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
-const unsupportedFormat = ref(false)
+const errorCode = ref<number>()
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
@@ -212,9 +206,10 @@ const handleVideoError = (event: Event) => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
-  unsupportedFormat.value =
-    event.target instanceof HTMLVideoElement &&
-    event.target.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED
+  errorCode.value =
+    event.target instanceof HTMLVideoElement
+      ? event.target.error?.code
+      : undefined
 
   const failedUrl = currentVideoUrl.value
   if (!failedUrl) return
