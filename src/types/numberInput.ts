@@ -5,16 +5,16 @@ export type NumberInputInteraction =
 
 export interface NumberInputOptions {
   name: string
-  value: number
-  displayValue?: string
-  annotation?: string
-  unit?: string
-  disabled?: boolean
   onInteraction: (interaction: NumberInputInteraction) => void
+  value: number
   action?: {
-    label: string
     icon: 'reset' | 'disable'
-    disabled?: boolean
+    label: string
     onClick: () => void
+    disabled?: boolean
   }
+  annotation?: string
+  disabled?: boolean
+  displayValue?: string
+  unit?: string
 }
