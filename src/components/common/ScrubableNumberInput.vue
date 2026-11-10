@@ -49,6 +49,7 @@
       />
       <div
         ref="swipeElement"
+        data-testid="number-input-scrub"
         :class="
           cn(
             'absolute inset-0 z-10 cursor-ew-resize touch-pan-y',
@@ -191,7 +192,7 @@ function handlePointerUp() {
 }
 
 const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
-  threshold: onInteraction ? 0 : 50,
+  threshold: onInteraction ? 1 : 50,
   onSwipeStart: () => (dragDelta = 0),
   onSwipe: () => {
     if (!onInteraction || disabled) return

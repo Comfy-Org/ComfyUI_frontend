@@ -126,7 +126,6 @@ export function createNumberInput(options: NumberInputOptions) {
                 onInteraction: state.onInteraction,
                 inputAttrs: {
                   'aria-label': state.name,
-                  inputmode: 'numeric',
                   onFocus: () => control.value?.edit()
                 }
               },

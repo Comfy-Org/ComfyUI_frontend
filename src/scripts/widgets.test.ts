@@ -5,6 +5,7 @@ import { screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { createNumberInput } from '@/scripts/widgets'
+import type { NumberInputInteraction } from '@/types/numberInput'
 
 let control: ReturnType<typeof createNumberInput> | undefined
 afterEach(() => {
@@ -75,3 +76,34 @@ test('buttons use extension policy and remain usable after removal and remount',
   expect(screen.getByRole('button', { name: 'Increment' })).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Decrement' })).toBeDisabled()
 })
+
+test.for([
+  { distance: 0.5, readonly: false, interactions: [] },
+  { distance: 1, readonly: true, interactions: [{ kind: 'drag', delta: 1 }] },
+  { distance: 3, readonly: true, interactions: [{ kind: 'drag', delta: 3 }] }
+])(
+  'pointer movement $distance preserves click and drag behavior',
+  async (row) => {
+    const user = userEvent.setup()
+    const interactions: NumberInputInteraction[] = []
+    control = createNumberInput({
+      name: 'Width',
+      value: 13,
+      onInteraction: (interaction) => interactions.push(interaction)
+    })
+    document.body.append(control.element)
+    await nextTick()
+    const target = screen.getByTestId('number-input-scrub')
+    target.setPointerCapture = () => {}
+    await user.pointer([
+      { target, keys: '[MouseLeft>]', coords: { clientX: 100, clientY: 20 } },
+      { coords: { clientX: 100 + row.distance, clientY: 20 } },
+      { keys: '[/MouseLeft]' }
+    ])
+    expect(screen.getByRole('textbox', { name: 'Width' })).toHaveProperty(
+      'readOnly',
+      row.readonly
+    )
+    expect(interactions).toEqual(row.interactions)
+  }
+)
