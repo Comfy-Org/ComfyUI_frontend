@@ -2,6 +2,7 @@ import { createApp, h, shallowReactive, shallowRef } from 'vue'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Button from '@comfyorg/design-system/button/Button'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { i18n } from '@/i18n'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import type { NumberInputOptions } from '@/types/numberInput'
@@ -112,59 +113,63 @@ export function createNumberInput(options: NumberInputOptions) {
     if (app) return
     app = createApp({
       render() {
-        return h(
-          WidgetLayoutField,
-          { widget: { name: state.name }, rootClass: 'col-span-full' },
-          () =>
-            h(
-              ScrubableNumberInput,
-              {
-                ref: control,
-                modelValue: state.value,
-                displayValue: state.displayValue,
-                disabled: state.disabled,
-                onInteraction: state.onInteraction,
-                inputAttrs: {
-                  'aria-label': state.name,
-                  onFocus: () => control.value?.edit()
-                }
-              },
-              () => [
-                state.annotation &&
-                  h(
-                    'span',
-                    { class: 'content-center truncate text-muted-foreground' },
-                    state.annotation
-                  ),
-                state.unit &&
-                  h(
-                    'span',
-                    { class: 'content-center text-muted-foreground' },
-                    state.unit
-                  ),
-                state.action &&
-                  h(
-                    Button,
-                    {
-                      'aria-label': state.action.label,
-                      title: state.action.label,
-                      disabled: state.disabled || state.action.disabled,
-                      variant: 'muted-textonly',
-                      size: 'unset',
-                      class: 'aspect-square h-full rounded-none p-0',
-                      tabindex: -1,
-                      onClick: state.action.onClick
-                    },
-                    () =>
-                      h('i', {
-                        class:
-                          state.action?.icon === 'disable'
-                            ? 'icon-[lucide--ban]'
-                            : 'icon-[lucide--rotate-ccw]'
-                      })
-                  )
-              ]
-            )
+        return h(TooltipProvider, null, () =>
+          h(
+            WidgetLayoutField,
+            { widget: { name: state.name }, rootClass: 'col-span-full' },
+            () =>
+              h(
+                ScrubableNumberInput,
+                {
+                  ref: control,
+                  modelValue: state.value,
+                  displayValue: state.displayValue,
+                  disabled: state.disabled,
+                  onInteraction: state.onInteraction,
+                  inputAttrs: {
+                    'aria-label': state.name,
+                    onFocus: () => control.value?.edit()
+                  }
+                },
+                () => [
+                  state.annotation &&
+                    h(
+                      'span',
+                      {
+                        class: 'content-center truncate text-muted-foreground'
+                      },
+                      state.annotation
+                    ),
+                  state.unit &&
+                    h(
+                      'span',
+                      { class: 'content-center text-muted-foreground' },
+                      state.unit
+                    ),
+                  state.action &&
+                    h(
+                      Button,
+                      {
+                        'aria-label': state.action.label,
+                        title: state.action.label,
+                        disabled: state.disabled || state.action.disabled,
+                        variant: 'muted-textonly',
+                        size: 'unset',
+                        class: 'aspect-square h-full rounded-none p-0',
+                        tabindex: -1,
+                        onClick: state.action.onClick
+                      },
+                      () =>
+                        h('i', {
+                          class:
+                            state.action?.icon === 'disable'
+                              ? 'icon-[lucide--ban]'
+                              : 'icon-[lucide--rotate-ccw]'
+                        })
+                    )
+                ]
+              )
+          )
         )
       }
     })

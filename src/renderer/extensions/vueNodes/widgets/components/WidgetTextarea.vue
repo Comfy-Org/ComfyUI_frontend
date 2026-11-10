@@ -20,7 +20,10 @@
         <label
           v-if="!hideLayoutField"
           :for="id"
-          class="min-w-0 truncate text-2xs text-muted-foreground"
+          class="min-w-0 truncate text-2xs text-node-foreground"
+          @pointerdown.stop
+          @pointermove.stop
+          @pointerup.stop
         >
           {{ displayName }}
         </label>

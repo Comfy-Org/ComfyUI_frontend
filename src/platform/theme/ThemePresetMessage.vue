@@ -9,7 +9,7 @@
       </div>
       <div class="actions">
         <AppSingleSelect
-          v-model="activePaletteId"
+          v-model="activePresetId"
           class="w-44"
           :options="paletteOptions"
         />
@@ -17,7 +17,7 @@
           size="icon"
           variant="textonly"
           :title="$t('g.export')"
-          @click="colorPaletteService.exportColorPalette(activePaletteId)"
+          @click="themeService.exportThemePreset(activePresetId)"
         >
           <i class="icon-[lucide--file-output]" />
         </Button>
@@ -33,8 +33,8 @@
           size="icon"
           variant="destructive-textonly"
           :title="$t('g.delete')"
-          :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
-          @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
+          :disabled="!themeStore.isCustomPreset(activePresetId)"
+          @click="themeService.deleteCustomThemePreset(activePresetId)"
         >
           <i class="icon-[lucide--trash-2]" />
         </Button>
@@ -51,19 +51,19 @@ import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeService } from '@/platform/theme/themeService'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 const settingStore = useSettingStore()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
-const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
+const themeStore = useThemeStore()
+const themeService = useThemeService()
+const { presets, activePresetId } = storeToRefs(themeStore)
 const paletteOptions = computed(() =>
-  palettes.value.map(({ id, name }) => ({ name, value: id }))
+  presets.value.map(({ id, name }) => ({ name, value: id }))
 )
 
 const importCustomPalette = async () => {
-  const palette = await colorPaletteService.importColorPalette()
+  const palette = await themeService.importThemePreset()
   if (palette) {
     await settingStore.set('Comfy.ColorPalette', palette.id)
   }
