@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest'
+import { expect, onTestFinished, test } from 'vitest'
 import { nextTick } from 'vue'
 
 import { screen } from '@testing-library/vue'
@@ -7,26 +7,29 @@ import userEvent from '@testing-library/user-event'
 import { createNumberInput } from '@/scripts/widgets'
 import type { NumberInputInteraction } from '@/types/numberInput'
 
-let control: ReturnType<typeof createNumberInput> | undefined
-afterEach(() => {
-  control?.destroy()
-  control?.element.remove()
-})
+function mountNumberInput(options: Parameters<typeof createNumberInput>[0]) {
+  const control = createNumberInput(options)
+  onTestFinished(() => {
+    control.destroy()
+    control.element.remove()
+  })
+  document.body.append(control.element)
+  return control
+}
 
 test('extension policy commits once and preserves drafts across presentation updates', async () => {
   const user = userEvent.setup()
   const changes: number[] = []
-  control = createNumberInput({
+  const control = mountNumberInput({
     name: 'Width',
     value: 13,
     onInteraction(interaction) {
       if (interaction.kind !== 'text') return
       const value = Math.round(Number(interaction.value) / 8) * 8
       changes.push(value)
-      control?.update({ value, displayValue: String(value) })
+      control.update({ value, displayValue: String(value) })
     }
   })
-  document.body.append(control.element)
   control.edit()
   await nextTick()
   await user.clear(screen.getByRole('textbox', { name: 'Width' }))
@@ -63,16 +66,15 @@ test('extension policy commits once and preserves drafts across presentation upd
 test('buttons use extension policy and remain usable after removal and remount', async () => {
   const user = userEvent.setup()
   let value = 0
-  control = createNumberInput({
+  const control = mountNumberInput({
     name: 'Width',
     value,
     onInteraction(interaction) {
       if (interaction.kind !== 'step') return
       value += interaction.delta * 8
-      control?.update({ value })
+      control.update({ value })
     }
   })
-  document.body.append(control.element)
   await user.click(screen.getByRole('button', { name: 'Increment' }))
   expect(screen.getByRole('textbox', { name: 'Width' })).toHaveValue('8')
   control.destroy()
@@ -94,12 +96,11 @@ test.for([
   async (row) => {
     const user = userEvent.setup()
     const interactions: NumberInputInteraction[] = []
-    control = createNumberInput({
+    mountNumberInput({
       name: 'Width',
       value: 13,
       onInteraction: (interaction) => interactions.push(interaction)
     })
-    document.body.append(control.element)
     await nextTick()
     const target = screen.getByTestId('number-input-scrub')
     target.setPointerCapture = () => {}
