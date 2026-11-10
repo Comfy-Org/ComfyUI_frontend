@@ -43,7 +43,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import Switch from '@/components/ui/switch/Switch.vue'
+import Switch from '@comfyorg/design-system/switch/Switch'
 
 describe('Switch', () => {
   it('requests the opposite value when clicked', async () => {

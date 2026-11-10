@@ -85,37 +85,41 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2026-01-30:
+The following tables cover a representative subset of the composables in this
+directory, grouped by category. They are not exhaustive — `src/composables/`
+is the source of truth, and feature-owned composables also live beside their
+feature under `src/platform/`, `src/renderer/`, and `src/workbench/`.
 
 ### Auth
 
 Composables for authentication and user management:
 
-| Composable               | Description                                     |
-| ------------------------ | ----------------------------------------------- |
-| `useCurrentUser`         | Provides access to the current user information |
-| `useFirebaseAuthActions` | Handles Firebase authentication operations      |
+| Composable       | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `useCurrentUser` | Provides access to the current user information |
+| `useAuthActions` | Sign-in, sign-out and account actions           |
+| `useAuthDialogs` | Opens the sign-in and account dialogs           |
 
 ### Bottom Panel Tabs
 
 Composables for terminal and bottom panel functionality:
 
-| Composable          | Description                              |
-| ------------------- | ---------------------------------------- |
-| `useTerminal`       | Core terminal functionality              |
-| `useTerminalBuffer` | Manages terminal output buffer           |
-| `useTerminalTabs`   | Handles multiple terminal tab management |
+| Composable        | Description                              |
+| ----------------- | ---------------------------------------- |
+| `useTerminal`     | Core terminal functionality              |
+| `useLogsTerminal` | Streams backend logs into a terminal     |
+| `useTerminalTabs` | Handles multiple terminal tab management |
 
 ### Element
 
 Composables for DOM and element interactions:
 
-| Composable                    | Description                                 |
-| ----------------------------- | ------------------------------------------- |
-| `useAbsolutePosition`         | Handles element positioning                 |
-| `useCanvasPositionConversion` | Converts between canvas and DOM coordinates |
-| `useDomClipping`              | Manages clipping of DOM elements            |
-| `useResponsiveCollapse`       | Manages responsive collapsing of elements   |
+| Composable                    | Description                                   |
+| ----------------------------- | --------------------------------------------- |
+| `useAbsolutePosition`         | Handles element positioning                   |
+| `useCanvasPositionConversion` | Converts between canvas and DOM coordinates   |
+| `useDomClipping`              | Manages clipping of DOM elements              |
+| `useOverflowObserver`         | Tracks whether an element's content overflows |
 
 ### Functional
 
@@ -227,12 +231,10 @@ General-purpose composables:
 | `useBrowserTabTitle`        | Manages browser tab title updates                         |
 | `useCachedRequest`          | Provides request caching functionality                    |
 | `useCanvasDrop`             | Handles drop operations on canvas                         |
-| `useCivitaiModel`           | Integrates with Civitai model API                         |
 | `useContextMenuTranslation` | Handles context menu translations                         |
 | `useCopy`                   | Provides copy functionality                               |
 | `useCopyToClipboard`        | Manages clipboard operations                              |
 | `useCoreCommands`           | Provides core command functionality                       |
-| `useDownload`               | Handles file download operations                          |
 | `useErrorHandling`          | Centralized error handling                                |
 | `useGlobalLitegraph`        | Access to global LiteGraph instance                       |
 | `useLitegraphSettings`      | Manages LiteGraph configuration                           |

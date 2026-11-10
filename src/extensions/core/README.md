@@ -6,7 +6,7 @@ This directory contains the core extensions that provide essential functionality
 
 The complete documentation for core extensions has been moved to:
 
-**[/docs/extensions/core.md](/docs/extensions/core.md)**
+**[docs/extensions/core.md](../../../docs/extensions/core.md)**
 
 ## Quick Reference
 
@@ -23,6 +23,6 @@ and more.
 
 ## See Also
 
-- [Extension Development Guide](/docs/extensions/development.md) - How to develop extensions
-- [Extension Documentation Index](/docs/extensions/README.md) - Overview of all extension docs
+- [Extension Development Guide](../../../docs/extensions/development.md) - How to develop extensions
+- [Extension Documentation Index](../../../docs/extensions/README.md) - Overview of all extension docs
 - [ComfyExtension Interface](../../types/comfy.ts) - TypeScript interface for extensions

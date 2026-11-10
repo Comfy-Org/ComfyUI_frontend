@@ -285,7 +285,7 @@ Each store owns the identity scheme that fits its concern:
 | LinkStore        | `LinkId` in root buckets; owner-qualified endpoint indexes         | Branded number   | Yes               |
 | RerouteStore     | `RerouteId` (root-scoped buckets)                                  | branded number   | Yes (`RerouteId`) |
 
-`WidgetValueStore` already keys on a branded `WidgetId` string (`src/types/widgetId.ts`),
+`WidgetValueStore` already keys on a branded `WidgetId` string (`packages/graph-model/src/widgetId.ts`),
 which carries its scope and survives renames at the store layer. The remaining
 stores can adopt their own branded string keys where cross-kind safety pays off,
 without a shared entity-ID space. For promoted value widgets, ADR-SUBGRAPH-PROMOTION-0009 keys on

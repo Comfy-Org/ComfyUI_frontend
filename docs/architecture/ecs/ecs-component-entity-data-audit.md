@@ -106,7 +106,7 @@ Representative evidence:
 
 Representative implementation:
 
-- `src/types/nodeState.ts`; `src/lib/litegraph/src/LGraphNode.ts`.
+- `packages/graph-model/src/nodeState.ts`; `src/lib/litegraph/src/LGraphNode.ts`.
 - `src/renderer/core/layout/operations/graphLayoutAttachment.ts` and
   `layoutMutations.ts`.
 - `src/lib/litegraph/src/LGraphCanvas.ts`: `bringToFront` and `sendToBack`.
