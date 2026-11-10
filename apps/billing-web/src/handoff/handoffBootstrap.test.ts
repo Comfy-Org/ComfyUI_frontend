@@ -1,7 +1,7 @@
 import { captureHandoffToken } from '@/handoff/captureHandoffToken'
 import { runHandoffBootstrap } from '@/handoff/handoffBootstrap'
 import type { HandoffBootEnv } from '@/handoff/handoffBootstrap'
-import type { HandoffState, TabStorage } from '@/handoff/handoffTab'
+import type { HandoffState, TabMarker, TabStorage } from '@/handoff/handoffTab'
 import { handoffTab, readHandoffState } from '@/handoff/handoffTab'
 
 const CLOUD = 'https://testcloud.comfy.org'
@@ -56,13 +56,25 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+function memoryMarker(): TabMarker {
+  let value = ''
+  return {
+    read: () => value,
+    write: (next) => {
+      value = next
+    }
+  }
+}
+
 function setup(
   url: string,
   {
     storage = memoryStorage(),
+    marker = memoryMarker(),
     respond = () => json(200, exchanged)
   }: {
     storage?: TabStorage
+    marker?: TabMarker
     respond?: () => Response | Promise<Response>
   } = {}
 ) {
@@ -82,6 +94,7 @@ function setup(
   const env: HandoffBootEnv = {
     capture,
     storage,
+    marker,
     fetchImpl,
     cloudBaseUrl: CLOUD,
     now: () => NOW
@@ -296,5 +309,51 @@ describe('runHandoffBootstrap', () => {
       kind: 'ended',
       ending: 'link_unavailable'
     })
+  })
+
+  it('keeps a handoff tab out of sign-in when storage becomes unreadable before a reload', async () => {
+    const marker = memoryMarker()
+    await runHandoffBootstrap(setup('/handoff#token=tok-1', { marker }).env)
+
+    const reload = setup('/', { storage: blockedStorage, marker })
+
+    await expect(runHandoffBootstrap(reload.env)).resolves.toBe('handoff')
+    expect(handoffTab.value).toEqual({
+      kind: 'ended',
+      ending: 'storage_unavailable'
+    })
+  })
+
+  it('keeps the storage ending across a reload when storage was blocked from the start', async () => {
+    const marker = memoryMarker()
+    await runHandoffBootstrap(
+      setup('/handoff#token=tok-1', { storage: blockedStorage, marker }).env
+    )
+
+    await runHandoffBootstrap(
+      setup('/handoff', { storage: blockedStorage, marker }).env
+    )
+
+    expect(handoffTab.value).toEqual({
+      kind: 'ended',
+      ending: 'storage_unavailable'
+    })
+  })
+
+  it('ends a handoff tab whose stored session disappeared', async () => {
+    const marker = memoryMarker()
+    await runHandoffBootstrap(setup('/handoff#token=tok-1', { marker }).env)
+
+    await expect(runHandoffBootstrap(setup('/', { marker }).env)).resolves.toBe(
+      'handoff'
+    )
+
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+  })
+
+  it('leaves a normal tab with blocked storage to its own sign-in', async () => {
+    const { env } = setup('/v1/subscription', { storage: blockedStorage })
+
+    await expect(runHandoffBootstrap(env)).resolves.toBe('not-handoff')
   })
 })

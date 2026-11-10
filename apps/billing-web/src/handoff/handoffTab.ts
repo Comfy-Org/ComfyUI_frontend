@@ -85,12 +85,48 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-/** Reads a stored state; anything unreadable is no state at all. */
+/** A tab-scoped record that the tab holds a handoff, kept outside storage so a blocked storage cannot hide it. */
+export interface TabMarker {
+  readonly read: () => string
+  readonly write: (value: string) => void
+}
+
+const MARKER_PREFIX = 'comfy-billing-handoff:'
+
+export const windowNameMarker: TabMarker = {
+  read: () => window.name,
+  write: (value) => {
+    window.name = value
+  }
+}
+
+/** `live` while a session may still be in use, else how the handoff ended. */
+export function readTabMarker(
+  marker: TabMarker
+): HandoffEnding | 'live' | undefined {
+  const value = marker.read()
+  if (!value.startsWith(MARKER_PREFIX)) return undefined
+  const rest = value.slice(MARKER_PREFIX.length)
+  return rest === 'live' ? 'live' : ENDINGS.find((e) => e === rest)
+}
+
+export function writeTabMarker(marker: TabMarker, state: HandoffState): void {
+  marker.write(
+    MARKER_PREFIX + (state.kind === 'session' ? 'live' : state.ending)
+  )
+}
+
+/** Reads a stored state; `unreadable` when the storage itself refused the read. */
 export function readHandoffState(
   storage: TabStorage
-): HandoffState | undefined {
+): HandoffState | 'unreadable' | undefined {
+  let raw: string | null
   try {
-    const raw = storage.getItem(STORAGE_KEY)
+    raw = storage.getItem(STORAGE_KEY)
+  } catch {
+    return 'unreadable'
+  }
+  try {
     if (raw === null) return undefined
     const parsed: unknown = JSON.parse(raw)
     if (!isRecord(parsed)) return undefined
@@ -134,10 +170,15 @@ export function writeHandoffState(
  */
 export const handoffTab = shallowRef<HandoffState>()
 
-/** Ends the tab's handoff; the ending survives a reload. */
-export function endHandoff(storage: TabStorage, ending: HandoffEnding): void {
+/** Ends the tab's handoff; the ending survives a reload, through the tab marker when storage refuses it. */
+export function endHandoff(
+  storage: TabStorage,
+  ending: HandoffEnding,
+  marker: TabMarker = windowNameMarker
+): void {
   const state: HandoffState = { kind: 'ended', ending }
   writeHandoffState(storage, state)
+  writeTabMarker(marker, state)
   handoffTab.value = state
 }
 
