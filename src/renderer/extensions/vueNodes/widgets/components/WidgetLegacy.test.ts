@@ -202,7 +202,23 @@ describe('WidgetLegacy repaint', () => {
 })
 
 describe('WidgetLegacy pointer events', () => {
-  it('passes the same widget-local position to mouse on pointerdown and pointerup', async () => {
+  const buttonCases = [
+    {
+      name: 'passes the same widget-local position to mouse on primary pointerdown and pointerup',
+      button: 'MouseLeft',
+      expectedPositions: [
+        [28, 11],
+        [28, 11]
+      ]
+    },
+    {
+      name: 'keeps secondary button presses away from mouse',
+      button: 'MouseRight',
+      expectedPositions: []
+    }
+  ]
+
+  it.for(buttonCases)('$name', async ({ button, expectedPositions }) => {
     const graph = new LGraph()
     const node = new LGraphNode('Legacy')
     node.pos = [100, 200]
@@ -239,13 +255,10 @@ describe('WidgetLegacy pointer events', () => {
     const target = screen.getByTestId('legacy-widget-canvas')
     const coords = { offsetX: 28, offsetY: 11 }
     await userEvent.pointer([
-      { keys: '[MouseLeft>]', target, coords },
-      { keys: '[/MouseLeft]', target, coords }
+      { keys: `[${button}>]`, target, coords },
+      { keys: `[/${button}]`, target, coords }
     ])
 
-    expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual([
-      [28, 11],
-      [28, 11]
-    ])
+    expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual(expectedPositions)
   })
 })

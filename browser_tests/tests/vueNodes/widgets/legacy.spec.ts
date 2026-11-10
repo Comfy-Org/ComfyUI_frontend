@@ -3,6 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
@@ -106,6 +107,66 @@ test.describe(
         }, legacyNode.id)
         await expect.poll(readFillPixel).toBe(red)
       })
+    })
+
+    test('draws the widget canvas at the node width, including after a resize', async ({
+      comfyPage
+    }) => {
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const node = new VueNodeFixture(
+        comfyPage.vueNodes.getNodeLocator(legacyNode.id)
+      )
+      const canvas = node.root.getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+
+      const widthDrift = () =>
+        canvas.evaluate((element, nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)!
+          const expected = node.size[0] * window.app!.canvas.ds.scale
+          return element.getBoundingClientRect().width - expected
+        }, legacyNode.id)
+
+      await expect.poll(widthDrift).toBeCloseTo(0, 0)
+
+      const initialWidth = (await canvas.boundingBox())!.width
+      await node.resizeFromCorner('SE', 120, 0)
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => (await canvas.boundingBox())?.width ?? 0)
+        .toBeGreaterThan(initialWidth + 100)
+      await expect.poll(widthDrift).toBeCloseTo(0, 0)
+    })
+
+    test('ignores right clicks while left clicks still reach the widget', async ({
+      comfyPage
+    }) => {
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator(legacyNode.id)
+        .getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+      const { height } = (await canvas.boundingBox())!
+      const widget = await legacyNode.getWidget(0)
+      expect(await widget.getValue()).toBe(0)
+
+      await canvas.click({
+        button: 'right',
+        position: { x: 20, y: height / 2 }
+      })
+      await comfyPage.nextFrame()
+      expect(await widget.getValue()).toBe(0)
+
+      await canvas.click({ position: { x: 20, y: height / 2 } })
+      await expect.poll(() => widget.getValue()).toBe(-1)
     })
   }
 )

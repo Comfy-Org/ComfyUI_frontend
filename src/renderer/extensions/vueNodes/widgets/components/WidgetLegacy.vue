@@ -66,7 +66,7 @@ onMounted(() => {
   canvasEl.value.width *= scaleFactor
   bindWidget()
   if (!widgetInstance) return
-  useResizeObserver(canvasEl, draw)
+  useResizeObserver(canvasEl.value.parentElement, draw)
   watch(() => useThemeStore().activePresetId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
@@ -93,9 +93,7 @@ function getWidgetHeight(
 
 function draw() {
   if (!widgetInstance || !node) return
-  const width =
-    canvasEl.value.parentElement.clientWidth ||
-    canvasEl.value.getBoundingClientRect().width
+  const width = canvasEl.value.parentElement.clientWidth
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
   node.canvasHeight = height
@@ -120,7 +118,7 @@ function augmentToWidgetPointerEvent(
   })
 }
 function handleDown(e: PointerEvent) {
-  if (!node || !widgetInstance || !pointer) return
+  if (!node || !widgetInstance || !pointer || e.button !== 0) return
   augmentToWidgetPointerEvent(e, node)
   pointer.down(e)
   if (widgetInstance.mouse)
@@ -145,7 +143,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative -mx-3 w-full min-w-0"
+    class="relative -mx-3 min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
