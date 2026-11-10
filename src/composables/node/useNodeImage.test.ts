@@ -1,3 +1,4 @@
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -23,12 +24,14 @@ vi.mock(import('@/utils/imageUtil'), () => ({
 }))
 
 describe('useNodeVideo', () => {
-  async function setup() {
+  async function setup(
+    output: ResultItem = { filename: '1.mp4', type: 'output' }
+  ) {
     vi.clearAllMocks()
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      'http://video/1.mp4'
-    ])
+    vi.mocked(useNodeOutputStore().getNodeOutputs).mockReturnValue({
+      images: [output]
+    })
     const node = createDOMWidgetNode({
       size: [400, 400],
       graph: new LGraph()
@@ -66,6 +69,18 @@ describe('useNodeVideo', () => {
     expect(useCanvasInteractions().handleWheel).toHaveBeenCalledTimes(1)
     expect(useCanvasInteractions().handlePointerMove).toHaveBeenCalledTimes(1)
     expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
+  })
+
+  it('loads the stored preview of a video that has one', async () => {
+    const { video } = await setup({
+      filename: 'render.mov',
+      type: 'output',
+      preview_id: 'proxy-1'
+    })
+
+    expect(video.getAttribute('src')).toBe(
+      '/api/assets/proxy-1/content?disposition=inline'
+    )
   })
 
   it('detaches every listener when the widget is removed', async () => {

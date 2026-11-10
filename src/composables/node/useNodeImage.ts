@@ -5,8 +5,10 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
 import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
@@ -22,6 +24,7 @@ type MediaElement = HTMLImageElement | HTMLVideoElement
 
 interface NodePreviewOptions<T extends MediaElement> {
   loadElement: (url: string) => Promise<T | null>
+  getUrls: (node: LGraphNode) => string[] | undefined
   onLoaded?: (elements: T[]) => void
   onFailedLoading?: () => void
   /** Which canvas surface this is, so the failure can be attributed. */
@@ -52,8 +55,8 @@ const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {
-  const { loadElement, onLoaded, onFailedLoading, telemetrySource } = options
-  const nodeOutputStore = useNodeOutputStore()
+  const { loadElement, getUrls, onLoaded, onFailedLoading, telemetrySource } =
+    options
 
   const loadElementWithTimeout = async (
     url: string,
@@ -95,13 +98,10 @@ const useNodePreview = <T extends MediaElement>(
   const loadElements = async (urls: string[]) =>
     Promise.all(urls.map((url) => loadElementWithTimeout(url)))
 
-  /**
-   * Displays media element(s) on the node.
-   */
   function showPreview(options: ShowPreviewOptions = {}) {
     if (node.isLoading) return
 
-    const outputUrls = nodeOutputStore.getNodeImageUrls(node)
+    const outputUrls = getUrls(node)
     if (!outputUrls?.length) return
 
     if (options.block) node.isLoading = true
@@ -153,6 +153,7 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
 
   return useNodePreview(node, {
     loadElement,
+    getUrls: useNodeOutputStore().getNodeImageUrls,
     onLoaded,
     telemetrySource: 'canvas_node_image',
     onFailedLoading: () => {
@@ -234,8 +235,15 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     callback?.()
   }
 
+  const nodeOutputStore = useNodeOutputStore()
+  const getVideoUrls = () =>
+    parseNodeOutput(node.id, nodeOutputStore.getNodeOutputs(node)).map((item) =>
+      resultItemPreviewUrl(item)
+    )
+
   return useNodePreview(node, {
     loadElement,
+    getUrls: getVideoUrls,
     onLoaded,
     telemetrySource: 'canvas_node_video',
     onFailedLoading: () => {

@@ -302,6 +302,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -478,7 +479,7 @@ const handleResizePointerDown = (
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
   if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
+  return !!nodeMedia.value
 })
 
 // Computed classes and conditions for better reusability
@@ -711,19 +712,20 @@ const nodeMedia = computed(() => {
   if (node instanceof SubgraphNode) return undefined
   if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
-  const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
-
-  const type =
+  const isVideo =
     isVideoOutput(newOutputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
-      ? 'video'
-      : 'image'
 
-  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
+  if (isVideo) {
+    if (hasVideoPreviewWidget.value) return undefined
+    const items = parseNodeOutput(node.id, newOutputs)
+    return items.length ? ({ type: 'video', items } as const) : undefined
+  }
 
-  return { type, urls } as const
+  const urls = nodeOutputs.getNodeImageUrls(node)
+  if (!urls?.length) return undefined
+  return { type: 'image', urls } as const
 })
 
 // Drag and drop support

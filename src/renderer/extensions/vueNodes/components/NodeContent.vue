@@ -10,7 +10,7 @@
     <slot>
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
-        :image-urls="media.urls"
+        :items="media.items"
         :node-id="nodeId"
         class="mt-2 flex-auto"
       />
@@ -38,21 +38,25 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
 import ImagePreview from './ImagePreview.vue'
 import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?: {
-    type: 'image' | 'video' | 'audio'
-    urls: string[]
-  }
+  media?:
+    | { type: 'video'; items: AugmentedResultItem[] }
+    | { type: 'image' | 'audio'; urls: string[] }
 }
 
 const props = defineProps<NodeContentProps>()
 
-const hasMedia = computed(() => props.media && props.media.urls.length > 0)
+const hasMedia = computed(() => {
+  const { media } = props
+  if (!media) return false
+  return (media.type === 'video' ? media.items : media.urls).length > 0
+})
 
 const nodeId = computed(() => props.nodeData?.id)
 

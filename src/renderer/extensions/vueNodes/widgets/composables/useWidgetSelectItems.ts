@@ -28,15 +28,12 @@ import { isGeneratedTempOutput } from '@/platform/assets/composables/media/asset
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import {
-  hdrPreviewAssetUrl,
-  isHdrImageFilename,
-  isHdrImageUrl
-} from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -65,7 +62,7 @@ function getAssetMediaType(asset: AssetItem): string {
 }
 
 function getHdrOutputPreviewUrl(asset: AssetItem): string {
-  if (asset.preview_id) return hdrPreviewAssetUrl(asset.preview_id)
+  if (asset.preview_id) return assetContentUrl(asset.preview_id)
   return (
     [asset.thumbnail_url, asset.preview_url].find(
       (url) => url && !isHdrImageUrl(url)

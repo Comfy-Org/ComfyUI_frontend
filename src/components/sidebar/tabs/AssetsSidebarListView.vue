@@ -81,7 +81,10 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  assetContentUrl,
+  resolveMediaSrc
+} from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -90,7 +93,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -142,7 +145,7 @@ function isVideoAsset(asset: AssetItem): boolean {
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
   if (asset.preview_id && isHdrImageFilename(asset.name))
-    return hdrPreviewAssetUrl(asset.preview_id)
+    return assetContentUrl(asset.preview_id)
   if (mediaType === 'image' || mediaType === 'video')
     return resolveMediaSrc(asset.preview_url)
   return ''

@@ -1,4 +1,4 @@
-import { api } from '@/scripts/api'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
 
 const HDR_EXTENSIONS = ['.exr', '.hdr'] as const
 
@@ -32,7 +32,7 @@ export function getHdrPreviewUrl(url: string | undefined): string | undefined {
     url &&
     isHdrImageUrl(url) &&
     new URL(url, window.location.origin).searchParams.get('preview_id')
-  return previewId ? hdrPreviewAssetUrl(previewId) : undefined
+  return previewId ? assetContentUrl(previewId) : undefined
 }
 
 /** The file an image shows, rather than the stored preview it may display. */
@@ -40,10 +40,6 @@ export function getImageFileUrl(img: HTMLImageElement): URL {
   const url = new URL(img.dataset.fileUrl ?? img.src, img.baseURI)
   url.searchParams.delete('preview')
   return url
-}
-
-export function hdrPreviewAssetUrl(previewId: string): string {
-  return api.apiURL(`/assets/${previewId}/content?disposition=inline`)
 }
 
 export function toFullResolutionUrl(url: string): string {
