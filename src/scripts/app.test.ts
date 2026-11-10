@@ -2354,6 +2354,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2380,6 +2381,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false
       })
     })
@@ -2406,6 +2408,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: true,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2433,6 +2436,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })

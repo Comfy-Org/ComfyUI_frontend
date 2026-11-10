@@ -1274,10 +1274,6 @@
       "addMoreCredits": "Weitere Credits hinzufügen",
       "addMoreCreditsToRun": "Weitere Credits zum Ausführen hinzufügen",
       "amountToPayLabel": "Zu zahlender Betrag in Dollar",
-      "autoTopUp": {
-        "prompt": "Gehen Ihnen die Credits aus? Aktivieren Sie die automatische Aufladung.",
-        "setUp": "Einrichten"
-      },
       "awaitingBankApprovalBody": "Ihre Bank muss diese Zahlung genehmigen, bevor Ihr Guthaben hinzugefügt wird. Sie können den Vorgang über die App Ihrer Bank oder den Zahlungslink für diesen Kauf abschließen. Eine neue Aufladung kann erst gestartet werden, wenn diese abgeschlossen ist oder abläuft.",
       "buy": "Kaufen",
       "buyCredits": "Weiter zur Zahlung",

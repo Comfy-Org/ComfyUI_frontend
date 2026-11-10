@@ -45,8 +45,10 @@
             autocorrect="off"
             spellcheck="false"
             @input="handleInput"
+            @focus="valueBeforeEditing = modelValue"
             @blur="handleBlur"
             @keyup.enter="handleBlur"
+            @keydown.esc.prevent.stop="cancelTextEdit"
             @keydown.up.prevent="updateValueBy(step)"
             @keydown.down.prevent="updateValueBy(-step)"
             @keydown.page-up.prevent="updateValueBy(10 * step)"
@@ -117,6 +119,7 @@ defineOptions({ inheritAttrs: false })
 const { t } = useI18n()
 const modelValue = defineModel<number>({ default: 0 })
 const draft = ref<string>()
+let valueBeforeEditing = modelValue.value
 
 const scrubElement = useTemplateRef<HTMLDivElement>('scrubElement')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
@@ -144,6 +147,7 @@ function handleInput(event: Event) {
 }
 
 function handleBlur(e: Event) {
+  if (draft.value === undefined) return
   const target = e.target
   if (!(target instanceof HTMLInputElement)) return
   const raw = target.value.trim()
@@ -158,6 +162,12 @@ function handleBlur(e: Event) {
     target.value = displayValue ?? String(modelValue.value)
   }
   draft.value = undefined
+}
+
+function cancelTextEdit() {
+  draft.value = undefined
+  modelValue.value = valueBeforeEditing
+  inputField.value?.blur()
 }
 
 function startTextEdit() {

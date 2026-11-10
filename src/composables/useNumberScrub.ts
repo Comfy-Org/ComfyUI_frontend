@@ -31,17 +31,19 @@ export function useNumberScrub(
     onSwipeStart: (event) => {
       dragged = false
       editingControl = isEditingControl(event.target)
-      startValue = toValue(value)
-      const width = toValue(target)?.getBoundingClientRect().width ?? 0
-      const span = Math.min(
-        toValue(max) - toValue(min),
-        Math.abs(startValue) * 2
-      )
-      unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
     },
     onSwipe: () => {
       if (toValue(disabled) || editingControl) return
-      if (!dragged && !['left', 'right'].includes(swipe.direction.value)) return
+      if (!dragged) {
+        if (!['left', 'right'].includes(swipe.direction.value)) return
+        startValue = toValue(value)
+        const width = toValue(target)?.getBoundingClientRect().width ?? 0
+        const span = Math.min(
+          toValue(max) - toValue(min),
+          Math.abs(startValue) * 2
+        )
+        unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
+      }
       dragged = true
       const increment = toValue(step)
       const delta = -swipe.distanceX.value * unitsPerPixel
