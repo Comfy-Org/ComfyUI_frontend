@@ -13,6 +13,7 @@
   />
 
   <AppMultiSelect
+    v-if="showUseCaseFilter"
     v-model="selectedUseCases"
     size="md"
     :class="triggerClass"
@@ -63,6 +64,7 @@ const {
   modelFilterLabel,
   useCaseFilterLabel,
   runsOnFilterLabel,
+  showUseCaseFilter = true,
   triggerClass = ''
 } = defineProps<{
   modelOptions: SelectOption[]
@@ -72,6 +74,7 @@ const {
   modelFilterLabel: string
   useCaseFilterLabel: string
   runsOnFilterLabel: string
+  showUseCaseFilter?: boolean
   triggerClass?: string
 }>()
 

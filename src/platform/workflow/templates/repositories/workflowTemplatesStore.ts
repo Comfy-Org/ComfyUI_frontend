@@ -20,7 +20,7 @@ import type {
 } from '@comfyorg/api-client/templateTypes'
 
 // Enhanced template interface for easier filtering
-interface EnhancedTemplate extends TemplateInfo {
+export interface EnhancedTemplate extends TemplateInfo {
   sourceModule: string
   category?: string
   categoryType?: string

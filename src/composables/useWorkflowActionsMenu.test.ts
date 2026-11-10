@@ -18,6 +18,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { useWorkspaceTemplateDialogs } from '@/platform/workflow/templates/workspace/useWorkspaceTemplateDialogs'
+import { useWorkspaceTemplatesStore } from '@/platform/workflow/templates/workspace/workspaceTemplatesStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -46,6 +48,20 @@ vi.mock(import('@/components/builder/useEnterBuilder'), () => {
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog')
+)
+
+const workspaceTemplateDialogs = vi.hoisted(() => ({
+  showAddDialog: vi.fn(),
+  showEditDialog: vi.fn(),
+  confirmDelete: vi.fn(async () => {})
+}))
+vi.mock(
+  import('@/platform/workflow/templates/workspace/useWorkspaceTemplateDialogs'),
+  () => ({
+    useWorkspaceTemplateDialogs: (): ReturnType<
+      typeof useWorkspaceTemplateDialogs
+    > => workspaceTemplateDialogs
+  })
 )
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
@@ -124,6 +140,52 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).toContain('menuLabels.Export (API)')
     expect(labels).toContain('breadcrumbsMenu.clearWorkflow')
     expect(labels).toContain('breadcrumbsMenu.deleteWorkflow')
+  })
+
+  it.for([
+    { canAdd: true, shown: true },
+    { canAdd: false, shown: false }
+  ])(
+    'offers Add as template only when the server allows adding workspace templates (allowed: $canAdd)',
+    ({ canAdd, shown }) => {
+      Object.assign(useWorkspaceTemplatesStore(), {
+        canAddWorkspaceTemplates: canAdd
+      })
+
+      const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+      expect(
+        menuLabels(menuItems.value).includes('workspaceTemplates.addAsTemplate')
+      ).toBe(shown)
+    }
+  )
+
+  it('opens the add form for the workflow the menu belongs to', async () => {
+    Object.assign(useWorkspaceTemplatesStore(), {
+      canAddWorkspaceTemplates: true
+    })
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    await findItem(
+      menuItems.value,
+      'workspaceTemplates.addAsTemplate'
+    ).command?.()
+
+    expect(workspaceTemplateDialogs.showAddDialog).toHaveBeenCalledWith(
+      mockWorkflowStore.activeWorkflow
+    )
+  })
+
+  it('never offers Add as template inside a subgraph', () => {
+    Object.assign(useWorkspaceTemplatesStore(), {
+      canAddWorkspaceTemplates: true
+    })
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
+
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'workspaceTemplates.addAsTemplate'
+    )
   })
 
   it('hides root-only items when isRoot is false', () => {

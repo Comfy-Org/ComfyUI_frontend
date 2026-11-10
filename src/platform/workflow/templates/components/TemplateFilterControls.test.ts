@@ -36,7 +36,7 @@ const sortOptions: SelectOption[] = [
   { name: 'Newest', value: 'newest' }
 ]
 
-function renderControls() {
+function renderControls({ showUseCaseFilter = true } = {}) {
   const selectedModels = ref<SelectOption[]>([])
   const sortSelection = ref<TemplateSortMode>('default')
 
@@ -56,10 +56,17 @@ function renderControls() {
         model-filter-label="Model Filter"
         use-case-filter-label="Use Case"
         runs-on-filter-label="Runs On"
+        :show-use-case-filter="showUseCaseFilter"
       />
     `,
     setup() {
-      return { selectedModels, sortSelection, modelOptions, sortOptions }
+      return {
+        selectedModels,
+        sortSelection,
+        modelOptions,
+        sortOptions,
+        showUseCaseFilter
+      }
     }
   }
 
@@ -78,6 +85,19 @@ describe('TemplateFilterControls', () => {
     expect(screen.getByRole('button', { name: 'Runs On' })).toBeInTheDocument()
     expect(
       screen.getByRole('combobox', { name: 'Sort by' })
+    ).toBeInTheDocument()
+
+    unmount()
+  })
+
+  it('leaves out the use case filter when the section has no use cases', () => {
+    const { unmount } = renderControls({ showUseCaseFilter: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Use Case' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Model Filter' })
     ).toBeInTheDocument()
 
     unmount()
