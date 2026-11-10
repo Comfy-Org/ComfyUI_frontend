@@ -6,6 +6,7 @@ import type {
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   canDesktopHostSwitchWorkspace,
+  desktopHostPartnerNodeToken,
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
@@ -131,6 +132,43 @@ describe('desktopHostSession', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'hands over the token Desktop minted',
+      getPartnerNodeToken: async () => 'partner-node-token',
+      expected: 'partner-node-token'
+    },
+    {
+      name: 'has none when Desktop has none',
+      getPartnerNodeToken: async () => null,
+      expected: undefined
+    },
+    {
+      name: 'has none when the bridge call fails',
+      getPartnerNodeToken: async () => {
+        throw new Error('ipc failed')
+      },
+      expected: undefined
+    },
+    {
+      name: 'has none on a Desktop build without the method',
+      getPartnerNodeToken: undefined,
+      expected: undefined
+    }
+  ] satisfies {
+    name: string
+    getPartnerNodeToken: (() => Promise<string | null>) | undefined
+    expected: string | undefined
+  }[])(
+    'a partner-node token read $name',
+    async ({ getPartnerNodeToken, expected }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+
+      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toBe(expected)
+    }
+  )
+
   describe('when Desktop changes state while a request is pending', () => {
     function deferred<T>() {
       let resolve!: (value: T) => void
@@ -150,6 +188,21 @@ describe('desktopHostSession', () => {
 
       expect(isDesktopHostSessionActive()).toBe(true)
       expect(desktopHostUser.value).toBeNull()
+    })
+
+    it('drops a partner-node token fetched across a sign-out', async () => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      const token = deferred<string | null>()
+      await startDesktopHostSession({
+        ...bridge,
+        getPartnerNodeToken: () => token.promise
+      })
+
+      const fetching = desktopHostPartnerNodeToken('ws-1')
+      push({ status: 'signed_out' })
+      token.resolve('stale-partner-node-token')
+
+      await expect(fetching).resolves.toBeUndefined()
     })
 
     it('drops a token fetched across a sign-out', async () => {

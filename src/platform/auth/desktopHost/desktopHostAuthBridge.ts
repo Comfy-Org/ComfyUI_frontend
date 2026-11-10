@@ -13,9 +13,14 @@ export type DesktopHostAuthState =
   | Exclude<ComfyDesktop2AuthState, { status: 'signed_in' }>
   | (DesktopHostSignedIn & { name?: string })
 
-/** `switchWorkspace` is absent on Desktop builds before Comfy-Desktop #1671. */
+/**
+ * `switchWorkspace` is absent on Desktop builds before Comfy-Desktop #1671,
+ * `getPartnerNodeToken` on builds before Comfy-Desktop #1983.
+ */
 export type DesktopHostAuthBridge = Omit<
   ComfyDesktop2AuthBridge,
   'switchWorkspace'
 > &
-  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>>
+  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>> & {
+    getPartnerNodeToken?: (workspaceId: string) => Promise<string | null>
+  }

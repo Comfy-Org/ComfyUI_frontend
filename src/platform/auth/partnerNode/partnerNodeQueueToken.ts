@@ -1,5 +1,6 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
+  desktopHostPartnerNodeToken,
   desktopHostUser,
   desktopHostWorkspaceToken
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -29,8 +30,8 @@ function mintTarget(workspaceId: string): PartnerNodeTokenTarget | undefined {
 
 /**
  * The credential a Local prompt carries in `auth_token_comfy_org`: a
- * partner-node token for the workspace when the flag is on and the mint
- * succeeds, otherwise the workspace token unchanged.
+ * partner-node token for the workspace when the flag is on and Desktop hands
+ * one over or the mint succeeds, otherwise the workspace token unchanged.
  */
 export async function queueAuthToken(
   workspaceToken: string | undefined,
@@ -38,6 +39,9 @@ export async function queueAuthToken(
 ): Promise<string | undefined> {
   if (!workspaceToken || !workspaceId || isCloud) return workspaceToken
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
+
+  const fromDesktop = await desktopHostPartnerNodeToken(workspaceId)
+  if (fromDesktop) return fromDesktop
 
   const target = mintTarget(workspaceId)
   if (!target) return workspaceToken

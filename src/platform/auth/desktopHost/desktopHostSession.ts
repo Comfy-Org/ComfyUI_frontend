@@ -109,6 +109,20 @@ export function desktopHostWorkspaceToken(
   return fetchToken((current) => current.getWorkspaceToken(workspaceId))
 }
 
+/**
+ * The partner-node token Desktop minted and renews for `workspaceId`, under
+ * the same rules as {@link desktopHostWorkspaceToken}. Resolves undefined when
+ * Desktop has none or its build cannot mint one.
+ */
+export function desktopHostPartnerNodeToken(
+  workspaceId: string
+): Promise<string | undefined> {
+  return fetchToken(
+    async (current) =>
+      (await current.getPartnerNodeToken?.(workspaceId)) ?? null
+  )
+}
+
 async function fetchToken(
   read: (current: DesktopHostAuthBridge) => Promise<string | null>
 ): Promise<string | undefined> {
