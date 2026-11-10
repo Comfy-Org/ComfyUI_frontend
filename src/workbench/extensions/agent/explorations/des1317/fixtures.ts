@@ -17,14 +17,11 @@ export const portraitTab: ActiveTab = {
 
 export const panelTabs = [portraitTab]
 
-export function userTurn(id: string, text: string): ConversationEntry {
+function userTurn(id: string, text: string): ConversationEntry {
   return { id: toTurnId(id), role: 'user', text }
 }
 
-export function thinkingTurn(
-  id: string,
-  thinkingText: string
-): ConversationEntry {
+function thinkingTurn(id: string, thinkingText: string): ConversationEntry {
   return {
     id: toTurnId(id),
     role: 'assistant',
@@ -35,7 +32,7 @@ export function thinkingTurn(
   }
 }
 
-export function replyTurn(
+function replyTurn(
   id: string,
   text: string,
   creditsUsed?: number
