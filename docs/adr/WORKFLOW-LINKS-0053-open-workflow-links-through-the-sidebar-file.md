@@ -44,11 +44,14 @@ and the stash name different links, the loader treats the stash as a navigation
 still in flight: it makes no replace and clears neither carrier, even for a
 link it already opened. Two different malformed values are different links;
 only the forms the stash records for one URL value (a repeated value joined
-with `,`, a bare `?workflowId` as `,`) count as the same link. An empty `?workflowId=` clears the stash when the
-router captures it, so an older stashed link cannot keep the empty one from
-being rejected as invalid. While the stash holds a link the loader never started
-and the URL does not show, the sweep makes no replace either, so that link's
-navigation is not cancelled.
+with `,`, a bare `?workflowId` or an empty `?workflowId=` as `,`) count as the
+same link. The router records an empty `?workflowId=` as `,` in place of any
+older stashed link rather than clearing the stash: an older link cannot keep
+the empty one from being rejected as invalid, and while a guard holds the empty
+link, an earlier lookup still sees a newer link in flight and its cleanup
+cannot cancel that navigation. While the stash holds a link the loader never
+started and the URL does not show, the sweep makes no replace either, so that
+link's navigation is not cancelled.
 
 The reply and the 409 body are validated with the generated
 `@comfyorg/ingest-types` schemas. The spec types the 409 as `ErrorResponse` and

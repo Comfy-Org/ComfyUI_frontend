@@ -312,6 +312,21 @@ describe('installPreservedQueryTracker', () => {
     ).toBeUndefined()
   })
 
+  it('stashes an empty markEmpty value as a bare comma in place of a stale value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [
+      { ...rejectRepeatedDefinition, markEmpty: true }
+    ])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ','
+    )
+  })
+
   it('keeps a plain namespace stash when the URL supplies an empty value', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [plainDefinition])

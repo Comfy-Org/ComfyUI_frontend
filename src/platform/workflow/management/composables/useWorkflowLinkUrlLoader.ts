@@ -59,7 +59,7 @@ function isWorkflowId(value: unknown): value is string {
 }
 
 function linkIdentity(value: unknown): unknown {
-  if (value === null) return ','
+  if (value === null || value === '') return ','
   if (!Array.isArray(value)) return value
   if (value.length === 1) return linkIdentity(value[0])
   return value.map((entry: unknown) => entry ?? '').join(',')
@@ -316,7 +316,7 @@ function useWorkflowLinkUrlLoaderInternal() {
   function completedStatus(value: unknown, workspaceId: string | null) {
     if (
       !completed ||
-      completed.value !== value ||
+      !isSameLink(completed.value, value) ||
       completed.workspaceId !== workspaceId
     )
       return undefined
@@ -337,7 +337,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     workflowId: unknown,
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
-    startedLinks.add(workflowId)
+    startedLinks.add(linkIdentity(workflowId))
     const ownership = attemptOwnership(workflowId, workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
@@ -362,7 +362,11 @@ function useWorkflowLinkUrlLoaderInternal() {
 
   function hasLinkInFlight(): boolean {
     const { route, stash } = linkCarriers()
-    return stash !== undefined && stash !== route && !startedLinks.has(stash)
+    return (
+      stash !== undefined &&
+      !isSameLink(stash, route) &&
+      !startedLinks.has(linkIdentity(stash))
+    )
   }
 
   return { openWorkflowLinkFromUrl, isLinkSettled, hasLinkInFlight }

@@ -709,6 +709,56 @@ describe('workflow-id links', () => {
     expect(currentQuery()).toEqual({ workflowId: 'bad2', topup: '1' })
   })
 
+  it('leaves a newer empty link a navigation guard holds after a newer guard-held link superseded the lookup', async () => {
+    const respond = holdLookup()
+    await navigate({ workflowId: ID })
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    const newerHold = holdNavigation(isNewerLink)
+    const emptyHold = holdNavigation((to) => to.query.workflowId === '')
+
+    const attempt = loader.openWorkflowLinkFromUrl()
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await newerHold.arrived
+    const emptyLink = navigate({ workflowId: '', topup: '1' })
+    await emptyHold.arrived
+    respond()
+
+    expect(await attempt).toBe('pending')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+    newerHold.release()
+    emptyHold.release()
+    await Promise.all([newerLink, emptyLink])
+    expect(currentQuery()).toEqual({ workflowId: '', topup: '1' })
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ topup: '1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(loader.hasLinkInFlight()).toBe(false)
+  })
+
+  it('reports an empty link once when another navigation cancels its URL cleanup, and clears it later', async () => {
+    await navigate({ workflowId: '' })
+    const cleanup = holdNavigation((to) => isUrlCleanup(to) && !to.query.keep)
+
+    const attempt = loader.openWorkflowLinkFromUrl(true)
+    await cleanup.arrived
+    await navigate({ keep: 'yes' })
+    cleanup.release()
+
+    expect(await attempt).toBe('failed')
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(',')
+    expect(loader.hasLinkInFlight()).toBe(false)
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ keep: 'yes' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(useToast().toasts).toHaveLength(1)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps a boot link opened when another navigation cancels its URL cleanup, and clears it later without reopening', async () => {
     serveFile()
     await navigate({ workflowId: ID })
