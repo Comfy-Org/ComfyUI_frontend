@@ -74,8 +74,9 @@ export const ADD_CREDITS_COPY = {
   'autoTopUp.body':
     'Buy credits automatically when you run low, so workflows keep running.',
   'autoTopUp.threshold': 'When credits drop below',
+  'autoTopUp.thresholdHint': 'Counts plan credits and credits you’ve bought.',
   'autoTopUp.target': 'Top up to',
-  'autoTopUp.targetHint': 'Each top-up is at least {amount}.',
+  'autoTopUp.targetHint': '{target} credits. Each top-up is at least {amount}.',
   'autoTopUp.limit': 'Monthly limit',
   'autoTopUp.limitOff':
     'Up to {max} a month, the maximum. Turn on to set a lower limit.',
@@ -103,7 +104,8 @@ export const ADD_CREDITS_COPY = {
   'autoTopUpOn.noLimit': 'No monthly limit.',
   'autoTopUpOn.done': 'Done',
   'autoTopUpFailed.title': "Auto top-up didn't turn on",
-  'autoTopUpFailed.body': 'Your credits were added.'
+  'autoTopUpFailed.body':
+    'Your credits were added. Set up auto top-up in Billing to try again.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

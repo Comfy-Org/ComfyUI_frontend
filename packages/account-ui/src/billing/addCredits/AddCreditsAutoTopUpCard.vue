@@ -28,6 +28,7 @@
         :input="input.threshold"
         :label="translate('autoTopUp.threshold')"
         :error="messageFor('threshold')"
+        :hint="translate('autoTopUp.thresholdHint')"
         :locked
         :ui
         @type="emit('edit', 'threshold', $event)"
@@ -156,9 +157,12 @@ const maxLimit = computed(() => format.dollars(rules.maxMonthlyBudgetCents))
 
 const targetHint = computed(() => {
   const cents = eachTopUpAtLeastCents(values)
-  return cents === null
+  return cents === null || values.targetCredits === null
     ? undefined
-    : translate('autoTopUp.targetHint', { amount: format.money(cents) })
+    : translate('autoTopUp.targetHint', {
+        target: format.count(values.targetCredits),
+        amount: format.money(cents)
+      })
 })
 
 const consentMax = computed(() =>

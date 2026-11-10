@@ -6604,8 +6604,9 @@
       "label": "Turn on auto top-up",
       "body": "Buy credits automatically when you run low, so workflows keep running.",
       "threshold": "When credits drop below",
+      "thresholdHint": "Counts plan credits and credits you’ve bought.",
       "target": "Top up to",
-      "targetHint": "Each top-up is at least {amount}.",
+      "targetHint": "{target} credits. Each top-up is at least {amount}.",
       "limit": "Monthly limit",
       "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
       "limitHint": "Most you can set here: {max} a month.",
@@ -6633,7 +6634,7 @@
     },
     "autoTopUpFailed": {
       "title": "Auto top-up didn't turn on",
-      "body": "Your credits were added."
+      "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
   }
 }

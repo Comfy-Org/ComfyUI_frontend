@@ -671,8 +671,13 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     await user.click(checkbox())
 
     expect(threshold()).toHaveValue('1000')
+    expect(
+      screen.getByText('Counts plan credits and credits you’ve bought.')
+    ).toBeVisible()
     expect(target()).toHaveValue('11550')
-    expect(screen.getByText('Each top-up is at least $50.00.')).toBeVisible()
+    expect(
+      screen.getByText('11,550 credits. Each top-up is at least $50.00.')
+    ).toBeVisible()
     expect(
       screen.getByText(
         'Up to $60,000 a month, the maximum. Turn on to set a lower limit.'
@@ -840,7 +845,11 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(
       await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeVisible()
-    expect(screen.getByText('Your credits were added.')).toBeVisible()
+    expect(
+      screen.getByText(
+        'Your credits were added. Set up auto top-up in Billing to try again.'
+      )
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
@@ -859,7 +868,11 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(
       await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeVisible()
-    expect(screen.getByText('Your credits were added.')).toBeVisible()
+    expect(
+      screen.getByText(
+        'Your credits were added. Set up auto top-up in Billing to try again.'
+      )
+    ).toBeVisible()
     expect(emitted().close).toBeUndefined()
   })
 
