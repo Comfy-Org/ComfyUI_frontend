@@ -544,14 +544,15 @@ export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.hash ?? asset.name
 }
 
-/** `user_metadata.subfolder` when it is a string, else the directory of a relative `user_metadata.filename`. */
+/** `user_metadata.subfolder` when it is a string, else the directory of an unhashed asset's `loader_path`. */
 export function getOutputSubfolder(
-  userMetadata: Record<string, unknown> | undefined
+  asset: Pick<AssetItem, 'hash' | 'loader_path' | 'user_metadata'>
 ): string | undefined {
-  const subfolder = userMetadata?.subfolder
+  const subfolder = asset.user_metadata?.subfolder
   if (typeof subfolder === 'string') return subfolder
-  const filename = userMetadata?.filename
-  if (typeof filename !== 'string') return undefined
-  const separatorIndex = filename.lastIndexOf('/')
-  return separatorIndex > 0 ? filename.slice(0, separatorIndex) : undefined
+  if (asset.hash || !asset.loader_path) return undefined
+  const separatorIndex = asset.loader_path.lastIndexOf('/')
+  return separatorIndex > 0
+    ? asset.loader_path.slice(0, separatorIndex)
+    : undefined
 }

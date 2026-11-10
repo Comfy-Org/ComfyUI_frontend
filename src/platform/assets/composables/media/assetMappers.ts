@@ -100,7 +100,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
+    subfolder: getOutputSubfolder(asset) ?? '',
     type: isTempOutput(asset) ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url
@@ -145,7 +145,7 @@ export function unflattenOutputAssets(
       user_metadata: {
         jobId: job_id,
         ...representative.user_metadata,
-        subfolder: getOutputSubfolder(representative.user_metadata) ?? '',
+        subfolder: getOutputSubfolder(representative) ?? '',
         assetId: representative.id,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)
