@@ -18,7 +18,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-type PromotedMedia =
+export type PromotedMedia =
   | { type: 'video'; items: AugmentedResultItem[] }
   | { type: 'image' | 'audio'; urls: string[] }
 

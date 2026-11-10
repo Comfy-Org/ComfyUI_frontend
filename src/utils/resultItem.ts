@@ -43,12 +43,6 @@ export function isVideoResult(item: AugmentedResultItem): boolean {
   )
 }
 
-export function hasStoredVideoPreview(
-  item: AugmentedResultItem
-): item is AugmentedResultItem & { preview_id: string } {
-  return !!item.preview_id && isVideoResult(item)
-}
-
 export function isImageResult(item: AugmentedResultItem): boolean {
   if (hasResolvedMediaType(item)) return item.mediaType === 'images'
   return (

@@ -24,10 +24,7 @@ import {
   resultItemPreviewUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import {
-  hasStoredVideoPreview,
-  resultItemHtmlVideoType
-} from '@/utils/resultItem'
+import { isVideoResult, resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */
@@ -51,7 +48,9 @@ const playsResolvedUrl = computed(
   () => !!props.result.url && props.result.filenameIsDisplayName === true
 )
 
-const playsStoredPreview = computed(() => hasStoredVideoPreview(props.result))
+const playsStoredPreview = computed(
+  () => !!props.result.preview_id && isVideoResult(props.result)
+)
 
 const vhsAdvancedPreviews = computed(() => {
   return (

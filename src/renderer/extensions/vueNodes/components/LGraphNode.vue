@@ -477,10 +477,9 @@ const handleResizePointerDown = (
 }
 
 // Check if node has custom content (like image/video outputs)
-const hasCustomContent = computed(() => {
-  if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value
-})
+const hasCustomContent = computed(
+  () => promotedPreviews.value.length > 0 || !!nodeMedia.value
+)
 
 // Computed classes and conditions for better reusability
 const progressClasses = 'h-2 bg-primary transition-all duration-300'

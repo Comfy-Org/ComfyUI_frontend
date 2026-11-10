@@ -9,18 +9,18 @@
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
-        v-if="hasMedia && media?.type === 'video'"
+        v-if="media?.type === 'video'"
         :items="media.items"
         :node-id="nodeId"
         class="mt-2 flex-auto"
       />
       <AudioPreview
-        v-else-if="hasMedia && media?.type === 'audio'"
+        v-else-if="media?.type === 'audio'"
         :audio-urls="media.urls"
         class="mt-2 flex-auto"
       />
       <ImagePreview
-        v-else-if="hasMedia && media?.type === 'image'"
+        v-else-if="media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
         class="flex-auto"
@@ -38,25 +38,17 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { PromotedMedia } from '@/composables/node/usePromotedPreviews'
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
 import ImagePreview from './ImagePreview.vue'
 import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?:
-    | { type: 'video'; items: AugmentedResultItem[] }
-    | { type: 'image' | 'audio'; urls: string[] }
+  media?: PromotedMedia
 }
 
 const props = defineProps<NodeContentProps>()
-
-const hasMedia = computed(() => {
-  const { media } = props
-  if (!media) return false
-  return (media.type === 'video' ? media.items : media.urls).length > 0
-})
 
 const nodeId = computed(() => props.nodeData?.id)
 
