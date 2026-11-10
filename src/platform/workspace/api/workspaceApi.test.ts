@@ -642,7 +642,9 @@ describe('workspaceApi', () => {
       const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
         finishAuth = resolve
       })
-      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        pendingAuth
+      )
       const controller = new AbortController()
       const cleared = workspaceApi.clearDeployment('ws-1', {
         signal: controller.signal
