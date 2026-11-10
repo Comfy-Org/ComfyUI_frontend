@@ -8,6 +8,10 @@ import {
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  ExportedSubgraph,
+  ISerialisedGraph
+} from '@comfyorg/graph-model/serialisation'
+import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
@@ -45,6 +49,26 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
     return value.__value__
   }
   return value
+}
+
+function sanitizeWorkflowAuxIds(graph: ISerialisedGraph | ExportedSubgraph) {
+  for (const { properties } of graph.nodes ?? []) {
+    if (
+      !properties ||
+      typeof properties.aux_id !== 'string' ||
+      !/^https?:\/\//i.test(properties.aux_id)
+    ) {
+      continue
+    }
+
+    const auxId = zNodePackMetadata.shape.aux_id.safeParse(properties.aux_id)
+    if (auxId.success) properties.aux_id = auxId.data
+    else delete properties.aux_id
+  }
+
+  for (const subgraph of graph.definitions?.subgraphs ?? []) {
+    sanitizeWorkflowAuxIds(subgraph)
+  }
 }
 
 /**
@@ -86,6 +110,7 @@ export const graphToPrompt = async (
   }
 
   compressWidgetInputSlots(workflow)
+  sanitizeWorkflowAuxIds(workflow)
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 

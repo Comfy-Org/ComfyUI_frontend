@@ -134,6 +134,23 @@ describe('graphToPrompt _meta pack identity', () => {
     expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
   })
 
+  it.for(['?token=example-token', '#example-token'])(
+    'omits a Git remote suffix (%s) from both export formats',
+    async (suffix) => {
+      const graph = new LGraph()
+      const remote = 'https://git.example.test/team/private-node-pack.git'
+      const node = addNode(graph, 'PrivatePackNode', {
+        aux_id: remote + suffix
+      })
+
+      const { workflow, output } = await graphToPrompt(graph)
+
+      expect(output[String(node.id)]._meta?.aux_id).toBe(remote)
+      expect(workflow.nodes[0].properties.aux_id).toBe(remote)
+      expect(node.properties.aux_id).toBe(remote + suffix)
+    }
+  )
+
   it('omits non-string pack identity properties', async () => {
     const graph = new LGraph()
     const node = addNode(graph, 'InvalidIdentityNode', {
