@@ -1,5 +1,5 @@
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
@@ -48,7 +48,7 @@ describe('useMaskEditor', () => {
       expect(mockDialogStore.showDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           key: 'global-mask-editor',
-          props: { node }
+          props: expect.objectContaining({ node })
         })
       )
     })
@@ -86,6 +86,24 @@ describe('useMaskEditor', () => {
       useMaskEditor().openMaskEditor(node)
 
       expect(mockDialogStore.showDialog).toHaveBeenCalledTimes(1)
+    })
+
+    it('cancels the removed session and keeps a replacement dialog open when its old close callback runs', () => {
+      useMaskEditor().openMaskEditor(nodeWithImage())
+      const old = mockDialogStore.dialogStack[0]
+      assert.exists(old)
+      const signal = old.headerProps?.signal
+      const close = old.headerProps?.closeSession
+      assert.instanceOf(signal, AbortSignal)
+      assert(typeof close === 'function')
+      close()
+      expect(signal.aborted).toBe(true)
+      const nextNode = nodeWithImage()
+      useMaskEditor().openMaskEditor(nextNode)
+      const replacement = mockDialogStore.dialogStack[0]
+      close()
+      expect(mockDialogStore.dialogStack).toHaveLength(1)
+      expect(mockDialogStore.dialogStack[0]).toBe(replacement)
     })
 
     it('should log and bail when node is null', () => {

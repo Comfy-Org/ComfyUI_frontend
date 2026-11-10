@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { copyPngTextMetadata } from './pngTextMetadata'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { writeImageWidgetValue } from '@/renderer/extensions/maskEditor/composables/imageWidgetAdapter'
@@ -39,27 +41,82 @@ export function useMaskEditorSaver() {
   const editorStore = useMaskEditorStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const save = async (): Promise<void> => {
+  const save = async (signal?: AbortSignal): Promise<'saved' | 'cancelled'> => {
+    if (signal?.aborted) return 'cancelled'
     const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
-
+    const sourceRef = { ...dataStore.inputData.sourceRef }
     try {
       const outputData = await prepareOutputData()
+      if (signal?.aborted) return 'cancelled'
+      await copySourceMetadata(sourceRef, outputData, signal)
+      if (signal?.aborted) return 'cancelled'
       dataStore.outputData = outputData
-
-      await updateNodePreview(sourceNode, outputData)
-
-      await uploadAllLayers(outputData)
-
+      await updateNodePreview(sourceNode, outputData, signal)
+      if (signal?.aborted) return 'cancelled'
+      await uploadAllLayers(outputData, signal)
+      if (signal?.aborted) return 'cancelled'
       updateNodeWithServerReferences(sourceNode, outputData)
-
       useApp().canvas.setDirty(true)
+      return 'saved'
     } catch (error) {
+      if (signal?.aborted) return 'cancelled'
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
     }
+  }
+
+  async function copySourceMetadata(
+    ref: ImageRef,
+    outputData: EditorOutputData,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const source = await readSourceImage(ref, signal)
+    if (!source || signal?.aborted) return
+    for (const layer of [
+      outputData.maskedImage,
+      outputData.paintedMaskedImage
+    ]) {
+      const image = copyPngTextMetadata(source, layer.blob)
+      if (!image) {
+        reportSourceImageFailure(new Error('Invalid mask editor source PNG'))
+        return
+      }
+      layer.blob = image
+    }
+  }
+
+  async function readSourceImage(
+    ref: ImageRef,
+    signal?: AbortSignal
+  ): Promise<ArrayBuffer | null> {
+    const params = new URLSearchParams({ filename: ref.filename })
+    if (ref.type) params.set('type', ref.type)
+    if (ref.subfolder) params.set('subfolder', ref.subfolder)
+    try {
+      const response = await api.fetchApi(`/view?${params}`, { signal })
+      if (signal?.aborted) return null
+      if (!response.ok)
+        return reportSourceImageFailure(
+          new Error(
+            `Failed to read mask editor source image (${response.status})`
+          )
+        )
+      return await response.arrayBuffer()
+    } catch (cause) {
+      if (signal?.aborted) return null
+      return reportSourceImageFailure(cause)
+    }
+  }
+
+  function reportSourceImageFailure(cause: unknown): null {
+    reportError(cause, {
+      errorType: 'error_loading_mask_editor_source_image',
+      surface: 'graph'
+    })
+    return null
   }
 
   async function prepareOutputData(): Promise<EditorOutputData> {
@@ -204,28 +261,38 @@ export function useMaskEditorSaver() {
     return { canvas, blob, ref }
   }
 
-  async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
-    const actualMaskedRef = await uploadLayer(outputData.maskedImage)
-    const actualPaintRef = await uploadLayer(outputData.paintLayer)
-    const actualPaintedRef = await uploadLayer(outputData.paintedImage)
-    const actualPaintedMaskedRef = await uploadLayer(
+  async function uploadAllLayers(
+    outputData: EditorOutputData,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const uploaded: { layer: EditorOutputLayer; ref: ImageRef }[] = []
+    const layers = [
+      outputData.maskedImage,
+      outputData.paintLayer,
+      outputData.paintedImage,
       outputData.paintedMaskedImage
-    )
-
-    outputData.maskedImage.ref = actualMaskedRef
-    outputData.paintLayer.ref = actualPaintRef
-    outputData.paintedImage.ref = actualPaintedRef
-    outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
+    ]
+    for (const layer of layers) {
+      if (signal?.aborted) return
+      const ref = await uploadLayer(layer, signal)
+      if (signal?.aborted) return
+      uploaded.push({ layer, ref })
+    }
+    for (const { layer, ref } of uploaded) layer.ref = ref
   }
 
-  async function uploadLayer(layer: EditorOutputLayer): Promise<ImageRef> {
+  async function uploadLayer(
+    layer: EditorOutputLayer,
+    signal?: AbortSignal
+  ): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal
     })
 
     if (!response.ok) {
@@ -262,12 +329,14 @@ export function useMaskEditorSaver() {
 
   async function updateNodePreview(
     node: LGraphNode,
-    outputData: EditorOutputData
+    outputData: EditorOutputData,
+    signal?: AbortSignal
   ): Promise<void> {
     const canvas = outputData.paintedMaskedImage.canvas
     const dataUrl = canvas.toDataURL('image/png')
 
     const mainImg = await loadImageFromUrl(dataUrl)
+    if (signal?.aborted) return
     node.imgs = [mainImg]
 
     useApp().canvas.setDirty(true)
