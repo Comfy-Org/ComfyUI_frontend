@@ -1,6 +1,6 @@
 {
-  "id": "dark",
-  "name": "Dark (Default)",
+  "id": "classic",
+  "name": "Classic",
   "colors": {
     "node_slot": {
       "CLIP": "#FFD500",
@@ -66,21 +66,13 @@
       "bar-shadow": "rgb(16 16 16 / 0.5) 0 0 0.5rem"
     },
     "theme": {
-      "background": "#171718",
-      "foreground": "#ffffff",
-      "card": "#262729",
-      "primary": "#0b8ce9",
-      "secondary": "#262729",
-      "muted": "#3c3d42",
-      "muted-foreground": "#8a8a8a",
-      "accent": "#313235",
-      "destructive": "#b33a3a",
-      "border": "#494a50",
-      "node-foreground": "#a0a0a0",
-      "node-header": "#202121",
-      "node-border": "#55565e",
-      "warning": "#fd9903",
-      "shadow-color": "rgb(0 0 0 / 0.4)"
+      "node-radius": "8px",
+      "node-title-font-size": "14px",
+      "node-icon-style": "triangle",
+      "node-widget-height": "20px",
+      "node-widget-radius": "9999px",
+      "node-widget-border-width": "1px",
+      "shadow-color": "rgb(0 0 0 / 0.5)"
     }
   }
 }

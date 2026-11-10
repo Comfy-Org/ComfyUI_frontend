@@ -254,11 +254,6 @@
       "count": 2
     }
   },
-  "browser_tests/fixtures/helpers/FeatureFlagHelper.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "browser_tests/fixtures/helpers/KeyboardHelper.ts": {
     "typescript/no-restricted-types": {
       "count": 9
@@ -589,7 +584,7 @@
   },
   "packages/account-core/src/core/billing/billingTab/autoTopUpCard.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 4
     }
   },
   "packages/account-core/src/core/billing/billingTab/creditsCard.ts": {
@@ -777,9 +772,14 @@
       "count": 1
     }
   },
+  "packages/account-ui/src/billing/addCredits/useAddCreditsDialog.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "packages/account-ui/src/billing/addCredits/useAddCreditsDialog.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 3
     }
   },
   "packages/account-ui/src/billing/checkout/CheckoutInviteForm.vue": {
@@ -847,6 +847,11 @@
       "count": 1
     }
   },
+  "packages/account-ui/src/billing/tab/BillingAutoTopUpMemberBlock.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "packages/account-ui/src/billing/tab/BillingBannerActionButton.vue": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -875,6 +880,16 @@
   "packages/account-ui/src/billing/tab/BillingPlanRow.vue": {
     "typescript/no-restricted-types": {
       "count": 1
+    }
+  },
+  "packages/account-ui/src/billing/tab/autoTopUpMemberView.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "packages/account-ui/src/billing/tab/autoTopUpMemberView.ts": {
+    "typescript/no-restricted-types": {
+      "count": 5
     }
   },
   "packages/account-ui/src/billing/tab/billingBannerView.ts": {
@@ -1658,7 +1673,7 @@
   },
   "packages/viewport3d/src/load3d/ModelExporter.ts": {
     "typescript/no-restricted-types": {
-      "count": 7
+      "count": 8
     }
   },
   "packages/viewport3d/src/load3d/PointCloudModelAdapter.ts": {
@@ -2548,11 +2563,6 @@
       "count": 1
     }
   },
-  "src/composables/node/useNodeImage.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
   "src/composables/node/useNodeImage.ts": {
     "typescript/no-restricted-types": {
       "count": 7
@@ -2724,6 +2734,11 @@
       "count": 3
     }
   },
+  "src/composables/useNumberScrub.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "src/composables/usePanelSizing.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -2771,7 +2786,7 @@
   },
   "src/composables/useUrlActionLoaders.ts": {
     "typescript/no-restricted-types": {
-      "count": 10
+      "count": 11
     }
   },
   "src/composables/useWaveAudioPlayer.test.ts": {
@@ -4167,17 +4182,12 @@
       "count": 2
     }
   },
-  "src/platform/billing/components/TopUpAutoTopUpCard.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 7
     }
   },
   "src/platform/billing/components/UnifiedPricingTable.vue": {
@@ -4196,6 +4206,11 @@
     }
   },
   "src/platform/billing/components/billingTab/BillingAutoTopUpCard.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.parity.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -4317,7 +4332,7 @@
   },
   "src/platform/billing/composables/__mocks__/useBillingCapabilities.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 3
     }
   },
   "src/platform/billing/composables/deriveAutoTopUpBanner.ts": {
@@ -4342,10 +4357,20 @@
   },
   "src/platform/billing/composables/types.ts": {
     "typescript/no-restricted-types": {
-      "count": 25
+      "count": 26
     }
   },
   "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useAutoTopUpSetupOffer.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useAutoTopUpSetupOffer.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -4485,6 +4510,16 @@
       "count": 20
     }
   },
+  "src/platform/billing/composables/useSubscriptionPaymentRecovery.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useSubscriptionPaymentRecovery.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "src/platform/billing/composables/useSubscriptionRail.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -4537,6 +4572,11 @@
   "src/platform/billing/openHostedBillingTab.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/billing/openPlatformPlans.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/billing/processingTopupPayment.test.ts": {
@@ -4622,7 +4662,7 @@
   },
   "src/platform/billing/subscription/composables/useBillingPlans.ts": {
     "typescript/no-restricted-types": {
-      "count": 7
+      "count": 8
     }
   },
   "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
@@ -4660,7 +4700,7 @@
       "count": 10
     },
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 6
     }
   },
   "src/platform/billing/subscription/composables/useSubscriptionDialog.ts": {
@@ -5089,6 +5129,31 @@
     }
   },
   "src/platform/onboarding/vCoachmark.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/openOnCloud/cloudCompatibilityApi.ts": {
+    "typescript/no-restricted-types": {
+      "count": 7
+    }
+  },
+  "src/platform/openOnCloud/composables/useLocalHandoffUrlLoader.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
+    }
+  },
+  "src/platform/openOnCloud/composables/useLocalHandoffUrlLoader.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/openOnCloud/desktopWorkflowHandoff.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/openOnCloud/openWorkflowOnCloud.ts": {
     "typescript/no-restricted-types": {
       "count": 2
     }
@@ -5892,7 +5957,12 @@
   },
   "src/platform/workspace/api/modelFileUploadApi.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 8
+    }
+  },
+  "src/platform/workspace/api/modelFileUploadApi.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
     }
   },
   "src/platform/workspace/api/partnerNodePolicyApi.ts": {
@@ -5938,6 +6008,11 @@
   "src/platform/workspace/components/MissingNodeDeploymentOffer.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
+    }
+  },
+  "src/platform/workspace/components/UploadModelDialogFileUpload.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 7
     }
   },
   "src/platform/workspace/components/UploadModelFilePicker.vue": {
@@ -7502,11 +7577,6 @@
   },
   "src/stores/workspace/bottomPanelStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
       "count": 2
     }
   },
