@@ -62,3 +62,20 @@ export const liveOpenOnCloudFixture = base.extend<{
     await use(comfyPage)
   }
 })
+
+export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
+  liveNetworkOrigins: async ({ liveNetworkOrigins }, use) => {
+    await use([
+      ...liveNetworkOrigins,
+      'https://browser-intake-us5-datadoghq.com',
+      'https://utt.impactcdn.com',
+      'https://comfyui.sjv.io',
+      'https://d.impct.site',
+      'https://www.ojrq.net',
+      'https://cdn.sy-d.io',
+      'https://t.comfy.org',
+      'https://o4507954455314432.ingest.us.sentry.io',
+      'https://cdp.customer.io'
+    ])
+  }
+})
