@@ -643,6 +643,28 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(screen.queryByTestId('add-credits-auto-top-up')).toBeNull()
   })
 
+  it('keeps the after-payment suggestion for a host that cannot turn auto top-up on with the purchase', async () => {
+    const ports = Object.assign(new FakePorts(), {
+      activatesAutoTopUp: false,
+      autoTopUpSetupUrl: () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    })
+    const { user, emitted } = renderOffered(CHECKBOX, { ports })
+    await user.click(continueButton())
+
+    ports.landed?.()
+
+    expect(
+      await screen.findByText(
+        'Buy credits automatically when you run low, so workflows and API calls keep running.'
+      )
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
+      'href',
+      AUTO_TOP_UP_SETUP_URL
+    )
+    expect(emitted().close).toBeUndefined()
+  })
+
   it('checking prefills the starting threshold and the credits picked on top', async () => {
     const { user } = renderOffered()
 
