@@ -273,8 +273,8 @@ function getBottomRadius(
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
   return nodeShape === RenderShape.CARD || corners === 'right'
-    ? 'rounded-br-xl'
-    : 'rounded-b-xl'
+    ? 'rounded-br-(--node-radius)'
+    : 'rounded-b-(--node-radius)'
 }
 
 const footerRadiusClass = computed(() => getBottomRadius(shape))

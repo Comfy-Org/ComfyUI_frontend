@@ -40,6 +40,20 @@ export function deriveAutoTopUpSection(
     : { kind: 'hidden' }
 }
 
+export interface AutoTopUpSetupFacts {
+  autoTopUpEnabled: boolean
+  canManageAutoTopUp: boolean
+  setup: AutoTopUpSetup | null
+}
+
+/** Platform Billing's Turn on block: served `auto_top_up_enabled` and `can_manage_auto_top_up`, and a setup neither unavailable nor frozen for past due. */
+export function canSetUpAutoTopUp(facts: AutoTopUpSetupFacts): boolean {
+  if (!facts.autoTopUpEnabled || !facts.canManageAutoTopUp) return false
+  const { setup } = facts
+  if (setup === null || setup.state === 'unavailable') return false
+  return !(setup.state === 'frozen' && setup.reason === 'payment_past_due')
+}
+
 export type AutoTopUpOffView =
   | 'off'
   | 'noPaymentMethod'

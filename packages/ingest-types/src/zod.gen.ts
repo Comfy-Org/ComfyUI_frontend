@@ -200,6 +200,33 @@ export const zAgentLlmError = z.object({
 })
 
 /**
+ * An explicit exact model selection. Unknown properties are refused with 400 so a newer intent is never silently ignored by an older server.
+ */
+export const zAgentModelSelection = z.object({
+  model_id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,127}$/),
+  option_id: z.string().optional()
+})
+
+/**
+ * The immutable model selection receipt for an accepted turn.
+ */
+export const zAgentModelReceipt = z.object({
+  contract: z.enum(['v1']),
+  model_id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,127}$/),
+  profile_revision: z.string(),
+  requested: zAgentModelSelection.nullable(),
+  source: z.enum(['request', 'deployment_default']),
+  strategy: z.enum(['anthropic']),
+  wire: z.enum(['anthropic_messages', 'openai_chat'])
+})
+
+export const zAgentModelUnavailable = zAgentError.and(
+  z.object({
+    code: z.enum(['model_unavailable'])
+  })
+)
+
+/**
  * The `context` of a `paused` ask.
  */
 export const zAgentPausedContext = z.object({
@@ -268,6 +295,7 @@ export const zAgentPostMessageRequest = z.object({
       content: z.record(z.string(), z.unknown()).optional()
     })
     .optional(),
+  model_selection: zAgentModelSelection.optional(),
   open_tabs: z
     .array(
       z.object({
@@ -574,10 +602,11 @@ export const zAgentToolCallFrame = z.object({
 })
 
 /**
- * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
+ * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames. The model selection receipt is present when the backend supports its configured wire. A client that requested selection must treat a missing receipt as selection not applied.
  */
 export const zAgentTurnAccepted = z.object({
   message_id: z.string(),
+  model_selection: zAgentModelReceipt.optional(),
   thread_id: z.string()
 })
 
@@ -1094,8 +1123,8 @@ export const zAutoTopUpMemberView = z.object({
  * means setup is not available. Owner read/disable authority remains separate.
  * These states do not determine surface visibility. Unified billing settings
  * show the auto top-up card only when capabilities.can_view_auto_top_up is
- * true; it is false when can_top_up is, including paused or payment-failed
- * billing.
+ * true. Paused or payment-failed billing hides it; the manual-purchase
+ * switch does not.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -1828,6 +1857,7 @@ export const zContentCatalogRecord = z.object({
   edit_version: z.string(),
   enabled: z.boolean(),
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP', 'TEMPLATE_SET']),
+  last_modified: z.iso.datetime().optional(),
   revision: z.coerce
     .bigint()
     .gte(BigInt(1))
@@ -3202,9 +3232,29 @@ export const zModelFolder = z.object({
 })
 
 /**
+ * Optional client observations. Invalid values are discarded without refusing the upload.
+ * Unknown or absent client becomes unknown. Missing resumed stays unknown; choosing resumable mode
+ * does not mean recovery. Start ignores resumed. Older servers ignore this entire object.
+ *
+ */
+export const zModelUploadAnalytics = z.object({
+  client: z.string().optional(),
+  resumed: z.boolean().optional()
+})
+
+/**
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
 export const zModelUploadStarted = z.object({
+  chunk_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   expires_at: z.iso.datetime(),
   headers: z.record(z.string(), z.string()),
   max_size_bytes: z.coerce
@@ -3216,8 +3266,26 @@ export const zModelUploadStarted = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   method: z.enum(['PUT']),
+  upload_analytics_version: z.int().optional(),
   upload_id: z.uuid(),
+  upload_mode: z.enum(['resumable']).optional(),
   upload_url: z.string()
+})
+
+export const zModelUploadTransferReport = z.object({
+  client: z.string(),
+  model_folder: z.string(),
+  reason: z.enum([
+    'network',
+    'http',
+    'session_expired',
+    'file_changed',
+    'file_unreadable',
+    'canceled',
+    'unknown'
+  ]),
+  resumed: z.boolean().optional(),
+  size_bytes: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(26843545600))
 })
 
 /**
@@ -4296,6 +4364,7 @@ export const zPreviewSubscribeResponse = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .optional(),
+  cancel_at: z.iso.datetime().optional(),
   cost_next_period_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -4619,6 +4688,7 @@ export const zBillingStatusResponse = z.object({
   scoped_effective_has_funds: z.record(z.string(), z.boolean()).optional(),
   scoped_has_funds: z.record(z.string(), z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
+  subscription_payment_recovery: zSubscriptionPaymentRecovery.optional(),
   subscription_state: zSubscriptionState.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -5252,6 +5322,9 @@ export const zBillingCapabilitiesResponse = z.object({
   has_parked_billing_operation: z.boolean().optional(),
   payment_recovery_available: z.boolean().optional(),
   plan_kind: z.enum(['none', 'self_serve', 'sales_managed']).optional(),
+  primary_billing_action: z
+    .enum(['update_payment', 'subscribe', 'resubscribe', 'add_credits', 'none'])
+    .optional(),
   recovery_route: z.enum(['none', 'resubscribe', 'contact_sales']).optional(),
   resolved_for: zBillingCapabilityScope,
   revision: z.coerce
@@ -5513,6 +5586,33 @@ export const zAgentGetDraftResponse = zAgentDraftSnapshot
 export const zGetAgentEventsQuery = z.object({
   token: z.string().optional(),
   workspace_id: z.string().optional()
+})
+
+export const zAgentGetExecutionsQuery = z.object({
+  thread_id: z.uuid().optional(),
+  message_id: z.uuid().optional()
+})
+
+/**
+ * Contract probe or the complete uncapped submission snapshot
+ */
+export const zAgentGetExecutionsResponse = z.object({
+  complete: z.boolean().optional(),
+  executions: z
+    .array(
+      z.object({
+        job_id: z.string().min(1),
+        paid: z.boolean().nullable(),
+        partner: z.boolean().nullable(),
+        status: z.string(),
+        submitted_at: z.iso.datetime()
+      })
+    )
+    .optional(),
+  message_id: z.string().optional(),
+  schema_version: z.enum(['agent-executions.v1']),
+  thread_id: z.string().optional(),
+  turn_id: z.string().optional()
 })
 
 /**
@@ -5913,6 +6013,7 @@ export const zGetAssetTagHistogramResponse = zAssetTagHistogramResponse
 
 export const zStartModelUploadBody = z.object({
   filename: z.string(),
+  resumable: z.boolean().optional().default(false),
   size_bytes: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -5921,17 +6022,23 @@ export const zStartModelUploadBody = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  upload_analytics: zModelUploadAnalytics.optional()
+})
+
+export const zStartModelUploadHeaders = z.object({
+  Origin: z.string().optional()
 })
 
 /**
- * Signed upload URL for one staged object
+ * Signed upload URL or resumable session for one staged object
  */
 export const zStartModelUploadResponse = zModelUploadStarted
 
 export const zCompleteModelUploadBody = z.object({
   filename: z.string(),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  upload_analytics: zModelUploadAnalytics.optional()
 })
 
 export const zCompleteModelUploadPath = z.object({
@@ -5942,6 +6049,17 @@ export const zCompleteModelUploadPath = z.object({
  * Accepted; a task stores the file as an asset
  */
 export const zCompleteModelUploadResponse = zAssetDownloadResponse
+
+export const zReportModelUploadEventBody = zModelUploadTransferReport
+
+export const zReportModelUploadEventPath = z.object({
+  upload_id: z.uuid()
+})
+
+/**
+ * Report accepted; delivery is best effort
+ */
+export const zReportModelUploadEventResponse = z.void()
 
 export const zAuthenticateBody = zAuthenticateRequest
 
@@ -6382,6 +6500,7 @@ export const zGetFeaturesResponse = z.object({
   max_upload_size: z.int().optional(),
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
+  open_on_cloud_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),

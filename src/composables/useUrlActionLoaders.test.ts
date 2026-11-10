@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   loadTopUp: vi.fn(async () => undefined),
   loadSettings: vi.fn(),
   loadAssets: vi.fn(async () => undefined),
+  loadLocalHandoff: vi.fn(async () => undefined),
   useDeployment: vi.fn(),
   useWorkspace: vi.fn(),
   useInvite: vi.fn(),
@@ -34,7 +35,8 @@ const mocks = vi.hoisted(() => ({
   usePricingTable: vi.fn(),
   useTopUp: vi.fn(),
   useSettings: vi.fn(),
-  useAssets: vi.fn()
+  useAssets: vi.fn(),
+  useLocalHandoff: vi.fn()
 }))
 mocks.useDeployment.mockImplementation(() => ({
   loadDeploymentFromUrl: mocks.loadDeployment
@@ -59,6 +61,9 @@ mocks.useSettings.mockImplementation(() => ({
 }))
 mocks.useAssets.mockImplementation(() => ({
   loadAssetsFromUrl: mocks.loadAssets
+}))
+mocks.useLocalHandoff.mockImplementation(() => ({
+  loadLocalHandoffFromUrl: mocks.loadLocalHandoff
 }))
 
 // A real router rather than a stub: several assertions are the URL a reader
@@ -109,6 +114,10 @@ vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
   useAssetsUrlLoader: mocks.useAssets
 }))
 vi.mock(
+  import('@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'),
+  () => ({ useLocalHandoffUrlLoader: mocks.useLocalHandoff })
+)
+vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
@@ -141,6 +150,9 @@ describe('useUrlActionLoaders', () => {
     }))
     mocks.useAssets.mockImplementation(() => ({
       loadAssetsFromUrl: mocks.loadAssets
+    }))
+    mocks.useLocalHandoff.mockImplementation(() => ({
+      loadLocalHandoffFromUrl: mocks.loadLocalHandoff
     }))
     vi.mocked(useRouter).mockReturnValue(router)
     await router.replace({ path: '/', query: {} })
@@ -216,6 +228,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useTopUp).not.toHaveBeenCalled()
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.useAssets).not.toHaveBeenCalled()
+    expect(mocks.useLocalHandoff).not.toHaveBeenCalled()
     expect(useSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.loadDeployment).not.toHaveBeenCalled()
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
@@ -225,6 +238,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
+    expect(mocks.loadLocalHandoff).not.toHaveBeenCalled()
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).not.toHaveBeenCalled()
@@ -242,6 +256,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadAssets).toHaveBeenCalledOnce()
+    expect(mocks.loadLocalHandoff).toHaveBeenCalledOnce()
   })
 
   it('opens the requested workspace before any other loader reads the URL', async () => {

@@ -15,14 +15,13 @@
     :translate
     :title-as="DialogTitle"
     @close="close"
+    @set-up-auto-top-up="autoTopUpOffer.track"
+    @decline-auto-top-up="autoTopUpOffer.trackDeclined"
   >
     <template v-if="isInsufficientCredits" #description>
       <p class="m-0 text-muted-foreground">
         {{ $t('credits.topUp.insufficientWorkflowMessage') }}
       </p>
-    </template>
-    <template #extra>
-      <TopUpAutoTopUpCard />
     </template>
   </AddCreditsDialog>
 </template>
@@ -44,12 +43,10 @@ import {
   addCreditsPendingTopup,
   topupCheckoutFailure
 } from '@/platform/billing/addCredits/addCreditsFacts'
-import {
-  handsPopupsToSystemBrowser,
-  reserveBillingTab
-} from '@/platform/billing/billingTab'
-import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { useAutoTopUpSetupOffer } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
@@ -88,6 +85,7 @@ const telemetry = useTelemetry()
 const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
 const { canTopUp, topUpDenial } = useBillingCapabilities()
+const autoTopUpOffer = useAutoTopUpSetupOffer()
 const { payment: processingPayment } = useProcessingTopupPayment()
 const { topupOperation, createHostedCheckout, quoteTopup } = useTopupOperation()
 const planLine = useAddCreditsPlanLine()
@@ -152,7 +150,8 @@ const ports: AddCreditsPorts = {
         }
       }
     })
-  }
+  },
+  autoTopUpSetupUrl: autoTopUpOffer.setupUrl
 }
 
 function close() {

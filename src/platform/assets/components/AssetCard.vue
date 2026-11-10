@@ -30,7 +30,7 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
@@ -176,6 +176,12 @@ const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
+
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
+)
 
 const assetMenuOpen = ref(false)
 

@@ -139,6 +139,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -184,6 +185,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: {
         planMode: 'team',
@@ -209,6 +211,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: undefined
     })
@@ -256,6 +259,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal'
     })
   })
