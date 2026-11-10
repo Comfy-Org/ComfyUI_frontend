@@ -95,5 +95,5 @@ The inventory of accessors and the follow-up plan are tracked in
   rejected the same option for the litegraph classes.
 - **Consequence of moving registration into bootstrap.** Registration becomes
   a list that bootstrap must keep complete. A missing entry fails at the first
-  read, not at load. Decision 6 makes that failure name the provider. A
-  `deps:audit` reachability check can catch the omission in CI.
+  read, not at load. Decision 6 makes that failure name the provider.
+  `deps:audit` does not check for a missing registration.

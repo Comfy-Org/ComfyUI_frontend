@@ -120,18 +120,18 @@ also owns not splitting.
 
 ### Trigger
 
-Nothing moves unless the scope already contains at least one node before the
-batch. An empty canvas keeps the template's own layout, matching the human
+Nothing moves unless the scope already contains at least one node or group
+before the batch. An empty canvas keeps the template's own layout, matching the human
 template flow. Otherwise the batch moves in either of two cases.
 
 **Collision.** The frame is a live write by an agent turn (its `actor` is
-`agent:…` and it is not a subscribe catch-up), and any incoming node's rect
-intersects any existing node's rect. A template inserted into a populated tab
+`agent:…` and it is not a subscribe catch-up), and any incoming node or group
+intersects any existing node or group. A template inserted into a populated tab
 arrives at its baked-in coordinates, which commonly sit on top of the user's
 graph (PM-2232: the Z-Image template's nodes span x −420 to 1350, the same
 region as the default workflow). The agent does not overlap nodes on purpose,
 so the viewport does not veto this case. A batch that sits inside or near the
-existing hull without touching any node is not a collision and is left alone.
+existing hull without touching any node or group is not a collision and is left alone.
 
 Catch-up frames, changes applied on tab return (`applyCollected`) and human
 writes never move for a collision: a replay can recreate a node a human
