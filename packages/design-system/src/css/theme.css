@@ -77,6 +77,10 @@
   --node-radius: 0.75rem;
   --node-title-font-size: 0.75rem;
   --node-icon-style: chevron;
+  --node-widget-height: 1.5rem;
+  --node-widget-radius: 0.375rem;
+  --node-widget-border-width: 0;
+  --node-widget-gap: 0.25rem;
   --primary: var(--color-azure-600);
   --secondary: var(--color-charcoal-600);
   --muted: var(--color-charcoal-300);

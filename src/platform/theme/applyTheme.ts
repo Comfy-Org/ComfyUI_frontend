@@ -36,6 +36,10 @@ function applyCssTokens(theme: Theme, style: CSSStyleDeclaration) {
     if (value) style.setProperty(`--${key}`, value)
     else style.removeProperty(`--${key}`)
   }
+  style.setProperty(
+    '--node-widget-gap',
+    `${theme.preset.colors.litegraph_base.NODE_WIDGET_GAP}px`
+  )
   style.colorScheme = theme.colorScheme
 }
 

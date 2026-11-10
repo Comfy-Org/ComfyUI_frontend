@@ -6,7 +6,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'relative isolate flex min-w-0 items-center overflow-visible rounded-md bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
+            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
             useWidgetHeight(),
             className
           )
@@ -17,14 +17,16 @@
           v-if="!hideButtons"
           :aria-label="t('g.decrement')"
           data-testid="decrement"
-          class="h-full w-6 shrink-0 rounded-none"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
           @click="modelValue = clamp(modelValue - step)"
         >
-          <i class="icon-[lucide--minus]" />
+          <i
+            class="icon-[lucide--minus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          />
         </Button>
         <slot name="label" />
         <slot name="between" />
@@ -63,14 +65,16 @@
           v-if="!hideButtons"
           :aria-label="t('g.increment')"
           data-testid="increment"
-          class="h-full w-6 shrink-0 rounded-none"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
           @click="modelValue = clamp(modelValue + step)"
         >
-          <i class="icon-[lucide--plus]" />
+          <i
+            class="icon-[lucide--plus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+          />
         </Button>
       </div>
     </TooltipTrigger>

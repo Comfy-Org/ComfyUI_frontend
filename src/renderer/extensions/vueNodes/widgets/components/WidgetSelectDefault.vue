@@ -11,12 +11,15 @@
         tabindex="-1"
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
-        class="h-full w-6 shrink-0 rounded-none"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
       >
-        <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
+        <i
+          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          aria-hidden="true"
+        />
       </Button>
     </template>
     <template #between><slot name="between" /></template>
@@ -71,12 +74,15 @@
             tabindex="-1"
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
-            class="h-full w-6 shrink-0 rounded-none"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
           >
-            <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
+            <i
+              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+              aria-hidden="true"
+            />
           </Button>
         </div>
       </ComboboxAnchor>
