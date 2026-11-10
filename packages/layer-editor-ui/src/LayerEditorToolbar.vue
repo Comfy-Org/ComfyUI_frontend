@@ -78,7 +78,7 @@
       :disabled="exporting || !session.glOk.value"
       :title="t('layerEditor.exportPsd')"
       :aria-label="t('layerEditor.exportPsd')"
-      @click="onExportPsd"
+      @click="emit('export-psd')"
     >
       <i class="icon-[lucide--file-down]" />
     </button>
@@ -99,15 +99,18 @@ import {
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { session } = defineProps<{ session: LayerEditorSession }>()
+const { session, exporting = false } = defineProps<{
+  session: LayerEditorSession
+  exporting?: boolean
+}>()
+
+const emit = defineEmits<{ 'export-psd': [] }>()
 
 const { t } = useI18n()
 const { pointerMode, canUndo, canRedo, zoomRatio } = session
-const { exporting, exportPsd } = useLayerEditorExport(session)
 
 const zoomOpen = ref(false)
 
@@ -126,10 +129,6 @@ function applyZoom(ratio: number | null): void {
   if (ratio == null) session.fitView()
   else session.setZoom(ratio)
   zoomOpen.value = false
-}
-
-function onExportPsd(): void {
-  void exportPsd()
 }
 
 const zoomPercent = computed(() => `${Math.round(zoomRatio.value * 100)}%`)

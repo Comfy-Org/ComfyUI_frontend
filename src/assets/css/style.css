@@ -1,5 +1,7 @@
 @import '@comfyorg/design-system/css/style.css';
 
+@source '../../../packages/layer-editor-ui/src';
+
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
 }

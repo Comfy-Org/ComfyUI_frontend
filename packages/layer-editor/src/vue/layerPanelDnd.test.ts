@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { dropPositionFor, reorderDropIndex } from './layerPanelDnd'
+import { dropPositionFor, reorderDropIndex } from '#/vue/layerPanelDnd'
 
 describe('dropPositionFor', () => {
   it('splits the row at the midpoint', () => {

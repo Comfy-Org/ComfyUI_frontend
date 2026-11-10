@@ -26,7 +26,14 @@ the reverse.
 
 The application owns graph identity, node execution callbacks, backend image
 URLs, workflow persistence, preview URL lifetimes, dialogs, and downloads.
-These integrations remain together with the application's layer-editor UI.
+These integrations remain in the application. The sibling layer-editor-ui
+package owns reusable Vue controls and consumes the optional Vue session.
+Controls request host-owned effects through events rather than importing
+application services. The host supplies translations and theme styles.
+
+The UI package is private and source-consumed, like the design-system Vue
+components it uses. It does not introduce a published bundle or another Vue
+runtime.
 
 ## Alternatives
 
@@ -36,6 +43,8 @@ These integrations remain together with the application's layer-editor UI.
   and reactive synchronization solely to move existing behavior.
 - Moving graph integration into the package would couple the editor to the
   host and introduce a reverse dependency on graph contracts.
+- Keeping reusable controls in the engine package would couple its release
+  and dependency contract to the application's design system.
 
 ## Consequences
 

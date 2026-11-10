@@ -40,7 +40,11 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
           "packages/layer-editor/src/mode.ts",
           "packages/layer-editor/src/node.ts",
-          "packages/layer-editor/src/persistence/compositorTypes.ts"
+          "packages/layer-editor/src/persistence/compositorTypes.ts",
+          "packages/layer-editor-ui/src/LayerEditorCanvas.vue",
+          "packages/layer-editor-ui/src/LayerEditorToolbar.vue",
+          "packages/layer-editor-ui/src/LayerPanel.vue",
+          "packages/layer-editor-ui/src/LayerPropertiesPanel.vue"
         ]
       },
       {
@@ -1925,7 +1929,8 @@
           "src/lib/litegraph/src/widgets/CompositorWidget.ts",
           "src/renderer/extensions/layerEditor/**",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-          "packages/layer-editor/src/**"
+          "packages/layer-editor/src/**",
+          "packages/layer-editor-ui/src/**"
         ]
       },
       {

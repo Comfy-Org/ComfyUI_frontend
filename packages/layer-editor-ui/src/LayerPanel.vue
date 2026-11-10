@@ -121,11 +121,11 @@ import { computed, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LayerDropPos } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
+import type { LayerDropPos } from '@comfyorg/layer-editor/vue/layerPanelDnd'
 import {
   dropPositionFor,
   reorderDropIndex
-} from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
+} from '@comfyorg/layer-editor/vue/layerPanelDnd'
 import { DEFAULT_BACKGROUND_COLOR } from '@comfyorg/layer-editor/vue'
 import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
@@ -213,8 +213,6 @@ function onRowDragStart(id: string, e: DragEvent): void {
   dragId.value = id
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
-    // Firefox refuses to start the drag without data; empty keeps text
-    // inputs from receiving the layer id on a stray drop.
     e.dataTransfer.setData('text/plain', '')
   }
 }

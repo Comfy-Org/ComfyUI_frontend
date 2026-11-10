@@ -367,7 +367,8 @@ export default defineConfig([
         files: [
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
-          'packages/account-ui/**/*.vue'
+          'packages/account-ui/**/*.vue',
+          'packages/layer-editor-ui/**/*.vue'
         ],
         plugins: { 'template-classes': templateClasses },
         rules: {

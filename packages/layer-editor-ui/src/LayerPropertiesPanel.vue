@@ -180,7 +180,19 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
+          <ColorPicker
+            v-model="backgroundColorModel"
+            class="h-7"
+            :hex-label="t('color.hex')"
+            :rgba-label="t('color.rgba')"
+            :hue-label="t('color.hue')"
+            :alpha-label="t('color.alpha')"
+            :red-label="t('color.red')"
+            :green-label="t('color.green')"
+            :blue-label="t('color.blue')"
+            :saturation-brightness-label="t('color.saturationBrightness')"
+            :format-label="t('g.color')"
+          />
         </div>
       </div>
     </template>
@@ -194,7 +206,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
-import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import ColorPicker from '@comfyorg/design-system/color-picker/ColorPicker'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'

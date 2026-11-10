@@ -12,17 +12,17 @@ import {
   applyLayerState,
   extractLayerState,
   parseLayerState
-} from '@comfyorg/layer-editor/persistence/compositorLayerState'
+} from '#/persistence/compositorLayerState'
 import type {
   CompositeInput,
   Compositor,
   CompositorInit,
   FBOHandle
-} from '@comfyorg/layer-editor/compositor'
-import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
+} from '#/compositor'
+import type { ChannelData, RasterData } from '#/node'
 
 import { reorderDropIndex } from './layerPanelDnd'
-import { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
+import { useLayerEditorSession } from './useLayerEditorSession'
 
 class FakeCompositor implements Compositor {
   disposed = false

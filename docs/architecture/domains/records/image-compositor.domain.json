@@ -20,6 +20,9 @@
     },
     {
       "path": "packages/layer-editor/src/**"
+    },
+    {
+      "path": "packages/layer-editor-ui/src/**"
     }
   ],
   "publicEntryPoints": [
@@ -32,7 +35,11 @@
     "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
     "packages/layer-editor/src/mode.ts",
     "packages/layer-editor/src/node.ts",
-    "packages/layer-editor/src/persistence/compositorTypes.ts"
+    "packages/layer-editor/src/persistence/compositorTypes.ts",
+    "packages/layer-editor-ui/src/LayerEditorCanvas.vue",
+    "packages/layer-editor-ui/src/LayerEditorToolbar.vue",
+    "packages/layer-editor-ui/src/LayerPanel.vue",
+    "packages/layer-editor-ui/src/LayerPropertiesPanel.vue"
   ],
   "characterizationScenarios": [
     {
@@ -74,7 +81,8 @@
       "name": "Layer editor dialog opens from node outputs and drives the editing session",
       "checks": [
         "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
-        "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+        "packages/layer-editor/src/vue/useLayerEditorSession.test.ts",
+        "packages/layer-editor-ui/src/editorUi.test.ts",
         "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts"
       ]
     },
