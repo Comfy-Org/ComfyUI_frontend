@@ -6,10 +6,10 @@ defineProps<{ parts: readonly HighlightPart[] }>()
 
 <template>
   <template v-for="(part, index) in parts" :key="index">
-    <!-- Bold + background, the repo's search-highlight style: not colour alone. -->
+    <!-- Tinted background only: no padding or weight change, so words keep their shape and width. -->
     <mark
       v-if="part.highlighted"
-      class="rounded-sm bg-primary px-0.5 font-bold text-foreground"
+      class="rounded-sm bg-primary/30 text-foreground"
       >{{ part.text }}</mark
     >
     <template v-else>{{ part.text }}</template>

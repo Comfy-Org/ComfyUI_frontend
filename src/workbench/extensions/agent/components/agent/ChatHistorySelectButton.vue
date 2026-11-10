@@ -3,6 +3,7 @@ import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ChatHistoryHighlight from './ChatHistoryHighlight.vue'
 
@@ -68,7 +69,7 @@ const matchLabel = computed(() => {
       :aria-describedby="failed ? errorId : undefined"
       :disabled="loading"
       data-history-result
-      class="min-w-0 justify-start text-left text-xs font-normal"
+      class="min-w-0 items-start justify-start text-left text-xs font-normal"
       @click="emit('select')"
     >
       <i
@@ -77,8 +78,11 @@ const matchLabel = computed(() => {
         class="icon-[lucide--loader-circle] animate-spin"
       />
       <i v-else aria-hidden="true" class="icon-[lucide--circle-check]" />
-      <span class="flex min-w-0 flex-col">
-        <span class="truncate"
+      <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span
+          :class="
+            cn('truncate', date !== undefined && 'font-medium text-foreground')
+          "
           ><ChatHistoryHighlight :parts="titleParts"
         /></span>
         <template v-if="date !== undefined">
@@ -86,7 +90,7 @@ const matchLabel = computed(() => {
             v-if="plan.matchLine"
             class="truncate text-xs text-muted-foreground"
           >
-            <span class="mr-1 font-medium">{{ matchLabel }}</span
+            <span class="mr-1 opacity-70">{{ matchLabel }}</span
             ><ChatHistoryHighlight :parts="plan.matchLine.parts" />
           </span>
           <span

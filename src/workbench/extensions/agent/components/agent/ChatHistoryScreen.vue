@@ -4,6 +4,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import Input from '@comfyorg/design-system/input/Input'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
@@ -291,7 +292,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         :placeholder="t('agent.historySearchPlaceholder')"
         :accessible-label="t('agent.historySearchLabel')"
         :clear-label="t('agent.historySearchClear')"
-        size="sm"
+        size="md"
         @keydown.capture="onFieldKeydown"
       />
     </div>
@@ -328,7 +329,12 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
           v-for="{ session, result, ranges } in items"
           :key="session.id"
           :role="key === 'results' ? 'listitem' : undefined"
-          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
+          :class="
+            cn(
+              'group flex gap-2 rounded-sm px-2 py-1 hover:bg-accent',
+              key === 'results' ? 'items-start' : 'items-center'
+            )
+          "
         >
           <div
             v-if="renamingId === session.id"
