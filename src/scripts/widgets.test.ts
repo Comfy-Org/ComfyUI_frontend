@@ -90,7 +90,10 @@ test.for([
     })
   )
   await fireEvent.compositionEnd(input)
-  await fireEvent(input, new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }))
+  await fireEvent(
+    input,
+    new KeyboardEvent('keyup', { key: 'Enter', bubbles: true })
+  )
   expect(interactions).toEqual([])
   expect(input).toHaveFocus()
   expect(input).toHaveValue('21')
