@@ -28,7 +28,6 @@ const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
-let pendingFrame: number | null = null
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -59,7 +58,7 @@ function bindWidget() {
         this.triggerDraw?.()
       }
     )
-  widgetInstance.triggerDraw = scheduleDraw
+  widgetInstance.triggerDraw = draw
   draw()
 }
 
@@ -73,7 +72,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
-  if (pendingFrame !== null) cancelAnimationFrame(pendingFrame)
 })
 
 whenever(() => !canvasStore.linearMode, bindWidget)
@@ -111,13 +109,6 @@ function draw() {
   ctx.scale(scaleFactor, scaleFactor)
   widgetInstance.draw?.(ctx, node, width, 1, height)
 }
-function scheduleDraw() {
-  if (pendingFrame !== null) return
-  pendingFrame = requestAnimationFrame(() => {
-    pendingFrame = null
-    draw()
-  })
-}
 function augmentToWidgetPointerEvent(
   e: PointerEvent,
   node: LGraphNode
@@ -136,20 +127,20 @@ function handleDown(e: PointerEvent) {
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
-  scheduleDraw()
+  canvas.setDirty(true)
 }
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
   augmentToWidgetPointerEvent(e, node)
   e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
   pointer.up(e)
-  scheduleDraw()
+  canvas.setDirty(true)
 }
 function handleMove(e: PointerEvent) {
   if (!pointer || !node) return
   augmentToWidgetPointerEvent(e, node)
   pointer.move(e)
-  if (e.buttons) scheduleDraw()
+  if (e.buttons) canvas.setDirty(true)
 }
 </script>
 <template>

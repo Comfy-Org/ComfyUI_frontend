@@ -160,13 +160,11 @@ describe('WidgetLegacy repaint', () => {
   ]
 
   it.for(dirtySignals)(
-    'redraws the widget once per frame after $name',
+    'redraws the widget on the next dirty canvas frame after $name',
     async ({ markDirty }) => {
-      vi.useFakeTimers({ toFake: ['requestAnimationFrame'] })
       LiteGraph.vueNodesMode = true
       onTestFinished(() => {
         LiteGraph.vueNodesMode = false
-        vi.useRealTimers()
       })
       const graph = new LGraph()
       const node = new LGraphNode('Legacy')
@@ -174,9 +172,13 @@ describe('WidgetLegacy repaint', () => {
       graph.add(node)
       const draw = vi.fn()
       widget.draw = draw
-      useCanvasStore().canvas = fromPartial({ graph })
-      await nextTick()
       stubCanvasGetContext()
+      const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      useCanvasStore().canvas = canvas
+      await nextTick()
 
       render(WidgetLegacy, {
         props: {
@@ -184,14 +186,17 @@ describe('WidgetLegacy repaint', () => {
           widget: { name: 'stack_data', type: 'text', value: undefined }
         }
       })
+      canvas.draw()
       const drawsOnMount = draw.mock.calls.length
 
       markDirty(node)
       markDirty(node)
       expect(draw).toHaveBeenCalledTimes(drawsOnMount)
-      vi.advanceTimersToNextFrame()
+      canvas.draw()
       expect(draw).toHaveBeenCalledTimes(drawsOnMount + 1)
       expect(widget.last_y).toBe(widget.y)
+      canvas.draw()
+      expect(draw).toHaveBeenCalledTimes(drawsOnMount + 1)
     }
   )
 })

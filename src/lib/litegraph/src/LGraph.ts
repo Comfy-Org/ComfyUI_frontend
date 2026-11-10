@@ -1957,10 +1957,6 @@ export class LGraph
   }
 
   setDirtyCanvas(fg: boolean, bg?: boolean): void {
-    if (fg && LiteGraph.vueNodesMode) {
-      for (const node of this._nodes)
-        for (const widget of node.widgets ?? []) widget.triggerDraw?.()
-    }
     this.canvasAction((c) => c.setDirty(fg, bg))
   }
 
