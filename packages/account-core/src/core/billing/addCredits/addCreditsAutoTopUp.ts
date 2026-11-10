@@ -198,9 +198,7 @@ export function autoTopUpActivationFor(
   }
 }
 
-export function autoTopUpRulesFrom(
-  settings: AutoReloadSettings
-): AutoTopUpRules {
+function autoTopUpRulesFrom(settings: AutoReloadSettings): AutoTopUpRules {
   return {
     minReloadCredits: settings.min_reload_credits,
     maxReloadCredits: settings.max_reload_credits,
