@@ -1,7 +1,7 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export function createPromotedWidgetStoreProjection(
   input: INodeInputSlot,
@@ -32,6 +32,9 @@ export function createPromotedWidgetStoreProjection(
     },
     get options() {
       return store.getWidget(id)?.options ?? {}
+    },
+    set options(next) {
+      store.setOptions(id, next)
     },
     get value() {
       return store.getWidget(id)?.value

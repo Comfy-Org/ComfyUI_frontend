@@ -1,15 +1,12 @@
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createTestIdentity } from '../testing.js'
-import type { AccountIdentity } from './identity.js'
-import type { LazyIdentity } from './lazyIdentity.js'
-import {
-  createLazyIdentity,
-  createUnavailableIdentity
-} from './lazyIdentity.js'
-import { createSessionClient } from './session.js'
-import type { AccountUser } from './sessionContracts.js'
+import { createTestIdentity } from '#/testing'
+import type { AccountIdentity } from './identity'
+import type { LazyIdentity } from './lazyIdentity'
+import { createLazyIdentity, createUnavailableIdentity } from './lazyIdentity'
+import { createSessionClient } from './session'
+import type { AccountUser } from './sessionContracts'
 
 const alice: AccountUser = { uid: 'alice', getIdToken: async () => 'token' }
 const bob: AccountUser = { uid: 'bob', getIdToken: async () => 'token' }
@@ -345,15 +342,13 @@ describe('createLazyIdentity', () => {
       Promise.reject(new Error('chunk failed'))
     )
     const port = createLazyIdentity(load)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     port.onUserChanged(() => {
       throw new Error('listener failed')
     })
 
     await expect(port.activate()).rejects.toThrow('chunk failed')
 
-    expect(warn).toHaveBeenCalled()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('resolves the activation even when a listener throws on the first delivery', async () => {

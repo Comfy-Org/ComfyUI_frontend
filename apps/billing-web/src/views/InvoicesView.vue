@@ -4,34 +4,23 @@
  * "Invoice History" opens the portal rather than listing them itself. The
  * portal returns to this page, which has nothing to refresh.
  */
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { useBillingClient } from '@comfyorg/account-ui/billing'
 
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
+import { usePaymentPortal } from '@/composables/usePaymentPortal'
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
-const { commands } = useBillingClient<'commands'>(undefined)
+const { refusal } = useHostedCopy()
+const {
+  returningFromPortal,
+  opening,
+  refusal: failure,
+  openPortal,
+  dropReturnMarker
+} = usePaymentPortal('invoices')
 
-const opening = ref(false)
-const failure = ref<string | undefined>()
-
-async function openPortal() {
-  opening.value = true
-  failure.value = undefined
-  const result = await commands.openPaymentPortal({
-    returnUrl: window.location.href
-  })
-  opening.value = false
-  if (result.status === 'error') {
-    failure.value = coded('failure', result.code)
-    return
-  }
-  window.location.assign(result.value.url)
-}
+if (returningFromPortal) void dropReturnMarker()
 </script>
 
 <template>
@@ -40,13 +29,13 @@ async function openPortal() {
       <p class="m-0 text-sm text-muted-foreground">
         {{ t('hosted.invoices.body') }}
       </p>
-      <p v-if="failure" class="m-0 text-sm text-destructive-background">
-        {{ failure }}
+      <p v-if="failure" class="m-0 text-sm text-destructive">
+        {{ refusal(failure) }}
       </p>
       <button
         type="button"
         :disabled="opening"
-        class="h-11 cursor-pointer self-start rounded-lg bg-base-foreground px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer self-start rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
         @click="openPortal"
       >
         {{ t('hosted.invoices.open') }}

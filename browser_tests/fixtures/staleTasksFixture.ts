@@ -30,15 +30,22 @@ const staleTasksFixture = base.extend<{
         downloadRequests.push(route.request().url())
         await route.fulfill({ json: exportDownloadResponse })
       })
+      await page.context().route(exportDownloadResponse.url, async (route) => {
+        await route.fulfill({
+          contentType: 'application/zip',
+          headers: { 'Content-Disposition': 'attachment; filename="late.zip"' },
+          body: 'export archive'
+        })
+      })
 
       await use({
         taskRequests,
         downloadRequests,
-        downloadToast: page.getByRole('status').filter({
-          has: page.getByRole('heading', { name: 'Importing Models' })
+        downloadToast: comfyPage.toast.panels.filter({
+          hasText: 'Importing Models'
         }),
-        exportToast: page.getByRole('status').filter({
-          has: page.getByRole('heading', { name: 'Exporting Assets' })
+        exportToast: comfyPage.toast.panels.filter({
+          hasText: 'Exporting Assets'
         })
       })
     },

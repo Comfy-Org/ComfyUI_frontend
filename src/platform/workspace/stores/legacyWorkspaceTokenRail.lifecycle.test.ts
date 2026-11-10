@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import {
@@ -9,18 +10,16 @@ import {
 } from '@/platform/workspace/workspaceConstants'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 
-const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
-  workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({ ensureSessionCookie: mockEnsureSessionCookie })
-}))
+const mockEnsureSessionCookie = vi.fn<() => Promise<void>>()
+provideEnsureSessionCookie(mockEnsureSessionCookie)
 
 const workspace: WorkspaceIdentity = {
   id: 'workspace-123',
@@ -37,27 +36,22 @@ function tokenResponse(
   overrides: Record<string, unknown> = {},
   workspaceId = workspace.id
 ) {
-  return {
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        token: `token-${workspaceId}`,
-        expires_at: new Date(Date.now() + expiresInMs).toISOString(),
-        workspace: { id: workspaceId, name: workspace.name, type: 'team' },
-        role: 'owner',
-        permissions: ['owner:*'],
-        ...overrides
-      })
-  }
+  return Response.json({
+    token: `token-${workspaceId}`,
+    expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+    user_id: 'uid-1',
+    workspace: { id: workspaceId, name: workspace.name, type: 'team' },
+    role: 'owner',
+    permissions: ['owner:*'],
+    ...overrides
+  })
 }
 
 function failedResponse(status: number) {
-  return {
-    ok: false,
+  return new Response(JSON.stringify({ message: 'nope' }), {
     status,
-    statusText: `HTTP ${status}`,
-    text: () => Promise.resolve(JSON.stringify({ message: 'nope' }))
-  }
+    statusText: `HTTP ${status}`
+  })
 }
 
 function createRail() {
@@ -80,7 +74,8 @@ function createRail() {
     }),
     persistWorkspaceIdentity: vi.fn(),
     clearSessionStorage: vi.fn(),
-    surfacePermanentAuthError: vi.fn()
+    surfacePermanentAuthError: vi.fn(),
+    reportTransientRecoveryFailure: vi.fn()
   }
   const rail = createLegacyWorkspaceTokenRail(deps)
   return { rail, deps, identity }
@@ -111,19 +106,15 @@ function seedSession(
   }
 }
 
-let mockFetch: ReturnType<typeof vi.fn>
-
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: false })
+  vi.spyOn(Math, 'random').mockReturnValue(0)
   mockDistributionTypes.isCloud = true
   mockEnsureSessionCookie.mockResolvedValue(undefined)
-  mockFetch = vi.fn((_url: string, init: { body: string }) => {
-    const { workspace_id: workspaceId } = JSON.parse(init.body)
+  vi.mocked(fetch).mockImplementation((_url, init) => {
+    const { workspace_id: workspaceId } = JSON.parse(String(init?.body))
     return Promise.resolve(tokenResponse({}, workspaceId))
   })
-  vi.stubGlobal('fetch', mockFetch)
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-  vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 describe('minting a workspace token', () => {
@@ -174,7 +165,7 @@ describe('minting a workspace token', () => {
       failure: 'a body that fails the schema',
       uid: 'user-a',
       idToken: 'firebase-token',
-      response: () => ({ ok: true, json: () => Promise.resolve({ token: 1 }) }),
+      response: () => Response.json({ token: 1 }),
       code: 'TOKEN_EXCHANGE_FAILED'
     },
     {
@@ -190,7 +181,7 @@ describe('minting a workspace token', () => {
       const { rail, deps, identity } = createRail()
       identity.uid = uid
       vi.mocked(deps.getIdToken).mockResolvedValue(idToken)
-      mockFetch.mockResolvedValue(response())
+      vi.mocked(fetch).mockResolvedValue(response())
 
       await expect(
         rail.switchLegacyWorkspace('workspace-123')
@@ -204,16 +195,16 @@ describe('minting a workspace token', () => {
 
   it('discards a mint that lands after the user changes and settles loading', async () => {
     const { rail, deps, identity } = createRail()
-    let deliverToken: (value: unknown) => void = () => {}
-    mockFetch.mockReturnValue(
-      new Promise((resolve) => {
+    let deliverToken: (value: Response) => void = () => {}
+    vi.mocked(fetch).mockReturnValue(
+      new Promise<Response>((resolve) => {
         deliverToken = resolve
       })
     )
 
     const switching = rail.switchLegacyWorkspace('workspace-123')
     await vi.advanceTimersByTimeAsync(1)
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
     expect(deps.isLoading.value).toBe(true)
     identity.uid = 'user-b'
     deliverToken(tokenResponse())
@@ -275,7 +266,7 @@ describe('ensureWorkspaceToken', () => {
     await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBe(
       'token-workspace-123'
     )
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -333,7 +324,7 @@ describe('ensureWorkspaceToken', () => {
       vi.mocked(deps.activeWorkspaceId).mockReturnValue(active)
 
       await expect(rail.ensureWorkspaceToken(target)).resolves.toBe(token)
-      expect(mockFetch).toHaveBeenCalledTimes(mints)
+      expect(fetch).toHaveBeenCalledTimes(mints)
     }
   )
 
@@ -349,7 +340,7 @@ describe('ensureWorkspaceToken', () => {
     'backs off a failed recovery: retrying $retry makes $mints mint(s)',
     async ({ after, mints }) => {
       const { rail } = createRail()
-      mockFetch.mockResolvedValue(failedResponse(500))
+      vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
       await expect(
         rail.ensureWorkspaceToken('workspace-123')
@@ -359,7 +350,7 @@ describe('ensureWorkspaceToken', () => {
         rail.ensureWorkspaceToken('workspace-123')
       ).resolves.toBeNull()
 
-      expect(mockFetch).toHaveBeenCalledTimes(mints)
+      expect(fetch).toHaveBeenCalledTimes(mints)
     }
   )
 
@@ -369,24 +360,24 @@ describe('ensureWorkspaceToken', () => {
       rail.clearLegacyContext()
       return true
     })
-    mockFetch.mockResolvedValueOnce(failedResponse(403))
+    vi.mocked(fetch).mockResolvedValueOnce(failedResponse(403))
 
     await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
     await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBe(
       'token-workspace-123'
     )
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('fails closed and backs off when the mint lands on a different workspace', async () => {
     const { rail } = createRail()
-    mockFetch.mockResolvedValue(tokenResponse({}, 'workspace-123'))
+    vi.mocked(fetch).mockResolvedValue(tokenResponse({}, 'workspace-123'))
 
     await expect(rail.ensureWorkspaceToken('workspace-456')).resolves.toBeNull()
     await expect(rail.ensureWorkspaceToken('workspace-456')).resolves.toBeNull()
 
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -395,24 +386,27 @@ describe('ensureWorkspaceToken', () => {
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(403),
-      ended: [['workspace-999']],
-      surfaced: 1
+      ended: [['workspace-999', 'ACCESS_DENIED']],
+      surfaced: 1,
+      reported: 0
     },
     {
       failure: 'a 404',
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(404),
-      ended: [['workspace-999']],
-      surfaced: 1
+      ended: [['workspace-999', 'WORKSPACE_NOT_FOUND']],
+      surfaced: 1,
+      reported: 0
     },
     {
       failure: 'a 401',
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(401),
-      ended: [[undefined]],
-      surfaced: 1
+      ended: [[undefined, 'INVALID_FIREBASE_TOKEN']],
+      surfaced: 1,
+      reported: 0
     },
     {
       failure: 'a 500',
@@ -420,7 +414,8 @@ describe('ensureWorkspaceToken', () => {
       signedIn: true,
       response: () => failedResponse(500),
       ended: [],
-      surfaced: 0
+      surfaced: 0,
+      reported: 1
     },
     {
       failure: 'a missing identity token while signed in',
@@ -428,24 +423,26 @@ describe('ensureWorkspaceToken', () => {
       signedIn: true,
       response: tokenResponse,
       ended: [],
-      surfaced: 0
+      surfaced: 0,
+      reported: 1
     },
     {
       failure: 'a missing identity token after sign-out',
       idToken: undefined,
       signedIn: false,
       response: tokenResponse,
-      ended: [[undefined]],
-      surfaced: 1
+      ended: [[undefined, 'NOT_AUTHENTICATED']],
+      surfaced: 1,
+      reported: 0
     }
   ])(
     'classifies $failure during recovery',
-    async ({ idToken, signedIn, response, ended, surfaced }) => {
+    async ({ idToken, signedIn, response, ended, surfaced, reported }) => {
       const { rail, deps } = createRail()
       await rail.switchLegacyWorkspace('workspace-123')
       vi.mocked(deps.getIdToken).mockResolvedValue(idToken)
       vi.mocked(deps.hasSignedInUser).mockReturnValue(signedIn)
-      mockFetch.mockResolvedValue(response())
+      vi.mocked(fetch).mockResolvedValue(response())
 
       await expect(
         rail.ensureWorkspaceToken('workspace-999')
@@ -453,14 +450,89 @@ describe('ensureWorkspaceToken', () => {
 
       expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual(ended)
       expect(deps.surfacePermanentAuthError).toHaveBeenCalledTimes(surfaced)
+      expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledTimes(
+        reported
+      )
     }
   )
 
+  it('reports a run of transient recovery failures once, with the mint error', async () => {
+    const { rail, deps } = createRail()
+    vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
+
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ code: 'TOKEN_EXCHANGE_FAILED' })
+    )
+  })
+
+  it('reports again once a recovered token ends the failure run', async () => {
+    const { rail, deps } = createRail()
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(failedResponse(500))
+      .mockResolvedValueOnce(tokenResponse())
+      .mockResolvedValueOnce(failedResponse(500))
+
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBe(
+      'token-workspace-123'
+    )
+    await expect(rail.ensureWorkspaceToken('workspace-999')).resolves.toBeNull()
+
+    expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the failure run open when the recovery switch resolves without a legacy token', async () => {
+    const { rail, deps } = createRail()
+    const firstFailure = new Error('network down')
+    vi.mocked(deps.switchWorkspace)
+      .mockRejectedValueOnce(firstFailure)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('network down again'))
+
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+
+    expect(deps.switchWorkspace).toHaveBeenCalledTimes(3)
+    expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(deps.reportTransientRecoveryFailure).mock.calls[0][0]
+    ).toBe(firstFailure)
+  })
+
+  it('reports again after the legacy context is cleared', async () => {
+    const { rail, deps } = createRail()
+    const failureBeforeClear = new Error('network down')
+    const failureAfterClear = new Error('network down again')
+    vi.mocked(deps.switchWorkspace)
+      .mockRejectedValueOnce(failureBeforeClear)
+      .mockRejectedValueOnce(failureAfterClear)
+
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    rail.clearLegacyContext()
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+
+    const reported = vi.mocked(deps.reportTransientRecoveryFailure).mock.calls
+    expect(reported).toHaveLength(2)
+    expect(reported[0][0]).toBe(failureBeforeClear)
+    expect(reported[1][0]).toBe(failureAfterClear)
+  })
+
   it('collapses concurrent callers onto the in-flight mint', async () => {
     const { rail } = createRail()
-    let deliverToken: (value: unknown) => void = () => {}
-    mockFetch.mockReturnValueOnce(
-      new Promise((resolve) => {
+    let deliverToken: (value: Response) => void = () => {}
+    vi.mocked(fetch).mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
         deliverToken = resolve
       })
     )
@@ -477,7 +549,7 @@ describe('ensureWorkspaceToken', () => {
       'token-workspace-123',
       'token-workspace-123'
     ])
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -508,7 +580,7 @@ describe('ensureWorkspaceToken', () => {
 
       await expect(recovered).resolves.toBe(token)
       expect(deps.currentWorkspace.value?.id).toBe(current)
-      expect(mockFetch).toHaveBeenCalledTimes(mints)
+      expect(fetch).toHaveBeenCalledTimes(mints)
     }
   )
 })
@@ -519,7 +591,7 @@ describe('refreshToken', () => {
 
     await rail.refreshToken()
 
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -527,21 +599,21 @@ describe('refreshToken', () => {
       failure: 'a 403',
       response: () => failedResponse(403),
       fetches: 2,
-      ended: [['workspace-123']],
+      ended: [['workspace-123', 'ACCESS_DENIED']],
       token: undefined
     },
     {
       failure: 'a 404',
       response: () => failedResponse(404),
       fetches: 2,
-      ended: [['workspace-123']],
+      ended: [['workspace-123', 'WORKSPACE_NOT_FOUND']],
       token: undefined
     },
     {
       failure: 'a 401',
       response: () => failedResponse(401),
       fetches: 2,
-      ended: [[undefined]],
+      ended: [[undefined, 'INVALID_FIREBASE_TOKEN']],
       token: undefined
     }
   ])(
@@ -549,13 +621,13 @@ describe('refreshToken', () => {
     async ({ response, fetches, ended, token }) => {
       const { rail, deps } = createRail()
       await rail.switchLegacyWorkspace('workspace-123')
-      mockFetch.mockResolvedValue(response())
+      vi.mocked(fetch).mockResolvedValue(response())
 
       const refreshing = rail.refreshToken()
       await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
       await refreshing
 
-      expect(mockFetch).toHaveBeenCalledTimes(fetches)
+      expect(fetch).toHaveBeenCalledTimes(fetches)
       expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual(ended)
       expect(rail.getWorkspaceToken()).toBe(token)
     }
@@ -564,21 +636,21 @@ describe('refreshToken', () => {
   it('retries repeated 500s on a doubling backoff, then keeps the held token', async () => {
     const { rail, deps } = createRail()
     await rail.switchLegacyWorkspace('workspace-123')
-    mockFetch.mockResolvedValue(failedResponse(500))
+    vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
     const refreshing = rail.refreshToken()
     await vi.advanceTimersByTimeAsync(999)
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     await vi.advanceTimersByTimeAsync(1)
-    expect(mockFetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(3)
     await vi.advanceTimersByTimeAsync(1999)
-    expect(mockFetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(3)
     await vi.advanceTimersByTimeAsync(1)
-    expect(mockFetch).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(4)
     await vi.advanceTimersByTimeAsync(3999)
-    expect(mockFetch).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(4)
     await vi.advanceTimersByTimeAsync(1)
-    expect(mockFetch).toHaveBeenCalledTimes(5)
+    expect(fetch).toHaveBeenCalledTimes(5)
     await refreshing
 
     expect(deps.endWorkspaceSession).not.toHaveBeenCalled()
@@ -594,7 +666,7 @@ describe('refreshToken', () => {
     await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
     await refreshing
 
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
     expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
   })
 
@@ -606,7 +678,7 @@ describe('refreshToken', () => {
     async ({ clockAdvanceMs, uid }) => {
       const { rail, deps, identity } = createRail()
       await rail.switchLegacyWorkspace('workspace-123')
-      mockFetch.mockResolvedValue(failedResponse(500))
+      vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
       vi.setSystemTime(Date.now() + clockAdvanceMs)
       identity.uid = uid
 
@@ -614,7 +686,7 @@ describe('refreshToken', () => {
       await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
       await refreshing
 
-      expect(mockFetch).toHaveBeenCalledTimes(5)
+      expect(fetch).toHaveBeenCalledTimes(5)
       expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
     }
   )
@@ -622,7 +694,7 @@ describe('refreshToken', () => {
   it('abandons the retry chain once the workspace context has moved on', async () => {
     const { rail, deps } = createRail()
     await rail.switchLegacyWorkspace('workspace-123')
-    mockFetch.mockResolvedValueOnce(failedResponse(500))
+    vi.mocked(fetch).mockResolvedValueOnce(failedResponse(500))
 
     const refreshing = rail.refreshToken()
     await vi.advanceTimersByTimeAsync(999)
@@ -630,7 +702,7 @@ describe('refreshToken', () => {
     await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
     await refreshing
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(deps.currentWorkspace.value).toBeNull()
     expect(deps.endWorkspaceSession).not.toHaveBeenCalled()
   })
@@ -638,20 +710,20 @@ describe('refreshToken', () => {
   it('caps scheduled refresh retries and ends the session at expiry', async () => {
     const { rail, deps } = createRail()
     await rail.switchLegacyWorkspace('workspace-123')
-    mockFetch.mockResolvedValue(failedResponse(500))
+    vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
     const refreshing = rail.refreshToken()
     await vi.advanceTimersByTimeAsync(60_000)
     await refreshing
 
-    expect(mockFetch).toHaveBeenCalledTimes(17)
+    expect(fetch).toHaveBeenCalledTimes(17)
     expect(rail.getWorkspaceToken()).toBe('token-workspace-123')
     expect(deps.error.value).toBeNull()
     expect(deps.endWorkspaceSession).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(expiresInMs - 60_000)
 
-    expect(mockFetch).toHaveBeenCalledTimes(17)
+    expect(fetch).toHaveBeenCalledTimes(17)
     expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
   })
 })

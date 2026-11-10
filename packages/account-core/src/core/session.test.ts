@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import { makeClient } from './__fixtures__/sessionClientFixture'
 import {
   EXCHANGE_URL,
   jsonResponse,
@@ -9,19 +9,19 @@ import {
   mintBody,
   okFetch,
   testUser
-} from './__fixtures__/sessionFakes.js'
+} from './__fixtures__/sessionFakes'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
   SessionErrorCode
-} from './session.js'
+} from './session'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
-} from './session.js'
+} from './session'
 
 function seedCache(
   storage: CredentialStorage,
@@ -132,15 +132,36 @@ describe('ensureFresh', () => {
   })
 
   it.for([
-    ['a 401', 401, 'INVALID_FIREBASE_TOKEN', 401],
-    ['a 403', 403, 'ACCESS_DENIED', 403],
-    ['a 404', 404, 'WORKSPACE_NOT_FOUND', 404],
-    ['a 5xx', 503, 'TOKEN_EXCHANGE_FAILED', 503]
+    ['a 401', 401, 'INVALID_FIREBASE_TOKEN', 401, {}],
+    ['a 403', 403, 'ACCESS_DENIED', 403, {}],
+    [
+      'a 403 another refusal',
+      403,
+      'ACCESS_DENIED',
+      403,
+      { code: 'FORBIDDEN', message: 'x' }
+    ],
+    [
+      'a 403 sso_required',
+      403,
+      'SSO_REQUIRED',
+      403,
+      { code: 'sso_required', message: 'x' }
+    ],
+    [
+      'a 401 sso_required',
+      401,
+      'INVALID_FIREBASE_TOKEN',
+      401,
+      { code: 'sso_required', message: 'x' }
+    ],
+    ['a 404', 404, 'WORKSPACE_NOT_FOUND', 404, {}],
+    ['a 5xx', 503, 'TOKEN_EXCHANGE_FAILED', 503, {}]
   ] as const)(
     'maps %s to the production error code and caches nothing',
-    async ([, status, code, httpStatus]) => {
+    async ([, status, code, httpStatus, body]) => {
       const { client, storage } = makeClient({
-        fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(status, {}))
+        fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(status, body))
       })
 
       const result = await client.ensureFresh(testUser(), {})
@@ -150,32 +171,75 @@ describe('ensureFresh', () => {
     }
   )
 
+  it('carries the organization an sso_required refusal names', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(403, {
+          code: 'sso_required',
+          message: 'x',
+          organization_id: 'org_acme'
+        })
+      )
+    })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(result).toStrictEqual({
+      status: 'error',
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme',
+      httpStatus: 403
+    })
+  })
+
   it.for([
     [
       'a network throw',
       async () => {
         throw new TypeError('failed to fetch')
       },
+      undefined,
       undefined
     ],
     [
       'a non-JSON body',
       async () => new Response('<html>', { status: 200 }),
-      200
+      200,
+      { reason: 'body_unreadable' }
     ],
     [
       'an unparseable expires_at',
       async () => jsonResponse(200, mintBody({ expires_at: 'soon' })),
-      200
+      200,
+      { reason: 'schema_mismatch', detail: 'expires_at' }
     ],
     [
       'a missing token',
       async () => jsonResponse(200, mintBody({ token: undefined })),
-      200
+      200,
+      { reason: 'schema_mismatch', detail: 'token' }
+    ],
+    [
+      'an empty token',
+      async () => jsonResponse(200, mintBody({ token: '' })),
+      200,
+      { reason: 'empty_token' }
+    ],
+    [
+      'a token already expired on the local clock',
+      async () =>
+        jsonResponse(
+          200,
+          mintBody({
+            expires_at: new Date(Date.now() - 3_600_000).toISOString()
+          })
+        ),
+      200,
+      { reason: 'expired_on_arrival' }
     ]
   ] as const)(
     'collapses %s into TOKEN_EXCHANGE_FAILED and caches nothing',
-    async ([, respond, httpStatus]) => {
+    async ([, respond, httpStatus, diagnosis]) => {
       const { client, storage } = makeClient({
         fetchImpl: vi.fn<typeof fetch>(respond)
       })
@@ -186,9 +250,36 @@ describe('ensureFresh', () => {
       if (result?.status !== 'error') return
       expect(result.code).toBe('TOKEN_EXCHANGE_FAILED')
       expect(result.httpStatus).toBe(httpStatus)
+      expect(
+        result.reason,
+        'the 2xx failure reason is what tells a skewed clock from a contract drift'
+      ).toBe(diagnosis?.reason)
+      if (diagnosis && 'detail' in diagnosis) {
+        expect(result.detail).toBe(diagnosis.detail)
+      }
       expect(storage.raw()).toBeNull()
     }
   )
+
+  it('reports how far past expiry a token arrived on the local clock', async () => {
+    const now = Date.parse('2026-11-05T12:00:00.000Z')
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(200, mintBody({ expires_at: '2026-11-05T10:30:00.000Z' }))
+      ),
+      now: () => now
+    })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200,
+      reason: 'expired_on_arrival',
+      detail: 'expires_in_ms=-5400000'
+    })
+  })
 
   it('shares one in-flight mint between concurrent callers', async () => {
     let release!: (response: Response) => void
@@ -237,7 +328,8 @@ describe('ensureFresh', () => {
     ).toEqual({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED',
-      httpStatus: 200
+      httpStatus: 200,
+      reason: 'body_aborted'
     })
     expect(storage.raw()).toBeNull()
   })
@@ -881,7 +973,9 @@ describe('exchange response contract', () => {
     expect(await client.ensureFresh(testUser())).toEqual({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED',
-      httpStatus: 200
+      httpStatus: 200,
+      reason: 'schema_mismatch',
+      detail: 'expires_at'
     })
   })
 })

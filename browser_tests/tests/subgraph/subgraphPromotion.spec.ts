@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
@@ -228,7 +229,6 @@ test.describe(
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
-        test.fail()
         await expect(promotedTextarea).toHaveValue(hostValue)
       })
     })
@@ -335,7 +335,7 @@ test.describe(
           await comfyPage.nextFrame()
 
           const promoteEntry = comfyPage.page
-            .locator('.p-contextmenu')
+            .getByRole('menu')
             .locator('text=Promote Widget')
 
           await expect(promoteEntry.first()).toBeVisible()
@@ -679,17 +679,17 @@ test(
 
     await test.step('widgets display in order promoted', async () => {
       await expect(editor.promotionItems.first()).toContainText('steps')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'steps'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('steps')
     })
 
     await test.step('Reorder widgets', async () => {
       await editor.dragItem(0, 1)
       await expect(editor.promotionItems.first()).toContainText('cfg')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'cfg'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('cfg')
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')
@@ -738,8 +738,7 @@ test(
   'Can promote multiple previews',
   { tag: ['@vue-nodes'] },
   async ({ comfyPage }) => {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
     await test.step('Add and rename a Load Image node', async () => {
       const position = { x: 300, y: 300 }
@@ -765,6 +764,18 @@ test(
     const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
     await test.step('Promote both image previews', async () => {
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.flatMap((node) =>
+              node.isSubgraphNode()
+                ? node.subgraph.nodes.map((inner) => inner.imgs?.length ?? 0)
+                : []
+            )
+          )
+        )
+        .toEqual([1, 1])
+
       await editor.togglePromotion(subgraph.root, {
         nodeId: '1',
         widgetName: '$$canvas-image-preview',

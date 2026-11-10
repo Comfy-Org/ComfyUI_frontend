@@ -197,7 +197,7 @@ export class AssetHelper {
   }
   async fetch(
     path: string,
-    init?: RequestInit
+    init?: { method?: string; headers?: Record<string, string>; body?: string }
   ): Promise<{ status: number; body: unknown }> {
     return this.page.evaluate(
       async ([fetchUrl, fetchInit]) => {

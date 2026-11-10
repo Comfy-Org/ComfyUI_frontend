@@ -151,3 +151,11 @@ the store, in `AgentPanelRoot.test.ts`, and in
 (the follower this binding feeds) and
 [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)
 (editor tabs versus workflow references).
+
+## Amendment (2026-09-28): Boot restoration feedback
+
+[AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
+changes the boot warning described under Negative consequences. A restoration
+that cannot open its workflow now reports "Couldn’t open the target workflow."
+A workflow absent from a successful Cloud listing shows an in-chat notice
+instead of a toast.

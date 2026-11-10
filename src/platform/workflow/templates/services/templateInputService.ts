@@ -1,13 +1,16 @@
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 
-import { zTemplateInput } from '../schemas/templateSchema'
+import { zTemplateInput } from '@comfyorg/api-client/templateSchema'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'
@@ -17,8 +20,12 @@ const INPUT_WIDGETS: Readonly<Record<string, string>> = {
   LoadVideo: 'file',
   LoadAudio: 'audio'
 }
-const zValues = z.union([z.array(z.unknown()), z.record(z.unknown())])
-const zNamedValues = z.record(z.unknown())
+const zWidgetValue = z.custom<TWidgetValue>(isWidgetValue)
+const zValues = z.union([
+  z.array(zWidgetValue),
+  z.record(z.string(), zWidgetValue)
+])
+const zNamedValues = z.record(z.string(), zWidgetValue)
 
 type PreparationResult = {
   workflow: ComfyWorkflowJSON
@@ -50,7 +57,10 @@ async function uploadTemplateInput(
   sourceRevision: string,
   signal: AbortSignal
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
-  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+  const requestSignal = combineAbortSignals([
+    signal,
+    AbortSignal.timeout(120_000)
+  ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
     return {

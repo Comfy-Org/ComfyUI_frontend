@@ -1,0 +1,286 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-core-only-standard-node",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:6286 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 0505c391adfeb2a3b5cd96e6d0bbaa3945169e10; model claude-opus-4-8; thread 9b2ed761-881b-42c6-ade7-54202a77ca07; messages 7e0e7ddc-1134-4414-8042-7117b4192a5c; workflow 26c6c304-2b4c-47df-8cb0-149716f58b61 (seeded by throwaway turn ce408f29-4183-4f3a-af26-cfe7dc828a4c; recorded turns target the seeded workflow explicitly with workflow_id and the live draft); agent_tool_calls parent rows a7ad410f-dfca-499e-b674-052cd5019481, f48dd9c5-880b-4eb0-b749-7a327407ef39; rows agent-rec-core-only-standard-node.2026-10-26T17-41-52-706Z.rows.1.json; raw capture sha256 6dec884e6cbd375eea3343e17b40dda54e8a6989f541b40707b58b86956bb0b6",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "9b2ed761-881b-42c6-ade7-54202a77ca07",
+      "exported_at": "2026-10-26T17:42:07.686Z"
+    }
+  },
+  "workflow": {
+    "id": "26c6c304-2b4c-47df-8cb0-149716f58b61",
+    "name": "Empty workflow",
+    "catalog": {
+      "types": {
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [],
+      "links": []
+    }
+  },
+  "turns": [
+    {
+      "message_id": "7e0e7ddc-1134-4414-8042-7117b4192a5c",
+      "request": {
+        "content": "Add one CLIPTextEncode node as the start of a Cloud API workflow. This workflow must use standard/core nodes only; do not use any custom or partner pack."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "The user is asking to add just one node, which fits the core-nodes-only constraint for this workflow. I'll treat it as a simple one-off addition and proceed to verify node is indeed a core node before adding it.\n\n"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "status": "running",
+              "tool_call_id": "toolu_01JAxNMfz6w5r1AWNs3cnR2y",
+              "tool_name": "show_node"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 398,
+              "status": "success",
+              "tool_call_id": "toolu_01JAxNMfz6w5r1AWNs3cnR2y",
+              "tool_name": "show_node"
+            }
+          },
+          "at_ms": 399
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "status": "running",
+              "tool_call_id": "toolu_01XjokDqRMFNm8TpXeDkTGth",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 2007
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [40, 60],
+              "node": {
+                "id": 786984514593295,
+                "pos": [40, 60],
+                "mode": 0,
+                "size": [400, 236],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "node_id": 786984514593295,
+              "class_type": "CLIPTextEncode"
+            }
+          ],
+          "at_ms": 2170
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "doc_lineage_seq": 1,
+              "doc_seq": 2,
+              "duration_ms": 162,
+              "status": "success",
+              "tool_call_id": "toolu_01XjokDqRMFNm8TpXeDkTGth",
+              "tool_name": "add_node",
+              "workflow_id": "26c6c304-2b4c-47df-8cb0-149716f58b61"
+            }
+          },
+          "at_ms": 2170
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added"
+            }
+          },
+          "at_ms": 3252
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a"
+            }
+          },
+          "at_ms": 3665
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the"
+            }
+          },
+          "at_ms": 3826
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow"
+            }
+          },
+          "at_ms": 3956
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's"
+            }
+          },
+          "at_ms": 4076
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what"
+            }
+          },
+          "at_ms": 4204
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to"
+            }
+          },
+          "at_ms": 4331
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next"
+            }
+          },
+          "at_ms": 4446
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a"
+            }
+          },
+          "at_ms": 4565
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a CLIP source and a"
+            }
+          },
+          "at_ms": 4694
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a CLIP source and a terminal"
+            }
+          },
+          "at_ms": 4821
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a CLIP source and a terminal output) to build out the"
+            }
+          },
+          "at_ms": 4947
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Added a **node (#786984514593295)** node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a CLIP source and a terminal output) to build out the rest."
+            }
+          },
+          "at_ms": 4996
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "input_tokens": 6,
+                "output_tokens": 401,
+                "total_tokens": 407,
+                "cache_read_input_tokens": 175013,
+                "cache_creation_input_tokens": 1261
+              }
+            }
+          },
+          "at_ms": 4998
+        }
+      ]
+    }
+  ]
+}

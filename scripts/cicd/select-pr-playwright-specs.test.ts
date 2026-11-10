@@ -54,7 +54,10 @@ const withRepo = (run: (root: string, base: string) => void) => {
 
 describe('select-pr-playwright-specs.sh', () => {
   it('is called with the pull request head SHA by the video workflow', () => {
-    const workflow = readFileSync('.github/workflows/ci-tests-e2e.yaml', 'utf8')
+    const workflow = readFileSync(
+      '.github/workflows/ci-playwright-videos.yaml',
+      'utf8'
+    )
 
     expect(workflow).toContain(
       'HEAD_SHA: ${{ github.event.pull_request.head.sha }}'

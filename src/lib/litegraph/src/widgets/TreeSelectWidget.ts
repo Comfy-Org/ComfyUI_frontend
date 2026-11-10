@@ -1,4 +1,4 @@
-import type { ITreeSelectWidget } from '../types/widgets'
+import type { ITreeSelectWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

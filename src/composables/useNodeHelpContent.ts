@@ -3,7 +3,7 @@ import { computed, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { nodeHelpService } from '@/services/nodeHelpService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { getNodeHelpBaseUrl } from '@/workbench/utils/nodeHelpUtil'
 

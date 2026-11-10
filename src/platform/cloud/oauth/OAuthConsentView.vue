@@ -13,7 +13,7 @@
             />
           </div>
           <i
-            class="icon-[lucide--arrow-left-right] size-6 text-muted"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted-foreground"
             aria-hidden="true"
           />
           <div
@@ -26,18 +26,76 @@
           </div>
         </div>
         <div class="flex flex-col items-center gap-2">
-          <h1 class="m-0 text-2xl/tight font-semibold text-base-foreground">
+          <h1 class="m-0 text-2xl/tight font-semibold text-foreground">
             {{
               t('oauth.consent.title', {
                 client: challenge.client_display_name
               })
             }}
           </h1>
-          <p class="m-0 text-sm text-muted">
+          <template v-if="!isFirstPartyClient(challenge)">
+            <Badge
+              variant="compact"
+              severity="warning"
+              data-testid="client-unverified"
+            >
+              {{ t('oauth.consent.unverifiedBadge') }}
+            </Badge>
+            <p
+              class="m-0 text-xs wrap-anywhere text-muted-foreground"
+              data-testid="client-unverified-notice"
+            >
+              {{
+                destinationHost
+                  ? t('oauth.consent.unverifiedNotice', {
+                      host: destinationHost
+                    })
+                  : t('oauth.consent.unverifiedNoticeNoHost')
+              }}
+            </p>
+          </template>
+          <p class="m-0 text-sm text-muted-foreground">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
         </div>
       </header>
+
+      <section
+        v-if="signedInAccount"
+        class="flex items-center gap-3 rounded-lg bg-ink-400 p-3"
+        :aria-label="t('oauth.consent.signedInAs')"
+      >
+        <UserAvatar
+          :label="t('auth.login.userAvatar')"
+          :photo-url="signedInAccount.photoUrl"
+          class="shrink-0"
+        />
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span
+            v-if="signedInAccount.displayName"
+            class="truncate text-sm text-foreground"
+          >
+            {{ signedInAccount.displayName }}
+          </span>
+          <span class="truncate text-xs text-muted-foreground">
+            {{ signedInAccount.email }}
+          </span>
+        </div>
+        <div class="flex shrink-0 flex-col items-end">
+          <span class="text-xs text-muted-foreground">
+            {{ t('oauth.consent.notYou') }}
+          </span>
+          <Button
+            variant="textonly"
+            size="sm"
+            :loading="switchingAccount"
+            :disabled="isSubmitting || switchingAccount"
+            @click="switchAccount"
+          >
+            {{ t('oauth.consent.switchAccount') }}
+          </Button>
+        </div>
+      </section>
 
       <section class="flex flex-col gap-2">
         <p class="m-0 text-sm font-medium">
@@ -45,7 +103,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted-foreground"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -63,7 +121,7 @@
               cn(
                 'flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-3 text-left transition-colors',
                 'hover:bg-ink-300',
-                'focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset',
+                'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
                 selectedWorkspaceId === workspace.id && 'bg-ink-200'
               )
             "
@@ -73,7 +131,7 @@
               :workspace-name="workspace.name"
             />
             <div class="flex min-w-0 flex-1 flex-col">
-              <span class="truncate text-sm text-base-foreground">
+              <span class="truncate text-sm text-foreground">
                 {{ workspace.name }}
               </span>
               <span class="text-xs text-muted-foreground">
@@ -82,7 +140,7 @@
             </div>
             <i
               v-if="selectedWorkspaceId === workspace.id"
-              class="icon-[lucide--check] size-4 shrink-0 text-base-foreground"
+              class="icon-[lucide--check] text-foreground"
               aria-hidden="true"
             />
           </RadioGroupItem>
@@ -94,7 +152,7 @@
           {{ t('oauth.consent.detailsHeader') }}
         </p>
         <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
           <ul
@@ -106,7 +164,7 @@
               class="flex items-center gap-2"
             >
               <i
-                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
+                class="icon-[lucide--check] text-brand-yellow"
                 aria-hidden="true"
               />
               <span class="text-sm">
@@ -117,13 +175,13 @@
         </div>
         <div
           v-if="challenge.redirect_uri"
-          class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
+          class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3 text-xs"
         >
-          <span class="text-xs text-muted">
+          <span class="text-muted-foreground">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
+            class="block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -134,7 +192,7 @@
       <p
         v-show="errorMessage"
         role="alert"
-        class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
+        class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
       >
         {{ errorMessage }}
       </p>
@@ -145,7 +203,9 @@
           size="lg"
           class="w-full bg-ink-500 hover:bg-ink-400"
           :loading="submitting === 'allow'"
-          :disabled="isSubmitting || !selectedWorkspaceIsValid"
+          :disabled="
+            isSubmitting || switchingAccount || !selectedWorkspaceIsValid
+          "
           @click="submit('allow')"
         >
           {{ t('oauth.consent.allow') }}
@@ -155,7 +215,7 @@
           size="lg"
           class="w-full bg-ink-600 hover:bg-ink-400"
           :loading="submitting === 'deny'"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || switchingAccount"
           @click="submit('deny')"
         >
           {{ t('oauth.consent.deny') }}
@@ -166,11 +226,11 @@
     <p
       v-else-if="errorMessage"
       role="alert"
-      class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-center text-sm text-destructive-background"
+      class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
     >
       {{ errorMessage }}
     </p>
-    <p v-else class="m-0 text-center text-sm text-muted">
+    <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
   </main>
@@ -183,10 +243,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
+  isFirstPartyClient,
+  redirectHost,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
@@ -195,7 +262,8 @@ import type {
 } from '@/platform/cloud/oauth/oauthApi'
 import {
   clearOAuthRequestId,
-  getOAuthRequestId
+  getOAuthRequestId,
+  isOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
@@ -205,6 +273,8 @@ const { initialChallenge } = defineProps<{
 
 const { t, te } = useI18n()
 const route = useRoute()
+const { flags } = useFeatureFlags()
+const { userEmail, userPhotoUrl } = useCurrentUser()
 
 function getDefaultWorkspaceId(
   source: OAuthConsentChallenge | undefined
@@ -219,11 +289,30 @@ const selectedWorkspaceId = ref<string | undefined>(
 const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
+const switchingAccount = ref(false)
+
+const signedInAccount = computed(() => {
+  if (!flags.oauthConsentSwitchAccountEnabled) return null
+  const sessionEmail = challenge.value?.user_email
+  if (!sessionEmail) return null
+  return {
+    email: sessionEmail,
+    displayName: challenge.value?.user_display_name,
+    photoUrl:
+      sessionEmail.toLowerCase() === userEmail.value?.toLowerCase()
+        ? userPhotoUrl.value
+        : null
+  }
+})
 
 const resourceName = computed(
   () =>
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
+)
+
+const destinationHost = computed(() =>
+  redirectHost(challenge.value?.redirect_uri)
 )
 
 const selectedWorkspaceIsValid = computed(() =>
@@ -274,10 +363,16 @@ function messageForError(error: unknown): string {
   if (error instanceof OAuthApiError) {
     if (error.status === 400) return t('oauth.consent.errorExpired')
     if (error.status === 401) return t('oauth.consent.sessionError')
-    if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
+    if (error.status === 403) return forbiddenMessage(error.code)
     if (error.status === 404) return t('oauth.consent.errorUnavailable')
   }
   return t('oauth.consent.genericError')
+}
+
+function forbiddenMessage(code: string | undefined): string {
+  return code === 'origin_not_allowed' || code === 'cross_site_request'
+    ? t('oauth.consent.errorOriginRefused')
+    : t('oauth.consent.errorScopeBroadening')
 }
 
 async function submit(decision: 'allow' | 'deny') {
@@ -306,6 +401,24 @@ async function submit(decision: 'allow' | 'deny') {
   } finally {
     submitting.value = null
   }
+}
+
+function switchAccountSignInPath(oauthRequestId: string): string {
+  const query = new URLSearchParams({ switchAccount: 'true' })
+  if (isOAuthRequestId(oauthRequestId)) {
+    query.set('oauth_request_id', oauthRequestId)
+  }
+  return `/cloud/login?${query}`
+}
+
+async function switchAccount() {
+  if (!challenge.value) return
+  switchingAccount.value = true
+  const signedOut = await useAuthActions().logout({
+    signInPath: switchAccountSignInPath(challenge.value.oauth_request_id)
+  })
+  if (signedOut === false) switchingAccount.value = false
+  else if (signedOut === undefined) window.location.reload()
 }
 
 onMounted(() => {

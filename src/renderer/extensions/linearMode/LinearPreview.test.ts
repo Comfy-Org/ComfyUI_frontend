@@ -91,7 +91,6 @@ function renderPreview(
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
         LatentPreview: { template: '<div data-testid="latent-preview" />' },
@@ -167,7 +166,9 @@ describe('LinearPreview', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'More Options' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
+    expect(
+      await screen.findByRole('menuitem', { name: 'Delete all' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })

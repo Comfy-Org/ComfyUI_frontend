@@ -61,7 +61,6 @@ describe('SyftTelemetryProvider', () => {
     window.__CONFIG__ = {}
     window.syft = undefined
     window.syftc = undefined
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
   it('loads the Syft SDK once when a source id is configured', async () => {

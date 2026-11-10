@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (see `.nvmrc` for the required version) and pnpm
+  - Node.js (see `.nvmrc` for the required version), pnpm, and jq (used by `scripts/cicd/check-json.sh` and its unit test)
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
   - Docker, if you want to use the containerized test backend
@@ -216,6 +216,13 @@ We've also included a list of recommended extensions in `.vscode/extensions.json
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
+### Temporarily Disabled Tests
+
+Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
+failing tests before merging. The lint rules reject Vitest `skip` and `todo`
+declarations, `skipIf` and `runIf` with a literal condition that disables the
+test, and Playwright `skip` declarations.
+
 ### Running All Tests
 
 Before submitting a PR, ensure all tests pass:
@@ -244,7 +251,7 @@ pnpm format
 ### Styling
 
 - Use Tailwind CSS classes instead of custom CSS
-- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
+- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [theme.css](packages/design-system/src/css/theme.css) like `bg-node-component-surface`
 
 ## Design Team Approval (Required for Notable UI Changes)
 
@@ -259,13 +266,14 @@ Changes that materially affect the default UI must be approved or requested by o
 
 ## Icons
 
-The project supports three types of icons, all with automatic imports (no manual imports needed):
+The project uses two types of icons, both with automatic imports (no manual imports needed):
 
-1. **PrimeIcons** - Built-in PrimeVue icons using CSS classes: `<i class="pi pi-plus" />`
-2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
-3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
+1. **Lucide Icons** - The only third-party icon set, through Iconify: `<i class="icon-[lucide--settings]" />`
+2. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
-Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/style.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
+Don't add icons from other sets. PrimeIcons (`pi pi-*`) and Material Design Icons (`mdi`) are being phased out. Don't add new uses, in first-party code or extensions.
+
+Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/theme.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
 
 For detailed instructions and code examples, see [packages/design-system/src/icons/README.md](packages/design-system/src/icons/README.md).
 

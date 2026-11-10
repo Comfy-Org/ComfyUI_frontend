@@ -1,5 +1,4 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -18,7 +17,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 
 beforeEach(() => {
   const settings = useSettingStore().settingValues
@@ -36,18 +35,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/missingModel/composables/useMissingModelInteractions'),
+  import('@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { toNodeId } from '@/types/nodeId'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 
 function mockGraphReady(rootGraph: LGraph) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
@@ -631,14 +630,14 @@ describe('surfaceMissingModels — silent option', () => {
   it('opens error overlay when silent is not specified and setting is enabled', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels([
-      fromAny({
+      {
         name: 'model.safetensors',
         nodeId: toNodeId('1'),
         nodeType: 'Loader',
         widgetName: 'ckpt',
         isMissing: true,
         isAssetSupported: false
-      })
+      }
     ])
 
     expect(store.isErrorOverlayOpen).toBe(true)
@@ -648,14 +647,14 @@ describe('surfaceMissingModels — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels(
       [
-        fromAny({
+        {
           name: 'model.safetensors',
           nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
           isAssetSupported: false
-        })
+        }
       ],
       { silent: false }
     )
@@ -667,14 +666,14 @@ describe('surfaceMissingModels — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels(
       [
-        fromAny({
+        {
           name: 'model.safetensors',
           nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
           isAssetSupported: false
-        })
+        }
       ],
       { silent: true }
     )
@@ -697,14 +696,14 @@ describe('per-kind visibility', () => {
       settingId: 'Comfy.ErrorSystem.ShowMissingModels' as const,
       surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
         store.surfaceMissingModels([
-          fromAny({
+          {
             name: 'model.safetensors',
             nodeId: toNodeId('1'),
             nodeType: 'Loader',
             widgetName: 'ckpt',
             isMissing: true,
             isAssetSupported: false
-          })
+          }
         ]),
       rawCount: () => useMissingModelStore().missingModelCandidates?.length
     },
@@ -713,14 +712,14 @@ describe('per-kind visibility', () => {
       settingId: 'Comfy.Workflow.ShowMissingMediaWarning' as const,
       surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
         store.surfaceMissingMedia([
-          fromAny({
+          {
             name: 'photo.png',
             nodeId: toNodeId('1'),
             nodeType: 'LoadImage',
             widgetName: 'image',
             mediaType: 'image',
             isMissing: true
-          })
+          }
         ]),
       rawCount: () => useMissingMediaStore().missingMediaCandidates?.length
     }
@@ -755,14 +754,14 @@ describe('surfaceMissingMedia — silent option', () => {
   it('opens error overlay when silent is not specified and setting is enabled', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia([
-      fromAny({
+      {
         name: 'photo.png',
         nodeId: toNodeId('1'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
         isMissing: true
-      })
+      }
     ])
 
     expect(store.isErrorOverlayOpen).toBe(true)
@@ -772,14 +771,14 @@ describe('surfaceMissingMedia — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia(
       [
-        fromAny({
+        {
           name: 'photo.png',
           nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
           isMissing: true
-        })
+        }
       ],
       { silent: false }
     )
@@ -791,14 +790,14 @@ describe('surfaceMissingMedia — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia(
       [
-        fromAny({
+        {
           name: 'photo.png',
           nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
           isMissing: true
-        })
+        }
       ],
       { silent: true }
     )
@@ -845,13 +844,31 @@ describe('hasMissingError', () => {
     {
       type: 'models',
       seedMissingError: () => {
-        useMissingModelStore().missingModelCandidates = [fromAny({})]
+        useMissingModelStore().missingModelCandidates = [
+          {
+            name: 'model.safetensors',
+            nodeId: toNodeId('1'),
+            nodeType: 'Loader',
+            widgetName: 'ckpt',
+            isMissing: true,
+            isAssetSupported: false
+          }
+        ]
       }
     },
     {
       type: 'media',
       seedMissingError: () => {
-        useMissingMediaStore().missingMediaCandidates = [fromAny({})]
+        useMissingMediaStore().missingMediaCandidates = [
+          {
+            name: 'photo.png',
+            nodeId: toNodeId('1'),
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            isMissing: true
+          }
+        ]
       }
     }
   ])('includes missing $type', ({ seedMissingError }) => {
@@ -918,7 +935,6 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
 
 describe('before the root graph exists', () => {
   it('resolves the execution error locator without touching app.rootGraph', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useExecutionErrorStore()
     store.recordExecutionError({
       prompt_id: 'test',
@@ -933,7 +949,7 @@ describe('before the root graph exists', () => {
 
     expect(store.lastExecutionErrorNodeId).toBe(toNodeId('7'))
     expect(store.activeGraphErrorNodeIds).toEqual(new Set())
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })
 

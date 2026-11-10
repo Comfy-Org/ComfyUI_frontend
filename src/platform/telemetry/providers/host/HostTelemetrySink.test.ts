@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
 
@@ -157,27 +157,42 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards agent paywall impressions with their reason', () => {
+  it('forwards agent paywall impressions with their reason and surface', () => {
     new HostTelemetrySink().trackAgentPaywallShown({
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_SHOWN,
-      { reason: 'subscription_inactive' }
+      { reason: 'subscription_inactive', surface: 'credits_exhausted' }
     )
   })
 
-  it('forwards agent paywall CTA clicks with their cta', () => {
-    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+  it('forwards agent paywall CTA clicks with their cta and surface', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({
+      cta: 'add_credits',
+      surface: 'refused_send'
+    })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
-      { cta: 'add_credits' }
+      { cta: 'add_credits', surface: 'refused_send' }
     )
   })
 
-  it('forwards canonical billing events using the derived name and payload', () => {
+  it('forwards Agent credit transition notice interactions', () => {
+    new HostTelemetrySink().trackAgentCreditTransitionNotice({
+      action: 'shown'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+      { action: 'shown' }
+    )
+  })
+
+  it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',
@@ -258,6 +273,14 @@ describe('HostTelemetrySink', () => {
       properties: { source: 'close_button', open_duration_ms: 1234 }
     },
     {
+      name: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelRenderStalled({
+          stage: 'root_resolved_not_mounted'
+        }),
+      properties: { stage: 'root_resolved_not_mounted' }
+    },
+    {
       name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
@@ -277,7 +300,9 @@ describe('HostTelemetrySink', () => {
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
-          input_method: 'suggestion'
+          input_method: 'suggestion',
+          starter_prompt_id: 'slot_2',
+          starter_prompt_click_id: 'click-1'
         }),
       properties: {
         attachment_count: 2,
@@ -285,7 +310,9 @@ describe('HostTelemetrySink', () => {
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
-        input_method: 'suggestion'
+        input_method: 'suggestion',
+        starter_prompt_id: 'slot_2',
+        starter_prompt_click_id: 'click-1'
       }
     },
     {
@@ -297,7 +324,9 @@ describe('HostTelemetrySink', () => {
           thread_id: null,
           workflow_id: null,
           client_message_id: 'client-message-2',
-          input_method: 'typed'
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
         }),
       properties: {
         attachment_count: 0,
@@ -305,7 +334,66 @@ describe('HostTelemetrySink', () => {
         thread_id: null,
         workflow_id: null,
         client_message_id: 'client-message-2',
-        input_method: 'typed'
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptClicked({
+          prompt_id: 'slot_4',
+          prompt_index: 3,
+          prompt_count: 5,
+          visible_prompt_count: 3,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: false
+        }),
+      properties: {
+        prompt_id: 'slot_4',
+        prompt_index: 3,
+        prompt_count: 5,
+        visible_prompt_count: 3,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: false
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseNotice({
+          action: 'dismissed',
+          placement: 'top-banner'
+        }),
+      properties: { action: 'dismissed', placement: 'top-banner' }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseExposure({
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }),
+      properties: {
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentCreditUsageExposure({
+          variant: 'control',
+          '$feature/agent-credit-usage-summary': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/agent-credit-usage-summary': 'control'
       }
     },
     {
@@ -317,8 +405,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentResolved({ decision: 'accepted' }),
-      properties: { decision: 'accepted' }
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
@@ -328,8 +419,13 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_ONBOARDING_STEP,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
-      properties: { step: 4, action: 'finish' }
+        sink.trackAgentOnboardingStep({
+          step: 3,
+          card: 'history',
+          total: 3,
+          action: 'finish'
+        }),
+      properties: { step: 3, card: 'history', total: 3, action: 'finish' }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
@@ -422,6 +518,36 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'tour_active' }
     },
     {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'consent_unresolved',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'consent_unresolved',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentOnboardingNotShown({
@@ -429,6 +555,28 @@ describe('HostTelemetrySink', () => {
           step: 2
         }),
       properties: { reason: 'target_missing', step: 2 }
+    },
+    {
+      name: TelemetryEvents.AGENT_SEND_GATED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSendGated({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null,
+          client_session_id: 'client-session-1'
+        }),
+      properties: {
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: 'dismissed',
+        client_message_id: 'client-message-1',
+        held_ms: 1200,
+        thread_id: null,
+        client_session_id: 'client-session-1'
+      }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

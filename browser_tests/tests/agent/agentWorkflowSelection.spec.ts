@@ -1,10 +1,16 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -16,12 +22,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -59,12 +60,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -118,12 +114,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -242,12 +233,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Start in this workflow')
@@ -265,31 +251,24 @@ test.describe(
         '{workflowName}',
         'Unsaved Workflow'
       )
-      const inline = panel.getByRole('button', {
-        name: 'mention nodes'
+      const tooltip = new Tooltip(page).named(reason)
+      const addToPrompt = panel.getByRole('button', {
+        name: enMessages.agent.addToPrompt
       })
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(reason)
-      await inline.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
-
-      await panel
-        .getByRole('button', { name: enMessages.agent.addToPrompt })
-        .click()
+      await addToPrompt.click()
       const plusNodes = page.getByRole('menuitem', {
         name: enMessages.agent.nodes,
         exact: true
       })
       await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(reason)
       await plusNodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await page.keyboard.press('Escape')
-      await expect(page.getByText(reason, { exact: true })).toBeHidden()
+      await expect(tooltip).toBeHidden()
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
-      await expect(
-        panel.getByRole('button', { name: enMessages.agent.addToPrompt })
-      ).toBeFocused()
+      await expect(addToPrompt).toBeFocused()
 
       await composer.fill('@')
       const nodes = panel.getByRole('menuitem', {
@@ -298,7 +277,7 @@ test.describe(
       })
       await expect(nodes).toHaveAttribute('aria-disabled', 'true')
       await nodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await testInfo.attach('disabled-node-references', {
         body: await panel.screenshot({
           path: testInfo.outputPath('disabled-node-references.png')
@@ -310,7 +289,7 @@ test.describe(
       await composer.press('Escape')
       await composer.press('ControlOrMeta+a')
       await composer.press('Backspace')
-      await expect(inline).toBeVisible()
+      await expect(addToPrompt).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
 
       await panel
@@ -321,19 +300,26 @@ test.describe(
         .click()
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(
+      await addToPrompt.click()
+      await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(
         /Switch to .+ to add nodes\./
       )
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page.getByTestId('workflow-tab').first().click()
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
     })
 
     test('shows headerless search results when the current tab is filtered out', async ({
@@ -351,12 +337,7 @@ test.describe(
       await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
       await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await page
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()
@@ -401,12 +382,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(
@@ -465,7 +441,7 @@ test.describe(
       })
       await expect(targetMarker).toBeVisible()
       await targetMarker.hover()
-      await expect(page.getByRole('tooltip')).toHaveText(
+      await expect(new Tooltip(page).open).toHaveText(
         enMessages.agent.targetForThisChat
       )
       await expect(
@@ -473,7 +449,7 @@ test.describe(
       ).toBeVisible()
       await expect(targetMarker).toBeVisible()
       await targetTab.getByRole('button', { name: enMessages.g.close }).hover()
-      await expect(page.getByRole('tooltip')).toHaveCount(0)
+      await expect(new Tooltip(page).open).toHaveCount(0)
       await testInfo.attach('agent-target-active', {
         body: await page.getByTestId('topbar-workflow-tabs').screenshot({
           path: testInfo.outputPath('agent-target-active.png')
@@ -574,14 +550,10 @@ test.describe(
 
     test('keeps the failed selection open and allows retry without a naming dialog', async ({
       page,
+      toast,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Keep this draft')
@@ -598,7 +570,7 @@ test.describe(
       await expect(row).toBeEnabled()
       await expect(row).toBeChecked()
       await expect(
-        page.getByText(enMessages.shareWorkflow.saveFailedTitle)
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()
       await expect(composer).toHaveText('Keep this draft')
       await row.click()
@@ -610,6 +582,77 @@ test.describe(
       ).toHaveText('Unsaved Workflow')
       await expect(page.getByRole('dialog')).toHaveCount(0)
       expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
+    test('picks an unsaved tab a reload left unopened', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(1)
+      await page.evaluate(() => {
+        const workflow = (window.app!.extensionManager as WorkspaceStore)
+          .workflow.activeWorkflow!
+        window.app!.graph.add(window.LiteGraph!.createNode('Note'))
+        workflow.changeTracker.checkState()
+      })
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(tabs).toHaveCount(2)
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Object.keys(localStorage).some(
+              (key) =>
+                key.startsWith('Comfy.Workflow.DraftIndex.v2:') &&
+                localStorage
+                  .getItem(key)!
+                  .includes('"workflows/Unsaved Workflow.json"')
+            )
+          )
+        )
+        .toBe(true)
+
+      await page.reload()
+      await waitForCloudApp(page)
+      await expect(tabs).toHaveCount(2)
+
+      await test.step('the background tab is restored unloaded', async () => {
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () =>
+                (
+                  window.app!.extensionManager as WorkspaceStore
+                ).workflow.getWorkflowByPath('workflows/Unsaved Workflow.json')
+                  ?.isLoaded
+            )
+          )
+          .toBe(false)
+      })
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.chooseWorkflow('Unsaved Workflow')
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+
+      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+      const savedGraph = await page.evaluate(async (path) => {
+        const response = await fetch(
+          `/api/userdata/${encodeURIComponent(path)}`
+        )
+        return (await response.json()) as ComfyWorkflowJSON
+      }, workflowSelection.savedPaths[0])
+      expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
     })
   }
 )

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground"
+    class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-ocean-600 text-white"
   >
     <i v-if="modelValue === step.id" :class="cn(step.icon, 'size-5')" />
     <span v-else class="text-sm font-bold">

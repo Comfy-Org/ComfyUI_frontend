@@ -1,6 +1,6 @@
 import { st } from '@/i18n'
 
-import type { IBaseWidget } from '../types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

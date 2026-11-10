@@ -97,6 +97,30 @@ void Example
 `
   },
   {
+    file: path.join(probeDirs.source, 'mockMethodNames.ts'),
+    source: `interface Cache {
+  mockClear(): void
+  mockReset: () => void
+}
+type Store = { mockRestore(): void }
+class Fake {
+  mockClear() {}
+  mockReset = () => {}
+}
+const fake = { mockRestore() {}, 'mockClear': () => {}, mockReset }
+const { mockReset: renamed } = source
+const allowed = { reset() {}, mockFn: vi.fn() }
+void (fake as Cache & Store)
+void Fake
+void renamed
+void allowed
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'vitest.config.ts'),
+    source: 'export default { test: { mockReset: true, restoreMocks: true } }\n'
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
@@ -228,6 +252,18 @@ void z
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
     source: "test('allowed', () => {})\n"
+  },
+  {
+    file: path.join(probeDirs.source, 'disabled.test.ts'),
+    source: `it.skipIf(true)('a', () => {})
+describe.runIf(false)('b', () => {})
+test.skipIf(1).sequential('c', () => {})
+suite.runIf(0)('d', () => {})
+it.skipIf(false)('e', () => {})
+it.runIf(true)('f', () => {})
+it.skipIf(runtime)('g', () => {})
+other.skipIf(true)('h', () => {})
+`
   }
 ]
 
@@ -265,10 +301,16 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  if (!report.diagnostics.every(isDiagnostic)) {
+  const ruleDiagnostics = report.diagnostics.filter(isRuleDiagnostic)
+  if (!ruleDiagnostics.every(isDiagnostic)) {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
-  return report.diagnostics
+  return ruleDiagnostics
+}
+
+// The suppressions-file summary ("new violations not covered...") has no rule code.
+function isRuleDiagnostic(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'code' in value
 }
 
 describe('restricted syntax rules', () => {
@@ -365,6 +407,28 @@ describe('restricted syntax rules', () => {
     )
   })
 
+  it('rejects members named after Vitest mock cleanup methods outside Vite configs', () => {
+    const mockNameFindings = findingsFor('no-vitest-mock-method-names')
+    expect(
+      mockNameFindings.map(({ filename, labels }) => [
+        path.basename(filename),
+        labels[0].span.line
+      ])
+    ).toEqual([
+      ['mockMethodNames.ts', 2],
+      ['mockMethodNames.ts', 3],
+      ['mockMethodNames.ts', 5],
+      ['mockMethodNames.ts', 7],
+      ['mockMethodNames.ts', 8],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10]
+    ])
+    expect(mockNameFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
   it('rejects direct canvas selection writes', () => {
     const selectionFindings = findingsFor('no-direct-selection-write')
     expect(
@@ -456,6 +520,19 @@ describe('restricted syntax rules', () => {
       ['arrayCopy.vue', 2]
     ])
     expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects test declarations disabled by a literal condition', () => {
+    const disabledFindings = findingsFor('no-statically-disabled-test')
+    expect(locations(disabledFindings)).toEqual([
+      ['disabled.test.ts', 1],
+      ['disabled.test.ts', 2],
+      ['disabled.test.ts', 3],
+      ['disabled.test.ts', 4]
+    ])
+    expect(disabledFindings.every(({ severity }) => severity === 'error')).toBe(
       true
     )
   })

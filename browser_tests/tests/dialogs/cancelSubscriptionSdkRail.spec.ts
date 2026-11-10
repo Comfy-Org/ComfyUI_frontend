@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
@@ -34,8 +34,10 @@ const SUBSCRIPTION_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -99,9 +101,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       jsonRoute(createBillingCapabilities('ws-personal', { can_cancel: true }))
     )
   )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
-  )
 
   await page.route('**/api/billing/subscription/cancel', async (r) => {
     requests.push(r.request())
@@ -158,9 +157,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     expect(cancelRoute.requests).toHaveLength(1)
     expect(cancelRoute.requests[0].method()).toBe('POST')
     expect(idempotencyKey(cancelRoute.requests[0])).toBeUndefined()
@@ -178,9 +175,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     expect(cancelRoute.requests).toHaveLength(1)
     const [issued] = cancelRoute.requests
     expect(issued.method()).toBe('POST')
@@ -203,9 +198,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     await expect.poll(() => cancelRoute.requests.length).toBe(2)
     const [sdkAttempt, legacyAttempt] = cancelRoute.requests
     expect(idempotencyKey(sdkAttempt)).toBeTruthy()

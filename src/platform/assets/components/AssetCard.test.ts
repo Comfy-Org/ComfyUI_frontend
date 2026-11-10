@@ -6,13 +6,11 @@ import userEvent from '@testing-library/user-event'
 
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-
 const mockDeleteAsset = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -57,22 +55,7 @@ function renderCard(asset: AssetDisplayItem) {
   return render(AssetCard, {
     props: { asset, interactive: true },
     global: {
-      plugins: [i18n],
-      stubs: {
-        AssetBadgeGroup: true,
-        IconGroup: { template: '<div><slot /></div>' },
-        MoreButton: defineComponent({
-          setup(_, { expose, slots }) {
-            expose({ hide: vi.fn() })
-            return () => h('div', slots.default?.())
-          }
-        }),
-        StatusBadge: true,
-        Button: { template: '<button><slot /></button>' }
-      },
-      directives: {
-        tooltip: {}
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -89,6 +72,28 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it.for([true, false])(
+    'shows Library origin only for library cards: %s',
+    (isWorkspaceLibrary) => {
+      renderCard(createDisplayAsset({ isWorkspaceLibrary }))
+      expect(screen.queryByText('assetBrowser.library') !== null).toBe(
+        isWorkspaceLibrary
+      )
+    }
+  )
+
+  it('closes the asset menu before opening the delete confirmation', async () => {
+    renderCard(createDisplayAsset({ is_immutable: false }))
+
+    await userEvent.click(screen.getAllByRole('button')[1])
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'g.delete' })
+    )
+
+    expect(showConfirmDialog).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('menuitem', { name: 'g.delete' })).toBeNull()
+  })
+
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()
@@ -159,15 +164,16 @@ describe('AssetCard', () => {
     const result = renderCard(asset)
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-    await user.click(screen.getByText('g.delete'))
+    await user.click(screen.getByRole('button', { name: 'g.more' }))
+    await user.click(screen.getByRole('menuitem', { name: 'g.delete' }))
     const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
-    const onConfirm = dialogOptions?.footerProps?.onConfirm
+    const onConfirm = dialogOptions.footerProps?.onConfirm
     expect(onConfirm).toBeTypeOf('function')
     if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
     const confirmation = onConfirm()
 
     await vi.advanceTimersByTimeAsync(0)
-    expect(dialogOptions?.props?.promptText).toHaveProperty(
+    expect(dialogOptions.props?.promptText).toHaveProperty(
       'value',
       'assetBrowser.deletion.failed'
     )

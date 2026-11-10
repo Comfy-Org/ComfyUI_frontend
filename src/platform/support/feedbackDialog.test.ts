@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 
@@ -15,7 +15,7 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 

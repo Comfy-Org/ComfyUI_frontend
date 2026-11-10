@@ -1,7 +1,7 @@
 import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export interface SelectedNode {
   id: string
@@ -20,7 +20,6 @@ export interface UseCanvasSelectionOptions {
   isLive: MaybeRefOrGetter<boolean>
   enabled?: MaybeRefOrGetter<boolean>
   isTracking?: MaybeRefOrGetter<boolean>
-  isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
   retainStagedNode?: (node: SelectedNode) => boolean
@@ -79,12 +78,10 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
           [
             toValue(options.isLive),
             toValue(options.isTracking ?? true),
-            toValue(options.isPaused ?? false),
             toValue(options.scope ?? null),
             toValue(options.selection)
           ] as const,
-        ([isLive, isTracking, isPaused, scope, nodes]) => {
-          if (isPaused) return
+        ([isLive, isTracking, scope, nodes]) => {
           if (!isLive) {
             if (options.retainWhenNotLive) return
             staged.value = []

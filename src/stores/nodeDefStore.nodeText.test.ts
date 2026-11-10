@@ -2,8 +2,9 @@ import { clone } from 'es-toolkit/compat'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { mergeCustomNodesI18n, setActiveLocale } from '@/i18n'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 function def(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
   return {

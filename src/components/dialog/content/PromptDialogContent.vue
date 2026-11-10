@@ -21,8 +21,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { message, defaultValue, onConfirm, placeholder } = defineProps<{

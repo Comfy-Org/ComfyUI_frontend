@@ -2,7 +2,10 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  ModelBrowserAsset
+} from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
@@ -52,11 +55,52 @@ beforeEach(() => {
 })
 
 describe('resolveModelNodeFromAsset', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+  it.for([
+    '../private.safetensors',
+    '/absolute.safetensors',
+    'folder\\model.safetensors'
+  ])('refuses unsafe server loader path %s', (loader_path) => {
+    mockProvider(createMockNodeProvider())
+    expect(
+      resolveModelNodeFromAsset(createMockAsset({ loader_path }))
+    ).toMatchObject({
+      success: false,
+      error: { code: 'INVALID_ASSET' }
+    })
+  })
+
+  it('selects the loader for the unshadowed category of a shared model', () => {
+    const provider = createMockNodeProvider({
+      nodeDef: { name: 'VAELoader', display_name: 'Load VAE' },
+      key: 'vae_name'
+    })
+    mockGetNodeProvider.mockImplementation((category) =>
+      category === 'vae' ? provider : createMockNodeProvider()
+    )
+    const asset: ModelBrowserAsset = {
+      ...createMockAsset({ tags: ['models', 'loras', 'vae'] }),
+      browserCategories: ['vae']
+    }
+    expect(resolveModelNodeFromAsset(asset)).toMatchObject({
+      success: true,
+      value: { provider }
+    })
   })
 
   describe('valid assets', () => {
+    it('uses the server loader path instead of the uploaded display filename', () => {
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          loader_path: 'artist/style.safetensors',
+          user_metadata: { filename: 'style.safetensors' }
+        })
+      )
+      expect(result.success && result.value.filename).toBe(
+        'artist/style.safetensors'
+      )
+    })
+
     it('resolves the provider for the asset category and the filename', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(createMockAsset())

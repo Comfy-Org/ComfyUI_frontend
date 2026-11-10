@@ -3,16 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
-// Mock the api
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    listUserDataFullInfo: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    deleteUserData: vi.fn(),
-    moveUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>
@@ -106,16 +97,12 @@ describe('useUserFileStore', () => {
         vi.mocked(api.getUserData).mockResolvedValue(
           new Response(null, { status: 404, statusText: 'Not Found' })
         )
-        const consoleSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
 
         await expect(file.load()).resolves.toBeUndefined()
 
         expect(file.isLoading).toBe(false)
         expect(file.isLoaded).toBe(false)
-        expect(consoleSpy).toHaveBeenCalledOnce()
-        consoleSpy.mockRestore()
+        expect(console.error).toHaveBeenCalledOnce()
       })
     })
 
@@ -171,14 +158,10 @@ describe('useUserFileStore', () => {
             statusText: 'Internal Server Error'
           })
         )
-        const consoleSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
 
         await expect(file.delete()).resolves.toBe(false)
 
-        expect(consoleSpy).toHaveBeenCalledOnce()
-        consoleSpy.mockRestore()
+        expect(console.error).toHaveBeenCalledOnce()
       })
     })
 
@@ -206,15 +189,11 @@ describe('useUserFileStore', () => {
         vi.mocked(api.moveUserData).mockResolvedValue(
           new Response(null, { status: 409, statusText: 'Conflict' })
         )
-        const consoleSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
 
         await expect(file.rename('newfile.txt')).resolves.toBe(false)
 
         expect(file.path).toBe('file1.txt')
-        expect(consoleSpy).toHaveBeenCalledOnce()
-        consoleSpy.mockRestore()
+        expect(console.error).toHaveBeenCalledOnce()
       })
     })
 

@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import type { BillingSession, BillingTransport } from './billingContracts.js'
+import type { SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
+import type { BillingSession, BillingTransport } from './billingContracts'
 import {
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
   readCapabilityRevision
-} from './capabilities.js'
-import { createSessionBillingTransport } from './transport.js'
+} from './capabilities'
+import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
   let snapshot = initial
@@ -43,7 +43,23 @@ const CAPABILITIES = {
   can_change_seats: false,
   can_downgrade_to_personal: false,
   can_invite_members: false,
+  can_manage_members: false,
+  can_delete_workspace: false,
+  can_leave_workspace: false,
+  can_manage_billing: false,
+  can_manage_partner_node_access: false,
+  can_view_pending_invites: false,
+  can_view_team_usage: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
+  can_edit_workspace: false,
+  can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
+  can_manage_subscription: false,
+  can_open_plans: false,
+  can_run_workflows: false,
+  can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
 }
@@ -66,6 +82,24 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
 }
 
 describe('createCapabilitiesReader', () => {
+  it.for([
+    { wire: { auto_top_up_enabled: true }, expected: true },
+    { wire: { auto_top_up_enabled: false }, expected: false },
+    { wire: {}, expected: undefined }
+  ])(
+    'preserves auto top-up state $expected without deriving it',
+    async ({ wire, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(wire))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.autoTopUpEnabled).toBe(expected)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
@@ -84,6 +118,246 @@ describe('createCapabilitiesReader', () => {
     })
     expect(result.value.rolloutDefaultsApplied.can_top_up).toBe(true)
   })
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps payment_recovery_available $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { payment_recovery_available: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.paymentRecoveryAvailable).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: 'sales_managed', expected: 'sales_managed' },
+    { served: 'self_serve', expected: 'self_serve' },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps plan_kind $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(served === undefined ? {} : { plan_kind: served })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      served: { state: 'frozen', reason: 'payment_past_due' },
+      expected: { state: 'frozen', reason: 'payment_past_due' }
+    },
+    { served: { state: 'ready' }, expected: { state: 'ready' } },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps auto_top_up_setup $served.state instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_setup: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpSetup).toEqual(expected)
+    }
+  )
+
+  it.for([
+    {
+      case: 'a served view',
+      served: {
+        status: 'paused_by_budget',
+        threshold_credits: 1000,
+        target_credits: 6275,
+        cycle_resets_at: '2026-11-28T00:00:00Z',
+        monthly_budget_is_default: true
+      }
+    },
+    {
+      case: 'a view turned off by declines',
+      served: {
+        status: 'failed',
+        threshold_credits: null,
+        target_credits: null,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false,
+        disabled_reason: 'consecutive_declines'
+      }
+    },
+    { case: 'an omitted view', served: undefined }
+  ] as const)(
+    'keeps auto_top_up_member_view for $case with credits as numbers',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_member_view: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpMemberView).toEqual(served)
+    }
+  )
+
+  it.for([
+    {
+      case: 'an unknown status',
+      served: { status: 'snoozed', monthly_budget_is_default: false }
+    },
+    {
+      case: 'fractional credits',
+      served: {
+        status: 'on',
+        threshold_credits: 1.5,
+        target_credits: 6000,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false
+      }
+    }
+  ])(
+    'drops a malformed auto_top_up_member_view for $case and keeps the read',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ auto_top_up_member_view: served }))
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpMemberView).toBeUndefined()
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps has_parked_billing_operation $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { has_parked_billing_operation: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.hasParkedBillingOperation).toBe(expected)
+    }
+  )
+
+  it.for([true, false])(
+    'preserves can_manage_members=%s from the server',
+    async (allowed) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody({
+            capabilities: { ...CAPABILITIES, can_manage_members: allowed }
+          })
+        )
+      ])
+      const result = await createCapabilitiesReader({
+        transport,
+        scopeSource
+      }).read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.capabilities.can_manage_members).toBe(allowed)
+    }
+  )
+
+  it('rejects capabilities missing member management permission', async () => {
+    const legacyCapabilities: Record<string, unknown> = { ...CAPABILITIES }
+    delete legacyCapabilities.can_manage_members
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk(capabilitiesBody({ capabilities: legacyCapabilities }))
+    ])
+    const result = await createCapabilitiesReader({
+      transport,
+      scopeSource
+    }).read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+  })
+
+  it.for([null, 'true', 1, {}])(
+    'rejects invalid member management permission %j',
+    async (invalid) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody({
+            capabilities: { ...CAPABILITIES, can_manage_members: invalid }
+          })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      expect(await reader.read()).toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
+    }
+  )
 
   it('asks the capabilities route with production\u2019s 10s budget', async () => {
     const { scopeSource } = fakeSession()
@@ -260,17 +534,12 @@ describe('createCapabilitiesReader', () => {
       expect(reader.getSnapshot()).toBeUndefined()
     })
 
-    it('refuses another member\u2019s answer for the caller\u2019s own workspace', async () => {
+    it('accepts the server\u2019s own user id for a caller the scope knows by its sign-in uid', async () => {
       const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
-            // The right workspace, the wrong actor. Capabilities resolve per
-            // (user, workspace), so this decides what a different member may
-            // be offered — publishing it would hand the caller someone else's
-            // rights.
-            resolved_for: { user_id: 'uid-other', workspace_id: 'ws-1' },
-            capabilities: { ...CAPABILITIES, can_cancel: true }
+            resolved_for: { user_id: 'canonical-user-1', workspace_id: 'ws-1' }
           })
         )
       ])
@@ -278,12 +547,14 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result).toEqual({
-        status: 'error',
-        code: 'REQUEST_FAILED',
-        httpStatus: 200
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: {
+          capabilities: CAPABILITIES,
+          scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' }
+        }
       })
-      expect(reader.getSnapshot()).toBeUndefined()
+      expect(reader.getSnapshot()?.scope.userId).toBe('uid-1')
     })
   })
 
@@ -350,27 +621,33 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it('keeps the capability set usable when a reason is unrecognized', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk(
-          capabilitiesBody({
-            denied_reasons: { can_top_up: 'something_new' }
-          })
-        )
-      ])
+    it.for([
+      { reason: 'something_new', decoded: 'unspecified' },
+      { reason: 'reason_from_a_newer_server', decoded: 'unspecified' },
+      { reason: 'topup_purchases_paused', decoded: 'topup_purchases_paused' }
+    ])(
+      'keeps the capability set usable and decodes can_top_up reason $reason as $decoded',
+      async ({ reason, decoded }) => {
+        const { scopeSource } = fakeSession()
+        const { transport } = fakeTransport([
+          httpOk(
+            capabilitiesBody({
+              denied_reasons: { can_top_up: reason }
+            })
+          )
+        ])
 
-      const result = await createCapabilitiesReader({
-        transport,
-        scopeSource
-      }).read()
+        const result = await createCapabilitiesReader({
+          transport,
+          scopeSource
+        }).read()
 
-      // The point of the lenient decode: a reason this client predates must
-      // not cost the caller the capability set that gates its UI.
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
-      expect(result.value.capabilities.can_top_up).toBe(true)
-    })
+        expect(result.status).toBe('ok')
+        if (result.status !== 'ok') return
+        expect(result.value.capabilities.can_top_up).toBe(true)
+        expect(result.value.denials.can_top_up).toBe(decoded)
+      }
+    )
 
     it('reads an absent denials object as no reasons, not as a granted capability', async () => {
       const { scopeSource } = fakeSession()

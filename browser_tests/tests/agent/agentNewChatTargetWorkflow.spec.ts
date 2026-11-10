@@ -1,6 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -21,17 +22,13 @@ test.describe(
   'New chat targets the workflow tab on screen',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('PM-1322: retargets to a tab the user switched to', async ({
+    test('PM-1322 / PM-2251: retargets to a tab the user switched to and starts with an empty composer', async ({
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
       })
@@ -51,7 +48,7 @@ test.describe(
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('Start in this workflow')
-      await initialComposer.fill('')
+      await initialComposer.fill('Only edit workflow A')
 
       // Open a second workflow tab (B), then switch back to A so B is just
       // another open tab rather than the newest/active one.
@@ -100,13 +97,9 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
       })

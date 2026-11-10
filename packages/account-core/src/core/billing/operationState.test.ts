@@ -6,8 +6,13 @@ import type {
   BillingOperationState,
   BillingPresentationState,
   PendingBillingOperation
-} from './operationState.js'
-import { reduceBillingOperation, validateActionUrl } from './operationState.js'
+} from './operationState'
+import {
+  BillingOpStatusSchema,
+  reduceBillingOperation,
+  validateActionUrl
+} from './operationState'
+import { projectPaymentStep } from './paymentProjection'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 
@@ -50,6 +55,27 @@ function polled(
 }
 
 describe('reduceBillingOperation', () => {
+  it.for([
+    {
+      phase: 'awaiting_payment_method',
+      expected: 'https://checkout.example/resumed'
+    },
+    { phase: 'awaiting_invoice_payment', expected: undefined }
+  ] as const)(
+    'keeps a reissued checkout link through a poll that omits it only while it waits on a card ($phase)',
+    ({ phase, expected }) => {
+      const reissued = reduceBillingOperation(pending(), {
+        type: 'action_reissued',
+        actionUrl: 'https://checkout.example/resumed'
+      })
+
+      const next = polled(reissued, { phase })
+
+      expect(next).toMatchObject({ phase: 'pending' })
+      expect((next as PendingBillingOperation).actionUrl).toBe(expected)
+    }
+  )
+
   it('terminalizes on the server verdict and keeps the coded reason only', () => {
     const failed = polled(pending(), {
       status: 'failed',
@@ -73,6 +99,21 @@ describe('reduceBillingOperation', () => {
       retryable: false
     })
     expect(polled(pending(), { status: 'succeeded' }).phase).toBe('succeeded')
+  })
+
+  it('carries the plan the server reports for a pending operation, and drops it once the server stops reporting one', () => {
+    const plan = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    } as const
+
+    const next = polled(pending(), { plan })
+
+    expect(next).toMatchObject({ phase: 'pending', plan })
+    expect(polled(next, {})).not.toHaveProperty('plan')
   })
 
   it('ignores a status that names another operation', () => {
@@ -186,6 +227,189 @@ describe('reduceBillingOperation', () => {
     ).toBeUndefined()
   })
 
+  it.for(['authentication_failed', 'authentication_required'] as const)(
+    "keeps the server's %s reason on a settled failure",
+    (reason) => {
+      expect(
+        polled(pending(), { status: 'failed', decline_reason: reason })
+      ).toMatchObject({ phase: 'failed', declineReason: reason })
+    }
+  )
+
+  it.for([
+    { latest: true, expected: true },
+    { latest: false, expected: false },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's cancelable claim ($latest)",
+    ({ latest, expected }) => {
+      const claimed = polled(pending(), {
+        authentication_state: 'failed_retryable',
+        cancelable: true
+      })
+
+      const next = polled(claimed, {
+        authentication_state: 'failed_retryable',
+        ...(latest === undefined ? {} : { cancelable: latest })
+      })
+
+      expect((next as PendingBillingOperation).cancelable).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      latest: '2026-10-30T15:40:00Z',
+      expected: '2026-10-30T15:40:00Z'
+    },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's authentication deadline ($latest)",
+    ({ latest, expected }) => {
+      const served = polled(pending({ kind: 'topup' }), {
+        authentication_state: 'requires_action',
+        authentication_deadline: '2026-10-30T15:40:00Z'
+      })
+
+      const next = polled(served, {
+        authentication_state: 'requires_action',
+        ...(latest === undefined ? {} : { authentication_deadline: latest })
+      })
+
+      expect((next as PendingBillingOperation).authenticationDeadline).toBe(
+        expected
+      )
+    }
+  )
+
+  it('keeps the deadline cleared over an echo of the challenge this tab completed, and takes one for a new challenge', () => {
+    const DEADLINE = '2026-10-30T15:40:00Z'
+    const completed = reduceBillingOperation(
+      reduceBillingOperation(
+        polled(pending({ kind: 'topup' }), {
+          authentication_state: 'requires_action',
+          authentication_deadline: DEADLINE,
+          payment_intent_client_secret: 'pi_secret'
+        }),
+        { type: 'challenge_started' }
+      ),
+      { type: 'challenge_settled', outcome: 'completed' }
+    )
+
+    const echo = polled(completed, {
+      authentication_state: 'requires_action',
+      authentication_deadline: DEADLINE,
+      payment_intent_client_secret: 'pi_secret'
+    })
+    const moved = polled(completed, {
+      authentication_state: 'requires_action',
+      authentication_deadline: '2026-10-30T16:10:00Z',
+      payment_intent_client_secret: 'pi_other'
+    })
+
+    expect(
+      (echo as PendingBillingOperation).authenticationDeadline
+    ).toBeUndefined()
+    expect((moved as PendingBillingOperation).authenticationDeadline).toBe(
+      '2026-10-30T16:10:00Z'
+    )
+  })
+
+  it.for([
+    { served: '2026-10-30T16:10:00Z', expected: '2026-10-30T16:10:00Z' },
+    { served: undefined, expected: undefined }
+  ])(
+    'takes the deadline the server serves when it re-serves a failed challenge ($served)',
+    ({ served, expected }) => {
+      const failed = reduceBillingOperation(
+        reduceBillingOperation(
+          polled(pending({ kind: 'topup' }), {
+            authentication_state: 'requires_action',
+            authentication_deadline: '2026-10-30T15:40:00Z',
+            payment_intent_client_secret: 'pi_secret'
+          }),
+          { type: 'challenge_started' }
+        ),
+        { type: 'challenge_settled', outcome: 'failed' }
+      )
+
+      const reserved = polled(failed, {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret',
+        ...(served === undefined ? {} : { authentication_deadline: served })
+      })
+
+      expect(reserved).toMatchObject({
+        phase: 'pending',
+        authenticationDeadline: expected
+      })
+    }
+  )
+
+  it('clears the deadline when a hosted flow moves past a failed challenge and the server later omits both secret and deadline', () => {
+    const hosted = reduceBillingOperation(
+      reduceBillingOperation(
+        reduceBillingOperation(
+          polled(pending({ kind: 'topup' }), {
+            authentication_state: 'requires_action',
+            authentication_deadline: '2026-10-30T15:40:00Z',
+            payment_intent_client_secret: 'pi_a',
+            action_url: 'https://billing.example/continue'
+          }),
+          { type: 'challenge_started' }
+        ),
+        { type: 'challenge_settled', outcome: 'failed' }
+      ),
+      {
+        type: 'presentation_switched',
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      }
+    )
+    const servedB = polled(hosted, {
+      authentication_state: 'requires_action',
+      authentication_deadline: '2026-10-30T16:10:00Z',
+      payment_intent_client_secret: 'pi_b'
+    })
+
+    const secretless = polled(servedB, {
+      authentication_state: 'requires_action'
+    })
+
+    expect(hosted).toMatchObject({
+      presentation: 'hosted',
+      actionUrl: 'https://billing.example/continue'
+    })
+    expect(servedB).toMatchObject({
+      phase: 'pending',
+      authenticationDeadline: '2026-10-30T16:10:00Z'
+    })
+    expect(secretless).toMatchObject({
+      phase: 'pending',
+      authenticationDeadline: undefined
+    })
+  })
+
+  it('drops the authentication deadline once the server settles the operation', () => {
+    const served = polled(pending({ kind: 'topup' }), {
+      authentication_state: 'requires_action',
+      authentication_deadline: '2026-10-30T15:40:00Z'
+    })
+
+    const next = polled(served, { status: 'succeeded' })
+
+    expect(next).not.toHaveProperty('authenticationDeadline')
+  })
+
+  it('reads a retryable failure served without a reason as a generic decline', () => {
+    const failed = polled(pending(), {
+      authentication_state: 'failed_retryable'
+    })
+
+    expect(failed).toMatchObject({ declineReason: 'generic' })
+    expect(projectPaymentStep(failed, 'preview').step).toBe('processing_error')
+  })
+
   it('switches presentation under the same id and restores a failed challenge on rollback', () => {
     const challenged = polled(pending(), {
       authentication_state: 'requires_action',
@@ -293,5 +517,43 @@ describe('BillingOperationIdentity', () => {
         hostedDestination: 'stripe'
       })
     ).toBe('stripe')
+  })
+})
+
+describe('BillingOpStatusSchema charge_breakdown', () => {
+  const wire = (reasonCents: unknown) => ({
+    id: 'op-1',
+    status: 'succeeded',
+    started_at: '2026-09-14T00:00:00.000Z',
+    charge_breakdown: {
+      amount_charged_cents: 900,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          amount_cents: reasonCents,
+          kind: 'promo_code',
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE10',
+            amount_off_cents: 100,
+            duration_in_months: 3
+          }
+        }
+      ]
+    }
+  })
+
+  it('reads every amount as a number', () => {
+    const parsed = BillingOpStatusSchema.parse(wire(100))
+    const breakdown = parsed.charge_breakdown!
+    expect(breakdown.amount_charged_cents).toBe(900)
+    expect(breakdown.reasons[0].amount_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.amount_off_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.duration_in_months).toBe(3)
+  })
+
+  it('rejects an amount beyond the safe-integer range', () => {
+    expect(BillingOpStatusSchema.safeParse(wire(2 ** 53)).success).toBe(false)
   })
 })

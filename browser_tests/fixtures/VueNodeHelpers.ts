@@ -3,11 +3,12 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
@@ -17,16 +18,11 @@ export class VueNodeHelpers {
    * Get locator for all Vue node components in the DOM
    */
   public readonly nodes: Locator
-  /**
-   * Get locator for selected Vue node components (using visual selection indicators)
-   */
-  public readonly selectedNodes: Locator
+  public readonly emphasizedNodes: Locator
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator(
-      '[data-node-id].outline-node-component-outline'
-    )
+    this.emphasizedNodes = page.locator('[data-node-id][data-emphasized]')
   }
 
   /**
@@ -73,6 +69,36 @@ export class VueNodeHelpers {
     return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
       TestIds.node.slotConnectionDot
     )
+  }
+
+  async waitForSlotLayout(nodeId: string): Promise<void> {
+    await expect
+      .poll(() =>
+        this.getNodeLocator(nodeId).evaluate((element, id) => {
+          const app = window.app!
+          const node = app.canvas.graph!.getNodeById(id)!
+          const errors = [
+            ...node.inputs.map((_, index) => ({
+              key: `${id}-in-${index}`,
+              position: node.getInputPos(index)
+            })),
+            ...node.outputs.map((_, index) => ({
+              key: `${id}-out-${index}`,
+              position: node.getOutputPos(index)
+            }))
+          ].flatMap(({ key, position }) => {
+            const dot = element.querySelector(`[data-slot-key="${key}"]`)
+            if (!dot) return []
+            const rect = dot.getBoundingClientRect()
+            const [, y] = app.canvasPosToClientPos(position)
+            return [
+              Math.abs(y - rect.top - rect.height / 2) / app.canvas.ds.scale
+            ]
+          })
+          return errors.length ? Math.max(...errors) : Infinity
+        }, toNodeId(nodeId))
+      )
+      .toBeLessThan(0.5)
   }
 
   /**
@@ -182,6 +208,23 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Rename a node via its canvas title editor: double-click the title to
+   * start editing, fill in the new text, then press Enter to commit it
+   * (blurring the input, which is what `EditableText` treats as confirm).
+   *
+   * The `delay` matches the canvas double-clicks elsewhere in this suite: a
+   * zero-delay synthetic dblclick on a canvas surface is a documented flake
+   * source, since the two downs can land inside one frame.
+   */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick({ delay: 5 })
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -251,21 +294,13 @@ export class VueNodeHelpers {
     })
   }
 
-  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+  getWidgetRowByLabel(node: string | Locator, widgetName: string): Locator {
     const widgetLabel = this.page
       .getByTestId(TestIds.widgets.layoutFieldLabel)
       .and(this.page.getByText(widgetName, { exact: true }))
 
-    return this.getNodeByTitle(nodeTitle)
-      .getByTestId(TestIds.widgets.widget)
-      .filter({ has: widgetLabel })
-  }
-
-  /**
-   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
-   */
-  getVisibleWidgetTooltip(): Locator {
-    return this.page.locator('.p-tooltip-text:visible')
+    const root = typeof node === 'string' ? this.getNodeByTitle(node) : node
+    return root.getByTestId(TestIds.widgets.widget).filter({ has: widgetLabel })
   }
 
   /**
@@ -276,11 +311,10 @@ export class VueNodeHelpers {
     widgetName: string,
     optionName: string
   ): Promise<void> {
-    const node = this.getNodeByTitle(nodeTitle)
-    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
-    await this.page
-      .getByRole('option', { name: optionName, exact: true })
-      .click()
+    await new WidgetSelectDefaultFixture(
+      this.getNodeByTitle(nodeTitle),
+      widgetName
+    ).selectOption(optionName)
   }
 
   /**
@@ -293,6 +327,13 @@ export class VueNodeHelpers {
       incrementButton: widget.getByTestId(TestIds.widgets.increment),
       valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  async setInputNumberValue(widget: Locator, value: string): Promise<void> {
+    const { input } = this.getInputNumberControls(widget)
+    await input.fill(value)
+    await input.blur()
+    await expect(input).toHaveValue(value)
   }
 
   /**

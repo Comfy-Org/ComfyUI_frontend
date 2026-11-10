@@ -2,7 +2,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -10,21 +10,19 @@ import type { Ref } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 
-const { apiTarget } = vi.hoisted(() => ({
-  apiTarget: new EventTarget()
-}))
+import { api as apiTarget } from '@/scripts/api'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 vi.mock(import('@/composables/useAppMode'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: Object.assign(apiTarget, {
-    apiURL: (path: string) => path
-  })
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(apiTarget.apiURL).mockImplementation((path) => path)
+})
 
 function setJobWorkflowPath(jobId: string, path: string) {
   const next = new Map(useExecutionStore().jobIdToSessionWorkflowPath)
@@ -1194,7 +1192,7 @@ describe('linearOutputStore', () => {
           '1'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       // Dog's latent preview also arrives
       useJobPreviewStore().setPreviewUrl('job-dog', 'blob:dog-latent', '2')
@@ -1285,7 +1283,7 @@ describe('linearOutputStore', () => {
           '3'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       expect(
         store.inProgressItems.filter((i) => i.state === 'image')
