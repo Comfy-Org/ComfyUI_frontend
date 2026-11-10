@@ -62,6 +62,9 @@ export function useComboOptions(
   const selectedOption = computed(() =>
     normalized.value.find((option) => option.value === selectedValue.value)
   )
+  const summarizeFilename = computed(
+    () => config.filenameSummary() && !options.value?.getOptionLabel
+  )
   const selection = computed(() => {
     const option = selectedOption.value
     const invalid =
@@ -69,14 +72,14 @@ export function useComboOptions(
       Boolean(selectedValue.value) &&
       !option
     const label = option ? option.label : invalid ? String(value.value) : ''
-    const summarizeFilename =
-      config.filenameSummary() && !options.value?.getOptionLabel
-    const summary = summarizeFilename ? label.split(/[/\\]/).at(-1) : label
+    const summary = summarizeFilename.value
+      ? label.split(/[/\\]/).at(-1)
+      : label
     return {
       option,
       invalid,
       summary:
-        summarizeFilename &&
+        summarizeFilename.value &&
         settings.get('Comfy.VueNodes.HideSafeModelExtensions')
           ? summary?.replace(/^(.+)\.(?:safetensors|sft)$/i, '$1')
           : summary
