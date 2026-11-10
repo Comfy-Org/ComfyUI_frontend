@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import {
   expectElementScreenshot,
@@ -170,14 +170,56 @@ test.describe(
 
         await expect(
           agentConversation.vueNodes
-            .getWidgetByName('KSampler', 'steps')
-            .getByRole('spinbutton')
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'steps', exact: true })
         ).toHaveValue('30')
         await expect(
           agentConversation.vueNodes
-            .getWidgetByName('KSampler', 'cfg')
-            .getByRole('spinbutton')
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'cfg', exact: true })
         ).toHaveValue('5.0')
+
+        const sampler = agentConversation.vueNodes
+          .getNodeLocator('3')
+          .getByRole('combobox', { name: 'sampler_name', exact: true })
+        await sampler.click()
+        await expect(page.getByRole('option', { name: 'heun' })).toBeVisible()
+        await expect(sampler).not.toHaveAttribute('aria-invalid')
+      })
+
+      test('clamps an agent widget edit before refreshing dependent combo options', async ({
+        agentConversation,
+        page
+      }) => {
+        test.setTimeout(90_000)
+
+        await agentConversation.sendPrompt(0)
+        await agentConversation.replayResponse(0, {
+          beforeFirstGraphOps: () =>
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              const steps = node?.widgets?.find(
+                (widget) => widget.name === 'steps'
+              )
+              if (!steps) throw new Error('KSampler steps widget not found')
+              steps.options.max = 25
+              steps.callback = (_value, _canvas, owner) => {
+                const sampler = owner?.widgets?.find(
+                  (widget) => widget.name === 'sampler_name'
+                )
+                if (!sampler)
+                  throw new Error('KSampler sampler widget not found')
+                sampler.options.values = ['euler', 'heun']
+              }
+            }, toNodeId(3))
+        })
+        await agentConversation.waitForTurnComplete()
+
+        await expect(
+          agentConversation.vueNodes
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'steps', exact: true })
+        ).toHaveValue('25')
 
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')

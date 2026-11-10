@@ -5,7 +5,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
-import type { PositionConfig } from '@/types/positionConfig'
+import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 import type { BaseDOMWidget } from '@/types/domWidget'
 
 export interface DomWidgetState extends PositionConfig {

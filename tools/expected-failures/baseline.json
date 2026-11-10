@@ -4,27 +4,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentTurnProgressIsLegible.spec.ts:names how long the finished turn took:1",
     "classification": "live-defect"
   },
   {
     "id": "playwright:browser_tests/tests/agent/agentTwoSessionCrdtSubscription.spec.ts:returning to the displaced build shows it on the canvas:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentUnboundTabLinkSeverance.spec.ts:carries the canvas after the user severs a link:1",
     "classification": "live-defect"
   },
   {
@@ -68,10 +52,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },
@@ -80,11 +60,111 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/workbench/extensions/agent/composables/agent/useAgentSession.test.ts:(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410):1",
+    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+    "id": "vitest:src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts:keeps ops the host skipped when it refuses another op in the batch:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/subgraph/subgraphCrud.spec.ts:Empty selection conversion shows an error toast and leaves the graph unchanged:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/workflow/failureRecovery.spec.ts:keeps the workflow name when its rename request fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts:propagates failed workflow deletion to the tree:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic input socket is missing:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic widget is missing:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/lib/litegraph/src/LGraphNode.test.ts:does not add a reroute when a floating chain has no link:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the request reports failure:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the response body is invalid:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not duplicate a workflow that fails to load:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not report success when persistence fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not save and shows an error when an extension rename fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not transform the graph when the workflow cannot be loaded:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:shows an error and does not save when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not open a workflow when loading fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not remove related state when deleting fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not update related state when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:preserves the loaded workflow when a forced refresh is invalid:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:reattaches a temporary workflow when it is reopened:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/assetsStore.test.ts:rolls back when the server confirms the update was rejected:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should not access the canvas when a blueprint fails to open:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:does not change the path when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:returns false when deleting fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:returns undefined and clears loading state on failed load:1",
     "classification": "live-defect"
   }
 ]

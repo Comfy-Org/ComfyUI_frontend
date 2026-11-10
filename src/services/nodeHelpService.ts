@@ -1,8 +1,8 @@
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType } from '@/types/nodeSource'
-import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
+import { extractCustomNodeName } from '@/platform/customNodes/manager/utils/packUtils'
 
 class NodeHelpService {
   async fetchNodeHelp(

@@ -55,10 +55,7 @@ function renderCard(asset: AssetDisplayItem) {
   return render(AssetCard, {
     props: { asset, interactive: true },
     global: {
-      plugins: [i18n],
-      stubs: {
-        AssetBadgeGroup: true
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -75,6 +72,16 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it.for([true, false])(
+    'shows Library origin only for library cards: %s',
+    (isWorkspaceLibrary) => {
+      renderCard(createDisplayAsset({ isWorkspaceLibrary }))
+      expect(screen.queryByText('assetBrowser.library') !== null).toBe(
+        isWorkspaceLibrary
+      )
+    }
+  )
+
   it('closes the asset menu before opening the delete confirmation', async () => {
     renderCard(createDisplayAsset({ is_immutable: false }))
 
@@ -160,13 +167,13 @@ describe('AssetCard', () => {
     await user.click(screen.getByRole('button', { name: 'g.more' }))
     await user.click(screen.getByRole('menuitem', { name: 'g.delete' }))
     const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
-    const onConfirm = dialogOptions?.footerProps?.onConfirm
+    const onConfirm = dialogOptions.footerProps?.onConfirm
     expect(onConfirm).toBeTypeOf('function')
     if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
     const confirmation = onConfirm()
 
     await vi.advanceTimersByTimeAsync(0)
-    expect(dialogOptions?.props?.promptText).toHaveProperty(
+    expect(dialogOptions.props?.promptText).toHaveProperty(
       'value',
       'assetBrowser.deletion.failed'
     )

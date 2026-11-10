@@ -8,7 +8,7 @@ function readQueryString(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
-function isOAuthRequestId(value: string): boolean {
+export function isOAuthRequestId(value: string): boolean {
   return UUID_PATTERN.test(value)
 }
 

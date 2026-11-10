@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
-import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { TaskResponse } from '@comfyorg/api-client/taskSchema'
+import type { AssetExportWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
@@ -306,11 +306,11 @@ describe('assetExportStore triggerDownload', () => {
     })
     vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({ url })
     const clickedHrefs: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-      function (this: HTMLAnchorElement) {
-        clickedHrefs.push(this.href)
-      }
-    )
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      clickedHrefs.push(this.href)
+    })
     const store = useAssetExportStore()
     store.trackExport('task-1')
     const [exportJob] = store.exportList

@@ -4,10 +4,10 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { KeybindingPreset } from '@/platform/keybindings/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { KeybindingPreset } from '@comfyorg/keybindings/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { api } from '@/scripts/api'
 
@@ -58,7 +58,7 @@ function closeSmallLayoutDialog(
 }
 
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({

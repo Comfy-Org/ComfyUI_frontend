@@ -97,18 +97,24 @@ test.describe('App mode usage', () => {
       ['3', 'sampler_name'],
       ['6', 'text']
     ])
-    const seed = comfyPage.appMode.linearWidgets.getByLabel('seed', {
-      exact: true
+    const seed = comfyPage.appMode.linearWidgets.filter({
+      has: comfyPage.page.getByRole('spinbutton', { name: 'seed', exact: true })
     })
     const { input, incrementButton, decrementButton } =
       comfyPage.vueNodes.getInputNumberControls(seed)
     const initialValue = Number(await input.inputValue())
+    const seedBox = (await seed.boundingBox())!
+    const inputBox = (await input.boundingBox())!
+    const sourcePosition = {
+      x: inputBox.x + inputBox.width / 2 - seedBox.x,
+      y: inputBox.y + inputBox.height / 2 - seedBox.y
+    }
 
-    await seed.dragTo(incrementButton, { steps: 5 })
+    await seed.dragTo(incrementButton, { sourcePosition, steps: 5 })
     const intermediateValue = Number(await input.inputValue())
     expect(intermediateValue).toBeGreaterThan(initialValue)
 
-    await seed.dragTo(decrementButton, { steps: 5 })
+    await seed.dragTo(decrementButton, { sourcePosition, steps: 5 })
     const endValue = Number(await input.inputValue())
     expect(endValue).toBeLessThan(intermediateValue)
 
@@ -122,14 +128,11 @@ test.describe('App mode usage', () => {
       .fill('uni')
     await comfyPage.page.keyboard.press('Enter')
     await expect(sampler).toHaveText('uni_pc')
-
-    //verify values are consistent with litegraph
   })
 
   test('FormDropdown search Enter selects the top filtered item', async ({
     comfyPage
   }) => {
-    await comfyPage.appMode.enableLinearMode()
     const loadImageNode = await comfyPage.nodeOps.addNode('LoadImage')
     await comfyPage.nextFrame()
 
@@ -248,7 +251,6 @@ test.describe('App mode usage', () => {
     comfyPage
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
-    await comfyPage.appMode.enableLinearMode()
     await expect(toggle).toBeVisible()
 
     await comfyPage.appMode.enterBuilder()

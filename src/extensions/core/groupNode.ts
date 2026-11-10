@@ -1,7 +1,7 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type {
   LGraphNodeConstructor,
   LGraphNode
@@ -10,18 +10,18 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type {
   ComfyNodeDef,
   ComfyOutputTypesSpec,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'

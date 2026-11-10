@@ -21,7 +21,7 @@
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
-        <i class="pi pi-times" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </header>
 
@@ -39,8 +39,10 @@
         class="m-0 flex max-h-52 list-none flex-col gap-2 overflow-y-auto p-0"
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
-          <button
-            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-transparent px-4 py-3 transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+          <Button
+            variant="outline"
+            size="unset"
+            class="w-full gap-3 rounded-lg px-4 py-3"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
@@ -65,9 +67,9 @@
             </div>
             <span class="shrink-0 text-sm font-medium">
               {{ $t('teamWorkspacesDialog.switch') }}
-              <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
+              <i class="icon-[lucide--arrow-right] size-3" aria-hidden="true" />
             </span>
-          </button>
+          </Button>
         </li>
       </ul>
     </section>
@@ -121,7 +123,7 @@
           :disabled="!isValidName || loading"
           @click="onCreate"
         >
-          <i class="pi pi-plus text-xs" aria-hidden="true" />
+          <i class="icon-[lucide--plus] size-3" aria-hidden="true" />
           {{ $t('teamWorkspacesDialog.createWorkspace') }}
         </Button>
       </section>
@@ -145,7 +147,7 @@ import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspa
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>

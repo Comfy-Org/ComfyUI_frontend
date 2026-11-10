@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { escapeRegExp } from 'es-toolkit'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -6,29 +7,42 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeployment,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_START_POLL_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { api } from '@/scripts/api'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   listDeployments: vi.fn(),
   pickDeployment: vi.fn(),
+  startDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
   clearDefaultDeployment: vi.fn(),
@@ -57,6 +71,8 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -91,6 +107,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 2,
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     },
     {
@@ -101,15 +118,30 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 1,
       status: 'stopped',
+      can_start: true,
       created_at: '2026-09-20T00:00:00Z'
     },
     {
       deployment_id: D9,
       release_id: 'r-9',
       status: 'stopped',
+      can_start: true,
       created_at: '2026-09-10T00:00:00Z'
     }
   ]
+}
+
+function withStatus(
+  deployment: WorkspaceDeployment,
+  status: WorkspaceDeployment['status'],
+  canStart = status === 'stopped' || status === 'failed'
+): WorkspaceDeployment {
+  return { ...deployment, status, can_start: canStart }
+}
+
+const everyRowReady: WorkspaceDeploymentList = {
+  ...listing,
+  items: listing.items.map((item) => withStatus(item, 'ready'))
 }
 
 function workflowWith(...types: string[]): LGraph {
@@ -158,6 +190,9 @@ describe('DeploymentSwitcher', () => {
   beforeEach(() => {
     hoisted.rootGraph = undefined
     sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
@@ -189,30 +224,117 @@ describe('DeploymentSwitcher', () => {
     const production = screen.getByTestId(`deployment-row-${D2}`)
     expect(production).toHaveTextContent('Studio Build')
     expect(
-      within(production).getByText("Studio's <b>production</b> & R&D · v2")
+      within(production).getByText("Studio's <b>production</b> & R&D")
     ).toBeVisible()
     expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
       'Studio Buildstaging'
     )
   })
 
-  it.for([
-    { row: D2, ends: 'production · v2' },
-    { row: D1, ends: 'staging · v1Stopped' },
-    { row: D9, ends: 'Deployment dep-b9b9b9b9Stopped' }
-  ])(
-    'puts the Release version after the deployment name and the status on the right unless ready: $ends',
-    async ({ row, ends }) => {
+  const rowColumns = [
+    {
+      row: D2,
+      title: 'Studio Build',
+      name: 'production',
+      detail: 'v2',
+      runOnDetail: 'v2',
+      note: ''
+    },
+    {
+      row: D1,
+      title: 'Studio Build',
+      name: 'staging',
+      detail: 'Stopped',
+      runOnDetail: 'Start',
+      note: "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
+    },
+    {
+      row: D9,
+      title: 'Deployment dep-b9b9b9b9',
+      name: '',
+      detail: 'Stopped',
+      runOnDetail: 'Start',
+      note: "Deployment dep-b9b9b9b9 isn't running. Start it on the Developer Platform, then pick it."
+    }
+  ]
+
+  function columnsOf(
+    { title, name, detail }: (typeof rowColumns)[number],
+    note = ''
+  ) {
+    const cells = [title, name, detail, note].map(escapeRegExp)
+    return new RegExp(`^${cells.join('\\s*')}$`)
+  }
+
+  it.for(rowColumns)(
+    'gives each row the same columns, the Build, the deployment, then the version when ready or else what choosing it does: $title $name $runOnDetail',
+    async (columns) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       const user = renderSwitcher()
       await openList(user)
-      expect(screen.getByTestId(`deployment-row-${row}`)).toHaveTextContent(
-        new RegExp(`${ends}$`)
+      expect(
+        screen.getByTestId(`deployment-row-${columns.row}`)
+      ).toHaveTextContent(
+        columnsOf({ ...columns, detail: columns.runOnDetail }, columns.note)
       )
     }
   )
 
+  it.for(rowColumns)(
+    'gives each Workspace default row the same columns: $title $name $detail',
+    async (columns) => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+      await openDefaultMenu(user)
+      expect(
+        screen.getByTestId(`default-row-${columns.row}`)
+      ).toHaveTextContent(columnsOf(columns))
+    }
+  )
+
+  async function focusProductionRow(cutOffText?: string) {
+    vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(
+      function (this: Element) {
+        return this.textContent.trim() === cutOffText ? 400 : 0
+      }
+    )
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+  }
+
   it.for([
+    { cell: 'Build name', text: 'Studio Build' },
+    { cell: 'deployment name', text: 'production' },
+    { cell: 'version', text: 'v2' }
+  ])(
+    'spells out a row beside the menu when its $cell is cut off',
+    async ({ text }) => {
+      await focusProductionRow(text)
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Studio Build · production · v2'
+      )
+    }
+  )
+
+  it('shows no tooltip for a row whose text fits', async () => {
+    await focusProductionRow()
+
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it.for<{
+    status: WorkspaceDeployment['status']
+    text: string
+    name: string
+  }>([
     {
       status: 'ready',
       text: 'Running on Studio Build · production',
@@ -239,7 +361,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue({
         ...listing,
         picked_deployment_id: D2,
-        items: [{ ...listing.items[0], status }, ...listing.items.slice(1)]
+        items: [withStatus(listing.items[0], status), ...listing.items.slice(1)]
       })
       const user = renderSwitcher()
       const trigger = await screen.findByTestId('deployment-switcher-trigger')
@@ -281,11 +403,11 @@ describe('DeploymentSwitcher', () => {
     await waitFor(() =>
       expect(useDeploymentPickStore().state.phase).toBe('hidden')
     )
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     expect(screen.queryByTestId('deployment-switcher')).toBeNull()
   })
 
-  it('says Comfy Cloud when nothing is picked, and lists every deployment as pickable', async () => {
+  it('says Comfy Cloud when nothing is picked, and lists every deployment with only a ready one pickable', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
 
@@ -303,11 +425,118 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
       'Deployment dep-b9b9b9b9'
     )
-    expect(screen.getByTestId(`deployment-row-${D1}`)).not.toHaveAttribute(
-      'aria-disabled',
-      'true'
+    expect(screen.getByTestId(`deployment-row-${D2}`)).not.toHaveAttribute(
+      'aria-disabled'
+    )
+    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAccessibleName(
+      'Start Studio Build · staging on the Developer Platform'
     )
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
+  })
+
+  it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    expect(trigger).toHaveAccessibleName(
+      'New. Running on Comfy Cloud. Choose where this editor runs'
+    )
+
+    await openList(user)
+    expect(api.storeSetting).toHaveBeenCalledWith(
+      'Comfy.DeploymentSwitcher.Seen',
+      true
+    )
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
+  })
+
+  it('switches only to a ready deployment, and a stopped row opens its page on the Developer Platform in a new tab', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(screen.getByTestId(`deployment-row-${D1}`))
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    await openList(user)
+
+    await user.click(screen.getByTestId(`deployment-row-${D2}`))
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+      deployment_id: D2
+    })
+  })
+
+  it.for<{ status: WorkspaceDeployment['status']; reason: string }>([
+    {
+      status: 'stopped',
+      reason:
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
+    },
+    {
+      status: 'failed',
+      reason:
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
+    },
+    {
+      status: 'provisioning',
+      reason: "Studio Build · staging is starting. Pick it once it's ready."
+    },
+    {
+      status: 'stopping',
+      reason: "Studio Build · staging isn't ready. Pick it once it's ready."
+    }
+  ])(
+    'says beside a $status row why it cannot be picked',
+    async ({ status, reason }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [listing.items[0], withStatus(listing.items[1], status)]
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.hover(screen.getByTestId(`deployment-row-${D1}`))
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    }
+  )
+
+  it('gives no reason on the row this browser already runs on', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1,
+      items: [listing.items[0], withStatus(listing.items[1], 'provisioning')]
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      await screen.findByTestId(`deployment-row-${D1}`)
+    ).not.toHaveAccessibleDescription()
   })
 
   it('refreshes the listing each time the list opens', async () => {
@@ -319,21 +548,53 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it('links to the Developer Platform to create a custom deployment, in a new tab', async () => {
+  it('keeps keyboard focus on a row that the refreshed listing moves', async () => {
+    let refresh: (listing: WorkspaceDeploymentList) => void = () => {}
+    mockWorkspaceApi.listDeployments.mockResolvedValueOnce(everyRowReady)
+    mockWorkspaceApi.listDeployments.mockReturnValueOnce(
+      new Promise<WorkspaceDeploymentList>((resolve) => {
+        refresh = resolve
+      })
+    )
+    const user = renderSwitcher()
+    await openList(user)
+    const unnamed = screen.getByTestId(`deployment-row-${D9}`)
+    unnamed.focus()
+    await waitFor(() => expect(unnamed).toHaveFocus())
+
+    const [production, staging, unnamedItem] = everyRowReady.items
+    refresh({ ...everyRowReady, items: [unnamedItem, production, staging] })
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('menuitemradio').map((row) => row.dataset.testid)
+      ).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D9}`,
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`
+      ])
+    )
+
+    await waitFor(() => expect(unnamed).toHaveFocus())
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveFocus()
+  })
+
+  it('links an existing deployment workspace to the Builds page on the Developer Platform in a new tab', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
     await openList(user)
 
-    const create = screen.getByTestId('deployment-switcher-create')
-    expect(create).toHaveTextContent('Create a custom deployment')
-    expect(create).toHaveAttribute(
+    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    expect(builds).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/profile\/deploy#builds$/)
+      expect.stringMatching(/\/profile\/builds$/)
     )
-    expect(create).toHaveAttribute('target', '_blank')
+    expect(builds).toHaveAttribute('target', '_blank')
+    expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
   })
 
-  it('says a workspace with no deployments has none yet, and still offers to create one', async () => {
+  it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
       items: []
@@ -344,8 +605,18 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId('deployment-switcher-empty')).toHaveTextContent(
       'This workspace has no deployments yet.'
     )
-    expect(screen.getByTestId('deployment-switcher-create')).toBeVisible()
+    expect(screen.queryByTestId('deployment-switcher-builds')).toBeNull()
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-create-custom-deployment')
+      ).toBe(true)
+    )
   })
 
   const pickGone = 'The deployment you picked no longer exists.'
@@ -470,8 +741,10 @@ describe('DeploymentSwitcher', () => {
   )
 
   it('disables the Reload item while a switch is in flight', async () => {
+    const readyStaging = withStatus(listing.items[1], 'ready')
     const boot = {
       ...listing,
+      items: [listing.items[0], readyStaging],
       picked_deployment_id: D2,
       pick_source: 'browser'
     }
@@ -481,7 +754,7 @@ describe('DeploymentSwitcher', () => {
         ...boot,
         items: [
           { ...listing.items[0], release_id: 'r-3', release_version: 3 },
-          ...listing.items.slice(1)
+          readyStaging
         ]
       })
     mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise<void>(() => {}))
@@ -842,7 +1115,7 @@ describe('DeploymentSwitcher', () => {
     it.for([
       {
         path: 'picking a deployment',
-        owner: false,
+        setup: () => {},
         boot: listing,
         next: listing,
         act: (user: ReturnType<typeof userEvent.setup>) =>
@@ -851,7 +1124,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'picking Comfy Cloud',
-        owner: false,
+        setup: () => {},
         boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         next: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         act: (user: ReturnType<typeof userEvent.setup>) =>
@@ -860,7 +1133,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'following the workspace default',
-        owner: false,
+        setup: () => {},
         boot: {
           ...listing,
           picked_deployment_id: D1,
@@ -879,7 +1152,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'changing the default this browser follows',
-        owner: true,
+        setup: asOwner,
         boot: listing,
         next: listing,
         act: async (user: ReturnType<typeof userEvent.setup>) => {
@@ -890,7 +1163,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'reloading after its deployment changed',
-        owner: false,
+        setup: () => {},
         boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         next: {
           ...listing,
@@ -907,15 +1180,15 @@ describe('DeploymentSwitcher', () => {
       }
     ] satisfies {
       path: string
-      owner: boolean
+      setup: () => void
       boot: WorkspaceDeploymentList
       next: WorkspaceDeploymentList
       act: (user: ReturnType<typeof userEvent.setup>) => Promise<void>
       target: string
     }[])(
       'asks to save them first when $path, and changes nothing on Cancel',
-      async ({ owner, boot, next, act, target }) => {
-        if (owner) asOwner()
+      async ({ setup, boot, next, act, target }) => {
+        setup()
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
           .mockResolvedValue(next)
@@ -968,6 +1241,28 @@ describe('DeploymentSwitcher', () => {
         expect(takeLeavePromptSkip()).toBe(true)
       }
     )
+
+    it('drops the first-open mark when it closes its list to ask about them', async () => {
+      useSettingStore().$patch({
+        settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      )
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('deployment-switcher-new')
+        ).not.toBeInTheDocument()
+      )
+    })
 
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
@@ -1138,15 +1433,35 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it('opens its list when the missing-nodes message asks for the switcher', async () => {
+  it('opens its list and remembers the first open when the missing-nodes message asks for the switcher', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    renderSwitcher()
-    await screen.findByTestId('deployment-switcher-trigger')
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
     expect(screen.queryByRole('menu')).toBeNull()
 
     useDeploymentPickStore().requestSwitcherOpen()
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        'Comfy.DeploymentSwitcher.Seen',
+        true
+      )
+    )
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
   })
 
   it('does not open on its own later for an ask made before it could show', async () => {
@@ -1160,7 +1475,13 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  describe('marks which deployments can run the open workflow', () => {
+  describe('groups the rows by whether they can run the open workflow', () => {
+    function rowsIn(group: string) {
+      return within(screen.getByRole('group', { name: group }))
+        .getAllByRole('menuitemradio')
+        .map((row) => row.dataset.testid)
+    }
+
     beforeEach(() => {
       hoisted.rootGraph = workflowWith(
         'KSampler',
@@ -1171,7 +1492,7 @@ describe('DeploymentSwitcher', () => {
         true
     })
 
-    it('shows the rows as before and sends no check while its switch is off', async () => {
+    it('shows one Run on list and sends no check while its switch is off', async () => {
       vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
         false
       const user = renderSwitcher()
@@ -1184,10 +1505,41 @@ describe('DeploymentSwitcher', () => {
       expect(
         mockWorkspaceApi.checkDeploymentCompatibility
       ).not.toHaveBeenCalled()
-      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
+      expect(rowsIn('Run on')).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
     })
 
-    it('says which rows run it, which miss nodes (named on hover and in the row description), and which were not checked', async () => {
+    function rowOrder() {
+      return screen
+        .getAllByRole('menuitemradio')
+        .map((row) => row.dataset.testid)
+    }
+
+    it('puts the current deployment first in the one Run on list', async () => {
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        false
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D1
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(rowsIn('Run on')).toEqual([
+          `deployment-row-${D1}`,
+          'deployment-row-cloud',
+          `deployment-row-${D2}`,
+          `deployment-row-${D9}`
+        ])
+      )
+    })
+
+    it('lists the current row under Running on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
           { deployment_id: D2, missing_node_types: [], unknown: false },
@@ -1206,9 +1558,9 @@ describe('DeploymentSwitcher', () => {
       await openList(user)
 
       await waitFor(() =>
-        expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
-          'Runs this workflow'
-        )
+        expect(rowsIn('Compatible environments')).toEqual([
+          `deployment-row-${D2}`
+        ])
       )
       expect(
         mockWorkspaceApi.checkDeploymentCompatibility
@@ -1216,55 +1568,84 @@ describe('DeploymentSwitcher', () => {
         'KSampler',
         'Power Lora Loader (rgthree)'
       ])
-      expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
-        'Missing 1 node'
-      )
-      expect(screen.getByText('Missing 1 node')).toHaveAttribute(
-        'title',
-        'Power Lora Loader (rgthree)'
-      )
-      expect(
-        screen.getByTestId(`deployment-row-${D1}`)
-      ).toHaveAccessibleDescription('Power Lora Loader (rgthree)')
-      expect(
-        screen.getByTestId(`deployment-row-${D2}`)
-      ).not.toHaveAccessibleDescription()
-      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
-        'Not checked'
-      )
-      expect(screen.getByTestId('deployment-row-cloud')).toHaveTextContent(
-        'Missing 2 nodes'
-      )
-      expect(screen.getByText('Missing 2 nodes')).toHaveAttribute(
-        'title',
-        'Power Lora Loader (rgthree), Image Saver'
+      expect(rowsIn('Running on')).toEqual(['deployment-row-cloud'])
+      expect(rowsIn('Incompatible environments')).toEqual([
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
+      expect(rowOrder()).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
+      expect(screen.getByTestId('deployment-row-cloud')).toHaveAccessibleName(
+        'Comfy Cloud'
       )
       expect(
         screen.getByTestId('deployment-row-cloud')
-      ).toHaveAccessibleDescription('Power Lora Loader (rgthree), Image Saver')
+      ).toHaveAccessibleDescription(
+        'Comfy Cloud cannot run this workflow. It is missing Power Lora Loader (rgthree) and Image Saver.'
+      )
+      expect(
+        screen.getByTestId(`deployment-row-${D2}`)
+      ).not.toHaveAccessibleDescription()
+      expect(
+        screen.getByTestId(`deployment-row-${D9}`)
+      ).toHaveAccessibleDescription(
+        "Deployment dep-b9b9b9b9 isn't running. Start it on the Developer Platform, then pick it. Could not check whether it can run this workflow."
+      )
+
+      const staging = screen.getByTestId(`deployment-row-${D1}`)
+      const stagingNote =
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it. It cannot run this workflow. It is missing Power Lora Loader (rgthree)."
+      expect(staging).toHaveAccessibleDescription(stagingNote)
+      await user.hover(staging)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(stagingNote)
     })
 
-    it('keeps the deployment title whole and shortens its subtitle first, in a list no wider than the screen', async () => {
-      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+    it('keeps keyboard focus on the same row when the answer regroups the menu', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(everyRowReady)
+      let answer: (compatibility: DeploymentCompatibility) => void = () => {}
+      mockWorkspaceApi.checkDeploymentCompatibility.mockReturnValue(
+        new Promise<DeploymentCompatibility>((resolve) => {
+          answer = resolve
+        })
+      )
+      const user = renderSwitcher()
+      await openList(user)
+      const staging = screen.getByTestId(`deployment-row-${D1}`)
+      staging.focus()
+      await waitFor(() => expect(staging).toHaveFocus())
+
+      answer({
         deployments: [
-          { deployment_id: D2, missing_node_types: [], unknown: false }
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          {
+            deployment_id: D1,
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
+          },
+          { deployment_id: D9, missing_node_types: [], unknown: true }
         ],
         cloud: { missing_node_types: [] }
       })
-      const user = renderSwitcher()
-      const menu = await openList(user)
-      const row = await screen.findByTestId(`deployment-row-${D2}`)
-      await waitFor(() => expect(row).toHaveTextContent('Runs this workflow'))
+      await waitFor(() =>
+        expect(rowsIn('Incompatible environments')).toEqual([
+          `deployment-row-${D1}`,
+          `deployment-row-${D9}`
+        ])
+      )
 
-      expect(menu).toHaveClass('max-w-[min(25rem,calc(100vw-1rem))]')
-      expect(within(row).getByText('Studio Build')).toHaveClass('shrink-0')
-      const subtitle = within(row).getByText('production · v2')
-      expect(subtitle).toHaveClass('min-w-0', 'truncate')
-      expect(subtitle).not.toHaveClass('shrink-0')
-      expect(subtitle).toHaveAttribute('title', 'production · v2')
+      await waitFor(() =>
+        expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveFocus()
+      )
+      await user.keyboard('{ArrowDown}')
+      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveFocus()
     })
 
-    it('shows the rows as before when the check fails', async () => {
+    it('shows one Run on list when the check fails', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
         new WorkspaceApiError('not found', 404)
       )
@@ -1275,10 +1656,448 @@ describe('DeploymentSwitcher', () => {
       )
       await nextTick()
 
-      expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
-        'Studio Build'
-      )
-      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
+      expect(rowsIn('Run on')).toHaveLength(4)
+      expect(
+        screen.queryByRole('group', { name: 'Compatible environments' })
+      ).toBeNull()
     })
   })
+})
+
+describe('DeploymentSwitcher, starting a stopped deployment', () => {
+  const staging = listing.items[1]
+
+  function withStaging(
+    status: WorkspaceDeployment['status'],
+    canStart?: boolean
+  ): WorkspaceDeploymentList {
+    return {
+      ...listing,
+      items: [listing.items[0], withStatus(staging, status, canStart)]
+    }
+  }
+
+  function offerStart() {
+    vi.mocked(useFeatureFlags().flags).deploymentStartEnabled = true
+  }
+
+  function stagingRow() {
+    return screen.getByTestId(`deployment-row-${D1}`)
+  }
+
+  beforeEach(() => {
+    hoisted.rootGraph = undefined
+    sessionStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    Object.defineProperty(window, 'location', {
+      value: { reload: vi.fn(), origin: 'http://localhost' },
+      writable: true,
+      configurable: true
+    })
+  })
+
+  it('offers Start on a stopped row, and choosing it starts the deployment instead of switching to it', async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    const start = screen.getByRole('menuitemradio', {
+      name: 'Start Studio Build · staging'
+    })
+    expect(within(start).getByText('Start')).toBeVisible()
+    await user.click(start)
+
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledWith('ws-1', D1)
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+  })
+
+  it('offers Start only on a row the listing says can start, whatever its status', async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(
+      withStaging('stopped', false)
+    )
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      screen.queryByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    ).toBeNull()
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('shows a started deployment as Starting, refreshes the open list every 5 s, and lets it be picked once ready', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('starting')
+      return { deployment_id: D1, status: 'starting' }
+    })
+    mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+
+    current = withStaging('ready')
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('v1')).toBeVisible()
+    )
+    expect(stagingRow()).not.toHaveAttribute('aria-disabled')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+
+    await user.click(stagingRow())
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+      deployment_id: D1
+    })
+  })
+
+  it("says why a Start failed with the server's own message, and starts again on Retry", async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment
+      .mockRejectedValueOnce(
+        new WorkspaceApiError(
+          'The workspace has no credits left.',
+          402,
+          'PAYMENT_REQUIRED'
+        )
+      )
+      .mockReturnValueOnce(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    const problem = await screen.findByTestId('deployment-row-problem')
+    expect(problem).toHaveTextContent(
+      "Studio Build · staging didn't start. The workspace has no credits left."
+    )
+    expect(problem).toHaveTextContent('Add credits, then retry.')
+    const retry = screen.getByRole('menuitemradio', {
+      name: 'Retry starting Studio Build · staging'
+    })
+    expect(retry).toHaveAccessibleDescription(
+      "Studio Build · staging didn't start. The workspace has no credits left. Add credits, then retry."
+    )
+
+    await user.click(retry)
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(2)
+    await waitFor(() =>
+      expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+    )
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+  })
+
+  function startStaging(user: ReturnType<typeof userEvent.setup>) {
+    return user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+  }
+
+  it('names the started deployment on the listing asked for after its Start', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('queued', false)
+      return { deployment_id: D1, status: 'queued' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await startStaging(user)
+
+    await waitFor(() =>
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+        'ws-1',
+        [D1]
+      )
+    )
+  })
+
+  it('shows a started deployment that failed to come up as failed, and offers Start again', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('queued')
+      return { deployment_id: D1, status: 'queued' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await startStaging(user)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    current = withStaging('failed')
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Start')).toBeVisible()
+    )
+    expect(stagingRow()).toHaveAccessibleDescription(
+      'Studio Build · staging failed. Start it again to run jobs on it.'
+    )
+    expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+  })
+
+  it('shows Starting until the listing asked for after the Start lands, whatever an older listing says', async () => {
+    offerStart()
+    const answers: ((list: WorkspaceDeploymentList) => void)[] = []
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    let takeStart: (started: {
+      deployment_id: string
+      status: string
+    }) => void = () => {}
+    mockWorkspaceApi.startDeployment.mockReturnValue(
+      new Promise((resolve) => {
+        takeStart = resolve
+      })
+    )
+    const user = renderSwitcher()
+    await openList(user)
+    await startStaging(user)
+    mockWorkspaceApi.listDeployments.mockImplementation(
+      () => new Promise((resolve) => answers.push(resolve))
+    )
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+    takeStart({ deployment_id: D1, status: 'queued' })
+    await waitFor(() => expect(answers).toHaveLength(2))
+    answers[0](withStaging('stopped'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+
+    answers[1](withStaging('queued'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+  })
+
+  it.for([
+    {
+      sender: 'the concurrency cap',
+      code: 'CONCURRENCY_LIMIT',
+      message: 'Three deployments are already running.',
+      shown: true,
+      fix: 'Stop another deployment, then retry.'
+    },
+    {
+      sender: 'a rate limit',
+      code: 'RATE_LIMITED',
+      message: 'Too many attempts; try again later.',
+      shown: true,
+      fix: 'Retry, or check it on the Developer Platform.'
+    },
+    {
+      sender: 'a gateway',
+      code: undefined,
+      message: 'Request failed with status code 429',
+      shown: false,
+      fix: 'Retry, or check it on the Developer Platform.'
+    }
+  ])(
+    'tells a 429 from $sender apart by its code, and shows only a message the server wrote',
+    async ({ code, message, shown, fix }) => {
+      offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+      mockWorkspaceApi.startDeployment.mockRejectedValue(
+        new WorkspaceApiError(message, 429, code)
+      )
+      const user = renderSwitcher()
+      await openList(user)
+
+      await startStaging(user)
+
+      const problem = await screen.findByTestId('deployment-row-problem')
+      expect(problem).toHaveTextContent(fix)
+      expect(problem.textContent.includes(message)).toBe(shown)
+    }
+  )
+
+  it.for([
+    {
+      failure: 'one that is not an API error',
+      error: new Error('sign-in failed'),
+      reported: true
+    },
+    {
+      failure: 'a 503',
+      error: new WorkspaceApiError(
+        'could not start',
+        503,
+        'SERVICE_UNAVAILABLE'
+      ),
+      reported: true
+    },
+    {
+      failure: 'a timeout',
+      error: new WorkspaceApiError('timeout of 30000ms exceeded'),
+      reported: true
+    },
+    {
+      failure: 'a refusal the person can act on',
+      error: new WorkspaceApiError('no credit', 402, 'PAYMENT_REQUIRED'),
+      reported: false
+    }
+  ])(
+    'reports a Start that failed with $failure only when the server gave no answer',
+    async ({ error, reported }) => {
+      offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+      mockWorkspaceApi.startDeployment.mockRejectedValue(error)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await startStaging(user)
+
+      await screen.findByTestId('deployment-row-problem')
+      const reports = vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([reportedError, context]) =>
+            reportedError === error &&
+            context.errorType === 'error_starting_deployment'
+        )
+      expect(reports).toHaveLength(reported ? 1 : 0)
+    }
+  )
+
+  it('waits for a slow listing before refreshing the open list again', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('starting')
+      return { deployment_id: D1, status: 'starting' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+    await startStaging(user)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    mockWorkspaceApi.listDeployments.mockReset()
+    mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS * 3)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the Developer Platform when the server will not start it from this editor, and does not ask it again', async () => {
+    offerStart()
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment.mockRejectedValue(
+      new WorkspaceApiError(
+        'starting a deployment needs a signed-in session, not an API key',
+        403
+      )
+    )
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    expect(
+      await screen.findByTestId('deployment-row-problem')
+    ).toHaveTextContent('Start it on the Developer Platform for now.')
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging on the Developer Platform'
+      })
+    )
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(1)
+  })
+
+  it.for<{
+    status: WorkspaceDeployment['status']
+    start: string
+    offered: boolean
+    tooltip: string
+    notice: string
+  }>([
+    {
+      status: 'stopped',
+      start: 'offered',
+      offered: true,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run. Open this menu to start it.",
+      notice:
+        "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
+    },
+    {
+      status: 'stopped',
+      start: 'not offered',
+      offered: false,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run until it's started on the Developer Platform.",
+      notice:
+        "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
+    },
+    {
+      status: 'failed',
+      start: 'offered',
+      offered: true,
+      tooltip:
+        "Running on Studio Build · staging. It failed, so jobs won't run. Open this menu to start it again.",
+      notice:
+        "Studio Build · staging failed, so jobs won't run. Start it again, or pick a ready deployment."
+    }
+  ])(
+    'says jobs will not run on a $status deployment this browser is on, on hover and at the top of the list, with Start $start',
+    async ({ status, offered, tooltip, notice }) => {
+      if (offered) offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...withStaging(status),
+        picked_deployment_id: D1,
+        pick_source: 'browser'
+      })
+      const user = renderSwitcher()
+      const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+      await user.hover(trigger)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+      await openList(user)
+
+      expect(
+        screen.getByTestId('deployment-switcher-notice')
+      ).toHaveTextContent(notice)
+    }
+  )
 })

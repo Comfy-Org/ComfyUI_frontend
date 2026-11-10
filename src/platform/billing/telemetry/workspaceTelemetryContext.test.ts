@@ -4,8 +4,8 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -25,7 +25,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({ datadogRum: rum }))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
@@ -156,6 +156,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
     resolvedWorkspaceId: string
   ): BillingCapabilitiesResponse {
     return {
+      auto_top_up_enabled: false,
       resolved_for: {
         user_id: 'canonical-user-1',
         workspace_id: resolvedWorkspaceId
@@ -178,6 +179,8 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
         can_view_team_usage: false,
         can_edit_workspace: false,
         can_manage_auto_top_up: false,
+        can_view_auto_top_up: false,
+        can_view_auto_top_up_member_notice: false,
         can_manage_subscription: false,
         can_open_plans: false,
         can_run_workflows: false,

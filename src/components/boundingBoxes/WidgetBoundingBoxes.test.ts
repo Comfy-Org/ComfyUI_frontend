@@ -1,5 +1,5 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -8,9 +8,10 @@ import { createI18n } from 'vue-i18n'
 import BoundingBoxesEditor from './BoundingBoxesEditor.vue'
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import { toNodeId } from '@/types/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 const { appState } = vi.hoisted(() => {
   const appState: { node: unknown } = { node: null }
@@ -339,4 +340,49 @@ describe('WidgetBoundingBoxes fullscreen', () => {
 
     expect(lastBoxes(emitted)[0].metadata.desc).toBe('side panel')
   })
+})
+
+describe('WidgetBoundingBoxes max boxes', () => {
+  function renderWithLimit(modelValue: BoundingBox[], maxBoxes?: number) {
+    render(WidgetBoundingBoxes, {
+      global: { plugins: [i18n] },
+      props: {
+        nodeId: toNodeId('1'),
+        widget: fromPartial<
+          SimplifiedWidget<WidgetValue, IWidgetBoundingBoxesOptions>
+        >({
+          name: 'editor_state',
+          options: { max_boxes: maxBoxes }
+        }),
+        modelValue
+      }
+    })
+  }
+
+  it('hides the box count without a limit', () => {
+    renderWithLimit([box()])
+    expect(screen.queryByTestId('bounding-boxes-count')).toBeNull()
+  })
+
+  it.for([
+    { count: 2, maxBoxes: 3, shown: '2/3', spoken: '2 of 3 boxes' },
+    { count: 3, maxBoxes: 3, shown: '3/3', spoken: '3 of 3 boxes' },
+    { count: 5, maxBoxes: 3, shown: '3/3', spoken: '3 of 3 boxes' },
+    { count: 0, maxBoxes: 1, shown: '0/1', spoken: '0 of 1 box' },
+    { count: 1, maxBoxes: 1, shown: '1/1', spoken: '1 of 1 box' }
+  ])(
+    'shows $shown and reads "$spoken" for $count boxes with a limit of $maxBoxes',
+    ({ count, maxBoxes, shown, spoken }) => {
+      renderWithLimit(
+        Array.from({ length: count }, () => box()),
+        maxBoxes
+      )
+      const counter = screen.getByTestId('bounding-boxes-count')
+      expect(within(counter).getByText(shown)).toHaveAttribute(
+        'aria-hidden',
+        'true'
+      )
+      expect(within(counter).getByText(spoken)).toHaveClass('sr-only')
+    }
+  )
 })

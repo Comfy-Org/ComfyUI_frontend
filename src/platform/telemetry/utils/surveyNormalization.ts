@@ -9,7 +9,7 @@ import Fuse from 'fuse.js'
 import type {
   SurveyResponses,
   SurveyResponsesNormalized
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 interface CategoryMapping {
   name: string

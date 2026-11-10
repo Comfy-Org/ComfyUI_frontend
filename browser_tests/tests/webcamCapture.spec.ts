@@ -112,12 +112,8 @@ class WebcamCaptureFixture {
       exact: true
     })
     this.errorMessage = this.node.getByText('Unable to load webcam')
-    this.widthInput = vueNodes.getInputNumberControls(
-      vueNodes.getWidgetByName(NODE_TITLE, 'width')
-    ).input
-    this.heightInput = vueNodes.getInputNumberControls(
-      vueNodes.getWidgetByName(NODE_TITLE, 'height')
-    ).input
+    this.widthInput = vueNodes.getWidgetByName(NODE_TITLE, 'width')
+    this.heightInput = vueNodes.getWidgetByName(NODE_TITLE, 'height')
     this.captureOnQueueToggle = this.node.getByRole('switch', {
       name: 'capture_on_queue'
     })

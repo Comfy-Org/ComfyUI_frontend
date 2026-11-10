@@ -2,20 +2,21 @@ import type {
   LGraphNode,
   Reroute,
   SubgraphInput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 
 import type { RenderLink } from './RenderLink'
 

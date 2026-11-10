@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
 

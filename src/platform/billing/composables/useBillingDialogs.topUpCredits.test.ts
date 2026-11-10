@@ -1,11 +1,12 @@
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
@@ -17,7 +18,7 @@ import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaym
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockRumAddAction = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
@@ -83,6 +84,7 @@ describe('showTopUpCreditsDialog', () => {
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
 
     await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -104,59 +106,80 @@ describe('showTopUpCreditsDialog', () => {
 
   it.for([
     {
-      type: 'workspace',
-      canTopUp: false,
       denial: 'payment_past_due',
-      opensRecovery: true,
-      storeDialogs: []
+      recovery: 1,
+      dialogs: [],
+      plans: 0,
+      toast: null
     },
     {
-      type: 'legacy',
-      canTopUp: false,
-      denial: 'payment_past_due',
-      opensRecovery: true,
-      storeDialogs: []
-    },
-    {
-      type: 'workspace',
-      canTopUp: false,
       denial: 'not_workspace_owner',
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
+      recovery: 0,
+      dialogs: ['insufficient-credits-member'],
+      plans: 0,
+      toast: null
+    },
+    { denial: 'free_plan', recovery: 0, dialogs: [], plans: 1, toast: null },
+    {
+      denial: 'no_subscription',
+      recovery: 0,
+      dialogs: [],
+      plans: 1,
+      toast: null
     },
     {
-      type: 'workspace',
-      canTopUp: false,
-      denial: 'free_plan',
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
-    },
-    {
-      type: 'workspace',
-      canTopUp: false,
-      denial: undefined,
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
-    },
-    {
-      type: 'legacy',
-      canTopUp: false,
       denial: 'subscription_ended',
-      opensRecovery: false,
-      storeDialogs: []
+      recovery: 0,
+      dialogs: [],
+      plans: 1,
+      toast: null
     },
     {
-      type: 'workspace',
-      canTopUp: true,
+      denial: 'topup_purchases_paused',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'credits.topUp.deniedTopupsPaused'
+    },
+    {
+      denial: 'creator_only_provisioning',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'credits.topUp.deniedCreatorOnly'
+    },
+    {
+      denial: 'tier_not_self_serve',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.salesManaged'
+    },
+    {
+      denial: 'not_a_member',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.notAMember'
+    },
+    {
+      denial: 'subscription_status_unrecognized',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.billingStateUnknown'
+    },
+    {
       denial: undefined,
-      opensRecovery: false,
-      storeDialogs: ['top-up-credits']
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.billingStateUnknown'
     }
   ] as const)(
-    'routes a $type top-up denied as $denial (recovery: $opensRecovery, dialogs: $storeDialogs)',
-    async ({ type, canTopUp, denial, opensRecovery, storeDialogs }) => {
-      useBillingContext().type = computed(() => type)
-      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+    'routes a denied top-up served as $denial',
+    async ({ denial, recovery, dialogs, plans, toast }) => {
+      useBillingCapabilities().canTopUp = computed(() => false)
       useBillingCapabilities().topUpDenial = computed(() => denial)
 
       await useBillingDialogs().showTopUpCreditsDialog({
@@ -166,32 +189,13 @@ describe('showTopUpCreditsDialog', () => {
       const storeDialogKeys = vi
         .mocked(useDialogStore().showDialog)
         .mock.calls.map(([args]) => args.key)
-      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(
-        opensRecovery ? 1 : 0
-      )
-      expect(storeDialogKeys).toEqual(storeDialogs)
-      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(recovery)
+      expect(storeDialogKeys).toEqual(dialogs)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(plans)
+      if (toast === null) expect(useToast().error).not.toHaveBeenCalled()
+      else expect(useToast().error).toHaveBeenCalledExactlyOnceWith(toast)
     }
   )
-
-  it('uses the server capability on legacy billing', async () => {
-    useBillingContext().type = computed(() => 'legacy')
-
-    await useBillingDialogs().showTopUpCreditsDialog()
-
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.key).toBe('top-up-credits')
-  })
-
-  it('does not show workspace-admin copy for denied legacy billing', async () => {
-    useBillingContext().type = computed(() => 'legacy')
-    useBillingCapabilities().canTopUp = computed(() => false)
-
-    await useBillingDialogs().showTopUpCreditsDialog()
-
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
-  })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
     const canTopUp = ref(false)
@@ -225,20 +229,6 @@ describe('showTopUpCreditsDialog', () => {
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
-  it('does not route a denied top-up to subscription even when self-serve subscribe is allowed', async () => {
-    useBillingContext().type = computed(() => 'legacy')
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true,
-      source: 'agent_paywall'
-    })
-
-    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-  })
-
   it('passes the surface to the workspace rail content', async () => {
     await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true,
@@ -261,22 +251,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.component).toBe(TopUpCreditsDialogContentWorkspace)
-  })
-
-  it('passes the surface to the legacy rail content too', async () => {
-    useBillingContext().type = computed(() => 'legacy')
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true,
-      source: 'agent_paywall'
-    })
-
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.props).toEqual({
-      isInsufficientCredits: true,
-      source: 'agent_paywall'
-    })
+    expect(args.component).toBe(AddCreditsDialogContent)
   })
 
   describe('add-credits entries reported to Datadog', () => {
@@ -344,7 +319,7 @@ describe('showTopUpCreditsDialog', () => {
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false
-      useBillingContext().type = computed(() => 'legacy')
+      useBillingContext().type = computed(() => 'workspace')
     })
 
     it('opens the purchase dialog when the capability endpoint defaults open', async () => {

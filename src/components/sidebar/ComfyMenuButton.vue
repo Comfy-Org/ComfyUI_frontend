@@ -49,23 +49,23 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingPanelType } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import type { SettingPanelType } from '@comfyorg/settings-core/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useThemeService } from '@/platform/theme/themeService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem } from '@/stores/menuItemStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
 const menuItemStore = useMenuItemStore()
 const commandStore = useCommandStore()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
+const themeStore = useThemeStore()
+const themeService = useThemeService()
 const settingsDialog = useSettingsDialog()
 const settingStore = useSettingStore()
 
@@ -135,12 +135,12 @@ const showManageExtensions = async () => {
 }
 
 const themeMenuItems = computed(() => {
-  return colorPaletteStore.palettes.map<MenuItem>((palette) => ({
+  return themeStore.presets.map<MenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
-    checked: () => colorPaletteStore.activePaletteId === palette.id,
+    checked: () => themeStore.activePresetId === palette.id,
     command: async () => {
-      await colorPaletteService.loadColorPalette(palette.id)
+      await themeService.setActiveTheme(palette.id)
     }
   }))
 })
