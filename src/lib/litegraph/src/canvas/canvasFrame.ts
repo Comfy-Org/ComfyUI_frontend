@@ -20,7 +20,5 @@ export function onCanvasFrame(
 }
 
 export function runCanvasFramePhase(canvas: object, phase: FramePhase): void {
-  const callbacks = frames.get(canvas)?.[phase]
-  if (!callbacks) return
-  for (const callback of callbacks) callback()
+  for (const callback of frames.get(canvas)?.[phase] ?? []) callback()
 }
