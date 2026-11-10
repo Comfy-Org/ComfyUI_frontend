@@ -6,6 +6,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
@@ -24,6 +26,11 @@ vi.mock(import('@/utils/imageUtil'), () => ({
 }))
 
 describe('useNodeVideo', () => {
+  function previewElement(node: LGraphNode) {
+    const widget = node.widgets?.[0]
+    return widget && isDOMWidget(widget) ? widget.element : undefined
+  }
+
   function trackCreatedVideos() {
     const createdVideos: HTMLVideoElement[] = []
     const realCreateElement = document.createElement.bind(document)
@@ -81,7 +88,7 @@ describe('useNodeVideo', () => {
     await failBothAttempts(createdVideos, 2)
 
     expect(node.videoContainer?.contains(video)).toBe(false)
-    expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
+    expect(previewElement(node)).toBe(node.videoContainer)
     expect(node.videoContainer?.textContent).toBe('Video failed to load')
   })
 
@@ -106,7 +113,7 @@ describe('useNodeVideo', () => {
     useNodeVideo(node).showPreview()
     await failBothAttempts(createdVideos, 4)
 
-    expect(node.widgets?.[0]?.element).toBe(node.videoContainer)
+    expect(previewElement(node)).toBe(node.videoContainer)
     expect(node.videoContainer?.textContent).toContain("can't play this video")
   })
 
@@ -182,7 +189,7 @@ describe('useNodeVideo', () => {
     next.onloadeddata?.(new Event('loadeddata'))
     await vi.advanceTimersByTimeAsync(1)
 
-    expect(node.widgets?.[0]?.element.contains(next)).toBe(true)
+    expect(previewElement(node)?.contains(next)).toBe(true)
   })
 
   it('creates a video-preview widget and forwards canvas events while alive', async () => {
