@@ -1,9 +1,9 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
 
@@ -16,17 +16,7 @@ const i18n = createI18n({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
-  assetService: {
-    shouldUseWidgetAssetPicker: vi.fn(() => true),
-    isWidgetAssetPickerEnabled: vi.fn(() => true)
-  }
-}))
-
-import { assetService } from '@/platform/assets/services/assetService'
-const mockShouldUseWidgetAssetPicker = vi.mocked(
-  assetService.shouldUseWidgetAssetPicker
-)
+vi.mock(import('@/platform/assets/services/assetService'))
 
 const stubs = {
   WidgetSelectDropdown: {
@@ -50,7 +40,9 @@ describe('WidgetSelect asset mode', () => {
     })
 
   beforeEach(() => {
-    mockShouldUseWidgetAssetPicker.mockReturnValue(true)
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
+    vi.mocked(assetService.isWidgetAssetPickerEnabled).mockReturnValue(true)
   })
 
   const renderWidget = () => {
@@ -61,7 +53,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, getActivePinia()!, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs
       }
     })
@@ -75,7 +67,7 @@ describe('WidgetSelect asset mode', () => {
   })
 
   it('uses default widget when shouldUseWidgetAssetPicker returns false', () => {
-    mockShouldUseWidgetAssetPicker.mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
     renderWidget()
 
     expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
@@ -100,7 +92,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'ImageLoader'
       },
       global: {
-        plugins: [PrimeVue, getActivePinia()!, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           WidgetSelectDefault: stubs.WidgetSelectDefault,
           WidgetWithControl: stubs.WidgetWithControl

@@ -8,40 +8,46 @@
  */
 
 import { debounce } from 'es-toolkit'
-import { useToast } from 'primevue'
-import { tryOnScopeDispose, whenever } from '@vueuse/core'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { tryOnScopeDispose, until, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
+import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import type { StartupOutcome } from '../base/draftTypes'
+import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
-} from '../base/storageIO'
-import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+} from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -51,14 +57,22 @@ export function useWorkflowPersistenceV2() {
   const router = useRouter()
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
+  const linkedWorkflowUrlLoader = useLinkedWorkflowUrlLoader()
+  let openedLinkedWorkflow = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
+  const LOCAL_HANDOFF_NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
+  const { flags } = useFeatureFlags()
   const draftStore = useWorkflowDraftStoreV2()
+  draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { isAuthInitialized, onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let resolvedAuthSubject: string | null = null
+  let authTransitionVersion = 0
+  let authTransition = Promise.resolve()
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -111,10 +125,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     if (!saved) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft')
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToSaveDraft')
       })
       return
     }
@@ -142,25 +154,12 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
-  })
-  onUserResolved(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
+  const isWorkspaceInitConcluded = () =>
+    (teamWorkspaceStore.initState === 'ready' &&
+      teamWorkspaceStore.activeWorkspaceId !== null) ||
+    teamWorkspaceStore.initState === 'error'
 
-    // Release the fence once initialization concludes either way: a resolved
-    // workspace, or a permanent init failure. Waiting on 'ready' alone would
-    // leave writes blocked for the rest of the session if init settles on
-    // 'error' (e.g. no workspaces available, retries exhausted).
-    const isWorkspaceInitConcluded = () =>
-      (teamWorkspaceStore.initState === 'ready' &&
-        teamWorkspaceStore.activeWorkspaceId !== null) ||
-      teamWorkspaceStore.initState === 'error'
+  function resumePersistenceWhenWorkspaceIsReady(): void {
     if (isWorkspaceInitConcluded()) {
       completeWorkflowLogoutTransition()
       return
@@ -174,32 +173,98 @@ export function useWorkflowPersistenceV2() {
       },
       { once: true }
     )
+  }
+
+  async function waitForRestoreIdentity(): Promise<() => boolean> {
+    if (isCloud && !isAuthInitialized.value)
+      await until(isAuthInitialized).toBe(true)
+    const restoreVersion = authTransitionVersion
+    if (isCloud) await authTransition
+    return () => restoreVersion === authTransitionVersion
+  }
+
+  async function waitForWorkspaceInitialization(): Promise<void> {
+    if (isWorkspaceInitConcluded()) return
+    await until(isWorkspaceInitConcluded).toBe(true)
+  }
+
+  onUserLogout(() => {
+    if (!isCloud) return
+    authTransitionVersion++
+    resolvedAuthSubject = null
+    draftStore.setAuthSubject(null)
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearAllWorkspaceStorage()
+  })
+  onUserResolved((user) => {
+    if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
+    const previousSubject = resolvedAuthSubject
+    resolvedAuthSubject = user.id
+
+    if (!previousSubject || previousSubject === user.id) {
+      draftStore.setAuthSubject(user.id)
+      resumePersistenceWhenWorkspaceIsReady()
+      return
+    }
+
+    const transitionVersion = ++authTransitionVersion
+
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearWorkflowRestoreState()
+    authTransition = authTransition
+      .then(async () => {
+        if (transitionVersion !== authTransitionVersion) return
+        workflowStore.activeWorkflow = null
+        try {
+          await useWorkflowService().loadBlankWorkflow()
+          if (transitionVersion !== authTransitionVersion) return
+          draftStore.setAuthSubject(user.id)
+          await waitForWorkspaceInitialization()
+          if (transitionVersion !== authTransitionVersion) return
+          await draftStore.loadPersistedWorkflow({
+            fallbackToLatestDraft: true
+          })
+        } finally {
+          if (transitionVersion === authTransitionVersion) {
+            draftStore.setAuthSubject(user.id)
+            completeWorkflowLogoutTransition()
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Error switching workflow persistence identity', error)
+      })
   })
 
-  const loadPreviousWorkflowFromStorage = async () => {
+  const loadPreviousWorkflowFromStorage = async (isCurrent: () => boolean) => {
     const sessionPath = tabState.getActivePath()
 
-    // 1. Try draft for session path
     if (
       sessionPath &&
       (await draftStore.loadPersistedWorkflow({
-        preferredPath: sessionPath
+        preferredPath: sessionPath,
+        isCurrent
       }))
     )
       return true
 
-    // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
+    if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved)
+      if (
+        saved &&
+        (await useWorkflowService().openWorkflow(saved, { isCurrent }))
+      )
         return true
-      }
     }
 
-    // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
-      fallbackToLatestDraft: true
+      fallbackToLatestDraft: true,
+      isCurrent
     })
   }
 
@@ -231,7 +296,13 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
+  const hasLocalHandoffIntent = () =>
+    flags.openOnCloudEnabled &&
+    hasPreservedIntent(LOCAL_HANDOFF_NAMESPACE, LOCAL_HANDOFF_PARAM)
+
+  const resolveStartupOutcome = async (
+    workflowLinkPending = false
+  ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
       return 'restored'
@@ -240,7 +311,10 @@ export function useWorkflowPersistenceV2() {
     await useWorkflowService().loadBlankWorkflow()
     await nextTick()
     discardStartupBlankDraft()
-    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+    return workflowLinkPending ||
+      hasSharedWorkflowIntent() ||
+      hasTemplateUrlIntent() ||
+      hasLocalHandoffIntent()
       ? 'url-intent'
       : 'fresh'
   }
@@ -258,23 +332,33 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
+    const linkedWorkflow =
+      await linkedWorkflowUrlLoader.openLinkedWorkflowFromUrl()
+    const workflowLinkPending = linkedWorkflow === 'pending'
+    openedLinkedWorkflow = linkedWorkflow === 'opened'
+    if (openedLinkedWorkflow) return 'restored'
+
     if (!workflowPersistenceEnabled.value) {
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(workflowLinkPending)
     }
+
+    const isRestoreCurrent = await waitForRestoreIdentity()
 
     try {
       if (getRestorableTabState()) {
-        // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
-        // fallback here so the saved tab order and active index drive startup.
         return 'restored'
       }
 
       await workflowStore.loadWorkflows()
-      const restored = await loadPreviousWorkflowFromStorage()
-      return restored ? 'restored' : await resolveStartupOutcome()
+      if (!isRestoreCurrent()) return 'restored'
+      const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
+      if (!isRestoreCurrent()) return 'restored'
+      return restored
+        ? 'restored'
+        : await resolveStartupOutcome(workflowLinkPending)
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(workflowLinkPending)
     }
   }
 
@@ -355,10 +439,31 @@ export function useWorkflowPersistenceV2() {
    * GraphCanvas must call this during startup when workflow persistence is enabled.
    */
   const restoreWorkflowTabsState = async () => {
+    try {
+      await restoreSavedTabs()
+    } finally {
+      workflowStore.markTabsRestored()
+    }
+  }
+
+  const stampWithDraftTime = (
+    restored: ComfyWorkflow,
+    draftPath: string,
+    draftData: ComfyWorkflowJSON,
+    draftUpdatedAt: number
+  ) => {
+    const builtFromThisDraft =
+      restored.path === draftPath && isValidUuid(draftData.id)
+    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+  }
+
+  const restoreSavedTabs = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
     }
+
+    const isRestoreCurrent = await waitForRestoreIdentity()
 
     try {
       await workflowStore.loadWorkflows()
@@ -369,7 +474,9 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    const restorableTabState = getRestorableTabState()
+    const restorableTabState = isRestoreCurrent()
+      ? getRestorableTabState()
+      : null
     if (!restorableTabState) {
       tabStateRestored = true
       return
@@ -383,7 +490,8 @@ export function useWorkflowPersistenceV2() {
       if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        workflowStore.createTemporary(draft.name, workflowData)
+        const restored = workflowStore.createTemporary(draft.name, workflowData)
+        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
@@ -400,8 +508,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
+    if (openedLinkedWorkflow) return
 
-    // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath
       ? workflowStore.getWorkflowByPath(activePath)

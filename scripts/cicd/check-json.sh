@@ -61,9 +61,16 @@ if [ "$debug" -eq 1 ]; then
   printf '  %s\n' "${json_files[@]}"
 fi
 
+# A file passes when it parses and holds exactly one JSON value. Any value
+# counts, null and false included. Count the values instead of relying on
+# `jq -e`: its exit status for an empty input differs between jq releases
+# (jq 1.6 exits 0, jq 1.7 exits 4).
+# shellcheck disable=SC2016
+count_values='reduce inputs as $_ (0; . + 1) | if . == 1 then empty else error("expected exactly one JSON value, found \(.)") end'
+
 failed=0
 for file in "${json_files[@]}"; do
-  if ! jq -e . "$file" >/dev/null; then
+  if ! jq -n "$count_values" "$file" >/dev/null; then
     echo "Invalid JSON syntax: $file" >&2
     failed=1
   fi

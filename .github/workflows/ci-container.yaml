@@ -5,11 +5,13 @@ on:
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
+      - '.nvmrc'
   push:
     branches: [main]
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
+      - '.nvmrc'
   workflow_dispatch:
 
 permissions:

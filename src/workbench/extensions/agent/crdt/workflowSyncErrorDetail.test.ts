@@ -7,6 +7,10 @@ const translate = (key: string): string => {
     return 'Your canvas is unchanged.'
   if (key === 'agent.workflowSyncFailedDetailCatalogMismatch')
     return 'Your node catalog is incompatible.'
+  if (key === 'agent.workflowSyncFailedDetailStaleClient')
+    return 'Reload the page to see the latest changes.'
+  if (key === 'agent.workflowSyncFailedDetailStaleHost')
+    return 'This page is ahead of the agent service.'
   return key
 }
 
@@ -27,6 +31,28 @@ describe('formatWorkflowSyncErrorDetail', () => {
     expect(
       formatWorkflowSyncErrorDetail(translate, undefined, 'catalog_mismatch')
     ).toBe('Your node catalog is incompatible.')
+  })
+
+  it('omits raw context that contradicts catalog-mismatch recovery', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(
+        translate,
+        'the document was minted under a different widget catalog; retrying will not help',
+        'catalog_mismatch'
+      )
+    ).toBe('Your node catalog is incompatible.')
+  })
+
+  it('uses the reload copy when this page is older than the document', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'stale_client_schema')
+    ).toBe('Reload the page to see the latest changes.')
+  })
+
+  it('uses the ahead-of-service copy when the document is older than this page', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'stale_host_schema')
+    ).toBe('This page is ahead of the agent service.')
   })
 
   it('falls back to the schema-mismatch copy for an undifferentiated code', () => {

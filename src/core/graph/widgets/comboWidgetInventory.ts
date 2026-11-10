@@ -1,4 +1,4 @@
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 
 export type ComboWidgetInventoryStatus = 'loading' | 'ready' | 'error'
 

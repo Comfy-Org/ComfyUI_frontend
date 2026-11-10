@@ -1,5 +1,8 @@
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { TreeNode } from '@/types/treeExplorerTypes'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import type {
+  RenderedTreeExplorerNode,
+  TreeNode
+} from '@/types/treeExplorerTypes'
 
 export type GroupingStrategyId = 'category' | 'module' | 'source'
 export type SortingStrategyId = 'original' | 'alphabetical'
@@ -56,6 +59,12 @@ export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
   comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
   extensions: 'sideToolbar.nodeLibraryTab.sections.extensions',
   partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes'
+}
+
+export interface NodeLibrarySection<T = unknown> {
+  category?: NodeCategoryId
+  title?: string
+  root: RenderedTreeExplorerNode<T>
 }
 
 export interface NodeSection {

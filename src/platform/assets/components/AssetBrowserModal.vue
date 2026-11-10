@@ -1,6 +1,7 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    :labels="modalLayoutLabels"
     data-testid="asset-browser-modal"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
@@ -9,7 +10,7 @@
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
-      <i class="icon-[comfy--ai-model] size-4" />
+      <i class="icon-[comfy--ai-model]" />
       <h2 class="flex-auto text-base font-semibold text-nowrap select-none">
         {{ displayTitle }}
       </h2>
@@ -24,15 +25,15 @@
 
     <template #header>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
         class="flex w-full items-center justify-between gap-2"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       >
         <SearchInput
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
           :autofocus="true"
           size="lg"
-          :aria-label="$t('assetBrowser.searchModels')"
+          :accessible-label="$t('assetBrowser.searchModels')"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-lg flex-1"
         />
@@ -56,13 +57,15 @@
       <AssetFilterBar
         :assets="categoryFilteredAssets"
         :show-ownership-filter
-        :content-style="selectContentStyle"
         @filter-change="updateFilters"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       />
     </template>
 
     <template #content>
+      <p v-if="loadError" role="alert" class="px-4 text-destructive">
+        {{ $t('assetBrowser.errorLoadingModels') }}
+      </p>
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
@@ -72,20 +75,15 @@
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
         @asset-show-info="handleShowInfo"
-        @click="focusedAsset = null"
+        @click="focusedAssetId = null"
       />
     </template>
 
     <template #rightPanel>
-      <ModelInfoPanel
-        v-if="focusedAsset"
-        :asset="focusedAsset"
-        :cache-key
-        :select-content-style="selectContentStyle"
-      />
+      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
       <div
         v-else
-        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
+        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted-foreground"
       >
         {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
       </div>
@@ -95,15 +93,14 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed, provide, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
@@ -116,15 +113,13 @@ import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtil
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 
 const props = defineProps<AssetBrowserModalProps>()
 
@@ -133,7 +128,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-provide(OnCloseKey, props.onClose ?? (() => {}))
+const modalLayoutLabels = useModalLayoutLabels()
 
 const cacheKey = computed(() => {
   if (props.nodeType) return props.nodeType
@@ -143,6 +138,10 @@ const cacheKey = computed(() => {
 
 const fetchedAssets = computed(
   () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
+)
+
+const loadError = computed(() =>
+  props.overrideAssets ? undefined : assetStore.getError(cacheKey.value)
 )
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
@@ -179,7 +178,12 @@ const {
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
-const focusedAsset = ref<AssetDisplayItem | null>(null)
+const focusedAssetId = ref<string | null>(null)
+const focusedAsset = computed(
+  () =>
+    filteredAssets.value.find((asset) => asset.id === focusedAssetId.value) ??
+    null
+)
 const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
@@ -254,11 +258,11 @@ function handleClose() {
 }
 
 function handleAssetFocus(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
 }
 
 function handleShowInfo(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
   isRightPanelOpen.value = true
 }
 

@@ -9,14 +9,13 @@ const ROOT = join(import.meta.dirname, '..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'unified-report.ts')
 
-function renderWithoutSizeData(sizeStatus: string): string {
-  const cwd = mkdtempSync(join(tmpdir(), 'unified-report-'))
+function render(args: string[]): string {
+  const dir = mkdtempSync(join(tmpdir(), 'unified-report-'))
   try {
-    const result = spawnSync(
-      TSX,
-      [SCRIPT, `--size-status=${sizeStatus}`, '--perf-status=skip'],
-      { cwd, encoding: 'utf8' }
-    )
+    const result = spawnSync(TSX, [SCRIPT, ...args], {
+      cwd: dir,
+      encoding: 'utf8'
+    })
     if (result.status !== 0) {
       throw new Error(
         `unified-report.ts exited ${result.status}: ${result.stderr}`
@@ -24,13 +23,15 @@ function renderWithoutSizeData(sizeStatus: string): string {
     }
     return result.stdout
   } finally {
-    rmSync(cwd, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true })
   }
 }
 
-describe('unified-report bundle size section', () => {
-  it.for(['skip', 'ready'])('is omitted for size status %s', (sizeStatus) => {
-    expect(renderWithoutSizeData(sizeStatus)).not.toContain('Bundle Size')
+describe('unified-report', () => {
+  it.for(['skip', 'ready'])('omits size without data for %s', (sizeStatus) => {
+    expect(
+      render([`--size-status=${sizeStatus}`, '--perf-status=skip'])
+    ).not.toContain('Bundle')
   })
 
   it.for([
@@ -39,10 +40,32 @@ describe('unified-report bundle size section', () => {
   ])(
     'says "$message" for size status $sizeStatus',
     ({ sizeStatus, message }) => {
-      const output = renderWithoutSizeData(sizeStatus)
+      const output = render([
+        `--size-status=${sizeStatus}`,
+        '--perf-status=skip'
+      ])
 
-      expect(output).toContain('## 📦 Bundle Size')
+      expect(output).toContain('## 📦 Bundle:')
       expect(output).toContain(message)
     }
   )
+
+  it('separates each section from the one before it with a blank line', () => {
+    const output = render([
+      '--size-status=failed',
+      '--perf-status=pending',
+      '--coverage-status=failed'
+    ])
+
+    expect(output).toBe(
+      [
+        '## 📦 Bundle: ⚠️ Size data collection failed — check the CI workflow logs',
+        '',
+        '## ⚡ Performance: ⏳ Performance tests in progress…',
+        '',
+        '## 🔬 E2E Coverage: ⚠️ Coverage collection failed — check the CI workflow logs',
+        ''
+      ].join('\n')
+    )
+  })
 })

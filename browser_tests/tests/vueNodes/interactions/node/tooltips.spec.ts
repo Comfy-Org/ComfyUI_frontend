@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   test.use({
@@ -12,11 +13,11 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   })
 
   test('widget value tooltips', async ({ comfyPage }) => {
-    const tooltip = comfyPage.page.locator('.p-tooltip-text')
+    const tooltip = new Tooltip(comfyPage.page).open
     await comfyPage.vueNodes.getWidgetByName('load check', 'ckpt_name').hover()
     await expect(tooltip, 'displays for combos').toContainText('v1-5-pruned')
 
-    await comfyPage.vueNodes.getWidgetByName('ksampler', 'seed').hover()
+    await comfyPage.vueNodes.getWidgetRowByLabel('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
 
     await comfyPage.vueNodes.getNodeLocator('6').getByLabel('text').hover()

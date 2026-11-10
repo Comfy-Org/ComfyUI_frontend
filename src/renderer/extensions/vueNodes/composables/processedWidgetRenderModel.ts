@@ -1,15 +1,10 @@
-import type { TooltipOptions } from 'primevue'
-
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   WidgetGridItem,
   WidgetSlotMetadata
@@ -19,7 +14,7 @@ import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/Widg
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -29,11 +24,14 @@ import {
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import type { LinkTopology } from '@/types/linkTopology'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -43,7 +41,7 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,
@@ -71,18 +69,15 @@ interface WidgetErrorTarget {
 
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
-  hasLayoutSize: boolean
   hasError: boolean
-  widgetId: WidgetId
-  tooltipConfig: TooltipOptions
+  hasLayoutSize: boolean
+  tooltipText: string
   updateHandler: (value: WidgetValue) => void
+  widgetId: WidgetId
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipConfig: (
-    widget: WidgetTooltipSource,
-    fullVal?: string
-  ) => TooltipOptions
+  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -412,9 +407,7 @@ function processWidget(
     name: widgetState.name,
     type,
     value,
-    borderStyle: advanced
-      ? 'ring ring-component-node-widget-advanced'
-      : undefined,
+    borderStyle: advanced ? 'ring ring-primary' : undefined,
     callback: updateHandler,
     controlWidget,
     label: widgetState.label,
@@ -426,13 +419,13 @@ function processWidget(
       : undefined
   }
 
-  const valueTooltip =
+  const fullValue =
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
+  const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
+    fullValue
   )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
@@ -466,7 +459,7 @@ function processWidget(
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
-    tooltipConfig,
+    tooltipText,
     slotMetadata: slotInfo
   }
 }

@@ -27,11 +27,7 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
     })
 
     test('slow empty-canvas click clears selection without panning', async ({
@@ -39,14 +35,14 @@ test.describe(
     }) => {
       const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
       await a.title.click()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
       const before = await a.boundingBox()
       if (!before) throw new Error('Node A must be rendered')
       const empty = await comfyPage.canvasOps.toAbsolute({ x: 100, y: 100 })
 
       await pressMoveRelease(comfyPage, empty, { x: 1, y: 0 }, 150)
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
       await expect(comfyPage.selectionToolbox).toBeHidden()
       await expect.poll(() => a.boundingBox()).toEqual(before)
     })
@@ -61,7 +57,7 @@ test.describe(
 
       await pressMoveRelease(comfyPage, title, { x: 4, y: 0 })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '1'
       )
@@ -78,7 +74,7 @@ test.describe(
       await pressMoveRelease(comfyPage, title, { x: 4, y: 0 }, 150)
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
       await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
     })
 
@@ -92,7 +88,7 @@ test.describe(
 
       await pressMoveRelease(comfyPage, title, { x: 12, y: 0 })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '1'
       )
@@ -168,7 +164,7 @@ test.describe(
       await expect.poll(() => nodeZIndex(a.root)).toBe(before)
       await press.disposeAsync()
       await comfyPage.nextFrame()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '1'
       )
@@ -195,7 +191,7 @@ test.describe(
         .poll(async () => {
           const aAfter = await a.boundingBox()
           const bAfter = await b.boundingBox()
-          if (!aAfter || !bAfter) throw new Error('Both nodes must be rendered')
+          if (!aAfter || !bAfter) return null
           return { x: aAfter.x - bAfter.x, y: aAfter.y - bAfter.y }
         }, 'Locked drag may pan but must not move A relative to B')
         .toEqual({ x: aBefore.x - bBefore.x, y: aBefore.y - bBefore.y })
@@ -210,14 +206,14 @@ test.describe(
       const c = await comfyPage.vueNodes.getFixtureByTitle('Node C')
       await a.title.click()
       await b.title.click({ modifiers: ['Shift'] })
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
       await c.title.hover()
 
       await using press = await comfyMouse.hold({ button: 'right' })
       await comfyPage.nextFrame()
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '3'
       )

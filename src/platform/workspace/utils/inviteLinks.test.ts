@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   buildInviteLink,
@@ -15,7 +15,7 @@ function stubClipboard(writeText: (text: string) => Promise<void>) {
   })
 }
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 describe('buildInviteLink', () => {
   it('builds an ?invite=TOKEN link on the current origin', () => {
@@ -118,7 +118,7 @@ describe('copyTextSilently', () => {
     vi.mocked(reportError).mockImplementation(() => undefined)
 
     await expect(copyTextSilently('text')).resolves.toBe(false)
-    expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'error_copying_invite_link' })
     )

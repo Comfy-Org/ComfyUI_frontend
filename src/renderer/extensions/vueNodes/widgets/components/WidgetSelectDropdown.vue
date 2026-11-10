@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, toValue } from 'vue'
+import { computed, provide, ref, toRef, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -10,7 +10,7 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
@@ -31,6 +31,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const inputId = useId()
 
 provide(
   AssetKindKey,
@@ -72,7 +73,7 @@ const getAssetData = () => {
 const assetData = getAssetData()
 
 const {
-  dropdownItems,
+  dropdownItems: items,
   displayItems,
   filterSelected,
   filterOptions,
@@ -82,7 +83,7 @@ const {
   baseModelSelected,
   showBaseModelFilter,
   baseModelOptions,
-  selectedSet
+  selectedSet: selected
 } = useWidgetSelectItems({
   values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
@@ -94,14 +95,15 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
+  dropdownItems: items,
+  locatorId: props.widget.nodeLocatorId,
   modelValue: stringModelValue,
-  dropdownItems,
-  widget: () => props.widget,
   uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadSubfolder: () => props.uploadSubfolder,
+  widget: () => props.widget
 })
 
-const mediaPlaceholder = computed(() => {
+const placeholder = computed(() => {
   const options = props.widget.options
 
   if (options?.placeholder) {
@@ -131,9 +133,7 @@ const uploadable = computed(() => {
   return props.allowUpload === true
 })
 
-const acceptTypes = computed(() => {
-  // Be permissive with accept types because backend uses libraries
-  // that can handle a wide range of formats
+const accept = computed(() => {
   switch (props.assetKind) {
     case 'image':
       return 'image/*,.exr'
@@ -159,19 +159,20 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField :widget :input-id root-class="h-auto">
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
-      :selected="selectedSet"
-      :items="dropdownItems"
-      :display-items="displayItems"
-      :placeholder="mediaPlaceholder"
+      :input-id
+      :selected
+      :items
+      :display-items
+      :placeholder
       :multiple="false"
       :uploadable
-      :accept="acceptTypes"
+      :accept
       :filter-options
       :show-ownership-filter
       :ownership-options

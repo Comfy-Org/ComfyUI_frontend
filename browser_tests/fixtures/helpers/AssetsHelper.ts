@@ -6,11 +6,11 @@ import type {
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
 
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+  AssetDownloadWsMessage,
+  AssetExportWsMessage
+} from '@comfyorg/api-client/executionTypes'
 
 const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
@@ -142,6 +142,12 @@ export class AssetsHelper {
   async dispatchDownload(message: AssetDownloadWsMessage): Promise<void> {
     await this.page.evaluate((download) => {
       window.app!.api.dispatchCustomEvent('asset_download', download)
+    }, message)
+  }
+
+  async dispatchExport(message: AssetExportWsMessage): Promise<void> {
+    await this.page.evaluate((assetExport) => {
+      window.app!.api.dispatchCustomEvent('asset_export', assetExport)
     }, message)
   }
 

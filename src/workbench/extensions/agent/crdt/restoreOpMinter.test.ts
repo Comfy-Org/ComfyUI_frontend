@@ -1,8 +1,12 @@
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { GraphOperation } from './graphOperations'
+import { readDocWidgetValue } from './liveGraphApplier'
+import { mintWireOps } from './opEnvelope'
 import {
   attachRestoreOpMinter,
   notifyRestoreMintersAfterGraphConfigure,
@@ -10,6 +14,25 @@ import {
   notifyRestoreMintersGraphLoadError
 } from './restoreOpMinter'
 import type { RestoreOpMinter } from './restoreOpMinter'
+
+const CATALOG: WidgetCatalog = {
+  types: {
+    TestSource: { widget_order: ['image'] },
+    TestSink: { widget_order: [] }
+  }
+}
+
+function mintDocFrom(graph: LGraph) {
+  return mint(graph.serialize() as unknown as WorkflowJSON, CATALOG)
+}
+
+function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+  return applyOps(
+    doc,
+    mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
+    CATALOG
+  ).outcomes.map((outcome) => outcome.outcome)
+}
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -47,6 +70,7 @@ describe('attachRestoreOpMinter', () => {
   let bound: boolean
   let source: TestSource
   let sink: TestSink
+  let docInputs: readonly (string | undefined)[] | null
 
   /** Run `mutate` as the ChangeTracker would: inside a graph load bracket. */
   function restoreThrough(mutate: () => void): void {
@@ -60,6 +84,7 @@ describe('attachRestoreOpMinter', () => {
     minted = []
     restoring = true
     bound = true
+    docInputs = null
     source = new TestSource()
     sink = new TestSink()
     graph.add(source)
@@ -71,6 +96,7 @@ describe('attachRestoreOpMinter', () => {
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
+      docInputNames: () => docInputs,
       isRestoringState: () => restoring
     })
   })
@@ -117,6 +143,22 @@ describe('attachRestoreOpMinter', () => {
     ])
   })
 
+  it('maps a restored link target from live slot order to document order', () => {
+    sink.addInput('prompt', 'STRING')
+    docInputs = ['prompt', 'image']
+    sink.disconnectInput(0)
+
+    restoreThrough(() => source.connect(0, sink, 0))
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'connect',
+        to_node: sink.id,
+        to_slot: 1
+      })
+    ])
+  })
+
   it('mints a set_widget for a value the restore changed on a surviving node', () => {
     restoreThrough(() => {
       source.widgets![0].value = 'b.png'
@@ -127,10 +169,33 @@ describe('attachRestoreOpMinter', () => {
         op: 'set_widget',
         node_id: String(source.id),
         widget: 'image',
-        value: 'b.png',
-        old: 'a.png'
+        value: 'b.png'
       }
     ])
+  })
+
+  it('keeps a large widget restore inside the cost budget by leaving the previous value off the wire', () => {
+    const held = 'c'.repeat(140_000)
+    source.widgets![0].value = held
+    const doc = mintDocFrom(graph)
+    const counterfactualDoc = mintDocFrom(graph)
+
+    restoreThrough(() => {
+      source.widgets![0].value = `${held}x`
+    })
+
+    expect(minted).toHaveLength(1)
+    expect(minted[0]).not.toHaveProperty('old')
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(readDocWidgetValue(doc, String(source.id), 'image')).toBe(`${held}x`)
+    expect(
+      applyMinted(counterfactualDoc, [
+        { ...minted[0], old: held } as GraphOperation
+      ])
+    ).toEqual(['rejected'])
+
+    doc.destroy()
+    counterfactualDoc.destroy()
   })
 
   it.for([

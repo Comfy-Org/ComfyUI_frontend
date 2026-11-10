@@ -1,19 +1,28 @@
 import { useRouter } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
-import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
-import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
+import { usePricingTableUrlLoader } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { useTopUpUrlLoader } from '@/platform/billing/subscription/composables/useTopUpUrlLoader'
 import {
   BILLING_WEB_RETURN_PARAMS,
   STRIPE_RETURN_PARAMS
-} from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+} from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
+import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
+import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
+import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 interface UrlActionStep {
@@ -26,6 +35,8 @@ interface UrlActionStep {
 }
 
 type UrlActionLoaders = {
+  workflowLinkUrlLoader: ReturnType<typeof useWorkflowLinkUrlLoader> | null
+  deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
   workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
   inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
   createWorkspaceUrlLoader: ReturnType<
@@ -35,7 +46,7 @@ type UrlActionLoaders = {
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
-  paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
+  localHandoffUrlLoader: ReturnType<typeof useLocalHandoffUrlLoader> | null
 }
 
 /**
@@ -50,10 +61,16 @@ type UrlActionLoaders = {
  * rejected `router.replace` and returns normally, so a failed strip needs
  * this backstop rather than leaving the link live with no retry. A
  * successful switch reloads the page and stops the loop before this step
- * runs, so it never re-strips a live workspace switch.
+ * runs, so it never re-strips a live workspace switch. `deployment` likewise:
+ * the deployment link keeps both params only across its own switch reload,
+ * which also stops the loop first. `workflows` is opened at boot, which keeps
+ * it (and its preserved-query stash) beside a deployment link for the boot
+ * after the pick's reload; a link that did not reload ends here, stash too.
  */
 const HANDLED_PARAMS = [
   'workspace',
+  'deployment',
+  'workflows',
   'invite',
   'create_workspace',
   'pricing',
@@ -62,21 +79,87 @@ const HANDLED_PARAMS = [
   'topup',
   'settings',
   'assets',
+  LOCAL_HANDOFF_PARAM,
   ...STRIPE_RETURN_PARAMS,
   ...BILLING_WEB_RETURN_PARAMS
 ]
 
+function deploymentLinkSteps(
+  loader: UrlActionLoaders['deploymentUrlLoader']
+): UrlActionStep[] {
+  if (!loader) return []
+  return [
+    {
+      failureMessage: 'Failed to open deployment from URL:',
+      run: () => loader.loadDeploymentFromUrl()
+    }
+  ]
+}
+
+function workflowLinkSteps(
+  loader: UrlActionLoaders['workflowLinkUrlLoader']
+): UrlActionStep[] {
+  if (!loader) return []
+  return [
+    {
+      failureMessage: 'Failed to open the linked workflow from URL:',
+      run: async () => {
+        await loader.openWorkflowLinkFromUrl(true)
+      }
+    }
+  ]
+}
+
+function sweptWorkflowLinkParams(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  query: LocationQuery
+): string[] {
+  if (!loader) return []
+  const stashed = getPreservedQueryParam(
+    PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+    'workflowId'
+  )
+  if (stashed !== undefined && loader.isLinkSettled(stashed))
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID)
+  return 'workflowId' in query && loader.isLinkSettled(query.workflowId)
+    ? ['workflowId']
+    : []
+}
+
+function sweepStep(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  router: ReturnType<typeof useRouter>
+): UrlActionStep {
+  return {
+    failureMessage: 'Failed to clear handled deep-link params from the URL:',
+    run: async () => {
+      if (loader?.hasLinkInFlight()) return
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+      const query = { ...router.currentRoute.value.query }
+      const params = [
+        ...HANDLED_PARAMS.filter((param) => param in query),
+        ...sweptWorkflowLinkParams(loader, query)
+      ]
+      if (params.length === 0) return
+      for (const param of params) delete query[param]
+      await router.replace({ query })
+    }
+  }
+}
+
 /**
- * Orders the deep-link loaders: workspace first, so `?invite`,
- * `?create_workspace`, `?pricing`, `?topup`, `?settings`, `?assets` all act
- * on the requested workspace rather than the one the app happened to load
- * with. Only the loaders present (cloud-gated by the caller) become steps.
+ * Orders the deep-link loaders: the deployment link first, since with
+ * `?deployment` it owns `?workspace` too (it switches, then picks after the
+ * reload); then workspace, so `?invite`, `?create_workspace`, `?pricing`,
+ * `?topup`, `?settings`, `?assets` all act on the requested workspace rather
+ * than the one the app happened to load with. Only the loaders present
+ * (cloud-gated by the caller) become steps.
  */
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
   router: ReturnType<typeof useRouter>
 ): UrlActionStep[] {
-  const steps: UrlActionStep[] = []
+  const steps = deploymentLinkSteps(loaders.deploymentUrlLoader)
 
   if (loaders.workspaceUrlLoader) {
     const loader = loaders.workspaceUrlLoader
@@ -85,6 +168,7 @@ function buildUrlActionSteps(
       run: () => loader.loadWorkspaceFromUrl()
     })
   }
+  steps.push(...workflowLinkSteps(loaders.workflowLinkUrlLoader))
   if (loaders.inviteUrlLoader) {
     const loader = loaders.inviteUrlLoader
     steps.push({
@@ -128,26 +212,15 @@ function buildUrlActionSteps(
       run: () => loader.loadAssetsFromUrl()
     })
   }
-  // Handles the return leg of a redirect payment (Stripe appends
-  // payment_intent/redirect_status params): strips the params and refreshes
-  // billing status so the pending checkout resumes polling immediately.
-  if (loaders.paymentReturnUrlLoader) {
-    const loader = loaders.paymentReturnUrlLoader
+  if (loaders.localHandoffUrlLoader) {
+    const loader = loaders.localHandoffUrlLoader
     steps.push({
-      failureMessage: 'Failed to handle payment return from URL:',
-      run: () => loader.loadPaymentReturnFromUrl()
+      failureMessage: 'Failed to open the workflow handed over from local:',
+      run: () => loader.loadLocalHandoffFromUrl()
     })
   }
 
-  steps.push({
-    failureMessage: 'Failed to clear handled deep-link params from the URL:',
-    run: async () => {
-      const query = { ...router.currentRoute.value.query }
-      if (!HANDLED_PARAMS.some((param) => param in query)) return
-      for (const param of HANDLED_PARAMS) delete query[param]
-      await router.replace({ query })
-    }
-  })
+  steps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
 
   return steps
 }
@@ -201,14 +274,16 @@ function useIfCloud<T>(create: () => T): T | null {
 
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?workspace`, `?invite`, `?create_workspace`, `?pricing`, `?topup`,
- * `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
+ * (`?deployment`, `?workspace`, `?workflowId`, `?invite`, `?create_workspace`, `?pricing`,
+ * `?topup`, `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
  * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
   const router = useRouter()
 
+  const workflowLinkUrlLoader = useIfCloud(useWorkflowLinkUrlLoader)
+  const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
   const createWorkspaceUrlLoader = useIfCloud(useCreateWorkspaceUrlLoader)
@@ -216,12 +291,14 @@ export function useUrlActionLoaders() {
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
-  const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
+  const localHandoffUrlLoader = useIfCloud(useLocalHandoffUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
     ? buildUrlActionSteps(
         {
+          workflowLinkUrlLoader,
+          deploymentUrlLoader,
           workspaceUrlLoader,
           inviteUrlLoader,
           createWorkspaceUrlLoader,
@@ -229,7 +306,7 @@ export function useUrlActionLoaders() {
           topUpUrlLoader,
           settingsUrlLoader,
           assetsUrlLoader,
-          paymentReturnUrlLoader
+          localHandoffUrlLoader
         },
         router
       )

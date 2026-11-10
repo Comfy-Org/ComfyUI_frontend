@@ -3,10 +3,10 @@
  * pure-module suites (credential cache, mint coordinator, state machine) that
  * only need the data fakes do not evaluate the whole client graph.
  */
-import type { AccountIdentity, SessionClientOptions } from '../session.js'
-import { createSessionClient } from '../session.js'
+import type { AccountIdentity, SessionClientOptions } from '#/core/session'
+import { createSessionClient } from '#/core/session'
 
-import { EXCHANGE_URL, memoryStorage } from './sessionFakes.js'
+import { EXCHANGE_URL, memoryStorage } from './sessionFakes'
 
 export function makeClient(
   overrides: Partial<SessionClientOptions> = {},

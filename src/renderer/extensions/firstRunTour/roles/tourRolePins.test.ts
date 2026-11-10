@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CURATED_TEMPLATE_IDS,
   FALLBACK_TEMPLATE_IDS
-} from '../gettingStarted/tutorialCards'
+} from '@/renderer/extensions/firstRunTour/gettingStarted/tutorialCards'
 import { MEDIA_KIND_BY_SINK_TYPE, TOUR_ROLE_PINS } from './tourRolePins'
 
 /**

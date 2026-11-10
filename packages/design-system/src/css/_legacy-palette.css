@@ -1,0 +1,33 @@
+:root {
+  --fg-color: var(--foreground);
+  --bg-color: var(--background);
+  --comfy-menu-bg: var(--background);
+  --comfy-menu-secondary-bg: var(--card);
+  --comfy-input-bg: var(--input);
+  --input-text: var(--foreground);
+  --descrip-text: var(--muted-foreground);
+  --drag-text: var(--muted-foreground);
+  --error-text: var(--destructive);
+  --border-color: var(--border);
+  --tr-even-bg-color: var(--background);
+  --tr-odd-bg-color: var(--secondary);
+  --primary-bg: var(--primary);
+  --primary-fg: var(--foreground);
+  --primary-hover-bg: var(--primary);
+  --primary-hover-fg: var(--foreground);
+  --content-bg: var(--secondary);
+  --content-fg: var(--foreground);
+  --content-hover-bg: var(--accent);
+  --content-hover-fg: var(--foreground);
+  --interface-stroke: var(--border);
+  --interface-panel-surface: var(--background);
+  --interface-panel-hover-surface: var(--accent);
+  --interface-panel-selected-surface: var(--muted);
+  --interface-button-hover-surface: var(--accent);
+  --contrast-mix-color: light-dark(#000, #fff);
+  --color-gray-200: theme(colors.gray.200);
+  --bar-shadow: 0 0 0.5rem var(--shadow-color);
+  --interface-panel-box-shadow: 1px 1px 8px 0 var(--shadow-color);
+  --interface-panel-drop-shadow: 1px 1px 4px var(--shadow-color);
+  --interface-floating-panel-shadow: 0 2px 16px 0 var(--shadow-color);
+}

@@ -1,12 +1,11 @@
 import { getActivePinia } from 'pinia'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { render, screen } from '@testing-library/vue'
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import PrimeVue from 'primevue/config'
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -100,7 +99,7 @@ function mountDropdown(
       'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
-      plugins: [PrimeVue, i18n, getActivePinia()!],
+      plugins: [i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
         FormDropdownMenu: MockFormDropdownMenu
@@ -129,10 +128,6 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
   await screen.findByTestId('dropdown-menu')
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
-})
 
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {
@@ -405,6 +400,29 @@ describe('FormDropdown', () => {
 
     expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
     expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('restores trigger focus after Escape', async () => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { type: 'resize', target: window },
+    { type: 'scroll', target: document }
+  ])('dismisses on viewport $type', async ({ type, target }) => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await fireEvent(target, new Event(type))
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
   })
 
   it('closes on a pointerdown outside the menu and trigger', async () => {

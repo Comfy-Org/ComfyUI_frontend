@@ -17,13 +17,16 @@ describe('checkDevServer', () => {
   })
 
   function stubFetch(handler: (url: string) => Response | Promise<Response>) {
-    vi.stubGlobal('fetch', (input: string | URL) =>
-      Promise.resolve(handler(String(input)))
-    )
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+      return Promise.resolve(handler(input))
+    })
   }
 
   it('fails when nothing answers', async () => {
-    vi.stubGlobal('fetch', () => Promise.reject(new Error('ECONNREFUSED')))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.reject(new Error('ECONNREFUSED'))
+    )
     const result = await checkDevServer()
     expect(result.ok).toBe(false)
     expect(result.installInstructions?.join(' ')).toContain('pnpm dev')
@@ -73,8 +76,10 @@ describe('checkDevServer', () => {
   it('probes the url the recorder will actually use', async () => {
     process.env.PLAYWRIGHT_TEST_URL = 'http://127.0.0.1:4321'
     const seen: string[] = []
-    vi.stubGlobal('fetch', (input: string | URL) => {
-      seen.push(String(input))
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+
+      seen.push(input)
       return Promise.resolve(new Response(VITE_PAGE))
     })
     await checkDevServer()

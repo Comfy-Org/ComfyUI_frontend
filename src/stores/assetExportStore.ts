@@ -3,18 +3,14 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type {
-  TaskId,
-  TaskResponse,
-  TaskResult,
-  TaskStatus
-} from '@/platform/tasks/services/taskService'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { TaskResponse, TaskStatus } from '@comfyorg/api-client/taskSchema'
+import type { TaskId, TaskResult } from '@/platform/tasks/services/taskService'
 import {
   TaskNotFoundError,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetExportWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 
@@ -167,11 +163,10 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       if (!resolvedUrl.ok) {
         exp.downloadError = resolvedUrl.error
         exp.downloadTriggered = false
-        useToastStore().add({
-          severity: 'error',
-          summary: t('exportToast.downloadFailed', { name: exp.exportName }),
-          detail: resolvedUrl.error
-        })
+        useToast().error(
+          t('exportToast.downloadFailed', { name: exp.exportName }),
+          { description: resolvedUrl.error }
+        )
         return
       }
       const link = document.createElement('a')
@@ -188,13 +183,12 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       exp.downloadError = message
       exp.downloadTriggered = false
 
-      useToastStore().add({
-        severity: 'error',
-        summary: t('exportToast.downloadFailed', {
+      useToast().error(
+        t('exportToast.downloadFailed', {
           name: exp.exportName
         }),
-        detail: message
-      })
+        { description: message }
+      )
     }
   }
 

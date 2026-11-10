@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
@@ -7,20 +7,17 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate touch-none text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        isLightTheme
-          ? 'drop-shadow-md drop-shadow-black/15'
-          : 'drop-shadow-xl drop-shadow-black/40',
+        'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
-        executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -43,6 +40,12 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full"
+      :style="badgesStyle"
+    />
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -53,16 +56,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isSelected || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'pointer-events-none absolute z-0 border-3 outline-none',
+          'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected
-            ? 'border-node-component-outline'
-            : 'border-node-stroke-executing'
+          isEmphasized || executing ? 'block border-3' : 'hidden',
+          isEmphasized ? 'border-foreground' : executing && 'border-primary'
         )
       "
     />
@@ -70,20 +71,21 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-component-header-surface',
+          'flex flex-1 flex-col bg-node-header',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4',
-          errorSeverity === 'missing' && 'ring-warning-background',
-          errorSeverity === 'error' && 'ring-destructive-background',
+          errorSeverity === 'missing' && 'ring-warning',
+          errorSeverity === 'error' && 'ring-destructive',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
         )
       "
       :style="{
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        '--node': applyLightThemeColor(nodeData.bgcolor),
+        '--component-node-background': 'var(--node)',
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
@@ -107,7 +109,9 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -145,10 +149,7 @@
 
         <div
           :class="
-            cn(
-              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
-              bodyRoundingClass
-            )
+            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
           "
           :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
@@ -183,12 +184,6 @@
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
-          />
-          <NodeBadges
-            v-if="!isTransparentHeaderless"
-            v-bind="badges"
-            :pricing="undefined"
-            class="mt-auto"
           />
         </div>
       </template>
@@ -256,18 +251,18 @@ import { storeToRefs } from 'pinia'
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -299,26 +294,26 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
-  locatorIdFromState,
-  subgraphIdFromState
+  locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
-import { useNodeResize } from '../interactions/resize/useNodeResize'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -338,10 +333,6 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => !!colorPaletteStore.completedActivePalette.light_theme
-)
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -352,9 +343,10 @@ useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
-const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeId.value)
+const { isGhostPlacing } = storeToRefs(useCanvasStore())
+const isEmphasized = computed(() => {
+  const graph = canvasStore.currentGraph
+  return isNodeEmphasized(graph ? graphScopeOf(graph) : undefined, nodeId.value)
 })
 
 const nodeLocatorId = computed(
@@ -481,7 +473,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+const progressClasses = 'h-2 bg-primary transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -500,16 +492,16 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-br-xl',
-    default: 'rounded-b-xl'
+    card: 'rounded-br-(--node-radius)',
+    default: 'rounded-b-(--node-radius)'
   })
 )
 
 const shapeClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-tl-xl rounded-br-xl',
-    default: 'rounded-xl'
+    card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
+    default: 'rounded-(--node-radius)'
   })
 )
 
@@ -523,13 +515,14 @@ const isTransparentHeaderless = computed(
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
-  const isExpanded = hasAnyError.value
   return shapeVariantClass(nodeData.shape, {
     box: '',
-    card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+    card: hasAnyError.value
+      ? 'rounded-tl-[calc(var(--node-radius)+11px)] rounded-br-[calc(var(--node-radius)+11px)]'
+      : 'rounded-tl-[calc(var(--node-radius)+7px)] rounded-br-[calc(var(--node-radius)+7px)]',
+    default: hasAnyError.value
+      ? 'rounded-[calc(var(--node-radius)+7px)]'
+      : 'rounded-[calc(var(--node-radius)+3px)]'
   })
 })
 
@@ -539,16 +532,16 @@ const BEFORE_OVERLAY_BASE =
 const bypassOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
   })
 )
 
 const mutedOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: BEFORE_OVERLAY_BASE,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE}`
   })
 )
 
@@ -611,11 +604,6 @@ const handleEnterSubgraph = () => {
 }
 
 const nodeOutputs = useNodeOutputStore()
-
-const nodeOutputLocatorId = computed(() => {
-  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
-  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
-})
 
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
@@ -691,14 +679,17 @@ const hasVideoInput = computed(() =>
   nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
-const hasVideoEditWidget = computed(() =>
-  widgetIds.value.some(
-    (id) => widgetValueStore.getWidget(id)?.type === 'videoedit'
+const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
+
+const hasVideoPreviewWidget = computed(() =>
+  widgetIds.value.some((id) =>
+    VIDEO_PREVIEW_WIDGET_TYPES.has(widgetValueStore.getWidget(id)?.type ?? '')
   )
 )
 
 const nodeMedia = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const locatorId = nodeLocatorId.value
+  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
   if (
@@ -722,13 +713,17 @@ const nodeMedia = computed(() => {
       ? 'video'
       : 'image'
 
-  if (type === 'video' && hasVideoEditWidget.value) return undefined
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
   return { type, urls } as const
 })
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+
+const badgesStyle = computed(() => ({
+  marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
+}))
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()
@@ -746,8 +741,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

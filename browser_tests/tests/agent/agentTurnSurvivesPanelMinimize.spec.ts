@@ -26,7 +26,7 @@ test.describe(
     // below only resolves once a turn has actually ended.
     test('runs a turn to completion after a minimize and restore', async ({
       turnLock,
-      getWebSocket
+      getAgentSocket
     }) => {
       await test.step('minimize and restore an idle panel', async () => {
         await turnLock.openOnBlankWorkflow()
@@ -38,7 +38,7 @@ test.describe(
         await turnLock.startTurn(PROMPT)
         await expect(turnLock.workSummary).toHaveCount(0)
 
-        turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+        turnLock.push(await getAgentSocket(), TURN_DONE_EVENT)
 
         await expect(turnLock.workSummary).toBeVisible()
         await expect(turnLock.sendButton).toBeVisible()
@@ -74,7 +74,7 @@ test.describe(
 
       test('keeps rendering the turn after the panel is reopened', async ({
         turnLock,
-        getWebSocket
+        getAgentSocket
       }) => {
         await test.step('minimize and reopen over the live turn', async () => {
           await turnLock.minimizePanel()
@@ -84,7 +84,7 @@ test.describe(
         })
 
         await test.step('a later frame for that turn still renders', async () => {
-          turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
+          turnLock.push(await getAgentSocket(), POST_RECONNECT_EVENT)
 
           await expect(
             turnLock.panel.getByText(POST_RECONNECT_TEXT)
@@ -95,7 +95,7 @@ test.describe(
       test('settles when completion arrives after hydration handoff expires', async ({
         page,
         turnLock,
-        getWebSocket
+        getAgentSocket
       }) => {
         await page.clock.install()
         turnLock.holdNextTranscript()
@@ -108,7 +108,7 @@ test.describe(
         })
 
         await test.step('accept terminal delivery before stale hydration resolves', async () => {
-          turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+          turnLock.push(await getAgentSocket(), TURN_DONE_EVENT)
           turnLock.releaseHeldTranscript()
 
           await expect(turnLock.workSummary).toBeVisible()
@@ -120,7 +120,7 @@ test.describe(
       test('delivers completion to a background turn before its hydration mailbox expires', async ({
         page,
         turnLock,
-        getWebSocket
+        getAgentSocket
       }) => {
         await page.clock.install()
 
@@ -132,7 +132,7 @@ test.describe(
         })
 
         await test.step('complete the background turn and expire its mailbox', async () => {
-          turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+          turnLock.push(await getAgentSocket(), TURN_DONE_EVENT)
           await page.clock.fastForward(300_001)
         })
 

@@ -17,6 +17,14 @@
       "sessionError": "You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.",
       "retry": "Retry session"
     },
+    "sso": {
+      "continueWithSso": "Continue with SSO",
+      "required": {
+        "title": "Your organization requires single sign-on",
+        "body": "This account signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in."
+      }
+    },
     "email": {
       "label": "Email",
       "placeholder": "Enter your email"
@@ -62,6 +70,8 @@
   "checkout": {
     "back": "Back",
     "close": "Close",
+    "notification": "Notification",
+    "notifications": "Notifications ({hotkey})",
     "singleSelectDropdown": "Single-select dropdown",
     "genericError": "Error",
     "usdPerMonth": "USD / mo",
@@ -222,6 +232,10 @@
           "title": "Payment not completed",
           "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
         },
+        "not_verified": {
+          "title": "Payment not verified",
+          "body": "The payment wasn't verified. Try again later, or contact support."
+        },
         "promo_expired": {
           "title": "Your promo code expired",
           "body": "The {code} code expired, so the total was updated. Review the new total before paying. You have not been charged."
@@ -261,6 +275,7 @@
       },
       "phase": {
         "challenge": "Nothing has been charged yet.",
+        "challengeVerifyBy": "Nothing has been charged yet. Verify by {date}, {time}.",
         "processing": "This payment is already processing and can't be canceled.",
         "redirecting": "Taking you to {method} to finish paying. Nothing has been charged yet.",
         "redirectingUnnamed": "Taking you to your payment provider to finish paying. Nothing has been charged yet.",
@@ -521,7 +536,8 @@
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
       "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
       "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
-      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again."
+      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again.",
+      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one."
     },
     "tier": {
       "unknown": "Plan",
@@ -554,14 +570,8 @@
       "resubscribed": "Your subscription is active again."
     },
     "paymentMethods": {
-      "card": "{brand} •••• {last4}",
-      "default": "Default",
-      "empty": "No payment method is saved for this workspace.",
+      "opening": "Opening your payment methods…",
       "manage": "Manage payment methods"
-    },
-    "paymentMethodType": {
-      "unknown": "Saved payment method",
-      "card": "Card"
     },
     "invoices": {
       "body": "Invoices and receipts are kept by our payment provider. Open the billing portal to view and download them.",
@@ -581,5 +591,9 @@
       "reconciliation_needed": "That change needs a look from support before it completes.",
       "superseded": "Your workspace changed while we were working. Please try again."
     }
+  },
+  "topupReturn": {
+    "title": "Return to ComfyUI",
+    "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
   }
 }

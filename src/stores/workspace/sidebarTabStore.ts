@@ -1,15 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t, te } from '@/i18n'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])
+  const sourceExtensionNames = ref<Record<string, string>>({})
   const activeSidebarTabId = ref<string | null>(null)
 
   const activeSidebarTab = computed<SidebarTabExtension | null>(() => {
@@ -23,10 +21,34 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
 
+  let registeringExtensionName: string | undefined
+
+  /**
+   * Attributes tabs registered synchronously inside `run` to `extensionName`,
+   * whichever `app` reference the extension registers them through.
+   */
+  const attributeRegistrationsTo = <T>(
+    extensionName: string,
+    run: () => T
+  ): T => {
+    const previous = registeringExtensionName
+    registeringExtensionName = extensionName
+    try {
+      return run()
+    } finally {
+      registeringExtensionName = previous
+    }
+  }
+
   const registerSidebarTab = (
     tab: SidebarTabExtension,
-    options?: { prepend?: boolean }
+    options?: { prepend?: boolean },
+    sourceExtensionName?: string
   ) => {
+    const source = sourceExtensionName ?? registeringExtensionName
+    if (source) {
+      sourceExtensionNames.value[tab.id] = source
+    }
     sidebarTabs.value = options?.prepend
       ? [tab, ...sidebarTabs.value]
       : [...sidebarTabs.value, tab]
@@ -68,21 +90,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       versionAdded: '1.3.9',
       category: 'view-controls' as const,
       function: async () => {
-        const settingStore = useSettingStore()
-
-        // The asset browser cannot function without backend asset support, so
-        // the browser routing requires both the user preference and the server
-        // capability; without the capability the preference is inert and the
-        // tab opens the sidebar tree.
-        if (
-          tab.id === 'model-library' &&
-          settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
-          useFeatureFlags().flags.assetsEnabled
-        ) {
-          await openModelLibraryBrowser()
-          return
-        }
-
+        if (await tab.onToggle?.()) return
         toggleSidebarTab(tab.id)
       },
       active: () => activeSidebarTab.value?.id === tab.id,
@@ -103,14 +111,19 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       if (activeSidebarTabId.value === id) {
         activeSidebarTabId.value = null
       }
+      delete sourceExtensionNames.value[id]
     }
   }
+
+  const getSourceExtensionName = (id: string) => sourceExtensionNames.value[id]
 
   return {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
+    attributeRegistrationsTo,
+    getSourceExtensionName,
     registerSidebarTab,
     unregisterSidebarTab
   }

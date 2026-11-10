@@ -1,8 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const originalFetch = globalThis.fetch
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -11,11 +9,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/scripts/api'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 async function loadUseSessionCookie() {
+  const { provideAuthStore } = await import('@/platform/auth/authStoreAccess')
+  provideAuthStore(useAuthStore)
   return await import('@/platform/auth/session/useSessionCookie')
 }
 
@@ -23,13 +23,6 @@ describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
     useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    globalThis.fetch = vi.fn()
-  })
-
-  afterEach(() => {
-    // Restore the global fetch so a leaked mock doesn't bleed into later
-    // tests that depend on real fetch semantics.
-    globalThis.fetch = originalFetch
   })
 
   it('createSessionOrThrow posts the Firebase token and awaits success', async () => {
@@ -127,6 +120,21 @@ describe('useSessionCookie', () => {
       level: 'warning'
     })
     expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('leaves a revoked session to its caller instead of reporting it from createSession', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      Response.json(
+        { code: 'SESSION_REVOKED', message: 'signed out' },
+        { status: 401 }
+      )
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('serializes strict session creation after the previous user response', async () => {
@@ -361,6 +369,56 @@ describe('useSessionCookie', () => {
       await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
         'refused by ingest'
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'a 401 SESSION_REVOKED',
+      status: 401,
+      code: 'SESSION_REVOKED',
+      revoked: true
+    },
+    {
+      name: 'a 401 TOKEN_REVOKED',
+      status: 401,
+      code: 'TOKEN_REVOKED',
+      revoked: true
+    },
+    {
+      name: 'a 401 UNAUTHORIZED',
+      status: 401,
+      code: 'UNAUTHORIZED',
+      revoked: false
+    },
+    {
+      name: 'a 403 SESSION_REVOKED',
+      status: 403,
+      code: 'SESSION_REVOKED',
+      revoked: false
+    }
+  ])(
+    'ensureSessionCookie rejects with SessionRevokedError: $revoked for $name',
+    async ({ status, code, revoked }) => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-id-token'
+      )
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json(
+          { code, message: 'This session was signed out; sign in again' },
+          { status }
+        )
+      )
+      const { useSessionCookie } = await loadUseSessionCookie()
+      const { SessionRevokedError } =
+        await import('@/platform/auth/session/sessionRevokedError')
+
+      const failure = await useSessionCookie()
+        .ensureSessionCookie()
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(Error)
+      expect(failure instanceof SessionRevokedError).toBe(revoked)
     }
   )
 

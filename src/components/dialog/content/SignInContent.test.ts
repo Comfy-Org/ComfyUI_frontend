@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
@@ -113,16 +114,14 @@ afterEach(() => stopDesktopHostSession())
 
 function desktopHostBridge(signInResult: DesktopHostAuthState) {
   return {
-    getState: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({
-        status: 'signed_out'
-      })
-    ),
+    getState: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     getWorkspaceToken: vi.fn(async () => null),
     requestSignIn: vi.fn(async () => signInResult),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     onChanged: vi.fn(() => () => {})
   }
 }
@@ -313,25 +312,57 @@ describe('SignInContent', () => {
     {
       name: 'closes once Desktop signs in',
       result: { status: 'signed_in', userId: 'sso-user' } as const,
-      succeeded: true
+      reportsSignInFailures: false,
+      succeeded: true,
+      toasts: []
     },
     {
       name: 'stays open when the sign-in does not finish',
       result: { status: 'signed_out' } as const,
-      succeeded: false
+      reportsSignInFailures: false,
+      succeeded: false,
+      toasts: [
+        { duration: 6000, kind: 'error', title: 'Sign-in did not finish' }
+      ]
+    },
+    {
+      name: 'leaves a failure to a session that reports its own',
+      result: { status: 'signed_out' } as const,
+      reportsSignInFailures: true,
+      succeeded: false,
+      toasts: []
+    },
+    {
+      name: 'closes once a session that reports its own failures signs in',
+      result: { status: 'signed_in', userId: 'sso-user' } as const,
+      reportsSignInFailures: true,
+      succeeded: true,
+      toasts: []
     }
-  ])('SSO through Comfy Desktop $name', async ({ result, succeeded }) => {
-    const user = userEvent.setup()
-    const bridge = desktopHostBridge(result)
-    await startDesktopHostSession(bridge)
-    const onSuccess = vi.fn()
-    renderSignInContent(onSuccess)
+  ])(
+    'SSO through the host session $name',
+    async ({ result, reportsSignInFailures, succeeded, toasts }) => {
+      const user = userEvent.setup()
+      const bridge = desktopHostBridge(result)
+      await startDesktopHostSession(bridge, { reportsSignInFailures })
+      const onSuccess = vi.fn()
+      renderSignInContent(onSuccess)
 
-    await user.click(screen.getByRole('button', { name: 'Continue with SSO' }))
+      await user.click(
+        screen.getByRole('button', { name: 'Continue with SSO' })
+      )
 
-    await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
-    await waitFor(() =>
-      expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
-    )
-  })
+      await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
+      await waitFor(() =>
+        expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
+      )
+      expect(
+        useToast().toasts.map(({ duration, kind, title }) => ({
+          duration,
+          kind,
+          title
+        }))
+      ).toEqual(toasts)
+    }
+  )
 })

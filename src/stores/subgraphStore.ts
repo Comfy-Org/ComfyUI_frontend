@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -11,23 +11,25 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { api } from '@/scripts/api'
-import type { GlobalSubgraphData } from '@/scripts/api'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -166,12 +168,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
       return loaded
     }
-    override async promptSave(): Promise<string | null> {
-      return await useDialogService().prompt({
-        title: t('subgraphStore.saveBlueprint'),
-        message: t('subgraphStore.blueprintNamePrompt'),
-        defaultValue: this.filename
-      })
+    override readonly saveNamePrompt = {
+      title: 'subgraphStore.saveBlueprint',
+      message: 'subgraphStore.blueprintNamePrompt'
     }
     override unload(): void {
       //Skip unloading. Even if a workflow is closed after editing,
@@ -260,10 +259,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subgraphStore.loadFailure'),
-        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`
+      useToast().error(t('subgraphStore.loadFailure'), {
+        description:
+          errors.length > 3
+            ? `x${errors.length}`
+            : errors
+                .map((e) => getErrorMessage(e) ?? t('g.unknownError'))
+                .join(', ')
       })
     }
   }
@@ -368,11 +370,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
-    useToastStore().add({
-      severity: 'success',
-      summary: t('subgraphStore.publishSuccess'),
-      detail: t('subgraphStore.publishSuccessMessage'),
-      life: 4000
+    useToast().success(t('subgraphStore.publishSuccess'), {
+      description: t('subgraphStore.publishSuccessMessage'),
+      duration: 4000
     })
   }
   async function editBlueprint(nodeType: string) {
@@ -398,10 +398,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (!(name in subgraphCache)) throw new Error('not yet loaded')
 
     if (isGlobalBlueprint(name)) {
-      useToastStore().add({
-        severity: 'warn',
-        summary: t('subgraphStore.cannotDeleteGlobal'),
-        life: 4000
+      useToast().warning(t('subgraphStore.cannotDeleteGlobal'), {
+        duration: 4000
       })
       return
     }

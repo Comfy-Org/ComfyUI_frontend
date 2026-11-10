@@ -32,19 +32,17 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -226,7 +224,7 @@ function startFollower(options: FixtureOptions = {}) {
   follower.applyRemoteUpdate(update)
   expect(
     adapter.applyFrame({ workflowId: 'workflow', seq: 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
   expect(instance.inputs.map((i) => i.name)).toEqual(
@@ -266,7 +264,7 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 /**
@@ -285,7 +283,7 @@ function forwardRaw(
   state.follower.applyRemoteUpdate(update)
   expect(
     state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 beforeEach(() => {

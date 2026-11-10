@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
@@ -17,16 +17,6 @@ vi.mock<unknown>(
   () => ({
     useSlotLinkDragUIState: () => ({
       state: { active: false, compatible: new Map() }
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-  () => ({
-    useNodeTooltips: () => ({
-      getOutputSlotTooltip: () => '',
-      createTooltipConfig: (text: string) => ({ value: text })
     })
   })
 )
@@ -62,7 +52,6 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })

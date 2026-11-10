@@ -5,6 +5,7 @@ import {
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('Local workspace switcher', { tag: '@auth' }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -64,8 +65,12 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       'Workspaces only affect which credits you use.'
     )
     await expect(scopeCaption).toBeVisible()
-    await scopeCaption.locator('..').locator('.pi-info-circle').hover()
-    await expect(page.getByRole('tooltip')).toHaveText(
+    await panel
+      .getByRole('button', {
+        name: 'Workspaces only affect which credits you use.'
+      })
+      .hover()
+    await expect(new Tooltip(page).open).toHaveText(
       'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
     )
 

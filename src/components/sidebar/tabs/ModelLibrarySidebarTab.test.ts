@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -8,12 +9,12 @@ import { createI18n } from 'vue-i18n'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
@@ -94,9 +95,12 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
-  default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
-}))
+vi.mock<unknown>(
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
+  () => ({
+    default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
+  })
+)
 
 vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
@@ -128,8 +132,7 @@ describe('ModelLibrarySidebarTab', () => {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true },
-        directives: { tooltip: {} }
+        stubs: { teleport: true }
       }
     })
   }
@@ -166,7 +169,7 @@ describe('ModelLibrarySidebarTab', () => {
       'checkpoints'
     )
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
-      widgetValues: { ckpt_name: 'model.safetensors' },
+      widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }],
       source: 'sidebar_drag'
     })
   })
@@ -414,12 +417,12 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
       await nextTick()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'sideToolbar.modelLibraryLoadFailed'
+          description: 'sideToolbar.modelLibraryLoadFailed',
+          kind: 'error'
         })
-      )
+      ])
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {

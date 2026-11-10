@@ -11,9 +11,13 @@ import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 beforeEach(() => {
   const store = useAssetsStore()
@@ -82,12 +86,7 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
-)
+vi.mock(import('@/services/hdrViewerService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -120,7 +119,7 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click', 'context-menu'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
   template: `
     <div data-testid="assets-grid">
       <button
@@ -128,30 +127,34 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
+      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
     </div>
   `
+}
+
+const mediaLightboxStub = {
+  props: ['allGalleryItems', 'activeIndex'],
+  template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
 function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
-      directives: {
-        tooltip: {}
-      },
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true
+        MediaLightbox: mediaLightboxStub
       }
     }
   })
 }
 
 beforeEach(() => {
+  distribution.isCloud = false
   useAssetsStore().outputAssets.items = [folderAsset]
   useAssetsStore().outputAssets.hasMore = false
 })
@@ -197,6 +200,37 @@ describe('AssetsSidebarTab folder navigation', () => {
   })
 })
 
+it('gives the lightbox a playable URL for a video without a preview_url', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
+})
+
+it.for([
+  { isCloud: true, expected: 'true' },
+  { isCloud: false, expected: 'false' }
+])(
+  'marks the lightbox item filename as a display name only on Cloud ($isCloud)',
+  async ({ isCloud, expected }) => {
+    distribution.isCloud = isCloud
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+    ]
+    renderTab()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+    expect(
+      screen.getByTestId('lightbox-url').getAttribute('data-display-name')
+    ).toBe(expected)
+  }
+)
+
 it('shows the sidebar close button when mounted as a sidebar tab', () => {
   renderTab({ realTemplate: true })
 
@@ -204,6 +238,33 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
+  it('inspects an HDR output in the HDR viewer', async () => {
+    useAssetsStore().outputAssets.items = [
+      {
+        ...folderAsset,
+        name: 'sky.exr',
+        loader_path: 'renders/sky.exr',
+        preview_url: '/api/assets/sky-preview/content'
+      }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\/view\?filename=sky\.exr&type=output&subfolder=renders$/
+      )
+    )
+  })
+
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
     useAssetsStore().outputAssets.items = [asset]

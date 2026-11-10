@@ -23,7 +23,7 @@ import { withModels } from '@e2e/fixtures/helpers/AssetHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { dispatchApiCustomEvent } from '@e2e/fixtures/utils/dispatchApiEvent'
 import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 
@@ -245,14 +245,14 @@ test.describe('Model library sidebar - asset mode', () => {
       '[data-node-id="preview-CheckpointLoaderSimple"]'
     )
     await expect(ghost).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!
     await comfyPage.canvas.click({
       position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
     })
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'

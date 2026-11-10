@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -74,15 +78,19 @@ const entries = computed(() => {
         @edit="onEditComplete"
         @cancel="isEditing = false"
       />
-      <div
-        v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"
-        class="drag-handle truncate text-xs text-muted-foreground"
-        data-testid="builder-io-item-subtitle"
-        @mouseenter="
-          subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
-        "
-        v-text="subTitle"
-      />
+      <Tooltip :disabled="!subTitleTooltip">
+        <TooltipTrigger as-child>
+          <div
+            class="drag-handle truncate text-xs text-muted-foreground"
+            data-testid="builder-io-item-subtitle"
+            @mouseenter="
+              subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
+            "
+            v-text="subTitle"
+          />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{ subTitleTooltip }}</TooltipContent>
+      </Tooltip>
     </div>
     <Menu
       :items="entries"

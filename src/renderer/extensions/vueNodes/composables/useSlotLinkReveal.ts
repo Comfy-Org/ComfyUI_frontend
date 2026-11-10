@@ -4,16 +4,18 @@ import {
   clearRevealedLinks,
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkRevealState'
+import type { LinkRevealKind } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 interface SlotLinkRevealOptions {
   nodeId?: NodeId
   index: number
   type: 'input' | 'output'
+  kind?: LinkRevealKind
 }
 
 export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
@@ -41,7 +43,7 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
         ? [link.id]
         : []
     )
-    if (setRevealedLinks(scope.rootGraphId, linkIds, owner)) {
+    if (setRevealedLinks(scope.rootGraphId, linkIds, owner, options.kind)) {
       app.canvas.setDirty(false, true)
     }
   }

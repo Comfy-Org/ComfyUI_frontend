@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import {
+  capturePreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -12,8 +18,25 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
+)
+
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
+  loadDeployment: vi.fn(async (): Promise<boolean> => false),
   loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
@@ -21,7 +44,8 @@ const mocks = vi.hoisted(() => ({
   loadTopUp: vi.fn(async () => undefined),
   loadSettings: vi.fn(),
   loadAssets: vi.fn(async () => undefined),
-  loadPaymentReturn: vi.fn(async () => undefined),
+  loadLocalHandoff: vi.fn(async () => undefined),
+  useDeployment: vi.fn(),
   useWorkspace: vi.fn(),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
@@ -29,7 +53,10 @@ const mocks = vi.hoisted(() => ({
   useTopUp: vi.fn(),
   useSettings: vi.fn(),
   useAssets: vi.fn(),
-  usePaymentReturn: vi.fn()
+  useLocalHandoff: vi.fn()
+}))
+mocks.useDeployment.mockImplementation(() => ({
+  loadDeploymentFromUrl: mocks.loadDeployment
 }))
 mocks.useWorkspace.mockImplementation(() => ({
   loadWorkspaceFromUrl: mocks.loadWorkspace
@@ -52,8 +79,8 @@ mocks.useSettings.mockImplementation(() => ({
 mocks.useAssets.mockImplementation(() => ({
   loadAssetsFromUrl: mocks.loadAssets
 }))
-mocks.usePaymentReturn.mockImplementation(() => ({
-  loadPaymentReturnFromUrl: mocks.loadPaymentReturn
+mocks.useLocalHandoff.mockImplementation(() => ({
+  loadLocalHandoffFromUrl: mocks.loadLocalHandoff
 }))
 
 // A real router rather than a stub: several assertions are the URL a reader
@@ -67,26 +94,32 @@ const router = createRouter({
 })
 
 vi.mock(
+  import('@/platform/workspace/composables/useDeploymentUrlLoader'),
+  () => ({
+    useDeploymentUrlLoader: mocks.useDeployment
+  })
+)
+vi.mock(
   import('@/platform/workspace/composables/useWorkspaceUrlLoader'),
   () => ({
     useWorkspaceUrlLoader: mocks.useWorkspace
   })
 )
-vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
+vi.mock(import('@/platform/account/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
 vi.mock(
-  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  import('@/platform/account/composables/useCreateWorkspaceUrlLoader'),
   () => ({
     useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
   })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/usePricingTableUrlLoader'),
+  import('@/platform/billing/subscription/composables/usePricingTableUrlLoader'),
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useTopUpUrlLoader'),
+  import('@/platform/billing/subscription/composables/useTopUpUrlLoader'),
   () => ({
     useTopUpUrlLoader: mocks.useTopUp
   })
@@ -98,19 +131,22 @@ vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
   useAssetsUrlLoader: mocks.useAssets
 }))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'),
-  () => ({ usePaymentReturnUrlLoader: mocks.usePaymentReturn })
+  import('@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'),
+  () => ({ useLocalHandoffUrlLoader: mocks.useLocalHandoff })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
 describe('useUrlActionLoaders', () => {
   beforeEach(async () => {
     mockIsCloud.value = true
+    mocks.useDeployment.mockImplementation(() => ({
+      loadDeploymentFromUrl: mocks.loadDeployment
+    }))
     mocks.useWorkspace.mockImplementation(() => ({
       loadWorkspaceFromUrl: mocks.loadWorkspace
     }))
@@ -132,8 +168,8 @@ describe('useUrlActionLoaders', () => {
     mocks.useAssets.mockImplementation(() => ({
       loadAssetsFromUrl: mocks.loadAssets
     }))
-    mocks.usePaymentReturn.mockImplementation(() => ({
-      loadPaymentReturnFromUrl: mocks.loadPaymentReturn
+    mocks.useLocalHandoff.mockImplementation(() => ({
+      loadLocalHandoffFromUrl: mocks.loadLocalHandoff
     }))
     vi.mocked(useRouter).mockReturnValue(router)
     await router.replace({ path: '/', query: {} })
@@ -154,9 +190,6 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
-  // The payment-return loader clears Stripe's params with history.replaceState,
-  // which the router never sees, so the sweep is built from a query that still
-  // holds them — the client secret included.
   it('does not hand back the Stripe params the router still thinks are there', async () => {
     await router.replace({
       path: '/',
@@ -204,6 +237,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.useDeployment).not.toHaveBeenCalled()
     expect(mocks.useWorkspace).not.toHaveBeenCalled()
     expect(mocks.useInvite).not.toHaveBeenCalled()
     expect(mocks.useCreateWorkspace).not.toHaveBeenCalled()
@@ -211,8 +245,9 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useTopUp).not.toHaveBeenCalled()
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.useAssets).not.toHaveBeenCalled()
-    expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
+    expect(mocks.useLocalHandoff).not.toHaveBeenCalled()
     expect(useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.loadDeployment).not.toHaveBeenCalled()
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
@@ -220,7 +255,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
-    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
+    expect(mocks.loadLocalHandoff).not.toHaveBeenCalled()
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).not.toHaveBeenCalled()
@@ -230,6 +265,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.loadDeployment).toHaveBeenCalledOnce()
     expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
@@ -237,7 +273,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadAssets).toHaveBeenCalledOnce()
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadLocalHandoff).toHaveBeenCalledOnce()
   })
 
   it('opens the requested workspace before any other loader reads the URL', async () => {
@@ -256,6 +292,291 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.loadAssets.mock.invocationCallOrder[0]
     )
+  })
+
+  // With ?deployment the deployment link owns ?workspace too: the workspace
+  // loader alone would strip ?workspace and switch, and the boot after that
+  // reload would find a link with no workspace in it.
+  it('reads a deployment link before the workspace link', async () => {
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadDeployment.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.loadWorkspace.mock.invocationCallOrder[0]
+    )
+  })
+
+  // The deployment link keeps both params across its own workspace switch,
+  // so the boot after the reload can pick; nothing may strip them first.
+  it('stops before every other step, the sweep included, when the deployment link reloads', async () => {
+    await router.replace({
+      path: '/',
+      query: { workspace: 'w-2', deployment: 'dep-1', workflows: 'build' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
+    mocks.loadDeployment.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadWorkspace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.query).toEqual({
+      workspace: 'w-2',
+      deployment: 'dep-1',
+      workflows: 'build'
+    })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBe('build')
+  })
+
+  it('clears a workflows folder a deployment link left when it did not reload', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflows: 'build', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  it('clears a workflows folder stash a deployment link left when it did not reload', async () => {
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBeUndefined()
+  })
+
+  it.for(['deployment', 'workspace'] as const)(
+    'preserves the workflow-id link across a %s reload without opening it',
+    async (kind) => {
+      await router.replace({
+        query: { workflowId: 'workflow-id', workflows: 'ignored' }
+      })
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        { workflowId: 'workflow-id' },
+        ['workflowId']
+      )
+      const loader =
+        kind === 'deployment' ? mocks.loadDeployment : mocks.loadWorkspace
+      loader.mockResolvedValueOnce(true)
+
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expect(
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl
+      ).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.query.workflowId).toBe('workflow-id')
+      expect(
+        getPreservedQueryParam(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          'workflowId'
+        )
+      ).toBe('workflow-id')
+    }
+  )
+
+  it('finishes the workflow-id link after navigation and clears the URL and stash', async () => {
+    await router.replace({ query: { workflowId: 'workflow-id', keep: 'yes' } })
+    workflowLinkUrlLoader.isLinkSettled.mockReturnValue(true)
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl
+    ).toHaveBeenCalledExactlyOnceWith(true)
+    expect(
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mock.invocationCallOrder[0]
+    ).toBeGreaterThan(mocks.loadWorkspace.mock.invocationCallOrder[0])
+    expect(router.currentRoute.value.query).toEqual({ keep: 'yes' })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBeUndefined()
+  })
+
+  it('leaves a workflow-id link the browser navigated to after the settled one', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', keep: 'yes' } })
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockImplementation(
+      async () => {
+        await router.replace({
+          query: { workflowId: 'workflow-b', keep: 'yes' }
+        })
+        capturePreservedQuery(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          { workflowId: 'workflow-b' },
+          ['workflowId']
+        )
+        return 'opened'
+      }
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b',
+      keep: 'yes'
+    })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-b')
+  })
+
+  it('runs the later loaders and clears their params while a workflow-id link is pending', async () => {
+    await router.replace({
+      query: { workflowId: 'workflow-id', invite: 'inv-1', settings: 'x' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(mocks.loadInvite).toHaveBeenCalledOnce()
+    expect(mocks.loadSettings).toHaveBeenCalledOnce()
+    expect(mocks.loadLocalHandoff).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-id'
+    })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-id')
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('clears the other params but leaves a newer workflow-id link and its stash', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockImplementation(
+      async () => {
+        await router.replace({
+          query: { workflowId: 'workflow-b', topup: '1' }
+        })
+        capturePreservedQuery(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          { workflowId: 'workflow-b' },
+          ['workflowId']
+        )
+        return 'opened'
+      }
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b'
+    })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-b')
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('lets a newer workflow-id link held in a navigation guard land instead of cancelling it', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.hasLinkInFlight.mockReturnValue(true)
+    let releaseGuard: () => void = () => {}
+    const removeGuard = router.beforeEach(() => {
+      removeGuard()
+      return new Promise<void>((resolve) => {
+        releaseGuard = resolve
+      })
+    })
+    const newerLink = router.push({ query: { workflowId: 'workflow-b' } })
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+    releaseGuard()
+    await newerLink
+
+    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b'
+    })
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('retains a deferred workflow-id URL and stash after identity changes', async () => {
+    await router.replace({
+      query: { workflowId: 'workflow-id', workflows: 'ignored' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query.workflowId).toBe('workflow-id')
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-id')
+  })
+
+  it('clears a deployment param no loader acted on', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
   it('isolates a workspace-loader failure so it does not abort the boot chain', async () => {
@@ -280,7 +601,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
-    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
   })
 
   // A successful switch reloads the page, so the sweep step must never run
@@ -307,7 +627,7 @@ describe('useUrlActionLoaders', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('recovers an interrupted checkout after handling the payment return', async () => {
+  it('recovers an interrupted checkout after every URL loader has run', async () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
@@ -317,7 +637,7 @@ describe('useUrlActionLoaders', () => {
     expect(
       vi.mocked(useSubscriptionDialog().resumePendingPricingFlow).mock
         .invocationCallOrder[0]
-    ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
+    ).toBeGreaterThan(mocks.loadAssets.mock.invocationCallOrder[0])
   })
 
   it('resolves without waiting for checkout recovery to settle', async () => {
@@ -342,7 +662,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     await vi.waitFor(() => {
       expect(mocks.reportError).toHaveBeenCalledWith(failure, {
         surface: 'platform',
@@ -371,7 +691,7 @@ describe('useUrlActionLoaders', () => {
 
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
   })
 
   it('isolates a settings-loader failure so it does not abort the boot chain', async () => {
@@ -382,7 +702,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).toHaveBeenCalledOnce()

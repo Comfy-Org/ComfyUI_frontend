@@ -6,6 +6,8 @@ import {
   readCoverageMetadata
 } from './coverage-metadata'
 
+import { renderPrReportSection } from './cicd/pr-report-section'
+
 interface FileStats {
   lines: number
   covered: number
@@ -21,7 +23,11 @@ const lcovPath = process.argv[2] || 'coverage/playwright/coverage.lcov'
 
 if (!existsSync(lcovPath)) {
   process.stdout.write(
-    '## 🔬 E2E Coverage\n\n> ⚠️ No coverage data found. Check the CI workflow logs.\n'
+    renderPrReportSection({
+      icon: '🔬',
+      title: 'E2E Coverage',
+      status: '⚠️ No coverage data found — check the CI workflow logs'
+    }) + '\n'
   )
   process.exit(0)
 }
@@ -118,23 +124,19 @@ function bar(covered: number, total: number): string {
 }
 
 const lines: string[] = []
-lines.push('## 🔬 E2E Coverage')
-lines.push('')
-
+const notice: string[] = []
 const metadata = readCoverageMetadata(
   join(dirname(lcovPath), COVERAGE_METADATA_FILE)
 )
 if (!metadata) {
-  lines.push(
+  notice.push(
     '> [!NOTE]',
-    '> Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge.',
-    ''
+    '> Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge. Check the coverage workflow logs and re-run collection before using these totals for comparison.'
   )
 } else if (!metadata.complete) {
-  lines.push(
+  notice.push(
     '> [!NOTE]',
-    '> The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge.',
-    ''
+    '> The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge. Fix the failing shards and re-run coverage before using these totals for comparison.'
   )
 }
 
@@ -175,4 +177,18 @@ if (uncovered.length > 0) {
   lines.push('</details>')
 }
 
-process.stdout.write(lines.join('\n') + '\n')
+const linesStatus =
+  totalLines === 0
+    ? '⚠️ No line coverage recorded'
+    : `${bar(coveredLines, totalLines)} ${pct(coveredLines, totalLines)} of lines`
+
+process.stdout.write(
+  renderPrReportSection({
+    icon: '🔬',
+    title: 'E2E Coverage',
+    status: linesStatus,
+    notice: notice.join('\n'),
+    summary: 'Coverage totals',
+    body: lines.join('\n')
+  }) + '\n'
+)

@@ -3,7 +3,11 @@ import { init } from '@sentry/vue'
 import { expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import './initErrorReporter'
+
+vi.unmock(import('@comfyorg/telemetry/reportError'))
 
 it('suppresses a report raised by real Sentry payload normalization', async () => {
   const consoleError = vi.mocked(console.error)

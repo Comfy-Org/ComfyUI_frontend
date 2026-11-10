@@ -15,6 +15,8 @@ export interface CheckoutPlan {
     readonly yearly: number
   }
   readonly monthlyCredits: number
+  /** What the server bills for a year of a team credit stop, in USD. */
+  readonly yearlyChargeUsd?: number
   /**
    * A tier plan shows the quote's price once one arrives; a team credit stop
    * always shows its own.
