@@ -62,7 +62,9 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ open_on_cloud_enabled: true })
+    )
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
     remoteConfig.value = {}
@@ -107,6 +109,25 @@ describe(handleDesktopWorkflowHandoff, () => {
     }
   )
 
+  it('boots the editor without touching the transfer while Open on Cloud is off', async () => {
+    const { relay } = await stagedRelay()
+    openAt(relay)
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({ open_on_cloud_enabled: false })
+    )
+    const replace = relayed()
+    const splash = showSplash()
+    splash.textContent = 'Loading'
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+
+    expect(api.getUserData).not.toHaveBeenCalled()
+    expect(api.deleteUserData).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+    expect(api.user).toBe('desktop-user')
+    expect(splash.textContent).toBe('Loading')
+  })
+
   it('consumes the staged transfer once and forwards to Comfy Cloud', async () => {
     const { relay, record } = await stagedRelay()
     openAt(relay)
@@ -130,7 +151,8 @@ describe(handleDesktopWorkflowHandoff, () => {
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {
     const features = {
-      comfy_cloud_base_url: 'https://custom-cloud.example.com'
+      comfy_cloud_base_url: 'https://custom-cloud.example.com',
+      open_on_cloud_enabled: true
     }
     remoteConfig.value = features
     const { relay, record } = await stagedRelay()
