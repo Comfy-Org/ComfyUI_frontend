@@ -46,8 +46,8 @@
             spellcheck="false"
             @input="handleInput"
             @focus="valueBeforeEditing = modelValue"
-            @blur="handleBlur"
-            @keyup.enter="handleBlur"
+            @blur="commitDraft"
+            @keyup.enter="commitDraft"
             @keydown.esc.prevent.stop="cancelTextEdit"
             @keydown.up.prevent="updateValueBy(step)"
             @keydown.down.prevent="updateValueBy(-step)"
@@ -144,22 +144,21 @@ function handleInput(event: Event) {
   if (event.target instanceof HTMLInputElement) draft.value = event.target.value
 }
 
-function handleBlur(e: Event) {
-  if (draft.value === undefined) return
-  const target = e.target
-  if (!(target instanceof HTMLInputElement)) return
-  const raw = target.value.trim()
+function commitDraft(): number {
+  if (draft.value === undefined) return modelValue.value
+  const raw = draft.value.trim()
   const parsed = parseValue
     ? parseValue(raw)
     : raw === ''
       ? undefined
       : Number(raw)
-  if (parsed != null && !isNaN(parsed)) {
-    modelValue.value = clamp(parsed)
-  } else {
-    target.value = displayValue ?? String(modelValue.value)
-  }
   draft.value = undefined
+  if (parsed != null && !isNaN(parsed)) {
+    const value = clamp(parsed)
+    modelValue.value = value
+    return value
+  }
+  return modelValue.value
 }
 
 function cancelTextEdit() {
@@ -179,6 +178,11 @@ useNumberScrub(scrubElement, {
   max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
   step: () => step,
   disabled: () => disabled,
+  onScrubStart: () => {
+    const value = commitDraft()
+    inputField.value?.blur()
+    return value
+  },
   onScrub: (value) => {
     if (canStep.value) modelValue.value = value
   },

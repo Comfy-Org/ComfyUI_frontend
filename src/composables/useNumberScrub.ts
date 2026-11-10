@@ -10,6 +10,7 @@ export function useNumberScrub(
     max,
     step,
     disabled,
+    onScrubStart,
     onScrub,
     onClick
   }: {
@@ -18,6 +19,7 @@ export function useNumberScrub(
     max: MaybeRefOrGetter<number>
     step: MaybeRefOrGetter<number>
     disabled: MaybeRefOrGetter<boolean>
+    onScrubStart: () => number
     onScrub: (value: number) => void
     onClick: () => void
   }
@@ -36,7 +38,7 @@ export function useNumberScrub(
       if (toValue(disabled) || editingControl) return
       if (!dragged) {
         if (!['left', 'right'].includes(swipe.direction.value)) return
-        startValue = toValue(value)
+        startValue = onScrubStart()
         const width = toValue(target)?.getBoundingClientRect().width ?? 0
         const span = Math.min(
           toValue(max) - toValue(min),
