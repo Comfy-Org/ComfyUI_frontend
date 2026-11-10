@@ -61,6 +61,51 @@ test.describe(
         node.getByTestId(TestIds.widgets.widget).locator('canvas')
       ).toHaveCount(3)
     })
+
+    test('repaints when a legacy widget mutates its value and marks the canvas dirty', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.clearGraph()
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator(legacyNode.id)
+        .getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+
+      const readCenterPixel = () =>
+        canvas.evaluate((element: HTMLCanvasElement) => {
+          const { data } = element
+            .getContext('2d')!
+            .getImageData(element.width / 2, element.height / 2, 1, 1)
+          return Array.from(data).join(',')
+        })
+      const green = '119,255,119,255'
+      const blue = '119,119,255,255'
+      const red = '255,119,119,255'
+      await expect.poll(readCenterPixel).toBe(green)
+
+      await test.step('click through the legacy mouse handler', async () => {
+        const { height } = (await canvas.boundingBox())!
+        await canvas.click({ position: { x: 20, y: height / 2 } })
+        await expect.poll(readCenterPixel).toBe(blue)
+      })
+
+      await test.step('mutate the value outside any pointer event', async () => {
+        await comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)!
+          const widget = node.widgets!.find(
+            (widget) => widget.name === 'legacy_widget'
+          )!
+          widget.value = 1
+          node.setDirtyCanvas(true)
+        }, legacyNode.id)
+        await expect.poll(readCenterPixel).toBe(red)
+      })
+    })
   }
 )
 

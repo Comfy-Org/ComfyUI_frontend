@@ -1,12 +1,18 @@
 //es
 import { app } from '../../scripts/app.js'
 
+function legacyWidgetFillColor(value) {
+  if (value < 0) return '#77F'
+  if (value > 0) return '#F77'
+  return '#7F7'
+}
+
 function legacyWidget(node, inputName, _inputData) {
   if (!node.widgets) node.widgets = []
   const widget = {
     draw: function (ctx, _node, widget_width, y, H) {
       ctx.save()
-      ctx.fillStyle = '#7F7'
+      ctx.fillStyle = legacyWidgetFillColor(this.value)
       ctx.fillRect(15, y, widget_width - 15 * 2, H)
       ctx.restore()
     },
@@ -18,6 +24,7 @@ function legacyWidget(node, inputName, _inputData) {
       } else if (x > widget_width - 30 && x < widget_width) {
         this.value++
       }
+      node.setDirtyCanvas(true)
     },
     name: inputName,
     options: {},
