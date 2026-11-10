@@ -12,7 +12,7 @@ import {
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -46,53 +46,55 @@ async function runAndGetRefused(page: Page, creditsLocked: boolean) {
   await page.getByTestId(TestIds.topbar.queueButton).click()
 }
 
-test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
-  test.beforeEach(async ({ page }) => {
-    await new CloudWorkspaceMockHelper(page).setup(
-      DEFAULT_TEAM_MEMBERS,
-      workspace('personal', 'owner'),
-      FREE_ACCOUNT_WITH_CREDITS,
-      { can_run_workflows: true }
-    )
-    await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute({ subscription_required: true }))
-    )
-  })
-
-  test(
-    'says why bought credits did not unlock the run',
-    { tag: '@screenshot' },
-    async ({ page }) => {
-      await runAndGetRefused(page, true)
-
-      const notice = page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-      await expect(notice).toBeVisible({ timeout: 30_000 })
-      await expect(notice).toHaveText(
-        "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
-      )
-      await expectRegionScreenshot(
-        page,
-        [
-          page
-            .getByRole('dialog')
-            .getByRole('heading', { name: 'Choose a Plan' }),
-          notice
-        ],
-        'credits-locked-subscribe-dialog.png'
-      )
+test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
+  const ROWS = [
+    {
+      subscriptionState: 'never_subscribed',
+      body: 'Running workflows on Cloud needs a plan.'
+    },
+    {
+      subscriptionState: 'ended',
+      body: 'Your plan has ended. Resubscribe to keep running workflows on Cloud.'
     }
-  )
+  ] as const
 
-  test('stays out of the dialog for an account with no credits', async ({
-    page
-  }) => {
-    await runAndGetRefused(page, false)
+  for (const { subscriptionState, body } of ROWS) {
+    for (const creditsLocked of [true, false]) {
+      test(`explains the refused run and links to the Plans page (${subscriptionState}, credits_locked: ${creditsLocked})`, async ({
+        page
+      }) => {
+        await new CloudWorkspaceMockHelper(page).setup(
+          DEFAULT_TEAM_MEMBERS,
+          workspace('personal', 'owner'),
+          {
+            ...FREE_ACCOUNT_WITH_CREDITS,
+            subscription_state: subscriptionState
+          },
+          { can_run_workflows: true }
+        )
+        await page.route('**/api/features', (route) =>
+          route.fulfill(jsonRoute({ subscription_required: true }))
+        )
+        const tabsBeforeRun = page.context().pages().length
 
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
-    await expect(
-      page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-    ).toHaveCount(0)
-  })
+        await runAndGetRefused(page, creditsLocked)
+
+        const dialog = page.getByTestId('platform-plans-link-dialog')
+        await expect(dialog).toBeVisible()
+        await expect(dialog.getByText("Your workflow didn't run")).toBeVisible()
+        await expect(dialog.getByText(body)).toBeVisible()
+        expect(
+          page.context().pages(),
+          'the refusal opens no tab on its own'
+        ).toHaveLength(tabsBeforeRun)
+
+        await expectPlatformPlansOpened(page, () =>
+          dialog.getByRole('link', { name: 'Choose a plan' }).click()
+        )
+        await expect(dialog).toBeHidden()
+      })
+    }
+  }
 })
 
 async function arrangeEndedPlan(page: Page, hasFunds: boolean) {
@@ -116,42 +118,14 @@ async function clickSubscribeToRun(page: Page) {
   await page.getByTestId(TestIds.topbar.subscribeToRunButton).click()
 }
 
-test.describe(
-  'Subscribe to Run for an ended plan with funds',
-  { tag: '@cloud' },
-  () => {
-    test.beforeEach(async ({ page }) => {
-      await arrangeEndedPlan(page, true)
-    })
+test.describe('Subscribe to Run for an ended plan', { tag: '@cloud' }, () => {
+  for (const hasFunds of [true, false]) {
+    test(`opens the platform Plans page (has_funds: ${hasFunds})`, async ({
+      page
+    }) => {
+      await arrangeEndedPlan(page, hasFunds)
 
-    test('says why credits did not help', async ({ page }) => {
-      await clickSubscribeToRun(page)
-
-      await expect(
-        page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-      ).toHaveText(
-        "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
-        { timeout: 30_000 }
-      )
+      await expectPlatformPlansOpened(page, () => clickSubscribeToRun(page))
     })
   }
-)
-
-test.describe(
-  'Subscribe to Run for an ended plan without funds',
-  { tag: '@cloud' },
-  () => {
-    test.beforeEach(async ({ page }) => {
-      await arrangeEndedPlan(page, false)
-    })
-
-    test('stays out of the dialog', async ({ page }) => {
-      await clickSubscribeToRun(page)
-
-      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
-      await expect(
-        page.getByTestId(TestIds.dialogs.creditsLockedNotice)
-      ).toHaveCount(0)
-    })
-  }
-)
+})

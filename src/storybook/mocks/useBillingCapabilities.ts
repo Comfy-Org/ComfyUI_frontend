@@ -92,6 +92,9 @@ export function useBillingCapabilities() {
       receiveServerFact('can_open_plans', capabilityState.canOpenPlans)
     ),
     runDeniedPaymentPastDue: computed(() => false),
+    autoTopUpMemberView: computed(() =>
+      receiveServerFact('auto_top_up_member_view', null)
+    ),
     billingNoticeAudience: computed(() =>
       receiveServerFact(
         'billing_notice_audience',

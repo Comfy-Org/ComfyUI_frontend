@@ -831,6 +831,10 @@ export type AgentThinkingEntry = {
    * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
    */
   tool_call_id?: string
+  /**
+   * True where the stored thinking stops being whole: this entry's text was cut at the per-round cap (8,192 characters), or a later round's thinking was dropped because the turn's cap (32,768 characters) was spent. A client should say the reasoning was shortened. Absent when nothing was cut.
+   */
+  truncated?: boolean
 }
 
 /**
@@ -3198,6 +3202,7 @@ export type BillingPlansResponse = {
    */
   current_plan_slug?: string
   plans: Array<Plan>
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
   team_credit_stops?: TeamCreditStops
 }
 
@@ -5954,28 +5959,36 @@ export type ModelFolder = {
  */
 export type ModelUploadStarted = {
   /**
-   * When `upload_url` stops working (15 minutes after the answer).
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
    */
-  expires_at: string
+  upload_id: string
   /**
-   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
+   */
+  upload_url: string
+  method: 'PUT'
+  /**
+   * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
   headers: {
     [key: string]: string
   }
   /**
-   * The largest file an upload accepts, 2147483648 (2 GiB).
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
+   */
+  expires_at: string
+  /**
+   * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
    */
   max_size_bytes: number
-  method: 'PUT'
   /**
-   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   * Present only for a resumable session. When absent, send one PUT with the returned headers.
    */
-  upload_id: string
+  upload_mode?: 'resumable'
   /**
-   * Signed URL for exactly one staged object; works until `expires_at`.
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
    */
-  upload_url: string
+  chunk_size_bytes?: number
 }
 
 /**
@@ -6860,6 +6873,25 @@ export type PreviewSubscribeResponse = {
    */
   renewal_at?: string
   /**
+   * Whether the checkout must collect explicit consent to today's
+   * charge (a consent checkbox) before confirming this reactivation.
+   * True when requires_reactivation_confirmation is true, current_plan
+   * is present, transition_type is upgrade or duration_change, and
+   * today's charge (amount_due_cents, or cost_today_cents when
+   * amount_due_cents is absent) exceeds the current plan's monthly
+   * price: current_plan.seat_summary.total_cost_cents (the whole
+   * subscription, every seat), divided by 12 when current_plan.duration
+   * is ANNUAL. False otherwise, including every downgrade (nothing is
+   * charged today) and every new_subscription. Present exactly when
+   * requires_reactivation_confirmation is present, and absent when it is
+   * absent.
+   * Not whether the change is a reactivation (that is
+   * requires_reactivation_confirmation) and not an authorization:
+   * subscribe enforces reactivation consent on its own.
+   *
+   */
+  requires_reactivation_charge_confirmation?: boolean
+  /**
    * Whether this previewed change requires explicit reactivation
    * consent. Computed from the persisted subscription and a short-lived
    * cache of Stripe lifecycle state. The subscribe enforcement path
@@ -7692,6 +7724,26 @@ export type SubscriptionDiscount = {
  * Billing period (uppercase to match comfy-api)
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+
+/**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export type SubscriptionPaymentRecovery = {
+  /**
+   * Exact workspace-bound initial-subscription operation; never a newer top-up.
+   */
+  billing_op_id: string
+  /**
+   * The customer must finish or retry the existing initial invoice payment.
+   */
+  reason: 'payment_required'
+}
 
 /**
  * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
@@ -11403,13 +11455,23 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * The file's size, 1 to 2147483648 (2 GiB).
+     * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
+    /**
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
     tags: Array<string>
+  }
+  headers?: {
+    /**
+     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     */
+    Origin?: string
   }
   path?: never
   query?: never
@@ -13971,6 +14033,10 @@ export type GetFeaturesResponses = {
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     */
+    open_on_cloud_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
