@@ -22,7 +22,8 @@ const config: KnipConfig = {
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
-        '!src/__ecs_matrix__/**'
+        '!src/__ecs_matrix__/**',
+        '!src/workbench/extensions/agent/explorations/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
