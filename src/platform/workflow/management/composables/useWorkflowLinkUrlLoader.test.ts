@@ -677,6 +677,23 @@ describe('workflow-id links', () => {
     expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
   })
 
+  it('leaves a newer malformed link a navigation guard holds while an older malformed link is rejected', async () => {
+    const request = vi.spyOn(api, 'fetchApi')
+    await navigate({ workflowId: 'bad1' })
+    const signIn = holdNavigation((to) => to.query.workflowId === 'bad2')
+    const newerLink = navigate({ workflowId: 'bad2', topup: '1' })
+    await signIn.arrived
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+
+    expect(request).not.toHaveBeenCalled()
+    expect(currentQuery()).toEqual({ workflowId: 'bad1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe('bad2')
+    signIn.release()
+    await newerLink
+    expect(currentQuery()).toEqual({ workflowId: 'bad2', topup: '1' })
+  })
+
   it('keeps a boot link opened when another navigation cancels its URL cleanup, and clears it later without reopening', async () => {
     serveFile()
     await navigate({ workflowId: ID })

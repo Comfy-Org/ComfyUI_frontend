@@ -42,7 +42,9 @@ params but leaves `workflowId` and its stash. A navigation guard can hold a
 newer link in the stash while the URL still shows the old one. While the URL
 and the stash name different links, the loader treats the stash as a navigation
 still in flight: it makes no replace and clears neither carrier, even for a
-link it already opened. An empty `?workflowId=` clears the stash when the
+link it already opened. Two different malformed values are different links;
+only the forms the stash records for one URL value (a repeated value joined
+with `,`, a bare `?workflowId` as `,`) count as the same link. An empty `?workflowId=` clears the stash when the
 router captures it, so an older stashed link cannot keep the empty one from
 being rejected as invalid. While the stash holds a link the loader never started
 and the URL does not show, the sweep makes no replace either, so that link's
