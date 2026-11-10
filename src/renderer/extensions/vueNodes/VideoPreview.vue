@@ -137,6 +137,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { MEDIA_ERR_SRC_NOT_SUPPORTED } from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -206,8 +207,6 @@ const handleVideoLoad = (event: Event) => {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
   }
 }
-
-const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
 
 const handleVideoError = (event: Event) => {
   showLoader.value = false

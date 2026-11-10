@@ -18,7 +18,7 @@ const VIDEO_DEFAULT_OPTIONS = {
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
-const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+export const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
