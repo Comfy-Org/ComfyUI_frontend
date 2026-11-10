@@ -340,6 +340,23 @@ describe('Desktop remote assignment', () => {
         vi
           .mocked(ingestApiClient.get)
           .mockRejectedValue(new Error('private request detail'))
+    },
+    {
+      stage: 'Firebase ID token',
+      fail: () => {
+        vi.mocked(getHostProactiveGreetingAdmission).mockResolvedValue(
+          'verify-firebase'
+        )
+        vi.mocked(ingestApiClient.get).mockResolvedValue({
+          data: { agent_proactive_greeting_assignment: assignment }
+        })
+        useAuthStore().currentUser = fromPartial<User>({
+          uid: identity.userId,
+          getIdToken: vi
+            .fn()
+            .mockRejectedValue(new Error('private token detail'))
+        })
+      }
     }
   ])(
     'reports $stage failures once without request or identity details',

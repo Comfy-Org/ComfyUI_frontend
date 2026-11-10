@@ -65,33 +65,54 @@ type HostAssignment = {
   workspaceId: string
   assignment?: AgentGreetingAssignment
 }
+type AssignmentLoadFailure = 'failed'
 
 async function verifyHostFirebaseUser(
   userId: string,
   firebaseUser: () => User | null,
   signal: AbortSignal
-): Promise<boolean> {
+): Promise<true | AssignmentLoadFailure | undefined> {
   const user = firebaseUser()
-  if (user?.uid !== userId) return false
+  if (signal.aborted || user?.uid !== userId) return
   const isStale = () => signal.aborted || firebaseUser() !== user
-  const token = await user.getIdToken()
-  if (!token || isStale()) return false
+  let token: string
+  try {
+    token = await user.getIdToken()
+  } catch {
+    return 'failed'
+  }
+  if (!token || isStale()) return
   const admission = await getHostProactiveGreetingAdmission(userId, token)
-  return admission === 'allowed' && !isStale()
+  if (admission === 'allowed' && !isStale()) return true
 }
 
 async function readLocalAssignment(
   userId: string,
   workspaceId: string,
   signal: AbortSignal
-): Promise<AgentGreetingAssignment | undefined> {
-  const auth = await requestAuth()
+): Promise<AgentGreetingAssignment | AssignmentLoadFailure | undefined> {
+  let auth: Awaited<ReturnType<typeof requestAuth>>
+  try {
+    auth = await requestAuth()
+  } catch {
+    return 'failed'
+  }
   if (signal.aborted) return
-  const { data } = await ingestApiClient.get<unknown>(
-    ingestApiUrl('/features'),
-    { ...auth, signal, timeout: 10_000 }
-  )
-  return resolveProactiveGreetingAssignment(data, { userId, workspaceId })
+  const url = ingestApiUrl('/features')
+  let response: { data: unknown }
+  try {
+    response = await ingestApiClient.get<unknown>(url, {
+      ...auth,
+      signal,
+      timeout: 10_000
+    })
+  } catch {
+    return 'failed'
+  }
+  return resolveProactiveGreetingAssignment(response.data, {
+    userId,
+    workspaceId
+  })
 }
 
 async function loadHostAssignment(
@@ -99,7 +120,7 @@ async function loadHostAssignment(
   workspaceId: string,
   firebaseUser: () => User | null,
   signal: AbortSignal
-): Promise<HostAssignment | undefined> {
+): Promise<HostAssignment | AssignmentLoadFailure | undefined> {
   const isAborted = (): boolean => signal.aborted
   const admission = await getHostProactiveGreetingAdmission(userId)
   if (isAborted() || admission === 'denied') return
@@ -107,12 +128,11 @@ async function loadHostAssignment(
     return admission === 'allowed' ? { userId, workspaceId } : undefined
 
   const assignment = await readLocalAssignment(userId, workspaceId, signal)
-  if (!assignment || isAborted()) return
-  if (
-    admission === 'verify-firebase' &&
-    !(await verifyHostFirebaseUser(userId, firebaseUser, signal))
-  )
-    return
+  if (!assignment || assignment === 'failed') return assignment
+  if (admission === 'verify-firebase') {
+    const proof = await verifyHostFirebaseUser(userId, firebaseUser, signal)
+    if (proof !== true) return proof
+  }
   return { userId, workspaceId, assignment }
 }
 
@@ -168,21 +188,16 @@ export function useProactiveGreetingAssignment() {
         hostAssignment.value = undefined
         if (!open || !userId || !workspaceId) return
         const controller = new AbortController()
-        const isAborted = (): boolean => controller.signal.aborted
         onCleanup(() => controller.abort())
-        try {
-          const admitted = await loadHostAssignment(
-            userId,
-            workspaceId,
-            firebaseUser,
-            controller.signal
-          )
-          if (!isAborted()) hostAssignment.value = admitted
-        } catch {
-          if (isAborted()) return
-          hostAssignment.value = undefined
-          reportAssignmentFailure()
-        }
+        const admitted = await loadHostAssignment(
+          userId,
+          workspaceId,
+          firebaseUser,
+          controller.signal
+        )
+        if (controller.signal.aborted) return
+        if (admitted === 'failed') return reportAssignmentFailure()
+        hostAssignment.value = admitted
       },
       { immediate: true, flush: 'sync' }
     )
