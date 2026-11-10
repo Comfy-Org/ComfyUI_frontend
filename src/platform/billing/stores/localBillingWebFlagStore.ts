@@ -9,7 +9,7 @@ import {
   desktopHostUser
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
 
 const REREAD_INTERVAL_MS = 10 * 60_000
@@ -69,13 +69,13 @@ export const useLocalBillingWebFlagStore = defineStore(
 
     if (!isCloud) {
       const authStore = useAuthStore()
-      const teamWorkspaceStore = useTeamWorkspaceStore()
+      const workspaceIdentity = useWorkspaceIdentity()
 
       watch(
         [
           () => authStore.userId ?? null,
           () =>
-            teamWorkspaceStore.activeWorkspaceId ??
+            workspaceIdentity.activeWorkspaceId ??
             desktopHostUser.value?.workspaceId ??
             null
         ],
