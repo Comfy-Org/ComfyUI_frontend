@@ -149,7 +149,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
         rootGraphInternal = graph
       },
       ui: { settings: { dispatchChange: vi.fn() } },
-      setup: vi.fn()
+      setup: vi.fn(),
+      loadGraphData: vi.fn()
     }
   }
 })
