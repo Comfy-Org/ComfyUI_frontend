@@ -4,13 +4,13 @@ import {
   getComboSpecComboOptions,
   isComboInputSpec,
   isComboInputSpecV1
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
   InputSpec,
   ObjectInfoResponse
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 

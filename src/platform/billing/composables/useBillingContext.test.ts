@@ -11,11 +11,7 @@ import { useSubscription } from '@/platform/billing/subscription/composables/use
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { billingApi } from '@/platform/billing/api/billingApi'
-import type {
-  BillingRail,
-  BillingStatusResponse,
-  Plan
-} from '@comfyorg/billing-core'
+import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -69,7 +65,6 @@ const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
 }
 
 let mockIsPersonal: Ref<boolean>
-let mockBillingRail: Ref<BillingRail | null | undefined>
 
 vi.mock(import('@/platform/distribution/types'), () => {
   return {
@@ -129,9 +124,6 @@ describe('useBillingContext', () => {
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace
-    mockBillingRail = storeToRefs(
-      useWorkspaceBillingStateStore()
-    ).activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspaceId: computed(() =>
         mockIsPersonal.value ? 'personal-123' : 'team-456'
@@ -150,12 +142,6 @@ describe('useBillingContext', () => {
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
-    mockBillingRail.value = undefined
-    vi.mocked(
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail
-    ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
-      mockBillingRail.value = billingRail
-    })
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
@@ -273,7 +259,6 @@ describe('useBillingContext', () => {
       amount_due: 5000,
       currency: 'usd'
     }
-    mockBillingRail.value = 'stripe'
     mockBillingStatus.value.renewal_invoice = invoice
 
     const context = useBillingContext()
@@ -288,7 +273,6 @@ describe('useBillingContext', () => {
       credits: 2000,
       period: 'MONTHLY' as const
     }
-    mockBillingRail.value = 'stripe'
     mockBillingStatus.value.period_credit_grant = grant
 
     const context = useBillingContext()
@@ -296,6 +280,18 @@ describe('useBillingContext', () => {
 
     expect(context.periodCreditGrant.value).toStrictEqual(grant)
   })
+
+  it.for([{ served: '2026-12-01T00:00:00Z' }, { served: undefined }] as const)(
+    'forwards the next credit refill as served ($served)',
+    async ({ served }) => {
+      mockBillingStatus.value.next_credit_refill_at = served
+
+      const context = useBillingContext()
+      await context.initialize()
+
+      expect(context.nextCreditRefillAt.value).toBe(served ?? null)
+    }
+  )
 
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()
@@ -323,7 +319,6 @@ describe('useBillingContext', () => {
   it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()
@@ -497,7 +492,6 @@ describe('useBillingContext', () => {
 
     it('reads empty and makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
-      mockBillingRail.value = 'stripe'
       const context = useBillingContext()
       vi.clearAllMocks()
 

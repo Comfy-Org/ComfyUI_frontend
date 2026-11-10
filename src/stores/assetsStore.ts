@@ -1,6 +1,7 @@
 import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
 import { delay, difference, uniqBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   computed,
   effectScope,
@@ -13,6 +14,10 @@ import {
 } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
@@ -22,6 +27,7 @@ import {
 import type {
   AssetItem,
   AssetResponse,
+  ModelBrowserAsset,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -29,6 +35,12 @@ import {
   useAssetsQuery,
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  getAssetCategories,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { assetService } from '@/platform/assets/services/assetService'
 import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
@@ -113,6 +125,8 @@ export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
   const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const toast = useToast()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -469,7 +483,71 @@ export const useAssetsStore = defineStore('assets', () => {
    * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
+    const libraryCategory = 'library:models'
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
+
+    function includesLibrary(): boolean {
+      return (
+        isCloud &&
+        flags.runtimeLibraryModelsEnabled &&
+        !!workspaceStore.workspaceId &&
+        !!useDeploymentPickStore().bootDeployment
+      )
+    }
+
+    const mergedAssets = computed<ModelBrowserAsset[]>(() => {
+      const release = Array.from(
+        modelStateByCategory.value.get('tag:models')?.assets.values() ?? []
+      )
+      const library = Array.from(
+        modelStateByCategory.value.get(libraryCategory)?.assets.values() ?? []
+      ).sort(
+        (a, b) =>
+          Date.parse(b.created_at) - Date.parse(a.created_at) ||
+          (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+      )
+      const keyFor = (category: string, asset: AssetItem) =>
+        JSON.stringify([category, asset.loader_path ?? getAssetFilename(asset)])
+      const releaseKeys = new Set(
+        release.flatMap((asset) =>
+          getAssetCategories(asset, flags.supportsModelTypeTags).map(
+            (category) => keyFor(category, asset)
+          )
+        )
+      )
+      const releaseIds = new Set(release.map((asset) => asset.id))
+      const libraryKeys = new Set<string>()
+      const visibleLibrary = library.flatMap((asset): ModelBrowserAsset[] => {
+        if (releaseIds.has(asset.id)) return []
+        const filename = asset.loader_path ?? getAssetFilename(asset)
+        const categories = getAssetCategories(
+          asset,
+          flags.supportsModelTypeTags
+        )
+        const browserCategories = categories.filter((category) => {
+          const key = keyFor(category, asset)
+          return (
+            deploymentDownloads(category, filename) &&
+            !releaseKeys.has(key) &&
+            !libraryKeys.has(key)
+          )
+        })
+        if (browserCategories.length === 0) return []
+        browserCategories.forEach((category) =>
+          libraryKeys.add(keyFor(category, asset))
+        )
+        return [
+          {
+            ...asset,
+            isWorkspaceLibrary: true,
+            ...(browserCategories.length < categories.length
+              ? { browserCategories }
+              : {})
+          }
+        ]
+      })
+      return [...release, ...visibleLibrary]
+    })
 
     const assetsArrayCache = new Map<
       string,
@@ -483,6 +561,28 @@ export const useAssetsStore = defineStore('assets', () => {
       AbortController,
       Promise<void>
     >()
+
+    watch(
+      [
+        () => workspaceStore.workspaceId,
+        () => workspaceStore.identityGeneration
+      ],
+      () => {
+        for (const controller of abortByCategory.values()) controller.abort()
+        abortByCategory.clear()
+        pendingRequestByCategory.clear()
+        pendingPromiseByCategory.clear()
+        assetsArrayCache.clear()
+        modelStateByCategory.value.clear()
+      },
+      { flush: 'sync' }
+    )
+
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      () => invalidateCategory(libraryCategory),
+      { flush: 'sync' }
+    )
 
     function createState(
       existingAssets?: Map<string, AssetItem>
@@ -514,6 +614,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (key.startsWith('tag:')) {
         return key
       }
+      if (key === libraryCategory) return key
       return modelToNodeStore.getCategoryForNodeType(key)
     }
 
@@ -522,7 +623,13 @@ export const useAssetsStore = defineStore('assets', () => {
      * Translates nodeType to category internally for cache lookup.
      * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
      */
-    function getAssets(key: string): AssetItem[] {
+    function getAssets(key: string): ModelBrowserAsset[] {
+      return key === 'tag:models' && includesLibrary()
+        ? mergedAssets.value
+        : getCachedAssets(key)
+    }
+
+    function getCachedAssets(key: string): AssetItem[] {
       const category = resolveCategory(key)
       if (!category) return EMPTY_ASSETS
 
@@ -540,22 +647,34 @@ export const useAssetsStore = defineStore('assets', () => {
       return array
     }
 
+    function sourceCategories(category: string): string[] {
+      return category === 'tag:models' && includesLibrary()
+        ? [category, libraryCategory]
+        : [category]
+    }
+
     function isLoading(key: string): boolean {
       const category = resolveCategory(key)
       if (!category) return false
-      return modelStateByCategory.value.get(category)?.isLoading ?? false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.isLoading ?? false
+      )
     }
 
     function getError(key: string): Error | undefined {
       const category = resolveCategory(key)
       if (!category) return undefined
-      return modelStateByCategory.value.get(category)?.error
+      return sourceCategories(category)
+        .map((source) => modelStateByCategory.value.get(source)?.error)
+        .find((error) => error !== undefined)
     }
 
     function hasMore(key: string): boolean {
       const category = resolveCategory(key)
       if (!category) return false
-      return modelStateByCategory.value.get(category)?.hasMore ?? false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.hasMore ?? false
+      )
     }
 
     function hasAssetKey(key: string): boolean {
@@ -627,7 +746,7 @@ export const useAssetsStore = defineStore('assets', () => {
                   }
             )
 
-            if (isStale(category, state)) return
+            if (controller.signal.aborted || isStale(category, state)) return
 
             const newAssets = response.assets
 
@@ -683,6 +802,12 @@ export const useAssetsStore = defineStore('assets', () => {
             if (isStale(category, state)) return
             console.error(`Error loading batch for ${category}:`, err)
 
+            if (category === libraryCategory) {
+              reportError(err, {
+                surface: 'assets',
+                errorType: 'error_loading_workspace_library_models'
+              })
+            }
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             state.isLoading = false
@@ -762,10 +887,16 @@ export const useAssetsStore = defineStore('assets', () => {
       options?: ModelRefreshOptions
     ): Promise<void> {
       const category = `tag:${tag}`
-      await updateModelsForCategory(
-        category,
-        (opts) => assetService.getAssetsPageByTag(tag, true, opts),
-        options
+      await Promise.all(
+        sourceCategories(category).map((source) =>
+          updateModelsForCategory(
+            source,
+            source === libraryCategory
+              ? (opts) => assetService.getWorkspaceLibraryAssetsPage(opts)
+              : (opts) => assetService.getAssetsPageByTag(tag, true, opts),
+            options
+          )
+        )
       )
     }
 
@@ -775,6 +906,7 @@ export const useAssetsStore = defineStore('assets', () => {
      * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
      */
     function invalidateCategory(category: string): void {
+      if (category === 'tag:models') invalidateCategory(libraryCategory)
       abortByCategory.get(category)?.abort()
       abortByCategory.delete(category)
       modelStateByCategory.value.delete(category)
@@ -798,7 +930,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (cacheKey && !category) return
 
       const categoriesToCheck = category
-        ? [category]
+        ? sourceCategories(category)
         : Array.from(modelStateByCategory.value.keys())
 
       for (const cat of categoriesToCheck) {
@@ -815,12 +947,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
-    /**
-     * Update asset metadata with optimistic cache update
-     * @param asset The asset to update
-     * @param userMetadata The user_metadata to save
-     * @param cacheKey Optional cache key to target for optimistic update
-     */
     async function updateAssetMetadata(
       asset: AssetItem,
       userMetadata: Record<string, unknown>,
@@ -834,13 +960,19 @@ export const useAssetsStore = defineStore('assets', () => {
           user_metadata: userMetadata
         })
         updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        return true
       } catch (error) {
-        console.error('Failed to update asset metadata:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_metadata'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(
           asset.id,
           { user_metadata: originalMetadata },
           cacheKey
         )
+        return false
       }
     }
 
@@ -884,7 +1016,11 @@ export const useAssetsStore = defineStore('assets', () => {
           updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
         }
       } catch (error) {
-        console.error('Failed to update asset tags:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_tags'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
 
         if (removedTagsOnServer.length > 0) {

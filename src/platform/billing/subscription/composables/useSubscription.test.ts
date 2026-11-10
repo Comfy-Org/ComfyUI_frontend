@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -431,9 +430,6 @@ describe('useSubscription', () => {
         await fetchStatus()
 
         expect(subscriptionStatus.value).toEqual(status)
-        expect(
-          useWorkspaceBillingStateStore().setWorkspaceBillingRail
-        ).toHaveBeenCalledWith('workspace-123', 'stripe')
         // One transport per read: the rail a read is on is the only client it
         // asks, or the panels read one thing and the rail settled another.
         expect(path.idleReader()).not.toHaveBeenCalled()
@@ -595,8 +591,7 @@ describe('useSubscription', () => {
         )
         .mockResolvedValueOnce({
           is_active: false,
-          has_funds: false,
-          billing_rail: 'legacy_stripe'
+          has_funds: false
         })
 
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
@@ -619,15 +614,8 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
       expect(subscriptionStatus.value).toEqual({
         is_active: false,
-        has_funds: false,
-        billing_rail: 'legacy_stripe'
+        has_funds: false
       })
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).toHaveBeenCalledOnce()
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 
     it('drops the previous workspace renewal invoice link on a workspace switch', async () => {
