@@ -4,10 +4,7 @@
       v-if="isDragging && !isDocked"
       :class="
         cn(
-          'w-[200px] border-dashed border-blue-500 opacity-80',
-          'm-1.5 flex items-center justify-center self-stretch',
-          'rounded-md before:-ml-50 before:h-full before:w-50',
-          'pointer-events-auto',
+          'pointer-events-auto m-1.5 flex w-50 items-center justify-center self-stretch rounded-md border-dashed border-blue-500 opacity-80 before:-ml-50 before:h-full before:w-50',
           isMouseOverDropZone &&
             'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
         )

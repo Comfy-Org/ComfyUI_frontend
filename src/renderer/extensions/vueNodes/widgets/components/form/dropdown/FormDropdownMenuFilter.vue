@@ -20,10 +20,8 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
-const uploadButtonStyle = cn(
-  'ml-auto flex',
-  'transition-all duration-150 hover:bg-foreground/90 active:scale-95'
-)
+const uploadButtonStyle =
+  'ml-auto flex transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 </script>
 
 <template>
