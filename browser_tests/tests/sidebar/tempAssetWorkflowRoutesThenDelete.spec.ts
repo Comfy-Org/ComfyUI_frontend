@@ -152,7 +152,7 @@ for (const route of [
     shape: 'an expanded-stack child at the root folder',
     asset: TEMP_STACK_PREVIEW,
     reveal: inExpandedStack(1),
-    written: `${TEMP_STACK_PREVIEW.name} [temp]`,
+    written: `${TEMP_STACK_PREVIEW.hash} [temp]`,
     controls: rootControls(TEMP_STACK_PREVIEW)
   },
   {
@@ -242,28 +242,28 @@ for (const route of [
     shape: 'an expanded-stack child at the root folder',
     asset: TEMP_STACK_PREVIEW,
     reveal: inExpandedStack(1),
-    written: `${TEMP_STACK_PREVIEW.name} [temp]`,
+    written: `${TEMP_STACK_PREVIEW.hash} [temp]`,
     controls: rootControls(TEMP_STACK_PREVIEW)
   },
   {
     shape: 'an expanded-stack child whose metadata names only its subfolder',
     asset: TEMP_FOLDER_PREVIEW,
     reveal: inExpandedStack(0),
-    written: `previews/${TEMP_FOLDER_PREVIEW.name} [temp]`,
+    written: `previews/${TEMP_FOLDER_PREVIEW.hash} [temp]`,
     controls: folderControls(TEMP_FOLDER_PREVIEW)
   },
   {
     shape: 'a card with no job at the root folder',
     asset: FLAT_TEMP_ASSET,
     reveal: asCard,
-    written: `${FLAT_TEMP_ASSET.name} [temp]`,
+    written: `${FLAT_TEMP_ASSET.hash} [temp]`,
     controls: rootControls(FLAT_TEMP_ASSET)
   },
   {
     shape: 'a card with no job whose metadata names only its subfolder',
     asset: FLAT_FOLDER_TEMP_ASSET,
     reveal: asCard,
-    written: `previews/${FLAT_FOLDER_TEMP_ASSET.name} [temp]`,
+    written: `previews/${FLAT_FOLDER_TEMP_ASSET.hash} [temp]`,
     controls: folderControls(FLAT_FOLDER_TEMP_ASSET)
   }
 ]) {
