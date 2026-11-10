@@ -65,6 +65,10 @@ function isSameLink(carried: unknown, workflowId: unknown): boolean {
   )
 }
 
+function failureContext(cause: unknown) {
+  return { error_name: cause instanceof Error ? cause.name : typeof cause }
+}
+
 function isWorkflowPath(path: string): boolean {
   return (
     path.startsWith('workflows/') &&
@@ -116,9 +120,10 @@ async function lookupSidebarFile(workflowId: string): Promise<LookupResult> {
     const response = await api.fetchApi(`/workflows/${workflowId}/sidebar-file`)
     return await readLookupResponse(response)
   } catch (cause) {
-    reportError(new Error('Could not read workflow link', { cause }), {
+    reportError(new Error('Could not read workflow link'), {
       surface: 'graph',
-      errorType: 'error_loading_workflow_link'
+      errorType: 'error_loading_workflow_link',
+      context: failureContext(cause)
     })
     return { kind: 'error' }
   }
@@ -176,9 +181,10 @@ function useWorkflowLinkUrlLoaderInternal() {
     try {
       return (await router.replace({ query })) === undefined
     } catch (cause) {
-      reportError(new Error('Could not clear workflow link', { cause }), {
+      reportError(new Error('Could not clear workflow link'), {
         surface: 'graph',
-        errorType: 'error_clearing_workflow_link'
+        errorType: 'error_clearing_workflow_link',
+        context: failureContext(cause)
       })
       return true
     }
@@ -220,9 +226,10 @@ function useWorkflowLinkUrlLoaderInternal() {
       })
       return opened ? { kind: 'opened' } : { kind: 'error' }
     } catch (cause) {
-      reportError(new Error('Could not open workflow link', { cause }), {
+      reportError(new Error('Could not open workflow link'), {
         surface: 'graph',
-        errorType: 'error_opening_workflow_link'
+        errorType: 'error_opening_workflow_link',
+        context: failureContext(cause)
       })
       return { kind: 'error' }
     }
