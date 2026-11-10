@@ -44,6 +44,7 @@ export type CapabilityDenialReason =
   | 'membership_managed_by_directory'
   | 'personal_workspace_creator'
   | 'workspace_creator'
+  | 'workspace_owner'
   | 'only_owner'
   | 'billing_state_unknown'
   | 'free_tier_exhausted'
@@ -95,6 +96,7 @@ const KNOWN_REASONS: Readonly<
   membership_managed_by_directory: true,
   personal_workspace_creator: true,
   workspace_creator: true,
+  workspace_owner: true,
   only_owner: true,
   billing_state_unknown: true,
   free_tier_exhausted: true,

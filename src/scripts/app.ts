@@ -776,7 +776,13 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -804,21 +810,27 @@ export class ComfyApp implements IComfyApp {
       })
       if (precondition) {
         void useAccountPreconditionDialog().open(precondition, {
-          nodeType: detail.node_type
+          nodeType: detail.node_type,
+          runRefused: true
         })
       }
       this.canvas.draw(true, true)
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          jobId,
+          workflowId
+        )
+      ) {
         releaseSharedObjectUrl(blobUrl)
         return
       }
@@ -1967,6 +1979,7 @@ export class ComfyApp implements IComfyApp {
               const opened = await useAccountPreconditionDialog().open(
                 promptPrecondition,
                 {
+                  runRefused: true,
                   creditsLocked: promptErrorHasLockedCredits(
                     error instanceof PromptExecutionError
                       ? error.response.error

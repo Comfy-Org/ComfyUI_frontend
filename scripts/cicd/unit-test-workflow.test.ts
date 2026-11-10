@@ -20,6 +20,11 @@ it('gives every main push its own concurrency group', () => {
   )
 })
 
+// test-report downloads these by name within the same run. A 1-day
+// retention does not survive "re-run failed jobs" clicked more than a day
+// later: test-shards/test-packages keep their original (by-then-expired)
+// artifacts, so test-report fails on a missing-artifact error unrelated to
+// the PR under test (hit on frontend #22645 and #22507).
 it.for`
   job             | artifact
   ${'test-shards'}   | ${'unit-shard-${{ matrix.shard }}'}

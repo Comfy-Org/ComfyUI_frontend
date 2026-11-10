@@ -451,6 +451,46 @@ export type AgentMessageDoneFrame = {
 }
 
 /**
+ * The immutable model selection receipt for an accepted turn.
+ */
+export type AgentModelReceipt = {
+  contract: 'v1'
+  /**
+   * Exact model ID to which the turn is pinned.
+   */
+  model_id: string
+  /**
+   * Profile revision pinned for the turn (bootstrap for the configured default profile).
+   */
+  profile_revision: string
+  /**
+   * The supplied model_selection object, or null when omitted.
+   */
+  requested: AgentModelSelection | null
+  source: 'request' | 'deployment_default'
+  strategy: 'anthropic'
+  wire: 'anthropic_messages' | 'openai_chat'
+}
+
+/**
+ * An explicit exact model selection. Unknown properties are refused with 400 so a newer intent is never silently ignored by an older server.
+ */
+export type AgentModelSelection = {
+  /**
+   * Exact model ID, using the agent-llm v1 ID grammar.
+   */
+  model_id: string
+  /**
+   * Reserved dial option ID. It is accepted and recorded in requested while the dial is off, but does not affect resolution.
+   */
+  option_id?: string
+}
+
+export type AgentModelUnavailable = AgentError & {
+  code: 'model_unavailable'
+}
+
+/**
  * The `context` of a `paused` ask.
  */
 export type AgentPausedContext = {
@@ -600,6 +640,7 @@ export type AgentPostMessageRequest = {
       [key: string]: unknown
     }
   }
+  model_selection?: AgentModelSelection
   /**
    * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
@@ -831,6 +872,10 @@ export type AgentThinkingEntry = {
    * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
    */
   tool_call_id?: string
+  /**
+   * True where the stored thinking stops being whole: this entry's text was cut at the per-round cap (8,192 characters), or a later round's thinking was dropped because the turn's cap (32,768 characters) was spent. A client should say the reasoning was shortened. Absent when nothing was cut.
+   */
+  truncated?: boolean
 }
 
 /**
@@ -950,13 +995,14 @@ export type AgentToolCallFrame = {
 }
 
 /**
- * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
+ * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames. The model selection receipt is present when the backend supports its configured wire. A client that requested selection must treat a missing receipt as selection not applied.
  */
 export type AgentTurnAccepted = {
   /**
    * ID of the assistant message that will stream the reply.
    */
   message_id: string
+  model_selection?: AgentModelReceipt
   thread_id: string
 }
 
@@ -1530,12 +1576,34 @@ export type AutoReloadSettingsRequest = {
 }
 
 /**
+ * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
+ */
+export type AutoTopUpMemberView = {
+  cycle_resets_at: string | null
+  /**
+   * Present only when repeated declined charges automatically disabled auto top-up.
+   */
+  disabled_reason?: 'consecutive_declines'
+  /**
+   * Distinguishes the default maximum from an owner-selected limit, without exposing either amount.
+   */
+  monthly_budget_is_default: boolean
+  /**
+   * Server-resolved display state; card expiry does not change it.
+   */
+  status: 'off' | 'on' | 'on_hold' | 'paused_by_budget' | 'failed'
+  target_credits: number | null
+  threshold_credits: number | null
+}
+
+/**
  * Recorded account setup guidance, separate from owner authority in
  * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
  * means setup is not available. Owner read/disable authority remains separate.
  * These states do not determine surface visibility. Unified billing settings
- * hide the auto top-up card when can_top_up is false, including paused or
- * payment-failed billing.
+ * show the auto top-up card only when capabilities.can_view_auto_top_up is
+ * true. Paused or payment-failed billing hides it; the manual-purchase
+ * switch does not.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -1705,8 +1773,9 @@ export type BillingBalanceResponse = {
  *
  * When the deployment has billing disabled, this endpoint answers without
  * consulting billing-api: can_top_up is true; can_manage_members,
- * can_invite_members, can_manage_subscription and can_manage_auto_top_up
- * follow the owner role. Other billing-action fields are false. These role
+ * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
+ * can_view_auto_top_up follow the owner role, and
+ * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
  * facts do not promise that billing endpoints are available.
  *
  */
@@ -2006,6 +2075,41 @@ export type BillingCapabilities = {
    */
   can_upgrade: boolean
   /**
+   * - Answers: should the client show the owner auto top-up card?
+   * - True: owner management authority and top-up eligibility, except
+   * that stopped manual purchases do not hide this card. Paused and
+   * past-due billing still hide it. Render this fact as received.
+   * - False: denied_reasons.can_view_auto_top_up names the first refusal,
+   * the can_manage_auto_top_up reason before the can_top_up reason,
+   * excluding topup_purchases_paused.
+   * - When billing-api omits this field, ingest serves
+   * can_manage_auto_top_up and can_top_up as served here, and takes the
+   * reason from their denied_reasons in the same order. This fallback
+   * stays closed whenever can_top_up is false.
+   * - Not: authorization to enable, edit or charge auto top-up, and not
+   * setup readiness, which auto_top_up_setup reports. auto_top_up_enabled
+   * still gates the rollout.
+   *
+   */
+  can_view_auto_top_up: boolean
+  /**
+   * - Answers: should the client show the member auto top-up notice that
+   * sends a non-owner to a workspace owner?
+   * - True: the actor is a member but not an owner, and the workspace
+   * passes workspace eligibility checks other than stopped manual
+   * purchases. Paused and past-due billing still hide it.
+   * Render it as received; never derive
+   * it from can_top_up, can_manage_auto_top_up or their reasons.
+   * - False: denied_reasons.can_view_auto_top_up_member_notice names the
+   * first refusal.
+   * - When billing-api omits this field, ingest serves true for a member
+   * who is not an owner, with no reason.
+   * - Not: authorization to buy credits or change auto top-up.
+   * auto_top_up_enabled still gates the rollout.
+   *
+   */
+  can_view_auto_top_up_member_notice: boolean
+  /**
    * Whether to offer the actor's own usage attribution view. Optional for rolling deployments; absent means unknown. True for a current workspace member with usage attribution enabled. Clients must use person/source ledger groupings or person/source filters, which the existing route scopes to the actor for members. This is not permission for the default model grouping, whole-workspace analytics, or other unscoped queries. Query authorization and filters are unchanged. Attribution disabled emits usage_attribution_unavailable; missing denial means unknown.
    */
   can_view_own_usage?: boolean
@@ -2032,10 +2136,43 @@ export type BillingCapabilitiesResponse = {
    *
    */
   auto_top_up_enabled: boolean
+  auto_top_up_member_view?: AutoTopUpMemberView
   auto_top_up_setup?: AutoTopUpSetup
+  /**
+   * Which set of billing notices speaks to the plan. Rendered as received;
+   * never derive it from tier names, slugs or the workspace type.
+   * - none: no subscription, a reserved (scheduled) row, an ENTERPRISE plan,
+   * or a plan that is neither a Team plan nor a personal paid tier (FREE or
+   * unrecognised). ENTERPRISE wins over every other rule.
+   * - team: a Team plan, meaning the subscription has a team credit stop or a
+   * per-credit or retired seat-based Team plan slug.
+   * - personal: a STANDARD, CREATOR, PRO or FOUNDERS_EDITION plan that is not
+   * a Team plan.
+   * It classifies the workspace's pointed subscription, the one the
+   * subscription status reports; a scheduled replacement never stands in for
+   * it. It ignores the plan's status (an ended plan keeps its audience) and
+   * the user's role. It is not a capability and not authorization. Absent in
+   * the same cases as recovery_route, and when
+   * subscription_state_authoritative is false (unknown, not none).
+   *
+   */
+  billing_notice_audience?: 'none' | 'team' | 'personal'
   capabilities: BillingCapabilities
   denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
+  /**
+   * When the ending notice of a canceled ENTERPRISE plan starts: its
+   * cancel_at minus 14 days. The notice applies once the current time is
+   * at or after this instant; compare it on the client clock rather than
+   * caching a yes/no answer. Present only while the plan is ENTERPRISE, the
+   * subscription is canceled and its cancel_at is still in the future.
+   * Absent otherwise (including for self-serve plans, whose ending notice
+   * shows as soon as they are canceled), when billing is disabled, when
+   * talking to a billing-api version that predates it, and when the
+   * upstream value is not a valid timestamp.
+   *
+   */
+  ending_notice_starts_at?: string
   /**
    * Time after which the client must refetch this snapshot.
    */
@@ -2074,6 +2211,31 @@ export type BillingCapabilitiesResponse = {
    *
    */
   plan_kind?: 'none' | 'self_serve' | 'sales_managed'
+  /**
+   * The single billing action for this actor in the Cloud profile menu's
+   * credits row. Render as received, not derived from other capabilities.
+   * Members and unknown subscription/payment-recovery state receive none.
+   * Enterprise owners receive only permitted Add credits, including on
+   * reserved rows. Reserved self-serve signup rows receive none; use
+   * subscription_payment_recovery on plans for their Finish payment.
+   * For other eligible owners, verified payment recovery wins, then
+   * Subscribe/Resubscribe without a running paid plan, then Add credits
+   * for a running paid plan (even with zero credits), then permitted
+   * Resubscribe for an ending plan. FREE uses Subscribe, not Resubscribe.
+   * A no-plan Subscribe refusal never falls back to Add credits.
+   * This is not global top-up eligibility, other surfaces' button emphasis
+   * or write authorization. can_top_up still permits purchases without
+   * a plan; local clients retain existing guidance. Older servers and
+   * disabled billing omit the field. Absent, invalid or failed reads
+   * must show no row action.
+   *
+   */
+  primary_billing_action?:
+    | 'update_payment'
+    | 'subscribe'
+    | 'resubscribe'
+    | 'add_credits'
+    | 'none'
   /**
    * Where the customer goes when the plan has ended. Rendered as received;
    * never derive it from tier names or slugs.
@@ -2640,6 +2802,42 @@ export type BillingCapabilityDenials = {
     | 'sales_managed'
     | 'no_upgrade_available'
   /**
+   * Why can_view_auto_top_up is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the can_manage_auto_top_up refusal, then the can_top_up refusal.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - creator_only_provisioning: Only the creator can provision this workspace billing identity.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Accepted from older billing servers only; current policy does not emit this visibility refusal.
+   *
+   */
+  can_view_auto_top_up?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+  /**
+   * Why can_view_auto_top_up_member_notice is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the role refusal, then the workspace refusals in the order can_top_up reaches them.
+   * - not_a_member: The actor is not a workspace member.
+   * - workspace_owner: The actor is a workspace owner, who sees the owner auto top-up card (can_view_auto_top_up) instead.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought, including a paused workspace.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Accepted from older billing servers only; current policy does not emit this visibility refusal.
+   *
+   */
+  can_view_auto_top_up_member_notice?:
+    | 'not_a_member'
+    | 'workspace_owner'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+  /**
    * Why can_view_own_usage is false, in enum order. Attribution disabled emits usage_attribution_unavailable. Missing means no recognized explanation, including disabled team-workspaces or unreadable membership, never permission. This does not explain can_view_team_usage.
    */
   can_view_own_usage?: 'not_a_member' | 'usage_attribution_unavailable'
@@ -3074,6 +3272,7 @@ export type BillingPlansResponse = {
    */
   current_plan_slug?: string
   plans: Array<Plan>
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
   team_credit_stops?: TeamCreditStops
 }
 
@@ -3215,6 +3414,7 @@ export type BillingStatusResponse = {
     [key: string]: boolean
   }
   subscription_duration?: SubscriptionDuration
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
   /**
    * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. Also omitted for a native live subscription when a workspace payment_failed label has no authoritative subscription-payment provenance. Unknown states must not be inferred from missing fields.
    */
@@ -3630,6 +3830,10 @@ export type ContentCatalogRecord = {
   edit_version: string
   enabled: boolean
   kind: 'MODEL' | 'WORKFLOW' | 'APP' | 'TEMPLATE_SET'
+  /**
+   * When the page's public content last changed: its publication or a later revert. Set on LIVE card reads only.
+   */
+  last_modified?: string
   /**
    * Integer revision supplying this entity; may precede the requested catalog revision.
    */
@@ -5826,32 +6030,91 @@ export type ModelFolder = {
 }
 
 /**
+ * Optional client observations. Invalid values are discarded without refusing the upload.
+ * Unknown or absent client becomes unknown. Missing resumed stays unknown; choosing resumable mode
+ * does not mean recovery. Start ignores resumed. Older servers ignore this entire object.
+ *
+ */
+export type ModelUploadAnalytics = {
+  /**
+   * editor, comfy_cli or platform; other values normalize to unknown.
+   */
+  client?: string
+  /**
+   * True only after recovery continued from a nonzero stored offset; false for an observed fresh transfer. Omit when unknown.
+   */
+  resumed?: boolean
+}
+
+/**
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
 export type ModelUploadStarted = {
   /**
-   * When `upload_url` stops working (15 minutes after the answer).
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
+   */
+  chunk_size_bytes?: number
+  /**
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
    */
   expires_at: string
   /**
-   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
   headers: {
     [key: string]: string
   }
   /**
-   * The largest file an upload accepts, 2147483648 (2 GiB).
+   * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
    */
   max_size_bytes: number
   method: 'PUT'
+  /**
+   * Version 1 accepts optional metadata and terminal client reports. Absence means unsupported.
+   */
+  upload_analytics_version?: number
   /**
    * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
    */
   upload_id: string
   /**
-   * Signed URL for exactly one staged object; works until `expires_at`.
+   * Present only for a resumable session. Clients must tolerate unknown values and refuse unsupported modes without sending bytes. When absent, send one PUT with the returned headers.
+   */
+  upload_mode?: 'resumable'
+  /**
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
    */
   upload_url: string
+}
+
+export type ModelUploadTransferReport = {
+  /**
+   * editor, comfy_cli or platform; other values normalize to unknown.
+   */
+  client: string
+  /**
+   * One folder from model_upload_folders in GET /api/features.
+   */
+  model_folder: string
+  /**
+   * Terminal transfer failure; canceled reports a user cancellation.
+   */
+  reason:
+    | 'network'
+    | 'http'
+    | 'session_expired'
+    | 'file_changed'
+    | 'file_unreadable'
+    | 'canceled'
+    | 'unknown'
+  /**
+   * Actual recovery from a nonzero stored offset; omit when unknown.
+   */
+  resumed?: boolean
+  /**
+   * Client-reported file size.
+   */
+  size_bytes: number
 }
 
 /**
@@ -6629,6 +6892,16 @@ export type PreviewSubscribeResponse = {
    */
   balance_applied_cents?: number
   /**
+   * The date the current subscription is set to end because a
+   * cancellation is scheduled. Present only when a cancellation is
+   * scheduled, which is exactly when requires_reactivation_confirmation
+   * is true. Use this, not current_plan.period_end, for the
+   * reactivation banner: period_end is the provider's billing-period
+   * boundary and can differ from a mid-period cancellation date.
+   *
+   */
+  cancel_at?: string
+  /**
    * Amount that will be charged at next billing period in cents
    */
   cost_next_period_cents: number
@@ -6736,10 +7009,30 @@ export type PreviewSubscribeResponse = {
    */
   renewal_at?: string
   /**
+   * Whether the checkout must collect explicit consent to today's
+   * charge (a consent checkbox) before confirming this reactivation.
+   * True when requires_reactivation_confirmation is true, current_plan
+   * is present, transition_type is upgrade or duration_change, and
+   * today's charge (amount_due_cents, or cost_today_cents when
+   * amount_due_cents is absent) exceeds the current plan's monthly
+   * price: current_plan.seat_summary.total_cost_cents (the whole
+   * subscription, every seat), divided by 12 when current_plan.duration
+   * is ANNUAL. False otherwise, including every downgrade (nothing is
+   * charged today) and every new_subscription. Present exactly when
+   * requires_reactivation_confirmation is present, and absent when it is
+   * absent.
+   * Not whether the change is a reactivation (that is
+   * requires_reactivation_confirmation) and not an authorization:
+   * subscribe enforces reactivation consent on its own.
+   *
+   */
+  requires_reactivation_charge_confirmation?: boolean
+  /**
    * Whether this previewed change requires explicit reactivation
-   * consent. Computed from the persisted subscription and a short-lived
-   * cache of Stripe lifecycle state. The subscribe enforcement path
-   * performs its own uncached Stripe lifecycle read.
+   * consent. Present on every successful preview, with or without
+   * embedded checkout. Computed from the persisted subscription and a
+   * short-lived cache of Stripe lifecycle state. The subscribe
+   * enforcement path performs its own uncached Stripe lifecycle read.
    *
    */
   requires_reactivation_confirmation?: boolean
@@ -7568,6 +7861,26 @@ export type SubscriptionDiscount = {
  * Billing period (uppercase to match comfy-api)
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+
+/**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export type SubscriptionPaymentRecovery = {
+  /**
+   * Exact workspace-bound initial-subscription operation; never a newer top-up.
+   */
+  billing_op_id: string
+  /**
+   * The customer must finish or retry the existing initial invoice payment.
+   */
+  reason: 'payment_required'
+}
 
 /**
  * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
@@ -8412,6 +8725,24 @@ export type WorkflowResponse = {
 }
 
 /**
+ * The sidebar file a workflow was copied from, when the two agree. No content and no userdata id: open the path through the userdata API.
+ */
+export type WorkflowSidebarFileResponse = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds, the same unit as GET /api/userdata?full_info=true.
+   */
+  modified: number
+  /**
+   * The userdata path, `workflows/<name>.json`.
+   */
+  path: string
+  /**
+   * File size in bytes.
+   */
+  size: number
+}
+
+/**
  * Workflow metadata captured at mint time. The subsequent PUT body is the
  * raw workflow JSON document and nothing else, so everything that would
  * normally accompany workflow_json in POST /api/workflows is declared
@@ -9109,6 +9440,82 @@ export type GetAgentEventsErrors = {
 
 export type GetAgentEventsError =
   GetAgentEventsErrors[keyof GetAgentEventsErrors]
+
+export type AgentGetExecutionsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Thread UUID; required together with message_id
+     */
+    thread_id?: string
+    /**
+     * Exact assistant message UUID; required together with thread_id
+     */
+    message_id?: string
+  }
+  url: '/api/agent/executions'
+}
+
+export type AgentGetExecutionsErrors = {
+  /**
+   * Both identifiers must be supplied as UUIDs, or session workspace selection refused (workspace_id_invalid)
+   */
+  400: ErrorResponse | AgentError
+  /**
+   * Authentication required; ingest uses ErrorResponse and the agent identity guard uses AgentError
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Assistant message not found in the caller's thread and workspace
+   */
+  404: unknown
+  /**
+   * Observation unavailable; must not be interpreted as an empty set
+   */
+  500: unknown
+  /**
+   * Agent service unavailable
+   */
+  502: unknown
+  /**
+   * Execution observation unavailable
+   */
+  503: unknown
+}
+
+export type AgentGetExecutionsError =
+  AgentGetExecutionsErrors[keyof AgentGetExecutionsErrors]
+
+export type AgentGetExecutionsResponses = {
+  /**
+   * Contract probe or the complete uncapped submission snapshot
+   */
+  200: {
+    complete?: boolean
+    executions?: Array<{
+      job_id: string
+      paid: boolean | null
+      partner: boolean | null
+      /**
+       * Raw jobs state, including error, cancelled and executing; unknown if unavailable
+       */
+      status: string
+      submitted_at: string
+    }>
+    message_id?: string
+    schema_version: 'agent-executions.v1'
+    thread_id?: string
+    turn_id?: string
+  }
+}
+
+export type AgentGetExecutionsResponse =
+  AgentGetExecutionsResponses[keyof AgentGetExecutionsResponses]
 
 export type AgentGetIdentityData = {
   body?: never
@@ -9905,9 +10312,9 @@ export type AgentPostMessageErrors = {
    */
   403: ErrorResponse | AgentError
   /**
-   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   * The selected model is unavailable, or one or more attachments name a file type the agent does not accept. A model refusal writes no thread or message row and does not substitute another model. An attachment refusal names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
    */
-  422: AgentAttachmentError
+  422: AgentAttachmentError | AgentModelUnavailable
   /**
    * Rate limit exceeded: the request was refused before it reached the agent, so nothing ran. The body is a fixed message with no code to branch on.
    */
@@ -11279,13 +11686,24 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * The file's size, 1 to 2147483648 (2 GiB).
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
+  }
+  headers?: {
+    /**
+     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     */
+    Origin?: string
   }
   path?: never
   query?: never
@@ -11294,7 +11712,7 @@ export type StartModelUploadData = {
 
 export type StartModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB, or 25 GiB with `resumable`; the message is "Files can be up to 2 GB." or "Files can be up to 25 GB.")
    */
   400: ErrorResponse
   /**
@@ -11302,7 +11720,7 @@ export type StartModelUploadErrors = {
    */
   401: ErrorResponse
   /**
-   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, or when `resumable: true` is requested while ingest's deployment switch `MODEL_UPLOAD_RESUMABLE_ENABLED` is off (default false). The error code alone does not identify which gate refused the request. For files up to 2 GiB, callers may retry with `resumable` omitted or false for a single PUT; the library flag and all other upload checks still apply. Other refusals are `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
    */
   403: ErrorResponse
   /**
@@ -11320,7 +11738,7 @@ export type StartModelUploadError =
 
 export type StartModelUploadResponses = {
   /**
-   * Signed upload URL for one staged object
+   * Signed upload URL or resumable session for one staged object
    */
   201: ModelUploadStarted
 }
@@ -11338,6 +11756,7 @@ export type CompleteModelUploadData = {
      * The `tags` sent to start the upload.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
   }
   path: {
     /**
@@ -11351,7 +11770,7 @@ export type CompleteModelUploadData = {
 
 export type CompleteModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 25 GiB; the message is "Files can be up to 25 GB.")
    */
   400: ErrorResponse
   /**
@@ -11388,6 +11807,51 @@ export type CompleteModelUploadResponses = {
 
 export type CompleteModelUploadResponse =
   CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
+
+export type ReportModelUploadEventData = {
+  body: ModelUploadTransferReport
+  path: {
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/events'
+}
+
+export type ReportModelUploadEventErrors = {
+  /**
+   * Malformed report
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Workspace or private-library access refused
+   */
+  403: ErrorResponse
+  /**
+   * Edge rate limit exceeded
+   */
+  429: unknown
+  /**
+   * Private-model eligibility temporarily unavailable
+   */
+  503: ErrorResponse
+}
+
+export type ReportModelUploadEventError =
+  ReportModelUploadEventErrors[keyof ReportModelUploadEventErrors]
+
+export type ReportModelUploadEventResponses = {
+  /**
+   * Report accepted; delivery is best effort
+   */
+  204: void
+}
+
+export type ReportModelUploadEventResponse =
+  ReportModelUploadEventResponses[keyof ReportModelUploadEventResponses]
 
 export type AuthenticateData = {
   body: AuthenticateRequest
@@ -13197,7 +13661,7 @@ export type CreateTopupQuoteData = {
 export type CreateTopupQuoteErrors = {
   /**
    * Refused: `INVALID_REQUEST`, `INVALID_AMOUNT`,
-   * `LEGACY_STRIPE_CHECKOUT_REQUIRED` (use Stripe Checkout),
+   * `TRANSITION_NOT_ALLOWED` (workspace not on the `stripe` billing rail),
    * `BILLING_PLAN_ENDED` (retained code for unresolved existing plan/tier/status), or
    * `BILLING_DISABLED`.
    *
@@ -13847,6 +14311,10 @@ export type GetFeaturesResponses = {
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     */
+    open_on_cloud_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
@@ -19747,6 +20215,58 @@ export type ForkWorkflowResponses = {
 
 export type ForkWorkflowResponse =
   ForkWorkflowResponses[keyof ForkWorkflowResponses]
+
+export type GetWorkflowSidebarFileData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow. Parsed by the handler, so a malformed id answers 404.
+     */
+    workflow_id: string
+  }
+  query?: never
+  url: '/api/workflows/{workflow_id}/sidebar-file'
+}
+
+export type GetWorkflowSidebarFileErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `code` is `NOT_FOUND`: no live workflow with this id that the caller created in this workspace.
+   */
+  404: ErrorResponse
+  /**
+   * `code` is `WORKFLOW_OUT_OF_SYNC` and `details.reason` is one of `no_sidebar_path`, `name_ambiguous`, `file_missing` or `content_mismatch`. Clients open nothing on this answer. The set of reasons may grow, and clients treat an unknown reason as out of sync.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowSidebarFileError =
+  GetWorkflowSidebarFileErrors[keyof GetWorkflowSidebarFileErrors]
+
+export type GetWorkflowSidebarFileResponses = {
+  /**
+   * The workflow and its sidebar file agree.
+   */
+  200: WorkflowSidebarFileResponse
+}
+
+export type GetWorkflowSidebarFileResponse =
+  GetWorkflowSidebarFileResponses[keyof GetWorkflowSidebarFileResponses]
 
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest

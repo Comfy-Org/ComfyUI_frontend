@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   autoTopUpOffView,
+  canSetUpAutoTopUp,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './autoTopUpCard'
-import type { AutoTopUpSectionFacts } from './autoTopUpCard'
+import type {
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
+} from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
   card_expiry: null,
@@ -58,40 +62,44 @@ describe('deriveAutoTopUpSection', () => {
   const owner: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
     canViewAutoTopUpCard: true,
-    manageAutoTopUpDenial: undefined
+    canViewAutoTopUpMemberNotice: false
   }
   const member: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
     canViewAutoTopUpCard: false,
-    manageAutoTopUpDenial: 'not_workspace_owner'
+    canViewAutoTopUpMemberNotice: true
   }
 
   it.for<{ case: string; facts: AutoTopUpSectionFacts; kind: string }>([
     { case: 'a granted card', facts: owner, kind: 'card' },
     {
-      case: 'a withheld card with no denial',
+      case: 'a withheld card',
       facts: { ...owner, canViewAutoTopUpCard: false },
       kind: 'hidden'
     },
     {
-      case: 'a granted card beside a stale denial',
-      facts: { ...owner, manageAutoTopUpDenial: 'not_workspace_owner' },
+      case: 'a granted card beside a granted member notice',
+      facts: { ...owner, canViewAutoTopUpMemberNotice: true },
       kind: 'card'
     },
-    { case: 'a member', facts: member, kind: 'memberBlock' },
+    {
+      case: 'a member on a healthy workspace',
+      facts: member,
+      kind: 'memberBlock'
+    },
+    {
+      case: 'a member on a paused workspace',
+      facts: { ...member, canViewAutoTopUpMemberNotice: false },
+      kind: 'hidden'
+    },
     {
       case: 'a member with the flag off',
       facts: { ...member, autoTopUpEnabled: false },
       kind: 'hidden'
     },
     {
-      case: 'a not_a_member denial',
-      facts: { ...member, manageAutoTopUpDenial: 'not_a_member' },
-      kind: 'hidden'
-    },
-    {
-      case: 'no served denial',
-      facts: { ...member, manageAutoTopUpDenial: undefined },
+      case: 'an owner with the flag off',
+      facts: { ...owner, autoTopUpEnabled: false },
       kind: 'hidden'
     }
   ])('shows $kind for $case', ({ facts, kind }) => {
@@ -124,4 +132,46 @@ describe('autoTopUpOffView', () => {
       )
     }
   )
+})
+
+describe('canSetUpAutoTopUp', () => {
+  const manager: AutoTopUpSetupFacts = {
+    autoTopUpEnabled: true,
+    canManageAutoTopUp: true,
+    setup: { state: 'ready' }
+  }
+
+  it.for<{ name: string; facts: Partial<AutoTopUpSetupFacts>; can: boolean }>([
+    { name: 'a manager with a ready setup', facts: {}, can: true },
+    {
+      name: 'a setup frozen for a missing default card',
+      facts: {
+        setup: { state: 'frozen', reason: 'default_payment_method_missing' }
+      },
+      can: true
+    },
+    {
+      name: 'auto top-up not served',
+      facts: { autoTopUpEnabled: false },
+      can: false
+    },
+    {
+      name: 'no can_manage_auto_top_up',
+      facts: { canManageAutoTopUp: false },
+      can: false
+    },
+    { name: 'no served setup', facts: { setup: null }, can: false },
+    {
+      name: 'an unavailable setup',
+      facts: { setup: { state: 'unavailable' } },
+      can: false
+    },
+    {
+      name: 'a setup frozen for past due',
+      facts: { setup: { state: 'frozen', reason: 'payment_past_due' } },
+      can: false
+    }
+  ])('$name: $can', ({ facts, can }) => {
+    expect(canSetUpAutoTopUp({ ...manager, ...facts })).toBe(can)
+  })
 })

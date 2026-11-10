@@ -169,6 +169,27 @@ describe('unique widget name invariant', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('refuses a pushed concrete widget that normalization cannot make renamable', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const concrete = node.addWidget('number', 'steps', 2, () => undefined, {})
+    node.widgets!.splice(node.widgets!.indexOf(concrete), 1)
+    pinName(concrete, 'seed')
+
+    node.widgets!.push(concrete)
+
+    expect(node.widgets).not.toContain(concrete)
+    expect(names(node)).toEqual(['seed'])
+    expect(storedNames(node)).toEqual(['seed'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_renaming_widget_duplicate_name',
+        surface: 'graph'
+      })
+    )
+  })
+
   it('refuses the later of a pinned pair carried in by a whole-array assignment', () => {
     const node = createNode()
     const kept = node.addWidget('number', 'seed', 1, () => undefined, {})

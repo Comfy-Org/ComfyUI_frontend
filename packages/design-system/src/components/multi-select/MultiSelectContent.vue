@@ -61,11 +61,11 @@
             :class="cn('group', selectItemVariants({ layout: 'multi' }))"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary group-data-[state=unchecked]:bg-secondary [&>span]:flex"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-foreground group-data-[state=unchecked]:bg-secondary [&>span]:flex"
             >
               <ComboboxItemIndicator>
                 <i
-                  class="icon-[lucide--check] text-xs font-bold text-foreground"
+                  class="icon-[lucide--check] text-xs font-bold text-background"
                 />
               </ComboboxItemIndicator>
             </div>

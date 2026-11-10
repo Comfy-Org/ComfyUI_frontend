@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -17,21 +18,59 @@ function renderField(
   {
     hideLayoutField = false,
     slotContent = '<span data-testid="slot">content</span>'
-  }: { hideLayoutField?: boolean; slotContent?: string } = {}
+  }: {
+    hideLayoutField?: boolean
+    slotContent?: string
+  } = {}
 ) {
   const Harness = defineComponent({
     components: { WidgetLayoutField },
     setup: () => ({ widget }),
-    template: `<WidgetLayoutField :widget="widget">${slotContent}</WidgetLayoutField>`
+    template: `<WidgetLayoutField :widget input-id="field-input">${slotContent}</WidgetLayoutField>`
   })
   return render(Harness, {
     global: {
-      provide: { [HideLayoutFieldKey as symbol]: hideLayoutField }
+      provide: {
+        [HideLayoutFieldKey as symbol]: hideLayoutField
+      }
     }
   })
 }
 
 describe('WidgetLayoutField', () => {
+  it.for([
+    { target: 'row', disabled: false, expected: '1' },
+    { target: 'row', disabled: true, expected: '0' },
+    { target: 'primary', disabled: false, expected: '1' },
+    { target: 'secondary', disabled: false, expected: '0' }
+  ] as const)(
+    'activates $target with disabled=$disabled',
+    async ({ target, disabled, expected }) => {
+      const user = userEvent.setup()
+      const Harness = defineComponent({
+        components: { WidgetLayoutField },
+        setup: () => ({ count: ref(0), disabled, widget: { name: 'field' } }),
+        template: `
+          <WidgetLayoutField data-testid="row" :widget="widget" input-id="primary">
+            <button id="primary" :disabled="disabled" @click="count++">Primary</button>
+            <button>Secondary</button>
+            <output data-testid="count">{{ count }}</output>
+          </WidgetLayoutField>
+        `
+      })
+      render(Harness)
+      const targets = {
+        row: screen.getByTestId('widget-row-hit-area'),
+        primary: screen.getByRole('button', { name: 'field' }),
+        secondary: screen.getByRole('button', { name: 'Secondary' })
+      }
+
+      await user.click(targets[target])
+
+      expect(screen.getByTestId('count')).toHaveTextContent(expected)
+    }
+  )
+
   describe('Label rendering', () => {
     it('renders widget.name when label is absent', () => {
       renderField({ name: 'seed' })
@@ -66,18 +105,21 @@ describe('WidgetLayoutField', () => {
       expect(screen.queryByTestId('widget-layout-field-label')).toBeNull()
     })
 
-    it('still renders the slotted content when the label is hidden', () => {
-      renderField({ name: 'seed' }, { hideLayoutField: true })
-      expect(screen.getByTestId('slot')).toBeInTheDocument()
+    it('preserves the control name when the label is hidden', () => {
+      renderField(
+        { name: 'ckpt_name' },
+        {
+          hideLayoutField: true,
+          slotContent: '<button id="field-input">model.safetensors</button>'
+        }
+      )
+      expect(
+        screen.getByRole('button', { name: 'model.safetensors' })
+      ).toBeInTheDocument()
     })
   })
 
   describe('Slot content', () => {
-    it('renders the default slot', () => {
-      renderField({ name: 'seed' })
-      expect(screen.getByTestId('slot')).toBeInTheDocument()
-    })
-
     it('passes borderStyle to the default slot', () => {
       const Harness = defineComponent({
         components: { WidgetLayoutField },

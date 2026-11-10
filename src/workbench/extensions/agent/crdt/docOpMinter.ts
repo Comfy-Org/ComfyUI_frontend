@@ -191,7 +191,15 @@ interface PendingWidgetValue {
 
 type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
-/** Returns the node's save-format snapshot for a semantic add operation. */
+/**
+ * Returns the node's save-format snapshot for a semantic add operation.
+ *
+ * Excludes only subgraph hosts, whose widget values are positional by design
+ * (`applyHostWidgets` indexes them against the live promoted inputs). Every
+ * other named-value node gets a declared `widgets_values_form` when one can
+ * be proven (schema A24); otherwise it keeps the positional snapshot rather
+ * than shipping an undeclared name-keyed record (KA-12).
+ */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -208,15 +216,12 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  if (!named || node.isVirtualNode) return snapshot
+  if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
-  // The form is proven against the POST-HOOK serialization, not derived from
-  // the live widget list alone: `serialize()` above already ran the extension
-  // serialize hook, which may have replaced either widget-values field.
   const form = provenWidgetValuesForm(node, values, serialized)
-  return form
-    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
-    : { ...snapshot, widgets_values: values }
+  if (form)
+    return { ...snapshot, widgets_values: values, widgets_values_form: form }
+  return node.isVirtualNode ? snapshot : { ...snapshot, widgets_values: values }
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
