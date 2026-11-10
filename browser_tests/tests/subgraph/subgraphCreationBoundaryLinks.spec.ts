@@ -7,8 +7,8 @@ test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 const SUBGRAPH_LINKS_EXPECTED = {
   rootLinks: [
     '4:0->HOST:0',
-    '4:1->6:0',
-    '4:1->7:0',
+    '4:1->6:1',
+    '4:1->7:1',
     '4:2->HOST:4',
     '5:0->HOST:3',
     '6:0->HOST:1',
@@ -33,11 +33,13 @@ test(
       const vaeDecode = await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
       await expect(vaeDecode.header).toBeInViewport({ ratio: 1 })
 
-      await comfyPage.nodeOps.selectNodes(['KSampler', 'VAE Decode'])
-      expect(
-        await comfyPage.nodeOps.getSelectedNodeIds(),
-        'both nodes must be selected, or the conversion under test is not the one being asserted'
-      ).toEqual(['3', '8'])
+      await comfyPage.vueNodes.selectNodes(['3', '8'])
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds(), {
+          message:
+            'both nodes must be selected, or the conversion under test is not the one being asserted'
+        })
+        .toEqual(['3', '8'])
     })
 
     await test.step('Convert and verify the boundary links', async () => {

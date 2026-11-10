@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const CORE_DIR = dirname(fileURLToPath(import.meta.url))
+const SRC_DIR = resolve(CORE_DIR, '..')
 
 const FORBIDDEN_IMPORTS = ['firebase', 'vue', 'pinia', 'astro', '@/']
 /** A browser global being read, not the word appearing in a comment. */
@@ -19,7 +20,14 @@ function importSpecifiers(text: string): string[] {
   return [...text.matchAll(SPECIFIER)].map(([, specifier]) => specifier)
 }
 
-/** Every source file reachable from `entry` through relative imports. */
+function resolveLocalSpecifier(file: string, specifier: string): string {
+  const path = specifier.startsWith('#/')
+    ? resolve(SRC_DIR, specifier.slice(2))
+    : resolve(dirname(file), specifier)
+  return `${path}.ts`
+}
+
+/** Every source file reachable from `entry` through package-local imports. */
 function relativeImportClosure(entry: string): Map<string, string[]> {
   const closure = new Map<string, string[]>()
   const pending = [resolve(CORE_DIR, entry)]
@@ -29,10 +37,10 @@ function relativeImportClosure(entry: string): Map<string, string[]> {
     closure.set(file, specifiers)
     pending.push(
       ...specifiers
-        .filter((specifier) => specifier.startsWith('.'))
-        .map((specifier) =>
-          resolve(dirname(file), specifier.replace(/\.js$/, '.ts'))
+        .filter(
+          (specifier) => specifier.startsWith('.') || specifier.startsWith('#/')
         )
+        .map((specifier) => resolveLocalSpecifier(file, specifier))
     )
   }
   return closure
@@ -66,28 +74,35 @@ describe('core import guard', () => {
 
   it('scans the web session sources', () => {
     expect(sources.map(({ name }) => name)).toEqual(
-      expect.arrayContaining(['webSession.ts'])
+      expect.arrayContaining([
+        'webSession.ts',
+        'sessionTokenMint.ts',
+        'webSessionIdentity.ts'
+      ])
     )
   })
 
-  it('keeps the web session module and everything it imports off Firebase', () => {
-    const closure = relativeImportClosure('webSession.ts')
-    const firebaseImports = [...closure].flatMap(([file, specifiers]) =>
-      specifiers
-        .filter((specifier) => FIREBASE_SPECIFIER.test(specifier))
-        .map((specifier) => `${relative(CORE_DIR, file)} -> ${specifier}`)
-    )
+  it.for(['webSession.ts', 'sessionTokenMint.ts', 'webSessionIdentity.ts'])(
+    'keeps %s and everything it imports off Firebase',
+    (entry) => {
+      const closure = relativeImportClosure(entry)
+      const firebaseImports = [...closure].flatMap(([file, specifiers]) =>
+        specifiers
+          .filter((specifier) => FIREBASE_SPECIFIER.test(specifier))
+          .map((specifier) => `${relative(CORE_DIR, file)} -> ${specifier}`)
+      )
 
-    expect([...closure.keys()].map((file) => relative(CORE_DIR, file))).toEqual(
-      expect.arrayContaining(['webSession.ts'])
-    )
-    expect(firebaseImports).toEqual([])
-  })
+      expect(
+        [...closure.keys()].map((file) => relative(CORE_DIR, file))
+      ).toEqual(expect.arrayContaining([entry]))
+      expect(firebaseImports).toEqual([])
+    }
+  )
 
   it.for([
     'firebase/auth',
     '@firebase/app',
-    '../firebase/index.js',
+    '#/firebase/index',
     '@comfyorg/account-core/firebase'
   ])('recognizes %s as a Firebase import', (specifier) => {
     expect(importSpecifiers(`import x from '${specifier}'`)).toEqual([

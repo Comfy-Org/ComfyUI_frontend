@@ -1,48 +1,64 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { shallowRef } from 'vue'
 
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
+
+import { simpleTouchSupportExtension } from './simpleTouchSupport'
+import { installTouchPointerGuards } from './touchPointerGuards'
 
 type Viewport = Pick<
   DragAndScale,
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container } = vi.hoisted(() => {
+const { canvasEl, container, canvasAvailability, ds } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  return { container, canvasEl }
-})
-
-const processMouseDown = vi.fn()
-
-vi.mock(import('@/scripts/app'), () => {
   const ds: Viewport = {
     scale: 1,
     offset: [0, 0],
     min_scale: 0.1,
     max_scale: 10
   }
+  return { container, canvasEl, canvasAvailability: { missing: false }, ds }
+})
+
+const processMouseDown = vi.fn()
+const processMouseMove = vi.fn()
+
+vi.mock(import('@/scripts/app'), () => {
+  const canvas = fromPartial<LGraphCanvas>({
+    ds,
+    pointer: { isDown: false },
+    setDirty: vi.fn()
+  })
   return {
     app: fromPartial<typeof comfyApp>({
-      registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
       canvasEl,
-      canvas: fromPartial({
-        ds,
-        pointer: { isDown: false },
-        setDirty: vi.fn()
-      })
+      canvasElRef: shallowRef(canvasEl),
+      get canvasOrUndefined() {
+        return canvasAvailability.missing ? undefined : canvas
+      }
     })
   }
 })
 
 LGraphCanvas.prototype.processMouseDown = processMouseDown
+LGraphCanvas.prototype.processMouseMove = processMouseMove
 
-await import('./simpleTouchSupport')
+function canvasPointerHandlers() {
+  const { processMouseDown, processMouseMove } = LGraphCanvas.prototype
+  return { processMouseDown, processMouseMove }
+}
+
+await simpleTouchSupportExtension.setup?.(fromPartial({}))
+const handlersAtImport = canvasPointerHandlers()
+installTouchPointerGuards()
+const handlersAfterInstall = canvasPointerHandlers()
 
 let nextTouchId = 0
 
@@ -71,10 +87,19 @@ function dispatchTouch(
 }
 
 function pressPointer(init: PointerEventInit) {
+  const canvas = fromPartial<LGraphCanvas>({ pointer: { isDown: true } })
   LGraphCanvas.prototype.processMouseDown.call(
-    fromPartial<LGraphCanvas>({}),
+    canvas,
     new PointerEvent('pointerdown', { pointerType: 'touch', ...init })
   )
+  return canvas
+}
+
+function withoutCanvas() {
+  canvasAvailability.missing = true
+  onTestFinished(() => {
+    canvasAvailability.missing = false
+  })
 }
 
 /**
@@ -127,4 +152,115 @@ describe('Comfy.SimpleTouchSupport', () => {
       expect(processMouseDown).not.toHaveBeenCalled()
     }
   )
+
+  it('presses through to the original when no canvas exists', () => {
+    withoutCanvas()
+
+    const canvas = pressPointer({ isPrimary: true })
+
+    expect(processMouseDown).toHaveBeenCalledOnce()
+    expect(canvas.pointer.isDown).toBe(false)
+  })
+
+  it('ignores a pinch when no canvas exists', () => {
+    withoutCanvas()
+    const listenerErrors = vi.fn()
+    window.addEventListener('error', listenerErrors)
+    onTestFinished(() => window.removeEventListener('error', listenerErrors))
+    const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+
+    dispatchTouch('touchstart', twoFingers)
+    dispatchTouch('touchmove', twoFingers)
+    pressPointer({ isPrimary: true })
+
+    expect(listenerErrors).not.toHaveBeenCalled()
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  describe('pinch zoom', () => {
+    function resetViewport() {
+      ds.scale = 1
+      ds.offset[0] = 0
+      ds.offset[1] = 0
+    }
+
+    it.for([
+      { name: 'start on the same point', start: 0, move: 100 },
+      { name: 'start and stay on the same point', start: 0, move: 0 },
+      { name: 'end on the same point', start: 100, move: 0 }
+    ])(
+      'leaves the viewport unchanged when two fingers $name',
+      ({ start, move }) => {
+        resetViewport()
+
+        dispatchTouch('touchstart', [
+          touchAt(canvasEl),
+          touchAt(canvasEl, start)
+        ])
+        dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+
+        expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+          scale: 1,
+          offset: [0, 0]
+        })
+      }
+    )
+
+    it('waits for a usable distance before measuring a pinch', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 7)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+
+      expect(ds.scale).toBe(1)
+    })
+
+    it('zooms once fingers that started on the same point move apart', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+      expect(ds.scale).toBe(2)
+    })
+
+    it('uses the minimum scale when converting pinch movement to an offset', () => {
+      resetViewport()
+      ds.scale = ds.min_scale
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+      dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
+
+      expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+        scale: 0.1,
+        offset: [-50, 0]
+      })
+    })
+  })
+})
+
+describe('touch pointer guards', () => {
+  it('leaves the canvas pointer handlers untouched at import', () => {
+    expect(handlersAtImport.processMouseDown).toBe(processMouseDown)
+    expect(handlersAtImport.processMouseMove).toBe(processMouseMove)
+  })
+
+  it('wraps the canvas pointer handlers when installed', () => {
+    expect(handlersAfterInstall.processMouseDown).not.toBe(processMouseDown)
+    expect(handlersAfterInstall.processMouseMove).not.toBe(processMouseMove)
+  })
+
+  it('wraps the canvas pointer handlers only once when installed again', () => {
+    installTouchPointerGuards()
+
+    const handlers = canvasPointerHandlers()
+    expect(handlers.processMouseDown).toBe(
+      handlersAfterInstall.processMouseDown
+    )
+    expect(handlers.processMouseMove).toBe(
+      handlersAfterInstall.processMouseMove
+    )
+  })
 })

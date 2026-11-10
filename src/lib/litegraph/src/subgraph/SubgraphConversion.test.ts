@@ -24,13 +24,13 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import type { reportError } from '@/platform/telemetry/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import {
   createTestRootGraph,
@@ -42,7 +42,7 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -72,6 +72,7 @@ function expectUnresolvableLinkReported(
   expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
     new Error('Cannot unpack subgraph: unresolvable inner link'),
     {
+      surface: 'graph',
       errorType: 'error_unpacking_subgraph_link',
       context: {
         subgraphNodeId: subgraphNode.id,
@@ -244,6 +245,7 @@ describe('SubgraphConversion', () => {
         new Error(`Cannot unpack: node type "${nodeType}" is not registered`),
         {
           errorType: 'error_unpacking_subgraph_node_type',
+          surface: 'graph',
           context: { subgraphNodeId: subgraphNode.id, nodeType }
         }
       )
@@ -956,6 +958,7 @@ describe('SubgraphConversion', () => {
             message: 'Missing host input when unpacking subgraph'
           }),
           {
+            surface: 'graph',
             errorType: 'subgraph_unpack_missing_host_input',
             context: {
               linkId: link.id,

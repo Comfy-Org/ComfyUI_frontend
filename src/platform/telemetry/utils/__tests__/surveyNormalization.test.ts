@@ -9,7 +9,7 @@ import {
   normalizeIndustry,
   normalizeUseCase,
   normalizeSurveyResponses
-} from '../surveyNormalization'
+} from '@/platform/telemetry/utils/surveyNormalization'
 
 describe('normalizeIndustry', () => {
   describe('Film / TV / Animation category', () => {

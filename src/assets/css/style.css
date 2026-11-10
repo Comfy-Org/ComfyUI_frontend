@@ -4,6 +4,12 @@
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
 }
 
+@layer base {
+  .pi {
+    font-size: 1rem;
+  }
+}
+
 /* The agent entry button sits in the topbar, outside the agent panel, so its
    effect cannot live in agentPanel.css, which only AgentPanelRoot imports. */
 /* Sweeps out, snaps back faster, then rests off-screen before going again. */
@@ -33,7 +39,7 @@
   background: linear-gradient(
     115deg,
     transparent 42%,
-    var(--color-base-foreground) 50%,
+    var(--color-foreground) 50%,
     transparent 58%
   );
   background-size: 200% auto;
@@ -53,19 +59,6 @@
   .agent-shimmer-outline::after {
     display: none;
   }
-}
-
-/* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on
-   the body, which left toast close buttons painted above dialogs but
-   unclickable — clicks fell through to whatever sat beneath (including the
-   payment dialog's X, closing the checkout mid-payment). Keep toasts
-   interactive regardless of modal state. */
-.p-toast {
-  pointer-events: none;
-}
-
-.p-toast-message {
-  pointer-events: auto;
 }
 
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire

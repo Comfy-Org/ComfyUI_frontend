@@ -2,7 +2,7 @@ import type { assetService } from '@/platform/assets/services/assetService'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 
 export const runningDownload: AssetDownloadWsMessage = {
   task_id: '11111111-1111-4111-8111-111111111111',

@@ -7,7 +7,7 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'

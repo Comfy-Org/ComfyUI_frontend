@@ -2,10 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import {

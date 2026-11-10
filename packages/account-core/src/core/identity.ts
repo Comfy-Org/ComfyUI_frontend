@@ -1,4 +1,4 @@
-import type { AccountUser } from './sessionContracts.js'
+import type { AccountUser } from './sessionContracts'
 
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts

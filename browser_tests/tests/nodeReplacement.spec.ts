@@ -12,7 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -22,6 +22,33 @@ const renderModes = [
 test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
   test.use({
     initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+  })
+
+  test.describe('API workflow replacement', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/node_replacement_api'
+      )
+    })
+
+    test('SaveImage filename substitutions survive replacing an API placeholder', async ({
+      comfyPage
+    }) => {
+      const swapGroup = getSwapNodesGroup(comfyPage.page)
+      await swapGroup.getByRole('button', { name: /replace node/i }).click()
+      await expect(swapGroup).toBeHidden()
+
+      await expect
+        .poll(async () => {
+          const prompt = await comfyPage.workflow.getExportedWorkflow({
+            api: true
+          })
+          return prompt['2'].inputs.filename_prefix
+        })
+        .toBe('replacement-7')
+    })
   })
 
   for (const mode of renderModes) {
@@ -146,9 +173,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
             if (mode.vueNodesEnabled) {
               await expect(
-                comfyPage.vueNodes
-                  .getWidgetByName('KSampler', 'denoise')
-                  .locator('input')
+                comfyPage.vueNodes.getWidgetByName('KSampler', 'denoise')
               ).toHaveValue(/^1(?:\.0+)?$/)
             }
           })
@@ -160,7 +185,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
               .getByRole('button', { name: /replace node/i })
               .click()
 
-            await expect(comfyPage.visibleToasts.first()).toContainText(
+            await expect(comfyPage.toast.visibleToasts.first()).toContainText(
               /replaced|swapped/i
             )
           })

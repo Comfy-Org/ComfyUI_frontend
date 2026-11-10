@@ -36,7 +36,7 @@
     "label": "إعادة التشغيل"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "افتح عارض ثلاثي الأبعاد (تجريبي) للعقدة المحددة"
+    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
   },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف العناصر المحددة"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "حذف الروابط المحددة"
+  },
   "Comfy_Canvas_FitView": {
     "label": "تعديل العرض ليناسب العقد المحددة"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "إخفاء الروابط المحددة"
   },
   "Comfy_Canvas_Lock": {
     "label": "قفل اللوحة"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "تحديد الكل"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "إظهار الروابط المحددة"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "تبديل رؤية الروابط في اللوحة"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "طي/توسيع العقد المحددة"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "إخفاء/إظهار الروابط على العقد المحددة"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "كتم/إلغاء كتم العقد المحددة"
@@ -229,6 +241,9 @@
   },
   "Comfy_NewBlankWorkflow": {
     "label": "سير عمل جديد فارغ"
+  },
+  "Comfy_Onboarding_Replay": {
+    "label": "إعادة تشغيل الإعداد الأولي"
   },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"

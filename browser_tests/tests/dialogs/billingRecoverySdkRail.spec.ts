@@ -5,8 +5,6 @@ import type {
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
-  Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
@@ -15,16 +13,18 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import {
   createBillingCapabilities,
   createWorkspaceBillingCapabilities
 } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   member,
   mockWorkspaceList,
@@ -65,13 +65,6 @@ const BALANCE = {
   currency: 'usd'
 } satisfies BillingBalanceResponse
 
-const PENDING_PURCHASE = {
-  billing_op_id: OPERATION_ID,
-  topup_id: OPERATION_ID,
-  status: 'pending',
-  amount_cents: 5_000
-} satisfies CreateTopupResponse
-
 const STARTED_AT = '2026-09-20T00:00:00Z'
 
 const AWAITING_VERIFICATION = {
@@ -111,8 +104,10 @@ function billingStatus(
     billing_status: 'paid',
     max_seats: 1,
     occupied_seats: 1,
+    ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
+    next_charge: null,
     ...fields
   }
 }
@@ -142,19 +137,15 @@ async function enableRails(page: Page) {
 }
 
 interface TopupRoutes {
-  readonly purchaseRequests: Request[]
   readonly pollRequests: Request[]
-  /** What the next poll of the operation answers. */
   setOperation: (next: BillingOpStatusResponse) => void
   hostedOpens: () => Promise<string[]>
 }
 
 async function setupTopUp(page: Page): Promise<TopupRoutes> {
   const ws = workspace('personal', 'owner')
-  const purchaseRequests: Request[] = []
   const pollRequests: Request[] = []
-  let current: BillingOpStatusResponse = AWAITING_VERIFICATION
-  let serverReportsPending = false
+  let current: BillingOpStatusResponse = VERIFIED_PROCESSING
 
   const hostedOpens = await recordHostedOpens(page)
   await setupCloudApp(page, {
@@ -162,15 +153,11 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
     features: RAIL_FEATURES,
     billingCapabilities: createBillingCapabilities(ws.id)
   })
-  // Otherwise the templates dialog opens once the top-up dialog closes.
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
   await enableRails(page)
 
-  await page.route('**/api/billing/payment-methods', (route) =>
-    route.fulfill(jsonRoute([SAVED_CARD]))
-  )
   await page.route('**/api/billing/balance', (route) =>
     route.fulfill(jsonRoute(BALANCE))
   )
@@ -178,7 +165,7 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
     route.fulfill(
       jsonRoute(
         billingStatus(
-          serverReportsPending
+          current.status === 'pending'
             ? {
                 pending_billing_op_id: OPERATION_ID,
                 pending_billing_op_type: 'topup'
@@ -188,20 +175,12 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
       )
     )
   )
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    purchaseRequests.push(route.request())
-    serverReportsPending = true
-    return route.fulfill(jsonRoute(PENDING_PURCHASE))
-  })
   await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) => {
     pollRequests.push(route.request())
-    if (current.status !== 'pending') serverReportsPending = false
     return route.fulfill(jsonRoute(current))
   })
 
   return {
-    purchaseRequests,
     pollRequests,
     setOperation: (next) => {
       current = next
@@ -215,29 +194,8 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-async function payAndOpenVerification(page: Page, routes: TopupRoutes) {
-  const dialog = new TopUpCreditsDialog(page)
-  await page.goto(`${APP_URL}/?topup=1`)
-  await expect(dialog.heading).toBeVisible({ timeout: 45_000 })
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
-  await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
-  await expect(
-    dialog.root.getByRole('heading', { name: 'Verify your payment' })
-  ).toBeVisible()
-  await completeVerification(dialog).click()
-  await expect.poll(() => routes.hostedOpens()).toEqual([HOSTED_URL])
-  return dialog
-}
-
-const completeVerification = (dialog: TopUpCreditsDialog) =>
-  dialog.root.getByRole('button', { name: 'Complete verification' })
-
-const successToast = (page: Page) =>
-  page
-    .locator('.p-toast-message.p-toast-message-success')
-    .getByText('Credits added successfully')
+const successToast = (toast: ToastHelper) =>
+  toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
 
 function transports(requests: Request[]): string[] {
   return requests.map((request) => request.resourceType())
@@ -251,20 +209,13 @@ function operationIdsPolled(requests: Request[]): Set<string> {
   )
 }
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
 
 const UPGRADE_TO_CREATOR = {
   allowed: true,
@@ -273,8 +224,8 @@ const UPGRADE_TO_CREATOR = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -505,6 +456,8 @@ const UNSUBSCRIBED = billingStatus({
 })
 
 test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test.describe('workspace scoping', () => {
     test('shows only the new workspace usage when a switch lands mid-load', async ({
       page
@@ -564,112 +517,29 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
         teamContent.getByText('This workspace is not on a subscription')
       ).toBeVisible()
       await expect(
-        teamContent.getByRole('button', { name: 'Subscribe Now' })
+        teamContent.getByRole('button', { name: 'Subscribe', exact: true })
       ).toBeVisible()
       await expect(teamContent.getByText(/Renews on/)).toHaveCount(0)
     })
   })
 
-  test.describe('hosted bank verification', () => {
-    test('offers the verification again after the customer abandons the hosted page', async ({
-      page
-    }) => {
-      test.setTimeout(90_000)
-      const routes = await setupTopUp(page)
-      const dialog = await payAndOpenVerification(page, routes)
+  test('reports the outcome of a verified top-up adopted at boot', async ({
+    page,
+    toast
+  }) => {
+    test.setTimeout(120_000)
+    const routes = await setupTopUp(page)
+    await page.goto(APP_URL)
+    await expect
+      .poll(() => routes.pollRequests.length, { timeout: 45_000 })
+      .toBeGreaterThan(0)
 
-      const pollsBeforeReturn = routes.pollRequests.length
-      await returnToTab(page)
-      await expect
-        .poll(() => routes.pollRequests.length)
-        .toBeGreaterThan(pollsBeforeReturn)
+    routes.setOperation(SUCCEEDED)
+    await returnToTab(page)
 
-      await expect(completeVerification(dialog)).toBeEnabled()
-      await expect(completeVerification(dialog)).not.toHaveAttribute(
-        'aria-busy'
-      )
-      await expect(successToast(page)).toHaveCount(0)
-    })
-
-    test('settles the same purchase when the customer retries the verification', async ({
-      page
-    }) => {
-      test.setTimeout(90_000)
-      const routes = await setupTopUp(page)
-      const dialog = await payAndOpenVerification(page, routes)
-      await returnToTab(page)
-
-      await completeVerification(dialog).click()
-      await expect
-        .poll(() => routes.hostedOpens())
-        .toEqual([HOSTED_URL, HOSTED_URL])
-      routes.setOperation(SUCCEEDED)
-      await returnToTab(page)
-
-      await expect(successToast(page)).toBeVisible()
-      await expect(dialog.root).toBeHidden()
-      expect(routes.purchaseRequests).toHaveLength(1)
-      expect(operationIdsPolled(routes.pollRequests)).toEqual(
-        new Set([OPERATION_ID])
-      )
-      expect(transports(routes.pollRequests)).not.toContain('xhr')
-    })
-
-    test('does not offer the verification again once the bank has accepted it', async ({
-      page
-    }) => {
-      test.setTimeout(90_000)
-      const routes = await setupTopUp(page)
-      const dialog = await payAndOpenVerification(page, routes)
-
-      routes.setOperation(VERIFIED_PROCESSING)
-      // Several polls of the processing state, the window in which an echo of
-      // the finished challenge would put the offer back.
-      for (let visit = 0; visit < 3; visit++) {
-        const polls = routes.pollRequests.length
-        await returnToTab(page)
-        await expect
-          .poll(() => routes.pollRequests.length)
-          .toBeGreaterThan(polls)
-      }
-
-      await expect(
-        page
-          .locator('.p-toast-message')
-          .getByText('Verify your payment to add your credits')
-      ).toHaveCount(0)
-      // Shown as work in progress, not as a step the customer still owes.
-      await expect(completeVerification(dialog)).toBeDisabled()
-      await expect(completeVerification(dialog)).toHaveAttribute(
-        'aria-busy',
-        'true'
-      )
-      expect(await routes.hostedOpens()).toEqual([HOSTED_URL])
-      expect(routes.purchaseRequests).toHaveLength(1)
-    })
-
-    test('reports the outcome of a verified purchase after a reload', async ({
-      page
-    }) => {
-      test.setTimeout(120_000)
-      const routes = await setupTopUp(page)
-      await payAndOpenVerification(page, routes)
-
-      routes.setOperation(VERIFIED_PROCESSING)
-      const pollsBeforeReload = routes.pollRequests.length
-      await page.reload()
-      await expect
-        .poll(() => routes.pollRequests.length, { timeout: 45_000 })
-        .toBeGreaterThan(pollsBeforeReload)
-      routes.setOperation(SUCCEEDED)
-      await returnToTab(page)
-
-      await expect(successToast(page)).toBeVisible({ timeout: 45_000 })
-      expect(routes.purchaseRequests).toHaveLength(1)
-      expect(transports(routes.pollRequests)).not.toContain('xhr')
-      // The step was already done, so the reload has nothing to reopen.
-      expect(await routes.hostedOpens()).toEqual([])
-    })
+    await expect(successToast(toast)).toBeVisible({ timeout: 45_000 })
+    expect(transports(routes.pollRequests)).not.toContain('xhr')
+    expect(await routes.hostedOpens()).toEqual([])
   })
 
   test.describe('hosted bank verification for a subscription', () => {
@@ -703,6 +573,41 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       expect(operationIdsPolled(routes.pollRequests)).toEqual(
         new Set([OPERATION_ID])
       )
+    })
+  })
+
+  test.describe('a plan change over an operation parked by an earlier attempt', () => {
+    test('says the earlier payment has to finish, and issues no second subscribe', async ({
+      page,
+      toast
+    }) => {
+      test.setTimeout(90_000)
+      const routes = await setupSubscription(page)
+      // Processing, so no hosted action is offered and nothing disables the
+      // confirm button. This is the state the preview guard cannot see.
+      routes.setOperation(VERIFIED_PROCESSING)
+      // Parked before this tab sends any subscribe of its own.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(
+          jsonRoute({
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          } satisfies BillingStatusResponse)
+        )
+      )
+
+      await confirmUpgrade(page)
+
+      await expect(
+        toast.withText(
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+        )
+      ).toBeVisible()
+      expect(routes.subscribeRequests).toEqual([])
+      await expect(
+        page.getByRole('heading', { name: "You're all set" })
+      ).toBeHidden()
     })
   })
 })

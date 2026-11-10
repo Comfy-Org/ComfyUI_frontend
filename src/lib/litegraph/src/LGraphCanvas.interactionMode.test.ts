@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   LGraph,
   LGraphCanvas,
@@ -10,7 +10,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 

@@ -7,12 +7,12 @@ import {
   clearEscapeOverrides,
   registerEscapeOverride
 } from '@/platform/keybindings/escapeOverride'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -126,8 +126,8 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it.for(['menu', 'menubar'])(
-    'should leave Escape events from role=%s to the menu',
+  it.for(['menu', 'menubar', 'dialog'])(
+    'should leave Escape events from role=%s to the overlay',
     async (role) => {
       const menu = document.createElement('div')
       menu.setAttribute('role', role)

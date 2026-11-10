@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   LGraph,
   LGraphCanvas,
@@ -13,7 +13,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
 

@@ -1,5 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const REPLAY_KEY = 'Comfy.OnboardingReplay'
 
@@ -14,6 +14,7 @@ function reportStorageError(
   operation: 'writing' | 'reading' | 'clearing'
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType: `error_${operation}_onboarding_replay_request`
   })
 }

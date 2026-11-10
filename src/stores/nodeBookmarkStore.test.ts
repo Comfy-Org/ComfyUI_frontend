@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 import { useNodeBookmarkStore } from './nodeBookmarkStore'
 
@@ -30,8 +30,6 @@ describe('node bookmark folder commands', () => {
     ]
     settingStore.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
     vi.spyOn(settingStore, 'set').mockResolvedValue()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('omits bookmarks whose node definitions are no longer available', () => {
@@ -77,8 +75,8 @@ describe('node bookmark folder commands', () => {
       settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2']
     ).toEqual(originalBookmarks)
     expect(settingStore.set).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({ severity: 'error', detail: error })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'error', description: error })
     )
   })
 

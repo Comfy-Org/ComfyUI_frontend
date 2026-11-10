@@ -1,7 +1,7 @@
 import type {
   CURATED_TEMPLATE_IDS,
   FALLBACK_TEMPLATE_IDS
-} from '../gettingStarted/tutorialCards'
+} from '@/renderer/extensions/firstRunTour/gettingStarted/tutorialCards'
 
 /** Every id the Getting Started grid can offer, so no card can ship unpinned. */
 export type SupportedTemplateId =

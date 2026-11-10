@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@comfyorg/ingest-types'
@@ -16,10 +15,12 @@ import {
   cloudAppFixture as test
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -39,35 +40,22 @@ const BOOT_FEATURES = {
   unified_cloud_auth: true
 } satisfies RemoteConfig
 
-const STANDARD_ANNUAL_PLAN = {
+const STANDARD_ANNUAL_PLAN = createPlan({
   slug: 'standard-annual',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 19_200,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 19_200,
-    total_credits_cents: 4_200
-  }
-} satisfies Plan
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
@@ -79,8 +67,10 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -97,8 +87,9 @@ const CREATOR_UPGRADE_QUOTE = {
   is_immediate: true,
   cost_today_cents: 14_400,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 3_200,
-  credits_next_period_cents: 7_400,
+  credits_today_cents:
+    CREATOR_ANNUAL_PLAN.credits_cents - STANDARD_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   current_plan: {
     slug: STANDARD_ANNUAL_PLAN.slug,
     tier: STANDARD_ANNUAL_PLAN.tier,
@@ -253,6 +244,8 @@ const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
 test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('keeps the legacy calls while the SDK rail is off', async ({ page }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)

@@ -1,5 +1,5 @@
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 
 /**
  * The workspace a link leaving this app names: the one the session's
@@ -7,6 +7,6 @@ import { useBillingWebSession } from '@/session/billingWebSession'
  * there is only the entry's binding, and an unbound tab names none.
  */
 export function useBilledWorkspace(): () => string | undefined {
-  const { session } = useBillingWebSession()
+  const session = useBilledScope()
   return () => session.value?.workspace.id ?? boundWorkspaceId()
 }
