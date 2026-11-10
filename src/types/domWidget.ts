@@ -81,6 +81,7 @@ export interface DOMWidgetOptions<
   onHide?: (widget: BaseDOMWidget<V>) => void
   getValue?: () => V
   setValue?: (value: V) => void
+  callbackOnSet?: boolean
   getMinHeight?: () => number
   getMaxHeight?: () => number
   getHeight?: () => string | number

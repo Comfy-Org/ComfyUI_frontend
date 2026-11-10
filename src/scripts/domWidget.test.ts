@@ -225,3 +225,32 @@ describe('DOM widget value accessors with a non-function getValue/setValue', () 
     expect(widget.value).toBe('next')
   })
 })
+
+test.for([undefined, true, false])(
+  'assignment callbacks respect callbackOnSet=%s without consuming callback reads',
+  (callbackOnSet) => {
+    let value = 'initial'
+    const widget = new LGraphNode('test-node').addDOMWidget(
+      'value',
+      'custom',
+      document.createElement('div'),
+      {
+        callbackOnSet,
+        getValue: () => value,
+        setValue(next: string) {
+          value = next
+        }
+      }
+    )
+    const callback = vi.fn()
+    widget.callback = callback
+    widget.value = '13'
+    expect(widget.value).toBe('13')
+    expect(widget.callback).toBe(callback)
+    expect(widget.callback).toBe(callback)
+    expect(callback).toHaveBeenCalledTimes(callbackOnSet === false ? 0 : 1)
+    widget.callback(widget.value)
+    expect(callback).toHaveBeenLastCalledWith('13')
+    expect(callback).toHaveBeenCalledTimes(callbackOnSet === false ? 1 : 2)
+  }
+)
