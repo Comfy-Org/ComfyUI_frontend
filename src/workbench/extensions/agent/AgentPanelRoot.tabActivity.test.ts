@@ -8,7 +8,7 @@ import type {
 import type { User } from 'firebase/auth'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 vi.mock(import('firebase/auth'))
@@ -169,7 +169,7 @@ function addTab(
       newPath.slice(newPath.lastIndexOf('/') + 1)
     )
     Object.assign(tab, { path: newPath, ...renamed })
-    return tab
+    return true
   })
   workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
@@ -333,7 +333,9 @@ beforeEach(() => {
   vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
     async (tab, options) => {
-      workflowStore.activeWorkflow = await tab.load()
+      const loaded = await tab.load()
+      assert.exists(loaded)
+      workflowStore.activeWorkflow = loaded
       if (options?.initiator === 'user') workflowStore.reportUserActivation(tab)
       return true
     }

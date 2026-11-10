@@ -586,12 +586,16 @@ describe('WorkflowTabs selection and overflow', () => {
 
   beforeEach(async () => {
     const workflowStore = useWorkflowStore()
-    firstWorkflow = await workflowStore
+    const first = await workflowStore
       .createTemporary('First workflow.json')
       .load()
-    secondWorkflow = await workflowStore
+    const second = await workflowStore
       .createTemporary('Second workflow.json')
       .load()
+    assert.exists(first)
+    assert.exists(second)
+    firstWorkflow = first
+    secondWorkflow = second
     workflowStore.attachWorkflow(firstWorkflow, 0)
     workflowStore.attachWorkflow(secondWorkflow, 1)
     workflowStore.activeWorkflow = firstWorkflow
@@ -665,6 +669,7 @@ describe('WorkflowTabs selection and overflow', () => {
     const thirdWorkflow = await useWorkflowStore()
       .createTemporary('Third workflow.json')
       .load()
+    assert.exists(thirdWorkflow)
     useWorkflowStore().attachWorkflow(thirdWorkflow, 2)
     const { user } = renderComponent()
 

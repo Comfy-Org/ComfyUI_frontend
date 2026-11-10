@@ -3346,9 +3346,10 @@ describe('useAgentConversationStore', () => {
     function openTab(path: string): LoadedComfyWorkflow {
       const tab = fromPartial<LoadedComfyWorkflow>({ path, instanceId: path })
       tab.unload = vi.fn()
-      tab.rename = vi.fn(async (newPath: string) =>
+      tab.rename = vi.fn(async (newPath: string) => {
         Object.assign(tab, { path: newPath })
-      )
+        return true
+      })
       const workflowStore = useWorkflowStore()
       workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
       return tab

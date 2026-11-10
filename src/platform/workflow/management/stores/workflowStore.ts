@@ -184,10 +184,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     ).filter(isValidPath)
   }
 
-  /**
-   * Set the workflow as the active workflow.
-   * @param workflow The workflow to open.
-   */
   const openWorkflow = async (
     workflow: ComfyWorkflow
   ): Promise<LoadedComfyWorkflow | undefined> => {
@@ -214,14 +210,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     activeWorkflow.value = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
-    const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
-    if (historyIndex !== -1) {
-      tabActivationHistory.value.splice(historyIndex, 1)
-    }
-    tabActivationHistory.value.push(workflow.path)
-    if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
-      tabActivationHistory.value.shift()
-    }
+    tabActivationHistory.value = [
+      ...tabActivationHistory.value.filter((path) => path !== workflow.path),
+      workflow.path
+    ].slice(-MAX_HISTORY_SIZE)
 
     return loadedWorkflow
   }

@@ -11478,7 +11478,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('says the target workflow is no longer available after the user deletes it', async () => {
     const target = addTab('workflows/current.json', {
-      delete: vi.fn(async () => {})
+      delete: vi.fn(async () => true)
     })
     workflowStore.activeWorkflow = target
     useAgentWorkflowTabBindingStore().bind('wf-42', target.path)

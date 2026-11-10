@@ -3,6 +3,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   afterEach,
+  assert,
   beforeEach,
   describe,
   expect,
@@ -1199,6 +1200,7 @@ describe('useWorkflowPersistenceV2', () => {
     const sourceWorkflow = await workflowStore
       .createTemporary('AccountA.json')
       .load()
+    assert.exists(sourceWorkflow)
     workflowStore.activeWorkflow = sourceWorkflow
     mountWorkflowPersistence()
 

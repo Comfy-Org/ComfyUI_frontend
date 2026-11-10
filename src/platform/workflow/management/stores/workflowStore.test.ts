@@ -1974,6 +1974,7 @@ describe('useWorkflowStore', () => {
 
         const opened = await store.openWorkflow(workflow)
 
+        assert.exists(opened)
         expect(opened.isLoaded).toBe(true)
         expect(opened.initialState).toEqual(defaultGraph)
         expectReported(
@@ -2003,6 +2004,7 @@ describe('useWorkflowStore', () => {
 
       it('does not report an active workflow that is loaded', async () => {
         const workflow = await store.createTemporary('test.json').load()
+        assert.exists(workflow)
         store.activeWorkflow = workflow
 
         await store.openWorkflow(workflow)
@@ -2012,12 +2014,14 @@ describe('useWorkflowStore', () => {
 
       it('reports a never-loaded temporary workflow that aliases the active path', async () => {
         const activeByPath = await store.createTemporary('aliased.json').load()
+        assert.exists(activeByPath)
         const neverLoaded = store.createTemporary('aliased.json')
         neverLoaded.updatePath(activeByPath.path)
         store.activeWorkflow = activeByPath
 
         const opened = await store.openWorkflow(neverLoaded)
 
+        assert.exists(opened)
         expectReported(
           'openWorkflow called on an active workflow that is not loaded',
           {

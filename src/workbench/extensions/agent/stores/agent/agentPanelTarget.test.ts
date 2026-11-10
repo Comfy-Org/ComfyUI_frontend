@@ -55,15 +55,15 @@ type TargetSetup = Awaited<ReturnType<typeof setup>>
 
 function saveTarget(target: ComfyWorkflow): void {
   target.size = 1
-  vi.spyOn(target, 'delete').mockResolvedValue()
+  vi.spyOn(target, 'delete').mockResolvedValue(true)
 }
 
 function deferDelete(target: ComfyWorkflow): () => void {
   let finishDelete = () => {}
   vi.spyOn(target, 'delete').mockImplementation(
     () =>
-      new Promise<void>((resolve) => {
-        finishDelete = resolve
+      new Promise<boolean>((resolve) => {
+        finishDelete = () => resolve(true)
       })
   )
   return () => finishDelete()
@@ -117,7 +117,7 @@ describe('Agent target deletion', () => {
         saveTarget(target)
         vi.spyOn(target, 'rename').mockImplementation(async (path) => {
           target.path = path
-          return target
+          return true
         })
         await workflows.closeWorkflow(target)
         await nextTick()
