@@ -189,6 +189,55 @@
       </Button>
     </div>
 
+    <div
+      v-if="replacements.length"
+      data-testid="missing-model-replacements"
+      class="flex flex-col pl-5"
+    >
+      <span
+        :id="replacementsLabelId"
+        class="text-2xs/tight text-muted-foreground"
+      >
+        {{ t('rightSidePanel.missingModels.availableReplacements') }}
+      </span>
+      <ul :aria-labelledby="replacementsLabelId" class="m-0 list-none p-0">
+        <li
+          v-for="replacement in replacements"
+          :key="replacement"
+          class="flex min-h-8 min-w-0 items-center gap-2"
+        >
+          <span
+            class="min-w-0 flex-1 text-xs/tight wrap-break-word"
+            :title="replacement"
+          >
+            {{ replacement }}
+          </span>
+          <Button
+            data-testid="missing-model-use-replacement"
+            variant="secondary"
+            size="sm"
+            class="shrink-0 focus-visible:ring-inset"
+            :aria-label="
+              t(
+                'rightSidePanel.missingModels.useReplacement',
+                { model: replacement },
+                { escapeParameter: false }
+              )
+            "
+            @click="
+              replaceModelOnNodes(
+                model.name,
+                model.referencingNodes,
+                replacement
+              )
+            "
+          >
+            {{ t('rightSidePanel.missingModels.use') }}
+          </Button>
+        </li>
+      </ul>
+    </div>
+
     <TransitionCollapse>
       <ul
         v-if="showReferenceList"
@@ -306,6 +355,12 @@ const isCloudImportDownloadActive = computed(
 const cloudImportProgressPercent = computed(() =>
   Math.round((downloadStatus.value?.progress ?? 0) * 100)
 )
+const replacements = computed(() =>
+  isCloudImportDownloadActive.value
+    ? []
+    : (model.representative.replacements ?? [])
+)
+const replacementsLabelId = useId()
 const hasMultipleReferences = computed(() => model.referencingNodes.length > 1)
 const primaryReference = computed(() => model.referencingNodes[0])
 const hasModelLabelControl = computed(
@@ -458,8 +513,12 @@ function copyModelLink() {
   copyToClipboard(url ? toBrowsableUrl(url) : model.name)
 }
 
-const { confirmLibrarySelect, getDownloadStatus, handleUploadedModelImport } =
-  useMissingModelInteractions()
+const {
+  confirmLibrarySelect,
+  replaceModelOnNodes,
+  getDownloadStatus,
+  handleUploadedModelImport
+} = useMissingModelInteractions()
 
 function handleToggleExpand() {
   store.modelExpandState[modelKey.value] = !expanded.value

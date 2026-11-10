@@ -34,6 +34,8 @@ export interface MissingModelCandidate {
    * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
+  /** Available options the missing value most likely meant, best first. */
+  replacements?: string[]
 }
 
 /** View model grouping multiple candidate references under a single model name. */

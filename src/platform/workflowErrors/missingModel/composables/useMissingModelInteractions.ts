@@ -52,10 +52,7 @@ export function useMissingModelInteractions() {
     directory: string | null
   ) {
     const value = store.selectedLibraryModel[key]
-    if (!value) return
-
-    const graph = app.rootGraphOrUndefined
-    if (!graph) return
+    if (!value || !app.rootGraphOrUndefined) return
 
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
@@ -75,6 +72,19 @@ export function useMissingModelInteractions() {
       })
     }
 
+    delete store.selectedLibraryModel[key]
+    delete store.importTaskIds[key]
+    replaceModelOnNodes(modelName, referencingNodes, value)
+  }
+
+  function replaceModelOnNodes(
+    modelName: string,
+    referencingNodes: MissingModelViewModel['referencingNodes'],
+    value: string
+  ) {
+    const graph = app.rootGraphOrUndefined
+    if (!graph) return
+
     for (const ref of referencingNodes) {
       const node = getNodeByExecutionId(graph, String(ref.nodeId))
       if (node) {
@@ -87,8 +97,6 @@ export function useMissingModelInteractions() {
       }
     }
 
-    delete store.selectedLibraryModel[key]
-    delete store.importTaskIds[key]
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
@@ -134,6 +142,7 @@ export function useMissingModelInteractions() {
     toggleModelExpand,
     isModelExpanded,
     confirmLibrarySelect,
+    replaceModelOnNodes,
     getDownloadStatus,
     handleUploadedModelImport
   }
