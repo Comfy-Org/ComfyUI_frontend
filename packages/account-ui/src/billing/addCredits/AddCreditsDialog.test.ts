@@ -817,6 +817,21 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     )
   })
 
+  it("says auto top-up didn't turn on when a checked purchase lands without an outcome", async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    ports.landed?.()
+
+    expect(
+      await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeVisible()
+    expect(screen.getByText('Your credits were added.')).toBeVisible()
+    expect(emitted().close).toBeUndefined()
+  })
+
   it('says auto top-up is on with a Manage link when it already is', () => {
     renderOffered({ kind: 'on' })
 
