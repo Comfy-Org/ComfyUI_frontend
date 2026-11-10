@@ -18,10 +18,12 @@ function cardOf(module: { default?: Component } | undefined): Component {
   return module.default
 }
 
-async function openCardDialog(
+/** Lazily opens a headless deployment card; a failed load shows a toast and resolves false. */
+export async function openCardDialog(
   key: string,
   load: () => Promise<{ default?: Component } | undefined>,
-  props: Record<string, unknown>
+  props: Record<string, unknown>,
+  isStillWanted: () => boolean = () => true
 ): Promise<boolean> {
   const card = await load()
     .then(cardOf)
@@ -29,7 +31,7 @@ async function openCardDialog(
       useErrorHandling().toastErrorHandler(error)
       return null
     })
-  if (card === null) return false
+  if (card === null || !isStillWanted()) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({

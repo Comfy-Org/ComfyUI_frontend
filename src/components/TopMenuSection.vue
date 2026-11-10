@@ -86,8 +86,9 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
+              <CloudButton v-if="isCloudButtonShown" />
               <Button
-                v-if="isDeployButtonShown"
+                v-else-if="isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -216,7 +217,10 @@ import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { handsPopupsToSystemBrowser } from '@/platform/billing/billingTab'
 import { isCloud } from '@/platform/distribution/types'
+import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -241,6 +245,13 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const isCloudButtonShown = computed(
+  () =>
+    !isCloud &&
+    !handsPopupsToSystemBrowser() &&
+    flags.openOnCloudEnabled &&
+    canHandOffToCloud()
+)
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({
@@ -272,7 +283,7 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isDeployButtonShown.value) return true
+  if (isCloudButtonShown.value || isDeployButtonShown.value) return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
