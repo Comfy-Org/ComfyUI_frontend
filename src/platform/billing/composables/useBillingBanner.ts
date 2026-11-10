@@ -10,18 +10,36 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { hasEndingNoticeStarted } from '@/platform/billing/subscription/constants/tierPricing'
+import {
+  hasEndingNoticeStarted,
+  isWithinEnterpriseEndingNotice
+} from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { isTopUpDeniedPastDue } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 function toBannerAudience(
   served: 'none' | BillingStatusBannerAudience | null
 ): BillingStatusBannerAudience | null {
   return served === 'none' ? null : served
+}
+
+const PERSONAL_TIERS: ReadonlySet<NonNullable<SubscriptionInfo['tier']>> =
+  new Set(['STANDARD', 'CREATOR', 'PRO', 'FOUNDERS_EDITION'])
+
+function legacyBannerAudience(
+  tier: SubscriptionInfo['tier'] | undefined,
+  isTeamPlan: boolean
+): BillingStatusBannerAudience | null {
+  if (pendingServerFact('BE-25244', tier === 'ENTERPRISE')) return null
+  if (pendingServerFact('BE-25244', isTeamPlan)) return 'team'
+  return pendingServerFact('BE-25244', tier != null && PERSONAL_TIERS.has(tier))
+    ? 'personal'
+    : null
 }
 
 function toEnterpriseEndingNotice(
@@ -48,8 +66,12 @@ function readSubscriptionInputs(
 }
 
 function useBillingBannerInternal() {
-  const { canAccessSubscriptionFeatures, subscription, billingStatus } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    billingStatus,
+    isTeamPlan
+  } = useBillingContext()
   const { permissions } = useBillingUI()
   const { flags } = useFeatureFlags()
   const {
@@ -66,13 +88,30 @@ function useBillingBannerInternal() {
 
   const now = useTimestamp({ interval: 60_000 })
 
+  const enterpriseEndingNotice = computed<EnterpriseEndingNotice | null>(() => {
+    if (flags.billingNewUxEnabled) {
+      return toEnterpriseEndingNotice(endingNoticeStartsAt.value, now.value)
+    }
+    if (
+      !pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
+    ) {
+      return null
+    }
+    return pendingServerFact(
+      'BE-25244',
+      subscription.value?.isCancelled &&
+        isWithinEnterpriseEndingNotice(subscription.value.endDate, now.value)
+    )
+      ? 'started'
+      : 'scheduled'
+  })
+
   const bannerInputs = computed<BillingStatusBannerFacts>(() => ({
     billingControlEnabled: flags.billingControlEnabled,
-    audience: toBannerAudience(billingNoticeAudience.value),
-    enterpriseEndingNotice: toEnterpriseEndingNotice(
-      endingNoticeStartsAt.value,
-      now.value
-    ),
+    audience: flags.billingNewUxEnabled
+      ? toBannerAudience(billingNoticeAudience.value)
+      : legacyBannerAudience(subscription.value?.tier, isTeamPlan.value),
+    enterpriseEndingNotice: enterpriseEndingNotice.value,
     billingStatus: billingStatus.value,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     canManage: permissions.value.canManageSubscription,

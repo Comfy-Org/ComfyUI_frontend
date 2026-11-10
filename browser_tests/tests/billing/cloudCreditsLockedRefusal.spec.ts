@@ -97,6 +97,35 @@ test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
   }
 })
 
+test.describe(
+  '1.60 billing with the new UX disabled',
+  { tag: '@cloud' },
+  () => {
+    test.use({ billingNewUx: false })
+
+    test('hands a refused run directly to Plans without the 1.61 explanation', async ({
+      page
+    }) => {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        workspace('personal', 'owner'),
+        {
+          ...FREE_ACCOUNT_WITH_CREDITS,
+          subscription_state: 'never_subscribed'
+        },
+        { can_run_workflows: true }
+      )
+      await page.route('**/api/features', (route) =>
+        route.fulfill(jsonRoute({ subscription_required: true }))
+      )
+
+      await expectPlatformPlansOpened(page, () => runAndGetRefused(page, true))
+
+      await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+    })
+  }
+)
+
 async function arrangeEndedPlan(page: Page, hasFunds: boolean) {
   await new CloudWorkspaceMockHelper(page).setup(
     DEFAULT_TEAM_MEMBERS,

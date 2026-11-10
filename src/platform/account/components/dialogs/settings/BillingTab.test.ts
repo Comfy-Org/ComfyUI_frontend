@@ -2114,6 +2114,7 @@ describe('BillingTab', () => {
       })
 
       it('shows a member the served auto top-up status, still without an action or a settings read', () => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
         arrange({
           ...member,
           autoTopUpMemberView: {

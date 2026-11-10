@@ -404,11 +404,14 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
   hasEndingNoticeStarted,
+  isWithinEnterpriseEndingNotice,
   isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
@@ -456,6 +459,7 @@ const {
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
+const { flags } = useFeatureFlags()
 
 const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
@@ -613,7 +617,12 @@ const now = useTimestamp({ interval: 60_000 })
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+    !(flags.billingNewUxEnabled
+      ? hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+      : pendingServerFact(
+          'BE-25244',
+          isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+        ))
 )
 
 const { kind: billingBannerKind } = useBillingBanner()

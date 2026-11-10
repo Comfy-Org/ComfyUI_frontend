@@ -27,6 +27,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 
@@ -39,6 +40,7 @@ const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useBillingUI()
 const { subscription, subscriptionState } = useBillingContext()
+const { flags } = useFeatureFlags()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 
@@ -63,10 +65,12 @@ function handleSubscribeToRun() {
   }
 
   showSubscriptionDialog(
-    subscribeToRunDialogOptions({
-      subscriptionState: subscriptionState.value,
-      hasFunds: subscription.value?.hasFunds
-    })
+    flags.billingNewUxEnabled
+      ? subscribeToRunDialogOptions({
+          subscriptionState: subscriptionState.value,
+          hasFunds: subscription.value?.hasFunds
+        })
+      : { reason: 'subscribe_to_run' }
   )
 }
 </script>

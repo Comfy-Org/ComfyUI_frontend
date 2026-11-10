@@ -1,5 +1,27 @@
 # Real Cloud billing E2E setup
 
+## 1.61 billing rollout
+
+`billing_new_ux_enabled` controls the billing behavior introduced after 1.60.
+It defaults to false when absent or malformed. With the flag off, the app keeps
+the old Add credits dialog, tier-based billing notices and Enterprise 14-day
+notice window, direct Plans hand-off with an in-app pricing-table fallback,
+static member auto top-up notice, and Activity without the member column.
+Turning it on selects the new dialog, served notice audience/start, refusal
+and blocked-tab explanations, same-tab Plans entry, locked-credit explanation,
+member auto top-up status, and Activity member column. `pricing_table_fallback`
+continues to select the old Plans fallback while the new UX is enabled.
+
+SDK payment-rail flags remain independent. Behavior-preserving SDK rule moves
+do not change which billing behavior the rollout flag selects.
+
+Mocked browser tests opt in through the `billingNewUx` fixture option. Set it to
+false to exercise the default 1.60 path; do not enable the flag in that case's
+`/api/features` response or server flags. Real-account tests use the account's
+served flag value.
+
+## Live test setup
+
 Run the opt-in `cloud-live` project through the existing browser-test runner:
 
 ```sh

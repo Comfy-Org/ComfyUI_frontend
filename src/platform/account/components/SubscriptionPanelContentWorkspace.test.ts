@@ -9,6 +9,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { getActivePinia } from 'pinia'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
@@ -59,6 +60,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -632,6 +634,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
           screen.getByText(`Ends on ${formatPanelDate(iso)}`)
         ).toBeInTheDocument()
       })
+
+      it.for([
+        { enabled: true, showsEndDate: false },
+        { enabled: false, showsEndDate: true }
+      ])(
+        'uses the served notice start only when the new UX is enabled ($enabled)',
+        ({ enabled, showsEndDate }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+          const iso = endInDays(10)
+          useBillingCapabilities().endingNoticeStartsAt = computed(() =>
+            receiveServerFact('ending_notice_starts_at', null)
+          )
+
+          renderComponent()
+
+          expect(
+            screen.queryByText(`Ends on ${formatPanelDate(iso)}`) !== null
+          ).toBe(showsEndDate)
+        }
+      )
 
       // The capability alone decides Reactivate — the server closes it for
       // sales-managed tiers (hideLifecycleCapabilities), and the client adds
