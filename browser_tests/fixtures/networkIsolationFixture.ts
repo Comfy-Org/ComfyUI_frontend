@@ -3,6 +3,7 @@ import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { installSeededServerFlags } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
@@ -60,12 +61,14 @@ function guardApiRequests(
 export const networkIsolationFixture = base.extend<{
   liveCloudBillingConfig: LiveCloudBillingConfig | undefined
   liveNetworkOrigins: string[]
+  billingNewUx: boolean
   networkPolicy: NetworkPolicy
   toast: ToastHelper
 }>({
   serviceWorkers: 'block',
   liveCloudBillingConfig: [undefined, { option: true }],
   liveNetworkOrigins: [[], { option: true }],
+  billingNewUx: [true, { option: true }],
   networkPolicy: [
     async (
       { baseURL, liveCloudBillingConfig, liveNetworkOrigins },
@@ -137,10 +140,16 @@ export const networkIsolationFixture = base.extend<{
       baseURL,
       networkPolicy,
       liveCloudBillingConfig,
-      liveNetworkOrigins
+      liveNetworkOrigins,
+      billingNewUx
     },
     use
   ) => {
+    if (billingNewUx) {
+      await context.addInitScript(installSeededServerFlags, {
+        billing_new_ux_enabled: billingNewUx
+      })
+    }
     const { origins, unexpected } = networkPolicy
     const restore = guardApiRequests(
       context.request,
