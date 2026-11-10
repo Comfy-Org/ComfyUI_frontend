@@ -242,6 +242,7 @@
               >
                 {{ group.displayMessage }}
               </p>
+              <CloudErrorAction :catalog-id="group.catalogId" />
             </div>
 
             <!-- Missing Node Packs -->
@@ -422,6 +423,7 @@ import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/
 import { isCloud } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import CloudErrorAction from '@/platform/openOnCloud/components/CloudErrorAction.vue'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'

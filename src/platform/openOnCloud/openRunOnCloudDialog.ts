@@ -1,4 +1,8 @@
 import { useDialogStore } from '@/stores/dialogStore'
+import {
+  DEPLOY_VIDEO_POSTER_SRC,
+  DEPLOY_VIDEO_SOURCES
+} from '@/platform/workflow/deploy/constants'
 import { openCardDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const RUN_ON_CLOUD_DIALOG_KEY = 'global-run-on-comfy-cloud'
@@ -18,5 +22,13 @@ export function openRunOnCloudDialog(
     () => import('@/platform/openOnCloud/components/RunOnCloudDialog.vue'),
     {},
     isStillWanted
+  )
+}
+
+export function openDeploySetupDialog(): Promise<boolean> {
+  return openCardDialog(
+    RUN_ON_CLOUD_DIALOG_KEY,
+    () => import('@/platform/openOnCloud/components/DeploySetupCard.vue'),
+    { videoSources: DEPLOY_VIDEO_SOURCES, posterSrc: DEPLOY_VIDEO_POSTER_SRC }
   )
 }
