@@ -140,7 +140,6 @@ describe('ChatHistoryScreen search match line', () => {
 
     const row = screen.getByRole('button', { name: title })
     expect(within(row).getByText(/^Title:/)).toBeVisible()
-    // Once in the (clipped) title line, once in the match line.
     expect(marks(row)).toEqual(['needle', 'needle'])
   })
 
@@ -195,6 +194,8 @@ describe('ChatHistoryScreen search match line', () => {
   })
 })
 
+const SCREEN_READER_ONLY = '.sr-only'
+
 describe('ChatHistoryScreen search workflow tail', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
@@ -210,7 +211,9 @@ describe('ChatHistoryScreen search workflow tail', () => {
 
     const row = screen.getByRole('button', { name: 'Cats' })
     expect(within(row).getByText('Nov 10')).toBeVisible()
-    expect(within(row).queryByText(LONG_WORKFLOW)).toBeNull()
+    expect(
+      within(row).queryByText(LONG_WORKFLOW, { ignore: SCREEN_READER_ONLY })
+    ).toBeNull()
     const tail = within(row).getByText(/^Portrait.*…/)
     expect(tail.textContent).toHaveLength(18)
     expect(tail.textContent.endsWith('(copy 2)')).toBe(true)
@@ -239,7 +242,9 @@ describe('ChatHistoryScreen search workflow tail', () => {
     await search(user, 'cats')
 
     const row = screen.getByRole('button', { name: 'Cats' })
-    expect(within(row).queryByText('Portrait')).toBeNull()
+    expect(
+      within(row).queryByText('Portrait', { ignore: SCREEN_READER_ONLY })
+    ).toBeNull()
     expect(within(row).getByText('Nov 10')).toBeVisible()
   })
 

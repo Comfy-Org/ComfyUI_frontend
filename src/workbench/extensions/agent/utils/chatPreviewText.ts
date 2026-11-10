@@ -1,16 +1,7 @@
-/**
- * Same link shape `parseWorkflowReferences` reads: `[name](workflow://id)`
- * with `\\`, `\[` and `\]` escaped inside the name.
- */
 const WORKFLOW_REFERENCE_LINK =
   /\[((?:\\.|[^\]\\])*)\]\(workflow:\/\/[^\s)]+\)/g
 
-/**
- * Display text for a chat's first-message preview: a workflow reference reads
- * as its name instead of markdown link syntax, and line breaks and repeated
- * whitespace collapse so the preview fits one row line. Ordinary markdown is
- * left as typed. Returns undefined when nothing readable remains.
- */
+/** Preview text with workflow links reduced to names and whitespace collapsed. */
 export function readablePreview(
   preview: string | undefined
 ): string | undefined {

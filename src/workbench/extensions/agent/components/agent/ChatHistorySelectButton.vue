@@ -25,13 +25,10 @@ const {
   failed = false
 } = defineProps<{
   title: string
-  /** Rich search-result lines; omitted for the dense grouped rows. */
   preview?: string
   date?: string
   workflowName?: string
-  /** Search match ranges per field; highlights and the match line derive from them. */
   ranges?: Partial<Record<ChatSearchField, ChatSearchRange[]>>
-  /** Dock narrower than ~350 px: the workflow tail is dropped. */
   narrow?: boolean
   current?: boolean
   loading?: boolean
@@ -41,6 +38,13 @@ const emit = defineEmits<{ select: [] }>()
 const { t } = useI18n()
 const displayTitle = computed(() => title.trim() || t('agent.untitledChat'))
 const errorId = useId()
+const detailsId = useId()
+const describedBy = computed(
+  () =>
+    [date === undefined ? undefined : detailsId, failed ? errorId : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined
+)
 
 const plan = computed(() =>
   planChatRow({ title, preview, workflowName, ranges, narrow, current })
@@ -66,7 +70,7 @@ const matchLabel = computed(() => {
       size="unset"
       :aria-busy="loading"
       :aria-label="displayTitle"
-      :aria-describedby="failed ? errorId : undefined"
+      :aria-describedby="describedBy"
       :disabled="loading"
       data-history-result
       class="min-w-0 items-start justify-start text-left text-xs font-normal"
@@ -86,31 +90,37 @@ const matchLabel = computed(() => {
           ><ChatHistoryHighlight :parts="titleParts"
         /></span>
         <template v-if="date !== undefined">
-          <span
-            v-if="plan.matchLine"
-            class="truncate text-xs text-muted-foreground"
-          >
-            <span class="mr-1 opacity-70">{{ matchLabel }}</span
-            ><ChatHistoryHighlight :parts="plan.matchLine.parts" />
-          </span>
-          <span
-            v-else-if="plan.previewParts"
-            class="truncate text-xs text-muted-foreground"
-            ><ChatHistoryHighlight :parts="plan.previewParts"
-          /></span>
-          <span
-            class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
-          >
-            <span class="shrink-0">{{ date }}</span>
-            <span v-if="current" class="shrink-0 rounded-sm bg-muted px-1">{{
-              t('agent.historyCurrentChat')
-            }}</span>
+          <span :id="detailsId" class="flex min-w-0 flex-col gap-0.5">
             <span
-              v-if="plan.workflowParts"
-              :title="workflowName"
-              class="ml-auto min-w-0 truncate"
-              ><ChatHistoryHighlight :parts="plan.workflowParts"
+              v-if="plan.matchLine"
+              class="truncate text-xs text-muted-foreground"
+            >
+              <span class="mr-1">{{ matchLabel }}</span
+              ><ChatHistoryHighlight :parts="plan.matchLine.parts" />
+            </span>
+            <span
+              v-else-if="plan.previewParts"
+              class="truncate text-xs text-muted-foreground"
+              ><ChatHistoryHighlight :parts="plan.previewParts"
             /></span>
+            <span
+              class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+            >
+              <span class="shrink-0">{{ date }}</span>
+              <span v-if="current" class="shrink-0 rounded-sm bg-muted px-1">{{
+                t('agent.historyCurrentChat')
+              }}</span>
+              <span
+                v-if="plan.workflowParts"
+                :title="workflowName"
+                aria-hidden="true"
+                class="ml-auto min-w-0 truncate"
+                ><ChatHistoryHighlight :parts="plan.workflowParts"
+              /></span>
+              <span v-if="workflowName" class="sr-only">{{
+                workflowName
+              }}</span>
+            </span>
           </span>
         </template>
       </span>

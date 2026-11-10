@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   DOCK_PREVIEW_CHARS,
@@ -125,7 +125,8 @@ describe('planChatRow', () => {
       ranges: { title: [{ start: title.length - 6, end: title.length }] }
     })
     expect(plan.matchLine?.field).toBe('title')
-    expect(matchedText(plan.matchLine!.parts)).toEqual(['needle'])
+    assert.exists(plan.matchLine)
+    expect(matchedText(plan.matchLine.parts)).toEqual(['needle'])
   })
 
   it('treats a title match ending exactly at the budget as visible', () => {
@@ -150,7 +151,8 @@ describe('planChatRow', () => {
       }
     })
     expect(plan.matchLine?.field).toBe('preview')
-    expect(matchedText(plan.matchLine!.parts)).toEqual(['needle'])
+    assert.exists(plan.matchLine)
+    expect(matchedText(plan.matchLine.parts)).toEqual(['needle'])
     expect(plan.previewParts).toBeUndefined()
   })
 
@@ -160,7 +162,8 @@ describe('planChatRow', () => {
       preview: 'Help me plan the week',
       ranges: { preview: [{ start: 8, end: 12 }] }
     })
-    expect(matchedText(plan.previewParts!)).toEqual(['plan'])
+    assert.exists(plan.previewParts)
+    expect(matchedText(plan.previewParts)).toEqual(['plan'])
     expect(plan.matchLine).toBeUndefined()
   })
 
@@ -170,15 +173,18 @@ describe('planChatRow', () => {
       workflowName: 'Portrait upscale',
       ranges: { workflowName: [{ start: 0, end: 8 }] }
     })
-    expect(matchedText(plan.workflowParts!)).toEqual(['Portrait'])
+    assert.exists(plan.workflowParts)
+    expect(matchedText(plan.workflowParts)).toEqual(['Portrait'])
     expect(plan.matchLine).toBeUndefined()
   })
 
   it('shows the long workflow name middle-truncated to the tail budget', () => {
     const name = 'Portrait upscale final (copy 2)'
     const plan = planChatRow({ ...base, workflowName: name })
-    expect(joined(plan.workflowParts!)).toHaveLength(WORKFLOW_TAIL_CHARS)
-    expect(joined(plan.workflowParts!)).toContain('…')
+    assert.exists(plan.workflowParts)
+    expect(joined(plan.workflowParts)).toHaveLength(WORKFLOW_TAIL_CHARS)
+    assert.exists(plan.workflowParts)
+    expect(joined(plan.workflowParts)).toContain('…')
   })
 
   it('shrinks the tail to the minimum while the current marker is shown', () => {
@@ -187,7 +193,8 @@ describe('planChatRow', () => {
       current: true,
       workflowName: 'Portrait upscale final (copy 2)'
     })
-    expect(joined(plan.workflowParts!)).toHaveLength(WORKFLOW_TAIL_MIN_CHARS)
+    assert.exists(plan.workflowParts)
+    expect(joined(plan.workflowParts)).toHaveLength(WORKFLOW_TAIL_MIN_CHARS)
   })
 
   it('shifts the tail window to keep a workflow match visible', () => {
@@ -198,7 +205,8 @@ describe('planChatRow', () => {
       workflowName: name,
       ranges: { workflowName: [{ start, end: start + 4 }] }
     })
-    expect(matchedText(plan.workflowParts!)).toEqual(['copy'])
+    assert.exists(plan.workflowParts)
+    expect(matchedText(plan.workflowParts)).toEqual(['copy'])
     expect(plan.matchLine).toBeUndefined()
   })
 

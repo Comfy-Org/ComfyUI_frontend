@@ -30,6 +30,38 @@ describe('ChatHistorySelectButton', () => {
     expect(emitted().select).toEqual([[]])
   })
 
+  it('describes a result row with its preview, date, current marker and workflow', () => {
+    render(ChatHistorySelectButton, {
+      props: {
+        title: 'Weekly plan',
+        preview: 'Help me plan the week',
+        date: 'Sep 9',
+        current: true,
+        workflowName: 'Portrait flow'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const button = screen.getByRole('button', { name: 'Weekly plan' })
+
+    expect(button).toHaveAccessibleDescription(
+      expect.stringMatching(
+        /Help me plan the week.*Sep 9.*Current chat.*Portrait flow/
+      )
+    )
+  })
+
+  it('keeps a dense row described by nothing but its own error', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Portrait chat' })
+    ).not.toHaveAccessibleDescription()
+  })
+
   it('describes the failed chat with an external alert and clears it on retry', async () => {
     const { rerender } = render(ChatHistorySelectButton, {
       props: { title: 'Portrait chat', failed: true },

@@ -22,7 +22,6 @@ function setup(
   initial: ChatSession[],
   options: {
     currentId?: string | null
-    currentTitle?: string
     workflowNames?: Record<string, string>
   } = {}
 ) {
@@ -31,7 +30,6 @@ function setup(
   const search = useChatHistorySearch({
     sessions: () => sessions.value,
     currentSessionId: () => currentId.value,
-    currentSessionTitle: () => options.currentTitle,
     workflowNameFor: ({ workflowId }) =>
       workflowId === undefined ? undefined : options.workflowNames?.[workflowId]
   })
@@ -120,19 +118,6 @@ describe('useChatHistorySearch', () => {
     expect(search.isNoResults.value).toBe(true)
   })
 
-  it('matches the title that History shows for the current chat', () => {
-    const { search } = setup(
-      [session('cur', { title: 'New chat', titleSource: 'fallback' })],
-      { currentId: 'cur', currentTitle: 'Build a upscale flow' }
-    )
-
-    search.text.value = 'upscale'
-
-    expect(ids(search)).toEqual(['cur'])
-    search.text.value = 'new chat'
-    expect(ids(search)).toEqual([])
-  })
-
   it('shows and matches a workflow reference in the preview by its name', () => {
     const { search } = setup([
       session('a', {
@@ -147,6 +132,21 @@ describe('useChatHistorySearch', () => {
     expect(search.results.value?.[0].session.preview).toBe(
       'check Portrait flow please'
     )
+  })
+
+  it('drops a preview that only repeats the displayed title', () => {
+    const { search } = setup([
+      session('a', {
+        title: 'Animate the portrait',
+        titleSource: 'fallback',
+        preview: 'Animate  the portrait\n'
+      })
+    ])
+
+    search.text.value = 'portrait'
+
+    expect(search.results.value?.[0].session.preview).toBeUndefined()
+    expect(search.results.value?.[0].matchedFields).toEqual(['title'])
   })
 
   it('matches workflow names and tolerates unresolved ones', () => {
@@ -190,16 +190,5 @@ describe('useChatHistorySearch', () => {
     search.text.value = 'plan'
 
     expect(ids(search)).toEqual(['a'])
-  })
-
-  it('reset clears text and results', () => {
-    const { search } = setup([session('a', { title: 'plan' })])
-    search.text.value = 'plan'
-
-    search.reset()
-
-    expect(search.text.value).toBe('')
-    expect(search.results.value).toBeNull()
-    expect(search.isNoResults.value).toBe(false)
   })
 })

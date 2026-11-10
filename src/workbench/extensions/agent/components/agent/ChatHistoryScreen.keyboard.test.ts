@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type {
@@ -96,6 +96,40 @@ describe('ChatHistoryScreen keyboard path', () => {
     await user.keyboard('{Escape}{Escape}')
 
     expect(emitted('back')).toHaveLength(1)
+  })
+
+  describe('Esc does not reach the rest of the app (BC-10)', () => {
+    const keys: string[] = []
+    const record = (event: KeyboardEvent) => keys.push(event.key)
+
+    beforeEach(() => {
+      keys.length = 0
+      document.addEventListener('keydown', record)
+    })
+    afterEach(() => document.removeEventListener('keydown', record))
+
+    it('from the field, both when it clears and when it leaves', async () => {
+      const user = userEvent.setup()
+      renderScreen()
+      await user.type(field(), 'plan')
+      keys.length = 0
+
+      await user.keyboard('{Escape}{Escape}')
+
+      expect(keys).toEqual([])
+    })
+
+    it('from a focused result', async () => {
+      const user = userEvent.setup()
+      renderScreen()
+      await user.type(field(), 'plan')
+      await user.keyboard('{ArrowDown}')
+      keys.length = 0
+
+      await user.keyboard('{Escape}')
+
+      expect(keys).toEqual([])
+    })
   })
 
   it('Esc with an empty query leaves History immediately', async () => {

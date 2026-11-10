@@ -3,38 +3,36 @@ import { describe, expect, it } from 'vitest'
 import { readablePreview } from './chatPreviewText'
 
 describe('readablePreview', () => {
-  it('shows a workflow reference as its name, not as markdown link syntax', () => {
-    expect(
-      readablePreview(
-        'Workflow references and metadata [02_qwen_Image_edit_subgraphed](workflow://file%3A123) please check'
-      )
-    ).toBe(
-      'Workflow references and metadata 02_qwen_Image_edit_subgraphed please check'
-    )
-  })
-
-  it('unescapes brackets and backslashes inside a reference name', () => {
-    expect(
-      readablePreview('open [my \\[draft\\] flow](workflow://abc) now')
-    ).toBe('open my [draft] flow now')
-  })
-
-  it('keeps reference ids that contain encoded parentheses out of the text', () => {
-    expect(
-      readablePreview('[A](workflow://id%28x%29) and [B](workflow://y)')
-    ).toBe('A and B')
-  })
-
-  it('leaves ordinary markdown links and text alone', () => {
-    expect(readablePreview('see [docs](https://example.com) for more')).toBe(
-      'see [docs](https://example.com) for more'
-    )
-  })
-
-  it('collapses newlines and repeated whitespace into single spaces', () => {
-    expect(readablePreview('  first line\n\nsecond\t line  ')).toBe(
-      'first line second line'
-    )
+  it.for([
+    {
+      case: 'a workflow reference becomes its name',
+      input:
+        'Workflow references and metadata [02_qwen_Image_edit_subgraphed](workflow://file%3A123) please check',
+      expected:
+        'Workflow references and metadata 02_qwen_Image_edit_subgraphed please check'
+    },
+    {
+      case: 'brackets inside a reference name are unescaped',
+      input: 'open [my \\[draft\\] flow](workflow://abc) now',
+      expected: 'open my [draft] flow now'
+    },
+    {
+      case: 'encoded parentheses in a reference id stay out of the text',
+      input: '[A](workflow://id%28x%29) and [B](workflow://y)',
+      expected: 'A and B'
+    },
+    {
+      case: 'ordinary markdown links are left alone',
+      input: 'see [docs](https://example.com) for more',
+      expected: 'see [docs](https://example.com) for more'
+    },
+    {
+      case: 'newlines and repeated whitespace collapse',
+      input: '  first line\n\nsecond\t line  ',
+      expected: 'first line second line'
+    }
+  ])('$case', ({ input, expected }) => {
+    expect(readablePreview(input)).toBe(expected)
   })
 
   it('returns undefined for a missing or blank preview', () => {

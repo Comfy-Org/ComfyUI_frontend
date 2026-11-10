@@ -1,28 +1,16 @@
 import type { ChatSearchField, ChatSearchRange } from './chatHistorySearch'
 import { middleTruncateWithRanges } from './middleTruncate'
 
-/**
- * Character budgets for a search-result row at the 420 px dock (the panel's
- * minimum width). Derived from the row's layout, not measured: the text column
- * is ~300 px wide (404 px row minus padding, status icon, copy and menu
- * buttons) and 12 px UI text averages ~6.5 px per character. Deciding
- * visibility from budgets keeps the row pure and testable; the CSS `truncate`
- * on each line is only the safety net for wider glyphs.
- */
-/** Characters of the title that fit on its single line. */
+/** Title characters that fit on one line at the 420 px dock. */
 export const DOCK_TITLE_CHARS = 44
-/** Characters of the preview that fit on its single line. */
+/** Preview characters that fit on one line at the 420 px dock. */
 export const DOCK_PREVIEW_CHARS = 44
-/** Workflow name cap in the meta-line tail (≈ 117 px). */
+/** Workflow name characters shown in the meta-line tail. */
 export const WORKFLOW_TAIL_CHARS = 18
-/**
- * The tail shrinks to this while the "current" marker shares the meta line,
- * before anything else gives way (the date never truncates).
- */
+/** Tail characters left while the current-chat marker shares the line. */
 export const WORKFLOW_TAIL_MIN_CHARS = 8
-/** Characters of source text shown in a `Label: …` match line. */
+/** Source characters shown in a match line. */
 export const MATCH_LINE_CHARS = 40
-/** Characters of context kept before the match in a match line. */
 const MATCH_LINE_LEAD_CHARS = 12
 
 const ELLIPSIS = '…'
@@ -34,7 +22,6 @@ export interface HighlightPart {
 
 type FieldRanges = Partial<Record<ChatSearchField, ChatSearchRange[]>>
 
-/** Sorts, clamps to `[0, length]` and merges; drops empty ranges. */
 function normalize(
   ranges: readonly ChatSearchRange[],
   length: number
@@ -55,10 +42,7 @@ function normalize(
   return out
 }
 
-/**
- * Splits `text` into plain / matched segments for rendering as text nodes.
- * Adjacent ranges stay separate segments; overlapping ones are merged.
- */
+/** Splits text into plain and highlighted segments; overlaps are merged. */
 export function splitByRanges(
   text: string,
   ranges: readonly ChatSearchRange[]
@@ -79,10 +63,7 @@ export function splitByRanges(
   return parts
 }
 
-/**
- * A short window of `text` around the first range, with `…` where text was
- * cut, as segments with the ranges inside the window highlighted.
- */
+/** A short window around the first range, with `…` where text was cut. */
 export function matchWindow(
   text: string,
   ranges: readonly ChatSearchRange[],
@@ -115,34 +96,22 @@ function fitsBudget(ranges: readonly ChatSearchRange[], budget: number) {
 }
 
 export interface ChatRowInput {
-  /** Raw session title; the row displays it trimmed. */
   title: string
   preview?: string
   workflowName?: string
   ranges: FieldRanges
-  /** Dock narrower than ~350 px: the whole workflow tail is dropped. */
   narrow: boolean
-  /** The "current chat" marker shares the meta line. */
   current: boolean
 }
 
 export interface ChatRowPlan {
-  /** Segments of the trimmed title (empty when untitled). */
   titleParts: HighlightPart[]
-  /** Preview line; absent when no preview or a match line replaces it. */
   previewParts?: HighlightPart[]
-  /** Workflow name as shown in the meta-line tail; absent when dropped. */
   workflowParts?: HighlightPart[]
-  /** One `Label: …` line for the highest-priority hidden match. */
   matchLine?: { field: ChatSearchField; parts: HighlightPart[] }
 }
 
-/**
- * Decides what a result row shows. A matched field whose match is not visible
- * in the row gets a match line; priority is title, workflow name, preview and
- * at most one line is shown. A workflow match counts as visible when it
- * survives the tail's middle-ellipsis window.
- */
+/** Plans a result row; one match line shows the first hidden match. */
 export function planChatRow(input: ChatRowInput): ChatRowPlan {
   const { preview, workflowName, ranges, narrow, current } = input
   const displayTitle = input.title.trim()

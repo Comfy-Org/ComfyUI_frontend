@@ -2,7 +2,6 @@ import type { ChatSearchRange } from './chatHistorySearch'
 
 const ELLIPSIS = '…'
 
-/** A kept slice `[from, to)` of the original text. */
 interface Piece {
   from: number
   to: number
@@ -10,7 +9,6 @@ interface Piece {
 
 interface Layout {
   pieces: Piece[]
-  /** Ellipsis before the first piece / after the last (windowed layout). */
   leading: boolean
   trailing: boolean
 }
@@ -26,13 +24,17 @@ function headTailLayout(len: number, head: number, tail: number): Layout {
   }
 }
 
-/**
- * Chooses which parts of `text` to keep within `max` characters, ellipsis
- * included. The default keeps a head and a tail with the ellipsis between them
- * and gives the tail the extra character (version suffixes live there). When
- * `keep` would be cut, the head/tail split shifts toward it; a match that sits
- * in the middle of a very long text falls back to a window around it.
- */
+function windowLayout(len: number, max: number, keep: ChatSearchRange) {
+  const inner = max - 2
+  const lead = Math.floor((inner - Math.min(inner, keep.end - keep.start)) / 2)
+  const from = Math.max(1, Math.min(keep.start - lead, len - 1 - inner))
+  return {
+    pieces: [{ from, to: from + inner }],
+    leading: true,
+    trailing: true
+  }
+}
+
 function layoutFor(len: number, max: number, keep?: ChatSearchRange): Layout {
   const budget = max - 1
   const defaultHead = Math.floor(budget / 2)
@@ -53,15 +55,8 @@ function layoutFor(len: number, max: number, keep?: ChatSearchRange): Layout {
     return headTailLayout(len, budget - tail, tail)
   }
 
-  const inner = max - 2
-  if (inner < 1) return fallback
-  const lead = Math.floor((inner - Math.min(inner, keep.end - keep.start)) / 2)
-  const from = Math.max(1, Math.min(keep.start - lead, len - 1 - inner))
-  return {
-    pieces: [{ from, to: from + inner }],
-    leading: true,
-    trailing: true
-  }
+  if (max - 2 < 1) return fallback
+  return windowLayout(len, max, keep)
 }
 
 function render(text: string, layout: Layout) {
@@ -77,11 +72,7 @@ function render(text: string, layout: Layout) {
   return { text: out, starts }
 }
 
-/**
- * Shortens `text` to at most `maxChars` characters with an ellipsis in the
- * middle, keeping the head and the tail. Text that already fits is returned
- * unchanged.
- */
+/** Shortens text to at most `maxChars` with a middle ellipsis. */
 export function middleTruncate(text: string, maxChars: number): string {
   if (maxChars <= 0) return ''
   if (text.length <= maxChars) return text
@@ -89,11 +80,7 @@ export function middleTruncate(text: string, maxChars: number): string {
   return render(text, layoutFor(text.length, maxChars)).text
 }
 
-/**
- * `middleTruncate` that keeps the first of `ranges` visible when it can, and
- * returns the ranges re-expressed against the truncated text. `visible` is
- * true when at least one range survives whole (or there is nothing to match).
- */
+/** Middle truncation that keeps the first range visible and remaps ranges. */
 export function middleTruncateWithRanges(
   text: string,
   maxChars: number,

@@ -116,6 +116,47 @@ describe('ChatHistoryScreen search', () => {
     ).toEqual(['Deploy plan', 'Weekly plan', 'Old plan'])
   })
 
+  it('orders results by recency even when the current chat is older', async () => {
+    const user = userEvent.setup()
+    renderScreen({
+      groups: {
+        ...groups,
+        current: [{ ...current, updatedAt: NOW - 5 * DAY }]
+      }
+    })
+
+    await search(user, 'plan')
+
+    expect(
+      screen
+        .getAllByRole('button', { name: /plan/i })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Weekly plan', 'Deploy plan', 'Old plan'])
+  })
+
+  it('announces the result count, then the no-results message, and nothing without a query', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+    const status = () => screen.getByRole('status')
+
+    expect(status()).toHaveTextContent('')
+
+    await search(user, 'plan')
+    expect(status()).toHaveTextContent('3 chats found')
+
+    await user.clear(
+      screen.getByRole('combobox', { name: 'Search chat history' })
+    )
+    await search(user, 'zzzq')
+    expect(status()).toHaveTextContent('No chats match "zzzq"')
+
+    await user.clear(
+      screen.getByRole('combobox', { name: 'Search chat history' })
+    )
+    await search(user, 'weekly')
+    expect(status()).toHaveTextContent('1 chat found')
+  })
+
   it('shows title, single-line preview and own date on each result', async () => {
     const user = userEvent.setup()
     renderScreen()
@@ -151,10 +192,13 @@ describe('ChatHistoryScreen search', () => {
 
     expect(
       within(screen.getByRole('button', { name: 'Weekly plan' })).getByText(
-        'Portrait flow'
+        'Portrait flow',
+        { ignore: '.sr-only' }
       )
     ).toBeVisible()
-    expect(screen.getAllByText('Portrait flow')).toHaveLength(1)
+    expect(
+      screen.getAllByText('Portrait flow', { ignore: '.sr-only' })
+    ).toHaveLength(1)
   })
 
   it('does not render workflow text when no resolver is provided', async () => {

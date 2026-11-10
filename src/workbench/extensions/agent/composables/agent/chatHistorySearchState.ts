@@ -1,8 +1,3 @@
-/**
- * `text` is the raw field value. The effective query is `text.trim()`:
- * whitespace-only text is `idle` (the list is unfiltered) but stays in the
- * field. "No results" is a view of `searching`, not a stored state.
- */
 export type ChatHistorySearchState = {
   status: 'idle' | 'searching'
   text: string
@@ -34,7 +29,6 @@ export function transitionChatHistorySearch(
     case 'clear':
       return { state: initialChatHistorySearchState, effect: 'none' }
     case 'escape':
-      // Esc first empties the field (even whitespace), then leaves History.
       return {
         state: initialChatHistorySearchState,
         effect: state.text === '' ? 'leaveHistory' : 'none'

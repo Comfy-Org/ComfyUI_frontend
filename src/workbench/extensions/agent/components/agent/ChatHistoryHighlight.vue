@@ -6,7 +6,6 @@ defineProps<{ parts: readonly HighlightPart[] }>()
 
 <template>
   <template v-for="(part, index) in parts" :key="index">
-    <!-- Tinted background only: no padding or weight change, so words keep their shape and width. -->
     <mark
       v-if="part.highlighted"
       class="rounded-sm bg-primary/30 text-foreground"

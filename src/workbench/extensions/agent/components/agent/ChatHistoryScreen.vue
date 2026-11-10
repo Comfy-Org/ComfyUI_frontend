@@ -32,7 +32,6 @@ const {
   workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null
-  /** Dock narrower than ~350 px; result rows drop the workflow tail. */
   narrow?: boolean
 }>()
 const emit = defineEmits<{
@@ -45,8 +44,6 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-// `groups` already carries the live current-chat title, so the search reads
-// the same displayed data; only recency order is rebuilt from the buckets.
 const search = useChatHistorySearch({
   sessions: () =>
     [
@@ -56,7 +53,6 @@ const search = useChatHistorySearch({
       ...groups.earlier
     ].sort((a, b) => b.updatedAt - a.updatedAt),
   currentSessionId: () => groups.current[0]?.id ?? null,
-  currentSessionTitle: () => undefined,
   workflowNameFor: (session) => workflowNameFor(session)
 })
 
@@ -114,7 +110,6 @@ function focusField(): void {
   searchField.value?.focus()
 }
 
-// Arrow navigation covers search results only; the grouped list keeps Tab.
 function resultButtons(): HTMLButtonElement[] {
   if (!search.results.value) return []
   return (resultsList.value ?? []).flatMap((list) =>
@@ -124,7 +119,6 @@ function resultButtons(): HTMLButtonElement[] {
   )
 }
 
-// Esc is consumed here so it never reaches an ancestor or global Esc path.
 function escapeSearch(event: KeyboardEvent): void {
   event.preventDefault()
   event.stopPropagation()
@@ -139,15 +133,21 @@ function onFieldKeydown(event: KeyboardEvent): void {
     const [first] = resultButtons()
     if (!first) return
     event.preventDefault()
-    // Capture phase + stop: the combobox input's own ArrowDown handling
-    // would otherwise pull focus back to the input.
     event.stopPropagation()
     first.focus()
   }
 }
 
-// Roving focus: arrows move between the result select buttons. Other tab
-// stops in a row (copy, menu) keep their native behaviour.
+function isPlainCharacterKey(event: KeyboardEvent): boolean {
+  return (
+    event.key.length === 1 &&
+    event.key !== ' ' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  )
+}
+
 function onResultsKeydown(event: KeyboardEvent): void {
   const target = event.target
   if (
@@ -166,15 +166,7 @@ function onResultsKeydown(event: KeyboardEvent): void {
     else buttons[Math.min(next, buttons.length - 1)]?.focus()
     return
   }
-  // A printable key hands focus back so the character lands in the field.
-  if (
-    event.key.length === 1 &&
-    event.key !== ' ' &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.altKey
-  )
-    focusField()
+  if (isPlainCharacterKey(event)) focusField()
 }
 
 function pick(session: ChatSession): void {
@@ -298,14 +290,23 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
+      <div role="status">
+        <p
+          v-if="search.isNoResults.value"
+          class="px-2 py-8 text-center text-sm text-muted-foreground"
+        >
+          {{ t('agent.historyNoResults', { query: search.text.value.trim() }) }}
+        </p>
+        <span v-else-if="search.results.value" class="sr-only">{{
+          t(
+            'agent.historySearchCount',
+            { count: search.results.value.length },
+            search.results.value.length
+          )
+        }}</span>
+      </div>
       <p
-        v-if="search.isNoResults.value"
-        class="px-2 py-8 text-center text-sm text-muted-foreground"
-      >
-        {{ t('agent.historyNoResults', { query: search.text.value.trim() }) }}
-      </p>
-      <p
-        v-else-if="isEmpty"
+        v-if="isEmpty && !search.isNoResults.value"
         class="px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.historyEmpty') }}

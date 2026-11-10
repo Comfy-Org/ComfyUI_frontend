@@ -4,7 +4,6 @@ import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agen
 import type { ChatSearchResult } from '@/workbench/extensions/agent/utils/chatHistorySearch'
 import { searchChatHistory } from '@/workbench/extensions/agent/utils/chatHistorySearch'
 import { readablePreview } from '@/workbench/extensions/agent/utils/chatPreviewText'
-import { withCurrentSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import type { ChatHistorySearchEffect } from './chatHistorySearchState'
 import {
@@ -20,18 +19,12 @@ export interface SearchableChatSession extends ChatSession {
 export type ChatHistorySearchResult = ChatSearchResult<SearchableChatSession>
 
 interface ChatHistorySearchOptions {
-  /** Local-first sessions carrying `preview`; the caller sorts by recency. */
   sessions: () => readonly ChatSession[]
   currentSessionId: () => string | null
-  /** Live title of the current chat, as History displays it. */
-  currentSessionTitle: () => string | undefined
   workflowNameFor: (session: { workflowId?: string }) => string | undefined
 }
 
-/**
- * Search state local to the History screen; nothing is persisted, so leaving
- * History (or calling `reset`) discards it.
- */
+/** Chat history search state; nothing is persisted. */
 export function useChatHistorySearch(options: ChatHistorySearchOptions) {
   const state = ref(initialChatHistorySearchState)
 
@@ -46,21 +39,12 @@ export function useChatHistorySearch(options: ChatHistorySearchOptions) {
   })
 
   function searchable(session: ChatSession): SearchableChatSession {
-    const isCurrent = session.id === options.currentSessionId()
-    // Same helper History uses, so the matched title is the displayed title.
-    const titled = isCurrent
-      ? withCurrentSessionTitle(
-          { current: [session], today: [], yesterday: [], earlier: [] },
-          options.currentSessionTitle()
-        ).current[0]
-      : session
+    const preview = readablePreview(session.preview)
     return {
-      ...titled,
-      // Matched and displayed text are the same string, so highlight ranges
-      // line up and a reference's `workflow://` URL never matches.
-      preview: readablePreview(titled.preview),
+      ...session,
+      preview: preview === readablePreview(session.title) ? undefined : preview,
       workflowName: options.workflowNameFor(session),
-      isCurrent
+      isCurrent: session.id === options.currentSessionId()
     }
   }
 
@@ -82,11 +66,5 @@ export function useChatHistorySearch(options: ChatHistorySearchOptions) {
     return transition.effect
   }
 
-  function reset() {
-    state.value = transitionChatHistorySearch(state.value, {
-      type: 'clear'
-    }).state
-  }
-
-  return { text, results, isNoResults, onEscape, reset }
+  return { text, results, isNoResults, onEscape }
 }

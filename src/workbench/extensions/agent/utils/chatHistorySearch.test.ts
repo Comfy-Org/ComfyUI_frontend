@@ -214,6 +214,15 @@ describe('searchChatHistory', () => {
     })
   })
 
+  describe('very long input', () => {
+    it('finds nothing for a pasted word too long to be a real chat word, without throwing', () => {
+      const rows = [row('a', { title: 'Portrait upscale' })]
+
+      expect(() => searchChatHistory(rows, 'x'.repeat(60_000))).not.toThrow()
+      expect(searchChatHistory(rows, 'x'.repeat(60_000))).toEqual([])
+    })
+  })
+
   describe('order and immutability', () => {
     it('preserves input order and the input object identities', () => {
       const rows = [
