@@ -636,7 +636,7 @@ describe('workflow-id links', () => {
     })
   }
 
-  it('stops the URL actions without another replace while a newer link waits in a navigation guard', async () => {
+  it('runs the URL actions without another replace while a newer link waits in a navigation guard', async () => {
     serveFile()
     navigateToLink(ID)
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
@@ -650,7 +650,7 @@ describe('workflow-id links', () => {
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
   })
 
-  it('keeps a boot link opened and stops the URL actions without another replace while a newer link waits in a navigation guard', async () => {
+  it('keeps a boot link opened and makes no other replace while a newer link waits in a navigation guard', async () => {
     serveFile()
     navigateToLink(ID)
     const { store } = await openExistingTab()
@@ -673,6 +673,24 @@ describe('workflow-id links', () => {
     expect(useRouter().replace).toHaveBeenCalledTimes(2)
     expect(useRoute().query).toEqual({ workflowId: ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+  })
+
+  it('clears the other URL actions while a link from the stash waits for a workspace change', async () => {
+    vi.spyOn(api, 'fetchApi').mockImplementation(async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      return new Response(null, { status: 404 })
+    })
+    stashLink(ID)
+    Object.assign(useRoute().query, { topup: '1' })
+
+    await runUrlActions()
+
+    expect(useRouter().replace).toHaveBeenCalledOnce()
+    expect(useRoute().query).toEqual({})
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(ID)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
   })
 
   it('reports an opening error when the sidebar file is not in the workflow list after a sync', async () => {

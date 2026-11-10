@@ -153,6 +153,7 @@ function useWorkflowLinkUrlLoaderInternal() {
         status: 'opened' | 'failed'
       }
     | undefined
+  const startedLinks = new Set<unknown>()
   let disposed = false
   onScopeDispose(() => {
     disposed = true
@@ -303,6 +304,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     workflowId: unknown,
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
+    startedLinks.add(workflowId)
     const ownership = attemptOwnership(workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
@@ -325,14 +327,12 @@ function useWorkflowLinkUrlLoaderInternal() {
     )
   }
 
-  function hasNewerLink(): boolean {
+  function hasLinkInFlight(): boolean {
     const { route, stash } = linkCarriers()
-    return [route, stash].some(
-      (value) => value !== undefined && !isLinkSettled(value)
-    )
+    return stash !== undefined && stash !== route && !startedLinks.has(stash)
   }
 
-  return { openWorkflowLinkFromUrl, isLinkSettled, hasNewerLink }
+  return { openWorkflowLinkFromUrl, isLinkSettled, hasLinkInFlight }
 }
 
 export const useWorkflowLinkUrlLoader = createSharedComposable(

@@ -25,8 +25,8 @@ const workflowLinkUrlLoader = vi.hoisted(() => ({
   isLinkSettled: vi.fn<
     ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
   >(() => false),
-  hasNewerLink: vi.fn<
-    ReturnType<typeof useWorkflowLinkUrlLoader>['hasNewerLink']
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
   >(() => false)
 }))
 vi.mock(
@@ -450,22 +450,99 @@ describe('useUrlActionLoaders', () => {
     ).toBe('workflow-b')
   })
 
-  it('skips the sweep when a newer workflow-id link arrives after the settled one', async () => {
-    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
-    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
-    workflowLinkUrlLoader.isLinkSettled.mockReturnValue(true)
-    workflowLinkUrlLoader.hasNewerLink
-      .mockReturnValueOnce(false)
-      .mockReturnValue(true)
-    const replace = vi.spyOn(router, 'replace')
+  it('runs the later loaders and clears their params while a workflow-id link is pending', async () => {
+    await router.replace({
+      query: { workflowId: 'workflow-id', invite: 'inv-1', settings: 'x' }
+    })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+      { workflowId: 'workflow-id' },
+      ['workflowId']
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
 
     await useUrlActionLoaders().runUrlActionLoaders()
 
-    expect(replace).not.toHaveBeenCalled()
+    expect(mocks.loadInvite).toHaveBeenCalledOnce()
+    expect(mocks.loadSettings).toHaveBeenCalledOnce()
+    expect(mocks.loadLocalHandoff).toHaveBeenCalledOnce()
     expect(router.currentRoute.value.query).toEqual({
-      workflowId: 'workflow-a',
-      topup: '1'
+      workflowId: 'workflow-id'
     })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-id')
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('clears the other params but leaves a newer workflow-id link and its stash', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockImplementation(
+      async () => {
+        await router.replace({
+          query: { workflowId: 'workflow-b', topup: '1' }
+        })
+        capturePreservedQuery(
+          PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+          { workflowId: 'workflow-b' },
+          ['workflowId']
+        )
+        return 'opened'
+      }
+    )
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b'
+    })
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('workflow-b')
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('lets a newer workflow-id link held in a navigation guard land instead of cancelling it', async () => {
+    await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
+    workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+    workflowLinkUrlLoader.isLinkSettled.mockImplementation(
+      (workflowId) => workflowId === 'workflow-a'
+    )
+    workflowLinkUrlLoader.hasLinkInFlight.mockReturnValue(true)
+    let releaseGuard: () => void = () => {}
+    const removeGuard = router.beforeEach(() => {
+      removeGuard()
+      return new Promise<void>((resolve) => {
+        releaseGuard = resolve
+      })
+    })
+    const newerLink = router.push({ query: { workflowId: 'workflow-b' } })
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+    releaseGuard()
+    await newerLink
+
+    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.query).toEqual({
+      workflowId: 'workflow-b'
+    })
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
   })
 
   it('retains a deferred workflow-id URL and stash after identity changes', async () => {

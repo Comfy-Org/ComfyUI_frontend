@@ -100,9 +100,9 @@ function workflowLinkSteps(
   return [
     {
       failureMessage: 'Failed to open the linked workflow from URL:',
-      run: async () =>
-        (await loader.openWorkflowLinkFromUrl(true)) === 'pending' ||
-        loader.hasNewerLink()
+      run: async () => {
+        await loader.openWorkflowLinkFromUrl(true)
+      }
     }
   ]
 }
@@ -130,7 +130,7 @@ function sweepStep(
   return {
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
-      if (loader?.hasNewerLink()) return true
+      if (loader?.hasLinkInFlight()) return
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       const params = [

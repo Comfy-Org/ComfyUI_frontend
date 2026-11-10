@@ -32,13 +32,16 @@ Preserve the query through sign-in and onboarding. Defer the lookup while a
 deployment or workspace link can reload the page, then resolve it after those
 loaders finish. A workflow-id link takes precedence over a folder link, even
 when it cannot be opened. Final handling clears both intents, and only for the
-link it handled: a newer link the browser navigated to meanwhile stays in the
-URL and the stash for its own run. A workflow that opened stays open when
-another navigation cancels that cleanup; the final URL-action sweep clears the
-link it left. While the URL or the stash names a newer link, the URL actions
-stop before any further replace, so that link's navigation is not cancelled.
-A navigation guard can hold a newer link in the stash while the URL still
-shows the old one, so the loader checks both.
+link it handled. A link the loader has not settled, such as a newer link the
+browser navigated to meanwhile, stays in the URL and the stash. Nothing opens
+it until the next page load. A workflow that opened stays open when another
+navigation cancels that cleanup; the final URL-action sweep clears the link it
+left. Only a reload in flight stops the URL actions. A link that is not settled
+does not stop them: the other loaders run, and the final sweep removes their
+params but leaves `workflowId` and its stash. A navigation guard can hold a
+newer link in the stash while the URL still shows the old one. While the stash
+holds a link the loader never started and the URL does not show, the sweep
+makes no replace, so that link's navigation is not cancelled.
 
 The reply is typed in the loader until Cloud's generated types include the
 route.
