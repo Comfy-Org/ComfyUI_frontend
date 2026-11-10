@@ -235,4 +235,42 @@ describe('ChatHistoryScreen search', () => {
     expect(screen.getAllByText(bucketLabels)).toHaveLength(3)
     expect(screen.getByRole('button', { name: 'Cats' })).toBeVisible()
   })
+  describe('local data wins (BC-13)', () => {
+    it('matches and displays a locally renamed chat by its new title only', async () => {
+      const user = userEvent.setup()
+      const { rerender } = renderScreen()
+      await search(user, 'weekly')
+      expect(screen.getByRole('button', { name: 'Weekly plan' })).toBeVisible()
+
+      await rerender({
+        groups: {
+          ...groups,
+          today: [{ ...planToday, title: 'Sprint outline' }, unrelated]
+        }
+      })
+
+      expect(screen.queryByRole('button', { name: 'Weekly plan' })).toBeNull()
+      expect(screen.getByText('No chats match "weekly"')).toBeVisible()
+
+      await user.clear(
+        screen.getByRole('combobox', { name: 'Search chat history' })
+      )
+      await search(user, 'sprint')
+      expect(
+        screen.getByRole('button', { name: 'Sprint outline' })
+      ).toBeVisible()
+    })
+
+    it('drops a locally deleted chat from the results', async () => {
+      const user = userEvent.setup()
+      const { rerender } = renderScreen()
+      await search(user, 'old')
+      expect(screen.getByRole('button', { name: 'Old plan' })).toBeVisible()
+
+      await rerender({ groups: { ...groups, earlier: [] } })
+
+      expect(screen.queryByRole('button', { name: 'Old plan' })).toBeNull()
+      expect(screen.getByText('No chats match "old"')).toBeVisible()
+    })
+  })
 })
