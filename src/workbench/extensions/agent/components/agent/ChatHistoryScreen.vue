@@ -27,7 +27,6 @@ const {
   failedId = null
 } = defineProps<{
   groups: HistoryGroups
-  /** Resolved workflow title for a session; undefined while unresolved. */
   workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null

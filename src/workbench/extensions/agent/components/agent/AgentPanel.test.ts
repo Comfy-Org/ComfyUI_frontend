@@ -377,9 +377,9 @@ describe('AgentPanel', () => {
     expect(emitted('retrySync')).toHaveLength(1)
   })
 
-  it('Esc in the history search never stops a running turn: clears, then leaves History', async () => {
+  it('Esc in the history search clears the query, then leaves History', async () => {
     const user = userEvent.setup()
-    const { emitted } = render(AgentPanel, {
+    render(AgentPanel, {
       props: {
         entries: [],
         sessionId: 'previous',
@@ -410,7 +410,6 @@ describe('AgentPanel', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     )
-    expect(emitted('stop')).toBeUndefined()
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {

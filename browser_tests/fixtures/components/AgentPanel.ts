@@ -179,6 +179,12 @@ export class AgentPanel {
     })
   }
 
+  async openHistory(timeout?: number): Promise<Locator> {
+    const root = await this.open(timeout)
+    await this.historyButton.click()
+    return root
+  }
+
   async openChatFromHistory(title: string): Promise<void> {
     await this.historyButton.click()
     const row = this.root.getByRole('button', { name: title, exact: true })

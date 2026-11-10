@@ -41,6 +41,19 @@ export function agentThreadSummary(
   }
 }
 
+export const searchableAgentThreads: AgentThreadSummary[] = [
+  agentThreadSummary('t-plan', 'Weekly plan', {
+    preview: 'Help me plan the week around the product launch'
+  }),
+  agentThreadSummary('t-portrait', 'Portrait upscale', {
+    preview:
+      'Upscale this portrait to 4K, sharpen the hair and fix the studio lighting'
+  }),
+  agentThreadSummary('t-animate', 'Animate image', {
+    preview: 'Animate this image with a slow push in'
+  })
+]
+
 export function agentUserTranscript(
   threadId: string,
   workflowId: string,
