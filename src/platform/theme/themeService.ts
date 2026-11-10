@@ -81,13 +81,10 @@ export const useThemeService = () => {
       delete migrated[id]
       if (activeId === id) activeId = newId
     }
-    if (
-      !Object.hasOwn(BUILT_IN_THEME_PRESETS, activeId) &&
-      !Object.hasOwn(migrated, activeId)
-    ) {
+    themeStore.customPresets = migrated
+    if (!Object.hasOwn(themeStore.presetsLookup, activeId)) {
       activeId = DEFAULT_THEME_PRESET.id
     }
-    themeStore.customPresets = migrated
     if (!conflicts.length && activeId === previousId) return
 
     await settingStore.setMany({
