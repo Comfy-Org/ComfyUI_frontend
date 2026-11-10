@@ -1,3 +1,5 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -49,6 +51,16 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
       await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
       await expect(unselectedNode).toHaveCSS('opacity', '1')
+
+      const checkpoint =
+        await comfyPage.nodeOps.getNodeRefByTitle('Load Checkpoint')
+      const ksampler = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+      await expect
+        .poll(() => checkpoint.getProperty('mode'))
+        .toBe(LGraphEventMode.NEVER)
+      await expect
+        .poll(() => ksampler.getProperty('mode'))
+        .toBe(LGraphEventMode.NEVER)
     }
   )
 })
