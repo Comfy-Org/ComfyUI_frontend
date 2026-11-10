@@ -24,7 +24,7 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_note')
 
       const note = comfyPage.vueNodes.getNodeByTitle('Note').first()
-      await note.locator('.lg-node-header').click()
+      await comfyPage.vueNodes.selectNode('1')
       await expect(note).toHaveClass(/outline-node-component-outline/)
       await expect(note).toBeFocused()
 
