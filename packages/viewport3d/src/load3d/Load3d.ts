@@ -516,10 +516,11 @@ class Load3d extends Viewport3d {
   public async startRecording(): Promise<void> {
     this.viewHelperManager.visibleViewHelper(false)
 
-    return this.recordingManager.startRecording(
+    await this.recordingManager.startRecording(
       this.targetWidth,
       this.targetHeight
     )
+    this.renderLoop?.wake()
   }
 
   public stopRecording(): void {
@@ -560,6 +561,7 @@ class Load3d extends Viewport3d {
 
   public toggleAnimation(play?: boolean): void {
     this.animationManager.toggleAnimation(play)
+    this.renderLoop?.wake()
   }
 
   public hasAnimations(): boolean {

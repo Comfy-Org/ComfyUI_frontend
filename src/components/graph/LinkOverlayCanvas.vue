@@ -8,8 +8,9 @@
 <script setup lang="ts">
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
-import { useRafFn } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 const { canvas } = defineProps<{
   canvas: LGraphCanvas
@@ -22,16 +23,27 @@ const emit = defineEmits<{
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
-useRafFn(() => {
+function matchMainCanvasSize(mainCanvas: HTMLCanvasElement) {
   const el = canvasRef.value
-  const mainCanvas = canvas.canvas
-  if (!el || !mainCanvas) return
+  if (!el) return
 
   if (el.width !== mainCanvas.width || el.height !== mainCanvas.height) {
     el.width = mainCanvas.width
     el.height = mainCanvas.height
   }
-})
+}
+
+watch(
+  () => canvas,
+  (canvas, _, onCleanup) => {
+    onCleanup(
+      onCanvasFrame(canvas.canvas, 'update', () =>
+        matchMainCanvasSize(canvas.canvas)
+      )
+    )
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   if (canvasRef.value) emit('ready', canvasRef.value)

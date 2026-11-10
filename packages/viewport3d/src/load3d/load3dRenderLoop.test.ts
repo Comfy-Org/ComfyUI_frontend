@@ -15,20 +15,31 @@ describe('startRenderLoop', () => {
     handle.stop()
   })
 
-  it('skips tick on frames where isActive returns false', () => {
+  it('schedules no frames while inactive and resumes ticking on wake', () => {
     let active = false
     const tick = vi.fn()
     const handle = startRenderLoop({ tick, isActive: () => active })
 
-    vi.advanceTimersToNextTimer()
+    expect(vi.getTimerCount()).toBe(0)
+
+    active = true
     vi.advanceTimersToNextTimer()
     expect(tick).not.toHaveBeenCalled()
 
-    active = true
+    handle.wake()
     vi.advanceTimersToNextTimer()
     expect(tick).toHaveBeenCalledOnce()
 
     handle.stop()
+  })
+
+  it('wake after stop schedules nothing', () => {
+    const handle = startRenderLoop({ tick: vi.fn(), isActive: () => false })
+
+    handle.stop()
+    handle.wake()
+
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('stop halts further ticks', () => {

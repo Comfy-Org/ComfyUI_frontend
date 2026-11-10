@@ -5615,7 +5615,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const lineHeight = 13
-    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
+    const lineCount = (this.graph ? 3 : 1) + (this.info_text ? 1 : 0)
     x = x || 15
     y = y || this.canvas.height / this.dpr - (lineCount + 1) * lineHeight
 
@@ -5627,12 +5627,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.textAlign = 'left'
     let line = 1
     if (this.graph) {
-      ctx.fillText(
-        `T: ${this.graph.globaltime.toFixed(2)}s`,
-        0,
-        lineHeight * line++
-      )
-      ctx.fillText(`I: ${this.graph.iteration}`, 0, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         0,
