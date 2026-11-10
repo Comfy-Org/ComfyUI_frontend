@@ -509,6 +509,71 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     ]).toEqual([-20, -20])
     expect([...group.size]).toEqual([300, 200])
   })
+  it('creates and clears id-less inserted groups whose titles differ only by emoji', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a6a'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [20, 30],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ],
+            groups: [
+              { title: 'Stage 😀', bounding: [0, 10, 300, 200] },
+              { title: 'Stage 😁', bounding: [0, 10, 300, 200] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const groupTitles = graph.groups.map(({ title }) => title)
+    expect(groupTitles).toHaveLength(2)
+    expect(groupTitles).toEqual(
+      expect.arrayContaining(['Stage 😀', 'Stage 😁'])
+    )
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    assert(inserted, 'the insertion reached the canvas')
+    expect(
+      graph.groups.map((group) => [
+        group.pos[0] - inserted.pos[0],
+        group.pos[1] - inserted.pos[1]
+      ])
+    ).toEqual([
+      [-20, -20],
+      [-20, -20]
+    ])
+
+    hostEdit(() =>
+      applyHostOp(host, {
+        ...HOST_OP,
+        op_id: 'c1eb'.padEnd(32, '0'),
+        op: 'clear',
+        removed_nodes: graph._nodes.map(({ id }) => Number(id))
+      })
+    )
+
+    expect(graph.groups).toEqual([])
+  })
   it('keeps a group-only insertion on the existing nodes it frames', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
@@ -738,7 +803,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
           fromPartial<LGraphCanvas>({
             ctx,
             emitBeforeChange: () => {},
-            emitAfterChange: () => {}
+            emitAfterChange: () => {},
+            setDirty: () => {}
           })
       }
     )

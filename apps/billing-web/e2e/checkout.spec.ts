@@ -149,6 +149,7 @@ test('a reactivating upgrade taller than the frame scrolls to its confirm', asyn
     ...cloud.scenario.preview,
     transition_type: 'upgrade',
     requires_reactivation_confirmation: true,
+    requires_reactivation_charge_confirmation: true,
     cost_today_cents: 90_000,
     amount_due_cents: 90_000,
     current_plan: {

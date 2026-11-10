@@ -25,6 +25,7 @@
       "@comfyorg/tailwind-utils",
       "@comfyorg/telemetry",
       "@comfyorg/test-utils",
+      "@comfyorg/theme-core",
       "@comfyorg/viewport3d"
     ]
   },

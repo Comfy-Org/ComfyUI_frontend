@@ -207,6 +207,13 @@ export function useFeatureFlags() {
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        import.meta.env.DEV
+      )
+    },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
@@ -348,6 +355,12 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_billing_settings
       )
     },
+    get pricingTableFallback() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
+        remoteConfig.value.pricing_table_fallback
+      )
+    },
     get oauthConsentSwitchAccountEnabled() {
       return resolveFlag(
         ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
@@ -417,6 +430,7 @@ export function startFeatureFlagTelemetry() {
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
@@ -437,6 +451,7 @@ export function startFeatureFlagTelemetry() {
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
       [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
         flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,

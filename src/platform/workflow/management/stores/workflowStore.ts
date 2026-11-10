@@ -443,6 +443,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
           const isActiveWorkflow =
             activeWorkflow.value?.path === existingWorkflow.path
 
+          if (!isActiveWorkflow && existingWorkflow.isModified) return
+
           const nextLastModified = Math.max(
             existingWorkflow.lastModified,
             file.modified
@@ -457,12 +459,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
             existingWorkflow.size = file.size
           }
 
-          // Never unload the active workflow - it may contain unsaved in-memory edits.
           if (isActiveWorkflow) {
             return
           }
 
-          // If nothing changed, keep any loaded content cached.
           if (isMetadataUnchanged) {
             return
           }

@@ -447,7 +447,7 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-foreground')
+    expect(root).toHaveAttribute('data-emphasized', 'true')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-foreground')
@@ -456,10 +456,7 @@ describe('LGraphNode', () => {
   it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
-    const { container } = renderLGraphNode({ nodeData: mockNodeData })
-    const root = getNodeRoot(container)
-
-    expect(root).toHaveClass('outline-primary')
+    renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
@@ -757,8 +754,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-[calc(var(--node-radius)+7px)]')
+    expect(overlay).not.toHaveClass('rounded-[calc(var(--node-radius)+3px)]')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {
@@ -776,7 +773,7 @@ describe('LGraphNode', () => {
     })
 
     const wrapper = screen.getByTestId('node-inner-wrapper')
-    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).toHaveClass('before:rounded-(--node-radius)')
     expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
 

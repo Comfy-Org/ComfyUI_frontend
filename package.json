@@ -115,6 +115,7 @@
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@comfyorg/telemetry": "workspace:*",
+    "@comfyorg/theme-core": "workspace:*",
     "@comfyorg/viewport3d": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
     "@datadog/browser-rum": "catalog:",

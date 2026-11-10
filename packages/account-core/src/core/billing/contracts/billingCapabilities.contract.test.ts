@@ -65,6 +65,7 @@ function capabilitiesBody(
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_enabled'
+  | 'auto_top_up_member_view'
   | 'auto_top_up_setup'
   | 'billing_notice_audience'
   | 'capabilities'
@@ -75,6 +76,7 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'has_parked_billing_operation'
   | 'payment_recovery_available'
   | 'plan_kind'
+  | 'primary_billing_action'
   | 'recovery_route'
   | 'resolved_for'
   | 'revision'

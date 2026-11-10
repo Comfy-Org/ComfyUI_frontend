@@ -345,6 +345,33 @@ export const useWorkflowService = () => {
     if (!file) return
     downloadBlob(file, blob)
   }
+
+  function lostUnsavedEdits(workflow: ComfyWorkflow): boolean {
+    return (
+      workflow.isPersisted &&
+      workflow.isModified &&
+      workflow.content === workflow.originalContent
+    )
+  }
+
+  async function loadForSave(workflow: ComfyWorkflow): Promise<boolean> {
+    if (workflow.isLoaded || workflowStore.isActive(workflow)) return true
+    await loadWorkflowInBackground(workflow)
+    if (!lostUnsavedEdits(workflow)) return true
+    reportWorkflowStateAnomaly(
+      'Modified saved workflow lost its edits before saving',
+      'workflowService.loadForSave',
+      workflow
+    )
+    workflow.isModified = false
+    toast.warning(t('workflowService.unsavedChangesLostTitle'), {
+      description: t('workflowService.unsavedChangesLost', {
+        name: workflow.filename
+      })
+    })
+    return false
+  }
+
   /**
    * Save a workflow as a new file
    * @param workflow The workflow to save
@@ -356,6 +383,7 @@ export const useWorkflowService = () => {
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
+    if (!(await loadForSave(workflow))) return false
 
     const isApp = options.isApp ?? workflow.initialMode === 'app'
     const newPath =
@@ -376,7 +404,6 @@ export const useWorkflowService = () => {
 
     if (isSelfOverwrite) {
       workflow.changeTracker?.prepareForSave()
-      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
       await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
@@ -409,6 +436,7 @@ export const useWorkflowService = () => {
       return await saveWorkflowAs(workflow)
     }
 
+    if (!(await loadForSave(workflow))) return true
     workflow.changeTracker?.prepareForSave()
     const isApp = workflow.initialMode === 'app'
     const expectedPath =

@@ -235,43 +235,53 @@ function draftMatchesSavedFile(
 }
 
 /**
- * Stored workflow content is empty or not a JSON object, so it can never open.
- * The message is static; the path is on `workflowPath`.
+ * Stored workflow content is empty, not valid JSON, or not a JSON object, so it
+ * can never open. The message is static; the path is on `workflowPath`.
  */
 export class UnreadableWorkflowError extends Error {
   override readonly name = 'UnreadableWorkflowError'
 
   constructor(
-    readonly reason: 'empty' | 'not-object',
+    readonly reason: 'empty' | 'unparseable' | 'not-object',
     readonly workflowPath: string
   ) {
-    super(
-      reason === 'empty'
-        ? 'Workflow content is missing or empty'
-        : 'Workflow content is not a JSON object'
-    )
+    super(UNREADABLE_WORKFLOW_MESSAGES[reason])
   }
 }
 
-/**
- * The workflow object parsed from the stored text. Anything else (nothing
- * stored, empty text, JSON `null`, a number, an array) cannot back a change
- * tracker: a tracker around `null` is what later reads as a missing state.
- */
+const UNREADABLE_WORKFLOW_MESSAGES: Record<
+  UnreadableWorkflowError['reason'],
+  string
+> = {
+  empty: 'Workflow content is missing or empty',
+  unparseable: 'Workflow content is not valid JSON',
+  'not-object': 'Workflow content is not a JSON object'
+}
+
 function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   const content = workflow.originalContent
-  const parsed: unknown = content?.trim() ? JSON.parse(content) : undefined
+  const parsed = content?.trim() ? parseContent(content, workflow) : undefined
   if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     return parsed as ComfyWorkflowJSON
   }
-  // `undefined` means there was nothing to parse; anything else parsed to
-  // something that is not a workflow.
-  const error = new UnreadableWorkflowError(
-    parsed === undefined ? 'empty' : 'not-object',
-    workflow.path
-  )
+  throw unreadable(parsed === undefined ? 'empty' : 'not-object', workflow)
+}
+
+function parseContent(content: string, workflow: ComfyWorkflow): unknown {
+  try {
+    return JSON.parse(content)
+  } catch {
+    throw unreadable('unparseable', workflow)
+  }
+}
+
+function unreadable(
+  reason: UnreadableWorkflowError['reason'],
+  workflow: ComfyWorkflow
+): UnreadableWorkflowError {
+  const error = new UnreadableWorkflowError(reason, workflow.path)
   reportUnreadableContent(error, workflow)
-  throw error
+  return error
 }
 
 function reportUnreadableContent(
@@ -306,7 +316,7 @@ function requireActiveStateForSave(
     method,
     workflow
   )
-  throw new Error(`Cannot save workflow '${workflow.path}' before it is loaded`)
+  throw new Error('Cannot save a workflow before it is loaded')
 }
 
 export class ComfyWorkflow extends UserFile {
