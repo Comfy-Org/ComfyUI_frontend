@@ -6,6 +6,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
@@ -27,6 +28,7 @@ const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+let pendingFrame: number | null = null
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -57,7 +59,7 @@ function bindWidget() {
         this.triggerDraw?.()
       }
     )
-  widgetInstance.triggerDraw = draw
+  widgetInstance.triggerDraw = scheduleDraw
   draw()
 }
 
@@ -71,6 +73,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
+  if (pendingFrame !== null) cancelAnimationFrame(pendingFrame)
 })
 
 whenever(() => !canvasStore.linearMode, bindWidget)
@@ -99,6 +102,7 @@ function draw() {
   containerHeight.value = height
   node.canvasHeight = height
   widgetInstance.y = 0
+  widgetInstance.last_y = 0
   widgetInstance.width = width
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
@@ -107,27 +111,45 @@ function draw() {
   ctx.scale(scaleFactor, scaleFactor)
   widgetInstance.draw?.(ctx, node, width, 1, height)
 }
-//See LGraphCanvas.processWidgetClick
+function scheduleDraw() {
+  if (pendingFrame !== null) return
+  pendingFrame = requestAnimationFrame(() => {
+    pendingFrame = null
+    draw()
+  })
+}
+function augmentToWidgetPointerEvent(
+  e: PointerEvent,
+  node: LGraphNode
+): asserts e is CanvasPointerEvent {
+  augmentToCanvasPointerEvent(e, node, canvas)
+  Object.assign(e, {
+    canvasX: canvas.graph_mouse[0],
+    canvasY: canvas.graph_mouse[1]
+  })
+}
 function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  augmentToWidgetPointerEvent(e, node)
   pointer.down(e)
   if (widgetInstance.mouse)
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-  //NOTE: a mouseUp event is already registed under pointer.finally
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
+  scheduleDraw()
 }
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  augmentToWidgetPointerEvent(e, node)
   e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
   pointer.up(e)
+  scheduleDraw()
 }
 function handleMove(e: PointerEvent) {
   if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  augmentToWidgetPointerEvent(e, node)
   pointer.move(e)
+  if (e.buttons) scheduleDraw()
 }
 </script>
 <template>
@@ -137,6 +159,7 @@ function handleMove(e: PointerEvent) {
   >
     <canvas
       ref="canvasEl"
+      data-testid="legacy-widget-canvas"
       class="absolute w-full cursor-crosshair"
       @pointerdown.stop="handleDown"
       @pointerup.stop="handleUp"
