@@ -412,6 +412,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<number | null> {
+    const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
+    return quoted.status === 'ok' ? quoted.value.credits : null
+  }
+
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
@@ -634,6 +642,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    quoteTopup,
     subscribe,
     previewSubscribe,
     cancelSubscription,

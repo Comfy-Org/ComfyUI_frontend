@@ -303,3 +303,25 @@ test.describe(
     })
   }
 )
+
+test(
+  'classic progress text keeps inline links distinguishable',
+  { tag: '@widget' },
+  async ({ comfyPage, getWebSocket }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/flux2_image_node')
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const { nodeId } = await readPromptWidget(comfyPage)
+    await startGeneration(exec, ws, nodeId)
+    ws.send(
+      progressTextFrame(
+        nodeId,
+        'Read [[documentation|https://example.com]] or https://example.org'
+      )
+    )
+    const links = comfyPage.page.getByRole('link')
+    await expect(links).toHaveText(['documentation', 'https://example.org'])
+    await expect(links.nth(0)).toHaveCSS('text-decoration-line', 'underline')
+    await expect(links.nth(1)).toHaveCSS('text-decoration-line', 'underline')
+  }
+)

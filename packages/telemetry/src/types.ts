@@ -105,13 +105,22 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
@@ -660,7 +669,12 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'error_context'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -959,7 +973,11 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * the user wrote themselves. Each send falls into exactly one — a chip the user
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
-export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentInputMethod =
+  | 'typed'
+  | 'suggestion'
+  | 'edited'
+  | 'error_context'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel

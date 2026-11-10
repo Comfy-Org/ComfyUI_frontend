@@ -713,6 +713,20 @@ function createAssetService() {
     )
   }
 
+  async function getWorkspaceLibraryAssetsPage(
+    options: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      {
+        ...options,
+        includeTags: [MODELS_TAG],
+        includePublic: false,
+        workspaceLibrary: true
+      },
+      'workspace library models'
+    )
+  }
+
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
    *
@@ -1181,6 +1195,7 @@ function createAssetService() {
     getAssetsPageByTag,
     getAllAssetsByTag,
     getWorkspaceLibraryModels,
+    getWorkspaceLibraryAssetsPage,
     deleteAsset,
     onAssetsChanged,
     updateAsset,

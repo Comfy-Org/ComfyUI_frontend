@@ -82,17 +82,11 @@
       data-testid="video-playback-controls"
       class="flex h-8 items-center gap-2 px-1"
     >
-      <button
-        type="button"
+      <Button
+        variant="textonly"
+        size="icon-sm"
         data-testid="playback-toggle"
-        :class="
-          cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-foreground',
-            loading
-              ? 'cursor-default opacity-50'
-              : 'cursor-pointer hover:bg-muted'
-          )
-        "
+        class="size-6 shrink-0"
         :disabled="loading"
         :aria-label="isPlaying ? t('videoEdit.pause') : t('videoEdit.play')"
         @click="isPlaying = !isPlaying"
@@ -100,7 +94,7 @@
         <i
           :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
         />
-      </button>
+      </Button>
       <span
         data-testid="playback-timecode"
         class="shrink-0 text-muted-foreground tabular-nums"
@@ -117,19 +111,21 @@
         :aria-label="t('videoEdit.seekVideo')"
         @update:model-value="handleSliderSeek"
       />
-      <button
-        type="button"
+      <Button
+        variant="muted-textonly"
+        size="icon-sm"
         data-testid="playback-fullscreen"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
+        class="size-6 shrink-0"
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
         <i class="icon-[lucide--maximize]" />
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="icon-sm"
         data-testid="playback-mute"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
+        class="size-6 shrink-0"
         :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
         @click="isMuted = !isMuted"
       >
@@ -138,7 +134,7 @@
             isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'
           "
         />
-      </button>
+      </Button>
       <slot name="history" />
     </div>
 
@@ -165,7 +161,7 @@
       <WidgetInputNumberInput
         v-if="hasTrim"
         v-model="startFrame"
-        root-class="col-span-full grid grid-cols-subgrid items-center"
+        root-class="col-span-full"
         :widget="startFrameWidget"
         @update:model-value="emit('editEnd', 'trim:start')"
       />
@@ -173,7 +169,7 @@
       <WidgetInputNumberInput
         v-if="hasTrim"
         v-model="endFrame"
-        root-class="col-span-full grid grid-cols-subgrid items-center"
+        root-class="col-span-full"
         :widget="endFrameWidget"
         @update:model-value="emit('editEnd', 'trim:end')"
       />
@@ -373,39 +369,35 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     onEditEnd: () => emit('editEnd')
   })
 
-const startFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'start_frame',
-    label: t('videoEdit.startFrame'),
-    type: 'number',
-    value: startFrame.value,
-    options: {
-      min: 0,
-      max: Math.max(endFrame.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !hasSource || loading
-    }
-  })
-)
+const startFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'start_frame',
+  label: t('videoEdit.startFrame'),
+  type: 'number',
+  value: startFrame.value,
+  options: {
+    min: 0,
+    max: Math.max(endFrame.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !hasSource || loading
+  }
+}))
 
-const endFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'end_frame',
-    label: t('videoEdit.endFrame'),
-    type: 'number',
-    value: endFrame.value,
-    options: {
-      min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-      max: Math.max(effectiveTotalFrames.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !hasSource || loading
-    }
-  })
-)
+const endFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'end_frame',
+  label: t('videoEdit.endFrame'),
+  type: 'number',
+  value: endFrame.value,
+  options: {
+    min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
+    max: Math.max(effectiveTotalFrames.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !hasSource || loading
+  }
+}))
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value

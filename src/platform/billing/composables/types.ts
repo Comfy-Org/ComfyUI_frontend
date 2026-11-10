@@ -1,5 +1,6 @@
 import type {
   PeriodCreditGrant,
+  SubscriptionPaymentRecovery,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
@@ -59,6 +60,12 @@ export interface SubscriptionDialogOptions {
   creditsLocked?: boolean
   /** Server `error.type` of the refused run, reported with the paywall opening. */
   refusalType?: string
+  /** Reopens the in-app table to restore a failed checkout instead of handing off to the platform Plans page. */
+  resumingCheckout?: boolean
+  /** A run was refused without a click, so a dialog explains why and links to the Plans page. */
+  runRefused?: boolean
+  /** Opened on page load, so the Plans page replaces this tab. */
+  sameTab?: boolean
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
@@ -113,8 +120,18 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Served display-only plan remainder in cents; absent when omitted. */
+  cloudCreditDisplayBalanceCents?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
+  /** Served `min_topup_cents`. Absent when the balance response omits it. */
+  minTopupCents?: number
+  /** Served `min_topup_credits`. Absent when the balance response omits it. */
+  minTopupCredits?: number
+  /** Served `max_topup_cents`. Absent when the balance response omits it. */
+  maxTopupCents?: number
+  /** Served `max_topup_credits`. Absent when the balance response omits it. */
+  maxTopupCredits?: number
   /** Served `low_balance`. Absent when the balance response omits it. */
   lowBalance?: boolean
 }
@@ -174,6 +191,8 @@ export interface BillingState {
   currentPlanSlug: ComputedRef<string | null>
   /** Team per-credit pricing ladder; null for personal/legacy. */
   teamCreditStops: ComputedRef<TeamCreditStops | null>
+  /** The served unpaid initial-signup invoice holding plan changes; null when none is served. */
+  subscriptionPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
   /** Effective member limit for the current workspace; zero is unlimited. */
@@ -196,6 +215,8 @@ export interface BillingState {
   renewalInvoice: ComputedRef<RenewalInvoice | null>
   /** Served configured plan allowance; null when the server omits it. */
   periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
+  /** Served next credit refill; null when the server omits it. */
+  nextCreditRefillAt: ComputedRef<string | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {
