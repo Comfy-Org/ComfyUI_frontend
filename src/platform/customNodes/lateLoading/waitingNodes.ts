@@ -1,16 +1,15 @@
 import { t } from '@/i18n'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 function waitingBadge(): LGraphBadge {
-  const colors =
-    useColorPaletteStore().completedActivePalette.colors.litegraph_base
+  const colors = useThemeStore().activeTheme.canvas
   return new LGraphBadge({
     text: t('lateCustomNodes.waitingBadge'),
-    fgColor: colors.BADGE_FG_COLOR,
-    bgColor: colors.BADGE_BG_COLOR
+    fgColor: colors.badgeForegroundColor,
+    bgColor: colors.badgeBackgroundColor
   })
 }
 

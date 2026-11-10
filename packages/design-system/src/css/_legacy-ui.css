@@ -1,3 +1,14 @@
+.comfy-multiline-input,
+.comfy-markdown .tiptap,
+.litegraph.litecontextmenu,
+.litegraph.litesearchbox,
+.litegraph .dialog,
+.comfy-menu,
+.comfy-modal,
+.graphdialog {
+  line-height: normal;
+}
+
 .dom-widget .comfy-multiline-input {
   background-color: var(--comfy-input-bg);
   color: var(--input-text);
@@ -124,8 +135,6 @@ button.comfy-close-menu-btn {
   background-color: var(--input);
   border-width: initial;
   border-radius: 8px;
-  border-color: var(--border);
-  border-style: solid;
   margin-top: 2px;
 }
 
@@ -174,8 +183,7 @@ span.drag-handle::after {
   color: var(--muted-foreground);
   background-color: var(--background);
   margin-bottom: 10px;
-  border-color: var(--border);
-  border-style: solid;
+  border-width: medium;
 }
 
 .comfy-list-items {
@@ -188,9 +196,7 @@ span.drag-handle::after {
 
 .comfy-list h4 {
   min-width: 160px;
-  margin: 0;
   padding: 3px;
-  font-weight: 400;
 }
 
 .comfy-list-items button {
@@ -223,9 +229,7 @@ button.comfy-queue-btn {
   color: var(--foreground);
   background-color: var(--input);
   border-radius: 8px;
-  border-color: var(--border);
-  border-style: solid;
-  font-size: inherit;
+  border-width: revert;
 }
 
 @media only screen and (max-height: 850px) {
@@ -295,15 +299,12 @@ dialog::backdrop {
 }
 
 .comfy-dialog.comfyui-dialog.comfy-modal {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  margin: auto;
   transform: none;
 }
 
 .comfy-dialog.comfy-modal {
-  border-color: var(--background);
   box-shadow: none;
   border: 2px solid var(--border);
 }
@@ -316,7 +317,9 @@ dialog::backdrop {
 }
 
 .comfy-dialog .comfy-modal-content h3 {
-  margin-top: 0;
+  font-size: revert;
+  font-weight: revert;
+  margin-block: 0 1em;
 }
 
 .comfy-dialog .comfy-modal-content > p {
@@ -362,7 +365,6 @@ dialog::backdrop {
 }
 
 .comfy-context-menu-filter {
-  box-sizing: border-box;
   border: 1px solid #999;
   margin: 0 0 5px 5px;
   width: calc(100% - 10px);

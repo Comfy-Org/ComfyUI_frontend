@@ -6,7 +6,7 @@
     content-padding="none"
     size="md"
     close-button-variant="textonly"
-    @close="onClose"
+    @close="handleClose"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
@@ -542,8 +542,7 @@ onMounted(() => {
   sessionStartTime.value = Date.now()
 })
 
-// Wrap onClose to track session end
-const onClose = () => {
+const handleClose = () => {
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   const timeSpentSeconds = Math.floor(
@@ -1244,7 +1243,7 @@ async function openPreparedTemplate(
     if (result === 'not-started') return
 
     templateWasSelected.value = result === 'loaded'
-    onClose()
+    handleClose()
   } finally {
     openPending.value = false
   }
