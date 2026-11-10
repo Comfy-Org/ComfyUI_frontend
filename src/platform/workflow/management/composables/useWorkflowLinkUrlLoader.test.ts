@@ -563,6 +563,22 @@ describe('workflow-id links', () => {
       reported: new Error('Could not open workflow link'),
       errorType: 'error_opening_workflow_link',
       errorName: 'Error'
+    },
+    {
+      name: 'an error name cannot be read',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        Object.defineProperty(thrown, 'name', {
+          get: () => {
+            throw new Error('Customer Jane Doe')
+          }
+        })
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
     }
   ])(
     'reports that $name without the file name or the error text',

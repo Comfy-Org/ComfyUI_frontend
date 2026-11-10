@@ -61,10 +61,10 @@ records any other value as `unknown`.
 
 Error reports for the link carry a fixed message, the error type and the
 failing error's class name when it is a built-in JavaScript error class, or
-`other` for any other name. They never carry the caught error, its message or
-a name it chose: a failed file read names the file, a parser error quotes the
-reply, and custom node code that runs while the workflow loads can throw an
-error under any name.
+`other` for any other name or a name that cannot be read. They never carry the
+caught error, its message or a name it chose: a failed file read names the
+file, a parser error quotes the reply, and custom node code that runs while the
+workflow loads can throw an error under any name.
 
 ## Alternatives considered
 
