@@ -90,7 +90,6 @@ class WorkflowLinkHelper {
     await new CloudAuthHelper(this.page).mockLiveEmailSignIn()
   }
 
-  /** Cloud finds the sidebar file, which the workflows listing names. */
   async serveLinkedFile(): Promise<void> {
     await this.page.route(this.sidebarFileUrl(), (route) =>
       route.fulfill(jsonRoute(sidebarFile))
@@ -98,7 +97,6 @@ class WorkflowLinkHelper {
     await this.serveWorkflowsFolder()
   }
 
-  /** Cloud answers that the record no longer matches its sidebar file. */
   async refuseLinkedFile(): Promise<void> {
     await this.page.route(this.sidebarFileUrl(), (route) =>
       route.fulfill({ status: 409, json: outOfSync })
@@ -110,7 +108,6 @@ class WorkflowLinkHelper {
     await waitForCloudApp(this.page)
   }
 
-  /** Boots the app, then reloads it, so its tabs are the restored ones. */
   async openWithRestoredTabs(): Promise<void> {
     await this.open(APP_URL)
     await this.page.reload()
