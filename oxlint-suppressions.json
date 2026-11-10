@@ -1072,11 +1072,6 @@
       "count": 1
     }
   },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/types/extensionTypes.ts": {
     "comfy/no-reexports": {
       "count": 2

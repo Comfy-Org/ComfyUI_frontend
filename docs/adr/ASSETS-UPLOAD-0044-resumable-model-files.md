@@ -23,6 +23,13 @@ Keep the session URL in the current upload attempt only. Cancel aborts its
 request or retry wait. An expired session requires another upload attempt.
 Never log the session URL or pass it to telemetry.
 
+Start and completion name the editor as the client. Completion says whether
+the transfer resumed: true only after a status query found nonzero held bytes
+and the transfer continued from them, and absent for a single PUT. When start
+advertises `upload_analytics_version` 1, a failed or canceled transfer sends
+one coded report (reason, size, model folder, resume) that the caller never
+waits for; it carries no file name, URL or error text.
+
 ## Alternatives
 
 Raising the size limit alone leaves every interrupted transfer starting over.
