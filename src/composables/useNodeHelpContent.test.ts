@@ -5,7 +5,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getNodeSource } from '@/types/nodeSource'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
@@ -67,7 +67,7 @@ function createMockNode(
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('useNodeHelpContent', () => {
   const mockCoreNode = createMockNode({

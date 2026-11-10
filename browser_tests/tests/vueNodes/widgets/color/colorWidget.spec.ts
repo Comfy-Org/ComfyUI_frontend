@@ -15,10 +15,12 @@ test.describe('Vue Color Widget defaults', { tag: '@vue-nodes' }, () => {
 
     const node = comfyPage.vueNodes.getNodeByTitle(COLOR_NODE_DISPLAY_NAME)
     const colorTrigger = node.getByRole('button', {
-      name: new RegExp(DECLARED_DEFAULT, 'i')
+      name: 'color_input',
+      exact: true
     })
 
     await expect(colorTrigger).toBeVisible()
+    await expect(colorTrigger).toContainText(DECLARED_DEFAULT)
   })
 
   test('restores a saved color value when loading a workflow', async ({
@@ -28,10 +30,12 @@ test.describe('Vue Color Widget defaults', { tag: '@vue-nodes' }, () => {
 
     const node = comfyPage.vueNodes.getNodeByTitle(COLOR_NODE_DISPLAY_NAME)
     const colorTrigger = node.getByRole('button', {
-      name: new RegExp(PERSISTED_VALUE, 'i')
+      name: 'color_input',
+      exact: true
     })
 
     await expect(colorTrigger).toBeVisible()
+    await expect(colorTrigger).toContainText(PERSISTED_VALUE)
   })
 })
 

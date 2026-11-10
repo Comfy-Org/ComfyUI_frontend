@@ -3,7 +3,6 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
@@ -13,13 +12,9 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import {
-  UNSUBSCRIBED,
-  ZERO_BALANCE
-} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -291,6 +286,33 @@ export class ComfyPage {
     this.cloudAuth = new CloudAuthHelper(page)
   }
 
+  async expectNodeCount(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBe(count)
+  }
+
+  async expectNodeCountMinimum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeGreaterThanOrEqual(count)
+  }
+
+  async expectNodeCountMaximum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeLessThanOrEqual(count)
+  }
+
   async setupUser(username: string) {
     const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)
@@ -345,7 +367,6 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
-          ...DEPLOY_ACTION_SEEN_SETTINGS,
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,
@@ -679,7 +700,13 @@ export const comfyPageFixture = base.extend<{
           route.fulfill({ status: 204 })
         )
         await context.route('**/api/billing/status', (route) =>
-          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+          route.fulfill({
+            json: {
+              ...PERSONAL_BILLING_STATUS,
+              is_active: true,
+              subscription_status: undefined
+            }
+          })
         )
         await context.route('**/api/billing/capabilities', (route) =>
           route.fulfill({ json: createBillingCapabilities('ws-personal') })
@@ -689,12 +716,6 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/plans', (route) =>
           route.fulfill({ json: EMPTY_BILLING_PLANS })
-        )
-        await context.route('**/customers/cloud-subscription-status', (route) =>
-          route.fulfill({ json: UNSUBSCRIBED })
-        )
-        await context.route('**/customers/balance', (route) =>
-          route.fulfill({ json: ZERO_BALANCE })
         )
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
@@ -722,9 +743,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       if (isCustomNodes) {
-        await comfyExpect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(0)
+        await comfyPage.expectNodeCount(0)
       }
 
       if (testInfo.tags.includes('@cloud')) {

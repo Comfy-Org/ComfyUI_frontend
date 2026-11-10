@@ -1,15 +1,19 @@
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-// Installs `addDOMWidget` on the LGraphNode prototype for the real-graph cases.
-import '@/scripts/domWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/types/domWidget'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { isDOMWidget } from '@/scripts/domWidget'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import {
+  useDOMWidgetTestNodes,
+  stubWidgetValueCallbacks
+} from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const { canvasMock } = vi.hoisted(() => ({
   canvasMock: {
@@ -31,18 +35,18 @@ function createStringWidget(node: LGraphNode) {
     default: '',
     multiline: true
   }
-  return useStringWidget()(node, inputSpec) as DOMWidget<
-    HTMLTextAreaElement,
-    string
-  >
+  const widget = useStringWidget()(node, inputSpec)
+  assert(isDOMWidget(widget))
+  assert(widget.element instanceof HTMLTextAreaElement)
+  return Object.assign(widget, { element: widget.element })
 }
 
 describe('useStringWidget (multiline)', () => {
   function setup() {
     vi.clearAllMocks()
-    const node = createMockDOMWidgetNode()
+    const node = createDOMWidgetNode()
     const widget = createStringWidget(node)
-    const callback = vi.fn<(value: string) => void>()
+    const callback = vi.fn<NonNullable<typeof widget.callback>>()
     widget.callback = callback
     const inputEl = widget.element
     document.body.append(inputEl)
@@ -52,24 +56,18 @@ describe('useStringWidget (multiline)', () => {
 
   function setupInGraph() {
     const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+    const node = createDOMWidgetNode({ graph })
     return { graph, node }
   }
 
   it('writes the value into the store when no entry exists yet', () => {
-    const { node } = setup()
+    const { widget, callback } = setup()
+    expect(useWidgetValueStore().getNodeWidgets('root', toNodeId(1))).toEqual(
+      []
+    )
+    widget.value = 'from-execution'
 
-    // The real DOMWidget value setter delegates to options.setValue
-    // (domWidget.ts). Invoke the actual closure the composable registered.
-    const addDOMWidget = node.addDOMWidget as unknown as {
-      mock: { calls: unknown[][] }
-    }
-    const options = addDOMWidget.mock.calls[0][3] as {
-      setValue: (v: string) => void
-    }
-    options.setValue('from-execution')
-
+    expect(callback).toHaveBeenCalledExactlyOnceWith('from-execution')
     const entries = useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
     expect(entries.some((s) => s.value === 'from-execution')).toBe(true)
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
@@ -167,32 +165,30 @@ describe('useStringWidget (multiline)', () => {
   })
 
   it('does not throw when a saved value is restored synchronously during construction', () => {
-    // Mirrors LGraphNode.addCustomWidget, which restores a saved widget
-    // value (from a loaded workflow) by invoking `options.setValue`
-    // synchronously, from inside `node.addDOMWidget(...)`, before that
-    // call returns.
-    const node = createMockDOMWidgetNode({
-      addDOMWidget: vi.fn(
-        (
-          name: string,
-          type: string,
-          element: HTMLElement,
-          options?: { setValue?: (v: string) => void }
-        ) => {
-          options?.setValue?.('restored-value')
-          return { name, type, element, options: options ?? {}, value: '' }
-        }
-      )
+    const { graph, node } = setupInGraph()
+    useWidgetValueStore().setNodeWidgetRestoration(graph.id, node.id, {
+      positional: ['restored-value'],
+      restoreNamed: false
     })
 
-    expect(() => createStringWidget(node)).not.toThrow()
+    expect(() => {
+      const widget = createStringWidget(node)
+      expect(widget.value).toBe('restored-value')
+      expect(widget.element.value).toBe('restored-value')
+    }).not.toThrow()
   })
 
-  it('fires the widget callback on input', () => {
-    const { inputEl, callback } = setup()
+  it('fires the input listener callback independently of the value setter', () => {
+    const node = createDOMWidgetNode()
+    stubWidgetValueCallbacks(node)
+    const widget = createStringWidget(node)
+    const inputEl = widget.element
+    const callback = vi.fn()
+    widget.callback = callback
     inputEl.value = 'hello'
     inputEl.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(1)
+    expect(callback).toHaveBeenCalledWith('hello')
   })
 
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {

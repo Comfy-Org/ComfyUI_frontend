@@ -3,7 +3,7 @@ import { onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 
 const zTemplateRootNodes = z.object({
   nodes: z.array(zComfyNode.pick({ id: true, type: true })).min(1)

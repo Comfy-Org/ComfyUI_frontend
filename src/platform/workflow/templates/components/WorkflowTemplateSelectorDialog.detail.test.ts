@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
@@ -14,7 +14,7 @@ import type { useLazyPagination } from '@/platform/workflow/templates/composable
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 
 const fixtures = vi.hoisted(() => {
   const activeModel = {
@@ -298,11 +298,11 @@ vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
 

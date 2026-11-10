@@ -1,6 +1,7 @@
+import type { BillingTopUpDenial } from '@comfyorg/billing-core'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -57,12 +58,14 @@ function arrange(options: {
   isTeamPlan?: boolean
   subscription?: SubscriptionInfo
   balance?: BalanceInfo | null
-  renewalDate?: string | null
+  nextCreditRefillAt?: string | null
   canTopUp?: boolean
-  topUpDenial?: string
+  topUpDenial?: BillingTopUpDenial
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
+  workspaceType?: 'personal' | 'team'
+  addCreditsVariant?: 'secondary' | 'inverted'
 }) {
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
@@ -81,7 +84,8 @@ function arrange(options: {
       subscription: computed(() => subscription.value),
       balance: computed(() => balance.value),
       isTeamPlan: computed(() => options.isTeamPlan ?? false),
-      renewalDate: computed(() => options.renewalDate ?? null),
+      renewalDate: computed(() => '2026-12-15T00:00:00Z'),
+      nextCreditRefillAt: computed(() => options.nextCreditRefillAt ?? null),
       billingStatus: computed(() => 'paid' as const)
     })
   )
@@ -99,8 +103,10 @@ function arrange(options: {
       options.canManageSubscription ?? true
     )
   }))
+  workspace.workspaceType = computed(() => options.workspaceType ?? 'personal')
 
   render(BillingLocalCreditBanner, {
+    props: { addCreditsVariant: options.addCreditsVariant },
     global: {
       plugins: [
         createI18n({
@@ -147,7 +153,7 @@ describe('BillingLocalCreditBanner', () => {
     arrange({
       isCloud: true,
       subscription: { ...personalSubscription, hasFunds: false },
-      renewalDate: '2026-10-01T00:00:00Z'
+      nextCreditRefillAt: '2026-10-01T00:00:00Z'
     })
 
     expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
@@ -170,38 +176,98 @@ describe('BillingLocalCreditBanner', () => {
     {
       name: 'a personal owner',
       isTeamPlan: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026.",
       buttons: ['Dismiss', 'Add credits']
     },
     {
-      name: 'a team owner without a refill date',
+      name: 'a team owner without a served refill date',
       isTeamPlan: true,
-      renewalDate: null,
+      nextCreditRefillAt: null,
       body: 'Your team has used all its credits. Add more credits.',
       buttons: ['Dismiss', 'Add credits']
     },
     {
       name: 'a team member',
       isTeamPlan: true,
-      canManageSubscription: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      canTopUp: false,
+      topUpDenial: 'not_workspace_owner',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 1, 2026.',
       buttons: ['Dismiss']
+    },
+    {
+      name: 'a caller outside the workspace',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'not_a_member',
+      nextCreditRefillAt: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'an owner whose top-up purchases are paused',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'topup_purchases_paused',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Credits refill on October 1, 2026.",
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'an owner refused for another reason',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'creator_only_provisioning',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
+      body: 'Your team has used all its credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal owner refused without a recognized reason',
+      isTeamPlan: false,
+      canTopUp: false,
+      topUpDenial: undefined,
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
+      body: "You've used all your credits.",
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal owner without a served refill date',
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Add more credits.",
+      buttons: ['Dismiss', 'Add credits']
     }
-  ])(
+  ] satisfies {
+    name: string
+    isTeamPlan: boolean
+    canTopUp?: boolean
+    topUpDenial?: BillingTopUpDenial
+    nextCreditRefillAt: string | null
+    body: string
+    buttons: string[]
+  }[])(
     'shows out of credits to $name',
-    ({ isTeamPlan, renewalDate, canManageSubscription, body, buttons }) => {
+    ({
+      isTeamPlan,
+      nextCreditRefillAt,
+      canTopUp,
+      topUpDenial,
+      body,
+      buttons
+    }) => {
       arrange({
         isTeamPlan,
-        renewalDate,
-        canManageSubscription,
+        nextCreditRefillAt,
+        canTopUp,
+        topUpDenial,
         subscription: { ...personalSubscription, hasFunds: false }
       })
 
       const banner = screen.getByTestId('billing-local-credit-banner')
       expect(banner).toHaveTextContent('Out of credits')
-      expect(banner).toHaveTextContent(body)
+      expect(within(banner).getByText(body)).toBeInTheDocument()
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)
@@ -260,6 +326,158 @@ describe('BillingLocalCreditBanner', () => {
     }
   )
 
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    isTeamPlan: boolean
+    nextCreditRefillAt: string | null
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: null,
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      isTeamPlan: true,
+      nextCreditRefillAt: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Add more credits.",
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words out of credits for reason $reason, owner $owner, team $isTeamPlan, refill $nextCreditRefillAt',
+    ({ reason, owner, isTeamPlan, nextCreditRefillAt, body, buttons }) => {
+      arrange({
+        isCloud: true,
+        isTeamPlan,
+        nextCreditRefillAt,
+        canManageSubscription: owner,
+        canManageBilling: owner,
+        canTopUp: reason === undefined,
+        topUpDenial: reason,
+        subscription: { ...personalSubscription, hasFunds: false }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    workspaceType: 'team' | 'personal'
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      workspaceType: 'team',
+      body: "You have 1,055 credits left. Buying credits isn't available right now.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      workspaceType: 'personal',
+      body: "You have 1,055 credits left. Buying credits isn't available right now.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      workspaceType: 'team',
+      body: 'This workspace has 1,055 credits left. Ask the workspace owner to add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      workspaceType: 'personal',
+      body: 'You have 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words low credits for reason $reason, owner $owner, $workspaceType',
+    ({ reason, owner, workspaceType, body, buttons }) => {
+      arrange({
+        isCloud: true,
+        workspaceType,
+        canManageBilling: owner,
+        canManageSubscription: owner,
+        canTopUp: reason === undefined,
+        topUpDenial: reason,
+        balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Credits are low')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
   it('shows low credits from the served low_balance flag', () => {
     arrange({
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
@@ -274,6 +492,91 @@ describe('BillingLocalCreditBanner', () => {
       screen.getByRole('button', { name: 'Add credits' })
     ).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      name: 'a team owner on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'This workspace has 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      name: 'a team owner whose top-up the server denies on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: true,
+      canTopUp: false,
+      body: 'This workspace has 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a team member on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: false,
+      canTopUp: false,
+      body: 'This workspace has 1,055 credits left. Ask the workspace owner to add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal workspace on Cloud',
+      isCloud: true,
+      workspaceType: 'personal',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'You have 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      name: 'a local install',
+      isCloud: false,
+      workspaceType: 'personal',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'You have 1,055 credits left. Add credits to keep running Partner Nodes.',
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ] as const)(
+    'shows the low-credit copy for $name',
+    ({ isCloud, workspaceType, canManageBilling, canTopUp, body, buttons }) => {
+      arrange({
+        isCloud,
+        workspaceType,
+        canManageBilling,
+        canTopUp,
+        balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Credits are low')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+      expect(
+        screen
+          .queryAllByRole('button', { name: 'Add credits' })
+          .map((button) => button.getAttribute('data-variant'))
+      ).toEqual(canTopUp ? ['secondary'] : [])
+    }
+  )
+
+  it.for(['inverted', 'secondary'] as const)(
+    'renders the out-of-credits Add credits as $0',
+    (addCreditsVariant) => {
+      arrange({
+        addCreditsVariant,
+        subscription: { ...personalSubscription, hasFunds: false }
+      })
+
+      expect(
+        screen.getByRole('button', { name: 'Add credits' })
+      ).toHaveAttribute('data-variant', addCreditsVariant)
+    }
+  )
 
   it('skips low credits when the balance response omits low_balance', () => {
     arrange({

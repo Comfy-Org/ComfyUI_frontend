@@ -2,7 +2,8 @@ import { ref, watch } from 'vue'
 
 import { isMiddleButtonHeld, isMiddlePointerInput } from './pointer'
 
-import type { Point, ImageLayer, ToolInternalSettings } from './types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { ImageLayer, ToolInternalSettings } from './types'
 import { Tools } from './types'
 import { useMaskEditorStore } from './maskEditorStore'
 import { useBrushDrawing } from './useBrushDrawing'

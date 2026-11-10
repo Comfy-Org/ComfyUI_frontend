@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-import type { NodeProperty } from '@/types/nodeProperty'
-import type { WidgetValue } from '@/types/widgetValue'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 import { serializedProxyWidgetTupleSchema } from './promotionSchema'

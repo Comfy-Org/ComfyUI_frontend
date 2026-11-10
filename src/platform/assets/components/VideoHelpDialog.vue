@@ -19,7 +19,7 @@
             :aria-label="$t('g.close')"
             @click="isVisible = false"
           >
-            <i class="pi pi-times text-sm" />
+            <i class="icon-[lucide--x] size-3.5" />
           </Button>
           <video
             autoplay

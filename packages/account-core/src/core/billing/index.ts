@@ -17,7 +17,12 @@ export type {
   BillingSession,
   BillingTransport
 } from './billingContracts'
-export { matchesServerCode, unwrapServerCode } from './billingContracts'
+export {
+  isPurchaseRefusal,
+  matchesServerCode,
+  PURCHASE_REFUSAL_SERVER_CODES,
+  unwrapServerCode
+} from './billingContracts'
 export type { SessionBillingTransportOptions } from './transport'
 export { createSessionBillingTransport } from './transport'
 export type {
@@ -95,6 +100,26 @@ export {
   PAYMENT_METHODS_ROUTE,
   createPaymentMethodsReader
 } from './paymentMethods'
+export type {
+  AutoReloadPreview,
+  AutoReloadSettings,
+  AutoTopUpCommandOptions,
+  AutoTopUpCommandResult,
+  AutoTopUpReadOptions,
+  AutoTopUpReader,
+  AutoTopUpReaderOptions,
+  AutoTopUpScope,
+  AutoTopUpSnapshot,
+  PreviewAutoTopUpQuery,
+  SaveAutoTopUpInput
+} from './autoTopUp'
+export {
+  AUTO_TOP_UP_PREVIEW_ROUTE,
+  AUTO_TOP_UP_ROUTE,
+  createAutoTopUpReader,
+  previewAutoTopUp,
+  saveAutoTopUp
+} from './autoTopUp'
 export type {
   BillingStatusData,
   BillingStatusReader,
@@ -176,6 +201,54 @@ export {
   BILLING_OPERATION_TELEMETRY_EVENT
 } from '#/telemetry'
 export * from './telemetry/index'
+export type {
+  AddCreditsAmount,
+  AddCreditsAmountCheck,
+  AddCreditsAmountError,
+  AddCreditsBounds
+} from './addCredits/addCreditsAmount'
+export {
+  ADD_CREDITS_DEFAULT_CENTS,
+  ADD_CREDITS_FALLBACK_BOUNDS,
+  ADD_CREDITS_PRESETS_CENTS,
+  checkAddCreditsAmount,
+  initialAddCreditsAmount
+} from './addCredits/addCreditsAmount'
+export type {
+  AddCreditsRefusal,
+  AddCreditsWait
+} from './addCredits/addCreditsRefusal'
+export {
+  addCreditsRefusalFor,
+  addCreditsRefusalForDenial,
+  addCreditsWait
+} from './addCredits/addCreditsRefusal'
+export type {
+  AddCreditsAmountView,
+  AddCreditsEvent,
+  AddCreditsFacts,
+  AddCreditsNotice,
+  AddCreditsPendingTopup,
+  AddCreditsState
+} from './addCredits/addCreditsDialog'
+export {
+  addCreditsRefusalBlocks,
+  reduceAddCredits,
+  startAddCredits,
+  viewAddCreditsAmount
+} from './addCredits/addCreditsDialog'
+export type {
+  AddCreditsCopyKey,
+  AddCreditsCopyParams,
+  AddCreditsPlanLine,
+  AddCreditsTranslate
+} from './addCredits/addCreditsCopy'
+export {
+  ADD_CREDITS_COPY,
+  amountErrorCopyKey,
+  translateAddCreditsDefault,
+  waitCopy
+} from './addCredits/addCreditsCopy'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
@@ -270,3 +343,73 @@ export {
   BALANCE_WATCH_RETRY_GAPS_MS,
   createBalanceWatch
 } from './balanceWatch'
+export type {
+  PlanKind,
+  PlanRowAction,
+  PlanRowFacts,
+  PlanRowState
+} from './billingTab/planRow'
+export {
+  CONTACT_SALES_URL,
+  deriveBillingTabLoad,
+  derivePlanRow,
+  formatPlanDate,
+  planRowAction
+} from './billingTab/planRow'
+export type {
+  PlanCommandOutcome,
+  PlanConfirmEvent,
+  PlanConfirmState,
+  PlanLifecycleIntent
+} from './billingTab/planLifecycle'
+export {
+  PLAN_CONFIRM_CLOSED,
+  reducePlanConfirm,
+  resumeIntent,
+  stayIntent
+} from './billingTab/planLifecycle'
+export type {
+  AddCreditsEmphasisFacts,
+  CreditsCardBalance,
+  CreditsCardFacts,
+  CreditsCardState,
+  PlanCreditsState
+} from './billingTab/creditsCard'
+export { addCreditsEmphasis, deriveCreditsCard } from './billingTab/creditsCard'
+export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
+export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
+export type {
+  TopupCheckoutBanner,
+  TopupCheckoutSnapshot
+} from './billingTab/topupCheckoutBanner'
+export {
+  selectTopupCheckoutBanner,
+  topupCheckoutBannerKey
+} from './billingTab/topupCheckoutBanner'
+export type {
+  AutoTopUpCardFacts,
+  AutoTopUpCardState,
+  AutoTopUpOffView,
+  AutoTopUpOffViewFacts,
+  AutoTopUpSection,
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
+} from './billingTab/autoTopUpCard'
+export {
+  autoTopUpOffView,
+  canSetUpAutoTopUp,
+  deriveAutoTopUpCard,
+  deriveAutoTopUpSection
+} from './billingTab/autoTopUpCard'
+export type {
+  AddCreditsAvailability,
+  BillingTopUpDenial
+} from './billingTab/addCreditsAvailability'
+export {
+  addCreditsAvailability,
+  isMemberTopUpDenial
+} from './billingTab/addCreditsAvailability'
+export type { TopUpBound } from './topUpBounds'
+export { servedTopUpBound } from './topUpBounds'
+export type { BackendTicket } from './pendingServerFact'
+export { pendingServerFact } from './pendingServerFact'

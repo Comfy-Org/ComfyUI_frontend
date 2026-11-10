@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { generateModelThumbnail } from '@/extensions/core/load3d/components/modelThumbnail'
@@ -80,6 +81,7 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
 // Preserve controller identity inside Vue's deeply reactive state record.
 type ThumbnailState =
@@ -353,9 +355,6 @@ watch(
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
-const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
-)
 
 function refreshModelThumbnail(asset: ReplyAsset): void {
   const state = thumbnailState.value[asset.url]
@@ -385,6 +384,7 @@ function inspect(asset: ReplyVisualAssetData): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
 </script>
@@ -432,6 +432,7 @@ function inspect(asset: ReplyVisualAssetData): void {
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>

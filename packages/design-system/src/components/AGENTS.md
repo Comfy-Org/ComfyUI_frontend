@@ -19,7 +19,7 @@ After adding, create `ComponentName.stories.ts` with a `Default` story, an `argT
 - Use Iconify icons: `<i class="icon-[lucide--check]" />`
 - Use core semantic tokens such as `bg-secondary`, `text-muted-foreground`, and `border-border`
 - Generic UI primitives must not create or consume feature-, screen-, or component-specific color tokens
-- Before adding a token, search `../css/style.css` for an existing semantic role
+- Before adding a token, search `../css/theme.css` for an existing semantic role
 - Add a token only for a reusable role that the core theme cannot express. Do not add a token family for each component
 - Tailwind 4 CSS variables use parentheses: `h-(--my-var)` not `h-[--my-var]`
 

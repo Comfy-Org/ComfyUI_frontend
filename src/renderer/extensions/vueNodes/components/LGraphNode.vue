@@ -7,18 +7,17 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg',
+        'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isEmphasized && 'outline-foreground',
-        executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -41,13 +40,11 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <NodeBloodDrips
-      v-if="
-        !isRerouteNode &&
-        !isCollapsed &&
-        !nodeData.flags?.ghost &&
-        ['spooky', 'zombie'].includes(settingStore.get('Comfy.ColorPalette'))
-      "
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full"
+      :style="badgesStyle"
     />
     <AppOutput
       v-if="
@@ -59,14 +56,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'pointer-events-none absolute z-0 border-3 outline-none',
+          'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isEmphasized ? 'border-foreground' : 'border-primary'
+          isEmphasized || executing ? 'block border-3' : 'hidden',
+          isEmphasized ? 'border-foreground' : executing && 'border-primary'
         )
       "
     />
@@ -112,7 +109,9 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -186,12 +185,6 @@
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
           />
-          <NodeBadges
-            v-if="!isTransparentHeaderless"
-            v-bind="badges"
-            :pricing="undefined"
-            class="mt-auto"
-          />
         </div>
       </template>
     </div>
@@ -258,18 +251,18 @@ import { storeToRefs } from 'pinia'
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -307,14 +300,14 @@ import {
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -322,7 +315,6 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
-import NodeBloodDrips from './NodeBloodDrips.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
@@ -500,16 +492,16 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-br-xl',
-    default: 'rounded-b-xl'
+    card: 'rounded-br-(--node-radius)',
+    default: 'rounded-b-(--node-radius)'
   })
 )
 
 const shapeClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-tl-xl rounded-br-xl',
-    default: 'rounded-xl'
+    card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
+    default: 'rounded-(--node-radius)'
   })
 )
 
@@ -523,13 +515,14 @@ const isTransparentHeaderless = computed(
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
-  const isExpanded = hasAnyError.value
   return shapeVariantClass(nodeData.shape, {
     box: '',
-    card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+    card: hasAnyError.value
+      ? 'rounded-tl-[calc(var(--node-radius)+11px)] rounded-br-[calc(var(--node-radius)+11px)]'
+      : 'rounded-tl-[calc(var(--node-radius)+7px)] rounded-br-[calc(var(--node-radius)+7px)]',
+    default: hasAnyError.value
+      ? 'rounded-[calc(var(--node-radius)+7px)]'
+      : 'rounded-[calc(var(--node-radius)+3px)]'
   })
 })
 
@@ -539,16 +532,16 @@ const BEFORE_OVERLAY_BASE =
 const bypassOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
   })
 )
 
 const mutedOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: BEFORE_OVERLAY_BASE,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE}`
   })
 )
 
@@ -686,9 +679,11 @@ const hasVideoInput = computed(() =>
   nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
-const hasVideoEditWidget = computed(() =>
-  widgetIds.value.some(
-    (id) => widgetValueStore.getWidget(id)?.type === 'videoedit'
+const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
+
+const hasVideoPreviewWidget = computed(() =>
+  widgetIds.value.some((id) =>
+    VIDEO_PREVIEW_WIDGET_TYPES.has(widgetValueStore.getWidget(id)?.type ?? '')
   )
 )
 
@@ -718,13 +713,17 @@ const nodeMedia = computed(() => {
       ? 'video'
       : 'image'
 
-  if (type === 'video' && hasVideoEditWidget.value) return undefined
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
   return { type, urls } as const
 })
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+
+const badgesStyle = computed(() => ({
+  marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
+}))
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()

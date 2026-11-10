@@ -41,6 +41,7 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        data-testid="main-video"
         :src="currentVideoUrl"
         :class="
           cn(
@@ -130,9 +131,11 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
@@ -201,6 +204,15 @@ const handleVideoError = () => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+
+  const failedUrl = currentVideoUrl.value
+  if (!failedUrl) return
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview'
+    })
+  })
 }
 
 const handleDownload = () => {

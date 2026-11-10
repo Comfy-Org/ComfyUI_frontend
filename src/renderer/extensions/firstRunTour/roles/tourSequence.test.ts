@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ResolvedRoles } from './resolveTourRoles'
 import { sequenceBuilder } from './tourSequence'

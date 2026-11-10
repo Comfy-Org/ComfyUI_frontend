@@ -1,5 +1,8 @@
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import {
+  runDeniedPaymentPastDueFact,
+  serveBillingNotices
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -312,6 +315,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
         'can_manage_subscription',
         mockCanManageSubscriptionLifecycle.value
       )
+    }))
+    serveBillingNotices(() => ({
+      isTeamPlan: mockHasTeamPlan.value,
+      tier: mockSubscriptionTier.value,
+      isCancelled: mockSubscriptionStatus.value === 'canceled',
+      endDate: mockEndDate.value
     }))
     useBillingCapabilities().canLeaveWorkspace = computed(() =>
       receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
@@ -962,7 +971,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('keeps billing access in the ended state for an inactive paid Personal workspace', async () => {
     const user = userEvent.setup()
-    mockBillingType.value = 'legacy'
+    mockBillingType.value = 'workspace'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsActiveSubscription.value = false
     mockBillingStatus.value = 'inactive'
@@ -1427,7 +1436,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   ] as const)(
     'keeps billing access for $state personal workspaces',
     ({ hasSubscription, tier }) => {
-      mockBillingType.value = 'legacy'
+      mockBillingType.value = 'workspace'
       mockBillingStatus.value = 'inactive'
       mockSubscriptionTier.value = tier
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })

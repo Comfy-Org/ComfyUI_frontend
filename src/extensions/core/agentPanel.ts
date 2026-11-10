@@ -4,13 +4,14 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type {
   AgentConsentNotOfferedReason,
   AgentConsentOfferExit,
   AgentConsentOfferStage
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
@@ -26,8 +27,13 @@ import {
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  clearPendingSignInAccept,
+  hasPendingSignInAccept,
+  takePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -102,9 +108,10 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const introductionStore = useAgentConsentIntroductionStore()
       const { enabled } = storeToRefs(agentPanelStore)
+      const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
-      const { withConsent } = useAgentConsent()
+      const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
@@ -324,8 +331,35 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let resumingAccept = false
+      let pendingAcceptChecked = false
+      let pendingAcceptAccount: string | undefined
+      function resumePendingAccept(): boolean {
+        if (pendingAcceptChecked) return false
+        if (!isLoggedIn.value) {
+          pendingAcceptChecked = true
+          clearPendingSignInAccept()
+          return false
+        }
+        const accountId = resolvedUserInfo.value?.id
+        pendingAcceptAccount ??= accountId
+        if (!accountId || workspaceStore.isSwitching)
+          return hasPendingSignInAccept()
+        pendingAcceptChecked = true
+        const draft = takePendingSignInAccept()
+        if (draft === null || accountId !== pendingAcceptAccount) return false
+        resumingAccept = true
+        void resumeAcceptAfterReload(draft).finally(() => {
+          resumingAccept = false
+          loadConsentIfEligible()
+        })
+        return true
+      }
+
       const loadConsentIfEligible = (): void => {
-        if (!agentPanelStore.enabled || !isAuthInitialized.value) return
+        if (!isAuthInitialized.value) return
+        if (resumingAccept || resumePendingAccept()) return
+        if (!agentPanelStore.enabled) return
         if (!isLoggedIn.value) {
           if (!sessionEnded()) offerWhenStartupDecided()
           return

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import type { SettingOption } from '@/platform/settings/types'
+import type { SettingOption } from '@comfyorg/settings-core/types'
 
 import FormRadioGroup from './FormRadioGroup.vue'
 

@@ -16,7 +16,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -34,12 +34,12 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -92,6 +92,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  loadCustomThemePresets: vi.fn(async () => {}),
   setDirty: vi.fn()
 }))
 
@@ -158,7 +159,7 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock(import('@/services/extensionLoader'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
 
@@ -179,8 +180,12 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+vi.mock<unknown>(import('@/platform/theme/themeService'), () => ({
+  useThemeService: () => ({
+    setActiveTheme: vi.fn(),
+    loadCustomThemePresets: mocks.loadCustomThemePresets
+  }),
+  useLegacyColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -220,7 +225,10 @@ function setRootGraph(graph: LGraph | undefined) {
   ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
 }
 
-async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+async function mountGraphCanvas(
+  stubs: Record<string, unknown> = {},
+  errorHandler?: (error: unknown) => void
+) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -242,7 +250,8 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
       ],
-      stubs
+      stubs,
+      config: errorHandler ? { errorHandler } : {}
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -252,6 +261,37 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
     await Promise.resolve()
   }
 }
+
+it('keeps the canvas unavailable until saved custom themes are ready', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+
+  await mountGraphCanvas()
+
+  expect(useCanvasStore().canvas).toBeNull()
+  finishLoading()
+  await vi.waitFor(() => expect(useCanvasStore().canvas).toBe(app.canvas))
+})
+
+it('does not expose a disposed canvas after custom themes finish loading', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+  await mountGraphCanvas()
+
+  cleanup()
+  finishLoading()
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(useCanvasStore().canvas).toBeNull()
+})
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
@@ -272,6 +312,17 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(
       mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
     ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
+  })
+
+  it('settles tab restoration when startup fails before restoring tabs', async () => {
+    const failure = new Error('init failed')
+    mocks.initializeWorkflow.mockRejectedValue(failure)
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error))
+
+    expect(errors).toEqual([failure])
+    expect(useWorkflowStore().tabsRestored).toBe(true)
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -770,6 +821,7 @@ describe('deployment model options at startup', () => {
       deployment_id: 'dep-1',
       release_id: 'r-1',
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
 
@@ -966,9 +1018,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
@@ -977,6 +1031,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     }
     await nextTick()
@@ -1033,6 +1088,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
     vi.spyOn(store, 'loadOnce').mockReturnValue(

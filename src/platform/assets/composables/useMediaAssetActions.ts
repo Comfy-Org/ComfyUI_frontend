@@ -6,8 +6,9 @@ import { useI18n } from 'vue-i18n'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -17,6 +18,8 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
+import type { WorkflowOpenResult } from '@/platform/workflow/core/services/workflowActionsService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -24,7 +27,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getAssetDisplayName,
-  getAssetStoredFilename
+  getAssetStoredFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
@@ -50,12 +54,13 @@ import type { AssetDownload } from './useAssetDownload'
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 function createAssetWidgetPath(asset: AssetItem): string {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  const assetType = getAssetType(asset, 'input')
+  const assetType = isGeneratedTempOutput(asset)
+    ? 'temp'
+    : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
     filename: getAssetStoredFilename(asset),
-    subfolder: metadata?.subfolder ?? '',
+    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })
 }
@@ -307,7 +312,7 @@ export function useMediaAssetActions() {
   const openApiPromptAsWorkflow = async (
     asset: AssetItem,
     filename: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<WorkflowOpenResult> => {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
       if (!app.isApiJson(apiPrompt)) return { success: false }
@@ -322,7 +327,10 @@ export function useMediaAssetActions() {
       })
       return {
         success: false,
-        error: error instanceof Error ? error.message : undefined
+        error: error instanceof Error ? error.message : undefined,
+        errorPresentation: isGraphLoadFailurePresented(error)
+          ? 'handled'
+          : undefined
       }
     }
   }
@@ -331,6 +339,9 @@ export function useMediaAssetActions() {
    * Open an asset's workflow in a new tab, falling back to the stored API
    * graph for assets whose job embeds no workflow (API submissions)
    */
+  const isAlreadyPresented = (result: WorkflowOpenResult) =>
+    result.errorPresentation === 'handled'
+
   const openAssetWorkflow = async (asset: AssetItem) => {
     const { workflow, filename } = await extractWorkflowFromAsset(asset)
 
@@ -349,17 +360,20 @@ export function useMediaAssetActions() {
 
     const result = await openAssetWorkflow(targetAsset)
 
-    if (!result.success) {
-      toast.warning(t('g.warning'), {
-        description: result.error || t('mediaAsset.noWorkflowDataFound'),
-        duration: 2000
-      })
-    } else {
+    if (result.success) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.workflowOpenedInNewTab'),
         duration: 2000
       })
+      return
     }
+
+    if (isAlreadyPresented(result)) return
+
+    toast.warning(t('g.warning'), {
+      description: result.error || t('mediaAsset.noWorkflowDataFound'),
+      duration: 2000
+    })
   }
 
   /**
@@ -470,6 +484,7 @@ export function useMediaAssetActions() {
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
     let succeeded = 0
     let failed = 0
+    let alreadyPresented = 0
 
     for (const asset of assets) {
       try {
@@ -479,6 +494,7 @@ export function useMediaAssetActions() {
           succeeded++
         } else {
           failed++
+          if (isAlreadyPresented(result)) alreadyPresented++
         }
       } catch {
         failed++
@@ -493,10 +509,12 @@ export function useMediaAssetActions() {
         duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.warning(t('g.warning'), {
-        description: t('mediaAsset.selection.noWorkflowsFound'),
-        duration: 3000
-      })
+      const everyFailureAlreadyPresented = alreadyPresented === failed
+      if (!everyFailureAlreadyPresented)
+        toast.warning(t('g.warning'), {
+          description: t('mediaAsset.selection.noWorkflowsFound'),
+          duration: 3000
+        })
     } else {
       toast.warning(t('g.warning'), {
         description: t('mediaAsset.selection.partialWorkflowsOpened', {
@@ -624,8 +642,10 @@ export function useMediaAssetActions() {
         const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          stored?.type ?? getAssetType(asset, 'input'),
-          metadata?.subfolder,
+          isGeneratedTempOutput(asset)
+            ? 'temp'
+            : (stored?.type ?? getAssetType(asset, 'input')),
+          getOutputSubfolder(asset.user_metadata),
           asset.hash ?? stored?.hash
         )
         return [

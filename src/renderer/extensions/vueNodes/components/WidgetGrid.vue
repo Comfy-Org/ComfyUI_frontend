@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -55,17 +55,25 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="col-span-2 grid grid-cols-subgrid">
+                <div
+                  :class="
+                    cn(
+                      'grid min-w-0 grid-cols-1',
+                      row.rowSize === 'min-content' && 'self-center'
+                    )
+                  "
+                >
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
                     :widget="row.widget.simplified"
                     :node-id
                     :node-type
+                    :node-title
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
-                      cn('col-span-2', row.widget.hasError && 'font-bold')
+                      cn('col-span-full', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
                     @contextmenu="row.widget.handleContextMenu"
@@ -96,7 +104,7 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -111,12 +119,14 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
+  nodeTitle,
   syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  nodeTitle?: string
   syncLayout?: boolean
 }>()
 

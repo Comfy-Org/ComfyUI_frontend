@@ -6,7 +6,7 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -22,9 +22,9 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/services/litegraphService'))

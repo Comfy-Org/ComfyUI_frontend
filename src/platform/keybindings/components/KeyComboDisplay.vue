@@ -15,7 +15,7 @@
 import { computed } from 'vue'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
-import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 
 const { keyCombo, isModified = false } = defineProps<{
   keyCombo: KeyComboImpl

@@ -4,11 +4,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-di
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import type {
   LoadedComfyWorkflow,
@@ -16,34 +16,44 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow as ComfyWorkflowClass,
-  resetReportedWorkflowStateAnomaliesForTests
+  resetReportedWorkflowStateAnomaliesForTests,
+  UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
+  isUnreadableWorkflow,
   resetWorkflowLoadQueueForTests,
   useWorkflowService
 } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
-import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
+import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import {
+  bindCanvasTracker,
+  canCaptureCanvas,
+  invalidateCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useAppMode } from '@/composables/useAppMode'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { t } from '@/i18n'
+import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -51,6 +61,10 @@ vi.mock(import('firebase/auth'), { spy: true })
 beforeEach(() => {
   stubFirebaseAuthHarness()
 })
+
+function isDefaultWorkflow(data: unknown): boolean {
+  return JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+}
 
 function createModeTestWorkflow(
   options: {
@@ -104,8 +118,8 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/platform/lateCustomNodes/lateNodeTypes'))
-vi.mock(import('@/platform/lateCustomNodes/waitingNodes'))
+vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'))
+vi.mock(import('@/platform/customNodes/lateLoading/waitingNodes'))
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
 
@@ -124,11 +138,11 @@ vi.mock<unknown>(
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,
@@ -177,6 +191,7 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
+    ChangeTracker.resetCanvasTrackerForTest()
     vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(true)
   })
 
@@ -331,6 +346,17 @@ describe('useWorkflowService', () => {
       expect(
         useSubgraphNavigationStore().saveCurrentViewport
       ).toHaveBeenCalledWith(true)
+    })
+
+    it('returns the canvas replacement transition', () => {
+      const tracker = createMockChangeTracker()
+      bindCanvasTracker(tracker)
+
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph()
+
+      expect(canCaptureCanvas(tracker)).toBe(true)
+      replaceCanvas()
+      expect(canCaptureCanvas(tracker)).toBe(false)
     })
 
     it('stores a thumbnail of the active subgraph', () => {
@@ -568,6 +594,148 @@ describe('useWorkflowService', () => {
       )
     })
 
+    describe('keepSavedBaseline', () => {
+      function openEditedWorkflow() {
+        const saved = makeWorkflowData({ saved: true })
+        const workflow = createModeTestWorkflow()
+        workflow.changeTracker = new ChangeTracker(workflow, saved)
+        workflow.changeTracker.activeState = makeWorkflowData({
+          saved: true,
+          unsavedEdit: true
+        })
+        workflow.isModified = true
+        useWorkflowStore().activeWorkflow = workflow
+        app.rootGraph.extra.unsavedEdit = true
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          workflow.isModified = false
+          return true
+        })
+        return { workflow, saved }
+      }
+
+      it('keeps unsaved edits and history after a reload', async () => {
+        const { workflow, saved } = openEditedWorkflow()
+        const undo = makeWorkflowData({ previousEdit: true })
+        workflow.changeTracker.undoQueue = [undo]
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(workflow, data)
+          return true
+        })
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.changeTracker.activeState.extra).toMatchObject({
+          unsavedEdit: true
+        })
+        expect(workflow.changeTracker.undoQueue).toContainEqual(undo)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved baseline when the reload throws after resetting the tracker', async () => {
+        const { workflow, saved } = openEditedWorkflow()
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          throw new Error('afterLoadNewGraph failed')
+        })
+
+        await expect(
+          useWorkflowService().openWorkflow(workflow, {
+            force: true,
+            keepSavedBaseline: true
+          })
+        ).rejects.toThrow('afterLoadNewGraph failed')
+
+        expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('keeps a save made while the reload waited behind another load', async () => {
+        const { workflow } = openEditedWorkflow()
+        const other = createModeTestWorkflow({ path: 'workflows/other.json' })
+        let releaseOther = () => {}
+        vi.mocked(app.loadGraphData).mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              releaseOther = () => resolve(true)
+            })
+        )
+        const otherLoad = useWorkflowService().openWorkflow(other)
+        const reload = useWorkflowService().openWorkflow(workflow, {
+          force: true,
+          keepSavedBaseline: true
+        })
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+
+        workflow.changeTracker.prepareForSave()
+        const savedNow = workflow.changeTracker.activeState
+        workflow.changeTracker.reset()
+        workflow.isModified = false
+        releaseOther()
+        await Promise.all([otherLoad, reload])
+
+        expect(workflow.changeTracker.initialState).toEqual(savedNow)
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps a clean workflow clean when the reloaded graph serializes differently', async () => {
+        const { workflow } = openEditedWorkflow()
+        workflow.isModified = false
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps a save made while the reload was loading', async () => {
+        const { workflow } = openEditedWorkflow()
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          workflow.originalContent = workflow.content = JSON.stringify(data)
+          workflow.isModified = false
+          return true
+        })
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps the saved baseline when a save during the reload fails to write', async () => {
+        const { workflow, saved } = openEditedWorkflow()
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          workflow.content = JSON.stringify(data)
+          workflow.isModified = false
+          return true
+        })
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('resets the baseline to the reloaded state without the option', async () => {
+        const { workflow } = openEditedWorkflow()
+
+        await useWorkflowService().openWorkflow(workflow, { force: true })
+
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
+        expect(workflow.isModified).toBe(false)
+      })
+    })
+
     describe('reloadCurrentWorkflow during a tab switch', () => {
       let previous: LoadedComfyWorkflow
       let next: LoadedComfyWorkflow
@@ -783,7 +951,10 @@ describe('useWorkflowService', () => {
         loadable: true,
         path: 'workflows/active-noop.json'
       })
+      const activeTracker = active.changeTracker
+      if (!activeTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      bindCanvasTracker(activeTracker)
       const service = useWorkflowService()
 
       await service.openWorkflow(active)
@@ -791,6 +962,29 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(active, { force: true })
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads an active workflow that does not own the canvas', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/store-selected.json'
+      })
+      const activeTracker = active.changeTracker
+      if (!activeTracker) throw new Error('Expected loaded workflow')
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      const service = useWorkflowService()
+      vi.mocked(app.loadGraphData).mockImplementationOnce(
+        async (_workflowData, _clean, _restoreView, workflow) => {
+          await service.afterLoadNewGraph(workflow ?? null, makeWorkflowData())
+          return true
+        }
+      )
+
+      await service.openWorkflow(active)
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(isCanvasOwner(activeTracker)).toBe(true)
     })
 
     it('re-opens a workflow normally once its close has settled', async () => {
@@ -984,6 +1178,33 @@ describe('useWorkflowService', () => {
       )
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('invalidates ownership when the replacement and retained loads fail', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const failing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/failing.json'
+      })
+      const retainedTracker = retained.changeTracker
+      if (!retainedTracker) throw new Error('Expected loaded workflow')
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      bindCanvasTracker(retainedTracker)
+      vi.mocked(app.loadGraphData).mockImplementation(async () => {
+        invalidateCanvasTracker()
+        return false
+      })
+
+      await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
+        false
+      )
+
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(canCaptureCanvas(retainedTracker)).toBe(false)
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -2130,7 +2351,7 @@ describe('useWorkflowService', () => {
         path: 'Unsaved Workflow.json'
       })
       vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
-        if (data === defaultGraph)
+        if (isDefaultWorkflow(data))
           useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
         return true
       })
@@ -2282,6 +2503,301 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('openWorkflow with unreadable stored content', () => {
+    function unreadableWorkflow(
+      path = 'workflows/video_REDO.json',
+      reason: UnreadableWorkflowError['reason'] = 'not-object'
+    ) {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(workflow, 'load').mockRejectedValue(
+        new UnreadableWorkflowError(reason, workflow.path)
+      )
+      return workflow
+    }
+
+    const shownToast = () => {
+      const call = vi.mocked(useToast().error).mock.calls.at(-1)
+      expect(call).toBeDefined()
+      return { title: call![0], options: call![1] ?? {} }
+    }
+
+    it('tells the user instead of rejecting, and leaves the canvas alone', async () => {
+      const workflow = unreadableWorkflow()
+
+      const opened = await useWorkflowService().openWorkflow(workflow, {
+        initiator: 'user'
+      })
+
+      expect(opened).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(
+        useSubgraphNavigationStore().endWorkflowNavigation
+      ).toHaveBeenCalled()
+      const { title, options } = shownToast()
+      expect(title).toBe(t('workflowService.unreadableWorkflowTitle'))
+      expect(options.description).toBe(
+        t('workflowService.unreadableWorkflowMessage', {
+          name: 'video_REDO.json'
+        })
+      )
+    })
+
+    it.for(['empty', 'unparseable', 'not-object'] as const)(
+      'tells the user when the stored file is %s',
+      async (reason) => {
+        const workflow = unreadableWorkflow('workflows/video_REDO.json', reason)
+
+        const opened = await useWorkflowService().openWorkflow(workflow)
+
+        expect(opened).toBe(false)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(shownToast().title).toBe(
+          t('workflowService.unreadableWorkflowTitle')
+        )
+      }
+    )
+
+    it('offers to delete the unreadable file', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key !== 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+      const action = options.action
+      expect(action?.label).toBe(t('g.delete'))
+      await action!.onClick()
+
+      expect(deleteSpy).toHaveBeenCalledWith(workflow)
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('does not delete a different file that now has the same path', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/reused.json')
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/reused.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+
+      await options.action!.onClick()
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('does not delete a file that replaced it while the confirmation was open', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/raced.json')
+      const lookup = vi
+        .spyOn(workflowStore, 'getWorkflowByPath')
+        .mockReturnValue(workflow)
+      let confirm!: (value: boolean) => void
+      vi.mocked(useDialogService().confirm).mockReturnValue(
+        new Promise<boolean | null>((resolve) => (confirm = resolve))
+      )
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+
+      const clicked = options.action!.onClick()
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalled()
+      )
+      lookup.mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/raced.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+      confirm(true)
+      await clicked
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('dismisses the toast and disarms Delete once the same file opens', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key !== 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/repaired.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockResolvedValue(
+        workflow as ComfyWorkflow & LoadedComfyWorkflow
+      )
+
+      expect(await service.openWorkflow(workflow, { force: true })).toBe(true)
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+
+      await options.action!.onClick()
+      expect(deleteSpy).not.toHaveBeenCalled()
+    })
+
+    it('forgets the unreadable mark once the file opens', async () => {
+      const workflow = unreadableWorkflow('workflows/fixed.json')
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      expect(isUnreadableWorkflow(workflow)).toBe(true)
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(isUnreadableWorkflow(workflow)).toBe(false)
+    })
+
+    it('dismisses the toast when a retry fails for another reason', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/flaky.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+      await options.action!.onClick()
+      expect(deleteSpy).not.toHaveBeenCalled()
+    })
+
+    it('shows one toast per file however often it is clicked', async () => {
+      const workflow = unreadableWorkflow('workflows/twice.json')
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow)
+      const first = shownToast().options.id
+      await service.openWorkflow(workflow)
+
+      expect(first).toBeDefined()
+      expect(shownToast().options.id).toBe(first)
+      expect(
+        useToast().toasts.filter((toast) => toast.id === first)
+      ).toHaveLength(1)
+    })
+
+    it('does not toast for an open the caller already moved away from', async () => {
+      const workflow = unreadableWorkflow()
+
+      const opened = await useWorkflowService().openWorkflow(workflow, {
+        isCurrent: vi
+          .fn()
+          .mockReturnValueOnce(true)
+          .mockReturnValueOnce(true)
+          .mockReturnValue(false)
+      })
+
+      expect(opened).toBe(false)
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it('loads a same-name graph as a new workflow instead of rejecting', async () => {
+      const workflowStore = useWorkflowStore()
+      const stored = new ComfyWorkflowClass({
+        path: 'workflows/video_REDO.json',
+        modified: Date.now(),
+        size: 4
+      })
+      const temporary = createModeTestWorkflow({
+        path: 'workflows/video_REDO (2).json'
+      })
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(stored)
+      vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(temporary)
+      vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(async (wf) => {
+        if (wf === stored)
+          throw new UnreadableWorkflowError('not-object', stored.path)
+        return wf as LoadedComfyWorkflow
+      })
+
+      await useWorkflowService().afterLoadNewGraph(
+        'video_REDO',
+        makeWorkflowData()
+      )
+
+      expect(workflowStore.createNewTemporary).toHaveBeenCalledWith(
+        'video_REDO.json',
+        expect.anything()
+      )
+      expect(workflowStore.openWorkflow).toHaveBeenLastCalledWith(temporary)
+      expect(isUnreadableWorkflow(stored)).toBe(true)
+      expect(shownToast().title).toBe(
+        t('workflowService.unreadableWorkflowTitle')
+      )
+    })
+
+    it('closes the active tab with the default graph when the next tab is unreadable', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createModeTestWorkflow({ path: 'workflows/open.json' })
+      const replacement = unreadableWorkflow()
+      vi.spyOn(workflowStore, 'isActive').mockImplementation(
+        (wf) => wf === closing
+      )
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
+        replacement
+      )
+      const closeSpy = vi
+        .spyOn(workflowStore, 'closeWorkflow')
+        .mockResolvedValue()
+
+      const closed = await useWorkflowService().closeWorkflow(closing, {
+        warnIfUnsaved: false
+      })
+
+      expect(closed).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalled()
+      expect(closeSpy).toHaveBeenCalledWith(closing)
+    })
+
+    it('still rejects for other load failures', async () => {
+      const workflow = new ComfyWorkflowClass({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(workflow, 'load').mockRejectedValue(new Error('offline'))
+
+      await expect(useWorkflowService().openWorkflow(workflow)).rejects.toThrow(
+        'offline'
+      )
+      expect(useToast().error).not.toHaveBeenCalled()
     })
   })
 
@@ -2685,6 +3201,7 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
+      expect(isCanvasOwner(existingWorkflow.changeTracker)).toBe(true)
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)
@@ -3234,6 +3751,32 @@ describe('useWorkflowService', () => {
         expect(appMode.mode.value).toBe('builder:inputs')
       })
     })
+  })
+
+  describe('loadWorkflowInBackground', () => {
+    it.for([
+      { linearMode: true, mode: 'app' },
+      { linearMode: false, mode: 'graph' }
+    ])(
+      'loads an unopened tab with linearMode $linearMode as $mode without showing it',
+      async ({ linearMode, mode }) => {
+        const workflowStore = useWorkflowStore()
+        const service = useWorkflowService()
+        const tab = workflowStore.createTemporary('Background.json', {
+          ...blankGraph,
+          id: '2d4f6a8b-1c3e-4a5b-9c7d-8e9f0a1b2c3d',
+          extra: { linearMode }
+        })
+        expect(tab.isLoaded).toBe(false)
+
+        await service.loadWorkflowInBackground(tab)
+
+        expect(tab.isLoaded).toBe(true)
+        expect(tab.initialMode).toBe(mode)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(workflowStore.activeWorkflow).not.toBe(tab)
+      }
+    )
   })
 
   describe('renameWorkflow', () => {
@@ -3821,6 +4364,174 @@ describe('useWorkflowService', () => {
       )
 
       expect(addSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('saving a tab that is not loaded', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+      vi.spyOn(api, 'getUserData').mockImplementation(
+        async () => new Response(JSON.stringify(defaultGraph))
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(
+        async (path) =>
+          new Response(JSON.stringify({ path, modified: 300, size: 2 }))
+      )
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      resetReportedWorkflowStateAnomaliesForTests()
+      mockAssert.mockClear()
+    })
+
+    function unloadedModifiedTab(path: string): ComfyWorkflow {
+      const tab = new ComfyWorkflowClass({ path, modified: 100, size: 1 })
+      workflowStore.attachWorkflow(tab)
+      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+      tab.isModified = true
+      return tab
+    }
+
+    function storedContent(path: string): ComfyWorkflowJSON {
+      const call = vi
+        .mocked(api.storeUserData)
+        .mock.calls.find(([stored]) => stored === path)
+      assert(call, `nothing was stored at ${path}`)
+      return JSON.parse(call[1] as string) as ComfyWorkflowJSON
+    }
+
+    function enableDrafts() {
+      useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
+        id: 'Comfy.Workflow.Persist',
+        name: 'Persist workflow state',
+        type: 'boolean',
+        defaultValue: true
+      }
+    }
+
+    function draftOf(extra: Record<string, unknown>, updatedAt: number) {
+      vi.mocked(useWorkflowDraftStoreV2().getDraft).mockImplementation((path) =>
+        path === 'workflows/background.json'
+          ? {
+              data: JSON.stringify({ ...defaultGraph, extra }),
+              name: 'background.json',
+              isTemporary: false,
+              updatedAt
+            }
+          : null
+      )
+    }
+
+    it('loads its draft and saves it when Save is chosen in the close dialog', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.closeWorkflow(tab)).toBe(true)
+
+      expect(storedContent('workflows/background.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(workflowStore.openWorkflows).not.toContain(tab)
+      expect(mockAssert).not.toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow lost its edits before saving',
+        expect.anything()
+      )
+    })
+
+    it('writes nothing and says so when the edits are no longer available', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 50)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.closeWorkflow(tab)).toBe(true)
+
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(tab.isModified).toBe(false)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Unsaved changes were not saved'
+        })
+      ])
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow lost its edits before saving',
+        expect.objectContaining({
+          method: 'workflowService.loadForSave',
+          isPersisted: true
+        })
+      )
+    })
+
+    it('keeps refusing to save an active tab that has no loaded content', async () => {
+      const tab = unloadedModifiedTab('workflows/active.json')
+      workflowStore.activeWorkflow = fromAny(tab)
+      const load = vi.spyOn(tab, 'load')
+
+      await expect(service.saveWorkflow(tab)).rejects.toThrow(
+        'Cannot save a workflow before it is loaded'
+      )
+
+      expect(load).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
+    })
+
+    it('saves the draft the user edited when saved directly', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(await service.saveWorkflow(tab)).toBe(true)
+
+      expect(storedContent('workflows/background.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(tab.isModified).toBe(false)
+    })
+
+    it('saves the draft of an unloaded saved tab under a new name', async () => {
+      enableDrafts()
+      draftOf({ editedInDraft: true }, 200)
+      const tab = unloadedModifiedTab('workflows/background.json')
+
+      expect(
+        await service.saveWorkflowAs(tab, { filename: 'background copy' })
+      ).toBe(true)
+
+      expect(storedContent('workflows/background copy.json').extra).toEqual({
+        editedInDraft: true
+      })
+      expect(
+        vi
+          .mocked(api.storeUserData)
+          .mock.calls.some(([path]) => path === 'workflows/background.json')
+      ).toBe(false)
+    })
+
+    it('saves an unsaved tab that a reload restored without opening it', async () => {
+      const restored = workflowStore.createTemporary('Restored.json', {
+        ...blankGraph,
+        id: '7b1e2c3d-4f5a-4b6c-8d7e-9f0a1b2c3d4e'
+      })
+      workflowStore.openWorkflowsInBackground({ right: [restored.path] })
+      restored.isModified = true
+      expect(restored.isLoaded).toBe(false)
+      vi.mocked(useDialogService().prompt).mockResolvedValue('Restored')
+
+      expect(await service.closeWorkflow(restored)).toBe(true)
+
+      expect(storedContent('workflows/Restored.json').id).toBe(
+        '7b1e2c3d-4f5a-4b6c-8d7e-9f0a1b2c3d4e'
+      )
+      expect(mockAssert).not.toHaveBeenCalledWith(
+        false,
+        'Modified saved workflow lost its edits before saving',
+        expect.anything()
+      )
     })
   })
 })

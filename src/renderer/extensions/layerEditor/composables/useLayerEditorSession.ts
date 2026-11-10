@@ -1,3 +1,9 @@
+import type {
+  CompactSize,
+  Point2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { clamp } from 'es-toolkit'
 import { computed, reactive, ref } from 'vue'
 
@@ -18,10 +24,8 @@ import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
-  Rect,
   SceneNode,
-  Transform,
-  Vec2
+  Transform
 } from '@comfyorg/layer-editor/node'
 import { placedBounds } from '@comfyorg/layer-editor/render/bake'
 import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
@@ -187,7 +191,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     const node = activeNodeId.value ? engineNode(activeNodeId.value) : null
     return node && node.kind !== 'fill' ? 'layer' : 'background'
   })
-  const canvasSize = computed<{ w: number; h: number }>(() => {
+  const canvasSize = computed<CompactSize>(() => {
     void version.value
     const doc = editor.document()
     return { w: doc.width, h: doc.height }
@@ -653,7 +657,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     const height = clamp(Math.round(h), CANVAS_SIZE_MIN, CANVAS_SIZE_MAX)
     const before = { w: doc.width, h: doc.height }
     if (before.w === width && before.h === height) return
-    const apply = (v: { w: number; h: number }): void => {
+    const apply = (v: CompactSize): void => {
       const dx = Math.trunc((v.w - doc.width) / 2)
       const dy = Math.trunc((v.h - doc.height) / 2)
       doc.width = v.w
@@ -810,7 +814,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     editor.redo()
   }
 
-  function artboardPt(e: PointerEvent): { x: number; y: number } {
+  function artboardPt(e: PointerEvent): Point2D {
     return panZoom.screenToArtboard(e.clientX, e.clientY)
   }
 

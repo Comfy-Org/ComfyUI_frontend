@@ -4,9 +4,9 @@ import { computed } from 'vue'
 import type { useBillingRouting as realUseBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 
 const defaults: ReturnType<typeof realUseBillingRouting> = {
-  type: computed(() => 'legacy'),
-  shouldUseWorkspaceBilling: computed(() => false),
-  shouldUseUnifiedPricing: computed(() => false)
+  type: computed(() => 'workspace'),
+  shouldUseWorkspaceBilling: computed(() => true),
+  shouldUseUnifiedPricing: computed(() => true)
 }
 
 const billingRouting = { ...defaults }

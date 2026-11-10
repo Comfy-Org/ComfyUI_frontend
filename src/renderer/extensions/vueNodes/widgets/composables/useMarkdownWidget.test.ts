@@ -1,11 +1,16 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/types/domWidget'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import {
+  useDOMWidgetTestNodes,
+  stubWidgetValueCallbacks
+} from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const { canvasMock, reportErrorMock } = vi.hoisted(() => ({
   canvasMock: {
@@ -20,7 +25,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
@@ -35,15 +40,17 @@ function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
     name: 'note',
     default: defaultValue
   }
-  return useMarkdownWidget()(node, inputSpec) as DOMWidget<HTMLElement, string>
+  const widget = useMarkdownWidget()(node, inputSpec)
+  assert(isDOMWidget(widget))
+  return widget
 }
 
 describe('useMarkdownWidget', () => {
   function setup() {
     vi.clearAllMocks()
-    const node = createMockDOMWidgetNode()
+    const node = createDOMWidgetNode()
     const widget = createMarkdownWidget(node)
-    const callback = vi.fn<(value: string) => void>()
+    const callback = vi.fn<NonNullable<typeof widget.callback>>()
     widget.callback = callback
     const inputEl = widget.element
     const textarea = inputEl.querySelector('textarea')!
@@ -57,21 +64,36 @@ describe('useMarkdownWidget', () => {
     return { widget, inputEl, textarea, callback, parentKeydown }
   }
 
-  it('fires the widget callback on textarea input and change', () => {
-    const { textarea, callback } = setup()
+  it('fires the input and change listener callbacks independently of the value setter', () => {
+    const node = createDOMWidgetNode()
+    stubWidgetValueCallbacks(node)
+    const widget = createMarkdownWidget(node)
+    const textarea = widget.element.querySelector('textarea')!
+    const callback = vi.fn()
+    widget.callback = callback
     textarea.value = 'hello'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(callback).toHaveBeenCalledExactlyOnceWith('hello')
+    textarea.value = 'changed'
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
+    expect(callback).toHaveBeenLastCalledWith('changed')
+  })
+
+  it('fires the real widget callback once when its value is assigned', () => {
+    const { widget, textarea, callback } = setup()
+    widget.value = 'assigned'
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith('assigned')
+    expect(textarea.value).toBe('assigned')
   })
 
   it('renders Markdown links and tables', async () => {
-    const node = createMockDOMWidgetNode()
+    const node = createDOMWidgetNode()
     const widget = createMarkdownWidget(
       node,
       '[Comfy](https://www.comfy.org)\n\n| Name |\n| --- |\n| Comfy |'
     )
-    onTestFinished(() => widget.onRemove?.())
 
     await expect
       .poll(() => widget.element.querySelector('a')?.textContent)
@@ -80,9 +102,8 @@ describe('useMarkdownWidget', () => {
   })
 
   it('renders text edited before the editor finishes loading', async () => {
-    const node = createMockDOMWidgetNode()
+    const node = createDOMWidgetNode()
     const widget = createMarkdownWidget(node, 'default')
-    onTestFinished(() => widget.onRemove?.())
 
     const textarea = widget.element.querySelector('textarea')!
     textarea.value = '# Loaded later'
@@ -99,8 +120,7 @@ describe('useMarkdownWidget', () => {
     vi.mocked(createMarkdownEditor).mockImplementationOnce(() => {
       throw error
     })
-    const widget = createMarkdownWidget(createMockDOMWidgetNode())
-    onTestFinished(() => widget.onRemove?.())
+    createMarkdownWidget(createDOMWidgetNode())
 
     await vi.waitFor(() =>
       expect(reportErrorMock).toHaveBeenCalledWith(error, {

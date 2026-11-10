@@ -1,21 +1,21 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import {
   bindMultilineTextareaWidget,
   createMultilineInputElement
 } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
-import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isStringInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 function addMultilineWidget(
   node: LGraphNode,

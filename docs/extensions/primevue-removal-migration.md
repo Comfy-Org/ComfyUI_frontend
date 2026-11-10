@@ -45,4 +45,4 @@ release. Move to the theme variable now:
 | `--secondary-background`      | `--secondary`  |
 | `--component-node-background` | `--node`       |
 
-PrimeIcons are still loaded, so `pi pi-*` icon classes keep working.
+PrimeIcons are still loaded, so existing `pi pi-*` icon classes keep working, but they are being phased out. Don't add new uses.

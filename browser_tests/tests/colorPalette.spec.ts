@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   expectElementScreenshot,
   expectRegionScreenshot,
@@ -220,45 +221,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }
   )
 
-  test(
-    'Blood drips follow palette and motion preferences',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage }) => {
-      const { page } = comfyPage
-      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const drops = node.root.getByTestId('node-blood-drop')
-      const dripStyle = () =>
-        drops.first().evaluate((el) => {
-          const style = getComputedStyle(el)
-          return [style.animationName, style.pointerEvents]
-        })
-
-      await page.emulateMedia({ reducedMotion: 'no-preference' })
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'spooky')
-      await comfyPage.settings.setSetting(
-        'Comfy.Appearance.DisableAnimations',
-        false
-      )
-      await expect.poll(dripStyle).toEqual(['blood-fall', 'none'])
-
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'zombie')
-      await expect.poll(dripStyle).toEqual(['blood-fall', 'none'])
-
-      await page.emulateMedia({ reducedMotion: 'reduce' })
-      await expect.poll(dripStyle).toEqual(['none', 'none'])
-
-      await page.emulateMedia({ reducedMotion: 'no-preference' })
-      await comfyPage.settings.setSetting(
-        'Comfy.Appearance.DisableAnimations',
-        true
-      )
-      await expect.poll(dripStyle).toEqual(['none', 'none'])
-
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-      await expect(drops).toHaveCount(0)
-    }
-  )
-
   test.describe('Custom light palette', () => {
     test.use({
       initialSettings: {
@@ -284,6 +246,8 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           })
         )
         .toBe(true)
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+      await comfyPage.contextMenu.ariaMenu.evaluate(() => document.fonts.ready)
       await expectRegionScreenshot(
         comfyPage.page,
         [menuButton, comfyPage.contextMenu.ariaMenu],
@@ -319,6 +283,36 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'solarized')
     await expect.poll(getColor).not.toEqual(initialColor)
   })
+
+  test(
+    'Classic palette restyles @vue-nodes widget rows like LiteGraph',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const row = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'steps')
+      const field = row.getByTestId(TestIds.widgets.numberRow)
+      const { input, incrementButton } =
+        comfyPage.vueNodes.getInputNumberControls(row)
+      const incrementIcon = incrementButton.locator('i')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'classic')
+      await expect(field).toHaveCSS('height', '20px')
+      await expect(field).toHaveCSS('border-top-width', '1px')
+      await expect(field).toHaveCSS('border-top-left-radius', '9999px')
+      await expect(field).toHaveCSS('--node-icon-style', 'triangle')
+      await expect(incrementIcon).toHaveCSS('width', '10px')
+
+      await expect(input).toHaveValue('20')
+      await incrementButton.click()
+      await expect(input).toHaveValue('21')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect(field).toHaveCSS('height', '24px')
+      await expect(field).toHaveCSS('border-top-width', '0px')
+      await expect(field).toHaveCSS('border-top-left-radius', '6px')
+      await expect(field).toHaveCSS('--node-icon-style', 'chevron')
+      await expect(incrementIcon).toHaveCSS('width', '16px')
+    }
+  )
 })
 
 test.describe(

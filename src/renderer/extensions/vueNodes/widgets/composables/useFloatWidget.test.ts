@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
 vi.mock(import('@/scripts/app'))

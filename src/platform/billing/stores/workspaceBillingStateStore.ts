@@ -1,5 +1,4 @@
 import type {
-  BillingStatusResponse,
   SubscriptionTier,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
@@ -7,8 +6,6 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
-
-type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 interface WorkspaceBillingSummary {
   isSubscribed: boolean
@@ -23,12 +20,6 @@ export const useWorkspaceBillingStateStore = defineStore(
     const summaries = shallowRef<
       Readonly<Record<string, Partial<WorkspaceBillingSummary>>>
     >({})
-    const rails = shallowRef<Readonly<Record<string, BillingRail>>>({})
-
-    const activeWorkspaceBillingRail = computed(() => {
-      const id = workspace.activeWorkspaceId
-      return id ? (rails.value[id] ?? null) : null
-    })
 
     function getSummary(
       workspace: Pick<WorkspaceWithRole, 'id' | 'type' | 'subscription_tier'>
@@ -49,10 +40,6 @@ export const useWorkspaceBillingStateStore = defineStore(
       () => activeSummary.value?.isSubscribed ?? false
     )
 
-    function setWorkspaceBillingRail(id: string, rail: BillingRail): void {
-      rails.value = { ...rails.value, [id]: rail }
-    }
-
     function updateSummary(
       id: string,
       summary: Partial<WorkspaceBillingSummary>
@@ -65,7 +52,6 @@ export const useWorkspaceBillingStateStore = defineStore(
 
     function reset(): void {
       summaries.value = {}
-      rails.value = {}
     }
 
     watch(() => workspace.identityGeneration, reset, { flush: 'sync' })
@@ -74,8 +60,6 @@ export const useWorkspaceBillingStateStore = defineStore(
       getSummary,
       activeSummary,
       isWorkspaceSubscribed,
-      activeWorkspaceBillingRail,
-      setWorkspaceBillingRail,
       updateSummary
     }
   }

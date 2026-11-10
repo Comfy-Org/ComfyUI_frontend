@@ -1,5 +1,5 @@
 import { assert } from '@/base/assert'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   DocFrameClient,
@@ -143,6 +143,14 @@ export class LayoutFollowerBridge extends EventTarget {
   /** The higher of the last applied doc seq and the current subscribe's ack. */
   get lastSequence(): number {
     return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
+  }
+
+  /** True from a subscribe until its catch-up, if any, has been integrated. */
+  get isCatchingUp(): boolean {
+    return (
+      this.sentWorkflowId !== null &&
+      (this.ackSeq === null || this.catchUpPending)
+    )
   }
 
   get isSubscribeBaselineIntegrated(): boolean {

@@ -33,8 +33,9 @@ on:
         required: true
 
 concurrency:
-  group: publish-design-system-${{ inputs.version }}
+  group: publish-design-system
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish_design_system:
@@ -153,10 +154,19 @@ jobs:
         if: steps.check_npm.outputs.exists == 'false'
         run: scripts/cicd/check-design-system-consumer.sh
 
+      - name: Resolve dist-tag
+        id: dist_tag
+        if: steps.check_npm.outputs.exists == 'false'
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          DIST_TAG: ${{ inputs.dist_tag }}
+          DIST_TAG: ${{ steps.dist_tag.outputs.tag }}
         run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts
         working-directory: packages/design-system
