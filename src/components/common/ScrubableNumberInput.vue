@@ -6,7 +6,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
+            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
             useWidgetHeight(),
             className
           )

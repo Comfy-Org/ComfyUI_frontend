@@ -55,7 +55,14 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="grid min-w-0 grid-cols-1">
+                <div
+                  :class="
+                    cn(
+                      'grid min-w-0 grid-cols-1',
+                      row.rowSize === 'min-content' && 'self-center'
+                    )
+                  "
+                >
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"

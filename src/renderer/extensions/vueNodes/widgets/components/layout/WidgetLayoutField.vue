@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useHideLayoutField } from '@/types/widgetTypes'
+import { useHideLayoutField, useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
@@ -27,7 +27,7 @@ const hideLayoutField = useHideLayoutField()
     :class="
       cn(
         'relative isolate flex min-w-0 items-center rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
-        fullWidthControl && 'py-2',
+        fullWidthControl ? 'py-2' : useWidgetHeight(),
         !noBorder && widget.borderStyle,
         rootClass
       )
