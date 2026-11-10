@@ -13,7 +13,7 @@ import {
 } from './globalSettingsApi'
 
 vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
@@ -53,7 +53,7 @@ describe('Global Settings transport', () => {
 
       await expect(getGlobalSetting(key, authHeader)).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings/${key}`,
+        `${cloud ? '' : 'https://cloud.comfy.test'}/api/global-settings/${key}`,
         expect.objectContaining({ cache: 'no-store', headers: authHeader }),
         false
       )
@@ -71,7 +71,7 @@ describe('Global Settings transport', () => {
         setGlobalSetting({ key, value: true }, authHeader)
       ).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings`,
+        `${cloud ? '' : 'https://cloud.comfy.test'}/api/global-settings`,
         expect.objectContaining({
           method: 'POST',
           headers: { ...authHeader, 'Content-Type': 'application/json' },
