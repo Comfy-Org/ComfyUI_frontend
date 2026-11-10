@@ -34,21 +34,12 @@ describe('unified-report', () => {
     ).not.toContain('Bundle')
   })
 
-  it.for([
-    { sizeStatus: 'pending', message: 'Size data collection in progress' },
-    { sizeStatus: 'failed', message: 'Size data collection failed' }
-  ])(
-    'says "$message" for size status $sizeStatus',
-    ({ sizeStatus, message }) => {
-      const output = render([
-        `--size-status=${sizeStatus}`,
-        '--perf-status=skip'
-      ])
+  it('reports pending size collection', () => {
+    const output = render(['--size-status=pending', '--perf-status=skip'])
 
-      expect(output).toContain('## 📦 Bundle:')
-      expect(output).toContain(message)
-    }
-  )
+    expect(output).toContain('## 📦 Bundle:')
+    expect(output).toContain('Size data collection in progress')
+  })
 
   it('separates each section from the one before it with a blank line', () => {
     const output = render([

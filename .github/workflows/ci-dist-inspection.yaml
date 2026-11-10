@@ -1,4 +1,5 @@
 name: 'CI: Dist Inspection'
+run-name: 'Dist inspection for ${{ github.event.pull_request.number || github.ref }}'
 
 on:
   pull_request:
@@ -22,6 +23,8 @@ jobs:
       should-run: ${{ steps.changes.outputs.should-run-source }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -31,11 +34,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      # Awaited last so a license failure does not skip the dist checks.
       - name: Validate production dependency licenses
         id: licenses
         background: true
@@ -43,16 +47,6 @@ jobs:
           set -euo pipefail
           echo '🔍 Checking production dependency licenses...'
 
-          # Use license-checker-rseidelsohn (actively maintained fork, handles monorepos)
-          # Exclude internal @comfyorg packages from license check.
-          # NOTE on @comfyorg/account-core: it is `private: true`, and license-checker
-          # reports a private package as UNLICENSED regardless of its `license`
-          # field, so it must stay in this exclusion list. The `license: MIT`
-          # metadata is added ahead of the FE-2171 publish work, which unsets
-          # `private` and removes this exclusion — at which point this check
-          # will validate the account-core license directly. This note covers account-core
-          # only; the other entries here are excluded for their own reasons.
-          # Run in if condition to capture exit code
           if pnpx license-checker-rseidelsohn@4 \
             --production \
             --summary \
@@ -91,7 +85,6 @@ jobs:
                 exit 1
               fi
 
-              # Check for ABCROM and PP Formula font files
               if find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
                 \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \) \
                 -print -quit | grep -q .; then

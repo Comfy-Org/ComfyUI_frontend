@@ -43,6 +43,7 @@ jobs:
           workflow-id: ci-dist-inspection.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
           event: pull_request
+          run-name: 'Dist inspection for ${{ steps.pr-meta.outputs.number }}'
           artifact-name: size-data
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}

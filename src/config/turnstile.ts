@@ -26,10 +26,6 @@ const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
  *   still renders during a remote-config gap rather than silently disappearing.
  */
 export function getTurnstileSiteKey(): string {
-  // Gate on the __DISTRIBUTION__ build define rather than the cross-module
-  // `isCloud` const so dead-code elimination strips the real per-env sitekeys
-  // from OSS/desktop bundles — same idiom as initTelemetry.ts, enforced by the
-  // dist scan in ci-dist-inspection.yaml.
   const isCloudBuild = __DISTRIBUTION__ === 'cloud'
   if (!isCloudBuild) {
     return import.meta.env.DEV ? TURNSTILE_TEST_SITE_KEY : ''
