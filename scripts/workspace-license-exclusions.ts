@@ -49,31 +49,37 @@ export function generateWorkspaceLicenseExclusions(
     if (optional && !existsSync(dependency.path)) return
     const path = realpathSync(dependency.path)
 
-    const {
-      name,
-      dependencies,
-      optionalDependencies,
-      peerDependencies,
-      peerDependenciesMeta
-    } = manifestSchema.parse(
+    const manifest = manifestSchema.parse(
       JSON.parse(readFileSync(join(path, 'package.json'), 'utf8'))
     )
+    const { name, optionalDependencies } = manifest
     const workspacePath = workspacePaths.get(name)
     if (workspacePath && workspacePath !== path) {
       throw new Error(
         `Cannot exclude workspace package ${name}: external production dependency at ${path} shares its name with ${workspacePath}`
       )
     }
-    const expandManifest = !expandedManifests.has(path)
-    expandedManifests.add(path)
-
     for (const [name, child] of Object.entries(dependency.dependencies)) {
       visit(child, Object.hasOwn(optionalDependencies, name))
     }
     for (const child of Object.values(dependency.optionalDependencies))
       visit(child, true)
 
-    if (!expandManifest) return
+    visitInstalledDependencies(path, manifest)
+  }
+
+  function visitInstalledDependencies(
+    path: string,
+    {
+      dependencies,
+      optionalDependencies,
+      peerDependencies,
+      peerDependenciesMeta
+    }: z.infer<typeof manifestSchema>
+  ): void {
+    if (expandedManifests.has(path)) return
+    expandedManifests.add(path)
+
     for (const name of Object.keys({
       ...peerDependencies,
       ...dependencies,
