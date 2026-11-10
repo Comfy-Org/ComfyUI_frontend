@@ -410,7 +410,7 @@ overrides:
   minimatch@^9.0.0: ^9.0.7
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
-  undici@^7.0.0: ^7.29.0
+  undici@^7.0.0: ^7.30.1
   dompurify@^3.0.0: ^3.4.17
   js-yaml@^4.0.0: ^4.3.1
   js-yaml@^3.0.0: ^3.15.1
@@ -811,7 +811,7 @@ importers:
         version: 3.2.0
       openai:
         specifier: 'catalog:'
-        version: 7.45.1(undici@7.29.0)(ws@8.22.0)(zod@4.6.7)
+        version: 7.45.1(ws@8.22.0)(zod@4.6.7)
       oxfmt:
         specifier: 'catalog:'
         version: 0.75.0
@@ -7400,7 +7400,7 @@ packages:
       '@smithy/hash-node': '>=4.3.0 <5'
       '@smithy/signature-v4': '>=5.4.0 <6'
       google-auth-library: '>=9.15.1 <12'
-      undici: ^7.29.0
+      undici: ^7.30.1
       ws: ^8.21.0
       zod: ^3.25 || ^4.0
     peerDependenciesMeta:
@@ -8431,10 +8431,6 @@ packages:
 
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
-
-  undici@7.29.0:
-    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
-    engines: {node: '>=20.18.1'}
 
   undici@8.12.3:
     resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
@@ -14558,9 +14554,8 @@ snapshots:
       powershell-utils: 0.2.1
       wsl-utils: 1.0.1
 
-  openai@7.45.1(undici@7.29.0)(ws@8.22.0)(zod@4.6.7):
+  openai@7.45.1(ws@8.22.0)(zod@4.6.7):
     optionalDependencies:
-      undici: 7.29.0
       ws: 8.22.0
       zod: 4.6.7
 
@@ -15833,9 +15828,6 @@ snapshots:
   undici-types@8.12.3: {}
 
   undici-types@8.9.0: {}
-
-  undici@7.29.0:
-    optional: true
 
   undici@8.12.3: {}
 
