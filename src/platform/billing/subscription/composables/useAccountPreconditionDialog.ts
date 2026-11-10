@@ -45,11 +45,6 @@ export function useAccountPreconditionDialog() {
   function showTopUpForExhaustedBalance(
     context: AccountPreconditionContext
   ): void {
-    // The server just declared the balance exhausted; there is no push or
-    // polling for billing state, so refresh it here to converge
-    // hasFunds-keyed surfaces such as the credits-exhausted banner. The
-    // refresh is best-effort: allSettled keeps a flaky billing API from
-    // surfacing as unhandled rejections.
     const { fetchStatus, fetchBalance } = useBillingContext()
     void Promise.allSettled([fetchStatus(), fetchBalance()])
     void showTopUpCreditsDialog({
