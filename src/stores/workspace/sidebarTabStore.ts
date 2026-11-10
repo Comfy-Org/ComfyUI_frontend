@@ -7,6 +7,7 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])
+  const sourceExtensionNames = ref<Record<string, string>>({})
   const activeSidebarTabId = ref<string | null>(null)
 
   const activeSidebarTab = computed<SidebarTabExtension | null>(() => {
@@ -20,10 +21,34 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
 
+  let registeringExtensionName: string | undefined
+
+  /**
+   * Attributes tabs registered synchronously inside `run` to `extensionName`,
+   * whichever `app` reference the extension registers them through.
+   */
+  const attributeRegistrationsTo = <T>(
+    extensionName: string,
+    run: () => T
+  ): T => {
+    const previous = registeringExtensionName
+    registeringExtensionName = extensionName
+    try {
+      return run()
+    } finally {
+      registeringExtensionName = previous
+    }
+  }
+
   const registerSidebarTab = (
     tab: SidebarTabExtension,
-    options?: { prepend?: boolean }
+    options?: { prepend?: boolean },
+    sourceExtensionName?: string
   ) => {
+    const source = sourceExtensionName ?? registeringExtensionName
+    if (source) {
+      sourceExtensionNames.value[tab.id] = source
+    }
     sidebarTabs.value = options?.prepend
       ? [tab, ...sidebarTabs.value]
       : [...sidebarTabs.value, tab]
@@ -86,14 +111,19 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       if (activeSidebarTabId.value === id) {
         activeSidebarTabId.value = null
       }
+      delete sourceExtensionNames.value[id]
     }
   }
+
+  const getSourceExtensionName = (id: string) => sourceExtensionNames.value[id]
 
   return {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
+    attributeRegistrationsTo,
+    getSourceExtensionName,
     registerSidebarTab,
     unregisterSidebarTab
   }

@@ -59,13 +59,19 @@ function guardApiRequests(
 
 export const networkIsolationFixture = base.extend<{
   liveCloudBillingConfig: LiveCloudBillingConfig | undefined
+  liveNetworkOrigins: string[]
   networkPolicy: NetworkPolicy
   toast: ToastHelper
 }>({
   serviceWorkers: 'block',
   liveCloudBillingConfig: [undefined, { option: true }],
+  liveNetworkOrigins: [[], { option: true }],
   networkPolicy: [
-    async ({ baseURL, liveCloudBillingConfig }, use, testInfo) => {
+    async (
+      { baseURL, liveCloudBillingConfig, liveNetworkOrigins },
+      use,
+      testInfo
+    ) => {
       const frontend =
         process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
       const origins = liveCloudBillingConfig
@@ -82,7 +88,8 @@ export const networkIsolationFixture = base.extend<{
               frontend,
               baseURL,
               process.env.PLAYWRIGHT_SETUP_API_URL,
-              process.env.DEV_SERVER_COMFYUI_URL
+              process.env.DEV_SERVER_COMFYUI_URL,
+              ...liveNetworkOrigins
             ].flatMap((url) => (url ? [new URL(url).origin] : []))
           )
       const unexpected = new Set<string>()
@@ -98,7 +105,9 @@ export const networkIsolationFixture = base.extend<{
         liveCloudBillingConfig ? blocked.filter(isReportedViolation) : blocked,
         liveCloudBillingConfig
           ? 'Forbidden live Cloud requests'
-          : 'Unexpected external requests. Add a local mock.'
+          : liveNetworkOrigins.length > 0
+            ? 'Unexpected external requests during a live test'
+            : 'Unexpected external requests. Add a local mock.'
       ).toEqual([])
     },
     { auto: true }
@@ -123,7 +132,13 @@ export const networkIsolationFixture = base.extend<{
     restore()
   },
   context: async (
-    { context, baseURL, networkPolicy, liveCloudBillingConfig },
+    {
+      context,
+      baseURL,
+      networkPolicy,
+      liveCloudBillingConfig,
+      liveNetworkOrigins
+    },
     use
   ) => {
     const { origins, unexpected } = networkPolicy
@@ -137,7 +152,7 @@ export const networkIsolationFixture = base.extend<{
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (origins.has(url.origin)) {
-        await route.continue()
+        await route.fallback()
         return
       }
       unexpected.add(getBlockedRequestViolation(url, route.request().method()))
@@ -151,6 +166,11 @@ export const networkIsolationFixture = base.extend<{
         await socket.close()
       }
     )
+    if (liveNetworkOrigins.length > 0) {
+      await use(context)
+      restore()
+      return
+    }
     await context.route('https://huggingface.co/**/resolve/**', (route) =>
       route.request().method() === 'HEAD'
         ? route.fulfill({ status: 200, body: '' })

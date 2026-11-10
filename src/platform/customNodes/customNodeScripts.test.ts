@@ -13,27 +13,95 @@ describe('shouldLoadCustomNodeScript', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, true)).toBe(false)
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: true })
+      ).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, false)).toBe(true)
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: false })
+      ).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadCustomNodeScript('/extensions/core/foo.js', false)).toBe(
-      false
-    )
+    expect(
+      shouldLoadCustomNodeScript('/extensions/core/foo.js', {
+        isCloudBuild: false
+      })
+    ).toBe(false)
   })
 
   it('loads other extensions', () => {
     expect(
-      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', true)
+      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: true
+      })
     ).toBe(true)
+  })
+
+  it('leaves malformed extension entries to the isolated import failure path', () => {
+    expect(
+      shouldLoadCustomNodeScript('http://', {
+        isCloudBuild: false,
+        disabledExtensionPaths: ['/extensions/agent-cushions/']
+      })
+    ).toBe(true)
+  })
+
+  it.for([
+    { extension: '/extensions/agent-cushions/main.js', expected: false },
+    {
+      extension: '/extensions/agent-cushions/nested/panel.js',
+      expected: false
+    },
+    { extension: '/extensions/agent-cushions-extra/main.js', expected: true }
+  ])(
+    'admits $extension as $expected with a disabled extension path',
+    ({ extension, expected }) => {
+      expect(
+        shouldLoadCustomNodeScript(extension, {
+          isCloudBuild: false,
+          disabledExtensionPaths: ['/extensions/agent-cushions/']
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it('skips every custom extension during a safe boot', () => {
+    expect(
+      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: false,
+        disableAllCustomExtensions: true
+      })
+    ).toBe(false)
+  })
+})
+
+describe('loadCustomNodeScripts', () => {
+  it('keeps disabled scripts inert on the CPU-reading import path', async () => {
+    const { loadCustomNodeScripts } = await import('./customNodeScripts')
+    const { api } = await import('@/scripts/api')
+    const executed: string[] = []
+    vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    const attempt = crypto.randomUUID()
+    vi.spyOn(api, 'fileURL').mockImplementation(
+      (script) =>
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})#${attempt}`
+    )
+
+    await loadCustomNodeScripts(
+      ['/extensions/blocked/main.js', '/extensions/enabled/main.js'],
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' }),
+      { disabledExtensionPaths: ['/extensions/blocked/'] }
+    )
+
+    expect(executed).toEqual(['/extensions/enabled/main.js'])
   })
 })
 
@@ -66,7 +134,7 @@ describe('reportCustomNodeLoadFailures', () => {
     assert(cause instanceof AggregateError)
     expect(cause.message).toBe('Error loading extensions')
     expect(cause.stack).toContain(
-      `Failed extensions: ${BROKEN}, /extensions/b/b.js`
+      `Failed extensions: ${BROKEN}, /extensions/b/b.js\nFailed extension: ${BROKEN}: Cannot find module '${BROKEN}'\nFailed extension: /extensions/b/b.js: Cannot find module '/extensions/b/b.js'`
     )
     expect(options).toMatchObject({
       errorType: 'error_loading_extension',
@@ -90,6 +158,44 @@ describe('reportCustomNodeLoadFailures', () => {
         }
       ]
     })
+  })
+
+  it.for([
+    "Unexpected token '}'",
+    'Unexpected end of input',
+    'Unexpected end of script',
+    'unexpected garbage after module'
+  ])(
+    'attributes a module that does not parse (%s) to its extension path',
+    (message) => {
+      const ext = '/extensions/comfyui-pack/js/guide.js'
+
+      reportCustomNodeLoadFailures([{ ext, error: new SyntaxError(message) }])
+
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [{ ext, message, stack: expect.any(String) }]
+      )
+    }
+  )
+
+  it('strips query strings from a failure message before naming it in the stack', () => {
+    const ext = '/extensions/comfyui-pack/js/guide.js'
+
+    reportCustomNodeLoadFailures([
+      {
+        ext,
+        error: new Error(
+          'Failed to load https://cdn.example.com/guide.js?token=secret'
+        )
+      }
+    ])
+
+    const [cause] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof AggregateError)
+    expect(cause.stack).toContain(
+      `Failed extension: ${ext}: Failed to load https://cdn.example.com/guide.js`
+    )
+    expect(cause.stack).not.toContain('secret')
   })
 
   it('keeps a batch at the cap untruncated', () => {

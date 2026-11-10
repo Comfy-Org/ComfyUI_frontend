@@ -1,7 +1,7 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -19,8 +19,8 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { useApp } from '@/scripts/appInstance'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'

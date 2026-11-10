@@ -226,7 +226,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.personalWorkspace).toBeNull()
       expect(store.isInPersonalWorkspace).toBe(false)
       expect(store.sharedWorkspaces).toEqual([])
-      expect(store.ownedWorkspacesCount).toBe(0)
       expect(store.canCreateWorkspace).toBe(true)
       expect(store.members).toEqual([])
       expect(store.pendingInvites).toEqual([])
@@ -634,19 +633,21 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
     })
 
-    it('clears cached billing rails when identity state is reset', async () => {
+    it('clears cached billing summaries when identity state is reset', async () => {
       const store = useTeamWorkspaceStore()
       const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
+      billing.updateSummary(mockPersonalWorkspace.id, {
+        subscriptionPlan: 'monthly'
+      })
+      expect(billing.activeSummary?.subscriptionPlan).toBe('monthly')
       expect(store.identityGeneration).toBe(0)
 
       store.resetForIdentityChange()
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
-      expect(billing.activeWorkspaceBillingRail).toBeNull()
+      expect(billing.activeSummary?.subscriptionPlan).toBeNull()
       expect(store.identityGeneration).toBe(1)
     })
 
@@ -864,10 +865,7 @@ describe('useTeamWorkspaceStore', () => {
         }
       )
       const store = useTeamWorkspaceStore()
-      const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
@@ -881,12 +879,8 @@ describe('useTeamWorkspaceStore', () => {
       ).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
-      expect(billing.activeWorkspaceBillingRail).toBeNull()
       expect(store.workspaceTransitionGeneration).toBe(1)
       expect(store.identityGeneration).toBe(0)
-
-      billing.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
-      expect(billing.activeWorkspaceBillingRail).toBe('metronome')
     })
 
     it('ignores an overlapping local switch', async () => {
@@ -1507,21 +1501,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.sharedWorkspaces[0].id).toBe(mockTeamWorkspace.id)
     })
 
-    it('ownedWorkspacesCount counts owned workspaces', async () => {
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [
-          mockPersonalWorkspace,
-          mockTeamWorkspace,
-          mockMemberWorkspace
-        ]
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.ownedWorkspacesCount).toBe(2)
-    })
-
     it.for([
       { canCreate: false, expected: false },
       { canCreate: true, expected: true },
@@ -1551,33 +1530,45 @@ describe('useTeamWorkspaceStore', () => {
 
     it.for([
       {
-        reason: 'organization',
+        reason: 'organization_managed',
         response: {
-          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
-          default_workspace_id: mockTeamWorkspace.id,
-          can_create_workspace: false
+          workspaces: [mockTeamWorkspace],
+          can_create_workspace: false,
+          max_owned_workspaces: 10,
+          denied_reasons: { can_create_workspace: 'organization_managed' }
+        }
+      },
+      {
+        reason: 'owned_workspace_limit',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false,
+          max_owned_workspaces: 25,
+          denied_reasons: { can_create_workspace: 'owned_workspace_limit' }
         }
       },
       {
         reason: 'unknown',
         response: {
-          workspaces: [mockPersonalWorkspace, ...ownedTeams(9)],
-          can_create_workspace: false
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          default_workspace_id: mockTeamWorkspace.id,
+          can_create_workspace: false,
+          max_owned_workspaces: 10
         }
       },
       {
         reason: 'unknown',
         response: {
           workspaces: [mockPersonalWorkspace],
-          can_create_workspace: false
+          can_create_workspace: false,
+          max_owned_workspaces: 10,
+          denied_reasons: {
+            can_create_workspace: 'a_reason_this_build_predates'
+          }
         }
-      },
-      {
-        reason: 'limit',
-        response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
       }
-    ])(
-      'names the $reason refusal from the workspace list',
+    ] as const)(
+      'names the served $reason refusal',
       async ({ reason, response }) => {
         mockWorkspaceApi.list.mockResolvedValue(response)
 
@@ -1586,29 +1577,40 @@ describe('useTeamWorkspaceStore', () => {
 
         expect(store.canCreateWorkspace).toBe(false)
         expect(store.createWorkspaceRefusal).toBe(reason)
+        expect(store.maxOwnedWorkspaces).toBe(response.max_owned_workspaces)
       }
     )
 
-    it('canCreateWorkspace respects limit', async () => {
-      const manyWorkspaces = Array.from({ length: 10 }, (_, i) => ({
-        id: `ws-owned-${i}`,
-        name: `Owned ${i}`,
-        type: 'team' as const,
-        role: 'owner' as const,
-        created_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`,
-        joined_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`
-      }))
+    it.for([
+      {
+        name: 'a denial reason beside can_create_workspace true',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: true,
+          max_owned_workspaces: 10,
+          denied_reasons: { can_create_workspace: 'owned_workspace_limit' }
+        }
+      },
+      {
+        name: 'an owned count past the served limit',
+        response: {
+          workspaces: [mockPersonalWorkspace, ...ownedTeams(11)],
+          can_create_workspace: true,
+          max_owned_workspaces: 10
+        }
+      }
+    ] as const)(
+      'offers creation when the server allows it despite $name',
+      async ({ response }) => {
+        mockWorkspaceApi.list.mockResolvedValue(response)
 
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, ...manyWorkspaces]
-      })
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
 
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.ownedWorkspacesCount).toBe(11)
-      expect(store.canCreateWorkspace).toBe(false)
-    })
+        expect(store.canCreateWorkspace).toBe(true)
+        expect(store.createWorkspaceRefusal).toBeNull()
+      }
+    )
   })
 
   describe('overlapping member and invite reads', () => {
@@ -2669,6 +2671,104 @@ describe('useTeamWorkspaceStore', () => {
       const store = useTeamWorkspaceStore()
 
       await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+    })
+
+    it('initializes again when the host session is announced after a failed start', async () => {
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('initializes again when the host session is announced while a start that then fails is loading', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveList = resolve
+          })
+        )
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      const starting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await starting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('keeps the host change for a restarted start when the start it replaced settles first', async () => {
+      const pending = () => {
+        let resolve: (value: unknown) => void = () => {}
+        const promise = new Promise((r) => {
+          resolve = r
+        })
+        return { promise, resolve }
+      }
+      const replaced = pending()
+      const restarted = pending()
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(replaced.promise)
+        .mockReturnValueOnce(restarted.promise)
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      void store.initialize().catch(() => undefined)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      )
+      store.resetForIdentityChange()
+      const restarting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      )
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      replaced.resolve({ workspaces: [mockPersonalWorkspace] })
+      await Promise.resolve()
+      restarted.resolve({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await restarting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('reports an automatic retry that fails again', async () => {
+      vi.mocked(reportError).mockImplementation(() => undefined)
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(NoWorkspaceAccessError),
+          expect.objectContaining({
+            errorType: 'error_reinitializing_workspaces_for_desktop_host'
+          })
+        )
+      )
       expect(store.initState).toBe('error')
     })
 

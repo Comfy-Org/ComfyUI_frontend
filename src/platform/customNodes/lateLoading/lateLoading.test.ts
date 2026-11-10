@@ -12,7 +12,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
@@ -966,11 +966,11 @@ describe('late custom node loading', () => {
         kind: 'warning',
         title: "Some custom nodes didn't start",
         description: 'Reload the page to turn on: a-pack',
-        action: expect.objectContaining({ label: 'Reload' })
+        actions: [expect.objectContaining({ label: 'Reload' })]
       })
     ])
     expect(reload).not.toHaveBeenCalled()
-    useToast().toasts[0].action?.onClick()
+    useToast().toasts[0].actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual([
@@ -1097,7 +1097,8 @@ describe('naming the CPU server step', () => {
     )
     provideCurrentUser(() => ({
       userEmail: computed(() => null),
-      isApiKeyLogin: computed(() => true)
+      isApiKeyLogin: computed(() => true),
+      isLoggedIn: computed(() => true)
     }))
     await useTeamWorkspaceStore().initialize()
   })

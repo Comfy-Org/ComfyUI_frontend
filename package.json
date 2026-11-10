@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.60.0",
+  "version": "1.61.0",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "command-locales:check": "tsx scripts/check-command-locales.ts",
     "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
     "follower-document-mutations:check": "tsx scripts/check-follower-document-mutations.ts",
@@ -97,6 +98,7 @@
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
+    "@comfyorg/api-client": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",
@@ -109,9 +111,11 @@
     "@comfyorg/mask-editor": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/registry-types": "workspace:*",
+    "@comfyorg/settings-core": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@comfyorg/telemetry": "workspace:*",
+    "@comfyorg/theme-core": "workspace:*",
     "@comfyorg/viewport3d": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
     "@datadog/browser-rum": "catalog:",
@@ -208,7 +212,7 @@
     "eslint-plugin-vue": "catalog:",
     "fallow": "catalog:",
     "fast-check": "catalog:",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "catalog:",
     "globals": "catalog:",
     "happy-dom": "catalog:",
     "husky": "catalog:",
@@ -246,11 +250,11 @@
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
     "yaml": "catalog:",
-    "zip-dir": "^2.0.0"
+    "zip-dir": "catalog:"
   },
   "engines": {
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.13.1"
+  "packageManager": "pnpm@11.28.10"
 }

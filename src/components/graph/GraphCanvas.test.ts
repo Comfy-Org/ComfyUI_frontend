@@ -92,6 +92,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  loadCustomThemePresets: vi.fn(async () => {}),
   setDirty: vi.fn()
 }))
 
@@ -179,8 +180,12 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+vi.mock<unknown>(import('@/platform/theme/themeService'), () => ({
+  useThemeService: () => ({
+    setActiveTheme: vi.fn(),
+    loadCustomThemePresets: mocks.loadCustomThemePresets
+  }),
+  useLegacyColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -256,6 +261,37 @@ async function mountGraphCanvas(
     await Promise.resolve()
   }
 }
+
+it('keeps the canvas unavailable until saved custom themes are ready', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+
+  await mountGraphCanvas()
+
+  expect(useCanvasStore().canvas).toBeNull()
+  finishLoading()
+  await vi.waitFor(() => expect(useCanvasStore().canvas).toBe(app.canvas))
+})
+
+it('does not expose a disposed canvas after custom themes finish loading', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+  await mountGraphCanvas()
+
+  cleanup()
+  finishLoading()
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(useCanvasStore().canvas).toBeNull()
+})
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
@@ -982,9 +1018,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',

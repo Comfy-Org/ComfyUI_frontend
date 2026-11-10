@@ -118,6 +118,19 @@ describe('fetchOAuthConsentChallenge', () => {
     )
   })
 
+  it.for([
+    { field: 'user_email', value: { address: 'a@example.com' } },
+    { field: 'user_display_name', value: true }
+  ])('rejects a non-string $field', async ({ field, value }) => {
+    vi.mocked(fetch).mockResolvedValue(
+      okResponse({ ...validChallenge, [field]: value })
+    )
+
+    await expect(fetchOAuthConsentChallenge('abc')).rejects.toThrow(
+      'OAuth consent challenge is invalid'
+    )
+  })
+
   it('rejects when top-level fields are missing', async () => {
     vi.mocked(fetch).mockResolvedValue(
       okResponse({ ...validChallenge, csrf_token: undefined })

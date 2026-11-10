@@ -16,12 +16,22 @@ interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
   source?: PaymentIntentSource
+  creditsLocked?: boolean
+  refusalType?: string
+  runRefused?: boolean
 }
 
-// Routes a resolved account precondition to its dedicated modal. This is the
-// single seam where FE-978 attaches role-aware (member vs owner) subscription
-// content: the `subscription` branch resolves to the subscription dialog, whose
-// inner content FE-978 specializes for cancelled/inactive team states.
+function subscriptionDialogOptions(context: AccountPreconditionContext) {
+  return {
+    reason: context.source ?? 'subscription_required',
+    ...(context.creditsLocked !== undefined && {
+      creditsLocked: context.creditsLocked
+    }),
+    ...(context.refusalType && { refusalType: context.refusalType }),
+    ...(context.runRefused && { runRefused: true })
+  }
+}
+
 export function useAccountPreconditionDialog() {
   const { showApiNodesSignInDialog } = useAuthDialogs()
   const { showSubscriptionRequiredDialog, showTopUpCreditsDialog } =
@@ -93,9 +103,9 @@ export function useAccountPreconditionDialog() {
         )
         return true
       case 'subscription':
-        return showSubscriptionRequiredDialog({
-          reason: context.source ?? 'subscription_required'
-        })
+        return showSubscriptionRequiredDialog(
+          subscriptionDialogOptions(context)
+        )
       case 'credits':
         showTopUpForExhaustedBalance(context)
         return true

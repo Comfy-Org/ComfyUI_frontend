@@ -19,7 +19,8 @@ import {
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,
@@ -186,6 +187,10 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import {
+  captureSerialisedInputLinks,
+  pruneDanglingSubgraphLinks
+} from './subgraph/pruneDanglingSubgraphLinks'
 import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -478,21 +483,57 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     ordered.length !== adapters.size
   ) {
     const liveNodes = [...adapters.values()]
-    const missingState = ordered.find((state) => !adapters.has(state.id))
-    let missingAdapter: LGraphNode | undefined
-    if (missingState === undefined) {
-      const stateIds = new Set(ordered.map((state) => state.id))
-      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
-    }
-    const mismatch = missingState
-      ? `stored node ${missingState.id} has no live adapter`
-      : missingAdapter
-        ? `live node ${missingAdapter.id} has no stored state`
-        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    const stateIds = new Set(ordered.map((state) => state.id))
+    const storedOnlyState = ordered.find((state) => !adapters.has(state.id))
+    const liveOnlyAdapter = liveNodes.find(
+      (adapter) => !stateIds.has(adapter.id)
+    )
+    const mismatchDetails = storedOnlyState
+      ? liveOnlyAdapter
+        ? {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter; live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'stored_and_live_diverged',
+            storedOnlyNodeId: storedOnlyState.id,
+            storedOnlyStateGraphId: storedOnlyState.graphId,
+            liveOnlyNodeId: liveOnlyAdapter.id,
+            liveOnlyNodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            liveOnlyStateGraphId: liveOnlyAdapter._state.graphId,
+            liveOnlyRegistrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            liveOnlyRegistrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter`,
+            mismatchKind: 'stored_without_live_adapter',
+            nodeId: storedOnlyState.id,
+            stateGraphId: storedOnlyState.graphId
+          }
+      : liveOnlyAdapter
+        ? {
+            mismatch: `live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'live_without_stored_state',
+            nodeId: liveOnlyAdapter.id,
+            nodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            stateGraphId: liveOnlyAdapter._state.graphId,
+            registrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            registrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `${ordered.length} stored nodes do not match ${adapters.size} live nodes`,
+            mismatchKind: 'count_mismatch'
+          }
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
-      context: { graphId: owner.id, mismatch }
+      tags: { outcome: 'degraded' },
+      context: {
+        graphId: owner.id,
+        rootGraphId: owner.rootGraph.id,
+        ...mismatchDetails
+      }
     })
     const nodes = sortNodes
       ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
@@ -3624,9 +3665,11 @@ export class Subgraph
     keep_old?: boolean
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
+    const serialisedInputLinks = captureSerialisedInputLinks(normalized.nodes)
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)
+    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
     return r
   }
 

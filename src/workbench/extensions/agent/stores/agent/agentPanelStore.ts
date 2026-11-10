@@ -1,3 +1,4 @@
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
@@ -31,6 +32,7 @@ import type {
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -83,6 +85,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
@@ -103,6 +106,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   const fundsRecheckFinished = new Map<number, () => void>()
@@ -110,6 +114,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -242,6 +247,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     teardownReported = false
     reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
@@ -412,6 +418,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
     view,
     interruptHistorySelection,
     flagsSettled,
@@ -420,6 +427,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
@@ -436,6 +444,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingErrorContext,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,

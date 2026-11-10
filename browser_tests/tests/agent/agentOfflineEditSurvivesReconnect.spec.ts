@@ -9,6 +9,55 @@ test.describe(
     test.describe.configure({ timeout: 180_000 })
 
     test(
+      'win a register the agent wrote during the outage',
+      {
+        annotation: [
+          {
+            type: 'issue',
+            description:
+              'https://linear.app/comfyorg/issue/PM-2118/local-manual-parameter-edits-revert-after-agent-turns-even-when-only'
+          }
+        ]
+      },
+      async ({ offlineEdit }) => {
+        await test.step('the agent builds two prompt nodes', async () => {
+          await offlineEdit.buildAgentPromptNodes()
+          await expect
+            .poll(() => offlineEdit.canvasPromptValues())
+            .toEqual(offlineEdit.agentPrompts)
+        })
+
+        const subscribesBeforeOutage = offlineEdit.subscribeCount()
+
+        await test.step('the user retypes both prompts while the agent writes the first', async () => {
+          await offlineEdit.beginOutageAndRetype()
+          await expect
+            .poll(() => offlineEdit.refusedConnectionCount(), {
+              timeout: 90_000
+            })
+            .toBeGreaterThanOrEqual(4)
+          offlineEdit.agentRewritesFirstPrompt()
+        })
+
+        await test.step('the agent comes back and the held edit wins the register', async () => {
+          offlineEdit.restoreAgent()
+          await expect
+            .poll(() => offlineEdit.subscribeCount(), { timeout: 90_000 })
+            .toBeGreaterThan(subscribesBeforeOutage)
+          await expect
+            .poll(() => offlineEdit.documentPromptValues(), {
+              timeout: 60_000,
+              message: 'the held edit wins over the agent write it never saw'
+            })
+            .toEqual(offlineEdit.humanPrompts)
+          await expect
+            .poll(() => offlineEdit.canvasPromptValues())
+            .toEqual(offlineEdit.humanPrompts)
+        })
+      }
+    )
+
+    test(
       'survive the reconnect, the save, a reload and the next agent turn',
       {
         annotation: [

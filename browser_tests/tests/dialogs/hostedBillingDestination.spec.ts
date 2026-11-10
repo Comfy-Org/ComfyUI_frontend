@@ -18,6 +18,10 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
+  keepPricingTableInApp,
+  PLATFORM_PLANS_PATH
+} from '@e2e/fixtures/utils/platformPlans'
+import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -50,6 +54,7 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   plan_slug: 'pro-monthly',
@@ -130,9 +135,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
     return r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
   })
   await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
-  await page.route('**/customers/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
   await page.route('**/api/billing/plans', (r) =>
@@ -397,15 +399,8 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .toBeGreaterThan(requestsBeforeReturn)
   })
 
-  /**
-   * Plan selection stays in the app regardless of the destination: billing-web's
-   * `/v1/pricing` has no personal/team tabs, cycle toggle, or credit slider
-   * (G7), and a per-credit Team plan 400s there (FE-2642). Only a Subscribe
-   * click inside this table hands off to billing-web — see the "Hosted
-   * billing checkout handoff" describe below.
-   */
   for (const destination of ['stripe', 'billing_web'] as const) {
-    test(`opens the in-app pricing table from the avatar menu while the destination is ${destination}`, async ({
+    test(`hands the avatar menu's Plans and pricing off to the platform Plans page while the destination is ${destination}`, async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -419,13 +414,20 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
 
       await clickPlansAndPricing(page)
 
-      await expect(pricingHeading(page)).toBeVisible()
-      expect(await openedUrl(page)).toBeNull()
+      await expect
+        .poll(async () => {
+          const url = await openedUrl(page)
+          return url && new URL(url).pathname
+        })
+        .toBe(PLATFORM_PLANS_PATH)
+      await expect(pricingDialog(page)).toHaveCount(0)
     })
   }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
     page
   }) => {

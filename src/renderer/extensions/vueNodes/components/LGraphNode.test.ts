@@ -447,7 +447,7 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-foreground')
+    expect(root).toHaveAttribute('data-emphasized', 'true')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-foreground')
@@ -456,10 +456,7 @@ describe('LGraphNode', () => {
   it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
-    const { container } = renderLGraphNode({ nodeData: mockNodeData })
-    const root = getNodeRoot(container)
-
-    expect(root).toHaveClass('outline-primary')
+    renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
@@ -647,6 +644,105 @@ describe('LGraphNode', () => {
     ).not.toBeInTheDocument()
   })
 
+  describe('header missing-resources icon', () => {
+    const missingResourcesIcon = () =>
+      screen.queryByRole('img', { name: 'Missing resources' })
+
+    const issuesTabEnabled = ref(false)
+
+    function setIssuesTabEnabled(enabled: boolean) {
+      issuesTabEnabled.value = enabled
+      vi.mocked(useSettingStore().get).mockImplementation((key) => {
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab')
+          return issuesTabEnabled.value
+        if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
+        if (key === 'Comfy.Node.Opacity') return 1
+      })
+    }
+
+    function markModelMissing() {
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingModels'] =
+        true
+      useMissingModelStore().setMissingModels([
+        {
+          nodeId: createNodeExecutionId([mockNodeData.id]),
+          nodeType: 'TestNode',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          directory: 'checkpoints',
+          isAssetSupported: false,
+          isMissing: true
+        }
+      ])
+    }
+
+    function recordValidationError() {
+      useExecutionErrorStore().recordNodeErrors({
+        [mockNodeData.id]: nodeError([
+          validationError('required_input_missing', 'positive')
+        ])
+      })
+    }
+
+    function renderWithHeader() {
+      render(LGraphNode, {
+        props: { nodeData: mockNodeData },
+        global: {
+          plugins: [getActivePinia()!, i18n],
+          stubs: {
+            NodeSlots: true,
+            NodeWidgets: true,
+            NodeContent: true,
+            SlotConnectionDot: true
+          }
+        }
+      })
+    }
+
+    it('shows for a node with a missing model while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).toBeInTheDocument()
+    })
+
+    it('hides for a node with a missing model while the Issues tab is on', () => {
+      setIssuesTabEnabled(true)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides on a mounted node once the Issues tab is turned on', async () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+      expect(missingResourcesIcon()).toBeInTheDocument()
+
+      issuesTabEnabled.value = true
+      await nextTick()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node with a validation error while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      recordValidationError()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node without issues while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+  })
+
   it('should widen the selection outline rounding when the node has an error', () => {
     selectMockNode()
     useExecutionErrorStore().recordNodeErrors({
@@ -658,8 +754,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-[calc(var(--node-radius)+7px)]')
+    expect(overlay).not.toHaveClass('rounded-[calc(var(--node-radius)+3px)]')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {
@@ -677,7 +773,7 @@ describe('LGraphNode', () => {
     })
 
     const wrapper = screen.getByTestId('node-inner-wrapper')
-    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).toHaveClass('before:rounded-(--node-radius)')
     expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
 

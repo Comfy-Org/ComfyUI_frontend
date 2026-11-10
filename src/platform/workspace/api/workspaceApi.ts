@@ -35,7 +35,7 @@ import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import type { UserId } from '@/types/authTypes'
+import type { UserId } from '@comfyorg/api-client/authTypes'
 import {
   ingestApiClient as workspaceApiClient,
   requestAuth,
@@ -197,15 +197,17 @@ export const workspaceApi = {
   },
   async clearDeployment(
     workspaceId: WorkspaceId,
-    options: { follow?: 'workspace' } = {}
+    options: { follow?: 'workspace'; signal?: AbortSignal } = {}
   ): Promise<void> {
     const auth = await requestAuth()
+    options.signal?.throwIfAborted()
     try {
       await workspaceApiClient.delete(
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
           ...auth,
-          params: options.follow ? { follow: options.follow } : undefined
+          params: options.follow ? { follow: options.follow } : undefined,
+          ...(options.signal ? { signal: options.signal } : {})
         }
       )
     } catch (err) {

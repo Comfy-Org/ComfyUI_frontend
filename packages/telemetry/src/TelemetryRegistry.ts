@@ -14,6 +14,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -25,6 +26,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -33,7 +35,6 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -489,20 +490,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackAgentStarterPromptExposure?.(metadata)
-    )
-  }
-
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
   }
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditUsageExposure?.(metadata)
+    )
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -578,6 +579,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackAgentOnboardingNotShown?.(metadata)
     )
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSendGated?.(metadata))
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

@@ -1,13 +1,24 @@
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -104,7 +115,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -139,11 +154,13 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  openWorkflowMock.mockResolvedValue(true)
 })
 
 describe('useWorkflowPersistenceV2', () => {
@@ -347,6 +364,26 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
     })
 
+    it('falls back to the latest draft when the session workflow does not open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('Unreadable.json')
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValue(false)
+      const draftStore = useWorkflowDraftStoreV2()
+      const fallback = vi
+        .spyOn(draftStore, 'loadPersistedWorkflow')
+        .mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const outcome = await initializeWorkflow()
+
+      expect(fallback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackToLatestDraft: true })
+      )
+      expect(outcome).not.toBe('restored')
+    })
+
     it('prefers draft over saved workflow when draft exists', async () => {
       const workflowStore = useWorkflowStore()
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
@@ -522,6 +559,71 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('keeps the draft of an unsaved background tab when it is first loaded', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const draftPath = 'workflows/Background.json'
+      const draftGraph = JSON.stringify({
+        ...blankGraph,
+        id: '6f1e9a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
+        extra: { a: 1 }
+      })
+      draftStore.saveDraft(draftPath, draftGraph, {
+        name: 'Background.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState([draftPath, active.path], 1)
+      vi.advanceTimersByTime(60_000)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+      const background = workflowStore.getWorkflowByPath(draftPath)
+      expect(background?.isLoaded).toBe(false)
+
+      await background!.load()
+
+      expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
+    })
+
+    it('leaves a reused workflow outside the workflows folder unstamped', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const id = '7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
+      const graph = { ...blankGraph, id }
+      const outside = new ComfyWorkflow({
+        path: 'templates/Shared.json',
+        modified: Date.now(),
+        size: -1
+      })
+      outside.originalContent = outside.content = JSON.stringify(graph)
+      await outside.load()
+      workflowStore.attachWorkflow(outside)
+      const outsideModified = outside.lastModified
+      vi.advanceTimersByTime(60_000)
+      draftStore.saveDraft('workflows/Shared.json', JSON.stringify(graph), {
+        name: 'Shared.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState(['workflows/Shared.json', active.path], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(outside.lastModified).toBe(outsideModified)
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
@@ -739,6 +841,35 @@ describe('useWorkflowPersistenceV2', () => {
 
         await expect(initializeWorkflow()).resolves.toBe('url-intent')
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      }
+    )
+
+    it.for(
+      [
+        {
+          name: 'local handoff param in URL',
+          applyIntent: () => (routeMocks.query = { from_local: 'nonce' })
+        },
+        {
+          name: 'local handoff preserved across the sign-in redirect',
+          applyIntent: () =>
+            (preservedQueryMocks.payloads.local_handoff = {
+              from_local: 'nonce'
+            })
+        }
+      ].flatMap((intent) => [
+        { ...intent, openOnCloudEnabled: true, outcome: 'url-intent' },
+        { ...intent, openOnCloudEnabled: false, outcome: 'fresh' }
+      ])
+    )(
+      'reports $outcome with $name while Open on Cloud is $openOnCloudEnabled',
+      async ({ applyIntent, openOnCloudEnabled, outcome }) => {
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
+        applyIntent()
+
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await expect(initializeWorkflow()).resolves.toBe(outcome)
       }
     )
   })

@@ -4,11 +4,13 @@ import {
   loadCustomNodesWithDeadline
 } from '@/platform/customNodes/lateLoading/lateLoading'
 import {
+  claimExtensionImportError,
   CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
   CUSTOM_NODE_LOAD_ERROR_TYPE
 } from '@/platform/telemetry/customNodeLoadTelemetry'
 import type { CustomNodeFailureDiagnostic } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { redactTelemetryUrls } from '@comfyorg/telemetry/redactTelemetryUrls'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import {
@@ -21,12 +23,36 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
+export function getExtensionPath(script: string): string | undefined {
+  try {
+    const pathname = new URL(script, window.location.href).pathname
+    return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+  } catch {
+    return undefined
+  }
+}
+
 export function shouldLoadCustomNodeScript(
   script: string,
-  isCloudBuild: boolean
+  {
+    isCloudBuild,
+    disabledExtensionPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    isCloudBuild: boolean
+    disabledExtensionPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  }
 ): boolean {
   if (script.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(script)
+  if (isCloudBuild && INLINED_CLOUD_EXTENSIONS.has(script)) return false
+  if (disableAllCustomExtensions) return false
+
+  const extensionPath = getExtensionPath(script)
+  return (
+    extensionPath === undefined ||
+    !disabledExtensionPaths.includes(extensionPath)
+  )
 }
 
 const MAX_CUSTOM_NODE_PATH_LENGTH = 512
@@ -60,8 +86,13 @@ function toFailureDiagnostic({
   }
 }
 
-function importModule(url: string): Promise<unknown> {
-  return import(/* @vite-ignore */ url)
+async function importModule(url: string): Promise<unknown> {
+  try {
+    return await import(/* @vite-ignore */ url)
+  } catch (error) {
+    claimExtensionImportError(error)
+    throw error
+  }
 }
 
 async function importCustomNodeScript(
@@ -91,7 +122,11 @@ export function reportCustomNodeLoadFailures(
     Object.assign(new Error(message), stack ? { stack } : {})
   )
   const aggregate = new AggregateError(errors, 'Error loading extensions')
-  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+  const failureLines = reportedFailures.map(
+    ({ ext, message }) =>
+      `\nFailed extension: ${ext}: ${redactTelemetryUrls(message.split('\n')[0])}`
+  )
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}${failureLines.join('')}`
 
   reportError(aggregate, {
     errorType: CUSTOM_NODE_LOAD_ERROR_TYPE,
@@ -114,10 +149,21 @@ export function reportCustomNodeLoadFailures(
 export async function loadCustomNodeScripts(
   servedScripts: string[],
   signal: AbortSignal,
-  firstCpuServerReading: Promise<CpuServerReading> | undefined
+  firstCpuServerReading: Promise<CpuServerReading> | undefined,
+  {
+    disabledExtensionPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    disabledExtensionPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  } = {}
 ) {
   const scripts = servedScripts.filter((script) =>
-    shouldLoadCustomNodeScript(script, __DISTRIBUTION__ === 'cloud')
+    shouldLoadCustomNodeScript(script, {
+      isCloudBuild: __DISTRIBUTION__ === 'cloud',
+      disabledExtensionPaths,
+      disableAllCustomExtensions
+    })
   )
   if (firstCpuServerReading) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>

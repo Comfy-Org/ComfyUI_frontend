@@ -54,3 +54,13 @@ export function resolveAccountPrecondition(
     return 'personal_wallet_api_key'
   return preconditionForCatalogId(match?.catalogId)
 }
+
+/** Cloud's run refusal says the account holds credits a plan would unlock. */
+export function promptErrorHasLockedCredits(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'credits_locked' in error &&
+    error.credits_locked === true
+  )
+}

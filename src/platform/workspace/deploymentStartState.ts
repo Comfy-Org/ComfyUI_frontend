@@ -1,4 +1,3 @@
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { deploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
 
@@ -101,8 +100,7 @@ export function deploymentRowAction(
   if (start?.phase === 'refused') {
     return start.reason === 'unavailable' || !startOffered ? 'open' : 'retry'
   }
-  if (pendingServerFact('BE-24332', deployment.status === 'ready'))
-    return 'pick'
+  if (deployment.status === 'ready') return 'pick'
   if (!deployment.can_start) return 'none'
   return startOffered ? 'start' : 'open'
 }

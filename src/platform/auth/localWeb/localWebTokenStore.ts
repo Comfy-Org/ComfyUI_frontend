@@ -1,4 +1,5 @@
 import type { OAuthTokens } from '@comfyorg/account-core/oauthPkce'
+import { omit } from 'es-toolkit'
 import { z } from 'zod'
 
 /** Where this page keeps its OAuth tokens; swapping it changes the policy. */
@@ -10,9 +11,11 @@ export interface LocalWebTokenStore {
   readWorkspace(workspaceId: string): OAuthTokens | undefined
   /** False when the storage refused the write, so nothing was persisted. */
   writeWorkspace(workspaceId: string, tokens: OAuthTokens): boolean
+  /** Forgets one workspace's kept tokens, only if they are still `stale`. */
+  forgetWorkspace(workspaceId: string, stale: OAuthTokens): void
   /** Forgets the active tokens and every workspace's tokens. */
   clear(): void
-  /** Calls back when another tab changes the stored tokens. */
+  /** Calls back when another tab changes the stored or kept tokens. */
   subscribe(listener: () => void): () => void
 }
 
@@ -43,6 +46,10 @@ export function createMemoryTokenStore(): LocalWebTokenStore {
     writeWorkspace: (workspaceId, next) => {
       byWorkspace.set(workspaceId, next)
       return true
+    },
+    forgetWorkspace: (workspaceId, stale) => {
+      if (byWorkspace.get(workspaceId)?.refreshToken === stale.refreshToken)
+        byWorkspace.delete(workspaceId)
     },
     clear: () => {
       tokens = undefined
@@ -116,6 +123,16 @@ export function createStorageTokenStore(
         )
         return true
       }, false),
+    forgetWorkspace(workspaceId, stale) {
+      ignoringStorageErrors(() => {
+        const workspaces = readWorkspaces()
+        if (workspaces[workspaceId]?.refreshToken !== stale.refreshToken) return
+        storage.setItem(
+          LOCAL_WEB_WORKSPACE_TOKENS_KEY,
+          JSON.stringify(omit(workspaces, [workspaceId]))
+        )
+      }, undefined)
+    },
     clear() {
       ignoringStorageErrors(() => {
         storage.removeItem(LOCAL_WEB_TOKENS_KEY)
@@ -125,7 +142,12 @@ export function createStorageTokenStore(
     subscribe(listener) {
       const onStorage = (event: Event) => {
         const key = 'key' in event ? event.key : undefined
-        if (key === LOCAL_WEB_TOKENS_KEY || key === null) listener()
+        if (
+          key === LOCAL_WEB_TOKENS_KEY ||
+          key === LOCAL_WEB_WORKSPACE_TOKENS_KEY ||
+          key === null
+        )
+          listener()
       }
       storageEvents.addEventListener('storage', onStorage)
       return () => storageEvents.removeEventListener('storage', onStorage)

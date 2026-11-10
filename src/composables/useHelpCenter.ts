@@ -7,7 +7,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
-import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/useNodeConflictDialog'
+import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'
 
 export function useHelpCenter() {
   const settingStore = useSettingStore()

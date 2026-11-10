@@ -27,6 +27,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   member,
   mockWorkspace,
@@ -94,6 +95,7 @@ const ACTIVE_TEAM_STATUS = {
     stop_usd: 700
   },
   scheduled_change: null,
+  next_charge: null,
   max_seats: 5,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -110,6 +112,7 @@ const ACTIVE_STANDARD_STATUS = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -119,11 +122,6 @@ const ACTIVE_CREATOR_STATUS = {
   subscription_tier: 'CREATOR',
   plan_slug: 'creator-annual'
 } satisfies BillingStatusResponse
-
-const LEGACY_ACTIVE_STANDARD_STATUS = {
-  ...ACTIVE_STANDARD_STATUS,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
 
 const BILLING_BALANCE = {
   amount_micros: 0,
@@ -454,6 +452,7 @@ async function setupCloudApp(
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
   await mockWorkspace(page, ws, members)
+  await keepPricingTableInApp(page)
   await bootCloud(page)
 }
 
@@ -722,7 +721,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     const subscribeRequests: Request[] = []
     await setupCloudApp(page, workspace('personal', 'owner'), [])
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(
@@ -759,7 +758,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     })
     await setupCloudApp(page, workspace('personal', 'owner'), [])
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(

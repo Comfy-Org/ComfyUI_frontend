@@ -65,6 +65,7 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
@@ -75,7 +76,7 @@ import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templat
 import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig } from '@/constants/serverConfig'
-import type { ServerConfigValue } from '@/platform/settings/types'
+import type { ServerConfigValue } from '@comfyorg/settings-core/types'
 import { setActiveLocale } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
@@ -94,8 +95,10 @@ import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/ge
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -115,7 +118,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
 import { createUuidv4 } from '@/utils/uuid'
@@ -130,11 +133,18 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
-if (isCloud) useDeploymentCompatibility()
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  onBeforeUnmount(
+    setMissingNodesNotice(
+      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+    )
+  )
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
@@ -197,12 +207,12 @@ let hasTrackedLogin = false
 if (isCloud) void useDeploymentPickAtBoot()
 
 watch(
-  () => colorPaletteStore.completedActivePalette,
+  () => themeStore.activeTheme,
   (newTheme) => {
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
-        symbolColor: newTheme.colors.comfy_base['input-text']
+        symbolColor: newTheme.controls.inputTextColor
       })
     }
   },
@@ -312,9 +322,11 @@ const onExecutionSuccess = async () => {
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 const refreshOnReconnect = useReconnectQueueRefresh()
+const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
 
 const handleReconnected = async () => {
   onReconnected()
+  void refreshNodeDefinitionsOnReconnect()
   await refreshOnReconnect()
 }
 

@@ -30,7 +30,7 @@
         :model="row.model"
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
-        :can-cloud-import="true"
+        :can-cloud-import="!onDeployment"
         :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
@@ -108,10 +108,16 @@ const MODEL_TYPE_SORT_ORDER = [
   'diffusion_models'
 ] as const
 
-const { missingModelGroups, highlightedNodeIds } = defineProps<{
+const {
+  missingModelGroups,
+  highlightedNodeIds,
+  onDeployment = false
+} = defineProps<{
   missingModelGroups: MissingModelGroup[]
   /** Execution node ids to emphasize (current canvas selection). */
   highlightedNodeIds?: Set<string>
+  /** Lists every model in one list, with no Comfy Cloud import. */
+  onDeployment?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -137,11 +143,15 @@ const sortedModelRows = computed(() =>
 )
 
 const importableModelRows = computed(() =>
-  sortedModelRows.value.filter((row) => !isCloud || canCloudImport(row))
+  sortedModelRows.value.filter(
+    (row) => onDeployment || !isCloud || canCloudImport(row)
+  )
 )
 
 const unsupportedModelRows = computed(() =>
-  isCloud ? sortedModelRows.value.filter((row) => !canCloudImport(row)) : []
+  isCloud && !onDeployment
+    ? sortedModelRows.value.filter((row) => !canCloudImport(row))
+    : []
 )
 
 const downloadableModels = computed(() => {

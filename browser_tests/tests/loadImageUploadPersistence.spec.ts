@@ -95,7 +95,7 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
 
   test.describe('Vue image uploads', { tag: '@vue-nodes' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.expectNodeCount(0)
     })
 
@@ -152,6 +152,19 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
     test.describe('LoadImageOutput', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => {
+              const node = window.app!.graph.nodes.find(
+                (node) => node.type === 'LoadImageOutput'
+              )
+              const values = node?.widgets?.find(
+                (widget) => widget.name === 'image'
+              )?.options.values
+              return Array.isArray(values)
+            })
+          )
+          .toBe(true)
       })
 
       test('keeps the pasted output available after reload', async ({

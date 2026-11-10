@@ -10,7 +10,6 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -28,13 +27,16 @@ import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -86,7 +88,18 @@ async function startLocalAuthSession(): Promise<boolean> {
     }
     const { startLocalWebSession } =
       await import('@/platform/auth/localWeb/localWebSession')
-    return (await startLocalWebSession()) === 'sign-in-failed'
+    const signInNotice = createToastId()
+    const started = await startLocalWebSession({
+      onPopupBlocked: () =>
+        useToast().error(t('auth.desktopHost.popupBlocked'), {
+          id: signInNotice
+        }),
+      onSignInFailed: () =>
+        useToast().error(t('auth.desktopHost.signInFailed'), {
+          id: signInNotice
+        })
+    })
+    return started === 'sign-in-failed'
   })
 }
 
@@ -147,17 +160,13 @@ function installSubgraphGraphHooks(): void {
 async function bootstrap(): Promise<void> {
   bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
+  captureSafeExtensionBoot()
 
   if (isCloud) {
     stripPaymentReturnParams()
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
-  provideTeamWorkspaceDialog(async (onConfirm) => {
-    const { useWorkspaceDialogs } =
-      await import('@/platform/account/composables/useWorkspaceDialogs')
-    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
-  })
 
   bootstrapTracer.armWatchdog()
 
@@ -196,4 +205,4 @@ async function bootstrap(): Promise<void> {
   bootstrapTracer.milestone('app-mounted')
 }
 
-await bootstrap()
+if (!(await handleDesktopWorkflowHandoff())) await bootstrap()
