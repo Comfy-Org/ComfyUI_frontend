@@ -173,18 +173,22 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
 export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
-  let minWidth = DEFAULT_VIDEO_SIZE
+  let minWidth = 0
   let unsupportedSource = false
 
   const { handleWheel, handlePointerDown, handlePointerMove } =
     useCanvasInteractions()
 
+  const findVideoWidget = () =>
+    node.widgets?.find((w) => w.name === VIDEO_WIDGET_NAME)
+
   const setMinDimensions = (video: HTMLVideoElement) => {
+    const shownWidth = findVideoWidget()?.computeLayoutSize?.(node).minWidth
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
       fitDimensionsToNodeWidth(
         video.videoWidth,
         video.videoHeight,
-        node.size[0] || DEFAULT_VIDEO_SIZE
+        shownWidth || node.size[0] || DEFAULT_VIDEO_SIZE
       )
 
     minWidth = calculatedWidth
@@ -216,6 +220,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
         hideOnZoom: false
       })
       widget.serialize = false
+      widget.computeLayoutSize = () => ({ minHeight, minWidth })
 
       const controller = new AbortController()
       const { signal } = controller
@@ -234,13 +239,13 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       node.videoContainer = createContainer()
       addVideoDomWidget(node.videoContainer)
     }
-    const widget = node.widgets?.find((w) => w.name === VIDEO_WIDGET_NAME)
-    if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
     node.videoContainer.replaceChildren(element)
   }
 
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
     showInContainer(videoElements[0])
+    const widget = findVideoWidget()
+    if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
     callback?.()
   }
 

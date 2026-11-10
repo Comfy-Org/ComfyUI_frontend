@@ -179,6 +179,37 @@ describe('useNodeVideo', () => {
     })
   })
 
+  it('keeps the node width fixed across repeated runs', async () => {
+    vi.mocked(fitDimensionsToNodeWidth).mockImplementation(
+      (width, height, nodeWidth) => ({
+        minWidth: nodeWidth,
+        minHeight: (nodeWidth * height) / width
+      })
+    )
+    const node = createDOMWidgetNode({ size: [400, 400], graph: new LGraph() })
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/1.mp4'
+    ])
+    const createdVideos = trackCreatedVideos()
+
+    async function runAndLayout() {
+      useNodeVideo(node).showPreview()
+      const video = createdVideos.at(-1)!
+      Object.defineProperties(video, {
+        videoWidth: { value: 128 },
+        videoHeight: { value: 96 }
+      })
+      video.onloadeddata?.(new Event('loadeddata'))
+      await vi.advanceTimersByTimeAsync(1)
+      node.setSize(node.computeSize())
+      return [...node.size]
+    }
+
+    const first = await runAndLayout()
+    expect(await runAndLayout()).toEqual(first)
+    expect(await runAndLayout()).toEqual(first)
+  })
+
   it('shows the next good output after a failed one', async () => {
     const { node, createdVideos } = await setup()
     useNodeVideo(node).showPreview()
