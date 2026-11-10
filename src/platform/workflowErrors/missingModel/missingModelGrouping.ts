@@ -50,8 +50,8 @@ export function groupMissingModelCandidates(
     })
     .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
       directory: typeof key === 'string' ? key : null,
-      models: groupCandidatesByName(groupCandidates),
-      isAssetSupported
+      isAssetSupported,
+      models: groupCandidatesByName(groupCandidates)
     }))
 }
 

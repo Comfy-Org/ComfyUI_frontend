@@ -51,6 +51,6 @@ export interface MissingModelViewModel {
 /** A category group of missing models sharing the same directory. */
 export interface MissingModelGroup {
   directory: string | null
-  models: MissingModelViewModel[]
   isAssetSupported: boolean
+  models: MissingModelViewModel[]
 }
