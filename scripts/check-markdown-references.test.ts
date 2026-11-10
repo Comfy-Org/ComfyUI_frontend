@@ -94,13 +94,26 @@ describe('findBrokenReferences', () => {
     expect(lines('AGENTS.md', markdown)).toEqual([3, 5])
   })
 
-  test('reports the repo-root target so removed paths can be matched', () => {
-    expect(
-      findBrokenReferences(
-        'AGENTS.md',
-        'See `src/types/widgetId.ts`.',
-        index
-      ).map(({ targets }) => targets)
-    ).toEqual([['src/types/widgetId.ts']])
-  })
+  test.for([
+    ['AGENTS.md', ['src/types/widgetId.ts']],
+    [
+      'packages/graph-model/README.md',
+      [
+        'packages/graph-model/src/types/widgetId.ts',
+        'packages/src/types/widgetId.ts',
+        'src/types/widgetId.ts'
+      ]
+    ]
+  ] as const)(
+    'reports every resolved target from %s so removed paths can be matched',
+    ([document, targets]) => {
+      expect(
+        findBrokenReferences(
+          document,
+          'See `src/types/widgetId.ts`.',
+          index
+        ).map((finding) => finding.targets)
+      ).toEqual([targets])
+    }
+  )
 })

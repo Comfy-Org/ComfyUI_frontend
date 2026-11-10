@@ -151,7 +151,7 @@ function checkCodePath(
   )
   return candidates.some((candidate) => exists(index.paths, candidate))
     ? undefined
-    : [posix.normalize(reference)]
+    : candidates
 }
 
 function findUndefinedPnpmCommands(code: string, index: RepoIndex): string[] {
