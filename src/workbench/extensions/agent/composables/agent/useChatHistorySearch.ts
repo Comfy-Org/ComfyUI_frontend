@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import type { ChatSearchResult } from '@/workbench/extensions/agent/utils/chatHistorySearch'
 import { searchChatHistory } from '@/workbench/extensions/agent/utils/chatHistorySearch'
+import { readablePreview } from '@/workbench/extensions/agent/utils/chatPreviewText'
 import { withCurrentSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import type { ChatHistorySearchEffect } from './chatHistorySearchState'
@@ -55,6 +56,9 @@ export function useChatHistorySearch(options: ChatHistorySearchOptions) {
       : session
     return {
       ...titled,
+      // Matched and displayed text are the same string, so highlight ranges
+      // line up and a reference's `workflow://` URL never matches.
+      preview: readablePreview(titled.preview),
       workflowName: options.workflowNameFor(session),
       isCurrent
     }

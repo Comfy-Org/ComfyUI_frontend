@@ -133,6 +133,22 @@ describe('useChatHistorySearch', () => {
     expect(ids(search)).toEqual([])
   })
 
+  it('shows and matches a workflow reference in the preview by its name', () => {
+    const { search } = setup([
+      session('a', {
+        preview: 'check [Portrait flow](workflow://file%3A9)\nplease'
+      })
+    ])
+
+    search.text.value = 'workflow://'
+    expect(search.isNoResults.value).toBe(true)
+
+    search.text.value = 'portrait'
+    expect(search.results.value?.[0].session.preview).toBe(
+      'check Portrait flow please'
+    )
+  })
+
   it('matches workflow names and tolerates unresolved ones', () => {
     const { search } = setup(
       [
