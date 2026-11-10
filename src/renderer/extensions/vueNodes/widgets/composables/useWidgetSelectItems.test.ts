@@ -1395,14 +1395,16 @@ describe('useWidgetSelectItems', () => {
   })
 
   it('keeps same-named local outputs apart by the subfolder in their stored filename', async () => {
-    mockMediaAssets.items.value = ['hdr_00001.exr', 'c69r/hdr_00001.exr'].map(
-      (filename) =>
-        fromPartial<AssetItem>({
-          id: filename,
-          name: 'hdr_00001.exr',
-          tags: ['output', 'uploaded'],
-          user_metadata: { filename }
-        })
+    mockMediaAssets.items.value = [
+      'hdr_00001.exr',
+      'renders/hdr_00001.exr'
+    ].map((filename) =>
+      fromPartial<AssetItem>({
+        id: filename,
+        name: 'hdr_00001.exr',
+        tags: ['output', 'uploaded'],
+        user_metadata: { filename }
+      })
     )
 
     const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -1413,7 +1415,7 @@ describe('useWidgetSelectItems', () => {
 
     expect(dropdownItems.value.map((item) => item.name)).toEqual([
       'hdr_00001.exr [output]',
-      'c69r/hdr_00001.exr [output]'
+      'renders/hdr_00001.exr [output]'
     ])
   })
 

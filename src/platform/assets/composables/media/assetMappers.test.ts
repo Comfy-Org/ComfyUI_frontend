@@ -155,8 +155,8 @@ describe('unflattenOutputAssets', () => {
 
   it.for([
     { filename: 'hdr_00001.exr', subfolder: '' },
-    { filename: 'c69r/hdr_00001.exr', subfolder: 'c69r' },
-    { filename: 'renders/c69r/hdr_00001.exr', subfolder: 'renders/c69r' }
+    { filename: 'renders/hdr_00001.exr', subfolder: 'renders' },
+    { filename: 'archive/renders/hdr_00001.exr', subfolder: 'archive/renders' }
   ])(
     'reads the subfolder $subfolder from a local output stored as $filename',
     ({ filename, subfolder }) => {
