@@ -100,6 +100,29 @@ function backToOrigin(
     : { step: 'amount', amount: state.amount, ...withRefusal }
 }
 
+const LANDABLE_STEPS: ReadonlySet<AddCreditsState['step']> = new Set([
+  'opening',
+  'checkout_opened',
+  'checkout_blocked'
+])
+
+function landedState({
+  activation,
+  autoTopUpSetupUrl
+}: EventOf<'payment_landed'>): AddCreditsState {
+  if (activation?.status === 'on') {
+    return { step: 'auto_top_up_on', settings: activation.settings }
+  }
+  if (activation?.status === 'failed') {
+    return autoTopUpSetupUrl === undefined
+      ? { step: 'auto_top_up_failed' }
+      : { step: 'auto_top_up_failed', setupUrl: autoTopUpSetupUrl }
+  }
+  return autoTopUpSetupUrl === undefined
+    ? { step: 'landed' }
+    : { step: 'auto_top_up_offer', setupUrl: autoTopUpSetupUrl }
+}
+
 const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
   {
     preset_picked: (state, event) =>
@@ -144,25 +167,8 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             amountCents: state.amountCents
           }
         : state,
-    payment_landed: (state, event) => {
-      if (
-        state.step !== 'opening' &&
-        state.step !== 'checkout_opened' &&
-        state.step !== 'checkout_blocked'
-      )
-        return state
-      if (event.activation?.status === 'on') {
-        return { step: 'auto_top_up_on', settings: event.activation.settings }
-      }
-      if (event.activation?.status === 'failed') {
-        return event.autoTopUpSetupUrl === undefined
-          ? { step: 'auto_top_up_failed' }
-          : { step: 'auto_top_up_failed', setupUrl: event.autoTopUpSetupUrl }
-      }
-      return event.autoTopUpSetupUrl === undefined
-        ? { step: 'landed' }
-        : { step: 'auto_top_up_offer', setupUrl: event.autoTopUpSetupUrl }
-    }
+    payment_landed: (state, event) =>
+      LANDABLE_STEPS.has(state.step) ? landedState(event) : state
   }
 
 export function reduceAddCredits(

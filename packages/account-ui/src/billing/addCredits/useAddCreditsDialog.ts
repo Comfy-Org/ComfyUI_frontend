@@ -109,6 +109,17 @@ export function reserveBrowserTab(): AddCreditsCheckoutTab | null {
   }
 }
 
+function landedEvent(
+  setupUrl: string | null,
+  activation: AutoTopUpActivationOutcome | undefined
+): AddCreditsEvent {
+  return {
+    type: 'payment_landed',
+    ...(setupUrl === null ? {} : { autoTopUpSetupUrl: setupUrl }),
+    ...(activation === undefined ? {} : { activation })
+  }
+}
+
 export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   const { ports } = options
   const state = shallowRef<AddCreditsState>(
@@ -196,20 +207,18 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
       : null
   }
 
+  function setupUrlAfterPaying(
+    activation: AutoTopUpActivationOutcome | undefined
+  ): Promise<string | null> {
+    const asks = activation?.status === 'failed' || !offeredWithPurchase
+    return asks ? setupUrl() : Promise.resolve(null)
+  }
+
   async function land(activation?: AutoTopUpActivationOutcome) {
-    if (activation?.status === 'on') {
-      dispatch({ type: 'payment_landed', activation })
-      return
-    }
-    const asksAfterPaying =
-      activation?.status === 'failed' || !offeredWithPurchase
-    const url = asksAfterPaying ? await setupUrl() : null
+    const url =
+      activation?.status === 'on' ? null : await setupUrlAfterPaying(activation)
     if (disposed) return
-    dispatch({
-      type: 'payment_landed',
-      ...(url === null ? {} : { autoTopUpSetupUrl: url }),
-      ...(activation === undefined ? {} : { activation })
-    })
+    dispatch(landedEvent(url, activation))
     if (state.value.step === 'landed') options.onLanded?.()
   }
 
