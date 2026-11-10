@@ -22,6 +22,7 @@ import type {
   AgentGraphProjectionMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  ProactiveGreetingEnrolledMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
@@ -83,6 +84,11 @@ import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
+import {
+  getHostProactiveGreetingBridge,
+  hostProactiveGreetingProperties,
+  reportHostProactiveGreetingFailure
+} from '@/platform/telemetry/hostProactiveGreeting'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -115,6 +121,47 @@ function toHostTelemetryProperties(
   }
 
   return out
+}
+
+export async function enrollHostProactiveGreeting(
+  metadata: ProactiveGreetingEnrolledMetadata
+): Promise<boolean> {
+  const telemetry = getHostProactiveGreetingBridge()
+  if (!telemetry) return false
+  const { canvas_state, copy_locale } = metadata
+  try {
+    const admitted: unknown = await telemetry.enrollProactiveGreeting({
+      ...hostProactiveGreetingProperties(metadata),
+      canvas_state,
+      ...(copy_locale && { copy_locale })
+    })
+    return admitted === true
+  } catch {
+    reportHostProactiveGreetingFailure('enroll')
+    return false
+  }
+}
+
+/** Returns true when the host owns this event's delivery. */
+export function trackHostProactiveGreetingMessage(
+  metadata: AgentMessageSentMetadata
+): boolean {
+  const { proactive_greeting: context, ...properties } = metadata
+  if (!context) return false
+  const telemetry = getHostProactiveGreetingBridge()
+  if (!telemetry) return false
+  try {
+    telemetry.capture(
+      TelemetryEvents.AGENT_MESSAGE_SENT,
+      toHostTelemetryProperties({
+        ...properties,
+        ...hostProactiveGreetingProperties(context)
+      })
+    )
+  } catch {
+    reportHostProactiveGreetingFailure('capture')
+  }
+  return true
 }
 
 export class HostTelemetrySink implements TelemetryProvider {
@@ -384,7 +431,15 @@ export class HostTelemetrySink implements TelemetryProvider {
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
-    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+    if (trackHostProactiveGreetingMessage(metadata)) return
+    const { proactive_greeting: _, ...properties } = metadata
+    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, properties)
+  }
+
+  trackProactiveGreetingEnrolled(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): Promise<boolean> {
+    return enrollHostProactiveGreeting(metadata)
   }
 
   trackAgentStarterPromptClicked(

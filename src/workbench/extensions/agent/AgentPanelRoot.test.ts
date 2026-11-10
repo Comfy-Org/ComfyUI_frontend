@@ -48,6 +48,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 import { i18n } from '@/i18n'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -17084,7 +17085,13 @@ describe('AgentPanelRoot proactive qualification', () => {
   const assignment = {
     userId: 'account-a',
     workspaceId: 'workspace-proactive',
-    variant: 'B' as const
+    variant: 'B' as const,
+    telemetry: {
+      user_id: 'account-a',
+      workspace_id: 'workspace-proactive',
+      group_key: '["account-a","workspace-proactive"]',
+      variant: 'generic' as const
+    }
   }
 
   beforeEach(() => {
@@ -17096,6 +17103,7 @@ describe('AgentPanelRoot proactive qualification', () => {
       'Comfy.AgentPanel.onboarded.account-a.workspace-proactive',
       'true'
     )
+    telemetry.trackProactiveGreetingEnrolled.mockResolvedValue(true)
     mockMessagesEndpoint('wf-proactive')
   })
 
@@ -17104,12 +17112,202 @@ describe('AgentPanelRoot proactive qualification', () => {
     await screen.findByRole('textbox')
     await settleFollow()
     expect(fetchRequests('/api/agent/usage-status')).toHaveLength(0)
+    expect(telemetry.trackProactiveGreetingEnrolled).not.toHaveBeenCalled()
     expect(
       screen.getByRole('heading', { name: 'What do you want to make?' })
     ).toBeVisible()
   })
 
+  it.for([
+    {
+      scope: undefined,
+      expectedHeading: 'What do you want to make?',
+      enrollments: 0
+    },
+    {
+      scope: 'local_installation',
+      expectedHeading: 'A little help to get you started!',
+      enrollments: 1
+    }
+  ])(
+    'Desktop uses only installation-scoped history: $scope',
+    async ({ scope, expectedHeading, enrollments }) => {
+      const previousConfig = remoteConfig.value
+      remoteConfig.value = { enable_telemetry: false }
+      onTestFinished(() => {
+        remoteConfig.value = previousConfig
+      })
+      distribution.isCloud = false
+      vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockResolvedValue(
+        'workspace-token'
+      )
+      const enrollProactiveGreeting = vi.fn(async () => true)
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        Telemetry: Object.assign(
+          { capture: vi.fn() },
+          {
+            proactiveGreetingExperimentVersion: 2,
+            getProactiveGreetingAdmission: vi.fn(async () => 'allowed'),
+            enrollProactiveGreeting,
+            onProactiveGreetingAdmissionChanged: () => () => undefined
+          }
+        )
+      }
+      onTestFinished(() => {
+        delete window.__comfyDesktop2
+      })
+      const delegate = vi.mocked(fetch).getMockImplementation()!
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).includes('/agent/usage-status')
+          ? Promise.resolve(json(200, { has_used_agent: false, scope }))
+          : delegate(input, init)
+      )
+      render(AgentPanelRoot, {
+        props: { proactiveAssignment: assignment },
+        global: { plugins: [i18n] }
+      })
+      await waitFor(() =>
+        expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+      )
+      await settleFollow()
+      expect(
+        await screen.findByRole('heading', { name: expectedHeading })
+      ).toBeVisible()
+      expect(enrollProactiveGreeting).toHaveBeenCalledTimes(enrollments)
+      expect(telemetry.trackProactiveGreetingEnrolled).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([false, true])(
+    'keeps old Desktop hosts outside the experiment with Cloud=%s',
+    async (cloud) => {
+      distribution.isCloud = cloud
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        Telemetry: { capture: vi.fn() }
+      }
+      onTestFinished(() => {
+        delete window.__comfyDesktop2
+      })
+      render(AgentPanelRoot, {
+        props: { proactiveAssignment: assignment },
+        global: { plugins: [i18n] }
+      })
+      await screen.findByRole('textbox')
+      await settleFollow()
+      expect(fetchRequests('/api/agent/usage-status')).toHaveLength(0)
+      expect(telemetry.trackProactiveGreetingEnrolled).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('heading', { name: 'What do you want to make?' })
+      ).toBeVisible()
+    }
+  )
+
+  it.for([
+    { admitted: false, heading: 'What do you want to make?' },
+    { admitted: true, heading: 'A little help to get you started!' }
+  ])(
+    'uses the host capture decision for Cloud in Desktop: $admitted',
+    async ({ admitted, heading }) => {
+      const previousConfig = remoteConfig.value
+      remoteConfig.value = { enable_telemetry: false }
+      const enrollProactiveGreeting = vi.fn(async () => admitted)
+      window.__comfyDesktop2 = {
+        isRemote: () => true,
+        Telemetry: Object.assign(
+          { capture: vi.fn() },
+          {
+            proactiveGreetingExperimentVersion: 2,
+            getProactiveGreetingAdmission: vi.fn(async () => 'allowed'),
+            enrollProactiveGreeting,
+            onProactiveGreetingAdmissionChanged: () => () => undefined
+          }
+        )
+      }
+      onTestFinished(() => {
+        remoteConfig.value = previousConfig
+        delete window.__comfyDesktop2
+      })
+      const delegate = vi.mocked(fetch).getMockImplementation()!
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).includes('/agent/usage-status')
+          ? Promise.resolve(json(200, { has_used_agent: false }))
+          : delegate(input, init)
+      )
+      render(AgentPanelRoot, {
+        props: { proactiveAssignment: assignment },
+        global: { plugins: [i18n] }
+      })
+      await waitFor(() =>
+        expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+      )
+      await settleFollow()
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeVisible()
+      expect(enrollProactiveGreeting).toHaveBeenCalledOnce()
+      expect(telemetry.trackProactiveGreetingEnrolled).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps the sending pair when identity changes during workflow preparation', async () => {
+    const target = addTab('workflows/proactive.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'wf-proactive',
+        nodes: []
+      })
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-proactive', target.path)
+    useAgentPanelStore().setWorkflowTarget(target)
+    const delegate = vi.mocked(fetch).getMockImplementation()!
+    let holdPreparation = false
+    let releasePreparation: (() => void) | undefined
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).includes('/agent/usage-status'))
+        return json(200, { has_used_agent: false })
+      if (holdPreparation && String(input).includes('/workflows')) {
+        holdPreparation = false
+        await new Promise<void>((resolve) => {
+          releasePreparation = resolve
+        })
+      }
+      return delegate(input, init)
+    })
+    render(AgentPanelRoot, {
+      props: { proactiveAssignment: assignment },
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('heading', {
+      name: 'A little help to get you started!'
+    })
+    await settleFollow()
+    holdPreparation = true
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(releasePreparation).toBeDefined())
+    expect(telemetry.trackAgentMessageSent).not.toHaveBeenCalled()
+
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'account-b' })
+    currentUserInfo.value = { id: 'account-b' }
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-other'
+    })
+    releasePreparation!()
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+        expect.objectContaining({ proactive_greeting: assignment.telemetry })
+      )
+    )
+  })
+
   it('shows the assigned greeting only after qualification and retires it at the accepted send', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'zh'
+    onTestFinished(() => {
+      i18n.global.locale.value = previousLocale
+    })
     const target = addTab('workflows/proactive.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({
         id: 'wf-proactive',
@@ -17137,13 +17335,74 @@ describe('AgentPanelRoot proactive qualification', () => {
     expect(screen.getByRole('textbox')).toHaveTextContent(
       'What can you help me with?'
     )
+    expect(
+      telemetry.trackProactiveGreetingEnrolled
+    ).toHaveBeenCalledExactlyOnceWith({
+      ...assignment.telemetry,
+      canvas_state: 'empty',
+      copy_locale: 'en'
+    })
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ proactive_greeting: assignment.telemetry })
+    )
     await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
     expect(
       await screen.findByRole('heading', { name: 'What do you want to make?' })
     ).toBeVisible()
     expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+  })
+
+  it('keeps an accepted baseline send unattributed while exposure is pending', async () => {
+    const target = addTab('workflows/proactive.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'wf-proactive',
+        nodes: []
+      })
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-proactive', target.path)
+    useAgentPanelStore().setWorkflowTarget(target)
+    const delegate = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/agent/usage-status')
+        ? Promise.resolve(json(200, { has_used_agent: false }))
+        : delegate(input, init)
+    )
+    let finishExposure!: (admitted: boolean) => void
+    const exposure = new Promise<boolean>((resolve) => {
+      finishExposure = resolve
+    })
+    telemetry.trackProactiveGreetingEnrolled.mockReturnValue(exposure)
+
+    render(AgentPanelRoot, {
+      props: { proactiveAssignment: assignment },
+      global: { plugins: [i18n] }
+    })
+    await waitFor(() =>
+      expect(telemetry.trackProactiveGreetingEnrolled).toHaveBeenCalledOnce()
+    )
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+    await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ input_method: 'typed' })
+    )
+    expect(
+      telemetry.trackAgentMessageSent.mock.calls.at(-1)?.[0]
+    ).not.toHaveProperty('proactive_greeting')
+
+    finishExposure(true)
+    await exposure
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      await screen.findByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+    expect(telemetry.trackProactiveGreetingEnrolled).toHaveBeenCalledOnce()
   })
 })

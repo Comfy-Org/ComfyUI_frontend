@@ -23,6 +23,7 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
+  ProactiveGreetingEnrolledMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
@@ -480,6 +481,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  async trackProactiveGreetingEnrolled(
+    metadata: ProactiveGreetingEnrolledMetadata
+  ): Promise<boolean> {
+    const owner = this.providers.find(
+      (provider) => provider.trackProactiveGreetingEnrolled !== undefined
+    )
+    try {
+      return (await owner?.trackProactiveGreetingEnrolled?.(metadata)) === true
+    } catch (error) {
+      console.error('[Telemetry] Provider dispatch failed', error)
+      return false
+    }
   }
 
   trackAgentStarterPromptClicked(

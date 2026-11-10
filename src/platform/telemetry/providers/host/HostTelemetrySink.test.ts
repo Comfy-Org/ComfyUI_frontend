@@ -1,8 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ComfyDesktop2TelemetryBridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { AgentMessageSentMetadata } from '@comfyorg/telemetry/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-import { HostTelemetrySink } from './HostTelemetrySink'
+import {
+  HostTelemetrySink,
+  enrollHostProactiveGreeting,
+  trackHostProactiveGreetingMessage
+} from './HostTelemetrySink'
+
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const state = vi.hoisted(() => ({
   capture: vi.fn()
@@ -608,5 +619,225 @@ describe('HostTelemetrySink', () => {
       new HostTelemetrySink().trackNodeSearch({ query: 'k sampler' })
     ).not.toThrow()
     expect(state.capture).not.toHaveBeenCalled()
+  })
+})
+
+describe('proactive greeting host delivery', () => {
+  afterEach(() => {
+    delete window.__comfyDesktop2
+  })
+
+  it('uses acknowledged enrollment and sends flat pair attribution to Desktop despite absent boot config', async () => {
+    const capture = vi.fn()
+    const enrollProactiveGreeting = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      Telemetry: Object.assign(
+        { capture },
+        {
+          proactiveGreetingExperimentVersion: 2,
+          getProactiveGreetingAdmission: async () => 'allowed',
+          enrollProactiveGreeting,
+          onProactiveGreetingAdmissionChanged: () => () => undefined
+        }
+      )
+    }
+    const context = {
+      user_id: 'user-a',
+      workspace_id: 'workspace-a',
+      group_key: '["user-a","workspace-a"]',
+      variant: 'control' as const
+    }
+    const enrollment = {
+      ...context,
+      canvas_state: 'empty' as const,
+      copy_locale: 'zh'
+    }
+    remoteConfig.value = {}
+    expect(await enrollHostProactiveGreeting(enrollment)).toBe(true)
+    expect(enrollProactiveGreeting).toHaveBeenCalledExactlyOnceWith({
+      proactive_greeting_user_id: 'user-a',
+      proactive_greeting_workspace_id: 'workspace-a',
+      proactive_greeting_group_key: '["user-a","workspace-a"]',
+      proactive_greeting_variant: 'control',
+      canvas_state: 'empty',
+      copy_locale: 'zh'
+    })
+    const sent = trackHostProactiveGreetingMessage({
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null,
+      proactive_greeting: context
+    })
+    expect(sent).toBe(true)
+    expect(capture.mock.calls).toEqual([
+      [
+        'app:agent_message_sent',
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: null,
+          client_message_id: 'message-a',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null,
+          proactive_greeting_user_id: 'user-a',
+          proactive_greeting_workspace_id: 'workspace-a',
+          proactive_greeting_group_key: '["user-a","workspace-a"]',
+          proactive_greeting_variant: 'control'
+        }
+      ]
+    ])
+  })
+
+  it('keeps ordinary sends but strips retained experiment context on a v1 host', async () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      Telemetry: Object.assign(
+        { capture },
+        {
+          proactiveGreetingExperimentVersion: 1,
+          canEnrollProactiveGreeting: async () => true
+        }
+      )
+    }
+    const provider = new HostTelemetrySink()
+    const context = {
+      user_id: 'user-a',
+      workspace_id: 'workspace-a',
+      group_key: '["user-a","workspace-a"]',
+      variant: 'generic' as const
+    }
+    const pendingSend: AgentMessageSentMetadata = {
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null,
+      proactive_greeting: context
+    }
+    remoteConfig.value = { enable_telemetry: true }
+    provider.trackAgentMessageSent(pendingSend)
+    expect(
+      await provider.trackProactiveGreetingEnrolled({
+        ...context,
+        canvas_state: 'empty'
+      })
+    ).toBe(false)
+    expect(capture).toHaveBeenCalledExactlyOnceWith('app:agent_message_sent', {
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
+    })
+  })
+
+  const context = {
+    user_id: 'user-a',
+    workspace_id: 'workspace-a',
+    group_key: '["user-a","workspace-a"]',
+    variant: 'generic' as const
+  }
+
+  function installProactiveGreetingBridge(
+    capture: ComfyDesktop2TelemetryBridge['capture'],
+    enrollProactiveGreeting: () => Promise<unknown>
+  ): void {
+    window.__comfyDesktop2 = {
+      Telemetry: Object.assign(
+        { capture },
+        {
+          proactiveGreetingExperimentVersion: 2,
+          getProactiveGreetingAdmission: async () => 'allowed',
+          enrollProactiveGreeting,
+          onProactiveGreetingAdmissionChanged: () => () => undefined
+        }
+      )
+    }
+  }
+
+  it.for([
+    {
+      behavior: 'denial',
+      enroll: async () => false,
+      warnings: []
+    },
+    {
+      behavior: 'malformed acknowledgment',
+      enroll: async () => 'true',
+      warnings: []
+    },
+    {
+      behavior: 'rejected IPC call',
+      enroll: async () => {
+        throw new Error('IPC unavailable for user-a, workspace-a')
+      },
+      warnings: [
+        [
+          new Error('Desktop proactive greeting bridge call failed'),
+          {
+            errorType: 'failure_in_desktop_proactive_greeting_bridge',
+            surface: 'agent',
+            level: 'warning',
+            tags: { operation: 'enroll' }
+          }
+        ]
+      ]
+    }
+  ])('rejects enrollment after $behavior', async ({ enroll, warnings }) => {
+    const capture = vi.fn()
+    installProactiveGreetingBridge(capture, enroll)
+    const enrollment = { ...context, canvas_state: 'workflow' as const }
+    const sink = new HostTelemetrySink()
+
+    expect(await sink.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
+    expect(await sink.trackProactiveGreetingEnrolled(enrollment)).toBe(false)
+    expect(capture).not.toHaveBeenCalled()
+    expect(vi.mocked(reportError).mock.calls).toEqual(warnings)
+  })
+
+  it('warns once and keeps the attributed send on its host route when capture throws', () => {
+    const capture = vi.fn(() => {
+      throw new Error('IPC unavailable for user-a, workspace-a')
+    })
+    installProactiveGreetingBridge(capture, async () => true)
+    const message: AgentMessageSentMetadata = {
+      attachment_count: 0,
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'message-a',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null,
+      proactive_greeting: context
+    }
+
+    expect(trackHostProactiveGreetingMessage(message)).toBe(true)
+    new HostTelemetrySink().trackAgentMessageSent(message)
+    expect(capture).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Desktop proactive greeting bridge call failed'),
+      {
+        errorType: 'failure_in_desktop_proactive_greeting_bridge',
+        surface: 'agent',
+        level: 'warning',
+        tags: { operation: 'capture' }
+      }
+    )
   })
 })

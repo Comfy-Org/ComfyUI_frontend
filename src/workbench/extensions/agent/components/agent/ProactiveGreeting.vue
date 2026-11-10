@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
+import { proactiveGreetingCopy } from '@/workbench/extensions/agent/utils/proactiveGreetingCopy'
 import { speechTiming } from '@/workbench/extensions/agent/utils/speechTiming'
 
 import GreetingHeading from './GreetingHeading.vue'
@@ -16,24 +17,17 @@ const { greeting, userName } = defineProps<{
 const emit = defineEmits<{ prefilled: [delayMs: number] }>()
 const { t } = useI18n()
 const composer = useAgentComposerStore()
-const copy = computed(() =>
-  greeting.variant === 'B'
-    ? 'firstOpen'
-    : greeting.canvas === 'empty'
-      ? 'emptyCanvas'
-      : 'workflowOpen'
+const copy = computed(() => proactiveGreetingCopy(greeting))
+function translateCopy(key: string): string {
+  return greeting.copyLocale
+    ? t(key, {}, { locale: greeting.copyLocale })
+    : t(key)
+}
+const title = computed(() => translateCopy(copy.value.title))
+const description = computed(() => translateCopy(copy.value.description))
+const prefill = computed(() =>
+  copy.value.prefill ? translateCopy(copy.value.prefill) : undefined
 )
-const title = computed(() => t(`agent.proactiveGreeting.${copy.value}.title`))
-const description = computed(() =>
-  t(`agent.proactiveGreeting.${copy.value}.description`)
-)
-const prefill = computed(() => {
-  if (greeting.variant === 'B')
-    return t('agent.proactiveGreeting.firstOpen.prompt')
-  if (greeting.variant === 'C' && greeting.canvas === 'workflow')
-    return t('agent.proactiveGreeting.workflowOpen.prompt')
-  return undefined
-})
 const timing = computed(() => {
   const { starts, next } = speechTiming([
     { text: t('agent.greeting', { name: userName ?? t('agent.friend') }) },
