@@ -67,6 +67,7 @@ const matchLabel = computed(() => {
       :aria-label="displayTitle"
       :aria-describedby="failed ? errorId : undefined"
       :disabled="loading"
+      data-history-result
       class="min-w-0 justify-start text-left text-xs font-normal"
       @click="emit('select')"
     >

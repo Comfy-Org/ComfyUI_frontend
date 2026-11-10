@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -104,6 +104,77 @@ const sections = computed<HistorySection[]>(() => {
 const isEmpty = computed(
   () => !search.isNoResults.value && sections.value.length === 0
 )
+
+const searchField =
+  useTemplateRef<InstanceType<typeof SearchInput>>('searchField')
+const resultsList = useTemplateRef<HTMLElement[]>('resultsList')
+
+function focusField(): void {
+  searchField.value?.focus()
+}
+
+// Arrow navigation covers search results only; the grouped list keeps Tab.
+function resultButtons(): HTMLButtonElement[] {
+  if (!search.results.value) return []
+  return (resultsList.value ?? []).flatMap((list) =>
+    Array.from(
+      list.querySelectorAll<HTMLButtonElement>('button[data-history-result]')
+    ).filter((button) => !button.disabled)
+  )
+}
+
+// Esc is consumed here so it never reaches an ancestor or global Esc path.
+function escapeSearch(event: KeyboardEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  if (search.onEscape() === 'leaveHistory') emit('back')
+  else focusField()
+}
+
+function onFieldKeydown(event: KeyboardEvent): void {
+  if (event.isComposing) return
+  if (event.key === 'Escape') escapeSearch(event)
+  else if (event.key === 'ArrowDown') {
+    const [first] = resultButtons()
+    if (!first) return
+    event.preventDefault()
+    // Capture phase + stop: the combobox input's own ArrowDown handling
+    // would otherwise pull focus back to the input.
+    event.stopPropagation()
+    first.focus()
+  }
+}
+
+// Roving focus: arrows move between the result select buttons. Other tab
+// stops in a row (copy, menu) keep their native behaviour.
+function onResultsKeydown(event: KeyboardEvent): void {
+  const target = event.target
+  if (
+    event.isComposing ||
+    !(target instanceof HTMLButtonElement) ||
+    !target.hasAttribute('data-history-result') ||
+    !search.results.value
+  )
+    return
+  if (event.key === 'Escape') return escapeSearch(event)
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    const buttons = resultButtons()
+    const next = buttons.indexOf(target) + (event.key === 'ArrowDown' ? 1 : -1)
+    if (next < 0) focusField()
+    else buttons[Math.min(next, buttons.length - 1)]?.focus()
+    return
+  }
+  // A printable key hands focus back so the character lands in the field.
+  if (
+    event.key.length === 1 &&
+    event.key !== ' ' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  )
+    focusField()
+}
 
 function pick(session: ChatSession): void {
   emit('select', session.id)
@@ -215,11 +286,13 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
 
     <div class="shrink-0 px-2 pb-1">
       <SearchInput
+        ref="searchField"
         v-model="search.text.value"
         :placeholder="t('agent.historySearchPlaceholder')"
         :accessible-label="t('agent.historySearchLabel')"
         :clear-label="t('agent.historySearchClear')"
         size="sm"
+        @keydown.capture="onFieldKeydown"
       />
     </div>
 
@@ -237,13 +310,24 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         {{ t('agent.historyEmpty') }}
       </p>
 
-      <section v-for="{ key, label, items } in sections" :key class="mb-3">
+      <section
+        v-for="{ key, label, items } in sections"
+        :key
+        ref="resultsList"
+        class="mb-3"
+        :role="key === 'results' ? 'list' : undefined"
+        :aria-label="
+          key === 'results' ? t('agent.historyResultsLabel') : undefined
+        "
+        @keydown="onResultsKeydown"
+      >
         <p v-if="label" class="my-0 px-2 py-1 text-xs text-muted-foreground">
           {{ label }}
         </p>
         <div
           v-for="{ session, result, ranges } in items"
           :key="session.id"
+          :role="key === 'results' ? 'listitem' : undefined"
           class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
         >
           <div

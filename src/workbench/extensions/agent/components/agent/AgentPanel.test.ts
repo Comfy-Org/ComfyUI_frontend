@@ -377,6 +377,42 @@ describe('AgentPanel', () => {
     expect(emitted('retrySync')).toHaveLength(1)
   })
 
+  it('Esc in the history search never stops a running turn: clears, then leaves History', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        sessionId: 'previous',
+        streaming: true,
+        historyGroups: {
+          ...createHistoryGroups(),
+          today: [
+            {
+              id: 'previous',
+              title: 'Previous chat',
+              updatedAt: 3,
+              titleSource: 'server'
+            }
+          ]
+        }
+      },
+      global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+    })
+    await user.click(screen.getByRole('button', { name: 'Show chat history' }))
+    const field = screen.getByRole('combobox', { name: 'Search chat history' })
+    await user.type(field, 'prev')
+
+    await user.keyboard('{Escape}')
+    expect(field).toHaveValue('')
+    expect(screen.getByRole('heading', { name: 'Chat history' })).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(emitted('stop')).toBeUndefined()
+  })
+
   it('keeps a failed opening in history and lets the user retry that row', async () => {
     const select = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
     mountHistory(select)

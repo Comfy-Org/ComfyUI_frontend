@@ -6229,6 +6229,7 @@
     "historySearchPlaceholder": "Search chats",
     "historySearchLabel": "Search chat history",
     "historySearchClear": "Clear search",
+    "historyResultsLabel": "Search results",
     "historyNoResults": "No chats match \"{query}\"",
     "historyCurrentChat": "Current chat",
     "historyMatchTitle": "Title:",
