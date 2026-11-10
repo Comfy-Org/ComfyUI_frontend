@@ -3087,6 +3087,8 @@
     "eventType": "Event Type",
     "details": "Details",
     "time": "Time",
+    "member": "Member",
+    "formerMember": "{name} (former member)",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
     "lessThanOne": "<1",
@@ -4341,6 +4343,7 @@
     },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
+    "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",

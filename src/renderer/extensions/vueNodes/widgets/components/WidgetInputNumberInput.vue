@@ -1,24 +1,21 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
+import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import WidgetLayoutFieldLabel from './layout/WidgetLayoutFieldLabel.vue'
 
 const { locale } = useI18n()
+const inputId = useId()
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -43,7 +40,7 @@ function unformatValue(value: string) {
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const formattedValue = computed(() => {
+const displayValue = computed(() => {
   const value = modelValue.value
   if ((value as unknown) === '' || !isFinite(value)) return `${value}`
 
@@ -57,7 +54,7 @@ const formattedValue = computed(() => {
   return formatNumber(value, options)
 })
 
-function parseWidgetValue(raw: string): number | undefined {
+function parseValue(raw: string): number | undefined {
   return evaluateInput(unformatValue(raw))
 }
 
@@ -76,60 +73,17 @@ const filteredProps = computed(() => {
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const isDisabled = computed(() => props.widget.options?.disabled ?? false)
+const disabled = computed(() => props.widget.options?.disabled ?? false)
 
-// Get the precision value for proper number formatting
 const precision = computed(() => {
   const p = props.widget.options?.precision
-  // Treat negative or non-numeric precision as undefined
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-// Calculate the step value based on precision or widget options
-const stepValue = computed(() => {
-  // Use step2 (correct input spec value) if available
-  if (props.widget.options?.step2 !== undefined) {
-    return props.widget.options.step2
-  }
-  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
-  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
-  // We skip default step values (1, 10) to avoid affecting normal widgets
-  const step = props.widget.options?.step as number | undefined
-  if (step !== undefined && step > 10) {
-    return step / 10
-  }
-  // Otherwise, derive from precision
-  if (precision.value !== undefined) {
-    if (precision.value === 0) {
-      return 1
-    }
-    // For precision > 0, step = 1 / (10^precision)
-    // precision 1 → 0.1, precision 2 → 0.01, etc.
-    return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
-  }
-  // Default to 'any' for unrestricted stepping
-  return 0
-})
+const step = useNumberStepCalculation(() => props.widget.options, precision)
 
-// Disable grouping separators by default unless explicitly enabled by the node author
 const useGrouping = computed(() => {
   return props.widget.options?.useGrouping === true
-})
-
-// Check if increment/decrement buttons should be disabled due to precision limits
-const buttonsDisabled = computed(() => {
-  const currentValue = modelValue.value ?? 0
-  return (
-    !Number.isFinite(currentValue) ||
-    Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
-  )
-})
-
-const buttonTooltip = computed(() => {
-  if (buttonsDisabled.value) {
-    return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
-  }
-  return null
 })
 
 const sliderWidth = computed(() => {
@@ -145,7 +99,9 @@ const sliderWidth = computed(() => {
   return (ratio * 100).toFixed(0)
 })
 
-const inputAriaAttrs = computed(() => ({
+const inputAttrs = computed(() => ({
+  id: inputId,
+  'aria-label': props.widget.label || props.widget.name,
   'aria-valuenow': modelValue.value,
   'aria-valuemin': filteredProps.value.min,
   'aria-valuemax': filteredProps.value.max,
@@ -155,42 +111,37 @@ const inputAriaAttrs = computed(() => ({
 </script>
 
 <template>
-  <WidgetLayoutField :widget :root-class="props.rootClass">
-    <Tooltip :disabled="!buttonTooltip">
-      <TooltipTrigger as-child>
-        <ScrubableNumberInput
-          v-model="modelValue"
-          :aria-label="widget.name"
-          :min="filteredProps.min"
-          :max="filteredProps.max"
-          :step="stepValue"
-          :display-value="formattedValue"
-          :disabled="isDisabled"
-          :hide-buttons="buttonsDisabled"
-          :parse-value="parseWidgetValue"
-          :input-attrs="inputAriaAttrs"
-          :class="
-            cn(
-              WidgetInputBaseClass,
-              'relative flex grow text-xs',
-              useWidgetHeight()
-            )
-          "
-        >
-          <template #background>
-            <div
-              class="pointer-events-none absolute size-full overflow-clip rounded-md"
-            >
-              <div
-                class="size-full bg-primary/15"
-                :style="{ width: `${sliderWidth}%` }"
-              />
-            </div>
-          </template>
-          <slot />
-        </ScrubableNumberInput>
-      </TooltipTrigger>
-      <TooltipContent>{{ buttonTooltip }}</TooltipContent>
-    </Tooltip>
-  </WidgetLayoutField>
+  <ScrubableNumberInput
+    v-model="modelValue"
+    data-testid="widget-number-row"
+    :min="filteredProps.min"
+    :max="filteredProps.max"
+    :step
+    :display-value
+    :disabled
+    :parse-value
+    :input-attrs
+    :class="
+      cn('cursor-ew-resize touch-pan-y', widget.borderStyle, props.rootClass)
+    "
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+  >
+    <template #label>
+      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" />
+    </template>
+    <template #between><slot name="between" /></template>
+    <template #background>
+      <div
+        class="pointer-events-none absolute inset-0 -z-10 overflow-clip rounded-md"
+      >
+        <div
+          class="size-full bg-primary/15"
+          :style="{ width: `${sliderWidth}%` }"
+        />
+      </div>
+    </template>
+    <slot />
+  </ScrubableNumberInput>
 </template>
