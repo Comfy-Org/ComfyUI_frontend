@@ -76,6 +76,12 @@ describe('findModelReplacements', () => {
       expected: []
     },
     {
+      case: 'nothing from a different parent path ending in the same folder',
+      missing: 'sdxl/canny/model.safetensors',
+      options: ['sd15/canny/model.safetensors'],
+      expected: []
+    },
+    {
       case: 'nothing across file extensions',
       missing: 'sd3_fp16.safetensors',
       options: ['sd3.5_large', 'sd3_fp16.safetensors.bak'],

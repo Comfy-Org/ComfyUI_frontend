@@ -41,7 +41,7 @@ function parseModelPath(path: string): ModelPath {
     .join('_')
   return {
     fileName,
-    folder: parts.at(-1) ?? '',
+    folder: parts.join('/'),
     variantKey: stemKey && stemKey + extension
   }
 }
