@@ -46,6 +46,9 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly footer: Locator
   public readonly historyButton: Locator
+  public readonly historyHeading: Locator
+  public readonly historySearchClearButton: Locator
+  public readonly historySearchField: Locator
   public readonly hostFenceNotice: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
@@ -124,6 +127,15 @@ export class AgentPanel {
     this.footer = this.root.getByTestId('agent-panel-footer')
     this.historyButton = this.root.getByRole('button', {
       name: enMessages.agent.showChatHistory
+    })
+    this.historyHeading = this.root.getByRole('heading', {
+      name: enMessages.agent.history
+    })
+    this.historySearchClearButton = this.root.getByRole('button', {
+      name: enMessages.agent.historySearchClear
+    })
+    this.historySearchField = this.root.getByRole('combobox', {
+      name: enMessages.agent.historySearchLabel
     })
     this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
     this.loadFailedMessage = this.dockedPanelShell.getByText(

@@ -12,15 +12,18 @@ const searching = (text: string): ChatHistorySearchState => ({
 })
 
 describe('chat history search transitions', () => {
-  it('searches on non-empty text and returns to idle when it is cleared', () => {
+  it('searches on non-empty text and returns to idle when it is emptied', () => {
     const typed = transitionChatHistorySearch(initialChatHistorySearchState, {
       type: 'type',
       text: 'plan'
     })
-    const cleared = transitionChatHistorySearch(typed.state, { type: 'clear' })
+    const emptied = transitionChatHistorySearch(typed.state, {
+      type: 'type',
+      text: ''
+    })
 
     expect(typed.state).toEqual(searching('plan'))
-    expect(cleared.state).toEqual(initialChatHistorySearchState)
+    expect(emptied.state).toEqual(initialChatHistorySearchState)
   })
 
   it('keeps whitespace-only text in the field but treats it as idle', () => {

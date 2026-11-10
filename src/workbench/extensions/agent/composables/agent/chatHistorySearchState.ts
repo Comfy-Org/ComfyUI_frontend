@@ -5,7 +5,6 @@ export type ChatHistorySearchState = {
 
 export type ChatHistorySearchEvent =
   | { type: 'type'; text: string }
-  | { type: 'clear' }
   | { type: 'escape' }
 
 export type ChatHistorySearchEffect = 'none' | 'leaveHistory'
@@ -26,8 +25,6 @@ export function transitionChatHistorySearch(
   switch (event.type) {
     case 'type':
       return { state: stateForText(event.text), effect: 'none' }
-    case 'clear':
-      return { state: initialChatHistorySearchState, effect: 'none' }
     case 'escape':
       return {
         state: initialChatHistorySearchState,

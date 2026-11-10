@@ -24,11 +24,10 @@ test.describe('Agent chat history search', { tag: ['@cloud', '@ui'] }, () => {
   test('finds a chat by its first message and shows where it matched', async ({
     page
   }) => {
-    const panel = await new AgentPanel(page).openHistory(30_000)
+    const agent = new AgentPanel(page)
+    const panel = await agent.openHistory(30_000)
 
-    await panel
-      .getByRole('combobox', { name: enMessages.agent.historySearchLabel })
-      .fill('lighting')
+    await agent.historySearchField.fill('lighting')
 
     await expect(
       panel.getByRole('button', { name: 'Portrait upscale', exact: true })
@@ -44,17 +43,13 @@ test.describe('Agent chat history search', { tag: ['@cloud', '@ui'] }, () => {
   test('says when nothing matches, then restores the list when cleared', async ({
     page
   }) => {
-    const panel = await new AgentPanel(page).openHistory(30_000)
-    const field = panel.getByRole('combobox', {
-      name: enMessages.agent.historySearchLabel
-    })
+    const agent = new AgentPanel(page)
+    const panel = await agent.openHistory(30_000)
 
-    await field.fill('zzzq')
+    await agent.historySearchField.fill('zzzq')
     await expect(panel.getByText('No chats match "zzzq"')).toBeVisible()
 
-    await panel
-      .getByRole('button', { name: enMessages.agent.historySearchClear })
-      .click()
+    await agent.historySearchClearButton.click()
     await expect(
       panel.getByRole('button', { name: 'Weekly plan', exact: true })
     ).toBeVisible()
@@ -64,21 +59,16 @@ test.describe('Agent chat history search', { tag: ['@cloud', '@ui'] }, () => {
   })
 
   test('Esc clears the query first, then leaves History', async ({ page }) => {
-    const panel = await new AgentPanel(page).openHistory(30_000)
-    const field = panel.getByRole('combobox', {
-      name: enMessages.agent.historySearchLabel
-    })
+    const agent = new AgentPanel(page)
+    await agent.openHistory(30_000)
+    const field = agent.historySearchField
     await field.fill('plan')
 
     await field.press('Escape')
     await expect(field).toHaveValue('')
-    await expect(
-      panel.getByRole('heading', { name: enMessages.agent.history })
-    ).toBeVisible()
+    await expect(agent.historyHeading).toBeVisible()
 
     await field.press('Escape')
-    await expect(
-      panel.getByRole('heading', { name: enMessages.agent.history })
-    ).toBeHidden()
+    await expect(agent.historyHeading).toBeHidden()
   })
 })

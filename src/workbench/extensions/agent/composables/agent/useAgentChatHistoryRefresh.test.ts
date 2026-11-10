@@ -122,6 +122,27 @@ describe('useAgentChatHistoryRefresh', () => {
     ])
   })
 
+  it('reads a workflow reference in the preview by name when the preview stands in for the title', async () => {
+    const { history, listThreads, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce({
+      status: 'complete',
+      threads: [
+        {
+          ...thread('untitled', '', ''),
+          preview: 'Tweak [Portrait flow](workflow://cloud-1)  lighting'
+        },
+        { ...thread('blank', '', ''), preview: '   ' }
+      ]
+    })
+
+    await refreshHistory()
+
+    expect(history.sessions.map(({ id, title }) => [id, title])).toEqual([
+      ['untitled', 'Tweak Portrait flow lighting'],
+      ['blank', 'Untitled chat']
+    ])
+  })
+
   it('retains history and reports a failed listing', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     listThreads.mockResolvedValueOnce(requestFailure)
