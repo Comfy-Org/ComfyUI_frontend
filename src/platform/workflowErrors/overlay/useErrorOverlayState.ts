@@ -238,6 +238,7 @@ export function useErrorOverlayState() {
   return {
     hasError,
     hasMissingNodes,
+    missingModelGroups,
     isVisible,
     overlayMessage,
     overlayTitle,
