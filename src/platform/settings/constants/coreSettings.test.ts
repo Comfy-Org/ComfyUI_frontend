@@ -65,10 +65,6 @@ describe('extension path setting', () => {
 
 describe('color palette setting', () => {
   it.for([
-    { saved: 'spooky', expected: 'dark' },
-    { saved: 'skeleton', expected: 'dark' },
-    { saved: 'witch', expected: 'dark' },
-    { saved: 'zombie', expected: 'dark' },
     { saved: 'fennec', expected: 'fennec' },
     { saved: 'light', expected: 'light' },
     { saved: 'my-palette', expected: 'my-palette' },

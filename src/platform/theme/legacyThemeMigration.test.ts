@@ -28,6 +28,48 @@ describe('saved legacy theme migration', () => {
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   })
 
+  it('keeps an imported preset selectable and restores it after reload', async () => {
+    vi.mocked(api.getSettings).mockResolvedValue(fromPartial<Settings>({}))
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+    const service = useThemeService()
+    const custom = { ...DEFAULT_THEME_PRESET, id: 'spooky', name: 'My theme' }
+
+    await service.addCustomThemePreset(custom)
+    await settings.set('Comfy.ColorPalette', 'spooky')
+
+    expect(settings.get('Comfy.ColorPalette')).toBe('spooky')
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({
+        'Comfy.CustomColorPalettes': { spooky: custom },
+        'Comfy.ColorPalette': settings.get('Comfy.ColorPalette')
+      })
+    )
+    await settings.load()
+    await service.loadCustomThemePresets()
+
+    expect(settings.get('Comfy.ColorPalette')).toBe('spooky')
+    expect(useThemeStore().presetsLookup.spooky).toEqual(custom)
+  })
+
+  it('replaces a saved selection absent from the preset registry with Dark', async () => {
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({ 'Comfy.ColorPalette': 'missing-theme' })
+    )
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+
+    await useThemeService().loadCustomThemePresets()
+
+    expect(settings.get('Comfy.ColorPalette')).toBe('dark')
+    expect(api.storeSettings).toHaveBeenCalledWith({
+      'Comfy.CustomColorPalettes': {},
+      'Comfy.ColorPalette': 'dark'
+    })
+  })
+
   it.for(['custom_dark', 'dark', undefined])(
     'preserves built-ins and authored colors with selection %s',
     async (activeId) => {

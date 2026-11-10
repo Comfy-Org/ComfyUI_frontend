@@ -962,8 +962,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      if (['spooky', 'skeleton', 'witch', 'zombie'].includes(value))
-        return 'dark'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },
