@@ -25,8 +25,6 @@ interface ModelPath {
   variantKey: string
 }
 
-const parsedOptions = new WeakMap<readonly (string | number)[], ModelPath[]>()
-
 function parseModelPath(path: string): ModelPath {
   const parts = path.toLowerCase().replace(/\\/g, '/').split('/')
   const fileName = parts.pop() ?? ''
@@ -46,14 +44,6 @@ function parseModelPath(path: string): ModelPath {
   }
 }
 
-function parseOptions(options: readonly (string | number)[]): ModelPath[] {
-  const cached = parsedOptions.get(options)
-  if (cached) return cached
-  const parsed = options.map((option) => parseModelPath(String(option)))
-  parsedOptions.set(options, parsed)
-  return parsed
-}
-
 function isSameFolderOrUnfoldered(a: ModelPath, b: ModelPath): boolean {
   return !a.folder || !b.folder || a.folder === b.folder
 }
@@ -67,14 +57,11 @@ export function findModelReplacements(
   options: readonly (string | number)[]
 ): string[] {
   const missing = parseModelPath(missingName)
-  const parsed = parseOptions(options)
-  const candidates = options.flatMap((option, index) =>
-    typeof option === 'string' &&
-    option !== missingName &&
-    isSameFolderOrUnfoldered(missing, parsed[index])
-      ? [{ option, path: parsed[index] }]
-      : []
-  )
+  const candidates = options.flatMap((option) => {
+    if (typeof option !== 'string' || option === missingName) return []
+    const path = parseModelPath(option)
+    return isSameFolderOrUnfoldered(missing, path) ? [{ option, path }] : []
+  })
 
   const sameFile = candidates.filter(
     ({ path }) => path.fileName === missing.fileName

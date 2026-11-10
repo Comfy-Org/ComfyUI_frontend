@@ -111,4 +111,14 @@ describe('findModelReplacements', () => {
   ])('suggests $case', ({ missing, options, expected }) => {
     expect(findModelReplacements(missing, options)).toEqual(expected)
   })
+
+  it('reflects options added to the same list after an earlier lookup', () => {
+    const options = ['other.safetensors']
+    findModelReplacements('m_fp16.safetensors', options)
+    options.push('m_bf16.safetensors')
+
+    expect(findModelReplacements('m_fp16.safetensors', options)).toEqual([
+      'm_bf16.safetensors'
+    ])
+  })
 })
