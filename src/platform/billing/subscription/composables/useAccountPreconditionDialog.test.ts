@@ -58,6 +58,19 @@ describe('useAccountPreconditionDialog', () => {
     })
   })
 
+  it('marks a refused run so the subscription dialog explains it instead of opening a tab', async () => {
+    await useAccountPreconditionDialog().open('subscription', {
+      runRefused: true
+    })
+
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscription_required',
+      runRefused: true
+    })
+  })
+
   it('routes a credit precondition to the top-up dialog', async () => {
     await useAccountPreconditionDialog().open('credits', {
       nodeType: 'PartnerNode'

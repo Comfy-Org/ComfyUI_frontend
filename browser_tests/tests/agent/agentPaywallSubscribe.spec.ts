@@ -12,6 +12,7 @@ import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilitie
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -41,14 +42,6 @@ const CREATOR_YEARLY_PLAN = createPlan({
   priceCents: 33_600,
   monthlyCredits: 7_400
 })
-
-const CREATOR_YEARLY_SUBSCRIBE = enMessages.subscription.subscribeTo.replace(
-  '{plan}',
-  enMessages.subscription.tierNameYearly.replace(
-    '{name}',
-    enMessages.subscription.tiers.creator.name
-  )
-)
 
 /**
  * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`
@@ -136,7 +129,7 @@ agentTest.describe(
     })
 
     agentTest(
-      'opens the subscription dialog once the config gate is open',
+      'opens the platform Plans page once the config gate is open',
       async ({ page, agentPanel }, testInfo) => {
         await reconfigureBilling(page, { subscriptionRequired: true })
 
@@ -149,19 +142,7 @@ agentTest.describe(
           contentType: 'image/png'
         })
 
-        await subscribeButton.click()
-
-        const dialog = page.locator(DIALOG_SELECTOR)
-        await expect(dialog).toBeVisible()
-        await expect(
-          dialog.getByRole('button', { name: CREATOR_YEARLY_SUBSCRIBE }),
-          'the pricing table offers the plan served by /billing/plans'
-        ).toBeEnabled()
-
-        await testInfo.attach('subscription-dialog-opened', {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png'
-        })
+        await expectPlatformPlansOpened(page, () => subscribeButton.click())
       }
     )
 
