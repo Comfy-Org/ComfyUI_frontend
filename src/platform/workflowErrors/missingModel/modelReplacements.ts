@@ -20,8 +20,8 @@ const QUANTIZATION_TAG = new RegExp(
 )
 
 interface ModelPath {
-  folder: string
   fileName: string
+  folder: string
   variantKey: string
 }
 
@@ -40,8 +40,8 @@ function parseModelPath(path: string): ModelPath {
     .filter(Boolean)
     .join('_')
   return {
-    folder: parts.at(-1) ?? '',
     fileName,
+    folder: parts.at(-1) ?? '',
     variantKey: stemKey && stemKey + extension
   }
 }
