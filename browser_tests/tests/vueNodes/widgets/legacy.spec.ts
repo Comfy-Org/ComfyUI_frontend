@@ -9,10 +9,13 @@ test.describe(
   'Plain legacy widgets',
   { tag: ['@vue-nodes', '@widget'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.clearGraph()
+    })
+
     test('renders widgets added through legacy APIs and direct mutation', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.clearGraph()
       const nodeId = toNodeId(
         await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode(
@@ -65,7 +68,6 @@ test.describe(
     test('repaints when a legacy widget mutates its value and marks the canvas dirty', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.clearGraph()
       const legacyNode = await comfyPage.nodeOps.addNode(
         'DevToolsNodeWithLegacyWidget',
         undefined,
