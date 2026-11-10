@@ -35,7 +35,6 @@ const litegraphBaseSchema = z.object({
     z.literal(RenderShape.BOX),
     z.literal(RenderShape.ROUND),
     z.literal(RenderShape.CARD),
-    // Legacy palettes have string field for NODE_DEFAULT_SHAPE.
     z.string()
   ]),
   NODE_BOX_OUTLINE_COLOR: z.string(),
@@ -104,6 +103,9 @@ export const themeSchema = z
     ['node-foreground']: z.string(),
     ['node-header']: z.string(),
     ['node-border']: z.string(),
+    ['node-radius']: z.string(),
+    ['node-title-font-size']: z.string(),
+    ['node-icon-style']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })
@@ -123,8 +125,7 @@ const partialColorsSchema = z.object({
   theme: themeSchema.optional()
 })
 
-// Palette in the wild can have custom metadata fields such as 'version'.
-export const paletteSchema = z
+export const themePresetSchema = z
   .object({
     id: z.string(),
     name: z.string(),
@@ -133,16 +134,17 @@ export const paletteSchema = z
   })
   .passthrough()
 
-const completedPaletteSchema = z
+const completedPresetSchema = z
   .object({
     id: z.string(),
     name: z.string(),
+    light_theme: z.boolean().optional(),
     colors: colorsSchema
   })
   .passthrough()
 
 export type Colors = z.infer<typeof colorsSchema>
-export type Theme = z.infer<typeof themeSchema>
-export type Palette = z.infer<typeof paletteSchema>
-export type CompletedPalette = z.infer<typeof completedPaletteSchema>
-export type ColorPalettes = Record<string, Palette>
+export type ThemeTokens = z.infer<typeof themeSchema>
+export type ThemePreset = z.infer<typeof themePresetSchema>
+export type CompletedThemePreset = z.infer<typeof completedPresetSchema>
+export type ThemePresets = Record<string, ThemePreset>

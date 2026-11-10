@@ -493,6 +493,9 @@ importers:
       '@comfyorg/telemetry':
         specifier: workspace:*
         version: link:packages/telemetry
+      '@comfyorg/theme-core':
+        specifier: workspace:*
+        version: link:packages/theme-core
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:packages/viewport3d
@@ -1489,6 +1492,9 @@ importers:
       '@comfyorg/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+      '@comfyorg/theme-core':
+        specifier: workspace:*
+        version: link:../theme-core
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.44(typescript@6.0.3))
@@ -1501,9 +1507,6 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.44(typescript@6.0.3)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
     devDependencies:
       '@types/semver':
         specifier: 'catalog:'
@@ -1604,6 +1607,19 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/theme-core:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/viewport3d:
     dependencies:
