@@ -4,6 +4,7 @@
  * rather than risk showing the customer the other checkout.
  */
 import { CLOUD_BASE_URL } from '@/config/env'
+import { handoffTab } from '@/handoff/handoffTab'
 import { billingWebSessionClient } from '@/session/billingWebSession'
 
 export type CheckoutUiVariant = 'embedded' | 'full_page'
@@ -127,6 +128,7 @@ let memo:
   | undefined
 
 function awaitCloudFeatures(): Promise<CloudFeatures | undefined> {
+  if (handoffTab.value !== undefined) return Promise.resolve(undefined)
   const onSession = webSessionCloudRead()
   if (onSession) {
     const { uid, read } = onSession
