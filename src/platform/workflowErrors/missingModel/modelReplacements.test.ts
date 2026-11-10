@@ -44,14 +44,42 @@ describe('findModelReplacements', () => {
     {
       case: 'GGUF quant levels',
       missing: 'wan2.1-t2v-14b-Q4_K_M.gguf',
-      options: ['wan2.1-t2v-14b-Q8_0.gguf', 'wan2.1-t2v-1.3b-Q8_0.gguf'],
-      expected: ['wan2.1-t2v-14b-Q8_0.gguf']
+      options: [
+        'wan2.1-t2v-14b-Q8_0.gguf',
+        'wan2.1-t2v-1.3b-Q8_0.gguf',
+        'wan2.1-t2v-14b-q5-k-s.gguf'
+      ],
+      expected: ['wan2.1-t2v-14b-Q8_0.gguf', 'wan2.1-t2v-14b-q5-k-s.gguf']
     },
     {
       case: 'the same file in a subfolder ahead of a quantization variant',
       missing: 'model_fp16.safetensors',
       options: ['model_bf16.safetensors', 'sub/model_fp16.safetensors'],
       expected: ['sub/model_fp16.safetensors', 'model_bf16.safetensors']
+    },
+    {
+      case: 'mixed-precision and bit-width variants',
+      missing: 'flux2_dev_fp8mixed.safetensors',
+      options: [
+        'flux2_dev_bf16.safetensors',
+        'flux2_klein_fp8mixed.safetensors'
+      ],
+      expected: ['flux2_dev_bf16.safetensors']
+    },
+    {
+      case: 'nothing from a different model folder sharing a generic file name',
+      missing: 'controlnet-canny-sdxl/diffusion_pytorch_model.fp16.safetensors',
+      options: [
+        'controlnet-depth-sdxl\\diffusion_pytorch_model.fp16.safetensors',
+        'controlnet-depth-sdxl/diffusion_pytorch_model.safetensors'
+      ],
+      expected: []
+    },
+    {
+      case: 'nothing across file extensions',
+      missing: 'sd3_fp16.safetensors',
+      options: ['sd3.5_large', 'sd3_fp16.safetensors.bak'],
+      expected: []
     },
     {
       case: 'nothing for a name that is only a quantization tag',

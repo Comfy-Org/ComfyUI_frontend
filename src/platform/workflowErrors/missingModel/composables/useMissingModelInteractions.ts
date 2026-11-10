@@ -4,6 +4,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
@@ -35,6 +36,7 @@ export function useMissingModelInteractions() {
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const workflowStore = useWorkflowStore()
 
   function toggleModelExpand(key: string) {
     store.modelExpandState[key] = !isModelExpanded(key)
@@ -90,12 +92,15 @@ export function useMissingModelInteractions() {
       if (node) {
         const widget = node.widgets?.find((w) => w.name === ref.widgetName)
         if (widget) {
+          const oldValue = widget.value
           widget.value = value
           widget.callback?.(value)
+          node.onWidgetChanged?.(widget.name, value, oldValue, widget)
         }
         node.graph?.setDirtyCanvas(true, true)
       }
     }
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)

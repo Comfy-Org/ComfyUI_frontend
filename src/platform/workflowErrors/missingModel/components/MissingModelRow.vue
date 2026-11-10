@@ -190,7 +190,7 @@
     </div>
 
     <div
-      v-if="replacements.length"
+      v-if="model.representative.replacements?.length"
       data-testid="missing-model-replacements"
       class="flex flex-col pl-5"
     >
@@ -202,7 +202,7 @@
       </span>
       <ul :aria-labelledby="replacementsLabelId" class="m-0 list-none p-0">
         <li
-          v-for="replacement in replacements"
+          v-for="replacement in model.representative.replacements"
           :key="replacement"
           class="flex min-h-8 min-w-0 items-center gap-2"
         >
@@ -354,11 +354,6 @@ const isCloudImportDownloadActive = computed(
 )
 const cloudImportProgressPercent = computed(() =>
   Math.round((downloadStatus.value?.progress ?? 0) * 100)
-)
-const replacements = computed(() =>
-  isCloudImportDownloadActive.value
-    ? []
-    : (model.representative.replacements ?? [])
 )
 const replacementsLabelId = useId()
 const hasMultipleReferences = computed(() => model.referencingNodes.length > 1)

@@ -369,10 +369,16 @@ describe('MissingModelRow', () => {
       'sub/model.safetensors',
       'model_bf16.safetensors'
     ]
+    const unrelated = {
+      ...model.representative,
+      nodeId: '3',
+      name: 'other.safetensors'
+    }
     const store = useMissingModelStore()
     store.setMissingModels([
       { ...model.representative, nodeId: '1' },
-      { ...model.representative, nodeId: '2' }
+      { ...model.representative, nodeId: '2' },
+      unrelated
     ])
     renderRow(model, vi.fn(), false, 'checkpoints')
 
@@ -386,7 +392,7 @@ describe('MissingModelRow', () => {
       'model_bf16.safetensors',
       'model_bf16.safetensors'
     ])
-    expect(store.missingModelCandidates).toBeNull()
+    expect(store.missingModelCandidates).toEqual([unrelated])
   })
 
   it('locates the parent row directly when a cloud model has one reference', async () => {
