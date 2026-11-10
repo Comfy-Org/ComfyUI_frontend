@@ -84,7 +84,7 @@ export function startAssetDrag(
     filename: getAssetStoredFilename(asset, storedHash),
     subfolder: getOutputSubfolder(asset.user_metadata),
     type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
-    display_name: asset.display_name ?? asset.name,
+    display_name: asset.display_name || asset.name,
     attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }

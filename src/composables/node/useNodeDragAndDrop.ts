@@ -4,7 +4,19 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { withHdrImageType } from '@/utils/eventUtils'
+import { getPathDetails } from '@/utils/formatUtil'
 import { parseUrl } from '@/utils/urlSafety'
+
+function getFetchedAssetFileName({
+  filename,
+  display_name
+}: ResultItem): string | undefined {
+  if (!filename || !display_name) return filename
+  const label = getPathDetails(display_name)
+  return label.suffix && label.suffix === getPathDetails(filename).suffix
+    ? label.fullFilename
+    : filename
+}
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -77,8 +89,7 @@ export const useNodeDragAndDrop = <T>(
     try {
       const resp = await fetch(uri)
       const fileName =
-        asset?.display_name ??
-        asset?.filename ??
+        (asset && getFetchedAssetFileName(asset)) ??
         uri.searchParams.get('filename') ??
         baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
