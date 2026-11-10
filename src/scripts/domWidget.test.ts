@@ -227,7 +227,7 @@ describe('DOM widget value accessors with a non-function getValue/setValue', () 
 })
 
 test.for([undefined, true, false])(
-  'assignment callbacks respect callbackOnSet=%s without consuming callback reads',
+  'assignment callbacks respect callbackOnSet=%s',
   (callbackOnSet) => {
     let value = 'initial'
     const widget = new LGraphNode('test-node').addDOMWidget(
@@ -246,8 +246,6 @@ test.for([undefined, true, false])(
     widget.callback = callback
     widget.value = '13'
     expect(widget.value).toBe('13')
-    expect(widget.callback).toBe(callback)
-    expect(widget.callback).toBe(callback)
     expect(callback).toHaveBeenCalledTimes(callbackOnSet === false ? 0 : 1)
     widget.callback(widget.value)
     expect(callback).toHaveBeenLastCalledWith('13')

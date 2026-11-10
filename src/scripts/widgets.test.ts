@@ -30,7 +30,7 @@ test('extension policy commits once and preserves drafts across presentation upd
       control.update({ value, displayValue: String(value) })
     }
   })
-  control.edit()
+  await user.click(screen.getByText('Width'))
   await nextTick()
   await user.clear(screen.getByRole('textbox', { name: 'Width' }))
   await user.type(screen.getByRole('textbox', { name: 'Width' }), '-')
