@@ -10,6 +10,11 @@ import type { PreservedQueryDefinition } from '@/platform/navigation/preservedQu
  */
 export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
   {
+    namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+    keys: ['workflowId'],
+    rejectRepeated: true
+  },
+  {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
     keys: ['template', 'source', 'mode']
   },
@@ -65,5 +70,9 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
     keys: ['workflows'],
     rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF,
+    keys: ['from_local']
   }
 ]

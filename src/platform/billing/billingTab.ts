@@ -1,16 +1,8 @@
-import { isDesktop } from '@/platform/distribution/types'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 
 export interface BillingTab {
   navigate(url: string): void
   close(): void
-}
-
-/**
- * Desktop denies every in-app popup and hands its URL to the system browser,
- * so `window.open` there always returns `null` even though the page opened.
- */
-function handsPopupsToSystemBrowser(): boolean {
-  return isDesktop || window.__comfyDesktop2 !== undefined
 }
 
 /** Opens a billing page in a new tab; `false` only when the browser blocked it. */

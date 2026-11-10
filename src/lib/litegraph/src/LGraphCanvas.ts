@@ -4491,10 +4491,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
     } catch (error) {
       localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
-      reportError(error, {
-        errorType: 'error_writing_clipboard_storage',
-        surface: 'graph'
-      })
+      if (
+        !(error instanceof DOMException && error.name === 'QuotaExceededError')
+      ) {
+        reportError(error, {
+          errorType: 'error_writing_clipboard_storage',
+          surface: 'graph'
+        })
+      }
     }
     return serializedData
   }
@@ -5320,15 +5324,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const node of visible_nodes) {
         ctx.save()
 
-        // Draw snap shadow
         if (drawSnapGuides && selectedItems.has(node))
           this.drawSnapGuide(ctx, node)
 
-        // Localise co-ordinates to node position
         ctx.translate(node.pos[0], node.pos[1])
 
-        // Draw
         this.drawNode(node, ctx)
+        if (LiteGraph.vueNodesMode) {
+          for (const widget of node.widgets ?? []) widget.triggerDraw?.()
+        }
 
         ctx.restore()
       }

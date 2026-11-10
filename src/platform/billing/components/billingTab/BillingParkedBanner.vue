@@ -2,7 +2,7 @@
   <div
     v-if="parked"
     role="status"
-    class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
+    class="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-parked-banner"
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1">

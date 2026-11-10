@@ -1069,6 +1069,7 @@ describe('CheckoutView', () => {
         status: 'ok',
         value: upgradeQuote({
           requires_reactivation_confirmation: true,
+          requires_reactivation_charge_confirmation: true,
           amount_due_cents: 4500
         })
       }
@@ -1194,9 +1195,14 @@ describe('CheckoutView', () => {
       code: 'REACTIVATION_CONFIRMATION_REQUIRED'
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Confirm upgrade' })
-    )
+    const confirmUpgrade = await screen.findByRole('button', {
+      name: 'Confirm upgrade'
+    })
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: upgradeQuote({ requires_reactivation_charge_confirmation: true })
+    })
+    await userEvent.click(confirmUpgrade)
 
     const reactivate = await screen.findByRole('button', {
       name: 'Confirm & reactivate — $28.00 today'
@@ -1597,9 +1603,14 @@ describe('CheckoutView attempt telemetry', () => {
       status: 'error',
       code: 'REACTIVATION_CONFIRMATION_REQUIRED'
     })
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Confirm upgrade' })
-    )
+    const confirmUpgrade = await screen.findByRole('button', {
+      name: 'Confirm upgrade'
+    })
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: upgradeQuote({ requires_reactivation_charge_confirmation: true })
+    })
+    await userEvent.click(confirmUpgrade)
     const reactivate = await screen.findByRole('button', {
       name: 'Confirm & reactivate — $28.00 today'
     })

@@ -4,68 +4,52 @@
   "description": "Shared Three.js viewport: WebGL renderer views and high-precision output, scene, camera, controls, lighting, view helper, and event managers, letterboxed sizing, render loop, context-menu guard, the shared viewport interfaces, viewport widget shell, and node wiring. Model loading, animation, recording, serialization, and node extensions remain in the Load3D host.",
   "modules": [
     {
-      "path": "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
-      "role": "presentation"
+      "path": "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts"
     },
     {
-      "path": "src/extensions/core/load3d/components/menubar/menuBarStyles.ts",
-      "role": "presentation"
+      "path": "src/extensions/core/load3d/components/menubar/menuBarStyles.ts"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.ts"
     },
     {
-      "path": "packages/viewport3d/src/**",
-      "role": "application"
+      "path": "packages/viewport3d/src/**"
     },
     {
-      "path": "packages/viewport3d/src/load3d/CameraManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/CameraManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/ControlsManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/ControlsManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/EventManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/EventManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/LightingManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/LightingManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/SceneManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/SceneManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/ViewHelperManager.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/ViewHelperManager.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/Viewport3d.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/Viewport3d.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/createViewport3d.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/createViewport3d.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/interfaces.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/interfaces.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/load3dContextMenuGuard.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/load3dContextMenuGuard.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/load3dRenderLoop.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/load3dRenderLoop.ts"
     },
     {
-      "path": "packages/viewport3d/src/load3d/load3dViewport.ts",
-      "role": "application"
+      "path": "packages/viewport3d/src/load3d/load3dViewport.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -109,7 +93,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Existing imports and runtime behavior remain unchanged; model-viewer, camera, and light cross-domain imports remain visible without new dependency permissions.",
+    "Existing imports and runtime behavior remain unchanged; model-viewer, camera, and light cross-domain imports remain untracked and gain no dependency permissions.",
     "Classification does not move model loading, animation, recording, serialization, or graph node state into the viewport capability."
   ],
   "deepImports": "inventory"

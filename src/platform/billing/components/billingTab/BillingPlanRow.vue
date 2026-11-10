@@ -1,6 +1,6 @@
 <template>
   <section
-    class="flex items-start justify-between gap-4 rounded-xl border border-card px-5 py-4"
+    class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">
@@ -27,7 +27,7 @@
         class="shrink-0 no-underline"
       >
         {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
-        <i class="icon-[lucide--external-link]" aria-hidden="true" />
+        <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="action"
@@ -60,12 +60,12 @@ import BillingPlanLifecycle from '@/platform/billing/components/billingTab/Billi
 import {
   CONTACT_SALES_URL,
   formatPlanDate
-} from '@/platform/billing/components/billingTab/planRow'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+} from '@comfyorg/account-core/billing'
 import type {
   PlanRowAction,
   PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 const {
   state,

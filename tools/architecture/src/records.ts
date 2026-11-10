@@ -143,7 +143,7 @@ function withSubjectTests(
     if (!subject) continue
     implied.set(subject.module, [
       ...(implied.get(subject.module) ?? []),
-      { path: test, role: subject.module.role }
+      { path: test }
     ])
   }
   return records.map((record) => ({
@@ -160,15 +160,12 @@ export const contains = (outer: string, inner: string) =>
   outer.endsWith('/**') &&
   inner.startsWith(outer.slice(0, -2))
 
-export const sameRole = (a: Claim, b: Claim) =>
-  a.record === b.record && a.module.role === b.module.role
-
 /**
  * Maps each file to the most specific module path that matches it, so a
  * directory can claim everything below it while nested paths override parts
  * of it.
  */
-export function claimFiles(
+function claimFiles(
   records: DomainRecord[],
   files: string[]
 ): Map<string, Claim> {
@@ -254,10 +251,6 @@ function stalePathWarnings(
   )
 }
 
-/**
- * A path is redundant when the nearest path enclosing it has the same domain
- * and role: removing it hands its files to that path unchanged.
- */
 function redundantPathWarnings(
   records: { filename: string; record: DomainRecord }[],
   sourceFiles: string[],
@@ -287,10 +280,10 @@ function redundantPathWarnings(
       return outer &&
         !subject &&
         !prefixSubjects.has(module) &&
-        sameRole(outer, { record, module })
+        outer.record === record
         ? [
             {
-              message: `${record.id} path repeats the role of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
+              message: `${record.id} path repeats the domain of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
               file: filename
             }
           ]
@@ -311,10 +304,10 @@ function redundantTestWarnings(
       .filter(({ path }) => TEST_FILE.test(path))
       .flatMap((module) => {
         const subject = subjectOf(module.path, fileModules, sourceStems)
-        return subject && sameRole(subject, { record, module })
+        return subject?.record === record
           ? [
               {
-                message: `${record.id} path repeats the role of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
+                message: `${record.id} path repeats the domain of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
                 file: filename
               }
             ]

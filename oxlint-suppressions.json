@@ -373,7 +373,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/litegraph/src/subgraph/Subgraph.ts": {
@@ -571,11 +571,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -658,7 +653,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/workflow/management/stores/workflowStore.ts": {
@@ -814,11 +809,6 @@
   "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
     }
   },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
@@ -1082,11 +1072,6 @@
       "count": 1
     }
   },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/types/extensionTypes.ts": {
     "comfy/no-reexports": {
       "count": 2
@@ -1094,7 +1079,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 37
+      "count": 35
     }
   },
   "src/types/slotId.test.ts": {

@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Yeniden Başlat"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Seçili Düğüm için 3D Görüntüleyiciyi Aç (Beta)"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Deneysel: Model Varlıklarını Gözat"
   },
@@ -105,7 +108,7 @@
     "label": "Seçili Düğümleri Daralt/Genişlet"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Links": {
-    "label": "Seçili Düğümlerin Bağlantılarını Gizle/Göster"
+    "label": "Seçili Düğümlerde Bağlantıları Gizle/Göster"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Seçili Düğümleri Sessize Al/Sesi Aç"
