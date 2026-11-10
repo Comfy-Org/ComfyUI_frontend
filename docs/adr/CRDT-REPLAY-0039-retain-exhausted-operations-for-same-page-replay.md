@@ -6,6 +6,8 @@ Date: 2026-09-28
 
 Proposed
 
+## Amendments
+
 Partly implemented: transport exhaustion now holds the batch in `opSender` and
 replays it after the reconnect's catch-up. Stamping of that replay is decided in
 [CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).

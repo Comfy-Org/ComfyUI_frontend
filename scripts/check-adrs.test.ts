@@ -110,7 +110,7 @@ describe('validateAdrDirectory', () => {
 
   test('rejects a new ADR that reuses a sequence number', () => {
     const directory = createFixture({
-      'UI-0008-new-decision.md': adr('UI-0008', '2026-11-03', 'Accepted')
+      'UI-0008-new-decision.md': adr('UI-0008', '2026-11-11', 'Accepted')
     })
 
     expect(() => validateAdrDirectory(directory)).toThrow(
@@ -120,7 +120,7 @@ describe('validateAdrDirectory', () => {
 
   test('tolerates sequence numbers shared before the uniqueness rule', () => {
     const directory = createFixture({
-      'UI-0008-old-decision.md': adr('UI-0008', '2026-11-02', 'Accepted')
+      'UI-0008-old-decision.md': adr('UI-0008', '2026-11-10', 'Accepted')
     })
 
     expect(() => validateAdrDirectory(directory)).not.toThrow()

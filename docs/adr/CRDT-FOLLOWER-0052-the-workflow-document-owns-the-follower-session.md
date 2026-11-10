@@ -6,6 +6,8 @@ Date: 2026-11-04
 
 Proposed
 
+## Context
+
 Drafted against [FRONT-3582](https://linear.app/comfyorg/issue/FRONT-3582).
 It is a draft: it records the ownership decision and the migration order, and
 it is not in force until frontend maintainers ratify it. Ratification is owed
@@ -13,8 +15,6 @@ by the owners of the follower seam — `DrJKL`, who owns the FE-2504 rewrite
 this builds on, with `dante01yoon` for the panel and session surface — and the
 product direction in Decision 4 was already approved by Christian Byrne (see
 Notes).
-
-## Context
 
 The follower is the inbound half of the in-app agent: the host applies ops to
 a shared Yjs document and broadcasts the result, and the frontend replays that

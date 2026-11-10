@@ -11,7 +11,7 @@ const STATUS_LINE_PATTERN =
   /^(Proposed|Accepted|Rejected|Deprecated|Superseded)(?: \(\d{4}-\d{2}-\d{2}\))?(?: by \[ADR-[A-Z0-9-]+\]\([^)\s]+\.md\))?$/
 const STATUS_SECTION_PATTERN =
   /^## Status[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m
-const LAST_DATE_WITH_SHARED_SEQUENCES = '2026-11-02'
+const LAST_DATE_WITH_SHARED_SEQUENCES = '2026-11-10'
 const CITED_PROPOSALS_AWAITING_OWNER_STATUS = new Set([
   'AUTH-BILLING-0014',
   'AUTH-SESSION-0037',
