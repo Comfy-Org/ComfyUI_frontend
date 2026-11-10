@@ -151,7 +151,7 @@ const test = comfyPageFixture.extend({
 })
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
-  test('keeps both action buttons inside the popover when cancelled but active', async ({
+  test('shows only Add credits, inside the popover, when cancelled but active', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
@@ -163,18 +163,19 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     await expect(popover).toBeVisible()
 
     const addCredits = page.getByTestId('add-credits-button')
-    const resubscribe = page.getByRole('button', { name: 'Resubscribe' })
     await expect(addCredits).toBeVisible()
-    await expect(resubscribe).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Resubscribe' })).toHaveCount(
+      0
+    )
 
     const popoverBox = await popover.boundingBox()
-    const resubscribeBox = await resubscribe.boundingBox()
+    const addCreditsBox = await addCredits.boundingBox()
     expect(popoverBox).not.toBeNull()
-    expect(resubscribeBox).not.toBeNull()
+    expect(addCreditsBox).not.toBeNull()
 
     const popoverRight = popoverBox!.x + popoverBox!.width
-    const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
-    expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
+    const addCreditsRight = addCreditsBox!.x + addCreditsBox!.width
+    expect(addCreditsRight).toBeLessThanOrEqual(popoverRight)
   })
 
   test('keeps the user card inside the single popover frame', async ({

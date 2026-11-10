@@ -145,7 +145,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
-    await expect(page.getByTestId('add-credits-button')).toBeEnabled()
+    await expect(
+      page.getByRole('button', { name: /^(Subscribe|Resubscribe)$/ })
+    ).toBeVisible()
+    await expect(page.getByTestId('add-credits-button')).toHaveCount(0)
     const longWorkspaceCapabilities = page.waitForResponse(
       (response) =>
         response.url().includes('/api/billing/capabilities') &&
