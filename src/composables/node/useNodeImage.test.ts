@@ -83,13 +83,38 @@ describe('useNodeVideo', () => {
 
   it('replaces the previous video with a message when a new output fails to load', async () => {
     const { node, video, createdVideos } = await setup()
+    const callback = vi.fn()
 
-    useNodeVideo(node).showPreview()
+    useNodeVideo(node, callback).showPreview()
     await failBothAttempts(createdVideos, 2)
 
     expect(node.videoContainer?.contains(video)).toBe(false)
     expect(previewElement(node)).toBe(node.videoContainer)
     expect(node.videoContainer?.textContent).toBe('Video failed to load')
+    expect(callback).toHaveBeenCalledOnce()
+  })
+
+  it('says the browser cannot play a batch where one output is unsupported', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/a.mov',
+      'http://video/b.mp4'
+    ])
+    const node = createDOMWidgetNode({ size: [400, 400], graph: new LGraph() })
+    const createdVideos = trackCreatedVideos()
+    const failWith = (video: HTMLVideoElement, code: number) => {
+      Object.defineProperty(video, 'error', { value: { code } })
+      video.onerror?.(new Event('error'))
+    }
+
+    useNodeVideo(node).showPreview()
+    failWith(createdVideos[0], 4)
+    failWith(createdVideos[1], 2)
+    await vi.advanceTimersByTimeAsync(1)
+    failWith(createdVideos[2], 4)
+    failWith(createdVideos[3], 2)
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(node.videoContainer?.textContent).toContain("can't play this video")
   })
 
   it('says the browser cannot play a source it does not support', async () => {
@@ -339,7 +364,8 @@ describe('canvas node media failure telemetry', () => {
       '/api/view?filename=gone.png&type=output'
     ])
     const setDirtyCanvas = vi.spyOn(node.graph!, 'setDirtyCanvas')
-    useNodeImage(node).showPreview()
+    const callback = vi.fn()
+    useNodeImage(node, callback).showPreview()
     await flush()
     created[1].onerror?.(new Event('error'))
     await flush()
@@ -348,6 +374,7 @@ describe('canvas node media failure telemetry', () => {
 
     expect(node.imgs).toBeUndefined()
     expect(setDirtyCanvas).toHaveBeenCalled()
+    expect(callback).toHaveBeenCalledOnce()
   })
 
   it('stays silent when the image loads', async () => {

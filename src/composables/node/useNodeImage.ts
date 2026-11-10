@@ -163,6 +163,7 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
     telemetrySource: 'canvas_node_image',
     onFailedLoading: () => {
       node.imgs = undefined
+      callback?.()
     }
   })
 }
@@ -199,14 +200,14 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
-      unsupportedSource = false
 
       video.onloadeddata = () => {
         setMinDimensions(video)
         resolve(video)
       }
       video.onerror = () => {
-        unsupportedSource = video.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED
+        if (video.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED)
+          unsupportedSource = true
         resolve(null)
       }
       video.src = url
@@ -246,6 +247,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     showInContainer(videoElements[0])
     const widget = findVideoWidget()
     if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
+    unsupportedSource = false
     callback?.()
   }
 
@@ -259,7 +261,9 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       message.textContent = t(
         unsupportedSource ? 'g.videoFormatNotSupported' : 'g.videoFailedToLoad'
       )
+      unsupportedSource = false
       showInContainer(message)
+      callback?.()
     }
   })
 }
