@@ -1394,16 +1394,17 @@ describe('useWidgetSelectItems', () => {
     )
   })
 
-  it('keeps same-named local outputs apart by the subfolder in their stored filename', async () => {
+  it('keeps same-named local outputs apart by the subfolder in their loader path', async () => {
     mockMediaAssets.items.value = [
       'hdr_00001.exr',
       'renders/hdr_00001.exr'
-    ].map((filename) =>
+    ].map((loaderPath) =>
       fromPartial<AssetItem>({
-        id: filename,
+        id: loaderPath,
         name: 'hdr_00001.exr',
-        tags: ['output', 'uploaded'],
-        user_metadata: { filename }
+        loader_path: loaderPath,
+        tags: ['output'],
+        user_metadata: {}
       })
     )
 

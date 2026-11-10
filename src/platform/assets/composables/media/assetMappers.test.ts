@@ -154,22 +154,33 @@ describe('unflattenOutputAssets', () => {
   })
 
   it.for([
-    { filename: 'hdr_00001.exr', subfolder: '' },
-    { filename: 'renders/hdr_00001.exr', subfolder: 'renders' },
-    { filename: 'archive/renders/hdr_00001.exr', subfolder: 'archive/renders' }
+    { loaderPath: 'hdr_00001.exr', hash: undefined, subfolder: '' },
+    {
+      loaderPath: 'renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'renders'
+    },
+    {
+      loaderPath: 'archive/renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'archive/renders'
+    },
+    { loaderPath: 'renders/hdr_00001.exr', hash: 'blake3:abc', subfolder: '' }
   ])(
-    'reads the subfolder $subfolder from a local output stored as $filename',
-    ({ filename, subfolder }) => {
+    'reads the subfolder "$subfolder" from a local output at $loaderPath with hash $hash',
+    ({ loaderPath, hash, subfolder }) => {
       const [grouped] = unflattenOutputAssets([
         {
           id: 'output-id',
           name: 'hdr_00001.exr',
+          hash,
+          loader_path: loaderPath,
           job_id: 'job-id',
           size: 1,
-          tags: ['output', 'uploaded'],
+          tags: ['output'],
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
-          user_metadata: { filename }
+          user_metadata: {}
         }
       ] satisfies AssetItem[])
       const metadata = getOutputAssetMetadata(grouped.user_metadata)
