@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {},
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom/vitest"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue"]
+}

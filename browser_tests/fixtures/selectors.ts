@@ -191,6 +191,7 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    legacyCanvas: 'legacy-widget-canvas',
     numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
     formDropdownMenu: 'form-dropdown-menu',
