@@ -269,7 +269,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await clickNodeTitleWithMeta('Load Checkpoint')
       await clickNodeTitleWithMeta('KSampler')
       await clickNodeTitleWithMeta('Empty Latent Image')
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
       const headerPos = await getHeaderPos(comfyPage, 'Load Checkpoint')
@@ -287,7 +287,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
     }
 
-    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+    await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
 
     const checkpointAfter = await getHeaderPos(comfyPage, 'Load Checkpoint')
     const ksamplerAfter = await getHeaderPos(comfyPage, 'KSampler')

@@ -1,5 +1,7 @@
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import {
   cloudEditorUrl,
   cloudOrigin,
@@ -7,6 +9,7 @@ import {
   zLocalHandoffReady
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
+import { stageDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
@@ -25,6 +28,8 @@ export interface CloudTab {
 
 export interface CloudTabOpener {
   open(url: string): CloudTab | undefined
+
+  openDisowned(url: string): void
 }
 
 const browserTabs: CloudTabOpener = {
@@ -39,6 +44,9 @@ const browserTabs: CloudTabOpener = {
       postMessage: (message, targetOrigin) =>
         tab.postMessage(message, targetOrigin)
     }
+  },
+  openDisowned(url) {
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 }
 
@@ -57,6 +65,13 @@ function showPrepareFailed() {
     description: t('openOnCloud.prepareFailedDetail'),
     duration: NOTICE_MS
   })
+}
+
+function downloadWorkflow(filename: string, workflow: ComfyWorkflowJSON) {
+  downloadBlob(
+    `${filename}.json`,
+    new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' })
+  )
 }
 
 function armHandoff(
@@ -91,10 +106,30 @@ function armHandoff(
   })
 }
 
+async function openFromDesktop(
+  tabs: CloudTabOpener,
+  filename: string
+): Promise<void> {
+  const workflow = await prepareWorkflow()
+  if (!workflow) return showPrepareFailed()
+  const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
+    () => undefined
+  )
+  if (relay) return tabs.openDisowned(relay)
+  tabs.openDisowned(cloudEditorUrl())
+  downloadWorkflow(filename, workflow)
+  useToast().info(t('openOnCloud.downloaded'), {
+    description: t('openOnCloud.downloadedDetail'),
+    duration: NOTICE_MS
+  })
+}
+
 export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
+  if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
+
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))
   if (!tab) {

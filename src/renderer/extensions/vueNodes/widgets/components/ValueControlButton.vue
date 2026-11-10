@@ -4,9 +4,8 @@ import { useI18n } from 'vue-i18n'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { mode, variant = 'badge' } = defineProps<{
+const { mode } = defineProps<{
   mode: ControlOptions
-  variant?: 'badge' | 'button'
 }>()
 
 const { t } = useI18n()
@@ -34,7 +33,7 @@ const textMap: Record<ControlOptions, string | null> = {
     :class="
       cn(
         'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none',
-        variant === 'badge' ? 'h-4.5 w-8 rounded-full' : 'size-6 rounded-sm',
+        'h-5 w-9 rounded-full',
         mode !== 'fixed'
           ? 'bg-foreground/10 hover:bg-foreground/20'
           : 'bg-transparent'
