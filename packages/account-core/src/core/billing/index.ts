@@ -224,12 +224,39 @@ export {
   addCreditsWait
 } from './addCredits/addCreditsRefusal'
 export type {
+  AddCreditsAutoTopUpFacts,
+  AddCreditsAutoTopUpOffer,
+  AutoTopUpActivation,
+  AutoTopUpDefaultCard,
+  AutoTopUpErrors,
+  AutoTopUpField,
+  AutoTopUpFieldError,
+  AutoTopUpFormInput,
+  AutoTopUpFormValues,
+  AutoTopUpRules
+} from './addCredits/addCreditsAutoTopUp'
+export {
+  AUTO_TOP_UP_STARTING_LIMIT_CENTS,
+  AUTO_TOP_UP_STARTING_THRESHOLD_CREDITS,
+  CREDITS_PER_USD,
+  addCreditsAutoTopUpOffer,
+  autoTopUpActivationFor,
+  autoTopUpTargetFor,
+  creditsToCents,
+  eachTopUpAtLeastCents,
+  parseAutoTopUpForm,
+  smallestTopUpCents,
+  startAutoTopUpForm,
+  validateAutoTopUp
+} from './addCredits/addCreditsAutoTopUp'
+export type {
   AddCreditsAmountView,
   AddCreditsEvent,
   AddCreditsFacts,
   AddCreditsNotice,
   AddCreditsPendingTopup,
-  AddCreditsState
+  AddCreditsState,
+  AutoTopUpActivationOutcome
 } from './addCredits/addCreditsDialog'
 export {
   addCreditsRefusalBlocks,

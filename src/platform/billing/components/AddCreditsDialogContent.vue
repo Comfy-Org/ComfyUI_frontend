@@ -9,6 +9,8 @@
     :negative-balance-credits="negativeBalanceCredits"
     :pending-topup="pendingTopup"
     :plan-line="planLine"
+    :auto-top-up="autoTopUpLine.offer.value"
+    :billing-url="autoTopUpLine.billingUrl.value"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="BILLING_SUPPORT_URL"
     :locale
@@ -46,6 +48,7 @@ import {
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { useAddCreditsAutoTopUpLine } from '@/platform/billing/composables/useAddCreditsAutoTopUpLine'
 import { useAutoTopUpSetupOffer } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -86,6 +89,7 @@ const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
 const { canTopUp, topUpDenial } = useBillingCapabilities()
 const autoTopUpOffer = useAutoTopUpSetupOffer()
+const autoTopUpLine = useAddCreditsAutoTopUpLine()
 const { payment: processingPayment } = useProcessingTopupPayment()
 const { topupOperation, createHostedCheckout, quoteTopup } = useTopupOperation()
 const planLine = useAddCreditsPlanLine()

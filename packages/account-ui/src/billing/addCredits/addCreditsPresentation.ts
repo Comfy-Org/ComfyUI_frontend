@@ -5,10 +5,16 @@ import type {
   AddCreditsNotice,
   AddCreditsPendingTopup,
   AddCreditsRefusal,
-  AddCreditsTranslate
+  AddCreditsTranslate,
+  AutoTopUpDefaultCard,
+  AutoTopUpFieldError,
+  AutoTopUpFormValues,
+  AutoTopUpRules
 } from '@comfyorg/account-core/billing'
 import {
   addCreditsWait,
+  creditsToCents,
+  smallestTopUpCents,
   amountErrorCopyKey,
   waitCopy
 } from '@comfyorg/account-core/billing'
@@ -252,4 +258,60 @@ export function footerCopyFor(
       { amount: context.format.money(amountCents ?? 0) }
     )
   }
+}
+
+/** The Billing auto top-up dialog's message for a field error, word for word. */
+export function autoTopUpFieldMessage(
+  error: AutoTopUpFieldError,
+  values: AutoTopUpFormValues,
+  rules: AutoTopUpRules,
+  { translate, format }: AddCreditsCopyContext
+): string {
+  const threshold = values.thresholdCredits ?? 0
+  switch (error) {
+    case 'notWhole':
+    case 'belowMinimum':
+      return translate(`autoTopUp.fieldError.${error}`)
+    case 'belowTarget':
+      return translate('autoTopUp.fieldError.belowTarget', {
+        minimum: format.count(threshold + rules.minReloadCredits),
+        usd: format.dollars(Math.round(creditsToCents(rules.minReloadCredits)))
+      })
+    case 'aboveTarget': {
+      const max = threshold + (rules.maxReloadCredits ?? 0)
+      return translate('autoTopUp.fieldError.aboveTarget', {
+        max: format.count(max),
+        usd: format.dollars(Math.round(creditsToCents(max) / 100) * 100)
+      })
+    }
+    case 'belowTopUp':
+      return translate('autoTopUp.fieldError.belowTopUp', {
+        amount: format.dollars(
+          Math.ceil(
+            (smallestTopUpCents(values, rules.maxReloadCredits) ?? 0) / 100
+          ) * 100
+        )
+      })
+    case 'invalid':
+    case 'aboveCeiling':
+      return translate('autoTopUp.invalid')
+  }
+}
+
+export const BILLING_TOKEN = '{billing}'
+
+/** The consent by card, split around where the Billing link renders. */
+export function autoTopUpConsentParts(
+  defaultCard: AutoTopUpDefaultCard | null,
+  translate: AddCreditsTranslate
+): readonly string[] {
+  const billing = BILLING_TOKEN
+  const sentence =
+    defaultCard === null
+      ? translate('autoTopUp.consentNoCard', { billing })
+      : translate('autoTopUp.consentDefaultCard', {
+          billing,
+          card: translate('autoTopUp.card', { ...defaultCard })
+        })
+  return sentence.split(/(\{billing\})/).filter((part) => part !== '')
 }

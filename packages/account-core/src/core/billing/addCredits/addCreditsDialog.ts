@@ -4,6 +4,7 @@ import type {
   AddCreditsBounds
 } from './addCreditsAmount'
 import { checkAddCreditsAmount } from './addCreditsAmount'
+import type { AutoTopUpActivation } from './addCreditsAutoTopUp'
 import type { AddCreditsRefusal } from './addCreditsRefusal'
 
 /**
@@ -37,7 +38,17 @@ export type AddCreditsState =
       readonly checkoutUrl: string
     }
   | { readonly step: 'auto_top_up_offer'; readonly setupUrl: string }
+  | {
+      readonly step: 'auto_top_up_on'
+      readonly settings: AutoTopUpActivation
+    }
+  | { readonly step: 'auto_top_up_failed'; readonly setupUrl?: string }
   | { readonly step: 'landed' }
+
+/** What the server reports about turning auto top-up on with a paid top-up. */
+export type AutoTopUpActivationOutcome =
+  | { readonly status: 'on'; readonly settings: AutoTopUpActivation }
+  | { readonly status: 'failed' }
 
 export type AddCreditsEvent =
   | { readonly type: 'preset_picked'; readonly cents: number }
@@ -55,6 +66,7 @@ export type AddCreditsEvent =
       readonly type: 'payment_landed'
       /** Platform's Turn on auto top-up link, when the served facts offer it. */
       readonly autoTopUpSetupUrl?: string
+      readonly activation?: AutoTopUpActivationOutcome
     }
 
 export function startAddCredits(amount: AddCreditsAmount): AddCreditsState {
@@ -134,11 +146,19 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
         : state,
     payment_landed: (state, event) => {
       if (
-        state.step === 'amount' ||
-        state.step === 'landed' ||
-        state.step === 'auto_top_up_offer'
+        state.step !== 'opening' &&
+        state.step !== 'checkout_opened' &&
+        state.step !== 'checkout_blocked'
       )
         return state
+      if (event.activation?.status === 'on') {
+        return { step: 'auto_top_up_on', settings: event.activation.settings }
+      }
+      if (event.activation?.status === 'failed') {
+        return event.autoTopUpSetupUrl === undefined
+          ? { step: 'auto_top_up_failed' }
+          : { step: 'auto_top_up_failed', setupUrl: event.autoTopUpSetupUrl }
+      }
       return event.autoTopUpSetupUrl === undefined
         ? { step: 'landed' }
         : { step: 'auto_top_up_offer', setupUrl: event.autoTopUpSetupUrl }

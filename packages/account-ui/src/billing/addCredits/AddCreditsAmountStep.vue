@@ -53,6 +53,8 @@
       @type="emit('type', $event)"
     />
 
+    <slot name="autoTopUp" />
+
     <slot
       name="notice"
       :notice="view.notice"
