@@ -116,6 +116,15 @@ export function useAgentWorkflowResolver({
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
+  /** Display name of a chat's workflow, or undefined while it is unresolved. */
+  function workflowNameFor(session: {
+    workflowId?: string
+  }): string | undefined {
+    return session.workflowId === undefined
+      ? undefined
+      : indexedNameFor(session.workflowId)
+  }
+
   /**
    * A persisted binding is stale when the cloud index says `workflowId` is
    * a different saved workflow than the tab it points at, and the tab's own
@@ -255,6 +264,7 @@ export function useAgentWorkflowResolver({
     forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,
+    workflowNameFor,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,

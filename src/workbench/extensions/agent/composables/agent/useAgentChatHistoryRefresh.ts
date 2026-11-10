@@ -63,7 +63,8 @@ export function useAgentChatHistoryRefresh({
       updatedAt: lastActivityAt ?? Date.now(),
       lastActivityAt,
       titleSource: thread.title ? 'server' : 'fallback',
-      workflowId: thread.workflow_id || undefined
+      workflowId: thread.workflow_id || undefined,
+      preview: thread.preview || undefined
     }
   }
 

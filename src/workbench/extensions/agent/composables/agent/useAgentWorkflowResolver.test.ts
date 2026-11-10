@@ -84,6 +84,49 @@ describe('Agent workflow resolution', () => {
     localStorage.clear()
   })
 
+  describe('workflowNameFor', () => {
+    it('returns the saved workflow name once the cloud listing resolves it', async () => {
+      const { resolver } = setup(
+        [],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+      await resolver.refreshCloudWorkflowIds()
+
+      expect(resolver.workflowNameFor({ workflowId: 'cloud-portrait' })).toBe(
+        'Portrait'
+      )
+    })
+
+    it.for([
+      { case: 'pending listing', refresh: false, workflowId: 'cloud-portrait' },
+      { case: 'unresolved id', refresh: true, workflowId: 'cloud-other' },
+      { case: 'no workflow id', refresh: true, workflowId: undefined }
+    ])('returns undefined, never the raw id, for $case', async (row) => {
+      const { resolver } = setup(
+        [],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+      if (row.refresh) await resolver.refreshCloudWorkflowIds()
+
+      expect(
+        resolver.workflowNameFor({ workflowId: row.workflowId })
+      ).toBeUndefined()
+    })
+
+    it('does not name a workflow after the listing forgot it', async () => {
+      const { resolver } = setup(
+        [],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+      await resolver.refreshCloudWorkflowIds()
+      resolver.forgetCloudWorkflowId('cloud-portrait')
+
+      expect(
+        resolver.workflowNameFor({ workflowId: 'cloud-portrait' })
+      ).toBeUndefined()
+    })
+  })
+
   it.for(['cold', 'closed', 'forgotten'])(
     'does not use cached open resolution for a %s target despite its binding',
     async (state) => {
