@@ -52,11 +52,7 @@ describe('LGraphCanvas.renderInfo', () => {
 
     lgCanvas.renderInfo(ctx, 10, 0)
 
-    const lineHeight = 13
-    const lineCount = vi.mocked(ctx.fillText).mock.calls.length
-    expect(ctx.translate).toHaveBeenCalledWith(
-      10,
-      2160 / 2 - (lineCount + 1) * lineHeight
-    )
+    expect(ctx.fillText).toHaveBeenCalledTimes(3)
+    expect(ctx.translate).toHaveBeenCalledWith(10, 1028)
   })
 })
