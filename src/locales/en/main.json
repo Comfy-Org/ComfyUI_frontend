@@ -2624,6 +2624,8 @@
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
+    "linkedWorkflowNotOpened": "Couldn't open this workflow",
+    "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",

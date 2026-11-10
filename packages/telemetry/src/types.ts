@@ -469,6 +469,24 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export type WorkflowLinkOutOfSyncReason =
+  | 'no_sidebar_path'
+  | 'name_ambiguous'
+  | 'file_missing'
+  | 'content_mismatch'
+  | 'unknown'
+
+export type WorkflowLinkOpenedMetadata =
+  | {
+      outcome: 'opened' | 'not_found' | 'error'
+      workspace_id: string | null
+    }
+  | {
+      outcome: 'out_of_sync'
+      reason: WorkflowLinkOutOfSyncReason
+      workspace_id: string | null
+    }
+
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
@@ -1619,6 +1637,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowLinkOpened?(metadata: WorkflowLinkOpenedMetadata): void
   trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
@@ -1820,6 +1839,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  WORKFLOW_LINK_OPENED: 'app:workflow_link_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
   SHARE_LINK_OPENED: 'app:share_link_opened',
@@ -2007,6 +2027,7 @@ export type TelemetryEventProperties =
   | EnterLinearMetadata
   | ShareFlowMetadata
   | ShareLinkOpenedMetadata
+  | WorkflowLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata
