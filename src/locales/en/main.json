@@ -4207,6 +4207,7 @@
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
       "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
       "pointGpu": "Work in ComfyUI on the GPU you choose",
@@ -4849,7 +4850,7 @@
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
     "deployOnPlatform": "Deploy on Platform",
-    "deployWithAgent": "Deploy with your agent",
+    "deployWithAgent": "Build with your agent",
     "copied": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",

@@ -88,12 +88,17 @@ async function takeRelayDestination(
   return record.data.destination
 }
 
-async function relayWorkflow(url: URL): Promise<boolean> {
-  const nonce = relayNonce(url)
-  if (!nonce) return false
+async function isOpenOnCloudEnabled(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
+  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+  return useFeatureFlags().flags.openOnCloudEnabled
+}
+
+async function relayWorkflow(url: URL): Promise<boolean> {
+  const nonce = relayNonce(url)
+  if (!nonce) return false
   api.user = url.searchParams.get('user') ?? ''
   const destination = await takeRelayDestination(nonce)
   if (!destination) return false
@@ -104,6 +109,7 @@ async function relayWorkflow(url: URL): Promise<boolean> {
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
+  if (!(await isOpenOnCloudEnabled().catch(() => false))) return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')
