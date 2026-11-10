@@ -14,7 +14,6 @@ import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widget
 import { useThemeStore } from '@/platform/theme/themeStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useWidgetSpansNodeWidth } from '@/types/widgetTypes'
 
 const props = defineProps<{
   widget: SimplifiedWidget<undefined>
@@ -24,9 +23,7 @@ const props = defineProps<{
 const canvasEl = ref()
 const containerEl = ref<HTMLElement>()
 const containerHeight = ref(20)
-const canvasWidth = ref(0)
 
-const spansNodeWidth = useWidgetSpansNodeWidth()
 const canvasStore = useCanvasStore()
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
@@ -97,10 +94,9 @@ function getWidgetHeight(
 
 function draw() {
   if (!widgetInstance || !node || !containerEl.value) return
-  const width = spansNodeWidth ? node.size[0] : containerEl.value.clientWidth
+  const width = containerEl.value.clientWidth
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
-  canvasWidth.value = width
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.last_y = 0
@@ -149,14 +145,13 @@ function handleMove(e: PointerEvent) {
 <template>
   <div
     ref="containerEl"
-    class="relative -mx-3 w-full min-w-0"
+    class="relative -mx-3 min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
       ref="canvasEl"
       data-testid="legacy-widget-canvas"
-      class="absolute cursor-crosshair"
-      :style="{ width: `${canvasWidth}px` }"
+      class="absolute w-full cursor-crosshair"
       @pointerdown.stop="handleDown"
       @pointerup.stop="handleUp"
       @pointermove.stop="handleMove"

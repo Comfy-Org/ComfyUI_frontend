@@ -12,7 +12,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { WidgetSpansNodeWidthKey } from '@/types/widgetTypes'
 import {
   createMockCanvasRenderingContext2D,
   stubCanvasGetContext
@@ -110,49 +109,42 @@ describe('WidgetLegacy canvas sizing', () => {
 })
 
 describe('WidgetLegacy canvas width', () => {
-  const nodeWidth = 320
-  const containerWidth = 296
-  const hosts = [
-    { name: 'the Vue node', spansNodeWidth: true, expectedWidth: nodeWidth },
-    { name: 'a panel', spansNodeWidth: false, expectedWidth: containerWidth }
-  ]
+  it('uses the untransformed layout width when the canvas is zoomed', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
+    graph.add(node)
+    widget.draw = () => {}
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
 
-  it.for(hosts)(
-    'draws at $expectedWidth when hosted by $name',
-    async ({ spansNodeWidth, expectedWidth }) => {
-      const graph = new LGraph()
-      const node = new LGraphNode('Legacy')
-      node.size = [nodeWidth, 100]
-      const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
-      graph.add(node)
-      const draw = vi.fn()
-      widget.draw = draw
-      useCanvasStore().canvas = fromPartial({ graph })
-      await nextTick()
+    const layoutWidth = 200
+    const zoomedRectWidth = layoutWidth * 0.5
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+      layoutWidth
+    )
+    vi.spyOn(
+      HTMLCanvasElement.prototype,
+      'getBoundingClientRect'
+    ).mockReturnValue(DOMRect.fromRect({ width: zoomedRectWidth, height: 20 }))
+    const canvases: HTMLCanvasElement[] = []
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        canvases.push(this)
+        return null
+      }
+    )
 
-      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
-        containerWidth
-      )
-      stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'frame_load_cap', type: 'number', value: undefined }
+      }
+    })
 
-      render(WidgetLegacy, {
-        props: {
-          nodeId: node.id,
-          widget: { name: 'frame_load_cap', type: 'number', value: undefined }
-        },
-        global: { provide: { [WidgetSpansNodeWidthKey]: spansNodeWidth } }
-      })
-      await nextTick()
-
-      const canvasElement = screen.getByTestId<HTMLCanvasElement>(
-        'legacy-widget-canvas'
-      )
-      expect(widget.width).toBe(expectedWidth)
-      expect(draw.mock.lastCall?.[2]).toBe(expectedWidth)
-      expect(canvasElement.width).toBe(expectedWidth * 2)
-      expect(canvasElement.style.width).toBe(`${expectedWidth}px`)
-    }
-  )
+    expect(widget.width).toBe(layoutWidth)
+    expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
 })
 
 describe('WidgetLegacy repaint', () => {

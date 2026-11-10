@@ -248,7 +248,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, provide, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -300,7 +300,6 @@ import {
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { WidgetSpansNodeWidthKey } from '@/types/widgetTypes'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -329,8 +328,6 @@ import {
 const { nodeData } = defineProps<{
   nodeData: NodeState
 }>()
-
-provide(WidgetSpansNodeWidthKey, true)
 
 const { t } = useI18n()
 
