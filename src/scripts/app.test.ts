@@ -3012,7 +3012,16 @@ describe('ComfyApp', () => {
       }
     )
 
+    const gitRemoteAuxId =
+      'https://git.example.test/team/private-node-pack.git?token=example-token#revision'
+
     it.for([
+      {
+        name: 'HTTP(S) aux_id with a query and fragment',
+        metadata: { aux_id: gitRemoteAuxId },
+        expectedProperties: { aux_id: gitRemoteAuxId },
+        expectedCnrId: gitRemoteAuxId
+      },
       {
         name: 'non-string fields',
         metadata: { cnr_id: {}, aux_id: {}, ver: [] },

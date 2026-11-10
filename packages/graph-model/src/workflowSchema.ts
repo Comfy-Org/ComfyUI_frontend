@@ -206,19 +206,16 @@ const zGithubAuxId = z
   )
   .transform(([username, repo]) => `${username}/${repo}`)
 
-const zGitRemoteAuxId = z
-  .string()
-  .refine((remote) => {
-    if (!/^https?:\/\/[^/\s\\][^\s\\]*$/i.test(remote)) return false
+const zGitRemoteAuxId = z.string().refine((remote) => {
+  if (!/^https?:\/\/[^/\s\\][^\s\\]*$/i.test(remote)) return false
 
-    try {
-      const { pathname, username, password } = new URL(remote)
-      return pathname !== '/' && !username && !password
-    } catch {
-      return false
-    }
-  }, 'Invalid HTTP(S) git remote')
-  .transform((remote) => remote.replace(/[?#].*$/, ''))
+  try {
+    const { pathname, username, password } = new URL(remote)
+    return pathname !== '/' && !username && !password
+  } catch {
+    return false
+  }
+}, 'Invalid HTTP(S) git remote')
 
 const zAuxId = z.union([zGithubAuxId, zRepoLikeId, zGitRemoteAuxId])
 

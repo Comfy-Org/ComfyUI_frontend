@@ -325,6 +325,7 @@ describe('parseComfyWorkflow', () => {
       'valid-username-with-dash/valid_github-repo-name-with-underscore',
       'private-node-pack.git',
       'https://gitlab.example.test/team/plugins/private-node-pack.git',
+      'https://gitlab.example.test/team/plugins/private-node-pack.git?token=example-token#revision',
       'http://git.example.test:3000/team/private-node-pack'
     ]
     it.for(validAuxIds)('preserves aux_id: %s', async (aux_id) => {

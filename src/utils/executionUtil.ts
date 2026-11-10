@@ -51,18 +51,28 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
   return value
 }
 
+const httpRemotePattern = /^https?:\/\//i
+
+function getExportedAuxId(value: unknown): string | undefined {
+  const auxId = zNodePackMetadata.shape.aux_id.safeParse(value).data
+  // Git remote suffixes can contain credentials. Leave the live value intact.
+  return auxId && httpRemotePattern.test(auxId)
+    ? auxId.replace(/[?#].*$/, '')
+    : auxId
+}
+
 function sanitizeWorkflowAuxIds(graph: ISerialisedGraph | ExportedSubgraph) {
   for (const { properties } of graph.nodes ?? []) {
     if (
       !properties ||
       typeof properties.aux_id !== 'string' ||
-      !/^https?:\/\//i.test(properties.aux_id)
+      !httpRemotePattern.test(properties.aux_id)
     ) {
       continue
     }
 
-    const auxId = zNodePackMetadata.shape.aux_id.safeParse(properties.aux_id)
-    if (auxId.success) properties.aux_id = auxId.data
+    const auxId = getExportedAuxId(properties.aux_id)
+    if (auxId) properties.aux_id = auxId
     else delete properties.aux_id
   }
 
@@ -193,9 +203,7 @@ export const graphToPrompt = async (
     const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
       node.properties.cnr_id
     ).data
-    const auxId = zNodePackMetadata.shape.aux_id.safeParse(
-      node.properties.aux_id
-    ).data
+    const auxId = getExportedAuxId(node.properties.aux_id)
     const packVersion = zNodePackMetadata.shape.ver.safeParse(
       node.properties.ver
     ).data
