@@ -12,6 +12,7 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
 import { useChatHistorySearch } from '@/workbench/extensions/agent/composables/agent/useChatHistorySearch'
+import type { ChatHistorySearchResult } from '@/workbench/extensions/agent/composables/agent/useChatHistorySearch'
 import type {
   ChatSession,
   HistoryGroups
@@ -22,13 +23,16 @@ const {
   groups,
   workflowNameFor = () => undefined,
   loadingId = null,
-  failedId = null
+  failedId = null,
+  narrow = false
 } = defineProps<{
   groups: HistoryGroups
   /** Resolved workflow title for a session; undefined while unresolved. */
   workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null
+  /** Dock narrower than ~350 px; result rows drop the workflow tail. */
+  narrow?: boolean
 }>()
 const emit = defineEmits<{
   back: []
@@ -61,6 +65,7 @@ interface HistorySection {
   items: {
     session: ChatSession
     result?: { preview?: string; workflowName?: string; isCurrent: boolean }
+    ranges?: ChatHistorySearchResult['ranges']
   }[]
 }
 
@@ -72,7 +77,11 @@ const sections = computed<HistorySection[]>(() => {
       : [
           {
             key: 'results',
-            items: results.map(({ session }) => ({ session, result: session }))
+            items: results.map(({ session, ranges }) => ({
+              session,
+              result: session,
+              ranges
+            }))
           }
         ]
   }
@@ -233,7 +242,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
           {{ label }}
         </p>
         <div
-          v-for="{ session, result } in items"
+          v-for="{ session, result, ranges } in items"
           :key="session.id"
           class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
         >
@@ -266,6 +275,8 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
                   : undefined
               "
               :workflow-name="result?.workflowName"
+              :ranges
+              :narrow
               :current="result?.isCurrent"
               :loading="loadingId === session.id"
               :failed="failedId === session.id"

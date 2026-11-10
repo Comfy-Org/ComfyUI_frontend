@@ -4,11 +4,21 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 
+import ChatHistoryHighlight from './ChatHistoryHighlight.vue'
+
+import type {
+  ChatSearchField,
+  ChatSearchRange
+} from '@/workbench/extensions/agent/utils/chatHistorySearch'
+import { planChatRow } from '@/workbench/extensions/agent/utils/chatHistoryRowText'
+
 const {
   title,
   preview,
   date,
   workflowName,
+  ranges = {},
+  narrow = false,
   current = false,
   loading = false,
   failed = false
@@ -18,6 +28,10 @@ const {
   preview?: string
   date?: string
   workflowName?: string
+  /** Search match ranges per field; highlights and the match line derive from them. */
+  ranges?: Partial<Record<ChatSearchField, ChatSearchRange[]>>
+  /** Dock narrower than ~350 px: the workflow tail is dropped. */
+  narrow?: boolean
   current?: boolean
   loading?: boolean
   failed?: boolean
@@ -26,6 +40,21 @@ const emit = defineEmits<{ select: [] }>()
 const { t } = useI18n()
 const displayTitle = computed(() => title.trim() || t('agent.untitledChat'))
 const errorId = useId()
+
+const plan = computed(() =>
+  planChatRow({ title, preview, workflowName, ranges, narrow, current })
+)
+const titleParts = computed(() =>
+  plan.value.titleParts.length
+    ? plan.value.titleParts
+    : [{ text: displayTitle.value, highlighted: false }]
+)
+const matchLabel = computed(() => {
+  const field = plan.value.matchLine?.field
+  if (field === 'title') return t('agent.historyMatchTitle')
+  if (field === 'workflowName') return t('agent.historyMatchWorkflow')
+  return t('agent.historyMatchMessage')
+})
 </script>
 
 <template>
@@ -48,11 +77,22 @@ const errorId = useId()
       />
       <i v-else aria-hidden="true" class="icon-[lucide--circle-check]" />
       <span class="flex min-w-0 flex-col">
-        <span class="truncate">{{ displayTitle }}</span>
+        <span class="truncate"
+          ><ChatHistoryHighlight :parts="titleParts"
+        /></span>
         <template v-if="date !== undefined">
-          <span v-if="preview" class="truncate text-xs text-muted-foreground">{{
-            preview
-          }}</span>
+          <span
+            v-if="plan.matchLine"
+            class="truncate text-xs text-muted-foreground"
+          >
+            <span class="mr-1 font-medium">{{ matchLabel }}</span
+            ><ChatHistoryHighlight :parts="plan.matchLine.parts" />
+          </span>
+          <span
+            v-else-if="plan.previewParts"
+            class="truncate text-xs text-muted-foreground"
+            ><ChatHistoryHighlight :parts="plan.previewParts"
+          /></span>
           <span
             class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
           >
@@ -60,9 +100,12 @@ const errorId = useId()
             <span v-if="current" class="shrink-0 rounded-sm bg-muted px-1">{{
               t('agent.historyCurrentChat')
             }}</span>
-            <span v-if="workflowName" class="ml-auto min-w-0 truncate">{{
-              workflowName
-            }}</span>
+            <span
+              v-if="plan.workflowParts"
+              :title="workflowName"
+              class="ml-auto min-w-0 truncate"
+              ><ChatHistoryHighlight :parts="plan.workflowParts"
+            /></span>
           </span>
         </template>
       </span>
