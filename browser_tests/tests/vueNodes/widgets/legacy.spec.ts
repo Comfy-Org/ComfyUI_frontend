@@ -77,22 +77,21 @@ test.describe(
         .getByTestId(TestIds.widgets.legacyCanvas)
       await expect(canvas).toBeVisible()
 
-      const readCenterPixel = () =>
-        canvas.evaluate((element: HTMLCanvasElement) => {
-          const { data } = element
-            .getContext('2d')!
-            .getImageData(element.width / 2, element.height / 2, 1, 1)
+      const insideFillCorner = { x: 32, y: 4 }
+      const readFillPixel = () =>
+        canvas.evaluate((element: HTMLCanvasElement, { x, y }) => {
+          const { data } = element.getContext('2d')!.getImageData(x, y, 1, 1)
           return Array.from(data).join(',')
-        })
+        }, insideFillCorner)
       const green = '119,255,119,255'
       const blue = '119,119,255,255'
       const red = '255,119,119,255'
-      await expect.poll(readCenterPixel).toBe(green)
+      await expect.poll(readFillPixel).toBe(green)
 
       await test.step('click through the legacy mouse handler', async () => {
         const { height } = (await canvas.boundingBox())!
         await canvas.click({ position: { x: 20, y: height / 2 } })
-        await expect.poll(readCenterPixel).toBe(blue)
+        await expect.poll(readFillPixel).toBe(blue)
       })
 
       await test.step('mutate the value outside any pointer event', async () => {
@@ -104,7 +103,7 @@ test.describe(
           widget.value = 1
           node.setDirtyCanvas(true)
         }, legacyNode.id)
-        await expect.poll(readCenterPixel).toBe(red)
+        await expect.poll(readFillPixel).toBe(red)
       })
     })
 
