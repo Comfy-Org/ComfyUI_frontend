@@ -4,7 +4,10 @@ import { computed, ref, watch } from 'vue'
 import { z } from 'zod'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import {
+  desktopHostTokenRecoveries,
+  desktopHostUser
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -22,13 +25,16 @@ function localSurface(): 'desktop' | 'local_web' {
 
 async function readLocalBillingWeb(): Promise<boolean> {
   try {
-    const auth = await useAuthStore().getAuthHeader()
-    if (!auth) return false
+    const token = await useAuthStore().getIdToken()
+    if (!token) return false
     const response = await fetch(
       new URL('/api/features', getComfyCloudBaseUrl()),
       {
         cache: 'no-store',
-        headers: { ...auth, 'X-Comfy-Surface': localSurface() },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-Comfy-Surface': localSurface()
+        },
         signal: AbortSignal.timeout(READ_TIMEOUT_MS)
       }
     )
@@ -87,6 +93,10 @@ export const useLocalBillingWebFlagStore = defineStore(
           user.workspaceId === previous.workspaceId
         )
           void reread()
+      })
+
+      watch(desktopHostTokenRecoveries, () => {
+        if (authStore.userId) void reread()
       })
 
       useIntervalFn(() => {

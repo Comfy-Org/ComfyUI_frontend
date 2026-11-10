@@ -7,12 +7,15 @@ import type {
   DesktopHostAuthState
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
+  desktopHostWorkspaceToken,
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
 
@@ -247,7 +250,7 @@ describe('useLocalBillingWebFlagStore', () => {
     expect(store.enabled).toBe(false)
   })
 
-  it('turns on after a failed read, token recovery and a successful re-read', async () => {
+  it('turns on after a failed read, the session re-announcing the account and a successful re-read', async () => {
     const state = signedIn('user-1', 'ws-1')
     const host = fakeBridge(state)
     host.bridge.getWorkspaceToken.mockResolvedValueOnce(null)
@@ -261,5 +264,36 @@ describe('useLocalBillingWebFlagStore', () => {
     await settle()
 
     expect(store.enabled).toBe(true)
+  })
+
+  it('turns on after a failed read, a token recovered by another request and a successful re-read', async () => {
+    const host = fakeBridge(signedIn('user-1', 'ws-1'))
+    host.bridge.getWorkspaceToken.mockResolvedValueOnce(null)
+    serveFlags({ local_billing_web: true })
+    await startDesktopHostSession(host.bridge)
+    const store = useLocalBillingWebFlagStore()
+    await settle()
+    expect(store.enabled).toBe(false)
+
+    await desktopHostWorkspaceToken('ws-1')
+    await settle()
+
+    expect(store.enabled).toBe(true)
+  })
+
+  it('never falls back to a stored API key for a signed-in account without a token', async () => {
+    const authStore = useAuthStore()
+    Object.assign(authStore, { userId: 'firebase-user' })
+    vi.mocked(authStore.getIdToken).mockResolvedValue(undefined)
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+      'X-API-KEY': 'stored-key'
+    })
+    serveFlags({ local_billing_web: true })
+
+    const store = useLocalBillingWebFlagStore()
+    await settle()
+
+    expect(store.enabled).toBe(false)
+    expect(fetchRequests(FEATURES)).toEqual([])
   })
 })
