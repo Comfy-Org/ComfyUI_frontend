@@ -446,6 +446,14 @@ describe('a billing handoff tab', () => {
     expect(router.currentRoute.value.path).toBe('/')
   })
 
+  it('opens billing from the handoff route with a trailing slash', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff/')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
   it('never opens billing-web sign-in', async () => {
     handoffTab.value = liveHandoff
 

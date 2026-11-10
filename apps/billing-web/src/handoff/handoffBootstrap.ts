@@ -3,8 +3,8 @@ import type {
   HandoffState,
   TabStorage
 } from '@/handoff/handoffTab'
+import type { HandoffCapture } from '@/handoff/captureHandoffToken'
 import {
-  HANDOFF_PATH,
   handoffSessionFrom,
   handoffTab,
   readHandoffState,
@@ -12,19 +12,14 @@ import {
 } from '@/handoff/handoffTab'
 
 export interface HandoffBootEnv {
-  readonly pathname: string
-  readonly search: string
-  /** The location's fragment, read live so a strip can be confirmed. */
-  readonly hash: () => string
-  readonly replaceUrl: (url: string) => void
+  readonly capture: Extract<HandoffCapture, { kind: 'captured' }>
   readonly storage: TabStorage
   readonly fetchImpl: typeof fetch
   readonly cloudBaseUrl: string
   readonly now: () => number
 }
 
-/** `halt` means the token could not be removed from the URL, so nothing else may load. */
-export type HandoffBootOutcome = 'handoff' | 'not-handoff' | 'halt'
+export type HandoffBootOutcome = 'handoff' | 'not-handoff'
 
 const PROBE_KEY = 'comfy.billing-web.handoff.probe'
 
@@ -72,8 +67,16 @@ async function exchange(
 }
 
 function settle(env: HandoffBootEnv, state: HandoffState): 'handoff' {
-  writeHandoffState(env.storage, state)
-  handoffTab.value = state
+  if (writeHandoffState(env.storage, state) || state.kind === 'ended') {
+    handoffTab.value = state
+    return 'handoff'
+  }
+  const unavailable: HandoffState = {
+    kind: 'ended',
+    ending: 'storage_unavailable'
+  }
+  writeHandoffState(env.storage, unavailable)
+  handoffTab.value = unavailable
   return 'handoff'
 }
 
@@ -83,32 +86,27 @@ function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
     : state
 }
 
-/** Strips and exchanges a `/handoff` token before the app and its telemetry load. */
+/** Exchanges a captured `/handoff` token, or restores this tab's handoff, before the app and its telemetry load. */
 export async function runHandoffBootstrap(
   env: HandoffBootEnv
 ): Promise<HandoffBootOutcome> {
   const stored = readHandoffState(env.storage)
-  if (env.pathname !== HANDOFF_PATH) {
+  const { onHandoffPath, token } = env.capture
+  if (!onHandoffPath) {
     if (!stored) return 'not-handoff'
     return settle(env, restored(env, stored))
   }
-
-  const fragment = env.hash()
-  const token =
-    new URLSearchParams(fragment.replace(/^#/, '')).get('token') ?? undefined
-  if (fragment !== '') {
-    env.replaceUrl(`${HANDOFF_PATH}${env.search}`)
-    if (env.hash() !== '') return 'halt'
-  }
-
-  if (token === undefined || token === '')
+  if (token === undefined)
     return settle(
       env,
       stored
         ? restored(env, stored)
         : { kind: 'ended', ending: 'link_unavailable' }
     )
-  if (!storageWorks(env.storage)) {
+  if (
+    !storageWorks(env.storage) ||
+    !writeHandoffState(env.storage, { kind: 'ended', ending: 'exchange_lost' })
+  ) {
     handoffTab.value = { kind: 'ended', ending: 'storage_unavailable' }
     return 'handoff'
   }

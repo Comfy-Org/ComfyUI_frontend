@@ -1,6 +1,10 @@
 import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
 import type { HandoffState, TabStorage } from '@/handoff/handoffTab'
-import { handoffTab, readHandoffState } from '@/handoff/handoffTab'
+import {
+  endHandoffAtExpiry,
+  handoffTab,
+  readHandoffState
+} from '@/handoff/handoffTab'
 
 const NOW = Date.parse('2026-11-09T12:00:00Z')
 
@@ -92,5 +96,24 @@ describe('createHandoffBillingSession', () => {
       kind: 'ended',
       ending: 'link_unavailable'
     })
+  })
+})
+
+describe('endHandoffAtExpiry', () => {
+  it('ends the handoff when the session expires, with nothing calling billing', () => {
+    vi.useFakeTimers()
+    const { storage, clock } = setup()
+    const stop = endHandoffAtExpiry(storage, () => clock.now)
+
+    vi.advanceTimersByTime(30 * 60_000 - 1)
+    expect(handoffTab.value).toEqual(live)
+    vi.advanceTimersByTime(1)
+
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(readHandoffState(storage)).toEqual({
+      kind: 'ended',
+      ending: 'session_ended'
+    })
+    stop()
   })
 })

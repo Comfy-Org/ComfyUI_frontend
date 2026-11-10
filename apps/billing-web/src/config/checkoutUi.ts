@@ -128,7 +128,6 @@ let memo:
   | undefined
 
 function awaitCloudFeatures(): Promise<CloudFeatures | undefined> {
-  if (handoffTab.value !== undefined) return Promise.resolve(undefined)
   const onSession = webSessionCloudRead()
   if (onSession) {
     const { uid, read } = onSession
@@ -154,6 +153,7 @@ async function awaitFlag<T>(
   parse: (value: unknown) => T | undefined,
   failClosed: T
 ): Promise<T> {
+  if (handoffTab.value !== undefined) return failClosed
   const override = readDevOverride(key, parse)
   if (override !== undefined) return override
   const features = await awaitCloudFeatures()

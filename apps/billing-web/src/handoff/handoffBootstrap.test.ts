@@ -1,3 +1,4 @@
+import { captureHandoffToken } from '@/handoff/captureHandoffToken'
 import { runHandoffBootstrap } from '@/handoff/handoffBootstrap'
 import type { HandoffBootEnv } from '@/handoff/handoffBootstrap'
 import type { HandoffState, TabStorage } from '@/handoff/handoffTab'
@@ -59,31 +60,33 @@ function setup(
   url: string,
   {
     storage = memoryStorage(),
-    respond = () => json(200, exchanged),
-    stripWorks = true
+    respond = () => json(200, exchanged)
   }: {
     storage?: TabStorage
     respond?: () => Response | Promise<Response>
-    stripWorks?: boolean
   } = {}
 ) {
   const location = new URL(url, 'https://testbilling.comfy.org')
   let hash = location.hash
-  const fetchImpl = vi.fn<typeof fetch>(async () => respond())
-  const replaceUrl = vi.fn((next: string) => {
-    if (stripWorks) hash = new URL(next, location).hash
-  })
-  const env: HandoffBootEnv = {
+  const capture = captureHandoffToken({
     pathname: location.pathname,
     search: location.search,
     hash: () => hash,
-    replaceUrl,
+    replaceUrl: () => {
+      hash = ''
+    },
+    markExchangePending: () => {}
+  })
+  if (capture.kind !== 'captured') throw new Error('capture halted')
+  const fetchImpl = vi.fn<typeof fetch>(async () => respond())
+  const env: HandoffBootEnv = {
+    capture,
     storage,
     fetchImpl,
     cloudBaseUrl: CLOUD,
     now: () => NOW
   }
-  return { env, fetchImpl, replaceUrl, storage }
+  return { env, fetchImpl, storage }
 }
 
 beforeEach(() => {
@@ -100,20 +103,25 @@ describe('runHandoffBootstrap', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('strips the token from the URL, then exchanges it once without cookies', async () => {
-    const { env, fetchImpl, replaceUrl } = setup('/handoff#token=tok-1')
+  it('exchanges the captured token once, without cookies', async () => {
+    const { env, fetchImpl } = setup('/handoff#token=tok-1')
 
     await expect(runHandoffBootstrap(env)).resolves.toBe('handoff')
 
-    expect(replaceUrl).toHaveBeenCalledWith('/handoff')
-    expect(replaceUrl.mock.invocationCallOrder[0]).toBeLessThan(
-      fetchImpl.mock.invocationCallOrder[0]
-    )
     expect(fetchImpl).toHaveBeenCalledOnce()
     const [url, init] = fetchImpl.mock.calls[0]
     expect(url).toBe(`${CLOUD}/api/auth/handoffs/exchange`)
     expect(init).toMatchObject({ method: 'POST', credentials: 'omit' })
     expect(JSON.parse(String(init?.body))).toEqual({ token: 'tok-1' })
+    expect(handoffTab.value).toEqual(liveSession)
+  })
+
+  it('accepts the handoff route with a trailing slash', async () => {
+    const { env, fetchImpl } = setup('/handoff/#token=tok-1')
+
+    await runHandoffBootstrap(env)
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
     expect(handoffTab.value).toEqual(liveSession)
   })
 
@@ -125,17 +133,6 @@ describe('runHandoffBootstrap', () => {
 
     expect(readHandoffState(storage)).toEqual(liveSession)
     expect([...storage.items.values()].join()).not.toContain('tok-1')
-  })
-
-  it('stops startup when the token cannot be removed from the URL', async () => {
-    const { env, fetchImpl } = setup('/handoff#token=tok-1', {
-      stripWorks: false
-    })
-
-    await expect(runHandoffBootstrap(env)).resolves.toBe('halt')
-
-    expect(fetchImpl).not.toHaveBeenCalled()
-    expect(handoffTab.value).toBeUndefined()
   })
 
   it.for([
@@ -173,6 +170,54 @@ describe('runHandoffBootstrap', () => {
 
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'exchange_lost' })
+  })
+
+  it('ends instead of keeping the session only in memory when storing it fails', async () => {
+    const storage = memoryStorage()
+    const realSet = storage.setItem
+    const { env } = setup('/handoff#token=tok-1', { storage })
+    let writes = 0
+    storage.setItem = (key, value) => {
+      writes += 1
+      if (value.includes('comfy-scoped-session-1'))
+        throw new DOMException('full', 'QuotaExceededError')
+      realSet(key, value)
+    }
+
+    await runHandoffBootstrap(env)
+
+    expect(writes).toBeGreaterThan(0)
+    expect(handoffTab.value).toEqual({
+      kind: 'ended',
+      ending: 'storage_unavailable'
+    })
+    expect(readHandoffState(storage)).toEqual({
+      kind: 'ended',
+      ending: 'storage_unavailable'
+    })
+  })
+
+  it('replaces an earlier session before exchanging, so a reload mid-exchange cannot bring it back', async () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'comfy.billing-web.handoff.v1',
+      JSON.stringify({ kind: 'session', exchange: exchanged })
+    )
+    let storedDuringExchange: unknown
+    const { env } = setup('/handoff#token=tok-2', {
+      storage,
+      respond: () => {
+        storedDuringExchange = readHandoffState(storage)
+        return Promise.reject(new TypeError('reloaded'))
+      }
+    })
+
+    await runHandoffBootstrap(env)
+
+    expect(storedDuringExchange).toEqual({
+      kind: 'ended',
+      ending: 'exchange_lost'
+    })
   })
 
   it('does not spend the token when the tab cannot keep a session', async () => {

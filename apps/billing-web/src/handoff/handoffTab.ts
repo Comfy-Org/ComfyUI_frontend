@@ -1,5 +1,6 @@
-import { shallowRef } from 'vue'
+import { shallowRef, watch } from 'vue'
 
+import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
 import type {
   ExchangeTokenResponse,
   WorkspaceSummary
@@ -13,7 +14,12 @@ import {
 /** The receiver route a billing handoff entry URL opens. */
 export const HANDOFF_PATH = '/handoff'
 
-const STORAGE_KEY = 'comfy.billing-web.handoff.v1'
+/** `/handoff` with or without a trailing slash. */
+export function isHandoffPath(path: string): boolean {
+  return /^\/handoff\/?$/.test(path)
+}
+
+const STORAGE_KEY = HANDOFF_STORAGE_KEY
 
 export type HandoffEnding =
   | 'link_unavailable'
@@ -147,4 +153,28 @@ export const sessionTabStorage: TabStorage = {
   getItem: (key) => globalThis.sessionStorage.getItem(key),
   setItem: (key, value) => globalThis.sessionStorage.setItem(key, value),
   removeItem: (key) => globalThis.sessionStorage.removeItem(key)
+}
+
+/** Ends the tab's handoff when its session expires, even while nothing calls billing. */
+export function endHandoffAtExpiry(
+  storage: TabStorage,
+  now: () => number = () => Date.now()
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const stop = watch(
+    handoffTab,
+    (state) => {
+      clearTimeout(timer)
+      if (state?.kind !== 'session') return
+      timer = setTimeout(
+        () => endHandoff(storage, 'session_ended'),
+        Math.max(0, state.session.expiresAt - now())
+      )
+    },
+    { immediate: true }
+  )
+  return () => {
+    stop()
+    clearTimeout(timer)
+  }
 }

@@ -24,7 +24,7 @@ import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
-import { HANDOFF_PATH, handoffTab } from '@/handoff/handoffTab'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import {
   billingWebLivePhase,
   billingWebPhase,
@@ -304,7 +304,7 @@ export function createBillingRouter(
     fullPath: string
   }): Promise<boolean | string> {
     const authenticated = (await readPhase()) === 'authenticated'
-    if (to.path === HANDOFF_PATH) {
+    if (isHandoffPath(to.path)) {
       recordBillingEntry(undefined)
       return authenticated ? APP_ENTRY_PATH : true
     }

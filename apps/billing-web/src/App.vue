@@ -7,7 +7,7 @@ import { billingIntentPath } from '@comfyorg/billing-contract'
 import { safeReturnTo } from '@/auth/returnTo'
 import BillingShell from '@/components/BillingShell.vue'
 import { useBillingEntry } from '@/entry/billingEntry'
-import { HANDOFF_PATH, handoffTab } from '@/handoff/handoffTab'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import { SIGN_IN_PATH } from '@/router'
 import { billedScope, billingWebLivePhase } from '@/session/billingWebAuth'
 import EntryErrorView from '@/views/EntryErrorView.vue'
@@ -19,7 +19,7 @@ const router = useRouter()
 watch(billingWebLivePhase, (next) => {
   if (route.meta.public) return
   if (handoffTab.value !== undefined) {
-    if (next !== 'authenticated' && route.path !== HANDOFF_PATH)
+    if (next !== 'authenticated' && !isHandoffPath(route.path))
       void router.replace(HANDOFF_PATH)
     return
   }

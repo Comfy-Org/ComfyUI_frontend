@@ -88,14 +88,34 @@ export function createBillingWebClient(
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 
-/** On a billing handoff: the scoped session's own workspace, never one a URL names. */
+async function isScopedSessionRefusal(response: Response): Promise<boolean> {
+  if (response.status !== 401) return false
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'code' in body &&
+    body.code === 'INVALID_CREDENTIAL'
+  )
+}
+
+/** On a billing handoff: the scoped session's own workspace, never one a URL names; `onSessionRefused` runs when Cloud ends the session. */
 export function createHandoffBillingClient(
-  session: BillingSession
+  session: BillingSession,
+  onSessionRefused: () => void
 ): BillingWebClient {
   const transport = createSessionBillingTransport({
     session,
     resolveUrl,
-    workspaceId: () => pinnedWorkspaceId(session)
+    workspaceId: () => pinnedWorkspaceId(session),
+    fetchImpl: async (...args) => {
+      const response = await globalThis.fetch(...args)
+      if (await isScopedSessionRefusal(response)) onSessionRefused()
+      return response
+    }
   })
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
