@@ -48,7 +48,8 @@
             @input="handleInput"
             @focus="valueBeforeEditing = modelValue"
             @blur="handleBlur"
-            @keyup.enter="handleBlur"
+            @keyup.enter="!onInteraction && handleBlur($event)"
+            @keydown.enter="handleCallbackEnter"
             @keydown.esc.prevent.stop="cancelTextEdit"
             @keydown.up.prevent="updateValueBy(step)"
             @keydown.down.prevent="updateValueBy(-step)"
@@ -154,6 +155,11 @@ const canStep = computed(
 
 function handleInput(event: Event) {
   if (event.target instanceof HTMLInputElement) draft.value = event.target.value
+}
+
+function handleCallbackEnter(event: KeyboardEvent) {
+  if (!onInteraction || event.isComposing || event.keyCode === 229) return
+  handleBlur(event)
 }
 
 function handleBlur(e: Event) {

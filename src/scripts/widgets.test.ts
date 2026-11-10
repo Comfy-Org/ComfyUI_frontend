@@ -1,7 +1,7 @@
 import { expect, onTestFinished, test } from 'vitest'
 import { nextTick } from 'vue'
 
-import { screen } from '@testing-library/vue'
+import { fireEvent, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { createNumberInput } from '@/scripts/widgets'
@@ -61,6 +61,42 @@ test('extension policy commits once and preserves drafts across presentation upd
   await user.clear(screen.getByRole('textbox', { name: 'Width' }))
   await user.type(screen.getByRole('textbox', { name: 'Width' }), '21{Enter}')
   expect(changes).toEqual([16, 24])
+})
+
+test.for([
+  { name: 'composing Enter', isComposing: true, keyCode: 13 },
+  { name: 'IME processing Enter', isComposing: false, keyCode: 229 }
+])('candidate selection with $name keeps the draft focused', async (row) => {
+  const user = userEvent.setup()
+  const interactions: NumberInputInteraction[] = []
+  const control = mountNumberInput({
+    name: 'Width',
+    value: 13,
+    onInteraction: (interaction) => interactions.push(interaction)
+  })
+  control.edit()
+  await nextTick()
+  const input = screen.getByRole('textbox', { name: 'Width' })
+  await user.clear(input)
+  await fireEvent.compositionStart(input)
+  await user.type(input, '21')
+  await fireEvent(
+    input,
+    new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      isComposing: row.isComposing,
+      keyCode: row.keyCode
+    })
+  )
+  await fireEvent.compositionEnd(input)
+  await fireEvent(input, new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }))
+  expect(interactions).toEqual([])
+  expect(input).toHaveFocus()
+  expect(input).toHaveValue('21')
+  await user.keyboard('{Enter}')
+  expect(interactions).toEqual([{ kind: 'text', value: '21' }])
+  expect(input).not.toHaveFocus()
 })
 
 test('buttons use extension policy and remain usable after removal and remount', async () => {
