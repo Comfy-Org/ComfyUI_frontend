@@ -1755,6 +1755,7 @@
           "src/scripts/errorNodeWidgets.ts",
           "src/scripts/errorNodeWidgets.test.ts",
           "src/scripts/widgets.ts",
+          "src/scripts/widgets.test.ts",
           "src/stores/domWidgetStore.ts",
           "src/stores/domWidgetStore.test.ts",
           "src/stores/widgetStore.ts",
