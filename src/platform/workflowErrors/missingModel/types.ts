@@ -46,6 +46,8 @@ export interface MissingModelViewModel {
     nodeId: SerializedNodeId
     widgetName: string
   }>
+  /** Replacements every referencing candidate accepts, best first. */
+  replacements?: string[]
 }
 
 /** A category group of missing models sharing the same directory. */

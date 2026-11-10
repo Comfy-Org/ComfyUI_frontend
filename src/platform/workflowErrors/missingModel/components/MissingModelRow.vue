@@ -190,7 +190,7 @@
     </div>
 
     <div
-      v-if="model.representative.replacements?.length"
+      v-if="model.replacements?.length"
       data-testid="missing-model-replacements"
       class="flex flex-col pl-5"
     >
@@ -202,7 +202,7 @@
       </span>
       <ul :aria-labelledby="replacementsLabelId" class="m-0 list-none p-0">
         <li
-          v-for="replacement in model.representative.replacements"
+          v-for="replacement in model.replacements"
           :key="replacement"
           class="flex min-h-8 min-w-0 items-center gap-2"
         >

@@ -365,10 +365,7 @@ describe('MissingModelRow', () => {
       { nodeId: '1', widgetName: 'ckpt_name' },
       { nodeId: '2', widgetName: 'ckpt_name' }
     ])
-    model.representative.replacements = [
-      'sub/model.safetensors',
-      'model_bf16.safetensors'
-    ]
+    model.replacements = ['sub/model.safetensors', 'model_bf16.safetensors']
     const unrelated = {
       ...model.representative,
       nodeId: '3',
