@@ -181,7 +181,7 @@ export function writeHandoffState(
  */
 export const handoffTab = shallowRef<HandoffState>()
 
-/** How a session ends: on a payment this tab started and has not seen settle, or plainly. */
+/** How a session ends: on a payment this tab started and has not seen succeed, or plainly. */
 export function sessionEnding(
   storage: TabStorage,
   session: HandoffSession,
@@ -192,7 +192,7 @@ export function sessionEnding(
     workspaceId: session.workspace.id,
     role: session.role
   })
-  return pointer && pointer.kind !== 'cancel' && pointer.settled === undefined
+  return pointer && pointer.kind !== 'cancel' && pointer.settled !== 'succeeded'
     ? {
         kind: 'ended',
         ending: 'payment_pending',

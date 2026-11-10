@@ -81,7 +81,20 @@ describe('createHandoffBillingSession', () => {
       }
     },
     {
-      name: 'a payment that already settled',
+      name: 'a payment the server parked for reconciliation',
+      pointer: {
+        kind: 'subscription',
+        settled: 'reconciliation_needed',
+        awaited: true
+      },
+      ended: {
+        kind: 'ended',
+        ending: 'payment_pending',
+        reference: 'op-1'
+      }
+    },
+    {
+      name: 'a payment that already succeeded',
       pointer: { kind: 'subscription', settled: 'succeeded' },
       ended: { kind: 'ended', ending: 'session_ended' }
     },
