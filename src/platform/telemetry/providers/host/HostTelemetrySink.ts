@@ -86,7 +86,8 @@ import {
 } from '@comfyorg/telemetry/types'
 import {
   getHostProactiveGreetingBridge,
-  hostProactiveGreetingProperties
+  hostProactiveGreetingProperties,
+  reportHostProactiveGreetingFailure
 } from '@/platform/telemetry/hostProactiveGreeting'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
@@ -136,6 +137,7 @@ export async function enrollHostProactiveGreeting(
     })
     return admitted === true
   } catch {
+    reportHostProactiveGreetingFailure('enroll')
     return false
   }
 }
@@ -157,7 +159,7 @@ export function trackHostProactiveGreetingMessage(
       })
     )
   } catch {
-    return true
+    reportHostProactiveGreetingFailure('capture')
   }
   return true
 }

@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 beforeEach(() => {
@@ -13,6 +15,7 @@ beforeEach(() => {
 import {
   getHostProactiveGreetingAdmission,
   requiresHostProactiveGreetingAdmission,
+  subscribeToHostProactiveGreetingAdmission,
   supportsHostProactiveGreeting
 } from './hostProactiveGreeting'
 
@@ -21,7 +24,8 @@ afterEach(() => {
 })
 
 function installHost(
-  getProactiveGreetingAdmission: (userId: string) => Promise<unknown>
+  getProactiveGreetingAdmission: (userId: string) => Promise<unknown>,
+  onProactiveGreetingAdmissionChanged = () => () => undefined
 ) {
   window.__comfyDesktop2 = {
     Telemetry: Object.assign(
@@ -30,7 +34,7 @@ function installHost(
         proactiveGreetingExperimentVersion: 2,
         getProactiveGreetingAdmission,
         enrollProactiveGreeting: async () => true,
-        onProactiveGreetingAdmissionChanged: () => () => undefined
+        onProactiveGreetingAdmissionChanged
       }
     )
   }
@@ -84,12 +88,51 @@ it.for([
       'user-a',
       undefined
     )
+    expect(reportError).not.toHaveBeenCalled()
   }
 )
 
-it('fails closed when the host admission request fails', async () => {
-  installHost(vi.fn().mockRejectedValue(new Error('disconnected')))
-  expect(await getHostProactiveGreetingAdmission('user-a')).toBe('denied')
+it('fails closed and reports a sanitized warning once when host admission throws', async () => {
+  installHost(
+    vi.fn().mockRejectedValue(new Error('disconnected for user-a, token-a'))
+  )
+
+  expect(await getHostProactiveGreetingAdmission('user-a', 'token-a')).toBe(
+    'denied'
+  )
+  expect(await getHostProactiveGreetingAdmission('user-b', 'token-b')).toBe(
+    'denied'
+  )
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    new Error('Desktop proactive greeting bridge call failed'),
+    {
+      errorType: 'failure_in_desktop_proactive_greeting_bridge',
+      surface: 'agent',
+      level: 'warning',
+      tags: { operation: 'admission' }
+    }
+  )
+})
+
+it('leaves the subscription unavailable and warns once when the bridge throws', () => {
+  installHost(
+    async () => 'allowed',
+    () => {
+      throw new Error('unavailable for workspace-a')
+    }
+  )
+
+  expect(subscribeToHostProactiveGreetingAdmission(vi.fn())).toBeUndefined()
+  expect(subscribeToHostProactiveGreetingAdmission(vi.fn())).toBeUndefined()
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    new Error('Desktop proactive greeting bridge call failed'),
+    {
+      errorType: 'failure_in_desktop_proactive_greeting_bridge',
+      surface: 'agent',
+      level: 'warning',
+      tags: { operation: 'subscribe' }
+    }
+  )
 })
 
 it('uses live Desktop admission after frontend config clears the boot-time telemetry flag', async () => {

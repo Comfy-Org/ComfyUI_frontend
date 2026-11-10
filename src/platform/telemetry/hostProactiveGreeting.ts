@@ -2,6 +2,7 @@ import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryProperties
 } from '@comfyorg/comfyui-desktop-bridge-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ProactiveGreetingTelemetryContext } from '@comfyorg/telemetry/types'
 import { isCloud } from '@/platform/distribution/types'
 
@@ -21,6 +22,22 @@ interface ProactiveGreetingCapability {
 
 type ProactiveGreetingBridge = ComfyDesktop2TelemetryBridge &
   ProactiveGreetingCapability
+
+type HostOperation = 'admission' | 'subscribe' | 'enroll' | 'capture'
+const reportedHostFailures = new Set<HostOperation>()
+
+export function reportHostProactiveGreetingFailure(
+  operation: HostOperation
+): void {
+  if (reportedHostFailures.has(operation)) return
+  reportedHostFailures.add(operation)
+  reportError(new Error('Desktop proactive greeting bridge call failed'), {
+    errorType: 'failure_in_desktop_proactive_greeting_bridge',
+    surface: 'agent',
+    level: 'warning',
+    tags: { operation }
+  })
+}
 
 export function requiresHostProactiveGreetingAdmission(): boolean {
   return !isCloud || Boolean(window.__comfyDesktop2?.Telemetry)
@@ -60,6 +77,7 @@ export async function getHostProactiveGreetingAdmission(
       ? result
       : 'denied'
   } catch {
+    reportHostProactiveGreetingFailure('admission')
     return 'denied'
   }
 }
@@ -74,7 +92,7 @@ export function subscribeToHostProactiveGreetingAdmission(
       telemetry.onProactiveGreetingAdmissionChanged(callback)
     if (typeof unsubscribe === 'function') return () => unsubscribe()
   } catch {
-    return
+    reportHostProactiveGreetingFailure('subscribe')
   }
 }
 
