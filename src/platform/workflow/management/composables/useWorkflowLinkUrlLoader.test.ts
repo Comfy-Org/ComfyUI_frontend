@@ -113,7 +113,6 @@ const HOME: RouteLocationNormalized = {
   redirectedFrom: undefined
 }
 
-/** What router.replace resolves to when another navigation supersedes it. */
 function cancelledNavigation(): NavigationFailure {
   const cancelled: NavigationFailure['type'] = 8
   return Object.assign(new Error('Navigation cancelled'), {
@@ -674,6 +673,23 @@ describe('workflow-id links', () => {
     expect(useRouter().replace).toHaveBeenCalledTimes(2)
     expect(useRoute().query).toEqual({ workflowId: ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+  })
+
+  it('reports an opening error when the sidebar file is not in the workflow list after a sync', async () => {
+    serveFile()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([])
+    Object.assign(useRoute().query, { workflowId: ID })
+
+    expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
+
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        surface: 'graph',
+        errorType: 'error_opening_workflow_link'
+      })
+    )
   })
 
   it('keeps tabs unchanged when the sidebar file cannot be opened', async () => {

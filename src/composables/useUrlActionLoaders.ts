@@ -63,9 +63,6 @@ type UrlActionLoaders = {
  * which also stops the loop first. `workflows` is opened at boot, which keeps
  * it (and its preserved-query stash) beside a deployment link for the boot
  * after the pick's reload; a link that did not reload ends here, stash too.
- * `workflowId` is not here: the sweep strips it only as the link the
- * workflow-link loader settled (sweptWorkflowLinkParams), and does not run
- * while a newer link waits, since its replace would cancel that navigation.
  */
 const HANDLED_PARAMS = [
   'workspace',
@@ -110,12 +107,6 @@ function workflowLinkSteps(
   ]
 }
 
-/**
- * The workflow-id part of the sweep, owned by the link the loader settled: a
- * workflowId the browser navigated to after that link, in the URL or the
- * stash, is a newer link and stays for its own run. Clears the settled stash
- * and returns the URL params to strip.
- */
 function sweptWorkflowLinkParams(
   loader: UrlActionLoaders['workflowLinkUrlLoader'],
   query: LocationQuery

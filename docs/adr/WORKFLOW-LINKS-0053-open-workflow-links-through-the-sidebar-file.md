@@ -37,6 +37,8 @@ URL and the stash for its own run. A workflow that opened stays open when
 another navigation cancels that cleanup; the final URL-action sweep clears the
 link it left. While the URL or the stash names a newer link, the URL actions
 stop before any further replace, so that link's navigation is not cancelled.
+A navigation guard can hold a newer link in the stash while the URL still
+shows the old one, so the loader checks both.
 
 The reply is typed in the loader until Cloud's generated types include the
 route.

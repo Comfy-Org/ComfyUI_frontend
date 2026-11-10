@@ -52,14 +52,9 @@ type ResolveOutcome = LinkOutcome | { kind: 'pending' }
 type LookupResult =
   | { kind: 'found'; path: string }
   | Exclude<LinkOutcome, { kind: 'opened' }>
-/** Where a link lives: the address bar, and the stash that carries it past
- * navigations which drop the query (sign-in, a subgraph's hash replace). */
 type LinkCarriers = { route: unknown; stash: string | undefined }
 type Ownership = {
-  /** The link is still live and still the one this attempt captured. */
   owns: () => boolean
-  /** Nothing replaced the captured link; a carrier that is gone, such as the
-   * address bar this attempt just stripped, does not count as a replacement. */
   unreplaced: () => boolean
 }
 
@@ -163,10 +158,6 @@ function useWorkflowLinkUrlLoaderInternal() {
     disposed = true
   })
 
-  /** Strips the link from the address bar. Returns false when another
-   * navigation superseded the replace: that navigation may carry a newer link
-   * the stash has not seen yet. Only a URL that still carries the link is
-   * replaced, so no failure here is a duplicated navigation. */
   async function stripLinkFromUrl(): Promise<boolean> {
     if (!('workflowId' in route.query) && !('workflows' in route.query))
       return true
@@ -205,7 +196,16 @@ function useWorkflowLinkUrlLoaderInternal() {
         if (!isCurrent()) return { kind: 'pending' }
         workflow = workflowStore.getWorkflowByPath(path)
       }
-      if (!workflow) return { kind: 'error' }
+      if (!workflow) {
+        reportError(
+          new Error('Workflow link file is not in the workflow list'),
+          {
+            surface: 'graph',
+            errorType: 'error_opening_workflow_link'
+          }
+        )
+        return { kind: 'error' }
+      }
       const opened = await useWorkflowService().openWorkflow(workflow, {
         isCurrent
       })
@@ -257,10 +257,6 @@ function useWorkflowLinkUrlLoaderInternal() {
     }
   }
 
-  /** Each carrier is either gone (a hash-only replace drops the query) or
-   * still holds what it held when the attempt began. A navigation guard can
-   * hold a newer link in the stash while the address bar still shows this
-   * one, so both carriers are compared. */
   function keepsCapturedLink(captured: LinkCarriers): boolean {
     const current = linkCarriers()
     return (
@@ -322,8 +318,6 @@ function useWorkflowLinkUrlLoaderInternal() {
     return status
   }
 
-  /** Whether `workflowId` is the link this loader already settled, so a later
-   * sweep may strip it; a link it has not settled belongs to a later run. */
   function isLinkSettled(workflowId: unknown): boolean {
     return (
       completedStatus(workflowId, workspaceStore.activeWorkspaceId) !==
@@ -331,9 +325,6 @@ function useWorkflowLinkUrlLoaderInternal() {
     )
   }
 
-  /** Whether the address bar or the stash names a link this loader has not
-   * settled. Its navigation can still be waiting in a guard, and any replace
-   * now would cancel it, so URL actions stop for it. */
   function hasNewerLink(): boolean {
     const { route, stash } = linkCarriers()
     return [route, stash].some(
