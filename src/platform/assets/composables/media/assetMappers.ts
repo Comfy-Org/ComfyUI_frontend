@@ -144,8 +144,8 @@ export function unflattenOutputAssets(
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
-        subfolder: '',
         ...representative.user_metadata,
+        subfolder: getOutputSubfolder(representative.user_metadata) ?? '',
         assetId: representative.id,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)
