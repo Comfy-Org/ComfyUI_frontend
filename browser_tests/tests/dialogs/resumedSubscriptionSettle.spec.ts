@@ -14,8 +14,10 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -102,8 +104,10 @@ const ACTIVE_STANDARD = {
   renewal_date: '2099-02-20T00:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const SAVED_CARD = {
@@ -235,7 +239,11 @@ async function reloadWhileProcessing(page: Page, routes: ResumeRoutes) {
     .toBeGreaterThan(pollsBeforeReload)
 }
 
-async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
+async function expectResumedSubscribeSettles(
+  page: Page,
+  toast: ToastHelper,
+  rail: Rail
+) {
   const routes = await setupResume(page, rail)
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await expect(
@@ -252,9 +260,9 @@ async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
   await returnToTab(page)
 
   await expect(
-    page
-      .getByRole('alert')
-      .filter({ hasText: 'Subscription updated successfully' })
+    toast.toastSuccesses.filter({
+      hasText: 'Subscription updated successfully'
+    })
   ).toBeVisible({ timeout: 45_000 })
   const statusReadsAfterSettle = routes.statusRequests.slice(
     statusReadsBeforeSettle
@@ -270,17 +278,21 @@ async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
 }
 
 test.describe('Resumed subscription settle', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('reports a subscribe that settles after a reload on the SDK rail', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(120_000)
-    await expectResumedSubscribeSettles(page, 'sdk')
+    await expectResumedSubscribeSettles(page, toast, 'sdk')
   })
 
   test('reports a subscribe that settles after a reload on the legacy rail', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(120_000)
-    await expectResumedSubscribeSettles(page, 'legacy')
+    await expectResumedSubscribeSettles(page, toast, 'legacy')
   })
 })

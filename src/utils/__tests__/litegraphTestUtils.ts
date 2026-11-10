@@ -1,10 +1,10 @@
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   ISerialisedGraph,
@@ -22,15 +22,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { LinkId } from '@/types/linkId'
-import { toGroupId } from '@/types/groupId'
-import { toLinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 
 /** Creates a node shell state with minimal required fields. */
 export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {

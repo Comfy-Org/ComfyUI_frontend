@@ -6,6 +6,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -279,6 +280,10 @@ export class ModelFolder {
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
   const { flags } = useFeatureFlags()
+  const deploymentPick = isCloud ? useDeploymentPickStore() : undefined
+  const useAssetModels = computed(
+    () => flags.assetsEnabled && !deploymentPick?.bootDeployment
+  )
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -297,7 +302,7 @@ export const useModelStore = defineStore('models', () => {
    * all-registered-folders view.
    */
   const visibleModelFolders = computed<ModelFolder[]>(() =>
-    flags.assetsEnabled
+    useAssetModels.value
       ? modelFolders.value.filter(
           (folder) =>
             folder.state !== ResourceState.Loaded ||
@@ -307,13 +312,13 @@ export const useModelStore = defineStore('models', () => {
   )
 
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    return flags.assetsEnabled
+    return useAssetModels.value
       ? (folder) => assetService.getAssetModels(folder)
       : (folder) => api.getModels(folder)
   }
 
   const modelSource = computed(() =>
-    !flags.assetsEnabled
+    !useAssetModels.value
       ? 'legacy-api'
       : flags.supportsModelTypeTags
         ? 'asset-model-type-tags'
@@ -358,7 +363,7 @@ export const useModelStore = defineStore('models', () => {
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
+        useAssetModels.value ? effectiveModelExtensions(folder.extensions) : []
       )
     }
     return {
@@ -531,13 +536,10 @@ export const useModelStore = defineStore('models', () => {
   })
 
   /**
-   * The WS `feature_flags` handshake can land after createGetModelsFunc()
-   * already captured its data-source choice at store-init time, so a flag
-   * flip after boot must force a reload to switch the sidebar's source.
+   * The deployment listing and feature handshake can arrive after a folder
+   * captured its source, so reload when the source changes.
    */
-  watch([() => flags.assetsEnabled, () => flags.supportsModelTypeTags], () =>
-    scheduleModelReload()
-  )
+  watch(modelSource, () => scheduleModelReload())
 
   return {
     models,

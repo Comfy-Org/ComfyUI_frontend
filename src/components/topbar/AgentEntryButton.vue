@@ -5,11 +5,22 @@
     :class="
       cn(
         'group no-drag shrink-0 gap-1 rounded-lg',
-        active && 'bg-secondary-background-hover',
-        inviting && !active && 'agent-shimmer-outline'
+        active && 'bg-accent',
+        inviting && !active && !comfyAgent && 'agent-shimmer-outline',
+        comfyAgent && 'cursor-default opacity-50'
       )
     "
     :aria-pressed="active"
+    :aria-disabled="comfyAgent !== undefined || undefined"
+    :title="
+      comfyAgent?.state === 'failed'
+        ? $t('agent.entryFailedReason', {
+            reason: comfyAgent.reason ?? 'unknown'
+          })
+        : comfyAgent?.reason
+          ? $t('agent.entryStartingReason', { reason: comfyAgent.reason })
+          : undefined
+    "
   >
     <i
       :class="
@@ -19,18 +30,31 @@
         )
       "
     />
-    <span>{{ $t('agent.entryButton') }}</span>
+    <span>{{
+      comfyAgent?.state === 'starting'
+        ? $t('agent.entryStarting')
+        : comfyAgent?.state === 'failed'
+          ? $t('agent.entryFailed')
+          : $t('agent.entryButton')
+    }}</span>
   </Button>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-const { active = false, inviting = false } = defineProps<{
+const {
+  active = false,
+  inviting = false,
+  comfyAgent
+} = defineProps<{
   active?: boolean
   /** Draw attention to the button for a user who has never opened the panel. */
   inviting?: boolean
+  /** ComfyUI's agent while it is not ready: shown, but inert. */
+  comfyAgent?: AgentServerFeature
 }>()
 </script>

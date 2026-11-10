@@ -14,7 +14,9 @@ import {
   TEAM_BILLING_STATUS,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -52,6 +54,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const FAR_OUT_CANCEL_AT = new Date(Date.now() + 240 * DAY_MS).toISOString()
 const ENDING_SOON_CANCEL_AT = new Date(Date.now() + 10 * DAY_MS).toISOString()
 
+const ENDING_SOON_NOTICE_STARTS_AT = new Date(
+  Date.parse(ENDING_SOON_CANCEL_AT) - 14 * DAY_MS
+).toISOString()
+
 const CANCELLED_ACTIVE_ENTERPRISE_STATUS = {
   ...ACTIVE_ENTERPRISE_STATUS,
   cancel_at: FAR_OUT_CANCEL_AT,
@@ -72,16 +78,33 @@ const ACTIVE_UNRECOGNIZED_TIER_STATUS = {
 
 async function setupSalesManagedWorkspace(
   page: Page,
-  billingStatus: BillingStatusResponse
+  billingStatus: BillingStatusResponse,
+  capabilities: Partial<BillingCapabilities> = SALES_MANAGED_CAPABILITIES
 ) {
   const workspace = new CloudWorkspaceMockHelper(page)
   await workspace.setup(
     DEFAULT_TEAM_MEMBERS,
     TEAM_WORKSPACE,
     billingStatus,
-    SALES_MANAGED_CAPABILITIES
+    capabilities
   )
   return workspace
+}
+
+async function serveEnterpriseEndingNotice(page: Page, startsAt: string) {
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute({
+        ...createWorkspaceBillingCapabilities(
+          TEAM_WORKSPACE,
+          SALES_MANAGED_CAPABILITIES
+        ),
+        billing_notice_audience: 'none',
+        ending_notice_starts_at: startsAt
+      })
+    )
+  })
 }
 
 // The ending banner sits behind the billing_control_enabled remote-config
@@ -218,6 +241,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       ENDING_SOON_ENTERPRISE_STATUS
     )
     await enableBillingControl(page)
+    await serveEnterpriseEndingNotice(page, ENDING_SOON_NOTICE_STARTS_AT)
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
@@ -242,11 +266,13 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps an ended Enterprise workspace out of self-service recovery', async ({
-    page
+    page,
+    toast
   }) => {
     const workspace = await setupSalesManagedWorkspace(
       page,
-      ENDED_ENTERPRISE_STATUS
+      ENDED_ENTERPRISE_STATUS,
+      { ...SALES_MANAGED_CAPABILITIES, can_top_up: false }
     )
     const content = await workspace.openPlanAndCreditsSettings()
 
@@ -257,11 +283,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       'Inactive'
     )
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
-    // Top-up is closed for a terminal sales-managed plan (cloud#8001), so the
-    // ended state offers no Add credits — restoring access goes through sales.
     await expect(
       content.getByRole('button', { name: 'Add credits' })
-    ).toHaveCount(0)
+    ).toBeDisabled()
     await expect(
       content.getByText(
         "You can't run workflows or add new members. Contact sales to restore access."
@@ -283,10 +307,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
-      'Plan inactive'
-    )
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
+    const warning = toast.toastWarnings
+    await expect(warning).toContainText('Plan inactive')
+    await expect(warning).toContainText(
       'Contact your Comfy account manager to restore access.'
     )
   })
@@ -330,7 +353,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     ).toBeVisible()
   })
 
-  test('keeps the pricing deep link available during a capability outage', async ({
+  test('withholds the pricing deep link during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -338,16 +361,22 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/capabilities', (route) =>
       route.fulfill({ status: 503 })
     )
+    const capabilityResponse = page.waitForResponse(
+      '**/api/billing/capabilities'
+    )
 
     await page.goto(`${APP_URL}/?pricing=team`)
+    await capabilityResponse
+    await page.waitForURL((url) => !url.searchParams.has('pricing'), {
+      timeout: 45_000
+    })
 
     await expect(
       page.getByRole('heading', { name: 'Plans for Team Workspace' })
-    ).toBeVisible({ timeout: 45_000 })
-    await expect(page).not.toHaveURL(/[?&]pricing=/)
+    ).toBeHidden()
   })
 
-  test('keeps inactive credits disabled during a capability outage', async ({
+  test('keeps inactive credits locked during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -362,9 +391,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
 
     const content = await workspace.openPlanAndCreditsSettings()
 
-    await expect(
-      content.getByText('Reactivate your plan to use these credits')
-    ).toBeVisible()
+    await expect(content.getByText('Total credits')).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)

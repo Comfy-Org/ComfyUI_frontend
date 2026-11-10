@@ -1,11 +1,13 @@
 // oxlint-disable no-misused-spread
 import { describe, expect, it, vi } from 'vitest'
 
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   collectAllNodes,
   collectFromNodes,
@@ -37,10 +39,12 @@ import {
   isCandidateScopeActive,
   isExecutionPathActive,
   isMissingCandidateActive,
-  findSubgraphNodePathById
+  findSubgraphNodePathById,
+  executionIdToNodeLocatorId,
+  resolveInputSourceNode
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -617,6 +621,9 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('getNodeByExecutionId', () => {
+      const remappedNodeId =
+        'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
 
@@ -682,6 +689,27 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([createMockNode('123')])
         const found = getNodeByExecutionId(graph, '')
         expect(found).toBeNull()
+      })
+
+      it('finds a root node whose id contains execution path delimiters', () => {
+        const targetNode = createMockNode(remappedNodeId)
+        const graph = createMockGraph([targetNode])
+
+        expect(getNodeByExecutionId(graph, remappedNodeId)).toBe(targetNode)
+      })
+
+      it('finds an interior node below a colon-bearing subgraph host id', () => {
+        const targetNode = createMockNode('7')
+        const subgraph = createMockSubgraph('sub-uuid', [targetNode])
+        const host = createMockNode(remappedNodeId, {
+          isSubgraph: true,
+          subgraph
+        })
+        const graph = createMockGraph([host])
+
+        expect(getNodeByExecutionId(graph, `${remappedNodeId}:7`)).toBe(
+          targetNode
+        )
       })
     })
 
@@ -1087,17 +1115,19 @@ describe('graphTraversalUtil', () => {
           { id: toNodeId(rawId), graphId: ROOT_GRAPH_ID },
           ROOT_GRAPH_ID
         )
-        expect(locatorId).toBe(rawId)
+        expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')
       })
 
-      it('still rejects a colon-bearing id when the node really is subgraph-owned (no regression)', () => {
+      it('encodes a colon-bearing id when the node is subgraph-owned', () => {
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const rawId = 'insert:abc123:root:node:5'
         const locatorId = locatorIdFromState(
           { id: toNodeId(rawId), graphId: subgraphUuid },
           ROOT_GRAPH_ID
         )
-        expect(locatorId).toBeNull()
+        expect(locatorId).toBe(
+          `~subgraph:${subgraphUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
+        )
       })
     })
 
@@ -1747,5 +1777,124 @@ describe('graphTraversalUtil', () => {
         expect(executionIds).toEqual(['2:10', '2:11'])
       })
     })
+  })
+
+  describe('executionIdToNodeLocatorId', () => {
+    const REMAPPED_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+
+    it('regression: resolves an insert_workflow-remapped root id to its root locator (PM-2037)', () => {
+      const graph = createMockGraph([createMockNode(REMAPPED_ID)])
+
+      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(
+        '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
+      )
+    })
+
+    it('still returns undefined for a colon-bearing id no node on the graph carries', () => {
+      const graph = createMockGraph([createMockNode('9')])
+
+      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBeUndefined()
+    })
+
+    it('keeps the subgraph-path reading when both readings are available', () => {
+      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      const interior = createMockNode('999')
+      const subgraph = createMockSubgraph(subgraphUuid, [interior])
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const literal = createMockNode('123:999')
+      const graph = createMockGraph([host, literal])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
+        `${subgraphUuid}:999`
+      )
+    })
+
+    it('falls back to a literal root id when the parsed subgraph leaf does not exist', () => {
+      const subgraph = createMockSubgraph(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        []
+      )
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const literal = createMockNode('123:999')
+      const graph = createMockGraph([host, literal])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
+        '~root:123%3A999'
+      )
+    })
+
+    it('leaves a missing subgraph leaf unresolved without a literal root id', () => {
+      const subgraph = createMockSubgraph(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        []
+      )
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const graph = createMockGraph([host])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBeUndefined()
+    })
+
+    it('resolves an interior node below a colon-bearing subgraph host id', () => {
+      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      const interior = createMockNode('7')
+      const subgraph = createMockSubgraph(subgraphUuid, [interior])
+      const host = createMockNode(REMAPPED_ID, {
+        isSubgraph: true,
+        subgraph
+      })
+      const graph = createMockGraph([host])
+
+      expect(executionIdToNodeLocatorId(graph, `${REMAPPED_ID}:7`)).toBe(
+        `${subgraphUuid}:7`
+      )
+    })
+  })
+})
+
+describe('resolveInputSourceNode', () => {
+  function createHostedConsumer() {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'image', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('IMAGE', 'IMAGE')
+    rootGraph.add(source)
+    source.connect(0, host, 0)
+
+    const consumer = new LGraphNode('Consumer')
+    const input = consumer.addInput('image', 'IMAGE')
+    subgraph.add(consumer)
+    subgraph.inputNode.slots[0].connect(input, consumer)
+
+    return { rootGraph, host, source, consumer }
+  }
+
+  it('follows a subgraph input out through the host that instantiates it', () => {
+    const { host, source, consumer } = createHostedConsumer()
+
+    expect(resolveInputSourceNode(consumer, 0, host)).toBe(source)
+  })
+
+  it('stops at the subgraph input without a host', () => {
+    const { consumer } = createHostedConsumer()
+
+    expect(resolveInputSourceNode(consumer, 0)).toBeUndefined()
+  })
+
+  it('ignores a host that instantiates a different subgraph', () => {
+    const { rootGraph, consumer } = createHostedConsumer()
+    const otherHost = createTestSubgraphNode(
+      createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'image', type: 'IMAGE' }]
+      })
+    )
+
+    expect(resolveInputSourceNode(consumer, 0, otherHost)).toBeUndefined()
   })
 })

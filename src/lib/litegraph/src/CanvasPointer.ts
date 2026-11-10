@@ -7,8 +7,8 @@ import type {
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
-import type { CompassCorners } from './interfaces'
-import type { CanvasPointerEvent } from './types/events'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
 function positionOf(e: PointerEvent): GesturePoint {
   return { x: e.clientX, y: e.clientY }
@@ -209,16 +209,11 @@ export class CanvasPointer {
     const { eDown } = this
     if (!eDown) return
 
-    // No buttons down, but eDown exists - clean up & leave
-    if (!e.buttons) {
-      this.reset()
-      return
-    }
-
-    // Primary button released - treat as pointerup.
     if (!(e.buttons & eDown.buttons)) {
-      this.eUp = e
-      this.dispatch(this.upEvent(e), e)
+      if (this.state.phase !== 'idle') {
+        this.eUp = e
+        this.dispatch(this.upEvent(e), e)
+      }
       this.reset()
       return
     }
@@ -482,4 +477,10 @@ export class CanvasPointer {
       }
     }
   }
+}
+
+type RegisteredCanvasPointer = CanvasPointer
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface CanvasPointer extends RegisteredCanvasPointer {}
 }

@@ -2,11 +2,15 @@ import { computed, shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { isBoundingBox } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import {
+  isWidgetInputConnected,
+  resolveWidgetInputSource
+} from '@/composables/widgetInputSource'
 import type { BoundingBoxInput } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const BACKGROUND_INPUT = 'background'
 const BBOXES_INPUT = 'bboxes'
@@ -14,7 +18,8 @@ const INCOMING_OUTPUT = 'input_bboxes'
 const BACKGROUND_OUTPUT = 'background_images'
 
 export function useBoundingBoxesSources(
-  node: ComputedRef<LGraphNode | null | undefined>
+  node: ComputedRef<LGraphNode | null | undefined>,
+  renderedNodeId: NodeId
 ): {
   backgroundConnected: ComputedRef<boolean>
   backgroundUrl: ComputedRef<string | undefined>
@@ -27,16 +32,17 @@ export function useBoundingBoxesSources(
     if (!target) return false
 
     const slot = target.findInputSlot(BACKGROUND_INPUT)
-    return slot >= 0 && target.isInputConnected(slot)
+    return slot >= 0 && isWidgetInputConnected(target, slot, renderedNodeId)
   })
 
   const backgroundSource = computed(() => {
     const target = node.value
     if (!target || !backgroundConnected.value) return undefined
 
-    return resolveInputSourceNode(
+    return resolveWidgetInputSource(
       target,
-      target.findInputSlot(BACKGROUND_INPUT)
+      target.findInputSlot(BACKGROUND_INPUT),
+      renderedNodeId
     )
   })
 

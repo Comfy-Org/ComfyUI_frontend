@@ -1,35 +1,80 @@
-import { applyOps, linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { isPlainObject } from 'es-toolkit'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
+import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
-import { LiveGraphApplier } from './liveGraphApplier'
-import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { attachDocOpMinter } from './docOpMinter'
+import type { GraphOperation } from './graphOperations'
+import {
+  LiveGraphApplier,
+  readDocGroups,
+  readDocWidgetValue
+} from './liveGraphApplier'
+import type {
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
     super('Test Source')
     this.addWidget('number', 'steps', 20, () => {})
     this.addOutput('image', 'IMAGE')
+    this.serialize_widgets = true
+  }
+}
+
+class TestRangedWidgets extends LGraphNode {
+  constructor() {
+    super('Test Ranged Widgets')
+    this.addWidget('number', 'cfg', 5, () => {}, {
+      min: 0,
+      max: 10,
+      precision: 1
+    })
+    this.addWidget('combo', 'sampler', 'euler', () => {}, {
+      values: ['euler', 'dpm']
+    })
     this.serialize_widgets = true
   }
 }
@@ -58,6 +103,33 @@ class TestPlainWidgets extends LGraphNode {
     this.addWidget('number', 'known', 10, () => {})
     this.addWidget('number', 'addedAfterCatalog', 20, () => {})
     this.serialize_widgets = true
+  }
+}
+
+function addWideDiagnosticWidgets(node: LGraphNode): void {
+  for (let index = 0; index < 20; index++)
+    node.addWidget('number', `wide_${index}`, index, () => {})
+}
+
+/** Restores its name-keyed widget record in `onConfigure`, as VHS `useKVState` does. */
+class TestRecordRestore extends LGraphNode {
+  videopreview: unknown
+
+  constructor() {
+    super('Test Record Restore')
+    this.addWidget('number', 'known', 10, () => {})
+    this.addWidget('number', 'addedAfterCatalog', 20, () => {})
+    this.serialize_widgets = true
+  }
+
+  override onConfigure(info: ISerialisedNode): void {
+    const record: unknown = info.widgets_values
+    if (!isPlainObject(record)) return
+    for (const widget of this.widgets ?? []) {
+      if (Object.hasOwn(record, widget.name))
+        widget.value = record[widget.name] as WidgetValue
+    }
+    this.videopreview = record.videopreview
   }
 }
 
@@ -150,6 +222,88 @@ class TestNestedGrowing extends LGraphNode {
   }
 }
 
+class TestSelectionCombo extends LGraphNode {
+  constructor() {
+    super('Test Selection Combo')
+    const model = this.addWidget('combo', 'model', 'seedream', () => {}, {
+      values: ['seedream', 'reference']
+    })
+    let selected: unknown = 'seedream'
+    const mount = (next: unknown) => {
+      this.widgets = this.widgets?.filter(
+        ({ name }) => !name.startsWith('model.')
+      )
+      if (next === 'seedream')
+        this.addWidget('number', 'model.size_preset', 1, () => {})
+      else if (next === 'reference') {
+        this.addWidget('string', 'model.task_type', 'edit', () => {})
+        this.addWidget('number', 'model.strength', 5, () => {})
+      }
+    }
+    Object.defineProperty(model, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        mount(next)
+      }
+    })
+    mount(selected)
+    this.serialize_widgets = true
+  }
+}
+
+class TestSelectionComboNestedGroup extends LGraphNode {
+  constructor() {
+    super('Test Selection Combo Nested Group')
+    this.addWidget('combo', 'model', 'plain', () => {}, {
+      values: ['plain', 'grouped']
+    })
+    this.addWidget('string', 'model.label', 'a', () => {})
+    this.serialize_widgets = true
+  }
+}
+
+/** Grows and shrinks its rows from the row-count controller's own setter. */
+class TestPlainDynamicGroup extends LGraphNode {
+  constructor() {
+    super('Test Plain Dynamic Group')
+    this.addWidget('number', 'before', 1, () => {})
+    const rows = this.addWidget('number', 'rows', 1, () => {})
+    markDynamicGroupController(rows, 1)
+    this.addWidget('number', 'after', 9, () => {})
+    let count = 1
+    Object.defineProperty(rows, 'value', {
+      configurable: true,
+      get: () => count,
+      set: (next: unknown) => {
+        if (typeof next !== 'number') return
+        count = next
+        const kept = this.widgets?.filter(({ name }) =>
+          name.startsWith('rows.')
+        )
+        this.widgets = this.widgets?.filter(
+          ({ name }) => !name.startsWith('rows.')
+        )
+        const tail = this.widgets?.pop()
+        for (let index = 0; index < count; index++) {
+          const row = kept?.[index]
+          if (row) this.widgets?.push(row)
+          else
+            this.addWidget(
+              'number',
+              `rows.${index}.value`,
+              50 + index,
+              () => {}
+            )
+        }
+        if (tail) this.widgets?.push(tail)
+      }
+    })
+    this.serialize_widgets = true
+  }
+}
+
 /** A live widget whose own name is alias-shaped, at a position that is not its index. */
 class TestAliasNamedWidget extends LGraphNode {
   constructor() {
@@ -167,6 +321,31 @@ class TestPrototypeNamedWidget extends LGraphNode {
     super('Test Prototype Named Widget')
     this.addWidget('number', 'known', 1, () => {})
     this.addWidget('number', 'constructor', 2, () => {})
+    this.serialize_widgets = true
+  }
+}
+
+/**
+ * Two serializable widgets under ONE name, the second pinned so it cannot be
+ * renamed apart. A plain frozen object handed to `addWidget` does not
+ * reproduce it — the widget class's own writable accessor wins — so `name` is
+ * redefined on the already-concrete widget.
+ */
+class TestRepeatedWidgetName extends LGraphNode {
+  constructor() {
+    super('Test Repeated Widget Name')
+    this.addWidget('string', 'dup', 'first default', () => {})
+    const second = this.addWidget(
+      'string',
+      'second',
+      'second default',
+      () => {}
+    )
+    Object.defineProperty(second, 'name', {
+      value: 'dup',
+      writable: false,
+      configurable: false
+    })
     this.serialize_widgets = true
   }
 }
@@ -189,19 +368,32 @@ class TestDefinedSource extends LGraphNode {
   }
 }
 
+const TEST_OVERFLOW_LONG_TYPE =
+  'TestOverflowWidgetsWithAVeryLongButValidClassNameForDynamicInputsUsedInDiagnostics'
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
+    [TEST_OVERFLOW_LONG_TYPE]: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
+    TestRecordRestore: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
     // The catalog names `mode.a` but not `mode.b`, so the host stores the last
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
+    TestSelectionCombo: { widget_order: ['model', 'model.size_preset'] },
+    TestSelectionComboNestedGroup: { widget_order: ['model', 'model.label'] },
+    TestPlainDynamicGroup: { widget_order: ['before', 'rows'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
+    // The catalog names one widget TWICE, which schema v5 stores as one
+    // register per OCCURRENCE. The frontend cannot hold two widgets under one
+    // name, so the second register has no widget to address (FE-3036).
+    TestRepeatedWidgetName: { widget_order: ['dup', 'dup'] },
+    TestRangedWidgets: { widget_order: ['cfg', 'sampler'] },
     TestSink: { widget_order: [] }
   }
 }
@@ -229,6 +421,13 @@ function sinkNode(id: number, pos: [number, number] = [400, 0]) {
   }
 }
 
+function storeRecord(target: Y.Doc, record: Record<string, unknown>) {
+  const node = nodesMap(target).get('1')
+  assert(node instanceof Y.Map)
+  node.delete('widgets')
+  node.set(OPAQUE_WIDGETS_KEY, record)
+}
+
 function setup(
   workflow: WorkflowJSON,
   deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}
@@ -250,15 +449,25 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
+  LiteGraph.registerNodeType(TEST_OVERFLOW_LONG_TYPE, TestOverflowWidgets)
   LiteGraph.registerNodeType('TestPlainWidgets', TestPlainWidgets)
+  LiteGraph.registerNodeType('TestRecordRestore', TestRecordRestore)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
+  LiteGraph.registerNodeType('TestSelectionCombo', TestSelectionCombo)
+  LiteGraph.registerNodeType(
+    'TestSelectionComboNestedGroup',
+    TestSelectionComboNestedGroup
+  )
+  LiteGraph.registerNodeType('TestPlainDynamicGroup', TestPlainDynamicGroup)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
     'TestPrototypeNamedWidget',
     TestPrototypeNamedWidget
   )
+  LiteGraph.registerNodeType('TestRepeatedWidgetName', TestRepeatedWidgetName)
+  LiteGraph.registerNodeType('TestRangedWidgets', TestRangedWidgets)
   LiteGraph.registerNodeType('TestSink', TestSink)
 
   const dynamicCombo = transformInputSpecV1ToV2(
@@ -277,10 +486,77 @@ beforeEach(() => {
   ]) {
     nodeType.nodeData = dynamicNodeData
   }
+
+  TestSelectionCombo.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      model: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'seedream',
+                inputs: {
+                  required: {
+                    size_preset: ['INT', {}],
+                    unmounted_field: ['STRING', {}]
+                  }
+                }
+              },
+              {
+                key: 'reference',
+                inputs: {
+                  required: {
+                    task_type: ['STRING', {}],
+                    strength: ['INT', {}]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        { name: 'model' }
+      )
+    }
+  })
+
+  TestSelectionComboNestedGroup.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      model: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'plain',
+                inputs: { required: { label: ['STRING', {}] } }
+              },
+              {
+                key: 'grouped',
+                inputs: {
+                  required: {
+                    rows: [
+                      'COMFY_DYNAMICGROUP_V3',
+                      { template: { required: { field: ['STRING', {}] } } }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        { name: 'model' }
+      )
+    }
+  })
 })
 
 describe('LiveGraphApplier', () => {
-  it('rejects a positional alias on a node without a dynamic combo', () => {
+  it('applies a positional alias on a node without a dynamic combo', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
         {
@@ -303,16 +579,11 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-    ).toEqual([11, 20])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
-      }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('rejects an initial positional alias on a node without a dynamic combo', () => {
+  it('applies an initial positional alias on a node without a dynamic combo', () => {
     const { graph, applyCollected } = setup({
       nodes: [
         {
@@ -330,11 +601,269 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a positional alias past the end of a plain node', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('_extra_7', 99)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
+        message: "Node 1 (TestPlainWidgets) has no widget '_extra_7'"
       }),
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          availableWidgetNames: ['known', 'addedAfterCatalog'],
+          overflowIndex: 7,
+          supportsDynamicWidgetOverflow: false,
+          serializableWidgetNames: ['known', 'addedAfterCatalog']
+        })
+      })
+    )
+  })
+
+  it('places every aliased row of a grown DynamicGroup on a plain node', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainDynamicGroup',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [7, 2, 55, 65, 8]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'before', value: 7 },
+      { name: 'rows', value: 2 },
+      { name: 'rows.0.value', value: 55 },
+      { name: 'rows.1.value', value: 65 },
+      { name: 'after', value: 8 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it("reports the node's actual widget names for a non-positional missing widget", () => {
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('totally_unknown_widget', 99)
+    })
+
+    const [, options] =
+      vi
+        .mocked(reportError)
+        .mock.calls.find(
+          ([error]) =>
+            error instanceof Error &&
+            error.message ===
+              "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+        ) ?? []
+    expect(options).toMatchObject({
+      errorType: 'agent_graph_widget_missing',
+      context: { availableWidgetNames: ['known', 'addedAfterCatalog'] }
+    })
+    expect(options?.context).not.toHaveProperty('overflowIndex')
+    expect(options?.context).not.toHaveProperty('serializableWidgetNames')
+  })
+
+  it("caps the node's widget names in missing-widget diagnostics", () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    if (!node) throw new Error('missing live node')
+    addWideDiagnosticWidgets(node)
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('totally_unknown_widget', 99)
+    })
+
+    const [, options] = vi
+      .mocked(reportError)
+      .mock.calls.find(
+        ([error]) =>
+          error instanceof Error &&
+          error.message ===
+            "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+      ) ?? [undefined, undefined]
+    expect(options?.context?.availableWidgetNames).toEqual([
+      'known',
+      'addedAfterCatalog',
+      ...Array.from({ length: 14 }, (_, index) => `wide_${index}`),
+      '+6'
+    ])
+  })
+
+  it('keeps type and name intact when long widget names fill both diagnostic lists', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: TEST_OVERFLOW_LONG_TYPE,
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    if (!node) throw new Error('missing live node')
+    for (let index = 0; index < 20; index++) {
+      node.addWidget(
+        'number',
+        `model.reference_images.image_${index}.control_after_generate`,
+        index,
+        () => {}
+      )
+    }
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_50', 99)
+    })
+
+    const [, options] = vi
+      .mocked(reportError)
+      .mock.calls.find(
+        ([error]) =>
+          error instanceof Error &&
+          error.message ===
+            `Node 1 (${TEST_OVERFLOW_LONG_TYPE}) has no widget '_extra_50'`
+      ) ?? [undefined, undefined]
+    expect(options?.context?.type).toBe(TEST_OVERFLOW_LONG_TYPE)
+    expect(options?.context?.name).toBe('_extra_50')
+    expect(options?.context?.availableWidgetNames).not.toContain('')
+    expect(options?.context?.serializableWidgetNames).not.toContain('')
+  })
+
+  /**
+   * The pin bump's own regression, at the level that can see it cheaply. The
+   * browser case (`agentDuplicateWidgetOccurrenceFollower.spec.ts`) proves the
+   * same repair through the rendered canvas; this one runs the real applier,
+   * the real `LGraph` and the pinned package, so a pin rollback or an applier
+   * change that decodes an occurrence key back to the bare name goes red here
+   * instead of only on the cloud browser shard.
+   */
+  it('keeps the occurrence it can address on a repeated-name class and reports the one it cannot', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestRepeatedWidgetName',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['first occurrence', 'second occurrence']
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    // One widget survives registration, holding occurrence 0's value — not
+    // occurrence 1's, which is what schema v4's single register carried.
+    const node = graph.getNodeById(toNodeId(1))
+    expect(node?.widgets?.map((widget) => [widget.name, widget.value])).toEqual(
+      [['dup', 'first occurrence']]
+    )
+    // And it is one because the duplicate was REFUSED at registration, not
+    // because the class only ever had one widget.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'failure_renaming_widget_duplicate_name'
+      })
+    )
+
+    // A write aimed at the register the frontend cannot address is applied by
+    // the document and then skipped on the canvas, with a report — never
+    // misaddressed onto the widget the frontend kept.
+    const write: Op = {
+      op_id: 'occurrence-write'.padEnd(32, '0'),
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [1, 'agent:test'],
+      op: 'set_widget',
+      node_id: 1,
+      widget: 'dup',
+      widget_occurrence: 1,
+      value: 'rewritten second occurrence'
+    }
+    expect(applyOps(doc, [write], CATALOG).outcomes).toEqual([
+      { op_id: write.op_id, outcome: 'applied' }
+    ])
+    applier.applyChanges(doc, collector.take(), {
+      actor: 'agent:test',
+      opIds: [write.op_id]
+    })
+
+    expect(node?.widgets?.map((widget) => widget.value)).toEqual([
+      'first occurrence'
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
   })
@@ -403,6 +932,193 @@ describe('LiveGraphApplier', () => {
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
+  })
+
+  describe('a selection-dependent layout (PM-2356, PM-1932)', () => {
+    const selectionComboNode = (widgets_values: unknown[]) => ({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestSelectionCombo',
+          pos: [0, 0] as [number, number],
+          size: [210, 100] as [number, number],
+          widgets_values
+        }
+      ],
+      links: []
+    })
+
+    const setDocWidget = (doc: Y.Doc, name: string, value: unknown) => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(name, value)
+    }
+
+    it('does not report a sub-value only a non-selected option owns', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.task_type', 'inpaint'))
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node?.widgets?.map(({ name }) => name)).toEqual([
+        'model',
+        'model.size_preset'
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not report an overflow slot the current selection shortened', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, '_extra_2', 99))
+
+      expect(
+        graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+      ).toEqual(['seedream', 3])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports an overflow slot no selection of this node can reach', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, '_extra_10', 99))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Node 1 (TestSelectionCombo) has no widget '_extra_10'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('still reports a sub-value the SELECTED option owns but the node did not mount', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.unmounted_field', 'x'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            "Node 1 (TestSelectionCombo) has no widget 'model.unmounted_field'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('still reports a sub-value NO option owns, which is catalog drift', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.retired_field', 7))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            "Node 1 (TestSelectionCombo) has no widget 'model.retired_field'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('resolves a sub-value once its own option is selected', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => {
+        setDocWidget(doc, 'model', 'reference')
+        setDocWidget(doc, 'model.task_type', 'outpaint')
+      })
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(
+        node?.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'model', value: 'reference' },
+        { name: 'model.task_type', value: 'outpaint' },
+        { name: 'model.strength', value: 5 }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('leaves a retained value unapplied when the selector arrives in a later edit', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.task_type', 'outpaint'))
+      applyEdit(() => setDocWidget(doc, 'model', 'reference'))
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(
+        node?.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'model', value: 'reference' },
+        { name: 'model.task_type', value: 'edit' },
+        { name: 'model.strength', value: 5 }
+      ])
+      expect(readDocWidgetValue(doc, '1', 'model.task_type')).toBe('outpaint')
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    describe('a container nested inside one option', () => {
+      const nestedGroupNode = (widgets_values: unknown[]) => ({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestSelectionComboNestedGroup',
+            pos: [0, 0] as [number, number],
+            size: [210, 100] as [number, number],
+            widgets_values
+          }
+        ],
+        links: []
+      })
+
+      it('does not report a group row the non-selected option owns', () => {
+        const { doc, applyCollected, applyEdit } = setup(
+          nestedGroupNode(['plain', 'a'])
+        )
+        applyCollected()
+
+        applyEdit(() => setDocWidget(doc, 'model.rows.0.field', 'z'))
+
+        expect(reportError).not.toHaveBeenCalled()
+      })
+
+      it('still reports a sub-value no option owns', () => {
+        const { doc, applyCollected, applyEdit } = setup(
+          nestedGroupNode(['plain', 'a'])
+        )
+        applyCollected()
+
+        applyEdit(() => setDocWidget(doc, 'model.retired_field', 'z'))
+
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message:
+              "Node 1 (TestSelectionComboNestedGroup) has no widget 'model.retired_field'"
+          }),
+          expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+        )
+      })
+    })
   })
 
   it('keeps a named entry authoritative over its own overflow alias', () => {
@@ -636,7 +1352,15 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         message: `Node 1 (TestOverflowWidgets) has no widget '_extra_2'`
       }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          availableWidgetNames: ['known', 'transient', 'overflow'],
+          overflowIndex: 2,
+          supportsDynamicWidgetOverflow: true,
+          serializableWidgetNames: ['known', 'overflow']
+        })
+      })
     )
   })
 
@@ -935,6 +1659,33 @@ describe('LiveGraphApplier', () => {
     expect(widget.value).toBe(42)
   })
 
+  it('reverts only the rejected flag register', () => {
+    const { graph, doc, applier, applyCollected } = setup({
+      nodes: [sourceNode(1, { flags: { pinned: true } })],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    node.pin(false)
+    node.collapse()
+
+    applier.applyChanges(
+      doc,
+      changesForRejectedOps(doc, [
+        envelope({
+          op: 'set_node_field',
+          node_id: 1,
+          field: 'flags.collapsed',
+          value: true
+        })
+      ]),
+      CONTEXT
+    )
+
+    expect(node).toMatchObject({ collapsed: false, pinned: false })
+  })
+
   it('leaves an alias-shaped live widget addressing its own document entry', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -1015,6 +1766,114 @@ describe('LiveGraphApplier', () => {
     expect(graph.state.lastLinkId).toBeGreaterThanOrEqual(7)
   })
 
+  it("restores an edited or reopened widget record through the node's own configure", () => {
+    const workflow: WorkflowJSON = {
+      nodes: [
+        {
+          id: 1,
+          type: 'TestRecordRestore',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [10]
+        }
+      ],
+      links: []
+    }
+    const { graph, applier, doc, applyCollected, applyEdit } = setup(workflow)
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert(node instanceof TestRecordRestore)
+
+    applyEdit(() =>
+      storeRecord(doc, {
+        addedAfterCatalog: 21,
+        known: 11,
+        videopreview: 'a.mp4'
+      })
+    )
+    expect(node.widgets?.map((widget) => widget.value)).toEqual([11, 21])
+    expect(node.videopreview).toBe('a.mp4')
+
+    const reopened = followedDoc(workflow, CATALOG)
+    reopened.doc.transact(() =>
+      storeRecord(reopened.doc, {
+        addedAfterCatalog: 22,
+        known: 12,
+        videopreview: 'b.mp4'
+      })
+    )
+    applier.applyChanges(
+      reopened.doc,
+      reopened.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+    expect(graph.getNodeById(toNodeId(1))).toBe(node)
+    expect(node.widgets?.map((widget) => widget.value)).toEqual([12, 22])
+    expect(node.videopreview).toBe('b.mp4')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('restores the named widget map, not an opaque record beside it', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+    const docNode = nodesMap(doc).get('1')
+    assert(docNode instanceof Y.Map)
+    docNode.set(OPAQUE_WIDGETS_KEY, { known: 91 })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    expect(node?.widgets?.[0]?.value).toBe(11)
+
+    applyEdit(() => {
+      const widgets = docNode.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+    })
+    expect(node?.widgets?.[0]?.value).toBe(12)
+  })
+
+  it("saves an unregistered node's current record-form widget values", () => {
+    const workflow: WorkflowJSON = {
+      nodes: [{ id: 1, type: 'NotInstalled', pos: [0, 0], size: [210, 100] }],
+      links: []
+    }
+    const { graph, applier, doc, applyCollected, applyEdit } = setup(workflow)
+    const created = { video: 'clip.mp4', frame_load_cap: 8 }
+    doc.transact(() => storeRecord(doc, created))
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+    expect(placeholder?.serialize().widgets_values).toEqual(created)
+
+    const edited = { video: 'edit.mp4', frame_load_cap: 16 }
+    applyEdit(() => storeRecord(doc, edited))
+    expect(placeholder?.serialize().widgets_values).toEqual(edited)
+
+    const reopenedRecord = { video: 'reopen.mp4', frame_load_cap: 24 }
+    const reopened = followedDoc(workflow, CATALOG)
+    reopened.doc.transact(() => storeRecord(reopened.doc, reopenedRecord))
+    applier.applyChanges(
+      reopened.doc,
+      reopened.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(placeholder?.serialize().widgets_values).toEqual(reopenedRecord)
+  })
+
   it.for([
     { label: 'undersized', size: [10, 10] },
     { label: 'absent', size: undefined }
@@ -1046,6 +1905,221 @@ describe('LiveGraphApplier', () => {
     ])
   })
 
+  it.for([
+    {
+      field: 'flags.collapsed',
+      key: 'flags',
+      value: { collapsed: true },
+      expected: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    },
+    {
+      field: 'flags.pinned',
+      key: 'flags',
+      value: { pinned: true },
+      expected: true,
+      renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 3,
+      expected: 3,
+      renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 4,
+      expected: 4,
+      renderedSize: [210, 100]
+    }
+  ])(
+    'announces $field once when applying and reapplying a document field',
+    ({ field, key, value, expected, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      const listener = vi.fn()
+      onTestFinished(onGraphIntent(listener))
+
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: 'set_node_field',
+          field,
+          value: expected,
+          source: 'agent-remote'
+        })
+      )
+      expect([...node.size]).toEqual([210, 100])
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
+
+  it.for([
+    {
+      flags: {},
+      collapsed: false,
+      pinned: false,
+      resizable: true,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { pinned: true },
+      collapsed: false,
+      pinned: true,
+      resizable: false,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { collapsed: true },
+      collapsed: true,
+      pinned: false,
+      resizable: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    }
+  ])(
+    'updates pinned, collapsed and custom flags to $flags',
+    ({ flags, collapsed, pinned, resizable, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          sourceNode(1, {
+            flags: { pinned: true, collapsed: true, allow_interaction: true }
+          })
+        ],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+
+      applyEdit(() => nodesMap(doc).get('1')?.set('flags', flags))
+
+      expect(node.collapsed).toBe(collapsed)
+      expect(node.pinned).toBe(pinned)
+      expect(node.resizable).toBe(resizable)
+      expect(node.flags.allow_interaction).toBeUndefined()
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
+
+  it('creates trigger slots through the mode channel', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 3))
+
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    expect(node.inputs.map(({ name }) => name)).toContain('onTrigger')
+    expect(node.outputs.map(({ name }) => name)).toContain('onExecuted')
+  })
+
+  it('reports a refused mode once and preserves the live mode', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
+
+    expect(graph.getNodeById(toNodeId(1))?.mode).toBe(0)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_graph_node_mode_rejected' })
+    )
+  })
+
+  it.for([
+    {
+      initial: {},
+      update: { color: '#322', bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: {},
+      update: { color: '#123456', bgcolor: '#654321' },
+      expected: { color: '#123456', bgcolor: '#654321' },
+      calls: 0
+    },
+    {
+      initial: { color: '#123456', bgcolor: '#533' },
+      update: { color: '#322' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: { color: '#322', bgcolor: '#654321' },
+      update: { bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    }
+  ])(
+    'applies colour update $update using a named option when available',
+    ({ initial, update, expected, calls }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      Object.assign(node, initial)
+      const setColorOption = vi.spyOn(node, 'setColorOption')
+
+      applyEdit(() => {
+        nodesMap(doc).get('1')?.set('color', update.color)
+        nodesMap(doc).get('1')?.set('bgcolor', update.bgcolor)
+      })
+
+      expect(node).toMatchObject(expected)
+      expect(setColorOption).toHaveBeenCalledTimes(calls)
+    }
+  )
+
+  it('keeps a local colour, shape and property when a frame edits only the title (FE-3494)', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        sourceNode(1, {
+          color: '#232',
+          bgcolor: '#353',
+          shape: LiteGraph.CARD_SHAPE,
+          properties: { mode: 'document' }
+        })
+      ],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    Object.assign(node, { color: '#322', bgcolor: '#533' })
+    node.shape = LiteGraph.BOX_SHAPE
+    node.setProperty('mode', 'local')
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('title', 'Renamed'))
+
+    expect(node).toMatchObject({
+      title: 'Renamed',
+      color: '#322',
+      bgcolor: '#533',
+      shape: LiteGraph.BOX_SHAPE,
+      properties: { mode: 'local' }
+    })
+  })
+
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
@@ -1063,7 +2137,7 @@ describe('LiveGraphApplier', () => {
     expect(node.flags).toEqual({ collapsed: true, ghost: true })
   })
 
-  it('mirrors one flag register written inside the document flags map onto the live node', () => {
+  it('mirrors one flag register without replacing its locally edited sibling', () => {
     const { graph, doc, collector, applier, applyCollected } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
       links: []
@@ -1071,6 +2145,7 @@ describe('LiveGraphApplier', () => {
     applyCollected()
     const node = graph.getNodeById(toNodeId(1))
     if (!node) throw new Error('node 1 was not created')
+    node.pin(false)
 
     const collapse = envelope({
       op: 'set_node_field',
@@ -1083,7 +2158,7 @@ describe('LiveGraphApplier', () => {
     ])
     applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(node.flags).toEqual({ pinned: true, collapsed: true })
+    expect(node).toMatchObject({ collapsed: true, pinned: false })
   })
 
   it('applies the rest of a frame when one operation throws, and reports it once', () => {
@@ -1104,13 +2179,103 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(result.createdNodeIds).toEqual([toNodeId(2)])
+    expect(result.failureCount).toBe(1)
     expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
-        context: { actor: 'agent:test', opIds: ['op-1'] }
+        context: {
+          actor: 'agent:test',
+          opIds: ['op-1'],
+          omittedOpIdCount: 0
+        }
+      })
+    )
+  })
+
+  it('counts each frame against its own depth when an extension hook re-enters the applier', () => {
+    const { graph, doc, applier, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+    const outer = graph.getNodeById(toNodeId(1))
+    const victim = graph.getNodeById(toNodeId(2))
+    if (!outer || !victim) throw new Error('nodes 1 and 2 were not created')
+    victim.onRemoved = () => {
+      throw new Error('inner hook exploded')
+    }
+
+    let inner: ReturnType<typeof applier.applyChanges> | undefined
+    outer.onRemoved = () => {
+      inner = applier.applyChanges(
+        doc,
+        {
+          nodes: new Map([['2', 'delete']]),
+          widgets: new Map(),
+          resyncNodes: new Map(),
+          links: new Set()
+        },
+        { actor: 'agent:inner', opIds: ['op-inner'] }
+      )
+      throw new Error('extension hook exploded')
+    }
+
+    const result = applyEdit(() => {
+      nodesMap(doc).delete('1')
+    })
+
+    expect(inner?.failureCount).toBe(1)
+    expect(result.failureCount).toBe(1)
+  })
+
+  it('counts a degradation that never threw: an unresolved link', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [[7, 1, 0, 2, 0, 'IMAGE']]
+    })
+    applyCollected()
+    expect(graph.links.has(toLinkId(7))).toBe(true)
+
+    const result = applyEdit(() => {
+      nodesMap(doc)
+        .get('2')
+        ?.set('inputs', [{ name: 'bogus', type: 'IMAGE', link: 7 }])
+      linksMap(doc).set('7', [7, 1, 0, 2, 0, 'IMAGE'])
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_link_unresolved' })
+    )
+  })
+
+  it('counts a degradation that never threw: a subgraph definition that will not register', () => {
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    const result = applyEdit(() => {
+      doc
+        .getMap<unknown>('definitions')
+        .set(
+          'bad',
+          new Y.Map<unknown>(
+            Object.entries({ id: 'not-a-uuid', name: 'Broken' })
+          )
+        )
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definitions_failed'
       })
     )
   })
@@ -1140,6 +2305,259 @@ describe('LiveGraphApplier', () => {
     expect(node.properties.steps).toBe(20)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
+    )
+  })
+
+  it('reports bounded apply context and owner scope when a created node collides with an id in a sibling subgraph', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, inputs: [] })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const interior = new LGraphNode('Interior')
+    subgraph.add(interior)
+    const host = createTestSubgraphNode(subgraph, { id: 501 })
+    graph.add(host)
+    const collidingId = Number(interior.id)
+
+    const { doc, collector } = followedDoc(
+      { nodes: [sourceNode(collidingId)], links: [] },
+      CATALOG
+    )
+
+    const firstOpId = 'a'.repeat(128)
+    const secondOpId = 'b'.repeat(128)
+    const thirdOpId = 'c'.repeat(128)
+    const fourthOpId = 'd'.repeat(128)
+    const omittedOpId = 'e'.repeat(128)
+    const opIds = [firstOpId, secondOpId, thirdOpId, fourthOpId, omittedOpId]
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      { actor: 'agent:private-thread:private-turn', opIds }
+    )
+
+    const created = graph._nodes.find((node) => node.type === 'TestSource')
+    expect(created).toBeDefined()
+    expect(created?.id).not.toBe(toNodeId(collidingId))
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          `Live graph reminted node ${collidingId} as`
+        )
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_node_id_reminted',
+        context: expect.objectContaining({
+          nodeId: String(collidingId),
+          nodeType: 'TestSource',
+          mode: 'merge',
+          existingOwnerKind: 'subgraph',
+          existingOwnerGraphId: subgraph.id,
+          actor: 'agent',
+          opIds: [firstOpId, secondOpId, thirdOpId, fourthOpId],
+          omittedOpIdCount: 1,
+          liveAgentTurn: false
+        })
+      })
+    )
+  })
+
+  it('routes a promoted host widget once and treats deferred callback writes as local', async () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 1 })
+    graph.add(host)
+    const hostWidget = host.widgets[0]
+    const originalCallback = hostWidget.callback
+    const callbackReceivers: unknown[] = []
+    const callback = vi.fn(function (this: unknown, value: WidgetValue) {
+      callbackReceivers.push(this)
+      originalCallback?.(value, undefined, host)
+      hostWidget.value = 30
+      queueMicrotask(() => {
+        // Callback work that outlives the graph call is a separate local edit:
+        // provenance is scoped to the synchronous remote graph operation.
+        hostWidget.value = 36
+      })
+    })
+    const onWidgetChanged = vi.fn()
+    hostWidget.callback = callback
+    host.onWidgetChanged = onWidgetChanged
+    host.properties.steps = 99
+    hostWidget.options.property = 'steps'
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: Number(host.id),
+            type: host.type,
+            widgets_values: [20]
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get(String(host.id))
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 20]])))
+    collector.take()
+    doc.transact(() => {
+      const widgets = docNode.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('steps', 35)
+    })
+    const intents: Pick<GraphIntentEvent, 'source' | 'type'>[] = []
+    const detach = onGraphIntent(({ source, type }) => {
+      intents.push({ source, type })
+    })
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+    await Promise.resolve()
+    detach()
+
+    expect(hostWidget.value).toBe(36)
+    expect(host.properties.steps).toBe(99)
+    expect(callback).toHaveBeenCalledTimes(1)
+    expect(callback).toHaveBeenCalledWith(35, undefined, host)
+    expect(callbackReceivers).toEqual([hostWidget])
+    expect(onWidgetChanged).toHaveBeenCalledWith('steps', 35, 20, hostWidget)
+    expect(intents).toContainEqual({
+      source: 'agent-remote',
+      type: 'set_widget'
+    })
+    expect(intents).toContainEqual({ source: 'local', type: 'set_widget' })
+  })
+
+  it('restores a promoted callback when its value setter throws', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 101 })
+    graph.add(host)
+    const widget = host.widgets[0]
+    const callback = vi.fn()
+    widget.callback = callback
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => 20,
+      set: () => {
+        throw new Error('extension setter exploded')
+      }
+    })
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [{ id: 101, type: host.type, widgets_values: [20] }],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get('101')
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 35]])))
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+
+    expect(widget.callback).toBe(callback)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension setter exploded' }),
+      expect.objectContaining({
+        errorType: 'agent_graph_apply_failed',
+        tags: expect.objectContaining({ outcome: 'degraded' }),
+        context: { nodeId: '101', widget: 'steps' }
+      })
+    )
+  })
+
+  it('isolates a throwing promoted-widget callback from later widgets in the frame', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'first', type: 'number' },
+        { name: 'second', type: 'number' }
+      ]
+    })
+    const interior = new LGraphNode('Interior')
+    for (const name of ['first', 'second']) {
+      const input = interior.addInput(name, 'number')
+      input.widget = { name }
+      interior.addWidget('number', name, 1, () => {})
+    }
+    subgraph.add(interior)
+    for (const input of interior.inputs) {
+      subgraph.inputNode.slots
+        .find((slot) => slot.name === input.name)
+        ?.connect(input, interior)
+    }
+    const host = createTestSubgraphNode(subgraph, { id: 100 })
+    graph.add(host)
+    const first = host.widgets.find(({ name }) => name === 'first')
+    const second = host.widgets.find(({ name }) => name === 'second')
+    if (!first || !second) throw new Error('host widgets were not promoted')
+    first.callback = () => {
+      throw new Error('first callback exploded')
+    }
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [{ id: 100, type: host.type, widgets_values: [1, 1] }],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get('100')
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() =>
+      docNode.set(
+        'widgets',
+        new Y.Map([
+          ['first', 2],
+          ['second', 3]
+        ])
+      )
+    )
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+
+    expect(first.value).toBe(1)
+    expect(second.value).toBe(3)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'first callback exploded' }),
       expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
     )
   })
@@ -1180,6 +2598,28 @@ describe('LiveGraphApplier', () => {
       target_id: toNodeId(2)
     })
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('connects a dangling link when its endpoint arrives in a later frame', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => {
+      linksMap(doc).set('7', [7, 3, 0, 2, 0, 'IMAGE'])
+    })
+    expect(graph.links.has(toLinkId(7))).toBe(false)
+
+    applyEdit(() => {
+      nodesMap(doc).set('3', new Y.Map<unknown>(Object.entries(sourceNode(3))))
+    })
+
+    expect(graph.links.get(toLinkId(7))).toMatchObject({
+      origin_id: toNodeId(3),
+      target_id: toNodeId(2)
+    })
   })
 
   it('removes a live link whose document entry now names a slot the node lacks', () => {
@@ -1263,6 +2703,32 @@ describe('LiveGraphApplier', () => {
     expect(positionOf(1)).toEqual([0, 0])
     expect(positionOf(2)).toEqual([290, 0])
     expect(positionOf(3)).toEqual([690, 0])
+  })
+
+  it('moves a created batch off the nodes it lands on only for a live agent turn', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+    const addOnTopOfNode1 = (id: number, context: RemoteApplyContext) => {
+      doc.transact(() =>
+        nodesMap(doc).set(
+          String(id),
+          new Y.Map<unknown>(Object.entries(sinkNode(id, [50, 20])))
+        )
+      )
+      applier.applyChanges(doc, collector.take(), context)
+    }
+    const positionOf = (id: number) => [
+      ...(graph.getNodeById(toNodeId(id))?.pos ?? [])
+    ]
+
+    addOnTopOfNode1(2, CONTEXT)
+    addOnTopOfNode1(3, { ...CONTEXT, liveAgentTurn: true })
+
+    expect(positionOf(2)).toEqual([50, 20])
+    expect(positionOf(3)).toEqual([330, 0])
   })
 
   it('scopes every write to the remote actor', () => {
@@ -1361,6 +2827,165 @@ function envelope(body: OpBody): Op {
   }
   return { ...stamp, ...body }
 }
+
+describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
+  function rangedSetup(deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}) {
+    const fixture = setup(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestRangedWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [5, 'euler']
+          }
+        ],
+        links: []
+      },
+      deps
+    )
+    fixture.applyCollected()
+    const node = fixture.graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    const enqueue = vi.fn<(ops: GraphOperation[]) => void>()
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      getGraph: () => fixture.graph,
+      boundRootGraphId: () => toRootGraphId(fixture.graph.id),
+      docInputNames: () => [],
+      docWidgetValue: (nodeId, widgetName) => {
+        const widgets = nodesMap(fixture.doc)
+          .get(String(nodeId))
+          ?.get('widgets')
+        return widgets instanceof Y.Map ? widgets.get(widgetName) : undefined
+      },
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
+      onWidgetWriteRefused: () => {},
+      enqueue
+    })
+    onTestFinished(() => minter.detach())
+    const writeDocWidget = (name: string, value: WidgetValue) =>
+      fixture.applyEdit(() => {
+        const widgets = nodesMap(fixture.doc).get('1')?.get('widgets')
+        assert.instanceOf(widgets, Y.Map)
+        widgets.set(name, value)
+      })
+    return { ...fixture, node, enqueue, writeDocWidget }
+  }
+
+  it.for([
+    {
+      name: 'applies a value inside the range',
+      widget: 'cfg',
+      docValue: 8,
+      live: [8, 'euler']
+    },
+    {
+      name: 'clamps a number above its max',
+      widget: 'cfg',
+      docValue: 99,
+      live: [10, 'euler']
+    },
+    {
+      name: 'clamps a number below its min',
+      widget: 'cfg',
+      docValue: -3,
+      live: [0, 'euler']
+    },
+    {
+      name: 'coerces a numeric string',
+      widget: 'cfg',
+      docValue: '7',
+      live: [7, 'euler']
+    },
+    {
+      name: 'refuses a non-numeric string',
+      widget: 'cfg',
+      docValue: 'invalid',
+      live: [5, 'euler']
+    },
+    {
+      name: 'keeps a number finer than its display precision',
+      widget: 'cfg',
+      docValue: 1.23456,
+      live: [1.23456, 'euler']
+    },
+    {
+      name: 'keeps a combo value outside its listed values',
+      widget: 'sampler',
+      docValue: 'heun',
+      live: [5, 'heun']
+    }
+  ] as const)(
+    '$name without minting a document write',
+    async ({ widget, docValue, live }) => {
+      const { node, enqueue, writeDocWidget } = rangedSetup()
+
+      writeDocWidget(widget, docValue)
+      await Promise.resolve()
+
+      expect(node.serialize().widgets_values).toEqual(live)
+      expect(enqueue).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reaches the widget callback, onWidgetChanged and the mirrored property with the accepted value', () => {
+    const canvas = fromPartial<LGraphCanvas>({
+      graph_mouse: [3, 4],
+      emitBeforeChange: () => {},
+      emitAfterChange: () => {},
+      setDirty: () => {}
+    })
+    const { node, writeDocWidget } = rangedSetup({ getCanvas: () => canvas })
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+    const callback = vi.fn()
+    const onWidgetChanged = vi.fn()
+    widget.callback = callback
+    widget.options.property = 'cfg'
+    node.properties.cfg = 5
+    node.onWidgetChanged = onWidgetChanged
+
+    writeDocWidget('cfg', '7')
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      7,
+      canvas,
+      node,
+      [3, 4],
+      undefined
+    )
+    expect(onWidgetChanged).toHaveBeenCalledExactlyOnceWith('cfg', 7, 5, widget)
+    expect(node.properties.cfg).toBe(7)
+  })
+
+  it('skips the widget callback when a numeric string equals the live value', () => {
+    const { node, writeDocWidget } = rangedSetup()
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+    const callback = vi.fn()
+    widget.callback = callback
+
+    writeDocWidget('cfg', '5')
+
+    expect(callback).not.toHaveBeenCalled()
+  })
+
+  it('mints a document write for the same edit made outside the applier', async () => {
+    const { node, enqueue } = rangedSetup()
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+
+    widget.value = 8
+    await Promise.resolve()
+
+    expect(enqueue).toHaveBeenCalled()
+  })
+})
 
 /**
  * A canvas that only records the undo bracket: `emitBeforeChange` /
@@ -1461,10 +3086,12 @@ describe('LiveGraphApplier change bracket', () => {
   ])(
     'applies a $name frame inside exactly one before/after bracket that changes the graph',
     ({ op }) => {
-      const { graph, doc, applier, collector, applyCollected } = setup(seed)
-      applyCollected()
       const { canvas, events } = recordingCanvas()
-      graph.list_of_graphcanvas = [canvas]
+      const { graph, doc, applier, collector, applyCollected } = setup(seed, {
+        getCanvas: () => canvas
+      })
+      applyCollected()
+      events.length = 0
       const before = graph.serialize()
 
       expect(applyOps(doc, [op], CATALOG).outcomes).toEqual([
@@ -1477,10 +3104,40 @@ describe('LiveGraphApplier change bracket', () => {
     }
   )
 
+  it('drops the groups a replacement document no longer holds', () => {
+    const { graph, applier, applyCollected } = setup({
+      nodes: [],
+      links: [],
+      groups: [
+        { id: 5, title: 'Dropped', bounding: [0, 0, 100, 100] },
+        { id: 6, title: 'Kept', bounding: [200, 0, 100, 100] }
+      ]
+    })
+    applyCollected()
+    const replacement = followedDoc(
+      {
+        nodes: [],
+        links: [],
+        groups: [{ id: 6, title: 'Kept', bounding: [200, 0, 100, 100] }]
+      },
+      CATALOG
+    )
+
+    applier.applyChanges(
+      replacement.doc,
+      replacement.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+
+    expect(graph.groups.map((group) => group.title)).toEqual(['Kept'])
+  })
+
   it('brackets a catch-up frame and a lineage replacement once each, and never without a graph', () => {
-    const { graph, doc, collector, applier } = setup(seed)
     const { canvas, events } = recordingCanvas()
-    graph.list_of_graphcanvas = [canvas]
+    const { graph, doc, collector, applier } = setup(seed, {
+      getCanvas: () => canvas
+    })
     const catchUp = collector.peek()
     const empty = followedDoc({ nodes: [], links: [] }, CATALOG)
 
@@ -1491,9 +3148,50 @@ describe('LiveGraphApplier change bracket', () => {
     expect(graph._nodes).toEqual([])
     expect(reportError).not.toHaveBeenCalled()
 
-    const detached = new LiveGraphApplier({ getGraph: () => null })
+    const detached = new LiveGraphApplier({
+      getGraph: () => null,
+      getCanvas: () => canvas
+    })
     detached.applyChanges(doc, catchUp, CONTEXT)
     detached.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
     expect(events).toHaveLength(4)
+  })
+
+  it('invalidates the graph when no canvas is available', () => {
+    const { graph, doc, collector, applier } = setup(seed)
+    const setDirtyCanvas = vi.spyOn(graph, 'setDirtyCanvas')
+
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+})
+
+describe('readDocGroups', () => {
+  const frame = { title: 'Stage', bounding: [0, 0, 100, 100] }
+
+  it('keeps a stored positive integer id', () => {
+    expect([...readDocGroups([{ ...frame, id: 7 }]).keys()]).toEqual(['7'])
+  })
+
+  it('names a record without a usable id the same way on every read', () => {
+    const records = [frame, { ...frame, id: -1 }, { ...frame, id: Number.NaN }]
+    const first = [...readDocGroups(records).values()].map(({ id }) => id)
+    const second = [...readDocGroups(records).values()].map(({ id }) => id)
+    expect(first).toHaveLength(3)
+    expect(second).toEqual(first)
+    expect(first.every((id) => Number.isSafeInteger(id) && id > 0)).toBe(true)
+  })
+
+  it('tells apart id-less records whose titles differ only in an astral character', () => {
+    const groups = readDocGroups([
+      { ...frame, title: 'Stage \u{1F600}' },
+      { ...frame, title: 'Stage \u{1F601}' }
+    ])
+    expect(groups.size).toBe(2)
+  })
+
+  it('reads an id-less record that carries a bigint field', () => {
+    expect(readDocGroups([{ ...frame, extra: 1n }]).size).toBe(1)
   })
 })

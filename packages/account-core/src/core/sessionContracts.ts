@@ -59,7 +59,28 @@ export type SessionResult =
       readonly code: SessionErrorCode
       /** Set only when the failure came from an HTTP response, not aborted/network. */
       readonly httpStatus?: number
+      /** The organization an `SSO_REQUIRED` refusal names, when ingest names one. */
+      readonly organizationId?: string
+      /**
+       * Why a 2xx exchange produced no credential. Diagnostic only: every
+       * reason keeps the TOKEN_EXCHANGE_FAILED code and its handling.
+       */
+      readonly reason?: ExchangeFailureReason
+      /**
+       * Non-identifying detail for `reason`: the failing schema field paths,
+       * or `expires_in_ms=<n>` (local clock) for an expiry rejected on arrival.
+       */
+      readonly detail?: string
     }
+
+/** The 2xx exchange outcomes that still yield no usable credential. */
+export type ExchangeFailureReason =
+  | 'body_aborted'
+  | 'body_unreadable'
+  | 'schema_mismatch'
+  | 'invalid_expiry'
+  | 'expired_on_arrival'
+  | 'empty_token'
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
 
@@ -194,6 +215,8 @@ export interface WebSessionFailure {
   readonly httpStatus?: number
   /** The server's `ErrorResponse.code`, when the body carried one. */
   readonly serverCode?: string
+  /** The organization an `SSO_REQUIRED` refusal names. */
+  readonly organizationId?: string
 }
 
 export type WebSessionResult =

@@ -1,5 +1,5 @@
 import type { Response as OpenAiResponse } from 'openai/resources/responses/responses'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
 import type { TranslateBatch, TranslationItem } from './translate'
@@ -328,10 +328,6 @@ describe('createOpenAiTranslator', () => {
     status: 'incomplete',
     incomplete_details: { reason: 'max_output_tokens' }
   }
-
-  beforeEach(() => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
 
   function translatorFor(
     respond: Response[] | ((body: string, call: number) => Response),

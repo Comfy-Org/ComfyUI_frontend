@@ -1,17 +1,14 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import type {
   PromptFailureResponse,
   PromptResponse
-} from '@/platform/remote/comfyui/types'
-import { api, PromptExecutionError } from '@/scripts/api'
+} from '@comfyorg/api-client/types'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 describe('ComfyApi response boundaries', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-  })
-
   it('models prompt success separately from prompt failure', () => {
     const success = { prompt_id: 'job-17' } satisfies PromptResponse
     const failure = {

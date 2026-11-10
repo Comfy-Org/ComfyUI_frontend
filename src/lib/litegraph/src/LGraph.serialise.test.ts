@@ -8,13 +8,14 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -86,6 +87,9 @@ describe('LGraph Serialisation', () => {
     graph.add(registered)
     const adapterOnly = new LGraphNode('Adapter only')
     adapterOnly.id = toNodeId(99)
+    adapterOnly.graph = graph
+    adapterOnly._state.graphId = graph.id
+    adapterOnly._graphScope = graphScopeOf(graph)
     graph._nodes.push(adapterOnly)
 
     const serialized = graph.serialize()
@@ -101,9 +105,158 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
-          mismatch: `live node ${adapterOnly.id} has no stored state`
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `live node ${adapterOnly.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: adapterOnly.id,
+          nodeGraphId: graph.id,
+          stateGraphId: graph.id,
+          registrationRootGraphId: graph.rootGraph.id,
+          registrationOwningGraphId: graph.id
+        }
+      }
+    )
+  })
+
+  test('reports absent graph provenance for a detached live node', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const detached = new LGraphNode('Detached')
+    detached.id = toNodeId(99)
+    graph._nodes.push(detached)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Registered',
+      'Detached'
+    ])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
+        context: {
+          graphId: graph.id,
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `live node ${detached.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: detached.id,
+          nodeGraphId: null,
+          stateGraphId: detached._state.graphId,
+          registrationRootGraphId: null,
+          registrationOwningGraphId: null
+        }
+      }
+    )
+  })
+
+  test('reports both sides of mixed stored and live divergence', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const storedOnly = new LGraphNode('Stored only')
+    graph.add(storedOnly)
+    graph._nodes = []
+    storedOnly._state.graphId = 'stored-only-state-graph-id'
+    const liveOnly = new LGraphNode('Live only')
+    liveOnly.id = toNodeId(99)
+    liveOnly.graph = new LGraph()
+    liveOnly._state.graphId = 'live-only-state-graph-id'
+    liveOnly._graphScope = graphScopeOf({
+      id: 'live-only-registration-owning-graph-id',
+      rootGraph: { id: 'live-only-registration-root-graph-id' }
+    })
+    graph._nodes.push(liveOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual(['Live only'])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
+        context: {
+          graphId: graph.id,
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `stored node ${storedOnly.id} has no live adapter; live node ${liveOnly.id} has no stored state`,
+          mismatchKind: 'stored_and_live_diverged',
+          storedOnlyNodeId: storedOnly.id,
+          storedOnlyStateGraphId: 'stored-only-state-graph-id',
+          liveOnlyNodeId: liveOnly.id,
+          liveOnlyNodeGraphId: liveOnly.graph.id,
+          liveOnlyStateGraphId: 'live-only-state-graph-id',
+          liveOnlyRegistrationRootGraphId:
+            'live-only-registration-root-graph-id',
+          liveOnlyRegistrationOwningGraphId:
+            'live-only-registration-owning-graph-id'
+        }
+      }
+    )
+  })
+
+  test('reports the owning, node-state, and registration graph ids separately', ({
+    expect
+  }) => {
+    const rootGraph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph })
+    const attachedGraph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    subgraph.add(registered)
+    const staleScope = new LGraphNode('Stale scope')
+    staleScope.id = toNodeId(99)
+    staleScope.graph = attachedGraph
+    staleScope._state.graphId = 'state-graph-id'
+    staleScope._graphScope = graphScopeOf({
+      id: 'registration-owning-graph-id',
+      rootGraph: { id: 'registration-root-graph-id' }
+    })
+    subgraph._nodes.push(staleScope)
+
+    expect(
+      new Set([
+        subgraph.id,
+        rootGraph.id,
+        attachedGraph.id,
+        'state-graph-id',
+        'registration-owning-graph-id',
+        'registration-root-graph-id'
+      ]).size
+    ).toBe(6)
+
+    subgraph.asSerialisable()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
+        context: {
+          graphId: subgraph.id,
+          rootGraphId: rootGraph.id,
+          mismatch: `live node ${staleScope.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: staleScope.id,
+          nodeGraphId: attachedGraph.id,
+          stateGraphId: 'state-graph-id',
+          registrationRootGraphId: 'registration-root-graph-id',
+          registrationOwningGraphId: 'registration-owning-graph-id'
         }
       }
     )
@@ -422,14 +575,13 @@ describe('LGraph Serialisation', () => {
     const node = new LGraphNode('Extended')
     const cyclic: Record<string, unknown> = {}
     cyclic.self = cyclic
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     node.onSerialize = (data) => {
       Object.assign(data, { cyclic })
     }
 
     expect(() => node.serialize()).not.toThrow()
     expect(node.serialize()).not.toHaveProperty('extensions.cyclic')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       'LiteGraph: ignoring non-serializable extension payload'
     )
   })

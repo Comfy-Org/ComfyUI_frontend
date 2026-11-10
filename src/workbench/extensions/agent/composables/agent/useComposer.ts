@@ -1,20 +1,13 @@
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { composerPromptForSend } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-
-export interface ComposerAttachment {
-  id: string
-  name: string
-  ref: string
-  previewUrl?: string
-  uploading?: boolean
-}
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void
@@ -22,26 +15,38 @@ export interface UseComposerOptions {
   onStop: () => void
 }
 
+type ComposerSubmitIntent = 'keyboard' | 'explicit'
+
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
-  const { draft, attachments, prompt, workflowReferences, promptEpoch } =
-    storeToRefs(store)
+  const {
+    draft,
+    attachments,
+    prompt,
+    workflowReferences,
+    promptEpoch,
+    errorContext,
+    pendingCaret
+  } = storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
   const canSend = computed(
     () =>
-      (draft.value.trim().length > 0 || prompt.value.references.length > 0) &&
-      !attachments.value.some((item) => item.uploading)
+      (draft.value.trim().length > 0 ||
+        prompt.value.references.length > 0 ||
+        attachments.value.length > 0) &&
+      !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
-  function submit(): void {
+  function submit(intent: ComposerSubmitIntent = 'explicit'): void {
     if (options.isRunning()) {
       options.onStop()
       return
     }
     if (!canSend.value) return
+    if (intent === 'keyboard' && store.rejectedDraftUnchanged) return
     options.onSend(
-      composerPromptForSend(prompt.value).text.trim(),
+      composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value
     )
   }
@@ -58,18 +63,24 @@ export function useComposer(options: UseComposerOptions) {
     starterPrompt?: AgentStarterPromptAttribution
   ): void {
     const draftWasEmpty =
-      !draft.value.trim() && prompt.value.references.length === 0
+      !draft.value.trim() &&
+      prompt.value.references.length === 0 &&
+      attachments.value.length === 0
     store.setText(draft.value ? `${draft.value} ${text}` : text)
     if (!starterPrompt) {
       store.markSuggestedPrompt()
       return
     }
     const clickId = uuidv4()
-    store.markSuggestedPrompt({ id: starterPrompt.promptId, clickId })
+    store.markSuggestedPrompt({
+      id: starterPrompt.promptId,
+      clickId
+    })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
       prompt_index: starterPrompt.promptIndex,
       prompt_count: starterPrompt.promptCount,
+      visible_prompt_count: starterPrompt.visiblePromptCount,
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
@@ -82,8 +93,15 @@ export function useComposer(options: UseComposerOptions) {
     attachments,
     prompt,
     promptEpoch,
+    errorContext,
+    pendingCaret,
+    clearPendingCaret: store.clearPendingCaret,
+    setErrorContext: store.setErrorContext,
+    clearErrorContext: store.clearErrorContext,
     applyEditorPrompt: store.applyEditorPrompt,
+    resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,
+    setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,
     workflowReferences,
     canSend,
@@ -92,6 +110,7 @@ export function useComposer(options: UseComposerOptions) {
     setText: store.setText,
     replacePrompt: store.replacePrompt,
     addAttachment: store.addAttachment,
+    referenceAttachment: store.referenceAttachment,
     updateAttachment: store.updateAttachment,
     removeAttachment: store.removeAttachment
   }

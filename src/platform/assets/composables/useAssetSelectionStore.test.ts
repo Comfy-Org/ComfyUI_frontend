@@ -13,17 +13,15 @@ const shift: SelectionModifiers = { shift: true, cmdOrCtrl: false }
 const cmdOrCtrl: SelectionModifiers = { shift: false, cmdOrCtrl: true }
 
 function createMockAssets(count: number): AssetItem[] {
-  return Array.from(
-    { length: count },
-    (_, i): AssetItem =>
-      fromPartial({
-        id: `asset-${i}`,
-        name: `Asset ${i}`,
-        size: 1000,
-        created_at: new Date().toISOString(),
-        tags: ['output'],
-        preview_url: `http://example.com/asset-${i}.png`
-      })
+  return Array.from({ length: count }, (_, i): AssetItem =>
+    fromPartial({
+      id: `asset-${i}`,
+      name: `Asset ${i}`,
+      size: 1000,
+      created_at: new Date().toISOString(),
+      tags: ['output'],
+      preview_url: `http://example.com/asset-${i}.png`
+    })
   )
 }
 
@@ -241,10 +239,7 @@ describe('useAssetSelectionStore', () => {
 
       store.setSelectedIds(['asset-1', 'asset-3'], assets)
 
-      expect(Array.from(store.selectedAssetIds).sort()).toEqual([
-        'asset-1',
-        'asset-3'
-      ])
+      expect(store.selectedAssetIds).toEqual(new Set(['asset-1', 'asset-3']))
       expect(store.lastSelectedIndex).toBe(3)
       expect(store.lastSelectedAssetId).toBe('asset-3')
     })

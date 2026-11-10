@@ -1,4 +1,3 @@
-import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -9,9 +8,9 @@ import {
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -22,13 +21,16 @@ import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
@@ -77,7 +79,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 
@@ -554,9 +556,7 @@ describe('computeProcessedWidgets', () => {
 
     const result = processWidgets({ widgetIds: [id], showAdvanced: true })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
@@ -701,7 +701,7 @@ describe('computeProcessedWidgets', () => {
       hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
-        borderStyle: 'ring ring-component-node-widget-advanced'
+        borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)

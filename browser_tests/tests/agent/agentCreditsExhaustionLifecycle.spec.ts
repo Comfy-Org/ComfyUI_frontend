@@ -3,20 +3,30 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Agent standing credits-exhaustion lifecycle',
-  { tag: ['@cloud', '@ui'] },
+  { tag: ['@cloud', '@screenshot', '@ui'] },
   () => {
-    test.use({ connectWebSocketToServer: false })
+    test.use({
+      connectWebSocketToServer: false,
+      initialFeatureFlags: { enable_telemetry: true }
+    })
 
-    test('refreshes, survives remount, recovers, and re-arms without a send refusal', async ({
+    test('refreshes, survives remount, recovers, re-arms, and warns when the Agent grant runs out', async ({
       agentBilling,
       agentPanel,
-      creditsLifecycle
+      creditsLifecycle,
+      hostTelemetry
     }) => {
       const paywall = agentPanel.creditsExhaustedPaywall
       const sendButton = agentPanel.sendButton
+      const notice = agentPanel.creditTransitionNotice
+      const noticeEvents = () =>
+        hostTelemetry.filter(
+          ({ event }) => event === 'app:agent_credit_transition_notice'
+        )
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
@@ -51,7 +61,7 @@ test.describe(
         agentBilling.failSubsequentRefreshes()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Make the lighting warmer'])
+        ).toHaveText(['Build a red fox workflow', 'Make the lighting warmer'])
         await agentPanel.close()
         heldRefresh.release()
         await heldRefresh.completed
@@ -69,7 +79,11 @@ test.describe(
         await expect(paywall).toBeVisible()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field'
+        ])
       })
 
       await test.step('recover again and preserve the conversation', async () => {
@@ -80,7 +94,54 @@ test.describe(
         await expect(paywall).toHaveCount(0)
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field', 'Finish the workflow'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field',
+          'Finish the workflow'
+        ])
+      })
+
+      await test.step('warn once the Agent grant alone runs out', async () => {
+        await creditsLifecycle.completeTurn('Render a final preview', {
+          fundingState: 'scopedExhausted'
+        })
+        await expect(notice).toContainText(
+          enMessages.agent.creditTransitionNotice
+        )
+        await expect(paywall).toHaveCount(0)
+        await expectElementScreenshot(
+          notice,
+          'agent-credit-transition-notice.png'
+        )
+        await expectElementScreenshot(
+          agentPanel.composerStack,
+          'agent-credit-transition-composer-stack.png'
+        )
+        await expect.poll(noticeEvents).toEqual([
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'shown' }
+          }
+        ])
+      })
+
+      await test.step('dismiss the warning and keep the composer', async () => {
+        await notice
+          .getByRole('button', { name: enMessages.agent.dismiss })
+          .click()
+        await expect(notice).toHaveCount(0)
+        await expect(sendButton).toBeVisible()
+        await expect.poll(noticeEvents).toEqual([
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'shown' }
+          },
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'dismissed' }
+          }
+        ])
       })
     })
   }

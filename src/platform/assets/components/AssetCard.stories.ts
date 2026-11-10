@@ -31,7 +31,7 @@ const meta: Meta<typeof AssetCard> = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background"><story /></div>'
+      template: '<div class="p-8 bg-background"><story /></div>'
     })
   ]
 }
@@ -46,7 +46,7 @@ export const Interactive: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -66,7 +66,7 @@ export const NonInteractive: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -88,7 +88,7 @@ export const WithPreviewImage: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -109,7 +109,7 @@ export const FallbackGradient: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -196,7 +196,7 @@ export const EdgeCases: Story = {
       return { edgeCases }
     },
     template: `
-      <div class="grid grid-cols-4 gap-6 p-8 bg-base-background">
+      <div class="grid grid-cols-4 gap-6 p-8 bg-background">
         <AssetCard
           v-for="asset in edgeCases"
           :key="asset.id"

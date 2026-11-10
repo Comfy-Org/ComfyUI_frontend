@@ -9,6 +9,11 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    silent: 'passed-only',
+    setupFiles: [
+      '../../vitest.console.setup.ts',
+      '../../vitest.network.setup.ts'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

@@ -15,6 +15,38 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     })
 
+    test('anchors the image picker to its widget after canvas pan and zoom', async ({
+      comfyPage
+    }) => {
+      await comfyPage.canvasOps.pan({ x: 137, y: 83 }, { x: 700, y: 300 })
+      await comfyPage.canvas.hover({ position: { x: 600, y: 300 } })
+      await comfyPage.page.mouse.wheel(0, 200)
+      await comfyPage.nextFrame()
+
+      const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+      const trigger = node.getByRole('button', {
+        name: 'image',
+        exact: true
+      })
+      await expect(trigger).toContainText('example.png')
+      await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
+
+      const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
+      await expect(menu).toBeVisible()
+      await expect(async () => {
+        const triggerBox = await trigger.boundingBox()
+        const menuBox = await menu.boundingBox()
+        expect(triggerBox).not.toBeNull()
+        expect(menuBox).not.toBeNull()
+        const triggerRight = triggerBox!.x + triggerBox!.width
+        const menuRight = menuBox!.x + menuBox!.width
+        expect(Math.abs(menuRight - triggerRight)).toBeLessThanOrEqual(1)
+        const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
+        expect(gap).toBeGreaterThanOrEqual(0)
+        expect(gap).toBeLessThanOrEqual(16)
+      }).toPass({ timeout: 5000 })
+    })
+
     test('keeps a selected image loaded when it is selected again', async ({
       comfyPage
     }) => {
@@ -29,10 +61,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const imageLoadError = node.getByTestId(TestIds.errors.imageLoadError)
       const selectedImageButton = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect(imageLoadError).toBeHidden()
 
       await WidgetSelectDropdownFixture.fromTrigger(
@@ -41,6 +74,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect.poll(() => imageWidget.getValue()).toBe('example.png')
       await expect(imageLoadError).toBeHidden()
     })
@@ -83,9 +117,12 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await uploadResponse
 
     await expect.poll(() => imageWidget.getValue()).toBe(filename)
-    await expect(
-      node.getByRole('button', { name: filename, exact: true })
-    ).toBeVisible()
+    const imageTrigger = node.getByRole('button', {
+      name: 'image',
+      exact: true
+    })
+    await expect(imageTrigger).toBeVisible()
+    await expect(imageTrigger).toContainText(filename)
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
@@ -100,10 +137,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
-    const rejectionToasts = comfyPage.page.getByText(
-      enMessages.g.videoFilenameExtensionRequired,
-      { exact: true }
-    )
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
       uploadRequests += 1

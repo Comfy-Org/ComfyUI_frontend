@@ -16,7 +16,7 @@
       ref="textareaRef"
       v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
-      class="absolute inset-0 min-h-[60px] w-full resize-none text-(length:--comfy-textarea-font-size)"
+      class="absolute inset-0 min-h-[60px] resize-none font-mono text-(length:--comfy-textarea-font-size)"
       data-capture-wheel="true"
       @blur="handleBlur"
       @pointerdown.capture.stop
@@ -31,8 +31,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'

@@ -8,7 +8,7 @@ import type {
   ResubscribeResponse
 } from '@comfyorg/ingest-types'
 
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -69,8 +69,10 @@ const CANCELLED_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -172,14 +174,6 @@ async function mockCloudBoot(
       )
     )
   })
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 0,
-        currency: 'usd'
-      } satisfies BillingBalanceResponse)
-    )
-  )
 
   // Both lifecycle routes answer POST only. A regression to GET would
   // otherwise be served the success fixture and pass every assertion below,
@@ -450,7 +444,8 @@ test.describe(
        * reservation tells the customer why and asks neither transport.
        */
       test('mints no portal session when the browser refuses the tab', async ({
-        page
+        page,
+        toast
       }) => {
         test.setTimeout(60_000)
         const routes = await mockCloudBoot(page, { railOnFeatures: true })
@@ -461,7 +456,7 @@ test.describe(
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()
 
         await expect(
-          page.getByText(
+          toast.withText(
             "Couldn't open the billing page. Allow pop-ups for this site and try again."
           )
         ).toBeVisible()

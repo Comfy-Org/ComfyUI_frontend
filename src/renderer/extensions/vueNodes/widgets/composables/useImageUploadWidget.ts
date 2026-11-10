@@ -2,13 +2,13 @@ import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -61,7 +61,7 @@ export const useImageUploadWidget = () => {
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isExtensionlessVideo)) return false
-      useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
+      useToast().warning(t('g.videoFilenameExtensionRequired'))
       return true
     }
     const fileComboWidget = findFileComboWidget(node, imageInputName)

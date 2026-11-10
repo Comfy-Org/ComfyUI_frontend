@@ -129,7 +129,6 @@ it.for(['merge_group', 'push', 'workflow_dispatch'])(
       'should-run-unit': true,
       'should-run-e2e': true,
       'should-run-source': true,
-      'app-website-changes': true,
       'app-billing-web-changes': true,
       'app-frontend-changes': true,
       'packages-changes': true,

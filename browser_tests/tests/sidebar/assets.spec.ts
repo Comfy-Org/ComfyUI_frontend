@@ -12,10 +12,7 @@ import {
   withOutputAssets,
   withPagination
 } from '@e2e/fixtures/helpers/AssetHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 
@@ -296,7 +293,9 @@ test.describe('Assets sidebar - grid view display', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+    await expect(
+      tab.assetCards.getByRole('img', { name: 'Image failed to load' })
+    ).toBeVisible()
   })
 })
 
@@ -716,7 +715,7 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    await tab.dismissToasts()
+    await comfyPage.toast.closeToasts()
 
     // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
@@ -1056,8 +1055,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {

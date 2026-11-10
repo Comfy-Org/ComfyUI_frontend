@@ -1,13 +1,14 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from './useComposer'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { useComposer } from './useComposer'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
@@ -16,6 +17,7 @@ const CHIP: AgentStarterPromptAttribution = {
   promptId: 'slot_2',
   promptIndex: 1,
   promptCount: 5,
+  visiblePromptCount: 3,
   promptTextHash: 'deadbeef',
   locale: 'en'
 }
@@ -45,10 +47,8 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
-      attachment
-    ])
-    expect(composer.draft.value).toBe('  make a cat   ')
+    expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
+    expect(composer.draft.value).toBe('  make a cat  ')
     expect(composer.attachments.value).toEqual([attachment])
   })
 
@@ -105,7 +105,7 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
   })
@@ -173,6 +173,9 @@ describe('useComposer', () => {
       prompt_id: 'slot_2',
       prompt_index: 1,
       prompt_count: 5,
+      // Both counts travel, so a narrow panel is distinguishable from a
+      // shrunken set rather than overwriting it.
+      visible_prompt_count: 3,
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),
@@ -205,6 +208,22 @@ describe('useComposer', () => {
     )
   })
 
+  it('omits the retired experiment property from static prompt clicks', () => {
+    const { composer } = setup()
+
+    composer.insert(
+      'QA treatment',
+      starterPromptAttribution('QA treatment', 1, 5, 'en')
+    )
+
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
+    expect(useAgentComposerStore().starterPrompt).toEqual({
+      id: 'slot_2',
+      clickId: event.click_id
+    })
+  })
+
   it('treats a whitespace-only draft as empty for clean prompt attribution', () => {
     const { composer } = setup()
     composer.setText('    ')
@@ -216,7 +235,7 @@ describe('useComposer', () => {
     )
   })
 
-  it('treats a reference-only draft as non-empty for prompt attribution', () => {
+  it('treats an attachment-only draft as non-empty for prompt attribution', () => {
     const { composer } = setup()
     composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
@@ -233,17 +252,50 @@ describe('useComposer', () => {
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
-    expect(second.draft.value).toBe('still here ')
+    expect(second.draft.value).toBe('still here')
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('still here ')
+    expect(first.draft.value).toBe('still here')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])
+  })
+
+  it('allows sending with only an attached error context', () => {
+    const { composer, onSend } = setup()
+
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    expect(composer.errorContext.value).not.toBeNull()
+    expect(composer.canSend.value).toBe(true)
+    composer.submit()
+    expect(onSend).toHaveBeenCalledWith('', [])
+  })
+
+  it('clearing the error context blocks an otherwise empty send', () => {
+    const { composer } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    composer.clearErrorContext()
+
+    expect(composer.errorContext.value).toBeNull()
+    expect(composer.canSend.value).toBe(false)
   })
 
   it('removeAttachment drops the matching staged attachment', () => {
@@ -254,5 +306,83 @@ describe('useComposer', () => {
     composer.removeAttachment('a1')
 
     expect(composer.attachments.value.map((a) => a.id)).toEqual(['a2'])
+  })
+
+  describe('a draft restored after a refused send', () => {
+    function restoredAfterRefusal() {
+      const { composer, onSend } = setup()
+      composer.setText('make a red fox')
+      useAgentComposerStore().markRejectedDraft()
+      return { composer, onSend }
+    }
+
+    it('refuses the keyboard intent until it changes', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit('keyboard')
+
+      expect(onSend).not.toHaveBeenCalled()
+      expect(composer.draft.value).toBe('make a red fox')
+    })
+
+    it('still retries on the explicit Send intent', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit('explicit')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [])
+    })
+
+    it('defaults an unspecified intent to explicit, so Send cannot regress', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit()
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [])
+    })
+
+    it('re-arms the keyboard intent once the text changes', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.setText('make a red fox at dusk')
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox at dusk', [])
+    })
+
+    it('re-arms the keyboard intent once the attachments change', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.addAttachment({ id: 'a1', name: 'fox.png', ref: 'rfox' })
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [
+        { id: 'a1', name: 'fox.png', ref: 'rfox' }
+      ])
+    })
+
+    it('re-arms the keyboard intent when a reference moves within unchanged text', () => {
+      const store = useAgentComposerStore()
+      const text = 'render this and then stop'
+      const reference = {
+        id: 'wf-1',
+        name: 'Fox',
+        textOffset: 12
+      }
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const }]
+      })
+      store.markRejectedDraft()
+      const { composer, onSend } = setup()
+
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const, textOffset: 4 }]
+      })
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalled()
+    })
   })
 })

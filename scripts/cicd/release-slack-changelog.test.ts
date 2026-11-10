@@ -311,15 +311,13 @@ describe('createSlackPoster', () => {
   ) {
     const calls: { url: string; body: Record<string, unknown> }[] = []
     let index = 0
-    vi.stubGlobal(
-      'fetch',
-      async (
-        url: string,
-        init: { body: string; headers: Record<string, string> }
-      ) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
         calls.push({
           url,
-          body: JSON.parse(init.body) as Record<string, unknown>
+          body: JSON.parse(String(init.body)) as Record<string, unknown>
         })
         const next = responses[Math.min(index++, responses.length - 1)]
         // A real Response, so `.json()` and `.headers.get()` behave as they do

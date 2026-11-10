@@ -2,7 +2,7 @@ import type { UserCredential } from 'firebase/auth'
 import { onScopeDispose } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { SocialSignInOptions } from '@/stores/authStore'
 
 type SocialSignIn = (
