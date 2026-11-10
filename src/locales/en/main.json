@@ -6609,8 +6609,8 @@
       "limit": "Monthly limit",
       "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
       "limitHint": "Most you can set here: {max} a month.",
-      "consentNoCard": "Top-ups are charged to the card you pay with at checkout. Turn this off anytime in {billing}.",
-      "consentDefaultCard": "Top-ups are charged to your default card, {card}. Turn this off anytime in {billing}.",
+      "consentNoCard": "Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.",
+      "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.",
       "card": "{brand} ···· {last4}",
       "billing": "Billing",
       "invalid": "Enter a valid value.",
@@ -6628,6 +6628,7 @@
       "title": "Auto top-up is on",
       "summary": "Below {threshold} credits, tops up to {target}.",
       "limit": "Up to {limit} a month.",
+      "noLimit": "No monthly limit.",
       "done": "Done"
     },
     "autoTopUpFailed": {

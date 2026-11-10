@@ -303,14 +303,16 @@ export const BILLING_TOKEN = '{billing}'
 /** The consent by card, split around where the Billing link renders. */
 export function autoTopUpConsentParts(
   defaultCard: AutoTopUpDefaultCard | null,
+  max: string,
   translate: AddCreditsTranslate
 ): readonly string[] {
   const billing = BILLING_TOKEN
   const sentence =
     defaultCard === null
-      ? translate('autoTopUp.consentNoCard', { billing })
+      ? translate('autoTopUp.consentNoCard', { billing, max })
       : translate('autoTopUp.consentDefaultCard', {
           billing,
+          max,
           card: translate('autoTopUp.card', { ...defaultCard })
         })
   return sentence.split(/(\{billing\})/).filter((part) => part !== '')

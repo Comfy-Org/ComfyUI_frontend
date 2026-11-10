@@ -695,6 +695,9 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     await user.click(screen.getByRole('switch'))
     const limit = screen.getByLabelText('Monthly limit', { selector: 'input' })
     expect(limit).toHaveValue('10000')
+    expect(
+      screen.getByTestId('add-credits-auto-top-up-consent')
+    ).toHaveTextContent('up to $10,000 a month')
 
     await user.clear(limit)
     await user.type(limit, '60001')
@@ -707,13 +710,13 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
       name: 'no default card',
       defaultCard: null,
       consent:
-        'Top-ups are charged to the card you pay with at checkout. Turn this off anytime in Billing.'
+        'Top-ups are charged to the card you pay with at checkout, up to $60,000 a month. Turn this off anytime in Billing.'
     },
     {
       name: 'a default card',
       defaultCard: { brand: 'Visa', last4: '4242' },
       consent:
-        'Top-ups are charged to your default card, Visa ···· 4242. Turn this off anytime in Billing.'
+        'Top-ups are charged to your default card, Visa ···· 4242, up to $60,000 a month. Turn this off anytime in Billing.'
     }
   ])(
     'the consent names the card for $name',
@@ -784,6 +787,9 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     ).toBeVisible()
     expect(screen.getByTestId('add-credits-auto-top-up-on')).toHaveTextContent(
       'Below 1,000 credits, tops up to 11,550.'
+    )
+    expect(screen.getByTestId('add-credits-auto-top-up-on')).toHaveTextContent(
+      'No monthly limit.'
     )
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
       'href',

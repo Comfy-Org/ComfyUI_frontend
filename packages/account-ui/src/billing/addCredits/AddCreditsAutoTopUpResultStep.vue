@@ -25,6 +25,9 @@
           })
         }}
       </span>
+      <span v-else class="text-muted-foreground">
+        {{ translate('autoTopUpOn.noLimit') }}
+      </span>
     </div>
     <p
       v-else

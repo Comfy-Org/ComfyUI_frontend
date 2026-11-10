@@ -161,7 +161,13 @@ const targetHint = computed(() => {
     : translate('autoTopUp.targetHint', { amount: format.money(cents) })
 })
 
-const consent = computed(() => autoTopUpConsentParts(defaultCard, translate))
+const consentMax = computed(() =>
+  format.dollars(values.budgetCents ?? rules.maxMonthlyBudgetCents)
+)
+
+const consent = computed(() =>
+  autoTopUpConsentParts(defaultCard, consentMax.value, translate)
+)
 
 function messageFor(field: AutoTopUpField): string | undefined {
   const error = errors[field]

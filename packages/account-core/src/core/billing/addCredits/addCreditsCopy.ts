@@ -81,9 +81,9 @@ export const ADD_CREDITS_COPY = {
     'Up to {max} a month, the maximum. Turn on to set a lower limit.',
   'autoTopUp.limitHint': 'Most you can set here: {max} a month.',
   'autoTopUp.consentNoCard':
-    'Top-ups are charged to the card you pay with at checkout. Turn this off anytime in {billing}.',
+    'Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.',
   'autoTopUp.consentDefaultCard':
-    'Top-ups are charged to your default card, {card}. Turn this off anytime in {billing}.',
+    'Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.',
   'autoTopUp.card': '{brand} ···· {last4}',
   'autoTopUp.billing': 'Billing',
   'autoTopUp.invalid': 'Enter a valid value.',
@@ -100,6 +100,7 @@ export const ADD_CREDITS_COPY = {
   'autoTopUpOn.title': 'Auto top-up is on',
   'autoTopUpOn.summary': 'Below {threshold} credits, tops up to {target}.',
   'autoTopUpOn.limit': 'Up to {limit} a month.',
+  'autoTopUpOn.noLimit': 'No monthly limit.',
   'autoTopUpOn.done': 'Done',
   'autoTopUpFailed.title': "Auto top-up didn't turn on",
   'autoTopUpFailed.body': 'Your credits were added.'
