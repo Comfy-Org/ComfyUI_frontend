@@ -184,16 +184,12 @@ function useWorkflowLinkUrlLoaderInternal() {
     }
   }
 
-  /** Clears the link this attempt owns from the URL and stash. Returns false,
-   * clearing nothing more, when a newer link replaced it before or during the
-   * URL replace. */
   async function clearOwnedIntent(ownership: Ownership) {
-    if (!ownership.owns()) return false
+    if (!ownership.owns()) return
     hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
-    if (!(await stripLinkFromUrl()) || !ownership.unreplaced()) return false
+    if (!(await stripLinkFromUrl()) || !ownership.unreplaced()) return
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
-    return true
   }
 
   async function openPath(
@@ -307,24 +303,23 @@ function useWorkflowLinkUrlLoaderInternal() {
     return settleLink(query.workflowId, workspaceStore.activeWorkspaceId)
   }
 
-  /** Opens (or reports again) the link the URL carries now, then clears it
-   * only while this attempt still owns it; `pending` when a newer link or a
-   * workspace change took over, so callers leave that link alone. */
   async function settleLink(
     workflowId: unknown,
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
     const ownership = attemptOwnership(workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
-    if (priorStatus)
-      return (await clearOwnedIntent(ownership)) ? priorStatus : 'pending'
+    if (priorStatus) {
+      await clearOwnedIntent(ownership)
+      return priorStatus
+    }
     const outcome = await resolveLink(workflowId, ownership.owns)
     if (outcome.kind === 'pending' || !ownership.owns()) return 'pending'
     const status = outcome.kind === 'opened' ? 'opened' : 'failed'
     completed = { value: workflowId, workspaceId, status }
-    const cleared = await clearOwnedIntent(ownership)
+    await clearOwnedIntent(ownership)
     reportOutcome(outcome, workspaceId)
-    return cleared ? status : 'pending'
+    return status
   }
 
   /** Whether `workflowId` is the link this loader already settled, so a later

@@ -22,6 +22,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
@@ -548,7 +549,7 @@ describe('workflow-id links', () => {
       vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
       vi.mocked(useRouter().replace).mockImplementation(navigate)
 
-      expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+      expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
 
       expect(useRoute().query.workflowId).toBe(route)
       expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(stash)
@@ -572,11 +573,38 @@ describe('workflow-id links', () => {
       return cancelledNavigation()
     })
 
-    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
 
     expect(api.fetchApi).toHaveBeenCalledTimes(1)
     expect(useRoute().query.workflowId).toBe(ID)
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a boot link opened when an unrelated navigation cancels its URL cleanup, and clears it later without reopening', async () => {
+    serveFile()
+    navigateToLink(ID)
+    const { store } = await openExistingTab()
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+      async (workflow) => {
+        await store.openWorkflow(workflow)
+        return true
+      }
+    )
+    vi.mocked(useRouter().replace).mockResolvedValueOnce(cancelledNavigation())
+    const linkedLoader = scope.run(useLinkedWorkflowUrlLoader)
+    assert.exists(linkedLoader)
+
+    expect(await linkedLoader.openLinkedWorkflowFromUrl()).toBe('opened')
+    expect(store.activeWorkflow?.path).toBe(PATH)
+    expect(useRoute().query).toEqual({ workflowId: ID })
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(store.activeWorkflow?.path).toBe(PATH)
+    expect(useRoute().query).toEqual({})
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
     expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
   })
 
