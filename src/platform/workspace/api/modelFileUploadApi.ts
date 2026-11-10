@@ -226,7 +226,6 @@ function nextPosition(
   }
 }
 
-/** `resumed` is absent when the transfer could not observe a recovery. */
 interface Transfer {
   stopped?: ModelFileUploadStopped
   resumed?: boolean
@@ -331,7 +330,6 @@ function transferReason({
   return status[1] === '0' ? 'network' : 'http'
 }
 
-/** Best effort: it never throws, and the caller never waits for it. */
 function reportTransferStop(uploadId: string, report: TransferReport): void {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TRANSFER_REPORT_TIMEOUT_MS)
