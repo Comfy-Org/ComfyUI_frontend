@@ -49,10 +49,10 @@
             @blur="handleBlur"
             @keyup.enter="handleBlur"
             @keydown.esc.prevent.stop="cancelTextEdit"
-            @keydown.up.prevent="updateValueBy(step)"
-            @keydown.down.prevent="updateValueBy(-step)"
-            @keydown.page-up.prevent="updateValueBy(10 * step)"
-            @keydown.page-down.prevent="updateValueBy(-10 * step)"
+            @keydown.up.prevent="stepFromInput($event, step)"
+            @keydown.down.prevent="stepFromInput($event, -step)"
+            @keydown.page-up.prevent="stepFromInput($event, 10 * step)"
+            @keydown.page-down.prevent="stepFromInput($event, -10 * step)"
           />
           <div
             class="absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden"
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -184,6 +184,12 @@ useNumberScrub(scrubElement, {
   onScrub: updateIncrementalValue,
   onClick: startTextEdit
 })
+
+async function stepFromInput(event: Event, delta: number) {
+  handleBlur(event)
+  await nextTick()
+  updateValueBy(delta)
+}
 
 function updateValueBy(delta: number) {
   updateIncrementalValue(modelValue.value + delta)
