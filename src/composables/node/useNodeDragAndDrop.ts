@@ -77,6 +77,7 @@ export const useNodeDragAndDrop = <T>(
     try {
       const resp = await fetch(uri)
       const fileName =
+        asset?.display_name ??
         asset?.filename ??
         uri.searchParams.get('filename') ??
         baseUri.split('/').at(-1)

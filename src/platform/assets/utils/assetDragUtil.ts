@@ -20,7 +20,6 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import {
   getAssetStoredFilename,
-  getAssetUrlFilename,
   getOutputSubfolder
 } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
@@ -80,15 +79,13 @@ export function startAssetDrag(
   const { dataTransfer } = event
   if (!dataTransfer) return
 
+  const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
   const assetInfo = {
-    filename: getAssetStoredFilename(
-      asset,
-      asset.hash ?? getStoredOutputIdentity(asset)?.hash
-    ),
+    filename: getAssetStoredFilename(asset, storedHash),
     subfolder: getOutputSubfolder(asset.user_metadata),
     type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
     display_name: asset.display_name ?? asset.name,
-    attachment_ref: getAssetUrlFilename(asset),
+    attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
