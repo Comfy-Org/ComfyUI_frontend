@@ -181,6 +181,23 @@ describe('useNodeVideo', () => {
     expect(node.videoContainer?.textContent).toBe('Video failed to load')
   })
 
+  it('reports a plain failure after an unsupported attempt that recovered', async () => {
+    const { node, createdVideos } = await setup()
+    const { showPreview } = useNodeVideo(node)
+
+    showPreview()
+    const unsupported = createdVideos.at(-1)!
+    Object.defineProperty(unsupported, 'error', { value: { code: 4 } })
+    unsupported.onerror?.(new Event('error'))
+    await vi.advanceTimersByTimeAsync(1)
+    createdVideos.at(-1)!.onloadeddata?.(new Event('loadeddata'))
+    await vi.advanceTimersByTimeAsync(1)
+    showPreview()
+    await failBothAttempts(createdVideos, 2)
+
+    expect(node.videoContainer?.textContent).toBe('Video failed to load')
+  })
+
   it('sizes the widget for a video that follows a failure', async () => {
     const node = createDOMWidgetNode({ size: [400, 400], graph: new LGraph() })
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
@@ -190,10 +207,9 @@ describe('useNodeVideo', () => {
     useNodeVideo(node).showPreview()
     await failBothAttempts(createdVideos, 4)
 
-    vi.mocked(fitDimensionsToNodeWidth).mockReturnValue({
-      minHeight: 700,
-      minWidth: 400
-    })
+    vi.mocked(fitDimensionsToNodeWidth).mockImplementation(
+      (_width, _height, nodeWidth) => ({ minHeight: 700, minWidth: nodeWidth })
+    )
     useNodeVideo(node).showPreview()
     createdVideos.at(-1)!.onloadeddata?.(new Event('loadeddata'))
     await vi.advanceTimersByTimeAsync(1)
@@ -204,7 +220,7 @@ describe('useNodeVideo', () => {
     })
   })
 
-  it('keeps the node width fixed across repeated runs', async () => {
+  it('keeps the node width fixed when fitted to content after each run', async () => {
     vi.mocked(fitDimensionsToNodeWidth).mockImplementation(
       (width, height, nodeWidth) => ({
         minWidth: nodeWidth,
