@@ -21,7 +21,6 @@ const props = defineProps<{
 }>()
 
 const canvasEl = ref()
-const containerEl = ref<HTMLElement>()
 const containerHeight = ref(20)
 
 const canvasStore = useCanvasStore()
@@ -67,7 +66,7 @@ onMounted(() => {
   canvasEl.value.width *= scaleFactor
   bindWidget()
   if (!widgetInstance) return
-  useResizeObserver(containerEl, draw)
+  useResizeObserver(canvasEl.value.parentElement, draw)
   watch(() => useThemeStore().activePresetId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
@@ -93,8 +92,8 @@ function getWidgetHeight(
 }
 
 function draw() {
-  if (!widgetInstance || !node || !containerEl.value) return
-  const width = containerEl.value.clientWidth
+  if (!widgetInstance || !node) return
+  const width = canvasEl.value.parentElement.clientWidth
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
   node.canvasHeight = height
@@ -144,7 +143,6 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    ref="containerEl"
     class="relative -mx-3 min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
