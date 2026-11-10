@@ -6,6 +6,8 @@ import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 
 const STRIPPED_NAMESPACE = 'test_strip'
@@ -283,6 +285,29 @@ describe('installPreservedQueryTracker', () => {
     )
   })
 
+  it('clears a stale rejectRepeated value when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(
+      getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')
+    ).toBeUndefined()
+  })
+
+  it('keeps a plain namespace stash when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [plainDefinition])
+
+    await router.push('/?plain_code=abc')
+    await router.push('/?plain_code=')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('abc')
+  })
+
   it('drops a bare param of a non-rejectRepeated namespace like any empty value', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [
@@ -294,5 +319,25 @@ describe('installPreservedQueryTracker', () => {
     expect(
       getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')
     ).toBeUndefined()
+  })
+})
+
+describe('installPreservedQueryTracker with the app definitions', () => {
+  beforeEach(() => clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID))
+
+  it('preserves a workflow-id link through sign-in and onboarding redirects', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push('/?workflowId=82b98188-0c8f-41d2-9b91-617b9152b809')
+    await router.push('/login')
+    await router.push('/onboarding')
+
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('82b98188-0c8f-41d2-9b91-617b9152b809')
   })
 })

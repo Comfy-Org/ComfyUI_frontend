@@ -276,6 +276,23 @@ describe('TelemetryRegistry', () => {
     expect(b.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
+  it('dispatches trackWorkflowLinkOpened to every supporting provider', () => {
+    const a: TelemetryProvider = { trackWorkflowLinkOpened: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const metadata = {
+      outcome: 'out_of_sync' as const,
+      reason: 'content_mismatch' as const,
+      workspace_id: 'ws-1'
+    }
+    registry.trackWorkflowLinkOpened(metadata)
+
+    expect(a.trackWorkflowLinkOpened).toHaveBeenCalledExactlyOnceWith(metadata)
+  })
+
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
     const a: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
     const b: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }

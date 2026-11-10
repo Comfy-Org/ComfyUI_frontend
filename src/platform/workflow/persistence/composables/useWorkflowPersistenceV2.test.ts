@@ -25,6 +25,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useWorkflowLinkUrlLoader } from '@/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -61,6 +62,22 @@ vi.mock(
     })
   })
 )
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+
+vi.mock(import('@/composables/useWorkflowLinkUrlLoader'), () => ({
+  useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader
+}))
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
   openFolderWorkflowsFromUrl: vi.fn(async () => false)
@@ -851,6 +868,48 @@ describe('useWorkflowPersistenceV2', () => {
         await expect(initializeWorkflow()).resolves.toBe(outcome)
       }
     )
+  })
+
+  describe('a workflow-id link', () => {
+    it('defers Getting Started while a workflow-id link waits for navigation', async () => {
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the workflow-id link result is %s',
+      async (status) => {
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the linked workflow without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {

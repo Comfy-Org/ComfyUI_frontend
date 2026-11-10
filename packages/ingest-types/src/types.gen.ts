@@ -285,6 +285,24 @@ export type WorkflowVersionContentResponse = {
 }
 
 /**
+ * The sidebar file a workflow was copied from, when the two agree. No content and no userdata id: open the path through the userdata API.
+ */
+export type WorkflowSidebarFileResponse = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds, the same unit as GET /api/userdata?full_info=true.
+   */
+  modified: number
+  /**
+   * The userdata path, `workflows/<name>.json`.
+   */
+  path: string
+  /**
+   * File size in bytes.
+   */
+  size: number
+}
+
+/**
  * Workflow metadata captured at mint time. The subsequent PUT body is the
  * raw workflow JSON document and nothing else, so everything that would
  * normally accompany workflow_json in POST /api/workflows is declared
@@ -19523,6 +19541,58 @@ export type ForkWorkflowResponses = {
 
 export type ForkWorkflowResponse =
   ForkWorkflowResponses[keyof ForkWorkflowResponses]
+
+export type GetWorkflowSidebarFileData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow. Parsed by the handler, so a malformed id answers 404.
+     */
+    workflow_id: string
+  }
+  query?: never
+  url: '/api/workflows/{workflow_id}/sidebar-file'
+}
+
+export type GetWorkflowSidebarFileErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `code` is `NOT_FOUND`: no live workflow with this id that the caller created in this workspace.
+   */
+  404: ErrorResponse
+  /**
+   * `code` is `WORKFLOW_OUT_OF_SYNC` and `details.reason` is one of `no_sidebar_path`, `name_ambiguous`, `file_missing` or `content_mismatch`. Clients open nothing on this answer. The set of reasons may grow, and clients treat an unknown reason as out of sync.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowSidebarFileError =
+  GetWorkflowSidebarFileErrors[keyof GetWorkflowSidebarFileErrors]
+
+export type GetWorkflowSidebarFileResponses = {
+  /**
+   * The workflow and its sidebar file agree.
+   */
+  200: WorkflowSidebarFileResponse
+}
+
+export type GetWorkflowSidebarFileResponse =
+  GetWorkflowSidebarFileResponses[keyof GetWorkflowSidebarFileResponses]
 
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest

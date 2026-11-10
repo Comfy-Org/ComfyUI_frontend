@@ -28,7 +28,9 @@ export interface PreservedQueryDefinition {
    * becomes a bare `,`. Both are strings outside any real id's charset, so
    * they read back as invalid rather than resolving to one of several
    * colliding values or to "absent" (`capturePreservedQuery` itself drops a
-   * null/empty value as not worth capturing).
+   * null/empty value as not worth capturing). A key present with an empty
+   * value (`?key=`) clears the namespace's stash instead, so an older stashed
+   * value never stands in for the newer, empty one the URL carries.
    */
   rejectRepeated?: true
 }
@@ -53,6 +55,10 @@ function withAmbiguityMarked(
   return result
 }
 
+function hasValue(value: LocationQuery[string] | undefined): boolean {
+  return (Array.isArray(value) ? value : [value]).some(Boolean)
+}
+
 export const installPreservedQueryTracker = (
   router: Router,
   definitions: PreservedQueryDefinition[]
@@ -73,6 +79,13 @@ export const installPreservedQueryTracker = (
         const captureQuery = rejectRepeated
           ? withAmbiguityMarked(to.query, keys)
           : to.query
+        if (
+          rejectRepeated &&
+          !presentKeys.some((key) => hasValue(captureQuery[key]))
+        ) {
+          clearPreservedQuery(namespace)
+          return
+        }
         capturePreservedQuery(namespace, captureQuery, keys, {
           merge: stripAfterCapture
         })
