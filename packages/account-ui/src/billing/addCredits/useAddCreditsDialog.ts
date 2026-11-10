@@ -51,6 +51,8 @@ export interface AddCreditsPorts {
   readonly watchPayment: (
     landed: (activation?: AutoTopUpActivationOutcome) => void
   ) => () => void
+  /** True when `createCheckout` sends `autoTopUp` and `watchPayment` reports its outcome; the checkbox shows only then. */
+  readonly activatesAutoTopUp?: boolean
   /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
   readonly autoTopUpSetupUrl?: () => Promise<string | null>
 }

@@ -228,9 +228,12 @@ const bounds = computed<AddCreditsBounds>(() => ({
   maxCents: maxTopupCents ?? ADD_CREDITS_FALLBACK_BOUNDS.maxCents
 }))
 
-const autoTopUpOffer = computed<AddCreditsAutoTopUpOffer>(() =>
-  billingUrl ? autoTopUp : { kind: 'hidden' }
-)
+const autoTopUpOffer = computed<AddCreditsAutoTopUpOffer>(() => {
+  if (!billingUrl) return { kind: 'hidden' }
+  return autoTopUp.kind === 'checkbox' && !ports.activatesAutoTopUp
+    ? { kind: 'hidden' }
+    : autoTopUp
+})
 
 const autoTopUpFields = useAddCreditsAutoTopUp(
   autoTopUpOffer,

@@ -51,6 +51,7 @@ class FakePorts implements AddCreditsPorts {
   landed: ((activation?: AutoTopUpActivationOutcome) => void) | undefined
   watchStopped = false
   autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
+  activatesAutoTopUp = true
 
   quoteRejects = false
   checkoutRejects = false
@@ -609,7 +610,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     return renderDialog({ autoTopUp, billingUrl: BILLING_URL, ...props })
   }
 
-  it('shows the checkbox unchecked with its pitch', () => {
+  it('shows the checkbox unchecked with its pitch when the host turns auto top-up on with the purchase', () => {
     renderOffered()
 
     expect(checkbox()).toHaveAttribute('aria-checked', 'false')
@@ -627,7 +628,15 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
       name: 'a hidden offer',
       props: { autoTopUp: { kind: 'hidden' }, billingUrl: BILLING_URL }
     },
-    { name: 'no Billing link', props: { autoTopUp: CHECKBOX } }
+    { name: 'no Billing link', props: { autoTopUp: CHECKBOX } },
+    {
+      name: 'a host that cannot turn auto top-up on with the purchase',
+      props: {
+        autoTopUp: CHECKBOX,
+        billingUrl: BILLING_URL,
+        ports: Object.assign(new FakePorts(), { activatesAutoTopUp: false })
+      }
+    }
   ])('shows no checkbox for $name', ({ props }) => {
     renderDialog(props)
 
