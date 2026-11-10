@@ -65,8 +65,24 @@ function isSameLink(carried: unknown, workflowId: unknown): boolean {
   )
 }
 
+/** Error classes whose name is safe to report. Loading a workflow runs custom
+ * node code, which can throw an Error under any name, user data included. */
+const BUILT_IN_ERROR_NAMES: ReadonlySet<string> = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'ReferenceError',
+  'EvalError',
+  'URIError',
+  'AggregateError'
+])
+
 function failureContext(cause: unknown) {
-  return { error_name: cause instanceof Error ? cause.name : typeof cause }
+  if (!(cause instanceof Error)) return { error_name: typeof cause }
+  return {
+    error_name: BUILT_IN_ERROR_NAMES.has(cause.name) ? cause.name : 'other'
+  }
 }
 
 function isWorkflowPath(path: string): boolean {

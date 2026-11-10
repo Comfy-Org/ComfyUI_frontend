@@ -536,6 +536,18 @@ describe('workflow-id links', () => {
       reported: new Error('Could not read workflow link'),
       errorType: 'error_loading_workflow_link',
       errorName: 'SyntaxError'
+    },
+    {
+      name: 'custom node code throws an error under its own name',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        thrown.name = 'Customer Jane Doe'
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
     }
   ])(
     'reports that $name without the file name or the error text',
