@@ -240,7 +240,19 @@ describe('useNodeDragAndDrop', () => {
       assetInfo: { filename: 'aa7ecf08.wav', display_name: 'clip.mp3' },
       name: 'aa7ecf08.wav'
     },
-    { assetInfo: { filename: 'clip.wav', display_name: '' }, name: 'clip.wav' }
+    { assetInfo: { filename: 'clip.wav', display_name: '' }, name: 'clip.wav' },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'Take.WAV' },
+      name: 'Take.WAV'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: '..\\clip.wav' },
+      name: 'aa7ecf08.wav'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'Take 1: clip.wav' },
+      name: 'aa7ecf08.wav'
+    }
   ])(
     'onDragDrop names a fetched asset-card file $name from asset info $assetInfo',
     async ({ assetInfo, name }) => {
