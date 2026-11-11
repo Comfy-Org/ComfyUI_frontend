@@ -70,15 +70,6 @@ async function zlibDeflate(
   return out
 }
 
-/**
- * Encodes RGBA pixels as a PNG blob without going through a canvas.
- *
- * Canvas 2D output bitmaps use premultiplied alpha: fully transparent pixels
- * lose their RGB the moment they are written to the canvas, and
- * `canvas.toBlob()` serializes that loss. PNG stores straight
- * (non-premultiplied) alpha, so encoding the pixel buffer directly preserves
- * color data under transparent regions.
- */
 export async function encodeRgbaAsPng(image: RgbaImage): Promise<Blob> {
   const { width, height, data } = image
   const bytesPerRow = width * 4
@@ -86,15 +77,15 @@ export async function encodeRgbaAsPng(image: RgbaImage): Promise<Blob> {
   const raw = new Uint8Array(height * (bytesPerRow + 1))
   for (let y = 0; y < height; y++) {
     const rowStart = y * (bytesPerRow + 1)
-    raw[rowStart] = 0 // scanline filter: None
+    raw[rowStart] = 0
     raw.set(data.subarray(y * bytesPerRow, (y + 1) * bytesPerRow), rowStart + 1)
   }
 
   const ihdr = new Uint8Array(13)
   ihdr.set(u32be(width), 0)
   ihdr.set(u32be(height), 4)
-  ihdr[8] = 8 // bit depth
-  ihdr[9] = 6 // color type: RGBA (compression/filter/interlace stay 0)
+  ihdr[8] = 8
+  ihdr[9] = 6
 
   const idat = await zlibDeflate(raw)
 

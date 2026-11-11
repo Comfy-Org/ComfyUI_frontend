@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ToolPanel from '@/renderer/extensions/maskEditor/components/ToolPanel.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { Tools, allTools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import ToolPanel from './ToolPanel.vue'
+import type { useToolManager } from '#/useToolManager'
+import { Tools, allTools } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
@@ -24,9 +24,9 @@ const i18n = createI18n({
   }
 })
 
-const mockToolManager = vi.hoisted(() => ({
+const mockToolManager = {
   switchTool: vi.fn()
-}))
+}
 
 const renderPanel = () =>
   render(ToolPanel, {

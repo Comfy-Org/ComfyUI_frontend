@@ -28,12 +28,9 @@
 import { useElementBounding } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import {
-  getEffectiveBrushSize,
-  getEffectiveHardness
-} from '@comfyorg/mask-editor/brushUtils'
-import { BrushShape } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { getEffectiveBrushSize, getEffectiveHardness } from '#/brushUtils'
+import { BrushShape } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 const { containerRef } = defineProps<{
   containerRef?: HTMLElement

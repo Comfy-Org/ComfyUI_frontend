@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DecodedPng } from './__fixtures__/decodePng'
-import { decodePng, readU32be } from './__fixtures__/decodePng'
+import type { DecodedPng } from './testing/decodePng'
+import { decodePng, readU32be } from './testing/decodePng'
 import { encodeRgbaAsPng } from './pngEncodeUtil'
 
 async function encodeAndDecode(
@@ -29,17 +29,7 @@ describe('encodeRgbaAsPng', () => {
   })
 
   it('preserves RGB values of fully transparent pixels', async () => {
-    // The whole point of this encoder: canvas.toBlob() would zero these.
-    const data = new Uint8ClampedArray([
-      200,
-      100,
-      50,
-      0, // transparent, but RGB must survive
-      10,
-      20,
-      30,
-      255
-    ])
+    const data = new Uint8ClampedArray([200, 100, 50, 0, 10, 20, 30, 255])
 
     const decoded = await encodeAndDecode(data, 2, 1)
 
@@ -49,8 +39,6 @@ describe('encodeRgbaAsPng', () => {
   })
 
   it('produces chunks with valid CRCs (decodable by an external inflater)', async () => {
-    // decodePng already inflates the IDAT stream with node:zlib, which
-    // validates the zlib framing; here assert the CRC bytes explicitly.
     const data = new Uint8ClampedArray([1, 2, 3, 4])
     const blob = await encodeRgbaAsPng({ data, width: 1, height: 1 })
     const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -85,8 +73,6 @@ describe('encodeRgbaAsPng', () => {
   })
 })
 
-// Independent CRC-32 implementation (bitwise, no table) to cross-check the
-// encoder's table-based one.
 function crc32Reference(bytes: Uint8Array): number {
   let crc = 0xffffffff
   for (const byte of bytes) {

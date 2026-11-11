@@ -2,30 +2,30 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import PointerZone from '@/renderer/extensions/maskEditor/components/PointerZone.vue'
-import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import PointerZone from './PointerZone.vue'
+import type { usePanAndZoom } from '#/usePanAndZoom'
+import type { useToolManager } from '#/useToolManager'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 type PanZoom = ReturnType<typeof usePanAndZoom>
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-const mockToolManager = vi.hoisted(() => ({
+const mockToolManager = {
   handlePointerDown: vi.fn().mockResolvedValue(undefined),
   handlePointerMove: vi.fn().mockResolvedValue(undefined),
   handlePointerUp: vi.fn().mockResolvedValue(undefined),
   updateCursor: vi.fn()
-}))
+}
 
-const mockPanZoom = vi.hoisted(() => ({
+const mockPanZoom = {
   handleTouchStart: vi.fn(),
   handleTouchMove: vi.fn().mockResolvedValue(undefined),
   handleTouchEnd: vi.fn(),
   zoom: vi.fn().mockResolvedValue(undefined),
   updateCursorPosition: vi.fn()
-}))
+}
 
 const renderZone = () =>
   render(PointerZone, {

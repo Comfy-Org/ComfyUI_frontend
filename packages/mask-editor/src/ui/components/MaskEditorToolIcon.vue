@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { Tools } from '@comfyorg/mask-editor/types'
+import { Tools } from '#/types'
 
 defineProps<{ tool: Tools }>()
 </script>

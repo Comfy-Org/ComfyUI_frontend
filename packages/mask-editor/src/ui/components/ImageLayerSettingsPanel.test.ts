@@ -4,10 +4,10 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import ImageLayerSettingsPanel from './ImageLayerSettingsPanel.vue'
+import type { useToolManager } from '#/useToolManager'
+import { MaskBlendMode, Tools } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
@@ -15,21 +15,18 @@ let mockStore: ReturnType<typeof useMaskEditorStore>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
 const mockSetActiveLayer = vi.fn()
 
-vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
+vi.mock<unknown>(import('#/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),
-  () => ({
-    default: {
-      name: 'SliderControlStub',
-      props: ['label', 'min', 'max', 'step', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('./controls/SliderControl.vue'), () => ({
+  default: {
+    name: 'SliderControlStub',
+    props: ['label', 'min', 'max', 'step', 'modelValue'],
+    emits: ['update:modelValue'],
+    template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
+  }
+}))
 
 const i18n = createI18n({
   legacy: false,

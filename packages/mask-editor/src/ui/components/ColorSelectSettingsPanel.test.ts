@@ -3,35 +3,29 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ColorSelectSettingsPanel from '@/renderer/extensions/maskEditor/components/ColorSelectSettingsPanel.vue'
-import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import ColorSelectSettingsPanel from './ColorSelectSettingsPanel.vue'
+import { ColorComparisonMethod } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),
-  () => ({
-    default: {
-      name: 'SliderControlStub',
-      props: ['label', 'min', 'max', 'step', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-control="slider" :aria-label="label" @click="$emit('update:modelValue', 99)">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('./controls/SliderControl.vue'), () => ({
+  default: {
+    name: 'SliderControlStub',
+    props: ['label', 'min', 'max', 'step', 'modelValue'],
+    emits: ['update:modelValue'],
+    template: `<button data-control="slider" :aria-label="label" @click="$emit('update:modelValue', 99)">{{ modelValue }}</button>`
+  }
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/ToggleControl.vue'),
-  () => ({
-    default: {
-      name: 'ToggleControlStub',
-      props: ['label', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-control="toggle" :aria-label="label" @click="$emit('update:modelValue', !modelValue)">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('./controls/ToggleControl.vue'), () => ({
+  default: {
+    name: 'ToggleControlStub',
+    props: ['label', 'modelValue'],
+    emits: ['update:modelValue'],
+    template: `<button data-control="toggle" :aria-label="label" @click="$emit('update:modelValue', !modelValue)">{{ modelValue }}</button>`
+  }
+}))
 
 vi.mock<unknown>(
   import('@comfyorg/design-system/select/DropdownControl'),

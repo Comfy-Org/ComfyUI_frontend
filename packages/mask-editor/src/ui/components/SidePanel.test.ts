@@ -1,33 +1,27 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import type { useToolManager } from '#/useToolManager'
 
-import SidePanel from '@/renderer/extensions/maskEditor/components/SidePanel.vue'
+import SidePanel from './SidePanel.vue'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/SettingsPanelContainer.vue'),
-  () => ({
-    default: {
-      name: 'SettingsPanelContainerStub',
-      template: '<div data-testid="settings-panel-stub">settings</div>'
-    }
-  })
-)
+vi.mock<unknown>(import('./SettingsPanelContainer.vue'), () => ({
+  default: {
+    name: 'SettingsPanelContainerStub',
+    template: '<div data-testid="settings-panel-stub">settings</div>'
+  }
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'),
-  () => ({
-    default: {
-      name: 'ImageLayerSettingsPanelStub',
-      props: ['toolManager'],
-      template:
-        '<div data-testid="image-layer-stub">image-layer:{{ toolManager?.tag ?? "none" }}</div>'
-    }
-  })
-)
+vi.mock<unknown>(import('./ImageLayerSettingsPanel.vue'), () => ({
+  default: {
+    name: 'ImageLayerSettingsPanelStub',
+    props: ['toolManager'],
+    template:
+      '<div data-testid="image-layer-stub">image-layer:{{ toolManager?.tag ?? "none" }}</div>'
+  }
+}))
 
 describe('SidePanel', () => {
   it('should render both child panels', () => {

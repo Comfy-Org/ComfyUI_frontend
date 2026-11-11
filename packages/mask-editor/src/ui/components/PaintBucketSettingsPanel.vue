@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
 

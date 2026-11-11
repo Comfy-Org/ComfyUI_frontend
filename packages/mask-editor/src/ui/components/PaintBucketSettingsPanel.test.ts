@@ -3,22 +3,19 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import PaintBucketSettingsPanel from '@/renderer/extensions/maskEditor/components/PaintBucketSettingsPanel.vue'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import PaintBucketSettingsPanel from './PaintBucketSettingsPanel.vue'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),
-  () => ({
-    default: {
-      name: 'SliderControlStub',
-      props: ['label', 'min', 'max', 'step', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('./controls/SliderControl.vue'), () => ({
+  default: {
+    name: 'SliderControlStub',
+    props: ['label', 'min', 'max', 'step', 'modelValue'],
+    emits: ['update:modelValue'],
+    template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
+  }
+}))
 
 const i18n = createI18n({
   legacy: false,

@@ -40,11 +40,11 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import MaskEditorToolIcon from '@/renderer/extensions/maskEditor/components/MaskEditorToolIcon.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import type { Tools } from '@comfyorg/mask-editor/types'
-import { allTools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import MaskEditorToolIcon from './MaskEditorToolIcon.vue'
+import type { useToolManager } from '#/useToolManager'
+import type { Tools } from '#/types'
+import { allTools } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

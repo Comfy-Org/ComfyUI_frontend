@@ -18,10 +18,6 @@ export function readU32be(bytes: Uint8Array, offset: number): number {
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
-/**
- * Minimal test-only PNG reader for 8-bit RGBA images written with scanline
- * filter None (the shape `encodeRgbaAsPng` produces). Throws on anything else.
- */
 export function decodePng(bytes: Uint8Array): DecodedPng {
   PNG_SIGNATURE.forEach((expected, i) => {
     if (bytes[i] !== expected) throw new Error('missing PNG signature')

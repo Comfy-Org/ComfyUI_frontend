@@ -1,41 +1,32 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import SettingsPanelContainer from '@/renderer/extensions/maskEditor/components/SettingsPanelContainer.vue'
-import { Tools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import SettingsPanelContainer from './SettingsPanelContainer.vue'
+import { Tools } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue'),
-  () => ({
-    default: {
-      name: 'BrushSettingsPanelStub',
-      template: '<div>brush-panel</div>'
-    }
-  })
-)
+vi.mock<unknown>(import('./BrushSettingsPanel.vue'), () => ({
+  default: {
+    name: 'BrushSettingsPanelStub',
+    template: '<div>brush-panel</div>'
+  }
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/ColorSelectSettingsPanel.vue'),
-  () => ({
-    default: {
-      name: 'ColorSelectSettingsPanelStub',
-      template: '<div>color-panel</div>'
-    }
-  })
-)
+vi.mock<unknown>(import('./ColorSelectSettingsPanel.vue'), () => ({
+  default: {
+    name: 'ColorSelectSettingsPanelStub',
+    template: '<div>color-panel</div>'
+  }
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/PaintBucketSettingsPanel.vue'),
-  () => ({
-    default: {
-      name: 'PaintBucketSettingsPanelStub',
-      template: '<div>bucket-panel</div>'
-    }
-  })
-)
+vi.mock<unknown>(import('./PaintBucketSettingsPanel.vue'), () => ({
+  default: {
+    name: 'PaintBucketSettingsPanelStub',
+    template: '<div>bucket-panel</div>'
+  }
+}))
 
 describe('SettingsPanelContainer', () => {
   beforeEach(() => {
