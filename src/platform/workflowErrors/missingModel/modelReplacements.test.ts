@@ -82,6 +82,16 @@ describe('findModelReplacements', () => {
       expected: []
     },
     {
+      case: 'nothing for a name whose own words read like quantization',
+      missing: 'mixed_style_lora.safetensors',
+      options: [
+        'style_lora.safetensors',
+        'detail_tweaker.safetensors',
+        'detail_tweaker_quant.safetensors'
+      ],
+      expected: []
+    },
+    {
       case: 'nothing across file extensions',
       missing: 'sd3_fp16.safetensors',
       options: ['sd3.5_large', 'sd3_fp16.safetensors.bak'],
