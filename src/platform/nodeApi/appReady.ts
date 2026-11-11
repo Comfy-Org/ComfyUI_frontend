@@ -11,6 +11,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
+import { addListener } from './listeners'
 import type { Unsubscribe } from './widgetHandle'
 
 let ready = false
@@ -48,8 +49,7 @@ export function onAppReady(listener: () => void): Unsubscribe {
       active = false
     }
   }
-  waiting.add(listener)
-  return () => waiting.delete(listener)
+  return addListener(waiting, listener)
 }
 
 const workflowLoaded = new Set<() => void>()
@@ -98,8 +98,7 @@ export function notifyWorkflowLoaded(): void {
 }
 
 export function onWorkflowLoaded(listener: () => void): Unsubscribe {
-  workflowLoaded.add(listener)
-  return () => workflowLoaded.delete(listener)
+  return addListener(workflowLoaded, listener)
 }
 
 /** Undefined before the first workflow has loaded this page load. */
