@@ -711,6 +711,7 @@
           "src/renderer/core/canvas/useCanvasInteractions.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasScheduler.ts",
+          "tools/ci/src/**",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
           "src/extensions/core/cloudBadges.ts",
@@ -2045,7 +2046,7 @@
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**", "packages/*/src/**"]
+        "patterns": ["src/**", "packages/*/src/**", "tools/*/src/**"]
       }
     ],
     "rules": [

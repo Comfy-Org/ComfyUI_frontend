@@ -570,33 +570,39 @@ describe('buildCatalog', () => {
     ])
   })
 
-  it('reports coverage of src and package src code from directory and exact module paths', () => {
-    const root = createRepository(
-      {
-        modules: [...record.modules, { path: 'packages/widgets/src/index.ts' }]
-      },
-      {
-        'src/zeta.tsx': '',
-        'src/imageViewer.test.ts': '',
-        'src/images/nested/deep.vue': '<template />',
-        'src/README.md': '',
-        'apps/desktop/main.ts': '',
-        'packages/widgets/src/index.ts': '',
-        'packages/widgets/src/legacy.ts': '',
-        'packages/widgets/vite.config.ts': ''
-      }
-    )
-    const catalog = buildCatalog(loadValidConfiguration(root), [], [])
-    expect(catalog.domains[0].sourceFileCount).toBe(5)
-    expect(catalog.coverage).toEqual({
-      total: 8,
-      classified: 5,
-      unclassified: 3,
-      unclassifiedFiles: [
-        'packages/widgets/src/legacy.ts',
-        'src/imageViewer.test.ts',
-        'src/zeta.tsx'
-      ]
-    })
-  })
+  it.for(['packages', 'tools'])(
+    'reports coverage of src and %s source from directory and exact module paths',
+    (workspace) => {
+      const root = createRepository(
+        {
+          modules: [
+            ...record.modules,
+            { path: `${workspace}/widgets/src/index.ts` }
+          ]
+        },
+        {
+          'src/zeta.tsx': '',
+          'src/imageViewer.test.ts': '',
+          'src/images/nested/deep.vue': '<template />',
+          'src/README.md': '',
+          'apps/desktop/main.ts': '',
+          [`${workspace}/widgets/src/index.ts`]: '',
+          [`${workspace}/widgets/src/legacy.ts`]: '',
+          [`${workspace}/widgets/vite.config.ts`]: ''
+        }
+      )
+      const catalog = buildCatalog(loadValidConfiguration(root), [], [])
+      expect(catalog.domains[0].sourceFileCount).toBe(5)
+      expect(catalog.coverage).toEqual({
+        total: 8,
+        classified: 5,
+        unclassified: 3,
+        unclassifiedFiles: [
+          `${workspace}/widgets/src/legacy.ts`,
+          'src/imageViewer.test.ts',
+          'src/zeta.tsx'
+        ].sort()
+      })
+    }
+  )
 })

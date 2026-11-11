@@ -1,0 +1,36 @@
+{
+  "id": "ci-automation",
+  "capability": "CI automation",
+  "description": "Technical domain for CI report generation, workflow and release automation, and custom-node CI utilities. It supports repository delivery rather than frontend product behavior.",
+  "modules": [{ "path": "tools/ci/src/**" }],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Reports preserve artifact status and section output",
+      "checks": [
+        "tools/ci/src/unified-report.test.ts",
+        "tools/ci/src/cicd/pr-report-section.test.ts"
+      ]
+    },
+    {
+      "name": "Workflow selection preserves PR identity, pagination and pending reruns through actual action wiring",
+      "checks": ["tools/ci/src/cicd/find-workflow-run.test.ts"]
+    },
+    {
+      "name": "Release automation preserves workflow contracts",
+      "checks": ["tools/ci/src/cicd/release-weekly-comfyui.test.ts"]
+    },
+    {
+      "name": "Custom-node CI preserves quarantine and result handling",
+      "checks": [
+        "tools/ci/src/customNodeQuarantine.test.ts",
+        "tools/ci/src/cicd/custom-node-results.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing CLI entry points, package exports and artifact formats without introducing import restrictions."
+  ],
+  "deepImports": "inventory"
+}

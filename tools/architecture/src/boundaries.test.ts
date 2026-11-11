@@ -72,6 +72,13 @@ describe('buildBoundaries', () => {
       allowed: false
     },
     {
+      name: 'unclassified tooling may not deep-import an enforced domain',
+      records: [images()],
+      from: 'tools/widgets/src/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
       name: 'unclassified code may deep-import an inventory domain',
       records: [images({ deepImports: 'inventory' })],
       from: 'src/legacy/a.ts',

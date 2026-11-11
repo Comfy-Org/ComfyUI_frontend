@@ -96,7 +96,10 @@ export function buildBoundaries(records: DomainRecord[]): FallowBoundaries {
     boundaries: {
       zones: [
         ...ordered.map(({ name, patterns }) => ({ name, patterns })),
-        { name: UNCLASSIFIED, patterns: ['src/**', 'packages/*/src/**'] }
+        {
+          name: UNCLASSIFIED,
+          patterns: ['src/**', 'packages/*/src/**', 'tools/*/src/**']
+        }
       ],
       rules: [
         ...ordered.map((zone) => ({
