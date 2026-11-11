@@ -9,6 +9,7 @@ const nodes = textToImageNodes()
 const latent = nodes[1]
 const width = settingAddress(latent.id, 'width')
 const request: AgentRequest = {
+  kind: 'batch',
   requestId: 'request-1',
   annotations: [
     { id: 'comment-1', label: 'Save Image', comment: 'wider', targets: [] }
@@ -18,7 +19,8 @@ const request: AgentRequest = {
       comments: [
         { id: 'comment-0', label: 'KSampler', comment: 'faster', targets: [] }
       ],
-      answer: []
+      answer: [],
+      followUps: []
     }
   ]
 }
@@ -32,6 +34,7 @@ const runButton = {
   testId: 'queue-button'
 }
 const elementRequest: AgentRequest = {
+  kind: 'batch',
   requestId: 'request-2',
   annotations: [
     {
@@ -42,6 +45,20 @@ const elementRequest: AgentRequest = {
     }
   ],
   history: []
+}
+
+const followUpRequest: AgentRequest = {
+  kind: 'followUp',
+  requestId: 'request-3',
+  comment: {
+    id: 'comment-1',
+    label: 'Save Image',
+    comment: 'wider',
+    targets: []
+  },
+  thread: [],
+  followUp: 'a bit more than that',
+  history: request.history
 }
 
 function step(overrides: Partial<ReplyStep>): ReplyStep {
@@ -167,6 +184,67 @@ describe('checkReply', () => {
         target: width,
         problems: [problems.earlierComment]
       }
+    ])
+  })
+
+  it('TH-12: a reply to a follow-up keeps only the steps for the thread’s comment and says how many were left out', () => {
+    const reply: AgentReply = {
+      steps: [
+        step({ annotationId: 'comment-1', text: 'Go to 1664.' }),
+        step({ annotationId: null, text: 'Now run it.' }),
+        step({ annotationId: 'comment-0', text: 'And fewer steps.' })
+      ]
+    }
+
+    expect(checkReply(reply, followUpRequest, nodes)).toEqual([
+      {
+        annotationId: 'comment-1',
+        text: 'Go to 1664.',
+        target: width,
+        waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+        offerEdit: { target: width, value: 1536 },
+        problems: [problems.outsideThread(2)]
+      }
+    ])
+  })
+
+  it('TH-12: a reply to a follow-up with every step in the thread passes with nothing said', () => {
+    const reply: AgentReply = {
+      steps: [step({}), step({ text: 'Then height.' })]
+    }
+
+    expect(checkReply(reply, followUpRequest, nodes)).toMatchObject([
+      { problems: [] },
+      { text: 'Then height.', problems: [] }
+    ])
+  })
+
+  it('TH-12: a reply to a follow-up with no step for the thread’s comment is rejected', () => {
+    const reply: AgentReply = { steps: [step({ annotationId: null })] }
+
+    expect(checkReply(reply, followUpRequest, nodes)).toBeNull()
+  })
+
+  it('TH-12: a follow-up reply may point at an interface element only when the thread’s comment is pinned on it', () => {
+    const pointsAtRun: AgentReply = {
+      steps: [
+        step({
+          target: { kind: 'element', elementId: 'element-1' },
+          waitFor: null,
+          offerEdit: null
+        })
+      ]
+    }
+    const onRunButton: AgentRequest = {
+      ...followUpRequest,
+      comment: { ...followUpRequest.comment, targets: [runButton] }
+    }
+
+    expect(checkReply(pointsAtRun, onRunButton, nodes)).toMatchObject([
+      { target: runButton, problems: [] }
+    ])
+    expect(checkReply(pointsAtRun, followUpRequest, nodes)).toMatchObject([
+      { target: null, problems: [problems.unknownElement('element-1')] }
     ])
   })
 

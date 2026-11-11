@@ -14,11 +14,22 @@
         )
       "
       :aria-pressed="active"
+      :aria-busy="waitingSince !== null"
       :disabled
       :title="messages.annotateTooltip"
       @click="emit('toggle')"
     >
-      <i class="icon-[lucide--message-square-plus] size-3" aria-hidden="true" />
+      <i
+        v-if="waitingSince !== null"
+        data-testid="point-at-it-loading"
+        class="icon-[lucide--loader-circle] size-3 motion-safe:animate-spin"
+        aria-hidden="true"
+      />
+      <i
+        v-else
+        class="icon-[lucide--message-square-plus] size-3"
+        aria-hidden="true"
+      />
       <span>{{ messages.annotate }}</span>
     </Button>
     <Button
@@ -39,10 +50,6 @@
         role="status"
         class="flex items-center gap-1 text-muted-foreground"
       >
-        <i
-          class="icon-[lucide--loader-circle] size-3 motion-safe:animate-spin"
-          aria-hidden="true"
-        />
         {{ messages.waitingShort(elapsedSeconds) }}
       </span>
       <span

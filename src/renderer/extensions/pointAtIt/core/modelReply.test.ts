@@ -15,6 +15,7 @@ import { checkReply } from './replyValidation'
 
 const nodes = textToImageNodes()
 const request: AgentRequest = {
+  kind: 'batch',
   requestId: 'request-1',
   annotations: [
     {

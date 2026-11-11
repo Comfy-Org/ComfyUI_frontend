@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
 
 import { AGENT_INSTRUCTIONS } from './agentPrompt'
-import type { AgentRequest, HistoryTurn } from './agentReply'
+import type {
+  AgentRequest,
+  HistoryFollowUp,
+  HistoryTurn,
+  ThreadNote
+} from './agentReply'
 import { pointConfig } from './config'
 import { hostNode, textToImageNodes } from './fakePointHost'
-import { buildChatBody, describeHistory, describeWorkflow } from './modelPrompt'
+import {
+  buildChatBody,
+  describeHistory,
+  describeThread,
+  describeWorkflow
+} from './modelPrompt'
 import { chatBodySchema } from './modelWire'
 import type { HostNode } from './pointHost'
 
@@ -19,6 +29,7 @@ const runButton = {
   testId: 'queue-button'
 }
 const request: AgentRequest = {
+  kind: 'batch',
   requestId: 'request-1',
   annotations: [
     {
@@ -179,8 +190,13 @@ describe('describeHistory', () => {
           result: 'accepted',
           valueBefore: 1024
         }
-      ]
+      ],
+      followUps: []
     }
+  }
+
+  function followUp(text: string): HistoryFollowUp {
+    return { commentId: 'id-new', text, answer: turn('new', 'z').answer }
   }
 
   it('TU-04: gives every earlier turn, oldest first, with its comments, answer steps, offers and results', () => {
@@ -232,6 +248,44 @@ describe('describeHistory', () => {
     })
   })
 
+  it('TH-14: a turn’s threads go with it, and are cut with it when it is one of the oldest', () => {
+    const withThread = { ...turn('new', 'y'), followUps: [followUp('more')] }
+
+    expect(describeHistory([turn('old', 'x'), withThread])).toMatchObject({
+      turns: [
+        { turn: 1 },
+        { turn: 2, followUps: [{ commentId: 'id-new', text: 'more' }] }
+      ],
+      leftOut: 0
+    })
+    expect(describeHistory([withThread, turn('newest', 'x')], 300)).toEqual({
+      turns: [expect.objectContaining({ turn: 2 })],
+      leftOut: 1
+    })
+  })
+
+  it('TH-14: when the newest turn alone is over the cap, its oldest follow-ups are left out and counted', () => {
+    const newest = {
+      ...turn('new', 'y'),
+      followUps: ['first', 'second', 'third'].map((text) =>
+        followUp(`${text} ${'x'.repeat(300)}`)
+      )
+    }
+
+    const described = describeHistory([turn('old', 'x'), newest], 1100)
+
+    expect(described).toMatchObject({
+      turns: [
+        {
+          turn: 2,
+          followUps: [{ text: expect.stringMatching(/^third/) }],
+          followUpsLeftOut: 2
+        }
+      ],
+      leftOut: 1
+    })
+  })
+
   it('TU-04: always keeps the newest turn, even when it alone is over the cap', () => {
     const history = [turn('old', 'x'.repeat(400)), turn('new', 'y'.repeat(400))]
 
@@ -239,6 +293,79 @@ describe('describeHistory', () => {
       turns: [{ turn: 2 }],
       leftOut: 1
     })
+  })
+})
+
+describe('a follow-up', () => {
+  const width = {
+    kind: 'setting' as const,
+    nodeId: latent.id,
+    setting: 'width'
+  }
+  const earlier: ThreadNote[] = [
+    {
+      from: 'agent',
+      steps: [
+        {
+          annotationId: 'comment-1',
+          text: 'Change width to 1280.',
+          target: width,
+          offered: { target: width, value: 1280 },
+          result: 'accepted',
+          valueBefore: 1024
+        }
+      ]
+    }
+  ]
+  const followUpRequest: AgentRequest = {
+    kind: 'followUp',
+    requestId: 'request-2',
+    comment: request.annotations[0],
+    thread: earlier,
+    followUp: 'a bit more than that',
+    history: []
+  }
+
+  it('TH-13: sends the thread with its comment, what was said, the new message, the earlier turns and the workflow', () => {
+    const body = buildChatBody(followUpRequest, nodes, pointConfig.model)
+
+    expect(sent(body)).toMatchObject({
+      thread: {
+        comment: {
+          id: 'comment-1',
+          pinnedOn: [{ kind: 'node', nodeId: save.id }],
+          comment: 'make this wider'
+        },
+        messages: earlier,
+        messagesLeftOut: 0,
+        followUp: 'a bit more than that'
+      },
+      earlierTurns: [],
+      earlierTurnsLeftOut: 0,
+      workflow: {
+        nodes: [{ id: sampler.id }, { id: latent.id }, { id: save.id }]
+      }
+    })
+    expect(sent(body)).not.toHaveProperty('comments')
+    expect(chatBodySchema.safeParse(body).success).toBe(true)
+  })
+
+  it('TH-13: a long thread loses its oldest messages first and says how many', () => {
+    const long: ThreadNote[] = Array.from({ length: 6 }, (_, index) => ({
+      from: 'person',
+      text: `${index} ${'x'.repeat(400)}`
+    }))
+
+    const described = describeThread(long, 1000)
+
+    expect(described.leftOut).toBe(4)
+    expect(described.messages).toEqual(long.slice(4))
+  })
+
+  it('TH-13: the newest message of a thread is always kept', () => {
+    expect(
+      describeThread([{ from: 'person', text: 'x'.repeat(400) }], 100)
+    ).toMatchObject({ leftOut: 0, messages: [{ from: 'person' }] })
   })
 })
 

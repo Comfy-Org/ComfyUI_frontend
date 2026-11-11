@@ -4,6 +4,7 @@ export type PanelEvent =
   | { type: 'caretPressed' }
   | { type: 'collapsePressed' }
   | { type: 'stripPressed' }
+  | { type: 'sendStarted' }
 
 export type PanelState = 'open' | 'closed'
 
@@ -22,6 +23,7 @@ export function reducePanel(state: PanelState, event: PanelEvent): PanelState {
     case 'caretPressed':
       return state === 'open' ? 'closed' : 'open'
     case 'collapsePressed':
+    case 'sendStarted':
       return 'closed'
   }
 }

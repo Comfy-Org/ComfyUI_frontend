@@ -25,6 +25,9 @@
             {{ comment.annotation.label }}
           </span>
           <span class="wrap-break-word">{{ comment.annotation.comment }}</span>
+          <span v-if="comment.followUps > 0" class="text-muted-foreground">
+            {{ messages.followUpCount(comment.followUps) }}
+          </span>
           <span
             v-if="placeNote(comment.annotation.id)"
             class="text-destructive"

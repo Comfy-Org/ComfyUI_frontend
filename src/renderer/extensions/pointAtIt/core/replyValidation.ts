@@ -1,4 +1,4 @@
-import { agentReplySchema } from './agentReply'
+import { agentReplySchema, answerableNotes } from './agentReply'
 import type {
   AgentRequest,
   DescribedElement,
@@ -76,7 +76,7 @@ function checkSetting(
 }
 
 function annotatedElements(request: AgentRequest): DescribedElement[] {
-  return request.annotations.flatMap((annotation) =>
+  return answerableNotes(request).flatMap((annotation) =>
     annotation.targets.filter((target) => target.kind === 'element')
   )
 }
@@ -137,7 +137,7 @@ function checkStep(
   const target = checkTarget(step.target, request, nodes)
   const wait = checkWait(step.waitFor, nodes)
   const offer = checkOffer(step.offerEdit, nodes)
-  const answersKnownComment = request.annotations.some(
+  const answersKnownComment = answerableNotes(request).some(
     (annotation) => annotation.id === step.annotationId
   )
   const answersEarlierTurn = request.history.some((turn) =>
@@ -159,9 +159,29 @@ function checkStep(
   }
 }
 
+function withinThread(
+  steps: GuidanceStep[],
+  commentId: string
+): GuidanceStep[] | null {
+  const kept = steps.filter((step) => step.annotationId === commentId)
+  const first = kept.at(0)
+  if (!first) return null
+  const leftOut = steps.length - kept.length
+  if (leftOut === 0) return kept
+  return [
+    {
+      ...first,
+      problems: [...first.problems, problems.outsideThread(leftOut)]
+    },
+    ...kept.slice(1)
+  ]
+}
+
 /**
  * Checks an agent's raw reply against the workflow before anything moves.
- * Returns null when the reply is not in the reply format.
+ * Returns null when the reply is not in the reply format. A reply to a
+ * follow-up keeps only the steps that answer the thread's comment, and is
+ * null when it has none.
  */
 export function checkReply(
   raw: unknown,
@@ -170,5 +190,8 @@ export function checkReply(
 ): GuidanceStep[] | null {
   const parsed = agentReplySchema.safeParse(raw)
   if (!parsed.success || parsed.data.steps.length === 0) return null
-  return parsed.data.steps.map((step) => checkStep(step, request, nodes))
+  const steps = parsed.data.steps.map((step) => checkStep(step, request, nodes))
+  return request.kind === 'followUp'
+    ? withinThread(steps, request.comment.id)
+    : steps
 }

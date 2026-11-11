@@ -116,9 +116,12 @@
       :key="draftKey"
       :anchor="draftAnchor ?? windowCentre"
       :draft
+      :unsent-count="conversation.unsent.length"
+      :send-block="sendBlock"
       :avoid="panelRect"
       :target-note="draftTargetNote"
       @save="session.saveDraft"
+      @send="session.sendFromDraft"
       @remove="session.deleteDraft"
       @close="session.dismiss"
     />
@@ -142,6 +145,9 @@
       :total="state.steps.length"
       :edit-failed="state.editFailed"
       :answers="answeredComment"
+      :thread="threadBefore"
+      :follow-up="state.followUp"
+      :thinking
       :replay="state.replay"
       :avoid="panelRect"
       :view
@@ -149,26 +155,36 @@
       @next="session.next"
       @done="session.finish"
       @close="session.dismiss"
+      @follow-up="session.followUp"
+      @cancel-follow-up="session.cancelFollowUp"
+      @retry-follow-up="session.retryFollowUp"
     />
-    <Button
+    <div
       v-if="stripText"
       data-testid="point-at-it-strip"
-      variant="base"
-      size="unset"
-      :class="
-        cn(
-          'pointer-events-auto absolute w-80 justify-start gap-2 rounded-lg border border-solid border-border px-2 py-1 text-left text-xs shadow-md',
-          state.phase === 'failed'
-            ? 'text-destructive'
-            : 'text-muted-foreground'
-        )
-      "
+      class="pointer-events-auto absolute flex w-80 items-center gap-1 rounded-lg border border-solid border-border bg-background p-1 text-xs shadow-md"
       :style="{ left: `${panelPlace.x}px`, top: `${panelPlace.y}px` }"
-      :aria-label="messages.showPanel"
-      @click="session.openPanel"
     >
-      <span role="status" class="truncate">{{ stripText }}</span>
-    </Button>
+      <Button
+        variant="textonly"
+        size="unset"
+        :class="
+          cn(
+            'min-w-0 flex-1 justify-start rounded-md px-1 text-left',
+            state.phase === 'failed'
+              ? 'text-destructive'
+              : 'text-muted-foreground'
+          )
+        "
+        :aria-label="messages.showPanel"
+        @click="session.openPanel"
+      >
+        <span role="status" class="truncate">{{ stripText }}</span>
+      </Button>
+      <Button v-if="state.phase === 'failed'" size="sm" @click="session.retry">
+        {{ messages.retry }}
+      </Button>
+    </div>
     <CommentPanel
       v-if="panelOpen"
       ref="panel"
@@ -184,6 +200,8 @@
       :phase="state.phase"
       :waiting-since="waitingSince"
       :failure="state.phase === 'failed' ? state.failure : null"
+      :send-block="sendBlock"
+      :held="isHeld"
       @collapse="session.collapsePanel"
       @open="session.openPin"
       @send="session.sendBatch"
@@ -219,9 +237,10 @@ import type { Rect } from './geometry'
 import GuidanceOverlay from './GuidanceOverlay.vue'
 import { describeFailure, messages } from './messages'
 import type { PointHost } from './pointHost'
+import { waitsOnFollowUp } from './pointState'
 import { addressKey } from './targetAddress'
 import TriggerButton from './TriggerButton.vue'
-import { numberedComments } from './turns'
+import { messagesBefore, numberedComments, threadOf } from './turns'
 import { usePointSession } from './usePointSession'
 
 const { host, config } = defineProps<{
@@ -242,8 +261,10 @@ const {
   pins,
   hover,
   draftAnchor,
-  panelOpen
+  panelOpen,
+  sendBlock
 } = session
+const isHeld = computed(() => waitsOnFollowUp(state.value))
 const comments = computed(() => numberedComments(conversation.value))
 const windowSize = useWindowSize()
 
@@ -274,15 +295,19 @@ const blocksPage = computed(
     state.value.phase === 'asking' ||
     state.value.phase === 'annotating'
 )
-const waitingSince = computed(() =>
-  state.value.phase === 'waiting' ? state.value.startedAt : null
-)
+const waitingSince = computed(() => {
+  const current = state.value
+  if (current.phase === 'waiting') return current.startedAt
+  return current.phase === 'guiding' && current.followUp?.status === 'waiting'
+    ? current.followUp.startedAt
+    : null
+})
 const canToggle = computed(
   () =>
     state.value.phase === 'idle' ||
     state.value.phase === 'annotating' ||
     state.value.phase === 'failed' ||
-    state.value.phase === 'guiding'
+    (state.value.phase === 'guiding' && !isHeld.value)
 )
 const panelPlace = computed(() =>
   placePanel(
@@ -410,9 +435,17 @@ const canReplay = computed(
   () =>
     state.value.phase === 'idle' ||
     state.value.phase === 'failed' ||
-    state.value.phase === 'guiding' ||
+    (state.value.phase === 'guiding' && !isHeld.value) ||
     isPicking.value
 )
+const threadBefore = computed(() => {
+  if (state.value.phase !== 'guiding') return null
+  const step = state.value.steps[state.value.index]
+  const thread = step.annotationId
+    ? threadOf(conversation.value, step.annotationId)
+    : null
+  return thread ? messagesBefore(thread, step.ref) : null
+})
 const answeredComment = computed(() => {
   const annotationId = answeredId.value
   const answered = comments.value.find(

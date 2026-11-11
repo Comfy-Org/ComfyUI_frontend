@@ -3,7 +3,7 @@ import { computed, onScopeDispose, shallowRef } from 'vue'
 
 import { modelBackend, scriptedBackend } from './agentBackends'
 import type { AgentBackend } from './agentBackends'
-import type { AgentRequest } from './agentReply'
+import type { AgentRequest, BatchRequest, FollowUpRequest } from './agentReply'
 import { pointConfig } from './config'
 import type { PointConfig } from './config'
 import {
@@ -29,7 +29,7 @@ import {
 import { reducePanel } from './panelState'
 import type { PanelEvent, PanelState } from './panelState'
 import type { HostNode, PointHost, TargetReading } from './pointHost'
-import { idleState, reducePointState } from './pointState'
+import { idleState, reducePointState, waitsOnFollowUp } from './pointState'
 import type { Draft, GuidingState, PointEvent, PointState } from './pointState'
 import { checkReply } from './replyValidation'
 import type { GuidanceStep, StepWait } from './replyValidation'
@@ -45,12 +45,14 @@ import type { ThinkingEvent, ThinkingLog } from './thinkingLog'
 import {
   emptyConversation,
   historyOf,
+  latestAnswer,
   noteOf,
   numberedComments,
   reduceConversation,
-  replaySteps
+  threadNotes,
+  threadOf
 } from './turns'
-import type { Conversation, ConversationEvent } from './turns'
+import type { Conversation, ConversationEvent, ShownStep } from './turns'
 import { hasSettled, observeValue, startWatch } from './valueWatch'
 import type { ValueWatch } from './valueWatch'
 
@@ -77,7 +79,7 @@ export interface PinView {
   number: number
   rect: Rect | null
   missing: boolean
-  /** True for a comment of an answered turn: it replays its answer. */
+  /** True for a comment of an answered turn: it opens its thread. */
   locked: boolean
 }
 
@@ -91,6 +93,7 @@ const POINTER_INSET = 16
 const MIN_STROKE_STEP = 3
 const SCENE_MAX_AGE_MS = 500
 const ELEMENT_SEARCH_GAP_MS = 500
+const MALFORMED = { kind: 'malformed', detail: '' } as const
 const KEPT_FROM_THE_PAGE = [
   'pointerdown',
   'mousedown',
@@ -142,6 +145,13 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   const thinking = shallowRef<ThinkingLog | null>(null)
   const panelState = shallowRef<PanelState>('closed')
   const panelOpen = computed(() => panelState.value === 'open')
+  const sendBlock = computed(() => {
+    if (state.value.phase === 'waiting') return messages.sendBlocked.waiting
+    if (state.value.phase !== 'guiding') return ''
+    return waitsOnFollowUp(state.value)
+      ? messages.sendBlocked.followUp
+      : messages.sendBlocked.answerShowing
+  })
   const view = shallowRef<GuidanceView | null>(null)
   const pins = shallowRef<PinView[]>([])
   const hover = shallowRef<PickedTarget | null>(null)
@@ -158,7 +168,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   let markKeyHeld = false
   let disposed = false
   let inFlight: AbortController | null = null
-  let askedRequest: AgentRequest | null = null
+  let askedRequest: BatchRequest | null = null
   let pointer: Point | null = null
   let scene: HostNode[] = []
   let sceneAt = Number.NEGATIVE_INFINITY
@@ -257,10 +267,22 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     const next = reducePointState(previous, event)
     if (next === previous) return
     state.value = next
-    if (previous.phase === 'waiting') inFlight?.abort()
+    const endsFollowUp = waitsOnFollowUp(previous) && !waitsOnFollowUp(next)
+    if (previous.phase === 'waiting' || endsFollowUp) inFlight?.abort()
     if (previous.phase === 'annotating' && next.phase !== 'annotating')
       panel({ type: 'modeLeft', hasContent: hasSomethingToShow() })
-    if (previous.phase === 'waiting' && next.phase === 'idle')
+    if (previous.phase !== 'waiting' && next.phase === 'waiting' && !next.asked)
+      panel({ type: 'sendStarted' })
+    const cancelsFollowUp =
+      endsFollowUp &&
+      previous.phase === 'guiding' &&
+      next.phase === 'guiding' &&
+      next.steps === previous.steps &&
+      next.followUp === null
+    if (
+      (previous.phase === 'waiting' && next.phase === 'idle') ||
+      cancelsFollowUp
+    )
       think({ type: 'cleared' })
     if (next.phase === 'annotating') {
       refreshAnnotating(performance.now())
@@ -273,8 +295,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       view.value = null
     } else if (
       previous.phase !== 'guiding' ||
-      previous.index !== next.index ||
-      previous.requestId !== next.requestId
+      previous.steps[previous.index] !== next.steps[next.index]
     ) {
       beginStep(next)
     }
@@ -319,7 +340,9 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (guiding.phase !== 'guiding' || !stepRun) return
     const step = guiding.steps[guiding.index]
     const reading = step.target ? read(step.target) : undefined
-    const outcome = waitOutcome(stepRun, step.waitFor, now)
+    const outcome = waitsOnFollowUp(guiding)
+      ? 'waiting'
+      : waitOutcome(stepRun, step.waitFor, now)
     if (reading === null || outcome === 'removed') {
       send({ type: 'targetRemoved' })
       return
@@ -357,11 +380,11 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     result: 'accepted' | 'changed',
     valueBefore: SettingValue | undefined
   ): void {
-    if (!guiding.turnId) return
+    const { ref } = guiding.steps[guiding.index]
+    if (!ref) return
     converse({
       type: 'actedOn',
-      turnId: guiding.turnId,
-      stepIndex: guiding.index,
+      ref,
       result,
       valueBefore: valueBefore ?? null
     })
@@ -484,7 +507,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       phase === 'idle' ||
       phase === 'annotating' ||
       phase === 'failed' ||
-      phase === 'guiding'
+      (phase === 'guiding' && !waitsOnFollowUp(state.value))
     if (!startsStroke && !toggles) return
     swallow(event)
     markKeyHeld = true
@@ -588,16 +611,14 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     sceneAt = Number.NEGATIVE_INFINITY
   }
 
-  function withGoneTargetsSaid(steps: GuidanceStep[]): GuidanceStep[] {
-    return steps.map((step) =>
-      step.target && read(step.target) === null
-        ? {
-            ...step,
-            target: null,
-            problems: [...step.problems, messages.replayTargetGone]
-          }
-        : step
-    )
+  function withGoneTargetSaid(step: ShownStep): ShownStep {
+    return step.target && read(step.target) === null
+      ? {
+          ...step,
+          target: null,
+          problems: [...step.problems, messages.replayTargetGone]
+        }
+      : step
   }
 
   function openPin(annotationId: string): void {
@@ -605,12 +626,13 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       (candidate) => candidate.annotation.id === annotationId
     )
     if (!comment) return
-    const { annotation, turn } = comment
-    if (turn) {
+    const { annotation } = comment
+    const thread = threadOf(conversation.value, annotationId)
+    if (thread) {
       send({
-        type: 'replayOpened',
+        type: 'threadOpened',
         commentId: annotationId,
-        steps: withGoneTargetsSaid(replaySteps(turn, annotationId)),
+        step: withGoneTargetSaid(latestAnswer(thread)),
         origin: pinPoint(annotationId) ?? rectCenter(host.viewport())
       })
       return
@@ -652,7 +674,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   }
 
   function startOver(): void {
-    if (state.value.phase === 'waiting') return
+    if (state.value.phase === 'waiting' || waitsOnFollowUp(state.value)) return
     send({ type: 'dismissed' })
     converse({ type: 'startedOver' })
     think({ type: 'cleared' })
@@ -667,26 +689,74 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     else converse({ type: 'unsentCleared' })
   }
 
-  function deliver(request: AgentRequest, reply: unknown): void {
+  function deliverBatch(
+    request: BatchRequest,
+    steps: GuidanceStep[] | null
+  ): void {
     const { requestId } = request
-    const steps = checkReply(reply, request, host.readNodes())
+    if (!steps) {
+      send({ type: 'requestFailed', requestId, failure: MALFORMED })
+      return
+    }
     const isWaitedFor =
       state.value.phase === 'waiting' && state.value.requestId === requestId
     const turnId = request === askedRequest ? null : nextId('turn')
-    if (steps && isWaitedFor && turnId)
+    if (isWaitedFor && turnId)
       converse({
         type: 'answered',
         turnId,
         steps,
         thinking: thinking.value?.text ?? ''
       })
-    if (steps) send({ type: 'replyArrived', requestId, turnId, steps })
-    else
-      send({
-        type: 'requestFailed',
-        requestId,
-        failure: { kind: 'malformed', detail: '' }
-      })
+    send({
+      type: 'replyArrived',
+      requestId,
+      steps: steps.map((step, index) => ({
+        ...step,
+        ref: turnId ? { turnId, followUpId: null, index } : null
+      }))
+    })
+  }
+
+  function deliverFollowUp(
+    request: FollowUpRequest,
+    steps: GuidanceStep[] | null
+  ): void {
+    const { requestId } = request
+    const current = state.value
+    const isWaitedFor =
+      current.phase === 'guiding' &&
+      current.followUp?.status === 'waiting' &&
+      current.followUp.requestId === requestId
+    if (!isWaitedFor) return
+    const thread = threadOf(conversation.value, request.comment.id)
+    if (!steps || !thread) {
+      send({ type: 'followUpFailed', requestId, failure: MALFORMED })
+      return
+    }
+    const followUpId = nextId('followUp')
+    converse({
+      type: 'followedUp',
+      commentId: request.comment.id,
+      followUpId,
+      text: request.followUp,
+      steps,
+      thinking: thinking.value?.text ?? ''
+    })
+    send({
+      type: 'followUpAnswered',
+      requestId,
+      steps: steps.map((step, index) => ({
+        ...step,
+        ref: { turnId: thread.turnId, followUpId, index }
+      }))
+    })
+  }
+
+  function deliver(request: AgentRequest, reply: unknown): void {
+    const steps = checkReply(reply, request, host.readNodes())
+    if (request.kind === 'followUp') deliverFollowUp(request, steps)
+    else deliverBatch(request, steps)
   }
 
   function run(request: AgentRequest): void {
@@ -702,7 +772,12 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
         think({ type: 'finished', requestId })
         if (outcome.kind === 'reply') deliver(request, outcome.reply)
         if (outcome.kind === 'failure')
-          send({ type: 'requestFailed', requestId, failure: outcome.failure })
+          send({
+            type:
+              request.kind === 'followUp' ? 'followUpFailed' : 'requestFailed',
+            requestId,
+            failure: outcome.failure
+          })
       }
     })
   }
@@ -712,7 +787,8 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     const canSend =
       phase === 'idle' || phase === 'annotating' || phase === 'failed'
     if (!canSend || conversation.value.unsent.length === 0) return
-    const request: AgentRequest = {
+    const request: BatchRequest = {
+      kind: 'batch',
       requestId: nextId('request'),
       annotations: conversation.value.unsent.map(noteOf),
       history: historyOf(conversation.value)
@@ -727,10 +803,49 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     run(request)
   }
 
+  function sendFromDraft(comment: string): void {
+    saveDraft(comment)
+    sendBatch()
+  }
+
+  function followUp(text: string): void {
+    const guiding = state.value
+    if (guiding.phase !== 'guiding') return
+    const commentId = guiding.steps[guiding.index].annotationId
+    const thread = commentId ? threadOf(conversation.value, commentId) : null
+    if (!thread) return
+    const request: FollowUpRequest = {
+      kind: 'followUp',
+      requestId: nextId('request'),
+      comment: noteOf(thread.comment),
+      thread: threadNotes(thread),
+      followUp: text.trim(),
+      history: historyOf(conversation.value, thread.comment.id)
+    }
+    send({
+      type: 'followUpSent',
+      requestId: request.requestId,
+      text,
+      at: Date.now()
+    })
+    if (state.value !== guiding) run(request)
+  }
+
+  function retryFollowUp(): void {
+    const guiding = state.value
+    if (guiding.phase === 'guiding' && guiding.followUp?.status === 'failed')
+      followUp(guiding.followUp.text)
+  }
+
+  function cancelFollowUp(): void {
+    send({ type: 'followUpCancelled' })
+  }
+
   function ask(text: string): void {
     const asking = state.value
     if (asking.phase !== 'asking' || !text.trim()) return
-    const request: AgentRequest = {
+    const request: BatchRequest = {
+      kind: 'batch',
       requestId: nextId('request'),
       annotations: [
         {
@@ -829,6 +944,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     hover,
     draftAnchor,
     panelOpen,
+    sendBlock,
     pressTrigger,
     pressCaret,
     collapsePanel,
@@ -846,6 +962,10 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     clearUnsent,
     startOver,
     sendBatch,
+    sendFromDraft,
+    followUp,
+    retryFollowUp,
+    cancelFollowUp,
     ask,
     retry,
     removeChip,

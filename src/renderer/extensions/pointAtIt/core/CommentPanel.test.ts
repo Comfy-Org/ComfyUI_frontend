@@ -30,7 +30,16 @@ const secondTurn: Conversation = {
       id: 'turn-1',
       comments: [...unsentOnly.unsent],
       steps: [],
-      thinking: 'Checking which node sets the width.'
+      thinking: 'Checking which node sets the width.',
+      followUps: [
+        {
+          id: 'followUp-1',
+          commentId: 'comment-1',
+          text: 'a bit more than that',
+          steps: [],
+          thinking: ''
+        }
+      ]
     }
   ],
   unsent: [annotation('comment-3', 'a bit more than that')]
@@ -79,7 +88,8 @@ describe('CommentPanel', () => {
     await user.click(screen.getByRole('button', { name: messages.showTurn(1) }))
     await user.click(screen.getByText('make this wider'))
 
-    expect(screen.getByText('Turn 1 · 2 comments')).toBeVisible()
+    expect(screen.getByText('Turn 1 · 2 questions')).toBeVisible()
+    expect(screen.getAllByText(messages.followUpCount(1))).toHaveLength(1)
     expect(emitted('open')).toEqual([['comment-1']])
   })
 
@@ -95,6 +105,29 @@ describe('CommentPanel', () => {
       expect(screen.getByRole('button', { name: 'Send 0' })).toBeDisabled()
       expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled()
     })
+  })
+
+  it('TH-05: says why Send is unavailable while a follow-up waits, and opens no other thread', async () => {
+    const user = userEvent.setup()
+    renderPanel({
+      conversation: secondTurn,
+      phase: 'guiding',
+      held: true,
+      sendBlock: messages.sendBlocked.followUp
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      messages.sendBlocked.followUp
+    )
+    expect(screen.getByRole('button', { name: 'Send 1' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: messages.startOver })
+    ).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: messages.showTurn(1) }))
+    expect(
+      screen.getByRole('button', { name: /make this wider/ })
+    ).toBeDisabled()
   })
 
   it('TU-08: Start over takes two presses inside the panel and can be backed out of', async () => {

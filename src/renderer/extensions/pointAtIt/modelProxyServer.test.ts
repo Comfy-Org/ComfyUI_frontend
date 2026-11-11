@@ -81,7 +81,7 @@ describe('startModelProxy', () => {
     )
     const port = await listening(startModelProxy(config, 0, upstream))
     const chat = buildChatBody(
-      { requestId: 'request-1', annotations: [], history: [] },
+      { kind: 'batch', requestId: 'request-1', annotations: [], history: [] },
       textToImageNodes(),
       pointConfig.model
     )

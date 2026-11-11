@@ -13,6 +13,7 @@ import { SURFACE_ATTRIBUTE, usePointSession } from './usePointSession'
 import { SETTLE_MS } from './valueWatch'
 
 const FRAME_MS = 16
+const REPLY_MS = pointConfig.scripted.replyDelayMs
 const WIDTH_ROW: Point = { x: 300, y: 392 }
 const SAVE_NODE: Point = { x: 800, y: 480 }
 const EMPTY_CANVAS: Point = { x: 40, y: 600 }
@@ -802,6 +803,7 @@ describe('usePointSession: turns', () => {
     session.sendBatch()
 
     expect(model.calls[1].request).toMatchObject({
+      kind: 'batch',
       annotations: [{ comment: 'a bit more than that' }],
       history: [
         {
@@ -818,7 +820,6 @@ describe('usePointSession: turns', () => {
         }
       ]
     })
-    expect(model.calls[1].request.annotations).toHaveLength(1)
   })
 
   it('TU-05: records that the person changed the value themselves, and from what', () => {
@@ -833,7 +834,7 @@ describe('usePointSession: turns', () => {
     })
   })
 
-  it('TU-06: a locked comment shows its answer again for reading, bringing the target into view', () => {
+  it('TH-11: a locked comment opens its thread at the latest answer, for reading, bringing the target into view', () => {
     const { host, session, width } = answeredTurn()
     session.finish()
     host.nodes[1].settings[0].rect = { x: 3000, y: 384, width: 180, height: 18 }
@@ -852,7 +853,7 @@ describe('usePointSession: turns', () => {
     expect(session.conversation.value.turns[0].steps[0].result).toBeNull()
   })
 
-  it('TU-06: says so when what the earlier answer pointed at is gone', () => {
+  it('TH-11: says so when what the earlier answer pointed at is gone', () => {
     const { host, session } = answeredTurn()
     session.finish()
     host.removeNode(host.nodes[1].id)
@@ -920,6 +921,475 @@ describe('usePointSession: turns', () => {
         { annotationId: session.conversation.value.turns[1].comments[0].id }
       ]
     })
+  })
+})
+
+describe('usePointSession: follow-ups inside an answer', () => {
+  const WIDER = 'how do I make this wider?'
+
+  function answeredByModel() {
+    const model = fakeModel()
+    const { host, session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    const width = settingAddress(host.nodes[1].id, 'width')
+    const height = settingAddress(host.nodes[1].id, 'height')
+    comment(session, SAVE_NODE, WIDER)
+    const commentId = session.conversation.value.unsent[0].id
+    session.sendBatch()
+    model.calls[0].answer({
+      kind: 'reply',
+      reply: {
+        steps: [
+          {
+            annotationId: commentId,
+            text: 'Change width to 1280.',
+            target: width,
+            waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+            offerEdit: { target: width, value: 1280 }
+          },
+          {
+            annotationId: null,
+            text: 'Now run it.',
+            target: { kind: 'control', control: 'run' },
+            waitFor: { for: 'run' },
+            offerEdit: null
+          }
+        ]
+      }
+    })
+    function reply(call: number, annotationId: string | null = commentId) {
+      model.calls[call].answer({
+        kind: 'reply',
+        reply: {
+          steps: [
+            {
+              annotationId,
+              text: 'Then make it taller too: height to 1280.',
+              target: height,
+              waitFor: {
+                for: 'valueChange',
+                of: height,
+                direction: 'increase'
+              },
+              offerEdit: { target: height, value: 1280 }
+            }
+          ]
+        }
+      })
+    }
+    return { host, session, model, width, height, commentId, reply }
+  }
+
+  function followUps(session: Session) {
+    return session.conversation.value.turns.flatMap((turn) => turn.followUps)
+  }
+
+  it('TH-03, TH-13: a follow-up is sent on its own with its thread, and starts no turn', () => {
+    const { session, model, width, commentId } = answeredByModel()
+
+    session.followUp('  a bit more than that ')
+
+    expect(model.calls[1].request).toEqual({
+      kind: 'followUp',
+      requestId: expect.any(String),
+      comment: expect.objectContaining({ id: commentId, comment: WIDER }),
+      thread: [
+        {
+          from: 'agent',
+          steps: [
+            {
+              annotationId: commentId,
+              text: 'Change width to 1280.',
+              target: width,
+              offered: { target: width, value: 1280 },
+              result: null,
+              valueBefore: null
+            }
+          ]
+        }
+      ],
+      followUp: 'a bit more than that',
+      history: [
+        {
+          comments: [],
+          answer: [expect.objectContaining({ text: 'Now run it.' })],
+          followUps: []
+        }
+      ]
+    })
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      index: 0,
+      followUp: { status: 'waiting', text: 'a bit more than that' }
+    })
+    expect(session.conversation.value.turns).toHaveLength(1)
+  })
+
+  it('TH-02: a step that answers no question takes no follow-up', () => {
+    const { session, model } = answeredByModel()
+    session.applyOfferedEdit()
+
+    session.followUp('why?')
+
+    expect(stepIndex(session)).toBe(1)
+    expect(model.calls).toHaveLength(1)
+  })
+
+  it('TH-04: while a follow-up waits its thinking streams and the step holds, then goes on once the wait ends', () => {
+    const { host, session, model, width } = answeredByModel()
+    session.followUp('why 1280?')
+
+    model.calls[1].think('Looking at the width.')
+    host.setValue(width, 1280)
+    vi.advanceTimersByTime(SETTLE_MS + FRAME_MS * 4)
+
+    expect(session.thinking.value).toMatchObject({
+      text: 'Looking at the width.',
+      done: false
+    })
+    expect(stepIndex(session)).toBe(0)
+    expect(session.conversation.value.turns[0].steps[0].result).toBeNull()
+
+    session.cancelFollowUp()
+    vi.advanceTimersByTime(SETTLE_MS + FRAME_MS * 4)
+
+    expect(stepIndex(session)).toBe(1)
+    expect(session.conversation.value.turns[0].steps[0].result).toBe('changed')
+  })
+
+  it('TH-05: one request at a time: nothing else starts while a follow-up waits, and Send says why', () => {
+    const { session, model, commentId } = answeredByModel()
+    session.followUp('why 1280?')
+    const held = session.state.value
+
+    session.followUp('and the height?')
+    session.sendBatch()
+    tap(MARK_KEY)
+    session.pressTrigger()
+    session.openPin(commentId)
+    session.next()
+    session.startOver()
+
+    expect(session.state.value).toBe(held)
+    expect(model.calls).toHaveLength(2)
+    expect(session.sendBlock.value).toBe(messages.sendBlocked.followUp)
+    expect(session.conversation.value.turns).toHaveLength(1)
+  })
+
+  it('TH-06, TH-07, TH-15: the reply joins the thread, is live at its new target, and the sequence goes on after it', () => {
+    const { host, session, reply, height, commentId } = answeredByModel()
+    host.nodes[1].settings[1].rect = { x: 3000, y: 402, width: 180, height: 18 }
+    session.followUp('and taller?')
+
+    reply(1)
+
+    expect(followUps(session)).toMatchObject([
+      {
+        commentId,
+        text: 'and taller?',
+        steps: [{ target: height, result: null }]
+      }
+    ])
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      index: 0,
+      followUp: null,
+      steps: [
+        {
+          target: height,
+          offerEdit: { target: height, value: 1280 },
+          ref: { followUpId: followUps(session)[0].id, index: 0 }
+        },
+        { text: 'Now run it.' }
+      ]
+    })
+    expect(host.revealed).toEqual([height])
+
+    session.applyOfferedEdit()
+
+    expect(host.nodes[1].settings[1].value).toBe(1280)
+    expect(followUps(session)[0].steps[0]).toMatchObject({
+      result: 'accepted',
+      valueBefore: 1024
+    })
+    expect(session.conversation.value.turns[0].steps[0].result).toBeNull()
+    expect(stepIndex(session)).toBe(1)
+  })
+
+  it.for([
+    { name: 'Cancel', cancel: (session: Session) => session.cancelFollowUp() },
+    { name: 'Esc', cancel: () => void press('Escape') }
+  ])(
+    'TH-08, TH-10: $name aborts the follow-up, keeps the answer on screen, and a late reply is dropped',
+    ({ cancel }) => {
+      const { session, model, reply } = answeredByModel()
+      session.followUp('and taller?')
+      model.calls[1].think('Looking.')
+
+      cancel(session)
+      reply(1)
+
+      expect(model.calls[1].signal.aborted).toBe(true)
+      expect(session.state.value).toMatchObject({
+        phase: 'guiding',
+        index: 0,
+        followUp: null,
+        steps: [{ text: 'Change width to 1280.' }, { text: 'Now run it.' }]
+      })
+      expect(followUps(session)).toEqual([])
+      expect(session.thinking.value).toBeNull()
+    }
+  )
+
+  it('TH-09: a failed follow-up says so in place, keeps the text, and Retry sends it again', () => {
+    const { session, model } = answeredByModel()
+    session.followUp('and taller?')
+
+    model.calls[1].answer({
+      kind: 'failure',
+      failure: { kind: 'provider', detail: 'status 429' }
+    })
+
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      index: 0,
+      followUp: {
+        status: 'failed',
+        text: 'and taller?',
+        failure: { kind: 'provider' }
+      }
+    })
+
+    session.retryFollowUp()
+
+    expect(model.calls[2].request).toMatchObject({
+      kind: 'followUp',
+      followUp: 'and taller?'
+    })
+    expect(session.state.value).toMatchObject({
+      followUp: { status: 'waiting' }
+    })
+  })
+
+  it('TH-12: a reply with no step for the thread’s question fails as not in the expected format', () => {
+    const { session, reply } = answeredByModel()
+    session.followUp('and taller?')
+
+    reply(1, null)
+
+    expect(session.state.value).toMatchObject({
+      followUp: { status: 'failed', failure: { kind: 'malformed' } }
+    })
+    expect(followUps(session)).toEqual([])
+  })
+
+  it('TH-11: an earlier question’s thread can be followed up from its read-only answer, and that reply is live', () => {
+    const { session, reply, commentId, height } = answeredByModel()
+    session.dismiss()
+    session.openPin(commentId)
+    expect(session.state.value).toMatchObject({
+      replay: true,
+      steps: [{ text: 'Change width to 1280.', offerEdit: null }]
+    })
+
+    session.followUp('and taller?')
+    reply(1)
+
+    expect(session.state.value).toMatchObject({
+      replay: false,
+      steps: [{ offerEdit: { target: height, value: 1280 } }]
+    })
+
+    session.dismiss()
+    session.openPin(commentId)
+
+    expect(session.state.value).toMatchObject({
+      replay: true,
+      steps: [{ target: height, offerEdit: null, waitFor: null }]
+    })
+  })
+
+  it('TH-14: a later Send is reminded of the thread', () => {
+    const { session, model, reply, commentId } = answeredByModel()
+    session.followUp('and taller?')
+    reply(1)
+    session.dismiss()
+
+    comment(session, WIDTH_ROW, 'what is this?')
+    session.sendBatch()
+
+    expect(model.calls[2].request.history).toMatchObject([
+      {
+        comments: [{ id: commentId }],
+        followUps: [{ commentId, text: 'and taller?' }]
+      }
+    ])
+  })
+
+  it('TH-17: the scripted agent answers a follow-up by its words', () => {
+    const { host, session } = startGuidance(WIDER)
+    const height = settingAddress(host.nodes[1].id, 'height')
+
+    session.followUp('make it taller')
+    vi.advanceTimersByTime(FRAME_MS)
+
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      index: 0,
+      followUp: null,
+      steps: [{ target: height, offerEdit: { target: height } }, {}]
+    })
+    expect(followUps(session)).toHaveLength(1)
+  })
+
+  it('TH-18: Start over removes the threads with their turns', () => {
+    const { session, reply } = answeredByModel()
+    session.followUp('and taller?')
+    reply(1)
+
+    session.startOver()
+
+    expect(session.conversation.value).toEqual({ turns: [], unsent: [] })
+  })
+})
+
+describe('usePointSession: send right away, and what the panel does on Send', () => {
+  it('K-02: adds the question being typed and sends the whole list at once', () => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    comment(session, SAVE_NODE, 'make this wider')
+    session.pickAt(WIDTH_ROW)
+
+    session.sendFromDraft('what is this?')
+
+    expect(session.state.value.phase).toBe('waiting')
+    expect(model.calls[0].request).toMatchObject({
+      kind: 'batch',
+      annotations: [
+        { comment: 'make this wider' },
+        { comment: 'what is this?' }
+      ]
+    })
+  })
+
+  it('K-03: with nothing typed it sends the questions already in the list', () => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    comment(session, SAVE_NODE, 'make this wider')
+    session.pickAt(WIDTH_ROW)
+
+    session.sendFromDraft('  ')
+
+    expect(session.state.value.phase).toBe('waiting')
+    expect(model.calls[0].request).toMatchObject({
+      annotations: [{ comment: 'make this wider' }]
+    })
+  })
+
+  it('K-03: with nothing typed and nothing in the list it sends nothing and leaves the box open', () => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    session.toggleAnnotate()
+    session.pickAt(WIDTH_ROW)
+    const open = session.state.value
+
+    session.sendFromDraft('')
+
+    expect(session.state.value).toBe(open)
+    expect(model.calls).toEqual([])
+  })
+
+  it('SD-01, SD-02: Send collapses the panel, and the reply does not reopen it', () => {
+    const { session } = startSession()
+    session.pressTrigger()
+    comment(session, WIDTH_ROW, 'make this wider')
+    expect(session.panelOpen.value).toBe(true)
+
+    session.sendBatch()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'waiting',
+      false
+    ])
+
+    vi.advanceTimersByTime(REPLY_MS + FRAME_MS)
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'guiding',
+      false
+    ])
+  })
+
+  it('SD-01: sending right away from the box collapses the panel too', () => {
+    const { session } = startSession()
+    session.pressTrigger()
+    session.pickAt(WIDTH_ROW)
+
+    session.sendFromDraft('make this wider')
+
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'waiting',
+      false
+    ])
+  })
+
+  it('SD-03: a failure leaves the panel collapsed, and Retry keeps it collapsed', () => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    session.pressTrigger()
+    comment(session, WIDTH_ROW, 'make this wider')
+    session.sendBatch()
+
+    model.calls[0].answer({
+      kind: 'failure',
+      failure: { kind: 'proxyDown', detail: '' }
+    })
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'failed',
+      false
+    ])
+
+    session.openPanel()
+    session.retry()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'waiting',
+      false
+    ])
+  })
+
+  it('SD-04: a panel opened by hand while waiting stays open when the reply arrives', () => {
+    const { session } = startSession()
+    comment(session, WIDTH_ROW, 'make this wider')
+    session.sendBatch()
+
+    session.pressCaret()
+    vi.advanceTimersByTime(REPLY_MS + FRAME_MS)
+
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'guiding',
+      true
+    ])
+  })
+
+  it('SD-05: a follow-up collapses nothing', () => {
+    const { session } = startGuidance('how do I make this wider?')
+    session.pressCaret()
+
+    session.followUp('make it taller')
+
+    expect(session.panelOpen.value).toBe(true)
   })
 })
 

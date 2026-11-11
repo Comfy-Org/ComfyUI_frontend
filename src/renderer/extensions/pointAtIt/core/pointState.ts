@@ -1,7 +1,7 @@
 import { boundsOf } from './geometry'
 import type { Point, Rect } from './geometry'
-import type { GuidanceStep } from './replyValidation'
 import type { AnnotationTarget, TargetAddress } from './targetAddress'
+import type { ShownStep } from './turns'
 
 /** Why a request produced no guidance; `detail` is shown with the message. */
 export interface RequestFailure {
@@ -78,17 +78,28 @@ interface FailedState {
   asked: Asked | null
 }
 
+interface WaitingFollowUp {
+  status: 'waiting'
+  requestId: string
+  text: string
+  startedAt: number
+}
+
+/** A follow-up sent from the answer on screen that has no reply yet. */
+export type FollowUpActivity =
+  | WaitingFollowUp
+  | { status: 'failed'; text: string; failure: RequestFailure }
+
 export interface GuidingState {
   phase: 'guiding'
   requestId: string
-  /** The turn this guidance answers, when it answers one. */
-  turnId: string | null
-  /** True when an earlier answer is shown again, for reading. */
+  /** True while an opened thread shows an earlier answer, for reading. */
   replay: boolean
-  steps: GuidanceStep[]
+  steps: ShownStep[]
   index: number
   origin: Point
   editFailed: boolean
+  followUp: FollowUpActivity | null
 }
 
 export type PointState =
@@ -113,18 +124,12 @@ export type PointEvent =
   | { type: 'draftOpened'; draft: Draft }
   | { type: 'draftClosed' }
   | { type: 'batchSent'; requestId: string; at: number; origin: Point }
-  | {
-      type: 'replyArrived'
-      requestId: string
-      turnId: string | null
-      steps: GuidanceStep[]
-    }
-  | {
-      type: 'replayOpened'
-      commentId: string
-      steps: GuidanceStep[]
-      origin: Point
-    }
+  | { type: 'replyArrived'; requestId: string; steps: ShownStep[] }
+  | { type: 'threadOpened'; commentId: string; step: ShownStep; origin: Point }
+  | { type: 'followUpSent'; requestId: string; text: string; at: number }
+  | { type: 'followUpAnswered'; requestId: string; steps: ShownStep[] }
+  | { type: 'followUpFailed'; requestId: string; failure: RequestFailure }
+  | { type: 'followUpCancelled' }
   | { type: 'requestFailed'; requestId: string; failure: RequestFailure }
   | { type: 'valueChanged' }
   | { type: 'editApplied' }
@@ -137,13 +142,23 @@ export type PointEvent =
 
 export const idleState: PointState = { phase: 'idle' }
 
+/** True while the answer on screen is held by a follow-up that has no reply yet. */
+export function waitsOnFollowUp(state: PointState): boolean {
+  return state.phase === 'guiding' && state.followUp?.status === 'waiting'
+}
+
 function isLastStep(state: GuidingState): boolean {
   return state.index === state.steps.length - 1
 }
 
 function advance(state: GuidingState): PointState {
   if (isLastStep(state)) return idleState
-  return { ...state, index: state.index + 1, editFailed: false }
+  return {
+    ...state,
+    index: state.index + 1,
+    editFailed: false,
+    followUp: null
+  }
 }
 
 function dismiss(state: PointState): PointState {
@@ -173,25 +188,25 @@ function openDraft(state: PointState, draft: Draft): PointState {
   return canOpen ? { phase: 'annotating', draft } : state
 }
 
-function openReplay(
+function openThread(
   state: PointState,
-  event: Extract<PointEvent, { type: 'replayOpened' }>
+  event: Extract<PointEvent, { type: 'threadOpened' }>
 ): PointState {
   const canOpen =
     state.phase === 'idle' ||
     state.phase === 'failed' ||
     state.phase === 'guiding' ||
     (state.phase === 'annotating' && !state.draft)
-  if (!canOpen || event.steps.length === 0) return state
+  if (!canOpen) return state
   return {
     phase: 'guiding',
-    requestId: `replay:${event.commentId}`,
-    turnId: null,
+    requestId: `thread:${event.commentId}`,
     replay: true,
-    steps: event.steps,
+    steps: [event.step],
     index: 0,
     origin: event.origin,
-    editFailed: false
+    editFailed: false,
+    followUp: null
   }
 }
 
@@ -246,12 +261,70 @@ function reduceWaiting(state: WaitingState, event: PointEvent): PointState {
   return {
     phase: 'guiding',
     requestId: event.requestId,
-    turnId: event.turnId,
     replay: false,
     steps: event.steps,
     index: 0,
     origin: state.origin,
-    editFailed: false
+    editFailed: false,
+    followUp: null
+  }
+}
+
+function reduceHeld(
+  state: GuidingState,
+  held: WaitingFollowUp,
+  event: PointEvent
+): PointState {
+  switch (event.type) {
+    case 'followUpAnswered':
+      if (event.requestId !== held.requestId || event.steps.length === 0)
+        return state
+      return {
+        ...state,
+        replay: false,
+        editFailed: false,
+        followUp: null,
+        steps: [
+          ...state.steps.slice(0, state.index),
+          ...event.steps,
+          ...state.steps.slice(state.index + 1)
+        ]
+      }
+    case 'followUpFailed':
+      return event.requestId === held.requestId
+        ? {
+            ...state,
+            followUp: {
+              status: 'failed',
+              text: held.text,
+              failure: event.failure
+            }
+          }
+        : state
+    case 'followUpCancelled':
+    case 'dismissed':
+      return { ...state, followUp: null }
+    case 'targetRemoved':
+      return idleState
+    default:
+      return state
+  }
+}
+
+function sendFollowUp(
+  state: GuidingState,
+  event: Extract<PointEvent, { type: 'followUpSent' }>
+): PointState {
+  const text = event.text.trim()
+  if (!text || state.steps[state.index].annotationId === null) return state
+  return {
+    ...state,
+    followUp: {
+      status: 'waiting',
+      requestId: event.requestId,
+      text,
+      startedAt: event.at
+    }
   }
 }
 
@@ -274,6 +347,8 @@ function reduceGuiding(state: GuidingState, event: PointEvent): PointState {
       return isLastStep(state) ? idleState : state
     case 'targetRemoved':
       return idleState
+    case 'followUpSent':
+      return sendFollowUp(state, event)
     default:
       return state
   }
@@ -317,11 +392,17 @@ function reducePhase(state: PointState, event: PointEvent): PointState {
   }
 }
 
-/** Pure transition: an event that means nothing in the current phase returns `state`. */
+/**
+ * Pure transition: an event that means nothing in the current phase returns
+ * `state`. While a follow-up waits, the answer on screen is held: only its
+ * reply, its failure, a cancel or the loss of the target changes anything.
+ */
 export function reducePointState(
   state: PointState,
   event: PointEvent
 ): PointState {
+  if (state.phase === 'guiding' && state.followUp?.status === 'waiting')
+    return reduceHeld(state, state.followUp, event)
   switch (event.type) {
     case 'dismissed':
       return dismiss(state)
@@ -331,8 +412,8 @@ export function reducePointState(
       return openDraft(state, event.draft)
     case 'batchSent':
       return sendBatch(state, event)
-    case 'replayOpened':
-      return openReplay(state, event)
+    case 'threadOpened':
+      return openThread(state, event)
     default:
       return reducePhase(state, event)
   }

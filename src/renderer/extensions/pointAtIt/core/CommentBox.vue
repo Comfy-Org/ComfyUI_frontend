@@ -30,11 +30,14 @@
       class="resize-none rounded-md border border-border bg-transparent p-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
       :aria-label="messages.commentLabel"
       :placeholder="messages.commentPlaceholder"
-      @keydown.enter.exact="onEnter"
+      @keydown.enter="onEnter"
     />
+    <p v-if="notice" role="status" class="m-0 text-xs text-destructive">
+      {{ notice }}
+    </p>
     <div class="flex items-center gap-2">
       <Button type="submit" variant="primary" :disabled="!text.trim()">
-        {{ messages.save }}
+        {{ draft.annotationId ? messages.save : messages.add }}
       </Button>
       <Button
         v-if="draft.annotationId"
@@ -45,7 +48,9 @@
         {{ messages.remove }}
       </Button>
     </div>
-    <p class="m-0 text-xs text-muted-foreground">{{ messages.commentHint }}</p>
+    <p class="m-0 text-xs text-muted-foreground">
+      {{ messages.commentHint(sendKey) }}
+    </p>
   </form>
 </template>
 
@@ -57,17 +62,24 @@ import Button from '@comfyorg/design-system/button/Button'
 
 import { placeBeside } from './geometry'
 import type { Rect } from './geometry'
-import { messages } from './messages'
+import { messages, sendNowKeyLabel } from './messages'
 import type { Draft } from './pointState'
+import { takeEnter } from './textEntry'
 
 const {
   anchor,
   draft,
+  unsentCount,
+  sendBlock = '',
   avoid = null,
   targetNote = ''
 } = defineProps<{
   anchor: Rect
   draft: Draft
+  /** How many questions are already in the list, waiting to be sent. */
+  unsentCount: number
+  /** Why nothing can be sent right now; empty when it can. */
+  sendBlock?: string
   /** A rect the box should not sit under, when another side is free. */
   avoid?: Rect | null
   /** Says why the target cannot be shown, when it cannot. */
@@ -76,11 +88,15 @@ const {
 
 const emit = defineEmits<{
   save: [comment: string]
+  /** Add what is typed, if anything, and send the whole list right away. */
+  send: [comment: string]
   remove: []
   close: []
 }>()
 
+const sendKey = sendNowKeyLabel(navigator.userAgent)
 const text = ref(draft.comment)
+const notice = ref('')
 const box = useTemplateRef('box')
 const input = useTemplateRef('input')
 const boxSize = useElementSize(box, undefined, { box: 'border-box' })
@@ -96,10 +112,16 @@ const position = computed(() =>
   )
 )
 
+function sendNow() {
+  const hasSomething = text.value.trim() !== '' || unsentCount > 0
+  notice.value = sendBlock || (hasSomething ? '' : messages.nothingToSend)
+  if (!notice.value) emit('send', text.value)
+}
+
 function onEnter(event: KeyboardEvent) {
-  if (event.isComposing) return
-  event.preventDefault()
-  emit('save', text.value)
+  const meaning = takeEnter(event)
+  if (meaning === 'enter') emit('save', text.value)
+  if (meaning === 'sendNow') sendNow()
 }
 
 onMounted(() => input.value?.focus({ preventScroll: true }))

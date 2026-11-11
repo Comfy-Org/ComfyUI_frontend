@@ -101,18 +101,57 @@ export interface HistoryStep {
   valueBefore: string | number | boolean | null
 }
 
-/** An earlier turn: its comments and the answer they got. */
-export interface HistoryTurn {
-  comments: AnnotationNote[]
+/** A follow-up inside one comment's thread and the answer it got. */
+export interface HistoryFollowUp {
+  commentId: string
+  text: string
   answer: HistoryStep[]
 }
 
+/** An earlier turn: its comments, the answer they got and their threads. */
+export interface HistoryTurn {
+  comments: AnnotationNote[]
+  answer: HistoryStep[]
+  followUps: HistoryFollowUp[]
+}
+
+/** One earlier message of a thread, after its comment. */
+export type ThreadNote =
+  | { from: 'person'; text: string }
+  | { from: 'agent'; steps: HistoryStep[] }
+
 /**
- * What the layer sends: the comments of the current turn, to be answered,
- * and the earlier turns, oldest first, for context only.
+ * A Send: the comments of the current turn, to be answered, and the earlier
+ * turns, oldest first, for context only.
  */
-export interface AgentRequest {
+export interface BatchRequest {
+  kind: 'batch'
   requestId: string
   annotations: AnnotationNote[]
   history: HistoryTurn[]
+}
+
+/**
+ * A follow-up inside the thread of one answered comment. Only `followUp` is
+ * to be answered, and every step of the reply must carry `comment.id`.
+ */
+export interface FollowUpRequest {
+  kind: 'followUp'
+  requestId: string
+  /** The comment the thread belongs to. */
+  comment: AnnotationNote
+  /** What was said after the comment, oldest first. */
+  thread: ThreadNote[]
+  /** The person's new message. */
+  followUp: string
+  /** The earlier turns without this thread, oldest first, for context only. */
+  history: HistoryTurn[]
+}
+
+/** What the layer sends to an agent backend. */
+export type AgentRequest = BatchRequest | FollowUpRequest
+
+/** The comments a reply to this request may answer. */
+export function answerableNotes(request: AgentRequest): AnnotationNote[] {
+  return request.kind === 'batch' ? request.annotations : [request.comment]
 }

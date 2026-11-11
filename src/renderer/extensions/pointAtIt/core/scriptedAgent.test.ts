@@ -30,6 +30,7 @@ function answer(
   wrongTarget = false
 ) {
   const request: AgentRequest = {
+    kind: 'batch',
     requestId: 'request-7',
     annotations,
     history: []
@@ -153,6 +154,30 @@ describe('answerRequest', () => {
         offerEdit: null
       }
     ])
+  })
+
+  it('TH-17: answers a follow-up by the words of the new message, as one step for the thread’s comment and no Run step', () => {
+    const width = settingAddress(latent.id, 'width')
+    const request: AgentRequest = {
+      kind: 'followUp',
+      requestId: 'request-8',
+      comment: note('comment-1', 'what is this?', [width]),
+      thread: [],
+      followUp: 'make it wider',
+      history: []
+    }
+
+    expect(answerRequest(request, nodes, { wrongTarget: false }).steps).toEqual(
+      [
+        {
+          annotationId: 'comment-1',
+          text: answers.sizeLead('width', 1536, true),
+          target: width,
+          waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+          offerEdit: { target: width, value: 1536 }
+        }
+      ]
+    )
   })
 
   it('X-02: says it has no script for a comment and lists what it can answer', () => {

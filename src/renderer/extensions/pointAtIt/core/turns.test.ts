@@ -8,11 +8,14 @@ import type { GuidanceStep } from './replyValidation'
 import {
   emptyConversation,
   historyOf,
+  latestAnswer,
+  messagesBefore,
   numberedComments,
   reduceConversation,
-  replaySteps
+  threadNotes,
+  threadOf
 } from './turns'
-import type { Annotation, Conversation } from './turns'
+import type { Annotation, Conversation, ConversationEvent } from './turns'
 
 const width = settingAddress(createNodeLocatorId(null, 5), 'width')
 
@@ -49,6 +52,20 @@ const oneTurn = reduceConversation(unsentOnly, {
   thinking: 'Checking the width.'
 })
 const secondTurnOpen = reduceConversation(oneTurn, { type: 'saved', ...third })
+const widenMore: GuidanceStep = {
+  ...widen,
+  text: 'Go to 1408.',
+  offerEdit: { target: width, value: 1408 }
+}
+const moreWidth = {
+  type: 'followedUp',
+  commentId: 'comment-1',
+  followUpId: 'followUp-1',
+  text: ' a bit more than that ',
+  steps: [widenMore],
+  thinking: 'Going a little further.'
+} satisfies ConversationEvent
+const followedUp = reduceConversation(oneTurn, moreWidth)
 
 describe('reduceConversation', () => {
   it('AN-05: a saved comment joins the unsent comments, trimmed', () => {
@@ -93,7 +110,8 @@ describe('reduceConversation', () => {
             { ...widen, result: null, valueBefore: null },
             { ...run, result: null, valueBefore: null }
           ],
-          thinking: 'Checking the width.'
+          thinking: 'Checking the width.',
+          followUps: []
         }
       ],
       unsent: []
@@ -117,8 +135,7 @@ describe('reduceConversation', () => {
   it('TU-05: records whether the person took the offered value or changed it themselves', () => {
     const accepted = reduceConversation(oneTurn, {
       type: 'actedOn',
-      turnId: 'turn-1',
-      stepIndex: 0,
+      ref: { turnId: 'turn-1', followUpId: null, index: 0 },
       result: 'accepted',
       valueBefore: 1024
     })
@@ -130,8 +147,7 @@ describe('reduceConversation', () => {
     expect(
       reduceConversation(oneTurn, {
         type: 'actedOn',
-        turnId: 'turn-9',
-        stepIndex: 0,
+        ref: { turnId: 'turn-9', followUpId: null, index: 0 },
         result: 'changed',
         valueBefore: 1024
       })
@@ -185,22 +201,174 @@ describe('numberedComments', () => {
   })
 })
 
-describe('replaySteps', () => {
-  it('TU-06: shows the step for a locked comment again with nothing to wait for and nothing offered', () => {
-    expect(replaySteps(oneTurn.turns[0], 'comment-1')).toEqual([
-      { ...widen, waitFor: null, offerEdit: null }
+describe('threads', () => {
+  it('TH-01: a thread is the comment, the agent’s answer to it, then follow-ups and their replies, in order', () => {
+    expect(threadOf(followedUp, 'comment-1')).toEqual({
+      turnId: 'turn-1',
+      comment: first,
+      messages: [
+        { kind: 'comment', text: 'make this wider' },
+        {
+          kind: 'answer',
+          ref: { turnId: 'turn-1', followUpId: null, index: 0 },
+          step: { ...widen, result: null, valueBefore: null }
+        },
+        {
+          kind: 'followUp',
+          id: 'followUp-1',
+          text: 'a bit more than that',
+          thinking: 'Going a little further.'
+        },
+        {
+          kind: 'answer',
+          ref: { turnId: 'turn-1', followUpId: 'followUp-1', index: 0 },
+          step: { ...widenMore, result: null, valueBefore: null }
+        }
+      ]
+    })
+  })
+
+  it('TH-03: a follow-up starts no turn and leaves the unsent comments and other threads alone', () => {
+    const withUnsent = reduceConversation(secondTurnOpen, moreWidth)
+
+    expect(withUnsent.turns).toHaveLength(1)
+    expect(withUnsent.unsent).toEqual([third])
+    expect(threadOf(withUnsent, 'comment-2')?.messages).toEqual([
+      { kind: 'comment', text: 'what is this?' }
     ])
   })
 
-  it('TU-06: says so when the agent gave no step for the comment', () => {
-    expect(replaySteps(oneTurn.turns[0], 'comment-2')).toEqual([
+  it.for<{ name: string; event: ConversationEvent }>([
+    {
+      name: 'a comment that is not sent yet',
+      event: { ...moreWidth, commentId: 'comment-3' }
+    },
+    {
+      name: 'a comment that does not exist',
+      event: { ...moreWidth, commentId: 'comment-9' }
+    },
+    { name: 'no text', event: { ...moreWidth, text: '  ' } },
+    { name: 'a reply with no step', event: { ...moreWidth, steps: [] } }
+  ])('TH-03: a follow-up on $name stores nothing', ({ event }) => {
+    expect(reduceConversation(secondTurnOpen, event)).toBe(secondTurnOpen)
+  })
+
+  it('TH-02: an unsent or unknown comment has no thread', () => {
+    expect(threadOf(secondTurnOpen, 'comment-3')).toBeNull()
+    expect(threadOf(secondTurnOpen, 'comment-9')).toBeNull()
+  })
+
+  it('TH-15: what the person did is recorded on the follow-up reply’s own step', () => {
+    const ref = { turnId: 'turn-1', followUpId: 'followUp-1', index: 0 }
+    const acted = reduceConversation(followedUp, {
+      type: 'actedOn',
+      ref,
+      result: 'changed',
+      valueBefore: 1280
+    })
+
+    expect(threadOf(acted, 'comment-1')?.messages.at(-1)).toMatchObject({
+      ref,
+      step: { result: 'changed', valueBefore: 1280 }
+    })
+    expect(acted.turns[0].steps[0].result).toBeNull()
+    expect(
+      [
+        { ...ref, followUpId: 'followUp-9' },
+        { ...ref, index: 4 }
+      ].every(
+        (unknown) =>
+          reduceConversation(followedUp, {
+            type: 'actedOn',
+            ref: unknown,
+            result: 'changed',
+            valueBefore: 1280
+          }) === followedUp
+      )
+    ).toBe(true)
+  })
+
+  it('TH-01, TH-06: the bubble’s thread is what was said before the answer it shows', () => {
+    const thread = threadOf(followedUp, 'comment-1')
+    if (!thread) throw new Error('The thread was not found')
+
+    expect(
+      messagesBefore(thread, {
+        turnId: 'turn-1',
+        followUpId: 'followUp-1',
+        index: 0
+      }).map((message) => message.kind)
+    ).toEqual(['comment', 'answer', 'followUp'])
+    expect(
+      messagesBefore(thread, { turnId: 'turn-1', followUpId: null, index: 0 })
+    ).toEqual([{ kind: 'comment', text: 'make this wider' }])
+    expect(messagesBefore(thread, null)).toEqual(thread.messages)
+  })
+
+  it('TH-11: an opened thread shows its latest answer, with nothing to wait for and nothing offered', () => {
+    const thread = threadOf(followedUp, 'comment-1')
+    if (!thread) throw new Error('The thread was not found')
+
+    expect(latestAnswer(thread)).toEqual({
+      ...widenMore,
+      waitFor: null,
+      offerEdit: null,
+      ref: { turnId: 'turn-1', followUpId: 'followUp-1', index: 0 }
+    })
+  })
+
+  it('TH-11: says so when the agent gave the comment no step', () => {
+    const thread = threadOf(followedUp, 'comment-2')
+    if (!thread) throw new Error('The thread was not found')
+
+    expect(latestAnswer(thread)).toEqual({
+      annotationId: 'comment-2',
+      text: messages.noAnswerForComment,
+      target: null,
+      waitFor: null,
+      offerEdit: null,
+      problems: [],
+      ref: null
+    })
+  })
+
+  it('TH-16: a comment knows how many follow-ups its thread has', () => {
+    expect(
+      numberedComments(followedUp).map((comment) => comment.followUps)
+    ).toEqual([1, 0])
+  })
+
+  it('TH-13: the thread as the agent is reminded of it: its answers with what was offered and done, and the earlier follow-ups', () => {
+    const thread = threadOf(followedUp, 'comment-1')
+    if (!thread) throw new Error('The thread was not found')
+
+    expect(threadNotes(thread)).toEqual([
       {
-        annotationId: 'comment-2',
-        text: messages.noAnswerForComment,
-        target: null,
-        waitFor: null,
-        offerEdit: null,
-        problems: []
+        from: 'agent',
+        steps: [
+          {
+            annotationId: 'comment-1',
+            text: 'Change width to 1280.',
+            target: width,
+            offered: { target: width, value: 1280 },
+            result: null,
+            valueBefore: null
+          }
+        ]
+      },
+      { from: 'person', text: 'a bit more than that' },
+      {
+        from: 'agent',
+        steps: [
+          {
+            annotationId: 'comment-1',
+            text: 'Go to 1408.',
+            target: width,
+            offered: { target: width, value: 1408 },
+            result: null,
+            valueBefore: null
+          }
+        ]
       }
     ])
   })
@@ -210,8 +378,7 @@ describe('historyOf', () => {
   it('TU-04, TU-05: gives each answered turn’s comments and answer steps, with what was offered and what the person did', () => {
     const accepted = reduceConversation(secondTurnOpen, {
       type: 'actedOn',
-      turnId: 'turn-1',
-      stepIndex: 0,
+      ref: { turnId: 'turn-1', followUpId: null, index: 0 },
       result: 'accepted',
       valueBefore: 1024
     })
@@ -249,7 +416,37 @@ describe('historyOf', () => {
             result: null,
             valueBefore: null
           }
+        ],
+        followUps: []
+      }
+    ])
+  })
+
+  it('TH-14: later requests are reminded of each turn’s threads', () => {
+    expect(historyOf(followedUp)[0].followUps).toEqual([
+      {
+        commentId: 'comment-1',
+        text: 'a bit more than that',
+        answer: [
+          {
+            annotationId: 'comment-1',
+            text: 'Go to 1408.',
+            target: width,
+            offered: { target: width, value: 1408 },
+            result: null,
+            valueBefore: null
+          }
         ]
+      }
+    ])
+  })
+
+  it('TH-13: a follow-up’s history leaves its own thread out, since it is sent in full', () => {
+    expect(historyOf(followedUp, 'comment-1')).toMatchObject([
+      {
+        comments: [{ id: 'comment-2' }],
+        answer: [{ annotationId: null, text: 'Now run it.' }],
+        followUps: []
       }
     ])
   })

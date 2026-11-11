@@ -224,14 +224,18 @@ function misdirected(
   ]
 }
 
-/** The stand-in agent: a fixed script keyed on words in each comment. */
+/**
+ * The stand-in agent: a fixed script keyed on words in each comment, or in
+ * the new message of a follow-up.
+ */
 export function answerRequest(
   request: AgentRequest,
   nodes: readonly HostNode[],
   options: ScriptOptions
 ): AgentReply {
-  const steps = withRunStep(
-    request.annotations.map((note) => answerNote(note, nodes))
-  )
+  const steps =
+    request.kind === 'followUp'
+      ? [answerNote({ ...request.comment, comment: request.followUp }, nodes)]
+      : withRunStep(request.annotations.map((note) => answerNote(note, nodes)))
   return { steps: options.wrongTarget ? misdirected(steps, nodes) : steps }
 }

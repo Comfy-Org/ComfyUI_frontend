@@ -62,6 +62,7 @@
     <p v-if="replay" class="m-0 text-xs text-muted-foreground">
       {{ messages.replayHint }}
     </p>
+    <ThreadHistory v-if="thread && thread.length > 0" :thread />
     <div class="flex items-start gap-2">
       <p class="m-0 flex-1 whitespace-pre-line">{{ step.text }}</p>
       <Button
@@ -88,17 +89,31 @@
       <Button
         v-if="step.offerEdit"
         variant="primary"
+        :disabled="isHeld"
         @click="emit('applyEdit')"
       >
         {{ messages.doItForMe }}
       </Button>
-      <Button v-if="isLast" @click="emit('done')">
+      <Button v-if="isLast" :disabled="isHeld" @click="emit('done')">
         {{ messages.done }}
       </Button>
-      <Button v-else-if="!step.waitFor" @click="emit('next')">
+      <Button
+        v-else-if="!step.waitFor"
+        :disabled="isHeld"
+        @click="emit('next')"
+      >
         {{ messages.next }}
       </Button>
     </div>
+    <FollowUpField
+      v-if="thread"
+      :key="`${index}:${thread.length}`"
+      :activity="followUp"
+      :thinking
+      @send="(text) => emit('followUp', text)"
+      @cancel="emit('cancelFollowUp')"
+      @retry="emit('retryFollowUp')"
+    />
     <p class="m-0 text-xs text-muted-foreground">
       {{ messages.stepOf(index + 1, total) }}
     </p>
@@ -112,10 +127,15 @@ import { computed, useTemplateRef } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import FollowUpField from './FollowUpField.vue'
 import { placeAttached } from './geometry'
 import type { Rect, Side } from './geometry'
 import { messages } from './messages'
+import type { FollowUpActivity } from './pointState'
 import type { GuidanceStep } from './replyValidation'
+import ThreadHistory from './ThreadHistory.vue'
+import type { ThinkingLog } from './thinkingLog'
+import type { ThreadMessage } from './turns'
 import type { GuidanceView } from './usePointSession'
 
 const RING_OUTSET = 3
@@ -129,6 +149,9 @@ const {
   editFailed,
   view,
   answers,
+  thread = null,
+  followUp = null,
+  thinking = null,
   replay = false,
   avoid = null
 } = defineProps<{
@@ -138,6 +161,13 @@ const {
   editFailed: boolean
   view: GuidanceView
   answers: { number: number; label: string } | null
+  /**
+   * What was said in the answered question's thread before this step; null
+   * when the step answers no question, and then there is no follow-up field.
+   */
+  thread?: ThreadMessage[] | null
+  followUp?: FollowUpActivity | null
+  thinking?: ThinkingLog | null
   replay?: boolean
   /** A rect the bubble should not sit under, when another side is free. */
   avoid?: Rect | null
@@ -148,6 +178,9 @@ const emit = defineEmits<{
   next: []
   done: []
   close: []
+  followUp: [text: string]
+  cancelFollowUp: []
+  retryFollowUp: []
 }>()
 
 const bubble = useTemplateRef('bubble')
@@ -155,6 +188,7 @@ const bubbleSize = useElementSize(bubble, undefined, { box: 'border-box' })
 const windowSize = useWindowSize()
 
 const isLast = computed(() => index === total - 1)
+const isHeld = computed(() => followUp?.status === 'waiting')
 
 const placement = computed(() =>
   placeAttached(

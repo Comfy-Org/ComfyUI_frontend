@@ -7,7 +7,7 @@ import { pointConfig } from './config'
 import type { PointConfig } from './config'
 import { placeAfterMarker } from './dockSlot'
 import { createFakePointHost } from './fakePointHost'
-import { messages } from './messages'
+import { answers, messages } from './messages'
 import { isOwnElement } from './pageElements'
 import PointLayer from './PointLayer.vue'
 
@@ -97,5 +97,66 @@ describe('PointLayer: the trigger and its panel', () => {
     expect(isOwnElement(annotate())).toBe(true)
     expect(isOwnElement(screen.getByTestId('point-at-it-panel'))).toBe(true)
     expect(isOwnElement(screen.getByText('Agent'))).toBe(false)
+  })
+})
+
+describe('PointLayer: asking, sending and following up', () => {
+  it('K-02, SD-01, SD-05, TH-01, TH-03, TH-06: a question sent right away is answered in a bubble that takes a follow-up', async () => {
+    document.body.innerHTML = TOP_BAR
+    const host = createFakePointHost()
+    host.selection = [host.nodes[1].id]
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(PointLayer, {
+      props: {
+        host,
+        config: {
+          ...config,
+          scripted: { replyDelayMs: 500, wrongTarget: false }
+        }
+      }
+    })
+
+    await user.click(annotate())
+    await user.click(
+      screen.getByRole('textbox', { name: messages.commentLabel })
+    )
+    await user.keyboard('make this wider{Control>}{Enter}{/Control}')
+
+    expect(screen.queryByTestId('point-at-it-panel')).not.toBeInTheDocument()
+    expect(screen.getByTestId('point-at-it-loading')).toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(600)
+
+    const bubble = within(screen.getByTestId('point-at-it-bubble'))
+    expect(screen.queryByTestId('point-at-it-loading')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('point-at-it-panel')).not.toBeInTheDocument()
+    expect(
+      bubble.getByRole('log', { name: messages.threadLabel })
+    ).toHaveTextContent('make this wider')
+    expect(
+      bubble.getByText(answers.sizeLead('width', 1536, true))
+    ).toBeVisible()
+    const field = bubble.getByRole('textbox', { name: messages.followUpLabel })
+    expect(field).not.toHaveFocus()
+
+    await user.click(field)
+    await user.keyboard('make it taller{Enter}')
+
+    expect(screen.getByTestId('point-at-it-loading')).toBeInTheDocument()
+    expect(bubble.getByRole('button', { name: messages.cancel })).toBeEnabled()
+
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(
+      bubble.getByRole('log', { name: messages.threadLabel })
+    ).toHaveTextContent(
+      /make this wider.*Offered 1536 for width · not taken.*make it taller/
+    )
+    expect(
+      bubble.getByText(answers.sizeLead('height', 1536, true))
+    ).toBeVisible()
+    expect(
+      bubble.getByRole('textbox', { name: messages.followUpLabel })
+    ).toHaveValue('')
   })
 })

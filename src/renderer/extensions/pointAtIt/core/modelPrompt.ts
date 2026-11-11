@@ -2,8 +2,13 @@ import { omit } from 'es-toolkit'
 import { z } from 'zod'
 
 import { AGENT_INSTRUCTIONS } from './agentPrompt'
-import { agentReplySchema } from './agentReply'
-import type { AgentRequest, AnnotationNote, HistoryTurn } from './agentReply'
+import { agentReplySchema, answerableNotes } from './agentReply'
+import type {
+  AgentRequest,
+  AnnotationNote,
+  HistoryTurn,
+  ThreadNote
+} from './agentReply'
 import type { PointConfig } from './config'
 import type { ChatBody } from './modelWire'
 import type { HostLink, HostNode, HostSetting } from './pointHost'
@@ -11,6 +16,7 @@ import type { SettingValue } from './targetAddress'
 
 const MAX_WORKFLOW_CHARS = 48_000
 const MAX_HISTORY_CHARS = 12_000
+const MAX_THREAD_CHARS = 8_000
 const MAX_DESCRIPTION_CHARS = 200
 const MAX_TEXT_VALUE_CHARS = 300
 const MAX_OPTIONS = 30
@@ -95,7 +101,7 @@ function annotatedFirst(
   request: AgentRequest
 ): HostNode[] {
   const annotated = new Set<string>(
-    request.annotations.flatMap((note) =>
+    answerableNotes(request).flatMap((note) =>
       note.targets.flatMap((target) =>
         target.kind === 'element' ? [] : [target.nodeId]
       )
@@ -166,27 +172,90 @@ function compactTurn(turn: HistoryTurn, index: number) {
   return {
     turn: index + 1,
     comments: turn.comments.map(compactComment),
-    answer: turn.answer
+    answer: turn.answer,
+    ...(turn.followUps.length > 0 ? { followUps: turn.followUps } : {})
+  }
+}
+
+/** The index of the first item kept when the newest are kept within `budget`; the newest always is. */
+function firstKeptWithin(items: readonly unknown[], budget: number): number {
+  let used = 0
+  let firstKept = items.length
+  while (firstKept > 0) {
+    used += JSON.stringify(items[firstKept - 1]).length
+    if (used > budget && firstKept < items.length) break
+    firstKept -= 1
+  }
+  return firstKept
+}
+
+function withoutOldestFollowUps(
+  turn: HistoryTurn,
+  index: number,
+  budget: number
+): unknown {
+  let kept = turn.followUps
+  while (
+    kept.length > 0 &&
+    JSON.stringify(compactTurn({ ...turn, followUps: kept }, index)).length >
+      budget
+  )
+    kept = kept.slice(1)
+  return {
+    ...compactTurn({ ...turn, followUps: kept }, index),
+    followUpsLeftOut: turn.followUps.length - kept.length
   }
 }
 
 /**
- * The earlier turns for the model, oldest first. When they do not fit
- * `budget` the oldest are left out; the newest turn is always kept.
+ * The earlier turns for the model, oldest first, with their threads. When
+ * they do not fit `budget` the oldest turns are left out whole; the newest
+ * turn is always kept, and loses its oldest follow-ups when it alone is
+ * still too long.
  */
 export function describeHistory(
   history: readonly HistoryTurn[],
   budget = MAX_HISTORY_CHARS
 ): { turns: unknown[]; leftOut: number } {
   const compact = history.map(compactTurn)
-  let used = 0
-  let firstKept = compact.length
-  while (firstKept > 0) {
-    used += JSON.stringify(compact[firstKept - 1]).length
-    if (used > budget && firstKept < compact.length) break
-    firstKept -= 1
+  const firstKept = firstKeptWithin(compact, budget)
+  const newest = history.at(-1)
+  const isNewestAloneTooLong =
+    newest !== undefined &&
+    firstKept === history.length - 1 &&
+    JSON.stringify(compact[firstKept]).length > budget
+  return {
+    turns: isNewestAloneTooLong
+      ? [withoutOldestFollowUps(newest, firstKept, budget)]
+      : compact.slice(firstKept),
+    leftOut: firstKept
   }
-  return { turns: compact.slice(firstKept), leftOut: firstKept }
+}
+
+/**
+ * The earlier messages of a thread for the model, oldest first. When they
+ * do not fit `budget` the oldest are left out; the newest is always kept.
+ */
+export function describeThread(
+  thread: readonly ThreadNote[],
+  budget = MAX_THREAD_CHARS
+): { messages: ThreadNote[]; leftOut: number } {
+  const firstKept = firstKeptWithin(thread, budget)
+  return { messages: thread.slice(firstKept), leftOut: firstKept }
+}
+
+function asked(request: AgentRequest): Record<string, unknown> {
+  if (request.kind === 'batch')
+    return { comments: request.annotations.map(compactComment) }
+  const thread = describeThread(request.thread)
+  return {
+    thread: {
+      comment: compactComment(request.comment),
+      messages: thread.messages,
+      messagesLeftOut: thread.leftOut,
+      followUp: request.followUp
+    }
+  }
 }
 
 /** The reply format as the JSON Schema the provider enforces. */
@@ -203,8 +272,9 @@ function replyFormatInstructions(schema: Record<string, unknown>): string {
 }
 
 /**
- * Everything the model is sent for one batch of comments: the instructions,
- * the comments, the workflow description and the reply format. No screenshot.
+ * Everything the model is sent for one request: the instructions, the
+ * comments of a Send or the thread of a follow-up, the earlier turns, the
+ * workflow description and the reply format. No screenshot.
  */
 export function buildChatBody(
   request: AgentRequest,
@@ -225,7 +295,7 @@ export function buildChatBody(
       {
         role: 'user',
         content: JSON.stringify({
-          comments: request.annotations.map(compactComment),
+          ...asked(request),
           earlierTurns: history.turns,
           earlierTurnsLeftOut: history.leftOut,
           workflow: { nodes: workflow.nodes, leftOut: workflow.cut }

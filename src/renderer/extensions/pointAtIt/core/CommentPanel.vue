@@ -122,6 +122,13 @@
       </span>
       <Button size="sm" @click="emit('retry')">{{ messages.retry }}</Button>
     </div>
+    <p
+      v-if="sendBlock && phase !== 'waiting' && conversation.unsent.length > 0"
+      role="status"
+      class="m-0 text-muted-foreground"
+    >
+      {{ sendBlock }}
+    </p>
     <div
       v-if="confirmsStartOver"
       role="group"
@@ -141,7 +148,7 @@
         v-if="conversation.turns.length > 0"
         size="sm"
         variant="muted-textonly"
-        :disabled="phase === 'waiting'"
+        :disabled="phase === 'waiting' || held"
         @click="confirmsStartOver = true"
       >
         {{ messages.startOver }}
@@ -183,15 +190,27 @@ import type { PinView } from './usePointSession'
 
 const TAIL_CHARS = 160
 
-const { conversation, pins, phase, waitingSince, failure, thinking } =
-  defineProps<{
-    conversation: Conversation
-    pins: PinView[]
-    phase: PointState['phase']
-    waitingSince: number | null
-    failure: RequestFailure | null
-    thinking: ThinkingLog | null
-  }>()
+const {
+  conversation,
+  pins,
+  phase,
+  waitingSince,
+  failure,
+  thinking,
+  sendBlock = '',
+  held = false
+} = defineProps<{
+  conversation: Conversation
+  pins: PinView[]
+  phase: PointState['phase']
+  waitingSince: number | null
+  failure: RequestFailure | null
+  thinking: ThinkingLog | null
+  /** Why Send is unavailable right now; empty when it is available. */
+  sendBlock?: string
+  /** True while a follow-up waits for its reply and holds everything else. */
+  held?: boolean
+}>()
 
 const emit = defineEmits<{
   collapse: []
@@ -212,7 +231,9 @@ const comments = computed(() => numberedComments(conversation))
 const canEdit = computed(
   () => phase === 'idle' || phase === 'annotating' || phase === 'failed'
 )
-const canReplay = computed(() => canEdit.value || phase === 'guiding')
+const canReplay = computed(
+  () => (canEdit.value || phase === 'guiding') && !held
+)
 const elapsedSeconds = computed(() =>
   waitingSince === null
     ? 0

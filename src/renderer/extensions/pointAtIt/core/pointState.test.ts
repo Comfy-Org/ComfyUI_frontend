@@ -4,8 +4,14 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import { settingAddress } from './fakePointHost'
 import { idleState, reducePointState, TAP_MS } from './pointState'
-import type { Chip, Draft, PointEvent, PointState } from './pointState'
-import type { GuidanceStep } from './replyValidation'
+import type {
+  Chip,
+  Draft,
+  GuidingState,
+  PointEvent,
+  PointState
+} from './pointState'
+import type { ShownStep } from './turns'
 
 const latentId = createNodeLocatorId(null, 5)
 const width = settingAddress(latentId, 'width')
@@ -21,29 +27,41 @@ const latentChip: Chip = {
   label: 'Empty Latent Image'
 }
 
-const editStep: GuidanceStep = {
+const editStep: ShownStep = {
   annotationId: 'comment-1',
   text: 'Change width to 1536.',
   target: width,
   waitFor: { for: 'valueChange', of: width, direction: 'increase' },
   offerEdit: { target: width, value: 1536 },
-  problems: []
+  problems: [],
+  ref: { turnId: 'turn-1', followUpId: null, index: 0 }
 }
-const runStep: GuidanceStep = {
+const runStep: ShownStep = {
   annotationId: null,
   text: 'Now run it.',
   target: { kind: 'control', control: 'run' },
   waitFor: { for: 'run' },
   offerEdit: null,
-  problems: []
+  problems: [],
+  ref: { turnId: 'turn-1', followUpId: null, index: 1 }
 }
-const plainStep: GuidanceStep = {
+const plainStep: ShownStep = {
   annotationId: 'comment-1',
   text: 'Look here.',
   target: width,
   waitFor: null,
   offerEdit: null,
-  problems: []
+  problems: [],
+  ref: { turnId: 'turn-1', followUpId: null, index: 0 }
+}
+const followUpStep: ShownStep = {
+  annotationId: 'comment-1',
+  text: 'Then go a little further, to 1664.',
+  target: width,
+  waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+  offerEdit: { target: width, value: 1664 },
+  problems: [],
+  ref: { turnId: 'turn-1', followUpId: 'followUp-1', index: 0 }
 }
 
 const anchor = { x: 100, y: 100, width: 40, height: 30 }
@@ -104,30 +122,67 @@ const failed = {
   asked: waitingForQuestion.asked
 } satisfies PointState
 
-function guiding(steps: GuidanceStep[], index = 0): PointState {
+function followUpSentState() {
+  return {
+    status: 'waiting' as const,
+    requestId: 'request-3',
+    text: 'a bit more than that',
+    startedAt: 7000
+  }
+}
+
+function guiding(steps: ShownStep[], index = 0): GuidingState {
   return {
     phase: 'guiding',
     requestId: 'request-1',
-    turnId: 'turn-1',
     replay: false,
     steps,
     index,
     origin: centre,
-    editFailed: false
+    editFailed: false,
+    followUp: null
+  }
+}
+
+const held: GuidingState = {
+  ...guiding([editStep, runStep]),
+  followUp: followUpSentState()
+}
+const followUpFailed: GuidingState = {
+  ...held,
+  followUp: {
+    status: 'failed',
+    text: 'a bit more than that',
+    failure: { kind: 'timeout', detail: '60' }
   }
 }
 
 const reply = {
   type: 'replyArrived',
   requestId: 'request-1',
-  turnId: 'turn-1',
   steps: [editStep, runStep]
 } satisfies PointEvent
-const replay = {
-  type: 'replayOpened',
+const opened = {
+  type: 'threadOpened',
   commentId: 'comment-1',
-  steps: [plainStep],
+  step: plainStep,
   origin
+} satisfies PointEvent
+const followUpSent = {
+  type: 'followUpSent',
+  requestId: 'request-3',
+  text: ' a bit more than that ',
+  at: 7000
+} satisfies PointEvent
+const followUpAnswered = {
+  type: 'followUpAnswered',
+  requestId: 'request-3',
+  steps: [followUpStep]
+} satisfies PointEvent
+const followUpFailure = {
+  type: 'followUpFailed',
+  requestId: 'request-3',
+  failure: { kind: 'timeout', detail: '60' }
 } satisfies PointEvent
 const failure: PointEvent = {
   type: 'requestFailed',
@@ -154,7 +209,11 @@ const everyEvent: PointEvent[] = [
   { type: 'draftClosed' },
   batchSent,
   reply,
-  replay,
+  opened,
+  followUpSent,
+  followUpAnswered,
+  followUpFailure,
+  { type: 'followUpCancelled' },
   failure,
   { type: 'valueChanged' },
   { type: 'editApplied' },
@@ -287,28 +346,143 @@ describe('reducePointState: annotation mode', () => {
   })
 })
 
-describe('reducePointState: showing an earlier answer again', () => {
+describe('reducePointState: opening a thread', () => {
   it.for([
     { name: 'idle', state: idleState },
     { name: 'a failed request', state: failed },
     { name: 'the mode with no box open', state: picking },
     { name: 'other guidance', state: guiding([editStep, runStep]) }
-  ])('TU-06: opens the earlier answer for reading from $name', ({ state }) => {
-    expect(reducePointState(state, replay)).toEqual({
-      phase: 'guiding',
-      requestId: 'replay:comment-1',
-      turnId: null,
-      replay: true,
-      steps: [plainStep],
-      index: 0,
-      origin,
-      editFailed: false
+  ])(
+    'TH-11: opens the thread at its latest answer, for reading, from $name',
+    ({ state }) => {
+      expect(reducePointState(state, opened)).toEqual({
+        phase: 'guiding',
+        requestId: 'thread:comment-1',
+        replay: true,
+        steps: [plainStep],
+        index: 0,
+        origin,
+        editFailed: false,
+        followUp: null
+      })
+    }
+  )
+})
+
+describe('reducePointState: a follow-up inside an answer', () => {
+  it('TH-03: sending a follow-up keeps the answer where it is and waits, with the text trimmed', () => {
+    expect(
+      reducePointState(guiding([editStep, runStep]), followUpSent)
+    ).toEqual(held)
+  })
+
+  it.for([
+    { name: 'empty text', state: guiding([editStep]), text: '  ' },
+    {
+      name: 'a step that answers no question',
+      state: guiding([editStep, runStep], 1),
+      text: 'why?'
+    }
+  ])('TH-02, TH-03: $name sends nothing', ({ state, text }) => {
+    expect(reducePointState(state, { ...followUpSent, text })).toBe(state)
+  })
+
+  it('TH-06, TH-07: the reply takes the place of the step it followed up on, live, and the rest of the sequence stays', () => {
+    const replied = reducePointState(
+      { ...held, replay: true, editFailed: true },
+      followUpAnswered
+    )
+
+    expect(replied).toEqual(guiding([followUpStep, runStep]))
+    expect(reducePointState(replied, { type: 'valueChanged' })).toEqual(
+      guiding([followUpStep, runStep], 1)
+    )
+  })
+
+  it('TH-06: a reply with several steps is shown one after another before the sequence goes on', () => {
+    const second: ShownStep = {
+      ...plainStep,
+      ref: { turnId: 'turn-1', followUpId: 'followUp-1', index: 1 }
+    }
+
+    expect(
+      reducePointState(held, {
+        ...followUpAnswered,
+        steps: [followUpStep, second]
+      })
+    ).toEqual(guiding([followUpStep, second, runStep]))
+  })
+
+  it.for<{ name: string; event: PointEvent }>([
+    { name: 'Cancel', event: { type: 'followUpCancelled' } },
+    { name: 'Esc', event: { type: 'dismissed' } }
+  ])(
+    'TH-08: $name ends the wait and keeps the answer on screen',
+    ({ event }) => {
+      expect(reducePointState(held, event)).toEqual(
+        guiding([editStep, runStep])
+      )
+    }
+  )
+
+  it('TH-09: a failure keeps the answer and the typed follow-up, and Retry sends it again', () => {
+    const failedFollowUp = reducePointState(held, followUpFailure)
+
+    expect(failedFollowUp).toEqual(followUpFailed)
+    expect(
+      reducePointState(failedFollowUp, {
+        ...followUpSent,
+        requestId: 'request-4'
+      })
+    ).toMatchObject({
+      followUp: {
+        status: 'waiting',
+        requestId: 'request-4',
+        text: 'a bit more than that'
+      }
     })
   })
 
-  it('TU-06: does nothing when there is no step to show', () => {
-    expect(reducePointState(idleState, { ...replay, steps: [] })).toBe(
-      idleState
+  it.for<{ name: string; state: PointState }>([
+    { name: 'a cancelled follow-up', state: guiding([editStep, runStep]) },
+    {
+      name: 'a follow-up replaced by a newer one',
+      state: {
+        ...held,
+        followUp: { ...followUpSentState(), requestId: 'request-9' }
+      }
+    },
+    { name: 'guidance that was closed', state: idleState }
+  ])('TH-10: a reply or a failure for $name is dropped', ({ state }) => {
+    expect(reducePointState(state, followUpAnswered)).toBe(state)
+    expect(reducePointState(state, followUpFailure)).toBe(state)
+  })
+
+  it('TH-04, TH-05: while a follow-up waits the answer is held', () => {
+    const blocked: PointEvent[] = [
+      followUpSent,
+      { type: 'valueChanged' },
+      { type: 'editApplied' },
+      { type: 'nextRequested' },
+      { type: 'runQueued' },
+      { type: 'finished' },
+      { type: 'annotateToggled', selection: null },
+      opened,
+      batchSent
+    ]
+
+    expect(
+      blocked.filter((event) => reducePointState(held, event) !== held)
+    ).toEqual([])
+  })
+
+  it('TH-04: losing the target while a follow-up waits ends the guidance', () => {
+    expect(reducePointState(held, { type: 'targetRemoved' })).toBe(idleState)
+  })
+
+  it('TH-09: moving on from a step with a failed follow-up drops the failure', () => {
+    expect(reducePointState(followUpFailed, { type: 'valueChanged' })).toEqual(
+      guiding([editStep, runStep], 1)
     )
   })
 })
@@ -464,7 +638,7 @@ describe('reducePointState: events that mean nothing', () => {
         'annotateToggled',
         'draftOpened',
         'batchSent',
-        'replayOpened'
+        'threadOpened'
       )
     },
     {
@@ -485,7 +659,7 @@ describe('reducePointState: events that mean nothing', () => {
         'annotateToggled',
         'draftOpened',
         'batchSent',
-        'replayOpened',
+        'threadOpened',
         'dismissed'
       )
     },
@@ -508,7 +682,17 @@ describe('reducePointState: events that mean nothing', () => {
         'annotateToggled',
         'draftOpened',
         'batchSent',
-        'replayOpened',
+        'threadOpened',
+        'dismissed'
+      )
+    },
+    {
+      state: held,
+      ignored: eventsOtherThan(
+        'followUpAnswered',
+        'followUpFailed',
+        'followUpCancelled',
+        'targetRemoved',
         'dismissed'
       )
     },
@@ -516,7 +700,8 @@ describe('reducePointState: events that mean nothing', () => {
       state: guiding([editStep, runStep]),
       ignored: eventsOtherThan(
         'annotateToggled',
-        'replayOpened',
+        'threadOpened',
+        'followUpSent',
         'valueChanged',
         'editApplied',
         'editFailed',
@@ -529,7 +714,8 @@ describe('reducePointState: events that mean nothing', () => {
       state: guiding([plainStep, runStep]),
       ignored: eventsOtherThan(
         'annotateToggled',
-        'replayOpened',
+        'threadOpened',
+        'followUpSent',
         'nextRequested',
         'targetRemoved',
         'dismissed'

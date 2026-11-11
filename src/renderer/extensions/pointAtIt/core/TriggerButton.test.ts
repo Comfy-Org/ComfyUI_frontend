@@ -25,7 +25,7 @@ describe('TriggerButton', () => {
     const user = userEvent.setup()
     const { emitted } = renderTrigger()
 
-    await user.click(screen.getByRole('button', { name: 'Annotate' }))
+    await user.click(screen.getByRole('button', { name: messages.annotate }))
     await user.click(screen.getByRole('button', { name: messages.showPanel }))
 
     expect(emitted('toggle')).toHaveLength(1)
@@ -35,7 +35,7 @@ describe('TriggerButton', () => {
   it('P-01, P-10: names the shortcut and looks pressed while the mode is on', () => {
     renderTrigger({ active: true })
 
-    const main = screen.getByRole('button', { name: 'Annotate' })
+    const main = screen.getByRole('button', { name: messages.annotate })
     expect(main).toHaveAttribute('aria-pressed', 'true')
     expect(main).toHaveAttribute('title', expect.stringContaining('(Q)'))
   })
@@ -43,17 +43,34 @@ describe('TriggerButton', () => {
   it('P-10: shows how many comments of the current turn are unsent, and nothing at zero', async () => {
     const { rerender } = renderTrigger({ unsent: 3 })
 
-    expect(screen.getByLabelText('3 unsent comments')).toHaveTextContent('3')
+    expect(screen.getByLabelText('3 unsent questions')).toHaveTextContent('3')
 
     await rerender({ unsent: 0 })
     expect(screen.queryByLabelText(/unsent/)).not.toBeInTheDocument()
   })
 
-  it('P-10: shows a busy indicator with the elapsed seconds while a Send is waiting', () => {
+  it('P-10, SD-01: shows a loading icon and the elapsed seconds while a request is waiting', () => {
     renderTrigger({ unsent: 2, waitingSince: Date.now() - 12_400 })
 
+    expect(screen.getByTestId('point-at-it-loading')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: messages.annotate })
+    ).toHaveAttribute('aria-busy', 'true')
     expect(screen.getByRole('status')).toHaveTextContent('12 s')
     expect(screen.queryByLabelText(/unsent/)).not.toBeInTheDocument()
+  })
+
+  it('SD-02: shows no loading icon when nothing is waiting', () => {
+    renderTrigger()
+
+    expect(screen.queryByTestId('point-at-it-loading')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('W-01: the trigger is called Ask', () => {
+    renderTrigger()
+
+    expect(screen.getByRole('button', { name: 'Ask' })).toBeVisible()
   })
 
   it('P-15: is marked as the layer’s own, so it can never be picked', () => {
