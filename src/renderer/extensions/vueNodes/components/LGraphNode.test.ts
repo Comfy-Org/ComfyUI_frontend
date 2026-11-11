@@ -441,7 +441,7 @@ describe('LGraphNode', () => {
     expect(vi.mocked(resizeNodeLayout).mock.calls.at(-1)?.[1].height).toBe(238)
   })
 
-  it('hands the resized body height to growable widgets, floored at their declared minimum', () => {
+  it('hands the body height left after fixed rows to growable widgets, floored at their declared minimum', () => {
     const fakeRootGraph: Record<string, unknown> = {
       id: 'graph-test',
       getNodeById: () => mockData.mockLgraphNode,
@@ -468,13 +468,18 @@ describe('LGraphNode', () => {
       nodeData: { ...mockNodeData, graphId: 'graph-test' }
     })
     const element = document.createElement('div')
-    element.innerHTML =
-      '<div data-widget-name="prompt"></div><div data-widget-name="notes"></div>'
+    Object.defineProperty(element, 'offsetHeight', { value: 260 })
+    for (const name of ['prompt', 'notes']) {
+      const row = document.createElement('div')
+      row.dataset.widgetName = name
+      Object.defineProperty(row, 'offsetHeight', { value: 50 })
+      element.append(row)
+    }
 
     mockData.resizeCallback?.({ size: { width: 300, height: 500 } }, element)
 
-    expect(store.getWidgetRenderState(promptId)?.height).toBe(400)
-    expect(store.getWidgetRenderState(notesId)?.height).toBe(100)
+    expect(store.getWidgetRenderState(promptId)?.height).toBe(320)
+    expect(store.getWidgetRenderState(notesId)?.height).toBe(20)
   })
 
   it('should apply selected styling when selected prop is true', async () => {
