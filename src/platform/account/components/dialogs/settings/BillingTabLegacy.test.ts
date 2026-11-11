@@ -34,7 +34,7 @@ import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import BillingTab from '@/platform/billing/legacy160/BillingTabLegacy.vue'
+import BillingTab from '@/platform/account/components/dialogs/settings/BillingTabLegacy.vue'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({

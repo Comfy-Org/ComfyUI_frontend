@@ -63,7 +63,7 @@ vi.mock<unknown>(
   }
 )
 vi.mock<unknown>(
-  import('@/platform/billing/legacy160/BillingTabLegacy.vue'),
+  import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue'),
   async () => {
     const { defineComponent, h } = await import('vue')
     return {

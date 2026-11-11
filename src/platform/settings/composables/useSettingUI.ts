@@ -183,7 +183,8 @@ export function useSettingUI(
   )
   // shortcut: the 1.60 tab, kept whole for the billing_new_ux_enabled rollback; delete with the flag.
   const BillingTabLegacy = defineAsyncComponent(
-    () => import('@/platform/billing/legacy160/BillingTabLegacy.vue')
+    () =>
+      import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue')
   )
 
   const billingPanel: SettingPanelItem = {
