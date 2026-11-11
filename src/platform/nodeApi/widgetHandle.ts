@@ -206,7 +206,11 @@ export interface WidgetHandle extends HandleCommon {
   ): Unsubscribe
 }
 
-/** Where a value is being written, and the chance to change it. */
+/**
+ * Where a value is being written, and the chance to change it.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface WidgetSerializeEvent {
   readonly context: 'workflow' | 'prompt' | 'embedded'
   /** What would be written if no handler intervened. */
