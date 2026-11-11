@@ -14,10 +14,8 @@ import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/t
 import '@/scripts/changeTracker'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import {
-  downloadModel,
-  fetchModelMetadataWithStatus
-} from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 
 import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
@@ -94,6 +92,11 @@ function createTestI18n() {
           error: {
             goto: 'Show errors in graph'
           }
+        },
+        rightSidePanel: {
+          missingModels: {
+            downloadAll: 'Download all'
+          }
         }
       }
     }
@@ -124,9 +127,6 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
 
 describe('ErrorOverlay', () => {
   beforeEach(() => {
-    vi.mocked(fetchModelMetadataWithStatus).mockReturnValue(
-      new Promise(() => {})
-    )
     mockAllErrorGroups.value = []
     mockErrorGroups.missingPackGroups.value = []
     mockErrorGroups.missingModelGroups.value = []
@@ -207,31 +207,24 @@ describe('ErrorOverlay', () => {
     }
   }
 
-  const sizedLookup = {
-    metadata: { fileSize: 1024, gatedRepoUrl: null },
-    resolution: 'resolved'
-  } as const
+  const modelUrl =
+    'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
 
-  function settleMetadataLookups() {
-    return new Promise((resolve) => setTimeout(resolve, 0))
-  }
-
-  function toastDownloadState() {
-    const button = screen.queryByTestId('error-overlay-download-all-models')
-    if (!button) return 'absent'
-    return button.hasAttribute('disabled') ? 'disabled' : 'enabled'
+  function renderMissingModelOnlyOverlay(names: string[] = ['a.safetensors']) {
+    mockAllErrorGroups.value = [missingModelErrorGroup(names.length)]
+    mockErrorGroups.missingModelGroups.value = [
+      downloadableMissingModelGroup(names)
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    return renderOverlay()
   }
 
   it('downloads every missing model from the toast and opens its errors', async () => {
     vi.mocked(downloadModel).mockImplementation(() => {})
-    vi.mocked(fetchModelMetadataWithStatus).mockResolvedValue(sizedLookup)
-    mockAllErrorGroups.value = [missingModelErrorGroup(2)]
-    mockErrorGroups.missingModelGroups.value = [
-      downloadableMissingModelGroup(['a.safetensors', 'b.safetensors'])
-    ]
-    useExecutionErrorStore().showErrorOverlay()
-    const { emitted } = renderOverlay()
-    await settleMetadataLookups()
+    const { emitted } = renderMissingModelOnlyOverlay([
+      'a.safetensors',
+      'b.safetensors'
+    ])
 
     await userEvent.click(
       screen.getByTestId('error-overlay-download-all-models')
@@ -241,8 +234,7 @@ describe('ErrorOverlay', () => {
     expect(emitted('viewErrors')).toEqual([[['missing_model']]])
   })
 
-  it('offers no download from the toast when other issues accompany missing models', async () => {
-    vi.mocked(fetchModelMetadataWithStatus).mockResolvedValue(sizedLookup)
+  it('offers no download from the toast when other issues accompany missing models', () => {
     mockAllErrorGroups.value = [
       missingModelErrorGroup(1),
       {
@@ -260,68 +252,38 @@ describe('ErrorOverlay', () => {
     ]
     useExecutionErrorStore().showErrorOverlay()
     renderOverlay()
-    await settleMetadataLookups()
 
     expect(screen.getByRole('status')).toBeVisible()
-    expect(toastDownloadState()).toBe('absent')
+    expect(
+      screen.queryByTestId('error-overlay-download-all-models')
+    ).not.toBeInTheDocument()
   })
 
-  it.for([
-    {
-      lookup: 'pending',
-      outcome: new Promise<never>(() => {}),
-      state: 'disabled'
-    },
-    {
-      lookup: 'failed',
-      outcome: Promise.resolve({
-        metadata: { fileSize: null, gatedRepoUrl: null },
-        resolution: 'failed'
-      } as const),
-      state: 'disabled'
-    },
-    {
-      lookup: 'sized',
-      outcome: Promise.resolve(sizedLookup),
-      state: 'enabled'
-    },
-    {
-      lookup: 'resolved without a size',
-      outcome: Promise.resolve({
-        metadata: { fileSize: null, gatedRepoUrl: null },
-        resolution: 'resolved'
-      } as const),
-      state: 'enabled'
-    },
-    {
-      lookup: 'gated',
-      outcome: Promise.resolve({
-        metadata: {
-          fileSize: 1024,
-          gatedRepoUrl: 'https://huggingface.co/comfy/test'
-        },
-        resolution: 'resolved'
-      } as const),
-      state: 'absent'
-    }
-  ])(
-    'shows the toast Download all as $state while the metadata lookup is $lookup',
-    async ({ outcome, state }) => {
-      vi.mocked(fetchModelMetadataWithStatus).mockReturnValue(outcome)
-      mockAllErrorGroups.value = [missingModelErrorGroup(1)]
-      mockErrorGroups.missingModelGroups.value = [
-        downloadableMissingModelGroup(['a.safetensors'])
-      ]
-      useExecutionErrorStore().showErrorOverlay()
-      renderOverlay()
-      await settleMetadataLookups()
+  it('withdraws the toast download once a missing model is known to be gated', async () => {
+    renderMissingModelOnlyOverlay()
+    expect(
+      screen.getByTestId('error-overlay-download-all-models')
+    ).toBeVisible()
 
-      expect(fetchModelMetadataWithStatus).toHaveBeenCalledWith(
-        'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
-      )
-      expect(toastDownloadState()).toBe(state)
-    }
-  )
+    useMissingModelStore().gatedRepoUrls[modelUrl] =
+      'https://huggingface.co/comfy/test'
+    await nextTick()
+
+    expect(
+      screen.queryByTestId('error-overlay-download-all-models')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the toast label free of the download size', async () => {
+    renderMissingModelOnlyOverlay()
+
+    useMissingModelStore().fileSizes[modelUrl] = 2 * 1024 * 1024
+    await nextTick()
+
+    expect(
+      screen.getByTestId('error-overlay-download-all-models')
+    ).toHaveTextContent(/^Download all$/)
+  })
 
   it('renders a single overlay message without list markup', async () => {
     mockAllErrorGroups.value = [
