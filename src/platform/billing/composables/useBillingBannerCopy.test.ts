@@ -1,29 +1,49 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
 import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
+import {
+  BillingBanner,
+  planCheckoutBannerView
+} from '@comfyorg/account-ui/billing'
 
-import BillingPlanCheckoutBanner from './BillingPlanCheckoutBanner.vue'
+import enMessages from '@/locales/en/main.json'
+
+import { useBillingBannerCopy } from './useBillingBannerCopy'
 
 function renderBanner(banner: PlanCheckoutBanner) {
-  return render(BillingPlanCheckoutBanner, {
-    props: { banner },
-    global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: enMessages }
-        })
-      ]
+  const onDismiss = vi.fn()
+  render(
+    {
+      setup() {
+        const { copy } = useBillingBannerCopy()
+        return () =>
+          h(BillingBanner, {
+            view: planCheckoutBannerView(banner, copy.value),
+            copy: copy.value,
+            onDismiss
+          })
+      }
+    },
+    {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
     }
-  })
+  )
+  return { onDismiss }
 }
 
-describe('BillingPlanCheckoutBanner', () => {
+describe('useBillingBannerCopy plan checkout banner', () => {
   it('links the bank check from a white Complete verification action with no Dismiss', () => {
     renderBanner({
       kind: 'verifyPayment',
@@ -92,13 +112,13 @@ describe('BillingPlanCheckoutBanner', () => {
   })
 
   it('dismisses from the button', async () => {
-    const { emitted } = renderBanner({
+    const { onDismiss } = renderBanner({
       kind: 'paymentReceived',
       opId: 'op-1'
     })
 
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
-    expect(emitted().dismiss).toHaveLength(1)
+    expect(onDismiss).toHaveBeenCalledOnce()
   })
 })

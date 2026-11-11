@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingBannerInputs } from './useBillingBanner'
-import { deriveBillingBanner } from './useBillingBanner'
+import type { BillingStatusBannerFacts } from './billingStatusBanner'
+import { deriveBillingStatusBanner } from './billingStatusBanner'
 
-const funded: BillingBannerInputs = {
+const funded: BillingStatusBannerFacts = {
   billingControlEnabled: true,
   audience: 'team',
   enterpriseEndingNotice: null,
@@ -26,22 +26,22 @@ const funded: BillingBannerInputs = {
   isActive: true
 }
 
-function derive(overrides: Partial<BillingBannerInputs>) {
-  return deriveBillingBanner({ ...funded, ...overrides })
+function derive(overrides: Partial<BillingStatusBannerFacts>) {
+  return deriveBillingStatusBanner({ ...funded, ...overrides })
 }
 
-describe('deriveBillingBanner', () => {
+describe('deriveBillingStatusBanner', () => {
   it('shows no banner for a healthy funded team', () => {
     expect(derive({})).toBeNull()
   })
 
   describe('paused', () => {
-    const paused: Partial<BillingBannerInputs> = {
+    const paused: Partial<BillingStatusBannerFacts> = {
       billingStatus: 'paused',
       canAccessSubscriptionFeatures: false
     }
 
-    it.for<{ name: string; inputs: Partial<BillingBannerInputs> }>([
+    it.for<{ name: string; inputs: Partial<BillingStatusBannerFacts> }>([
       { name: 'a funded team', inputs: {} },
       { name: 'an exhausted team', inputs: { hasFunds: false } },
       { name: 'an ended plan', inputs: { isPlanEnded: true } },
@@ -68,7 +68,7 @@ describe('deriveBillingBanner', () => {
       expect(derive({ ...paused, ...inputs })).toBe('paused')
     })
 
-    it.for<{ name: string; inputs: Partial<BillingBannerInputs> }>([
+    it.for<{ name: string; inputs: Partial<BillingStatusBannerFacts> }>([
       {
         name: 'payment failed',
         inputs: {
@@ -86,14 +86,14 @@ describe('deriveBillingBanner', () => {
   })
 
   describe('personal plan', () => {
-    const personal: Partial<BillingBannerInputs> = {
+    const personal: Partial<BillingStatusBannerFacts> = {
       audience: 'personal'
     }
-    const endingSoon: Partial<BillingBannerInputs> = {
+    const endingSoon: Partial<BillingStatusBannerFacts> = {
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
-    const terminal: Partial<BillingBannerInputs> = {
+    const terminal: Partial<BillingStatusBannerFacts> = {
       isPlanTerminal: true,
       canAccessSubscriptionFeatures: false
     }
@@ -226,7 +226,7 @@ describe('deriveBillingBanner', () => {
   })
 
   describe('plan ended', () => {
-    const ended: Partial<BillingBannerInputs> = {
+    const ended: Partial<BillingStatusBannerFacts> = {
       isPlanEnded: true,
       canAccessSubscriptionFeatures: false
     }
@@ -360,7 +360,7 @@ describe('deriveBillingBanner', () => {
   })
 
   describe('enterprise ending notice', () => {
-    const enterprise: Partial<BillingBannerInputs> = {
+    const enterprise: Partial<BillingStatusBannerFacts> = {
       audience: null,
       isCancelled: true,
       endDate: '2026-09-13T12:00:00Z'

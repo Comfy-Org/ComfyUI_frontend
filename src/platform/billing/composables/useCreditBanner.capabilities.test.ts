@@ -20,7 +20,7 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
+import { CreditBannerHarness } from '@/platform/billing/__tests__/CreditBannerHarness'
 
 const wire: { body: unknown } = { body: {} }
 
@@ -150,21 +150,7 @@ beforeEach(() => {
   workspace.workspaceType = computed(() => 'team')
 })
 
-function renderBanner() {
-  return render(BillingLocalCreditBanner, {
-    global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: enMessages }
-        })
-      ]
-    }
-  })
-}
-
-describe('BillingLocalCreditBanner from a served capabilities read', () => {
+describe('useCreditBanner from a served capabilities read', () => {
   it('asks a member of a past-due team to have the owner update the payment method', async () => {
     wire.body = capabilitiesBody(
       {
@@ -175,9 +161,19 @@ describe('BillingLocalCreditBanner from a served capabilities read', () => {
     )
     await useBillingCapabilities().refresh()
 
-    renderBanner()
+    render(CreditBannerHarness, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
+    })
 
-    const banner = await screen.findByTestId('billing-local-credit-banner')
+    const banner = await screen.findByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent(
       'Your team has used all its credits. Ask your workspace owner to update the payment method.'
     )
@@ -190,9 +186,19 @@ describe('BillingLocalCreditBanner from a served capabilities read', () => {
     wire.body = capabilitiesBody({ can_top_up: 'topup_purchases_paused' })
     await useBillingCapabilities().refresh()
 
-    renderBanner()
+    render(CreditBannerHarness, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
+    })
 
-    const banner = await screen.findByTestId('billing-local-credit-banner')
+    const banner = await screen.findByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent(
       "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     )

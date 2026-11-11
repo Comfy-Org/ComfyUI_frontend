@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LocalCreditBannerInput } from './deriveLocalCreditBanner'
-import { deriveLocalCreditBanner } from './deriveLocalCreditBanner'
+import type { LocalCreditBannerInput } from './creditBanner'
+import { deriveLocalCreditBanner } from './creditBanner'
 
 const open: LocalCreditBannerInput = {
   unifiedBillingSettingsEnabled: true,

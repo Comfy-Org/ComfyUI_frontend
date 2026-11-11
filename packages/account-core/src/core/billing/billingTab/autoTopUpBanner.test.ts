@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AutoTopUpBannerInput } from './deriveAutoTopUpBanner'
-import { deriveAutoTopUpBanner } from './deriveAutoTopUpBanner'
+import type { AutoTopUpBannerInput } from './autoTopUpBanner'
+import { deriveAutoTopUpBanner } from './autoTopUpBanner'
 
 const failedOwner: AutoTopUpBannerInput = {
   enabled: true,
