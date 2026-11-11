@@ -831,8 +831,12 @@ describe('MissingModelRow', () => {
           isMissing: true
         })
       ])
-      vi.spyOn(missingModelStore, 'refreshMissingModels').mockResolvedValue(
-        undefined
+      vi.spyOn(missingModelStore, 'refreshMissingModels').mockImplementation(
+        async () => {
+          missingModelStore.isRefreshingMissingModels = true
+          await nextTick()
+          missingModelStore.isRefreshingMissingModels = false
+        }
       )
       renderHostRow()
 

@@ -44,6 +44,21 @@ const hostDownloadModel =
     (url: string, filename: string, directory: string) => Promise<boolean>
   >()
 
+function seedMissingModel() {
+  useMissingModelStore().setMissingModels([
+    fromPartial<MissingModelCandidate>({ name: model.name, isMissing: true })
+  ])
+}
+
+function settleRefresh() {
+  const missingModelStore = useMissingModelStore()
+  missingModelStore.isRefreshingMissingModels = true
+  return nextTick().then(() => {
+    missingModelStore.isRefreshingMissingModels = false
+    return nextTick()
+  })
+}
+
 function installDesktopHost() {
   hostDownloadModel.mockReset().mockResolvedValue(true)
   window.__comfyDesktop2 = {
@@ -173,6 +188,7 @@ describe(useMissingModelDownloadStore, () => {
 
   it('keeps a finished download finished when its own events arrive late', () => {
     installDesktopHost()
+    seedMissingModel()
     const store = useMissingModelDownloadStore()
     store.startTracking()
 
@@ -255,5 +271,71 @@ describe(useMissingModelDownloadStore, () => {
       errorType: 'error_starting_model_download',
       tags: { host: 'desktop2' }
     })
+  })
+  it('keeps no finished entry when no missing model is loaded', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('completed')
+
+    expect(store.stateFor(model).status).toBe('idle')
+  })
+
+  it('clears a finished download once any re-check settles', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    vi.spyOn(useMissingModelStore(), 'refreshMissingModels').mockReturnValue(
+      new Promise(() => {})
+    )
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('completed')
+
+    await settleRefresh()
+
+    expect(store.stateFor(model).status).toBe('idle')
+  })
+
+  it('keeps a download that finished during an in-flight re-check until the next one', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const missingModelStore = useMissingModelStore()
+    vi.spyOn(missingModelStore, 'refreshMissingModels').mockReturnValue(
+      new Promise(() => {})
+    )
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    missingModelStore.isRefreshingMissingModels = true
+    await nextTick()
+
+    emitHostProgress('completed')
+    missingModelStore.isRefreshingMissingModels = false
+    await nextTick()
+
+    expect(store.stateFor(model).status).toBe('done')
+  })
+
+  it('drops running downloads when host progress stops being tracked', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    const stopTracking = store.startTracking()
+    emitHostProgress('downloading')
+
+    stopTracking()
+
+    expect(store.stateFor(model).status).toBe('idle')
+  })
+
+  it('shows a destination another source is writing on the model that targets it', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('downloading', {
+      url: 'https://huggingface.co/other/repo/resolve/main/model.safetensors'
+    })
+
+    expect(store.stateFor(model).status).toBe('downloading')
   })
 })

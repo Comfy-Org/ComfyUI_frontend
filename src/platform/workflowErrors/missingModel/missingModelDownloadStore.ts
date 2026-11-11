@@ -114,23 +114,39 @@ export const useMissingModelDownloadStore = defineStore(
     let nextRequest = 0
 
     function stateFor(model: ModelWithUrl): MissingModelDownloadState {
-      const download = downloads.get(getModelFileKey(model))
-      return download?.url === model.url ? download.state : IDLE
+      return downloads.get(getModelFileKey(model))?.state ?? IDLE
     }
 
-    function clearFinished() {
+    function resetWhere(matches: (download: HostDownload) => boolean) {
       for (const [key, download] of downloads) {
-        if (download.state.status === 'done') downloads.delete(key)
+        if (matches(download)) downloads.set(key, { ...download, state: IDLE })
       }
     }
 
     function flushRefresh() {
       if (!refreshPending || missingModelStore.isRefreshingMissingModels) return
       refreshPending = false
-      void missingModelStore.refreshMissingModels().finally(clearFinished)
+      void missingModelStore.refreshMissingModels()
     }
 
-    watch(() => missingModelStore.isRefreshingMissingModels, flushRefresh)
+    let finishedBeforeRefresh = new Set<HostDownload>()
+    watch(
+      () => missingModelStore.isRefreshingMissingModels,
+      (refreshing) => {
+        if (refreshing) {
+          finishedBeforeRefresh = new Set(
+            [...downloads.values()].filter(
+              (download) => download.state.status === 'done'
+            )
+          )
+          return
+        }
+        const finished = finishedBeforeRefresh
+        finishedBeforeRefresh = new Set()
+        resetWhere((download) => finished.has(download))
+        flushRefresh()
+      }
+    )
 
     function keyFor(progress: ComfyDownloadProgress): string | undefined {
       if (progress.directory !== undefined) {
@@ -158,10 +174,12 @@ export const useMissingModelDownloadStore = defineStore(
         isTerminal(state) && jobId !== undefined
           ? new Set([...(current?.endedJobs ?? []), jobId])
           : (current?.endedJobs ?? new Set<string>())
+      const hasMissingModels =
+        !!missingModelStore.missingModelCandidates?.length
       downloads.set(key, {
         name: progress.filename,
         url: progress.url,
-        state,
+        state: state.status === 'done' && !hasMissingModels ? IDLE : state,
         jobId,
         endedJobs
       })
@@ -169,7 +187,7 @@ export const useMissingModelDownloadStore = defineStore(
       if (
         state.status === 'done' &&
         current?.state.status !== 'done' &&
-        !!missingModelStore.missingModelCandidates?.length
+        hasMissingModels
       ) {
         refreshPending = true
         flushRefresh()
@@ -185,6 +203,7 @@ export const useMissingModelDownloadStore = defineStore(
       return () => {
         tracking = false
         stop()
+        resetWhere((download) => isActive(download.state))
       }
     }
 

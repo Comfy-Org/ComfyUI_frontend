@@ -7,7 +7,7 @@ export function formatDownloadedBytes(
 ): string | undefined {
   if (state.status !== 'downloading') return undefined
   const { receivedBytes, totalBytes } = state
-  if (receivedBytes !== null && totalBytes !== null) {
+  if (receivedBytes !== null && totalBytes !== null && totalBytes > 0) {
     return `${formatSize(receivedBytes)} / ${formatSize(totalBytes)}`
   }
   if (receivedBytes !== null) return formatSize(receivedBytes)
