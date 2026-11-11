@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -1937,5 +1938,31 @@ describe('selecting definitions by shape', () => {
     )
 
     expect(seen).toEqual(['VAEDecode'])
+  })
+
+  it('treats a selector that throws as not matching, and applies the rest', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const seen: string[] = []
+    registry.applyTo({ prototype: {} }, { name: 'KnownFirst' })
+    const broken = new Error('broken selector')
+
+    defs.extend(
+      () => {
+        throw broken
+      },
+      (b) => seen.push(`broken ${b.def.type}`)
+    )
+    defs.extend('VAEDecode', (b) => seen.push(b.def.type))
+    registry.applyTo({ prototype: {} }, { name: 'VAEDecode' })
+
+    expect(seen).toEqual(['VAEDecode'])
+    expect(reportError).toHaveBeenCalledWith(
+      broken,
+      expect.objectContaining({
+        errorType: 'node_api_def_selector_failure',
+        tags: { node_type: 'VAEDecode' }
+      })
+    )
   })
 })

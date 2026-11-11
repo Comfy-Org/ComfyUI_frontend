@@ -798,7 +798,18 @@ function assertSelector(selector: DefSelector): void {
 }
 
 function matches(selector: DefSelector, def: NodeDef): boolean {
-  if (typeof selector === 'function') return selector(def)
+  if (typeof selector === 'function') {
+    try {
+      return selector(def)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_api_def_selector_failure',
+        surface: 'graph',
+        tags: { node_type: def.type }
+      })
+      return false
+    }
+  }
   if (typeof selector === 'string') return def.type === selector
   if (selector instanceof RegExp) return matchesPattern(selector, def.type)
   // `Array.isArray` does not narrow a `readonly` array out of a union.
