@@ -105,11 +105,10 @@ describe('resolveSlotRef', () => {
   })
 
   it('prefers id over name when both could match', () => {
-    const first = slot('shared')
-    const second = slot('shared')
-    const id = slotIdOf(second)
-    // Name is ambiguous, but the id is not — so this must not throw.
-    expect(resolveSlotRef([first, second], id)).toBe(1)
+    const target = slot('image')
+    const id = slotIdOf(target)
+    const shadow = slot(id)
+    expect(resolveSlotRef([shadow, target], id)).toBe(1)
   })
 
   it('handles an empty slot list', () => {
