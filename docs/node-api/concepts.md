@@ -36,7 +36,9 @@ Consequences:
 - `isDeleted` is available on every entity handle.
 
 Keep handles when convenient, but check `isDeleted` before writing through a
-long-lived one. Identity reads remain useful after deletion. Other reads return
+long-lived one. A handle belongs to the workflow it came from: after another
+workflow loads, including by switching tabs, it reads as deleted. Undo and redo
+keep it. Identity reads remain useful after deletion. Other reads return
 no value, while a write to a deleted entity throws `ComfyDeletedError` instead
 of being silently discarded.
 
