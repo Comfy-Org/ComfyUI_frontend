@@ -118,9 +118,9 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { electronAPI } from '@/utils/envUtil'
+import { electronAPI, isLocalDesktopHost } from '@/utils/envUtil'
 import { createUuidv4 } from '@/utils/uuid'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
@@ -144,7 +144,7 @@ if (isCloud) {
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
@@ -179,13 +179,29 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
     })
   }
 })
-const stopTemplateInputDownloadTracking =
-  (isDesktop &&
-    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
-      templateInputDownloadStore.updateProgress(progress)
-      templateInputGraphSync.handleProgress(progress)
-    })) ||
-  (() => undefined)
+const stopTemplateInputDownloadTracking = startTemplateInputDownloadTracking()
+
+function startTemplateInputDownloadTracking() {
+  try {
+    return (
+      (isLocalDesktopHost() &&
+        window.__comfyDesktop2?.onTemplateInputDownloadProgress?.(
+          (progress) => {
+            templateInputDownloadStore.updateProgress(progress)
+            templateInputGraphSync.handleProgress(progress)
+          }
+        )) ||
+      (() => undefined)
+    )
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_template_input_tracking_failed',
+      level: 'warning'
+    })
+    return () => undefined
+  }
+}
 
 onBeforeUnmount(() => {
   stopTemplateInputDownloadTracking()
@@ -207,12 +223,12 @@ let hasTrackedLogin = false
 if (isCloud) void useDeploymentPickAtBoot()
 
 watch(
-  () => colorPaletteStore.completedActivePalette,
+  () => themeStore.activeTheme,
   (newTheme) => {
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
-        symbolColor: newTheme.colors.comfy_base['input-text']
+        symbolColor: newTheme.controls.inputTextColor
       })
     }
   },

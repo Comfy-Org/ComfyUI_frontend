@@ -7,7 +7,7 @@ import type {
   NodeBox,
   NodeBoxStyle
 } from '@/renderer/core/canvas/nodeBoxRenderer'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
@@ -26,7 +26,7 @@ const { getBoxes, contentVersion = 0 } = defineProps<{
 }>()
 
 const { camera } = useTransformState()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 
 // Read once per measure rather than per frame: these are static class literals
@@ -71,11 +71,8 @@ useResizeObserver(canvasRef, () => {
   if (canvasRef.value) measureElement(canvasRef.value)
 })
 
-// A palette switch changes the theme tokens the boxes are painted with, and
-// nothing else re-samples them: the camera can sit still across a theme change
-// indefinitely, leaving light boxes on a dark canvas until the next pan.
 watch(
-  () => colorPaletteStore.completedActivePalette,
+  () => themeStore.activeTheme,
   () => {
     if (canvasRef.value) measureElement(canvasRef.value)
   }
