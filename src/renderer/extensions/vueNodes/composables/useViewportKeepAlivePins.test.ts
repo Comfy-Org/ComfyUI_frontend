@@ -97,7 +97,7 @@ describe('useViewportKeepAlivePins', () => {
     const root = document.createElement('div')
     root.innerHTML = `
       <div data-node-id="focused"><input /></div>
-      <div data-node-id="playing"><video /></div>
+      <div data-node-id="playing"><video></video></div>
     `
     document.body.appendChild(root)
 
