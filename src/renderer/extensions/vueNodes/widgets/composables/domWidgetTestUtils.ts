@@ -1,7 +1,6 @@
 import { beforeEach } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 type NodeOverrides = Partial<
@@ -29,32 +28,5 @@ export function useDOMWidgetTestNodes() {
     graph?.add(node)
     nodes.push(node)
     return node
-  }
-}
-
-class SilentValueDOMWidget<
-  T extends HTMLElement,
-  V extends object | string
-> extends DOMWidgetImpl<T, V> {
-  override get value(): V {
-    return super.value
-  }
-
-  override set value(value: V) {
-    this.options.setValue?.(value)
-  }
-}
-
-export function stubWidgetValueCallbacks(node: LGraphNode) {
-  node.addDOMWidget = (name, type, element, options = {}) => {
-    const widget = new SilentValueDOMWidget({
-      node,
-      name,
-      type,
-      element,
-      options
-    })
-    node.addCustomWidget(widget)
-    return widget
   }
 }

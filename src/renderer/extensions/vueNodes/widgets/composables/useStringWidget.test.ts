@@ -8,10 +8,7 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
-import {
-  useDOMWidgetTestNodes,
-  stubWidgetValueCallbacks
-} from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
@@ -178,9 +175,8 @@ describe('useStringWidget (multiline)', () => {
     }).not.toThrow()
   })
 
-  it('fires the input listener callback independently of the value setter', () => {
+  it('notifies once per textarea input, including repeated values', () => {
     const node = createDOMWidgetNode()
-    stubWidgetValueCallbacks(node)
     const widget = createStringWidget(node)
     const inputEl = widget.element
     const callback = vi.fn()
@@ -189,6 +185,9 @@ describe('useStringWidget (multiline)', () => {
     inputEl.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(1)
     expect(callback).toHaveBeenCalledWith('hello')
+    expect(widget.value).toBe('hello')
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(callback).toHaveBeenCalledTimes(2)
   })
 
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {
