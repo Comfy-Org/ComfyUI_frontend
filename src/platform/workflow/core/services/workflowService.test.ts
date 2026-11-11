@@ -815,6 +815,7 @@ describe('useWorkflowService', () => {
       vi.mocked(app.loadGraphData).mockImplementation(
         async (data, _clean, _restore, workflow, options) => {
           if (options?.isCurrent?.() === false) return false
+          useWorkflowService().beforeLoadNewGraph()
           if (workflow === loading) currentRequest = false
           if (options?.isCurrent?.() === false) return false
           assert.exists(data)
