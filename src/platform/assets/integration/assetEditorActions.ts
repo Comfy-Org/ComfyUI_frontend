@@ -1,6 +1,7 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { isGeneratedTempOutput } from '@/platform/assets/adapters/outputAssetMappers'
+import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { getAssetStoredFilename } from '@/platform/assets/utils/assetStoragePolicy'
 import {
@@ -48,7 +49,10 @@ export function useAssetEditorActions() {
       ? 'temp'
       : getAssetType(asset, 'input')
     const annotated = createAnnotatedPath({
-      filename: getAssetStoredFilename(asset),
+      filename: getAssetStoredFilename(
+        asset,
+        asset.hash ?? getStoredOutputIdentity(asset)?.hash
+      ),
       subfolder: getOutputSubfolder(asset) ?? '',
       type: isResultItemType(assetType) ? assetType : undefined
     })
