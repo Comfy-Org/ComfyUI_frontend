@@ -184,7 +184,7 @@ useNumberScrub(scrubElement, {
     return value
   },
   onScrub: (value) => {
-    if (canStep.value) modelValue.value = value
+    modelValue.value = value
   },
   onClick: startTextEdit
 })

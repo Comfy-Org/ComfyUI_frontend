@@ -47,6 +47,11 @@ export function useNumberScrub(
         unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
       }
       dragged = true
+      if (
+        !Number.isFinite(startValue) ||
+        Math.abs(startValue) > Number.MAX_SAFE_INTEGER
+      )
+        return
       const increment = toValue(step)
       const delta = -swipe.distanceX.value * unitsPerPixel
       const offset =

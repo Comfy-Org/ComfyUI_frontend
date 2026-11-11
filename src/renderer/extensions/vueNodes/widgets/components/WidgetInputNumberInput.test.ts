@@ -77,15 +77,45 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it.for([
-    { pointer: 'MouseLeft', pointerName: 'mouse' },
-    { pointer: 'TouchA', pointerName: 'TouchA' }
+    {
+      pointer: 'MouseLeft',
+      pointerName: 'mouse',
+      value: 37,
+      draft: '1000',
+      firstExpected: '1067',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '1000',
+      firstExpected: '1067',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '18446744073709552000',
+      firstExpected: '18446744073709552000',
+      expected: '18446744073709552000'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 18446744073709552000,
+      draft: '1000',
+      firstExpected: '1067',
+      expected: '1133'
+    }
   ])(
-    'starts $pointer label scrubbing from the pending typed value',
-    async ({ pointer, pointerName }) => {
+    'scrubs $pointer from $value after typing $draft',
+    async ({ pointer, pointerName, value, draft, firstExpected, expected }) => {
       const user = userEvent.setup()
       const { rerender } = renderComponent(
-        createNumberInputWidget(37, 'int', { step2: 1 }),
-        37
+        createNumberInputWidget(value, 'int', { step2: 1 }),
+        value
       )
       await rerender({
         'onUpdate:modelValue': (value: number) =>
@@ -99,22 +129,28 @@ describe('WidgetInputNumberInput Value Binding', () => {
       )
 
       await user.clear(input)
-      await user.type(input, '1000')
+      await user.type(input, draft)
       await user.pointer([
         {
           keys: `[${pointer}>]`,
           target: label,
           coords: { clientX: 20, clientY: 10 }
         },
-        { pointerName, target: label, coords: { clientX: 30, clientY: 10 } },
+        { pointerName, target: label, coords: { clientX: 30, clientY: 10 } }
+      ])
+
+      expect(input).toHaveValue(firstExpected)
+
+      await user.pointer([
         { pointerName, target: label, coords: { clientX: 40, clientY: 10 } },
         { keys: `[/${pointer}]`, target: label }
       ])
 
-      expect(input).toHaveValue('1133')
+      expect(input).toHaveValue(expected)
+      expect(input).toHaveAttribute('aria-valuenow', expected)
       expect(input).not.toHaveFocus()
       await user.tab()
-      expect(input).toHaveValue('1133')
+      expect(input).toHaveValue(expected)
     }
   )
 
