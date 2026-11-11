@@ -118,7 +118,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       expected: '1133'
     }
   ])(
-    'blocks $pointer scrubbing while editing $draft from $value after $commitKey until blur',
+    'blocks $pointer scrubbing of "$draft" from $value until blur (key="$commitKey")',
     async ({ pointer, pointerName, value, draft, commitKey, expected }) => {
       const user = userEvent.setup()
       const { rerender } = renderComponent(
