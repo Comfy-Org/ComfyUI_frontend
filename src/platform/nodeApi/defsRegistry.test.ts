@@ -29,7 +29,6 @@ import type { Comfy } from './comfyApi'
 import type {
   DefSelector,
   NodeCreatedEvent,
-  NodeDef,
   NodeDefBuilder,
   UnplacedLinkEvent
 } from './defsRegistry'
@@ -174,7 +173,7 @@ describe('defs.extend', () => {
 
     it('is frozen, so an extension cannot mutate what the next one sees', () => {
       const registry = createDefRegistry()
-      const seen: NodeDef[] = []
+      const seen: NodeDefBuilder['def'][] = []
       registry
         .forMajor(() => comfy.graph.node('1')!)
         .extend('KSampler', ({ def }) => seen.push(def))
