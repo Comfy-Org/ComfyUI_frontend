@@ -57,3 +57,33 @@ export async function waitForGridImagesDecoded(comfyPage: ComfyPage) {
     { timeout: 30_000, polling: 100 }
   )
 }
+
+/** Middle-drags the canvas through a 60-frame sweep around its center. */
+export async function panSweep(comfyPage: ComfyPage) {
+  const { page } = comfyPage
+  const { cx, cy } = await canvasCenter(comfyPage)
+  await page.mouse.move(cx, cy)
+  await page.mouse.down({ button: 'middle' })
+  for (let i = 0; i < 60; i++) {
+    await page.mouse.move(cx + Math.sin(i / 6) * 300, cy + (i % 20) * 8)
+    await comfyPage.nextFrame()
+  }
+  await page.mouse.up({ button: 'middle' })
+}
+
+/** Wheels 15 steps in then 15 steps out at the canvas center. */
+export async function zoomSweep(comfyPage: ComfyPage) {
+  const { page } = comfyPage
+  const { cx, cy } = await canvasCenter(comfyPage)
+  await page.mouse.move(cx, cy)
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.wheel(0, i < 15 ? -120 : 120)
+    await comfyPage.nextFrame()
+  }
+}
+
+async function canvasCenter(comfyPage: ComfyPage) {
+  const box = await comfyPage.canvas.boundingBox()
+  if (!box) throw new Error('Canvas has no bounding box')
+  return { cx: box.x + box.width / 2, cy: box.y + box.height / 2 }
+}
