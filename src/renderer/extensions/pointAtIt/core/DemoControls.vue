@@ -1,7 +1,7 @@
 <template>
   <aside
     data-testid="point-at-it-controls"
-    class="pointer-events-auto absolute bottom-4 left-16 flex w-64 flex-col gap-2 rounded-lg border border-solid border-border bg-background p-3 text-xs shadow-md"
+    class="flex flex-col gap-2 rounded-lg border border-solid border-border bg-background p-3 text-xs shadow-md"
   >
     <div class="flex items-center justify-between gap-2">
       <span class="font-medium">{{ messages.controlsTitle }}</span>
@@ -45,14 +45,6 @@
         <input v-model="wrongTarget" type="checkbox" />
         {{ messages.wrongTarget }}
       </label>
-      <label class="flex items-center gap-2">
-        <input v-model="heldKeyEntry" type="checkbox" />
-        {{ messages.heldKeyEntry }}
-      </label>
-      <label class="flex items-center gap-2">
-        <input v-model="selectionEntry" type="checkbox" />
-        {{ messages.selectionEntry }}
-      </label>
       <p class="m-0 whitespace-pre-line text-muted-foreground">
         {{ messages.scriptedNote }} {{ answers.canAnswer }}
       </p>
@@ -71,10 +63,6 @@ import { REPLY_DELAYS_MS } from './usePointSession'
 
 const replyDelayMs = defineModel<number>('replyDelayMs', { required: true })
 const wrongTarget = defineModel<boolean>('wrongTarget', { required: true })
-const heldKeyEntry = defineModel<boolean>('heldKeyEntry', { required: true })
-const selectionEntry = defineModel<boolean>('selectionEntry', {
-  required: true
-})
 
 const open = ref(true)
 </script>

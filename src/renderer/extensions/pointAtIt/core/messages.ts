@@ -1,4 +1,7 @@
-/** The one key that starts marking; lower case, compared with `event.key`. */
+import type { ReplySettingAddress } from './agentReply'
+import type { SettingValue } from './targetAddress'
+
+/** The one key of the layer; lower case, compared with `event.key`. */
 export const MARK_KEY = 'q'
 
 const keyLabel = MARK_KEY.toUpperCase()
@@ -19,16 +22,47 @@ export const messages = {
   close: 'Close',
   editFailed: 'That setting did not accept the value.',
   stepOf: (index: number, total: number) =>
-    `Step ${index} of ${total} · Esc to stop`,
-  controlsTitle: 'Point at it · POC',
+    `${index} of ${total} · Esc to stop`,
+  answersComment: (number: number, label: string) =>
+    `Answers comment ${number} · ${label}`,
+  trayTitle: 'Point at it · POC',
+  annotate: 'Annotate',
+  annotateKey: keyLabel,
+  annotateHint: 'Click a node or a setting to comment on it. Esc to leave.',
+  annotateIdle: `Press Annotate or ${keyLabel}, then click what you want to comment on.`,
+  commentPlaceholder: 'Your comment',
+  commentLabel: 'Comment',
+  commentHint: 'Enter to save · Shift+Enter for a new line · Esc to close',
+  save: 'Save',
+  remove: 'Delete',
+  pinLabel: (number: number, label: string) => `Comment ${number} on ${label}`,
+  targetMissing: 'target no longer in the workflow',
+  send: (count: number) => `Send ${count}`,
+  clear: 'Clear',
+  cancel: 'Cancel',
+  retry: 'Retry',
+  waiting: (seconds: number) => `Waiting for the agent · ${seconds} s`,
+  controlsTitle: 'Demo controls',
   controlsShow: 'Show demo controls',
   controlsHide: 'Hide demo controls',
   replyDelay: 'Reply delay',
   seconds: (seconds: number) => `${seconds} s`,
   wrongTarget: 'Point at the wrong node',
-  heldKeyEntry: `Hold ${keyLabel} and drag`,
-  selectionEntry: `Select nodes, then tap ${keyLabel}`,
   scriptedNote: 'Scripted answers, no model.'
+}
+
+/** The one sentence shown for a failed request. */
+export const failureText = {
+  malformed: 'The reply was not in the expected format.'
+}
+
+export const problems = {
+  unknownNode: (nodeId: string) =>
+    `The agent named node "${nodeId}", which is not in this workflow.`,
+  unknownSetting: ({ nodeId, setting }: ReplySettingAddress) =>
+    `The agent named setting "${setting}" on node "${nodeId}", which is not in this workflow.`,
+  valueNotAccepted: (label: string, value: SettingValue) =>
+    `The agent offered ${JSON.stringify(value)} for ${label}, which that setting does not accept.`
 }
 
 export const answers = {
@@ -40,15 +74,14 @@ export const answers = {
   noDescription: (label: string) =>
     `The node definition has no description for ${label}.`,
   describe: (label: string, description: string) => `${label}: ${description}`,
-  nothingToDescribe: 'Mark a node or a setting first, then ask what it is.',
   noSizeNode:
     'I could not find a node with width and height settings in this workflow.',
   noStepsNode: 'I could not find a node with a steps setting in this workflow.',
   noScript: 'I have no scripted answer for that.',
   canAnswer: [
-    'This demo can answer:',
+    'The scripted agent can answer:',
     '• make the picture wider, taller, larger or smaller',
     '• more or fewer steps',
-    '• what is this? (mark a node or a setting first)'
+    '• what is this?'
   ].join('\n')
 }

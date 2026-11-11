@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 
+import { resolveSwitch } from './activation'
 import PointLayer from './PointLayer.vue'
 import type { PointHost } from './pointHost'
 
@@ -8,7 +9,14 @@ export function mountPointLayer(host: PointHost): () => void {
   const root = document.createElement('div')
   root.dataset.pointAtItPoc = ''
   document.body.append(root)
-  const overlay = createApp(PointLayer, { host })
+  const overlay = createApp(PointLayer, {
+    host,
+    strokeEntry: resolveSwitch(
+      'stroke',
+      window.location.search,
+      window.localStorage
+    )
+  })
   overlay.mount(root)
   return () => {
     overlay.unmount()

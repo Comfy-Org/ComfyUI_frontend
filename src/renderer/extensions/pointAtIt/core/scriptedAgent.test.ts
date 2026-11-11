@@ -1,40 +1,74 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AgentQuestion, TargetAddress } from './agentReply'
+import type { AgentRequest, AnnotationNote, ReplyAddress } from './agentReply'
 import { hostNode, settingAddress, textToImageNodes } from './fakePointHost'
 import { answers } from './messages'
-import { answerQuestion } from './scriptedAgent'
+import { answerRequest } from './scriptedAgent'
 
 const nodes = textToImageNodes()
 const [sampler, latent, save] = nodes
-const run: TargetAddress = { kind: 'control', control: 'run' }
+const run: ReplyAddress = { kind: 'control', control: 'run' }
+const runStep = {
+  annotationId: null,
+  text: answers.runNext,
+  target: run,
+  waitFor: { for: 'run' },
+  offerEdit: null
+}
 
-function ask(
-  text: string,
-  marked: TargetAddress[] = [],
+function note(
+  id: string,
+  comment: string,
+  targets: AnnotationNote['targets'] = []
+): AnnotationNote {
+  return { id, label: 'label', comment, targets }
+}
+
+function answer(
+  annotations: AnnotationNote[],
   workflow = nodes,
   wrongTarget = false
 ) {
-  const question: AgentQuestion = { questionId: 'question-7', text, marked }
-  return answerQuestion(question, workflow, { wrongTarget })
+  const request: AgentRequest = { requestId: 'request-7', annotations }
+  return answerRequest(request, workflow, { wrongTarget }).steps
 }
 
-describe('answerQuestion', () => {
-  it('answers a wider picture by pointing at the size node, waiting for the change, then at Run', () => {
+describe('answerRequest', () => {
+  it('AN-16: answers every comment of a batch, each step naming its comment, with one Run step at the end', () => {
     const width = settingAddress(latent.id, 'width')
+    const steps = settingAddress(sampler.id, 'steps')
+    const picture = { kind: 'node' as const, nodeId: save.id }
 
-    expect(ask('how do I make this wider?')).toEqual({
-      questionId: 'question-7',
-      steps: [
-        {
-          text: answers.sizeLead('width', 1536, true),
-          target: width,
-          waitFor: { for: 'valueChange', of: width, direction: 'increase' },
-          offerEdit: { target: width, value: 1536 }
-        },
-        { text: answers.runNext, target: run, waitFor: { for: 'run' } }
-      ]
-    })
+    expect(
+      answer([
+        note('comment-1', 'make this wider', [picture]),
+        note('comment-2', 'what is this?', [steps]),
+        note('comment-3', 'more steps', [steps])
+      ])
+    ).toEqual([
+      {
+        annotationId: 'comment-1',
+        text: answers.sizeLead('width', 1536, true),
+        target: width,
+        waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+        offerEdit: { target: width, value: 1536 }
+      },
+      {
+        annotationId: 'comment-2',
+        text: 'KSampler › steps: The number of steps used in the denoising process.',
+        target: steps,
+        waitFor: null,
+        offerEdit: null
+      },
+      {
+        annotationId: 'comment-3',
+        text: answers.stepsLead(30, true),
+        target: steps,
+        waitFor: { for: 'valueChange', of: steps, direction: 'increase' },
+        offerEdit: { target: steps, value: 30 }
+      },
+      runStep
+    ])
   })
 
   it('finds the size node by its settings in a workflow with other ids and types', () => {
@@ -51,78 +85,89 @@ describe('answerQuestion', () => {
       })
     ]
 
-    expect(ask('make it taller', [], workflow).steps[0]).toMatchObject({
+    expect(
+      answer([note('comment-1', 'make it taller')], workflow)[0]
+    ).toMatchObject({
       target: settingAddress(workflow[0].id, 'height'),
       offerEdit: { value: 768 }
     })
   })
 
-  it.for([
-    { question: 'I want more steps', value: 30, direction: 'increase' },
-    { question: 'fewer steps please', value: 10, direction: 'decrease' }
-  ])('answers "$question" on the sampler', ({ question, value, direction }) => {
+  it('answers fewer steps with a lower value and a wait for a decrease', () => {
     const steps = settingAddress(sampler.id, 'steps')
 
-    expect(ask(question).steps).toEqual([
-      {
-        text: answers.stepsLead(value, direction === 'increase'),
-        target: steps,
-        waitFor: { for: 'valueChange', of: steps, direction },
-        offerEdit: { target: steps, value }
-      },
-      { text: answers.runNext, target: run, waitFor: { for: 'run' } }
-    ])
+    expect(answer([note('comment-1', 'fewer steps please')])[0]).toMatchObject({
+      text: answers.stepsLead(10, false),
+      waitFor: { for: 'valueChange', of: steps, direction: 'decrease' },
+      offerEdit: { target: steps, value: 10 }
+    })
   })
 
-  it('answers "what is this?" with the marked setting’s own description', () => {
-    const steps = settingAddress(sampler.id, 'steps')
+  it('answers "what is this?" about a node with the node’s own description, and adds no Run step', () => {
+    const marked = { kind: 'node' as const, nodeId: sampler.id }
 
-    expect(ask('what is this?', [steps]).steps).toEqual([
+    expect(answer([note('comment-1', 'What does this do?', [marked])])).toEqual(
+      [
+        {
+          annotationId: 'comment-1',
+          text: 'KSampler: Denoises a latent using the model and the prompts.',
+          target: marked,
+          waitFor: null,
+          offerEdit: null
+        }
+      ]
+    )
+  })
+
+  it('says so when the commented thing has no description', () => {
+    const marked = { kind: 'node' as const, nodeId: save.id }
+
+    expect(
+      answer([note('comment-1', 'what is this?', [marked])])[0]
+    ).toMatchObject({
+      text: answers.noDescription('Save Image'),
+      target: marked
+    })
+  })
+
+  it('X-02: says it has no script for a comment and lists what it can answer', () => {
+    expect(answer([note('comment-1', 'why is the sky blue?')])).toEqual([
       {
-        text: 'KSampler › steps: The number of steps used in the denoising process.',
-        target: steps
+        annotationId: 'comment-1',
+        text: `${answers.noScript}\n\n${answers.canAnswer}`,
+        target: null,
+        waitFor: null,
+        offerEdit: null
       }
     ])
   })
 
-  it('answers "what is this?" with the marked node’s own description', () => {
-    const marked: TargetAddress = { kind: 'node', nodeId: sampler.id }
-
-    expect(ask('What does this do?', [marked]).steps).toEqual([
-      {
-        text: 'KSampler: Denoises a latent using the model and the prompts.',
-        target: marked
-      }
-    ])
-  })
-
-  it('says so when the marked thing has no description', () => {
-    const marked: TargetAddress = { kind: 'node', nodeId: save.id }
-
-    expect(ask('what is this?', [marked]).steps).toEqual([
-      { text: answers.noDescription('Save Image'), target: marked }
-    ])
-  })
-
-  it('X-02: says it has no script for the question and lists what it can answer', () => {
-    expect(ask('why is the sky blue?').steps).toEqual([
-      { text: `${answers.noScript}\n\n${answers.canAnswer}`, target: null }
-    ])
-  })
-
-  it('X-02: says so when no node in the workflow fits the question', () => {
-    expect(ask('make it wider', [], [save]).steps).toEqual([
-      { text: `${answers.noSizeNode}\n\n${answers.canAnswer}`, target: null }
-    ])
+  it('X-02: says so when no node in the workflow fits the comment', () => {
+    expect(
+      answer([note('comment-1', 'make it wider')], [save])[0]
+    ).toMatchObject({
+      text: `${answers.noSizeNode}\n\n${answers.canAnswer}`,
+      target: null
+    })
   })
 
   it('X-01: with the wrong target on, the same text lands on a different node', () => {
-    const right = ask('how do I make this wider?').steps
-    const wrong = ask('how do I make this wider?', [], nodes, true).steps
+    const right = answer([note('comment-1', 'how do I make this wider?')])
+    const wrong = answer(
+      [note('comment-1', 'how do I make this wider?')],
+      nodes,
+      true
+    )
 
     expect(wrong).toEqual([
-      { text: right[0].text, target: { kind: 'node', nodeId: save.id } },
-      right[1]
+      {
+        annotationId: 'comment-1',
+        text: right[0].text,
+        target: { kind: 'node', nodeId: save.id },
+        waitFor: null,
+        offerEdit: null
+      },
+      runStep
     ])
   })
 })

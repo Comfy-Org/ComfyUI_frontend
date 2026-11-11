@@ -11,17 +11,13 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes, getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-import type {
-  SettingAddress,
-  SettingValue,
-  TargetAddress
-} from './core/agentReply'
 import type { Rect } from './core/geometry'
 import type {
   HostNode,
@@ -29,6 +25,11 @@ import type {
   PointHost,
   TargetReading
 } from './core/pointHost'
+import type {
+  SettingAddress,
+  SettingValue,
+  TargetAddress
+} from './core/targetAddress'
 
 const NODE_ELEMENTS = '[data-testid="transform-pane"] [data-node-id]'
 const RUN_BUTTON = '[data-testid="queue-button"]'
@@ -156,6 +157,7 @@ function visibleWidgets(node: LGraphNode): IBaseWidget[] {
 export function createComfyPointHost(): PointHost {
   const canvasStore = useCanvasStore()
   const { focusNodeInstance } = useFocusNode()
+  const { forwardEventToCanvas } = useCanvasInteractions()
 
   function hostSetting(
     node: LGraphNode,
@@ -262,6 +264,7 @@ export function createComfyPointHost(): PointHost {
     viewport,
     reveal,
     write,
-    onRunQueued
+    onRunQueued,
+    forwardWheel: forwardEventToCanvas
   }
 }

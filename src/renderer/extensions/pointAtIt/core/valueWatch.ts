@@ -1,4 +1,5 @@
-import type { SettingValue, StepWait } from './agentReply'
+import type { StepWait } from './replyValidation'
+import type { SettingValue } from './targetAddress'
 
 /** A changed value counts once it has stayed put this long. */
 export const SETTLE_MS = 600

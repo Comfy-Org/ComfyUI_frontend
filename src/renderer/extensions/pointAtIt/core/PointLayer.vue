@@ -9,7 +9,7 @@
       :class="
         cn(
           'pointer-events-auto absolute inset-0 touch-none',
-          canDraw && 'cursor-crosshair'
+          (canDraw || isPicking) && 'cursor-crosshair'
         )
       "
       @mousedown.prevent
@@ -17,6 +17,9 @@
       @pointermove="onPointerMove"
       @pointerup="session.releasePointer"
       @pointercancel="session.releasePointer"
+      @pointerleave="session.leavePointer"
+      @click="onClick"
+      @wheel="onWheel"
     />
     <svg
       v-if="stroke.length > 0"
@@ -45,13 +48,47 @@
     >
       {{ messages.markingHint }}
     </p>
+    <div
+      v-if="hover"
+      data-testid="point-at-it-hover"
+      class="absolute rounded-md outline-2 outline-offset-2 outline-primary outline-dashed"
+      :style="rectStyle(hover.rect)"
+    />
+    <template v-for="pin in pins" :key="pin.id">
+      <Button
+        v-if="pin.rect"
+        variant="primary"
+        size="unset"
+        class="pointer-events-auto absolute size-6 -translate-1/2 rounded-full text-xs shadow-md"
+        :style="{ left: `${pin.rect.x}px`, top: `${pin.rect.y}px` }"
+        :disabled="!canEditPins"
+        :aria-label="messages.pinLabel(pin.number, labelOf(pin.id))"
+        @click="session.openPin(pin.id)"
+      >
+        {{ pin.number }}
+      </Button>
+    </template>
+    <CommentBox
+      v-if="state.phase === 'annotating' && state.draft"
+      :key="draftKey"
+      :anchor="draftAnchor ?? windowCentre"
+      :draft="state.draft"
+      @save="session.saveDraft"
+      @remove="session.deleteDraft"
+      @close="session.dismiss"
+    />
     <AskBox
-      v-if="state.phase === 'asking' || state.phase === 'thinking'"
+      v-if="state.phase === 'asking'"
       :anchor="state.mark.anchor"
       :chips="state.chips"
-      :sent-question="state.phase === 'thinking' ? state.question : undefined"
       @remove-chip="session.removeChip"
       @ask="session.ask"
+    />
+    <AskBox
+      v-else-if="state.phase === 'waiting' && state.asked"
+      :anchor="state.asked.mark.anchor"
+      :chips="state.asked.chips"
+      :sent-question="state.asked.question"
     />
     <GuidanceOverlay
       v-if="state.phase === 'guiding' && view"
@@ -59,45 +96,81 @@
       :index="state.index"
       :total="state.steps.length"
       :edit-failed="state.editFailed"
+      :answers="answeredComment"
       :view
       @apply-edit="session.applyOfferedEdit"
       @next="session.next"
       @done="session.finish"
       @close="session.dismiss"
     />
-    <DemoControls
-      v-model:reply-delay-ms="settings.replyDelayMs"
-      v-model:wrong-target="settings.wrongTarget"
-      v-model:held-key-entry="settings.heldKeyEntry"
-      v-model:selection-entry="settings.selectionEntry"
-    />
+    <div
+      class="pointer-events-auto absolute bottom-4 left-16 flex w-72 flex-col gap-2"
+    >
+      <AnnotationTray
+        :annotations
+        :pins
+        :phase="state.phase"
+        :waiting-since="state.phase === 'waiting' ? state.startedAt : null"
+        :failure="state.phase === 'failed' ? state.failure.kind : null"
+        @toggle="session.toggleAnnotate"
+        @open="session.openPin"
+        @send="session.sendBatch"
+        @clear="session.clearAnnotations"
+        @cancel="session.dismiss"
+        @retry="session.retry"
+      />
+      <DemoControls
+        v-model:reply-delay-ms="settings.replyDelayMs"
+        v-model:wrong-target="settings.wrongTarget"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core'
 import { computed } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import AnnotationTray from './AnnotationTray.vue'
 import AskBox from './AskBox.vue'
+import CommentBox from './CommentBox.vue'
 import DemoControls from './DemoControls.vue'
+import type { Rect } from './geometry'
 import GuidanceOverlay from './GuidanceOverlay.vue'
 import { messages } from './messages'
 import type { PointHost } from './pointHost'
+import { addressKey } from './targetAddress'
 import { usePointSession } from './usePointSession'
 
-const { host } = defineProps<{ host: PointHost }>()
+const { host, strokeEntry = false } = defineProps<{
+  host: PointHost
+  strokeEntry?: boolean
+}>()
 
-const session = usePointSession(host)
-const { state, view, settings } = session
+const session = usePointSession(host, { strokeEntry })
+const { state, annotations, view, pins, hover, draftAnchor, settings } = session
+const windowSize = useWindowSize()
 
 const canDraw = computed(
-  () =>
-    state.value.phase === 'marking' ||
-    (state.value.phase === 'armed' && state.value.canMark)
+  () => state.value.phase === 'armed' || state.value.phase === 'marking'
+)
+const isPicking = computed(
+  () => state.value.phase === 'annotating' && !state.value.draft
 )
 const blocksCanvas = computed(
-  () => canDraw.value || state.value.phase === 'asking'
+  () =>
+    canDraw.value ||
+    state.value.phase === 'asking' ||
+    state.value.phase === 'annotating'
+)
+const canEditPins = computed(
+  () =>
+    state.value.phase === 'idle' ||
+    state.value.phase === 'failed' ||
+    isPicking.value
 )
 const stroke = computed(() => {
   if (state.value.phase === 'marking') return state.value.stroke
@@ -106,8 +179,46 @@ const stroke = computed(() => {
 const strokePoints = computed(() =>
   stroke.value.map((point) => `${point.x},${point.y}`).join(' ')
 )
+const windowCentre = computed<Rect>(() => ({
+  x: windowSize.width.value / 2,
+  y: windowSize.height.value / 2,
+  width: 0,
+  height: 0
+}))
+const draftKey = computed(() => {
+  if (state.value.phase !== 'annotating' || !state.value.draft) return ''
+  const { annotationId, targets } = state.value.draft
+  return annotationId ?? targets.map(addressKey).join('|')
+})
+const answeredComment = computed(() => {
+  if (state.value.phase !== 'guiding') return null
+  const { annotationId } = state.value.steps[state.value.index]
+  const index = annotations.value.findIndex(
+    (annotation) => annotation.id === annotationId
+  )
+  return index < 0
+    ? null
+    : { number: index + 1, label: annotations.value[index].label }
+})
+
+function labelOf(annotationId: string): string {
+  return (
+    annotations.value.find((annotation) => annotation.id === annotationId)
+      ?.label ?? ''
+  )
+}
+
+function rectStyle(rect: Rect) {
+  return {
+    left: `${rect.x}px`,
+    top: `${rect.y}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`
+  }
+}
 
 function onPointerDown(event: PointerEvent) {
+  if (!canDraw.value) return
   if (event.currentTarget instanceof Element)
     event.currentTarget.setPointerCapture(event.pointerId)
   session.pressPointer({ x: event.clientX, y: event.clientY })
@@ -115,5 +226,13 @@ function onPointerDown(event: PointerEvent) {
 
 function onPointerMove(event: PointerEvent) {
   session.movePointer({ x: event.clientX, y: event.clientY })
+}
+
+function onClick(event: MouseEvent) {
+  session.pickAt({ x: event.clientX, y: event.clientY })
+}
+
+function onWheel(event: WheelEvent) {
+  if (state.value.phase === 'annotating') session.passWheel(event)
 }
 </script>

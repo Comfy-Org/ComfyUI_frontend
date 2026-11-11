@@ -1,9 +1,13 @@
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
-import type { SettingAddress, SettingValue, TargetAddress } from './agentReply'
 import type { Rect } from './geometry'
 import type { HostNode, HostSetting, PointHost } from './pointHost'
+import type {
+  SettingAddress,
+  SettingValue,
+  TargetAddress
+} from './targetAddress'
 
 const ROW_HEIGHT = 18
 const TITLE_HEIGHT = 24
@@ -101,6 +105,7 @@ interface FakePointHost extends PointHost {
   nodes: HostNode[]
   selection: NodeLocatorId[]
   revealed: TargetAddress[]
+  forwardedWheels: WheelEvent[]
   rejectsWrites: boolean
   queueRun(): void
   setValue(target: SettingAddress, value: SettingValue): void
@@ -123,6 +128,7 @@ export function createFakePointHost(
     nodes,
     selection: [],
     revealed: [],
+    forwardedWheels: [],
     rejectsWrites: false,
     readNodes: () => host.nodes,
     readSelection: () => host.selection,
@@ -154,6 +160,9 @@ export function createFakePointHost(
     onRunQueued(listener) {
       runListeners.add(listener)
       return () => runListeners.delete(listener)
+    },
+    forwardWheel(event) {
+      host.forwardedWheels.push(event)
     },
     queueRun() {
       runListeners.forEach((listener) => listener())

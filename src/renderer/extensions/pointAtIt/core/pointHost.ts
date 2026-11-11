@@ -1,7 +1,11 @@
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
-import type { SettingAddress, SettingValue, TargetAddress } from './agentReply'
 import type { Rect } from './geometry'
+import type {
+  SettingAddress,
+  SettingValue,
+  TargetAddress
+} from './targetAddress'
 
 export interface HostSetting {
   name: string
@@ -38,4 +42,6 @@ export interface PointHost {
   /** False when the setting rejected the value. */
   write(target: SettingAddress, value: SettingValue): boolean
   onRunQueued(listener: () => void): () => void
+  /** Lets the canvas pan or zoom from a wheel event the layer caught. */
+  forwardWheel(event: WheelEvent): void
 }

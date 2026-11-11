@@ -14,7 +14,8 @@ let removeLayer: (() => void) | undefined
 export async function plug(
   register: (extension: LayerExtension) => unknown
 ): Promise<void> {
-  if (!resolveSwitch(window.location.search, window.localStorage)) return
+  if (!resolveSwitch('layer', window.location.search, window.localStorage))
+    return
   const [{ createComfyPointHost }, { mountPointLayer }] = await Promise.all([
     import('./comfyPointHost'),
     import('./core/mountPointLayer')

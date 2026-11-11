@@ -1,10 +1,10 @@
 import type {
-  AgentQuestion,
   AgentReply,
-  GuidanceStep,
-  NodeAddress,
-  SettingAddress,
-  TargetAddress
+  AgentRequest,
+  AnnotationNote,
+  ReplyAddress,
+  ReplySettingAddress,
+  ReplyStep
 } from './agentReply'
 import { answers } from './messages'
 import type { HostNode, HostSetting } from './pointHost'
@@ -14,8 +14,7 @@ interface ScriptOptions {
 }
 
 interface NumberSetting {
-  node: HostNode
-  address: SettingAddress
+  address: ReplySettingAddress
   value: number
 }
 
@@ -31,7 +30,7 @@ const SIZE_NODE_TYPE = /Empty.*Latent/i
 const SAMPLER_NODE_TYPE = /KSampler/i
 const SIZE_GRID = 64
 const STEPS_DELTA = 10
-const RUN: TargetAddress = { kind: 'control', control: 'run' }
+const RUN: ReplyAddress = { kind: 'control', control: 'run' }
 
 function numberValue(node: HostNode, name: string): number | undefined {
   const value = node.settings.find((setting) => setting.name === name)?.value
@@ -55,63 +54,77 @@ function findNumberSetting(
   const value = node && numberValue(node, name)
   if (!node || value === undefined) return null
   return {
-    node,
     address: { kind: 'setting', nodeId: node.id, setting: name },
     value
   }
 }
 
-function unanswered(reason: string): GuidanceStep[] {
-  return [{ text: `${reason}\n\n${answers.canAnswer}`, target: null }]
+function say(
+  note: AnnotationNote,
+  text: string,
+  target: ReplyAddress | null
+): ReplyStep {
+  return {
+    annotationId: note.id,
+    text,
+    target,
+    waitFor: null,
+    offerEdit: null
+  }
 }
 
-function editThenRun(
+function unanswered(note: AnnotationNote, reason: string): ReplyStep {
+  return say(note, `${reason}\n\n${answers.canAnswer}`, null)
+}
+
+function edit(
+  note: AnnotationNote,
   found: NumberSetting,
   value: number,
   text: string
-): GuidanceStep[] {
-  return [
-    {
-      text,
-      target: found.address,
-      waitFor: {
-        for: 'valueChange',
-        of: found.address,
-        direction: value > found.value ? 'increase' : 'decrease'
-      },
-      offerEdit: { target: found.address, value }
+): ReplyStep {
+  return {
+    annotationId: note.id,
+    text,
+    target: found.address,
+    waitFor: {
+      for: 'valueChange',
+      of: found.address,
+      direction: value > found.value ? 'increase' : 'decrease'
     },
-    { text: answers.runNext, target: RUN, waitFor: { for: 'run' } }
-  ]
+    offerEdit: { target: found.address, value }
+  }
 }
 
-function resize(text: string, nodes: readonly HostNode[]): GuidanceStep[] {
+function resize(
+  note: AnnotationNote,
+  text: string,
+  nodes: readonly HostNode[]
+): ReplyStep {
   const name = ASKS_HEIGHT.test(text) ? 'height' : 'width'
   const found = findNumberSetting(nodes, name, SIZE_NODE_TYPE, [
     'width',
     'height'
   ])
-  if (!found) return unanswered(answers.noSizeNode)
+  if (!found) return unanswered(note, answers.noSizeNode)
   const grows = !ASKS_SHRINK.test(text)
   const scaled = found.value * (grows ? 1.5 : 0.75)
   const value = Math.max(SIZE_GRID, Math.round(scaled / SIZE_GRID) * SIZE_GRID)
-  return editThenRun(found, value, answers.sizeLead(name, value, grows))
+  return edit(note, found, value, answers.sizeLead(name, value, grows))
 }
 
-function changeSteps(text: string, nodes: readonly HostNode[]): GuidanceStep[] {
+function changeSteps(
+  note: AnnotationNote,
+  text: string,
+  nodes: readonly HostNode[]
+): ReplyStep {
   const found = findNumberSetting(nodes, 'steps', SAMPLER_NODE_TYPE)
-  if (!found) return unanswered(answers.noStepsNode)
+  if (!found) return unanswered(note, answers.noStepsNode)
   const more = !ASKS_FEWER.test(text)
   const value = more
     ? found.value + STEPS_DELTA
     : Math.max(1, found.value - STEPS_DELTA)
-  return editThenRun(found, value, answers.stepsLead(value, more))
-}
-
-function isGraphAddress(
-  address: TargetAddress
-): address is NodeAddress | SettingAddress {
-  return address.kind !== 'control'
+  return edit(note, found, value, answers.stepsLead(value, more))
 }
 
 function describedSetting(
@@ -124,15 +137,11 @@ function describedSetting(
   }
 }
 
-function describe(
-  marked: readonly TargetAddress[],
-  nodes: readonly HostNode[]
-): GuidanceStep[] {
-  const target = marked.find(isGraphAddress)
+function describe(note: AnnotationNote, nodes: readonly HostNode[]): ReplyStep {
+  const target = note.targets.at(0)
   const node =
     target && nodes.find((candidate) => candidate.id === target.nodeId)
-  if (!target || !node)
-    return [{ text: answers.nothingToDescribe, target: null }]
+  if (!target || !node) return unanswered(note, answers.noScript)
   const setting =
     target.kind === 'setting'
       ? node.settings.find((candidate) => candidate.name === target.setting)
@@ -140,31 +149,44 @@ function describe(
   const { label, description } = setting
     ? describedSetting(node, setting)
     : { label: node.title, description: node.description }
+  return say(
+    note,
+    description
+      ? answers.describe(label, description)
+      : answers.noDescription(label),
+    target
+  )
+}
+
+function answerNote(
+  note: AnnotationNote,
+  nodes: readonly HostNode[]
+): ReplyStep {
+  const text = note.comment.toLowerCase()
+  if (ASKS_WHAT.test(text)) return describe(note, nodes)
+  if (ASKS_SIZE.test(text)) return resize(note, text, nodes)
+  if (ASKS_STEPS.test(text)) return changeSteps(note, text, nodes)
+  return unanswered(note, answers.noScript)
+}
+
+function withRunStep(steps: ReplyStep[]): ReplyStep[] {
+  if (!steps.some((step) => step.offerEdit)) return steps
   return [
+    ...steps,
     {
-      text: description
-        ? answers.describe(label, description)
-        : answers.noDescription(label),
-      target
+      annotationId: null,
+      text: answers.runNext,
+      target: RUN,
+      waitFor: { for: 'run' },
+      offerEdit: null
     }
   ]
 }
 
-function scriptedSteps(
-  question: AgentQuestion,
-  nodes: readonly HostNode[]
-): GuidanceStep[] {
-  const text = question.text.toLowerCase()
-  if (ASKS_WHAT.test(text)) return describe(question.marked, nodes)
-  if (ASKS_SIZE.test(text)) return resize(text, nodes)
-  if (ASKS_STEPS.test(text)) return changeSteps(text, nodes)
-  return unanswered(answers.noScript)
-}
-
 function misdirected(
-  steps: GuidanceStep[],
+  steps: ReplyStep[],
   nodes: readonly HostNode[]
-): GuidanceStep[] {
+): ReplyStep[] {
   const first = steps.at(0)
   if (!first?.target || first.target.kind === 'control') return steps
   const rightId = first.target.nodeId
@@ -176,20 +198,25 @@ function misdirected(
   const wrong = others.find((node) => node.rect) ?? others.at(0)
   if (!wrong) return steps
   return [
-    { text: first.text, target: { kind: 'node', nodeId: wrong.id } },
+    {
+      annotationId: first.annotationId,
+      text: first.text,
+      target: { kind: 'node', nodeId: wrong.id },
+      waitFor: null,
+      offerEdit: null
+    },
     ...steps.slice(1)
   ]
 }
 
-/** The stand-in agent: a fixed script keyed on words in the question. */
-export function answerQuestion(
-  question: AgentQuestion,
+/** The stand-in agent: a fixed script keyed on words in each comment. */
+export function answerRequest(
+  request: AgentRequest,
   nodes: readonly HostNode[],
   options: ScriptOptions
 ): AgentReply {
-  const steps = scriptedSteps(question, nodes)
-  return {
-    questionId: question.questionId,
-    steps: options.wrongTarget ? misdirected(steps, nodes) : steps
-  }
+  const steps = withRunStep(
+    request.annotations.map((note) => answerNote(note, nodes))
+  )
+  return { steps: options.wrongTarget ? misdirected(steps, nodes) : steps }
 }
