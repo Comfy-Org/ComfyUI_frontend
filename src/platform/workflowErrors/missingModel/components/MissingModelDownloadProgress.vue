@@ -34,7 +34,7 @@
       />
     </span>
     <span
-      class="w-8 shrink-0 text-center text-2xs/tight text-muted-foreground tabular-nums"
+      class="min-w-8 shrink-0 text-center text-2xs/tight text-muted-foreground tabular-nums"
     >
       {{ progressLabel }}
     </span>
@@ -85,7 +85,10 @@ const progressText = computed(() => {
         )
       : t('rightSidePanel.missingModels.downloadPaused')
   }
-  return bytes ?? `${progressPercent.value ?? 0}%`
+  if (bytes) return bytes
+  return progressPercent.value === undefined
+    ? t('rightSidePanel.missingModels.downloading')
+    : `${progressPercent.value}%`
 })
 
 const progressLabel = computed(() => {

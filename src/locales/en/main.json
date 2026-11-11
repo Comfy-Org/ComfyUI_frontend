@@ -5371,7 +5371,8 @@
       "downloaded": "Downloaded",
       "retryDownload": "Retry",
       "retryDownloadModel": "Retry download for {model}",
-      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again."
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "downloading": "Downloading"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

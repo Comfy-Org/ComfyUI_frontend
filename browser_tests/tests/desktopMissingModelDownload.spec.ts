@@ -77,7 +77,7 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
       ).toBeHidden()
     })
 
-    await test.step('completion marks the model downloaded', async () => {
+    await test.step('completion re-checks and offers the download again while the file is still missing', async () => {
       await modelDownloadHost.emitProgress({
         ...fakeModel,
         status: 'completed',
@@ -85,8 +85,8 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
       })
 
       await expect(
-        group.getByTestId(TestIds.dialogs.missingModelDownloaded)
-      ).toHaveText('Downloaded')
+        group.getByTestId(TestIds.dialogs.missingModelDownload)
+      ).toBeVisible()
       await expect(group.getByRole('progressbar')).toBeHidden()
     })
   })

@@ -809,7 +809,7 @@ describe('MissingModelRow', () => {
       ])
       const refreshMissingModels = vi
         .spyOn(missingModelStore, 'refreshMissingModels')
-        .mockResolvedValue(undefined)
+        .mockReturnValue(new Promise(() => {}))
       renderHostRow()
 
       await userEvent.click(screen.getByTestId('missing-model-download'))
@@ -821,6 +821,27 @@ describe('MissingModelRow', () => {
         'Downloaded'
       )
       expect(refreshMissingModels).toHaveBeenCalledOnce()
+    })
+
+    it('offers Download again when the model is still missing after the re-check', async () => {
+      const missingModelStore = useMissingModelStore()
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          isMissing: true
+        })
+      ])
+      vi.spyOn(missingModelStore, 'refreshMissingModels').mockResolvedValue(
+        undefined
+      )
+      renderHostRow()
+
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ status: 'pending' })
+      emitHostProgress({ status: 'completed', progress: 1 })
+
+      expect(await screen.findByTestId('missing-model-download')).toBeVisible()
+      expect(screen.queryByTestId('missing-model-downloaded')).toBeNull()
     })
 
     it('offers Retry after a failed download and starts it again', async () => {

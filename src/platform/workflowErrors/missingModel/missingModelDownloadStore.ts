@@ -1,4 +1,5 @@
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
 import { shallowReactive, watch } from 'vue'
 
@@ -26,8 +27,12 @@ export type MissingModelDownloadState =
   | { status: 'failed'; reason: 'error' | 'cancelled' }
 
 interface HostDownload {
+  name: string
   url: string
   state: MissingModelDownloadState
+  jobId?: string
+  request?: number
+  endedJobs: ReadonlySet<string>
 }
 
 const IDLE: MissingModelDownloadState = { status: 'idle' }
@@ -53,7 +58,7 @@ function progressFraction(progress: ComfyDownloadProgress): number | null {
 
 function toDownloadState(
   progress: ComfyDownloadProgress
-): MissingModelDownloadState {
+): MissingModelDownloadState | undefined {
   switch (progress.status) {
     case 'pending':
       return { status: 'pending' }
@@ -72,7 +77,7 @@ function toDownloadState(
     case 'cancelled':
       return { status: 'failed', reason: progress.status }
     default:
-      return progress.status satisfies never
+      return undefined
   }
 }
 
@@ -84,6 +89,20 @@ function isActive(state: MissingModelDownloadState): boolean {
   )
 }
 
+function isTerminal(state: MissingModelDownloadState): boolean {
+  return state.status === 'done' || state.status === 'failed'
+}
+
+function acceptsEvent(
+  current: HostDownload | undefined,
+  progress: ComfyDownloadProgress
+): boolean {
+  if (!current) return true
+  if (progress.id !== undefined && current.endedJobs.has(progress.id))
+    return false
+  return !isActive(current.state) || current.url === progress.url
+}
+
 /** Desktop 2 model downloads, mirrored by destination wherever they started. */
 export const useMissingModelDownloadStore = defineStore(
   'missingModelDownload',
@@ -91,32 +110,62 @@ export const useMissingModelDownloadStore = defineStore(
     const missingModelStore = useMissingModelStore()
     const downloads = shallowReactive(new Map<string, HostDownload>())
     let refreshPending = false
+    let tracking = false
+    let nextRequest = 0
 
     function stateFor(model: ModelWithUrl): MissingModelDownloadState {
       const download = downloads.get(getModelFileKey(model))
       return download?.url === model.url ? download.state : IDLE
     }
 
+    function clearFinished() {
+      for (const [key, download] of downloads) {
+        if (download.state.status === 'done') downloads.delete(key)
+      }
+    }
+
     function flushRefresh() {
       if (!refreshPending || missingModelStore.isRefreshingMissingModels) return
       refreshPending = false
-      void missingModelStore.refreshMissingModels()
+      void missingModelStore.refreshMissingModels().finally(clearFinished)
     }
 
     watch(() => missingModelStore.isRefreshingMissingModels, flushRefresh)
 
-    function applyHostProgress(progress: ComfyDownloadProgress) {
-      if (progress.directory === undefined) return
-      const key = getModelFileKey({
-        name: progress.filename,
-        directory: progress.directory
-      })
-      const current = downloads.get(key)
-      if (current && current.url !== progress.url && isActive(current.state))
-        return
+    function keyFor(progress: ComfyDownloadProgress): string | undefined {
+      if (progress.directory !== undefined) {
+        return getModelFileKey({
+          name: progress.filename,
+          directory: progress.directory
+        })
+      }
+      const matches = [...downloads].filter(
+        ([, download]) =>
+          download.url === progress.url && download.name === progress.filename
+      )
+      return matches.length === 1 ? matches[0][0] : undefined
+    }
 
+    function applyHostProgress(progress: ComfyDownloadProgress) {
       const state = toDownloadState(progress)
-      downloads.set(key, { url: progress.url, state })
+      const key = keyFor(progress)
+      if (!state || key === undefined) return
+      const current = downloads.get(key)
+      if (!acceptsEvent(current, progress)) return
+
+      const jobId = progress.id ?? current?.jobId
+      const endedJobs =
+        isTerminal(state) && jobId !== undefined
+          ? new Set([...(current?.endedJobs ?? []), jobId])
+          : (current?.endedJobs ?? new Set<string>())
+      downloads.set(key, {
+        name: progress.filename,
+        url: progress.url,
+        state,
+        jobId,
+        endedJobs
+      })
+
       if (
         state.status === 'done' &&
         current?.state.status !== 'done' &&
@@ -129,41 +178,68 @@ export const useMissingModelDownloadStore = defineStore(
 
     function startTracking(): () => void {
       if (!hostReportsModelDownloadProgress()) return () => undefined
-      return (
-        window.__comfyDesktop2?.onDownloadProgress?.(applyHostProgress) ??
-        (() => undefined)
-      )
+      const stop =
+        window.__comfyDesktop2?.onDownloadProgress?.(applyHostProgress)
+      if (!stop) return () => undefined
+      tracking = true
+      return () => {
+        tracking = false
+        stop()
+      }
     }
 
-    function failRequest(model: ModelWithUrl) {
-      if (stateFor(model).status !== 'requested') return
-      downloads.set(getModelFileKey(model), {
-        url: model.url,
+    function failRequest(model: ModelWithUrl, request: number) {
+      const key = getModelFileKey(model)
+      const current = downloads.get(key)
+      if (current?.request !== request || current.state.status !== 'requested')
+        return
+      downloads.set(key, {
+        ...current,
         state: { status: 'failed', reason: 'error' }
       })
     }
 
+    function reportStartFailure(error: unknown) {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'desktop2' }
+      })
+    }
+
     function download(model: ModelWithUrl): void {
-      if (!hostReportsModelDownloadProgress()) {
+      if (!tracking || !hostReportsModelDownloadProgress()) {
         downloadModel(model, missingModelStore.folderPaths)
         return
       }
-      if (isActive(stateFor(model))) return
+      const key = getModelFileKey(model)
+      const current = downloads.get(key)
+      if (current && isActive(current.state)) return
 
-      downloads.set(getModelFileKey(model), {
+      const request = ++nextRequest
+      downloads.set(key, {
+        name: model.name,
         url: model.url,
-        state: { status: 'requested' }
+        state: { status: 'requested' },
+        request,
+        endedJobs: current?.endedJobs ?? new Set<string>()
       })
       const outcome = dispatchModelDownload(model, {})
+      if (outcome.status === 'dispatch-failed') {
+        reportStartFailure(outcome.error)
+      }
       if (outcome.status !== 'host-requested') {
-        failRequest(model)
+        failRequest(model, request)
         return
       }
       void outcome.hostResult.then(
         (accepted) => {
-          if (!accepted) failRequest(model)
+          if (!accepted) failRequest(model, request)
         },
-        () => failRequest(model)
+        (error: unknown) => {
+          reportStartFailure(error)
+          failRequest(model, request)
+        }
       )
     }
 
