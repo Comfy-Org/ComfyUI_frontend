@@ -525,10 +525,8 @@ const canToggleHostPause = computed(() => {
   return (
     !!target &&
     state.status === 'downloading' &&
-    missingModelDownloadStore.canControl(
-      target,
-      state.paused ? 'resumeDownload' : 'pauseDownload'
-    )
+    missingModelDownloadStore.canControl(target, 'pauseDownload') &&
+    missingModelDownloadStore.canControl(target, 'resumeDownload')
   )
 })
 const canCancel = computed(

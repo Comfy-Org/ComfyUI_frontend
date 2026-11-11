@@ -653,4 +653,32 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(pauseDownload).toHaveBeenCalledWith(model.url)
   })
+  it('stops addressing a job by id once it ends without an id', () => {
+    installDesktopHost()
+    const pauseDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, pauseDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading', { id: 'job-1' })
+    emitHostProgress('error', { id: undefined })
+    emitHostProgress('pending', { id: undefined })
+
+    store.pause(model)
+
+    expect(pauseDownload).toHaveBeenCalledWith(model.url)
+  })
+
+  it('does not control by a source URL that another running destination shares', () => {
+    installDesktopHost()
+    const pauseDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, pauseDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading', { id: undefined })
+    emitHostProgress('downloading', { id: undefined, directory: 'clip' })
+
+    store.pause(model)
+
+    expect(pauseDownload).not.toHaveBeenCalled()
+  })
 })

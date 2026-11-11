@@ -150,7 +150,10 @@ function nextHostDownload(
     name: progress.filename,
     url: progress.url,
     state,
-    jobId: progress.id ?? current?.jobId,
+    jobId:
+      isHostTerminal(progress.status) && progress.id === undefined
+        ? undefined
+        : (progress.id ?? current?.jobId),
     jobEnded: isHostTerminal(progress.status),
     endedJobs: endedJobsAfter(current, progress)
   }
@@ -389,10 +392,15 @@ export const useMissingModelDownloadStore = defineStore(
         download?.state.status !== 'downloading'
       )
         return undefined
-      return download.jobId !== undefined &&
+      if (
+        download.jobId !== undefined &&
         !download.endedJobs.has(download.jobId)
-        ? download.jobId
-        : download.url
+      )
+        return download.jobId
+      const sharingUrl = [...downloads.values()].filter(
+        (other) => other.url === download.url && isActive(other.state)
+      )
+      return sharingUrl.length === 1 ? download.url : undefined
     }
 
     function canControl(model: ModelWithUrl, action: DownloadControl): boolean {

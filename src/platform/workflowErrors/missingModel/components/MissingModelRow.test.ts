@@ -918,5 +918,19 @@ describe('MissingModelRow', () => {
       expect(hostCancelDownload).toHaveBeenCalledWith('job-1')
       expect(await screen.findByTestId('missing-model-download')).toBeVisible()
     })
+
+    it('offers no pause toggle on a host that cannot resume', async () => {
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        resumeDownload: undefined
+      }
+      renderHostRow()
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ receivedBytes: 1, totalBytes: 4 })
+      await nextTick()
+
+      expect(screen.queryByTestId('missing-model-download-pause')).toBeNull()
+      expect(screen.getByTestId('missing-model-download-cancel')).toBeVisible()
+    })
   })
 })
