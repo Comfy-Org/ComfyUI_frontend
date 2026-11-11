@@ -3,8 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createLargePng } from '@e2e/fixtures/utils/largePng'
 
-/** LoadImage node count in the `vueNodes/load-image-grid-4x3` workflow asset. */
-export const GRID_NODE_COUNT = 12
+const GRID_NODE_COUNT = 12
 
 /** Uploads one `size`² PNG per grid node under the names the workflow asset references. */
 export async function uploadGridImages(
