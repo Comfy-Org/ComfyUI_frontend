@@ -124,7 +124,7 @@ describe('EditorToolbar', () => {
         await user.click(screen.getByRole('button', { name: label }))
 
         expect(console.error).toHaveBeenCalledWith(
-          `[TopBarHeader] ${expectedMsg}`,
+          `[EditorToolbar] ${expectedMsg}`,
           expect.any(Error)
         )
       }

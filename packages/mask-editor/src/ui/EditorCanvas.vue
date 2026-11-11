@@ -109,6 +109,7 @@ const panZoom = usePanAndZoom()
 const toolManager = useToolManager(keyboard, panZoom, brushAdjustment)
 
 let resizeObserver: ResizeObserver | null = null
+let disposed = false
 
 const handleDragStart = (event: DragEvent) => {
   if (event.ctrlKey) {
@@ -116,11 +117,47 @@ const handleDragStart = (event: DragEvent) => {
   }
 }
 
-const initUI = async () => {
-  if (!containerRef.value) {
-    console.error(
-      '[MaskEditorContent] Cannot initialize - missing required refs'
+const initUI = async (
+  container: HTMLElement,
+  maskCanvas: HTMLCanvasElement,
+  gpuCanvas: HTMLCanvasElement
+) => {
+  try {
+    await nextTick()
+    if (disposed) return
+
+    const image = await canvasManager.initializeImages(
+      baseImage,
+      maskImage,
+      paintImage
     )
+    if (disposed) return
+
+    await panZoom.initializeCanvasPanZoom(image, container)
+    if (disposed) return
+
+    store.canvasHistory.saveInitialState()
+
+    await toolManager.brushDrawing.initGPUResources()
+    if (disposed) return
+
+    gpuCanvas.width = maskCanvas.width
+    gpuCanvas.height = maskCanvas.height
+
+    toolManager.brushDrawing.initPreviewCanvas(gpuCanvas)
+
+    initialized.value = true
+    emit('ready')
+  } catch (error) {
+    if (!disposed) emit('error', error)
+  }
+}
+
+onMounted(() => {
+  keyboard.addListeners()
+
+  if (!containerRef.value) {
+    console.error('[EditorCanvas] Cannot initialize - missing required refs')
     return
   }
 
@@ -128,10 +165,11 @@ const initUI = async () => {
     !imgCanvasRef.value ||
     !maskCanvasRef.value ||
     !rgbCanvasRef.value ||
+    !gpuCanvasRef.value ||
     !canvasContainerRef.value ||
     !canvasBackgroundRef.value
   ) {
-    console.error('[MaskEditorContent] Cannot initialize - missing canvas refs')
+    console.error('[EditorCanvas] Cannot initialize - missing canvas refs')
     return
   }
 
@@ -141,50 +179,16 @@ const initUI = async () => {
   store.canvasContainer = canvasContainerRef.value
   store.canvasBackground = canvasBackgroundRef.value
 
-  try {
-    await nextTick()
+  resizeObserver = new ResizeObserver(async () => {
+    await panZoom.invalidatePanZoom()
+  })
+  resizeObserver.observe(containerRef.value)
 
-    const image = await canvasManager.initializeImages(
-      baseImage,
-      maskImage,
-      paintImage
-    )
-
-    await panZoom.initializeCanvasPanZoom(image, containerRef.value)
-
-    store.canvasHistory.saveInitialState()
-
-    await toolManager.brushDrawing.initGPUResources()
-    if (gpuCanvasRef.value) {
-      gpuCanvasRef.value.width = maskCanvasRef.value.width
-      gpuCanvasRef.value.height = maskCanvasRef.value.height
-
-      toolManager.brushDrawing.initPreviewCanvas(gpuCanvasRef.value)
-    }
-
-    initialized.value = true
-    emit('ready')
-  } catch (error) {
-    emit('error', error)
-  }
-}
-
-onMounted(() => {
-  keyboard.addListeners()
-
-  if (containerRef.value) {
-    resizeObserver = new ResizeObserver(async () => {
-      if (panZoom) {
-        await panZoom.invalidatePanZoom()
-      }
-    })
-    resizeObserver.observe(containerRef.value)
-  }
-
-  void initUI()
+  void initUI(containerRef.value, maskCanvasRef.value, gpuCanvasRef.value)
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   keyboard?.removeListeners()
 
   if (resizeObserver) {

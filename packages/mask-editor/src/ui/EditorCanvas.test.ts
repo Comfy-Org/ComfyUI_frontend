@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { useKeyboard } from '#/useKeyboard'
 import type { usePanAndZoom } from '#/usePanAndZoom'
@@ -13,7 +14,7 @@ const mockKeyboard = vi.hoisted(() => ({
   removeListeners: vi.fn()
 }))
 const mockPanZoom = vi.hoisted(() => ({
-  initializeCanvasPanZoom: vi.fn(async () => undefined),
+  initializeCanvasPanZoom: vi.fn(async (): Promise<void> => undefined),
   invalidatePanZoom: vi.fn(async () => undefined)
 }))
 const mockBrushDrawing = vi.hoisted(() => ({
@@ -213,14 +214,13 @@ describe('EditorCanvas', () => {
     expect(screen.queryByTestId('tool-panel-stub')).not.toBeInTheDocument()
   })
 
-  it.for(['pan zoom', 'GPU'] as const)(
-    'emits an error without revealing controls when %s initialization fails',
-    async (stage) => {
+  it.for([
+    { stage: 'pan zoom', initialize: mockPanZoom.initializeCanvasPanZoom },
+    { stage: 'GPU', initialize: mockBrushDrawing.initGPUResources }
+  ])(
+    'emits an error without revealing controls when $stage initialization fails',
+    async ({ stage, initialize }) => {
       const error = new Error(`${stage} failed`)
-      const initialize = {
-        'pan zoom': mockPanZoom.initializeCanvasPanZoom,
-        GPU: mockBrushDrawing.initGPUResources
-      }[stage]
       initialize.mockRejectedValueOnce(error)
       const { emitted } = renderCanvas()
 
@@ -249,6 +249,40 @@ describe('EditorCanvas', () => {
       await screen.findByTestId('tool-panel-stub')
     }
   )
+
+  it('leaves the current image unchanged when unmounted before contexts attach', async () => {
+    const store = useMaskEditorStore()
+    const previousImage = new Image(7, 4)
+    store.image = previousImage
+    const { unmount } = renderCanvas()
+
+    unmount()
+    await nextTick()
+
+    expect(store.image).toBe(previousImage)
+  })
+
+  it('does not repopulate history when pan and zoom finishes after unmount', async () => {
+    let finishPanZoom = () => {}
+    mockPanZoom.initializeCanvasPanZoom.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPanZoom = resolve
+      })
+    )
+    const store = useMaskEditorStore()
+    vi.mocked(store.canvasHistory.saveInitialState).mockRestore()
+    vi.mocked(store.canvasHistory.clearStates).mockRestore()
+    const { unmount } = renderCanvas()
+    await waitFor(() =>
+      expect(mockPanZoom.initializeCanvasPanZoom).toHaveBeenCalledTimes(1)
+    )
+
+    unmount()
+    finishPanZoom()
+    await nextTick()
+
+    expect(store.canvasHistory.currentStateIndex).toBe(-1)
+  })
 
   it('releases keyboard, observer, history and engine state on unmount', async () => {
     const store = useMaskEditorStore()

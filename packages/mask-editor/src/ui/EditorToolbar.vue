@@ -179,7 +179,7 @@ const onRotateLeft = async () => {
   try {
     await canvasTransform.rotateCounterclockwise()
   } catch (error) {
-    console.error('[TopBarHeader] Rotate left failed:', error)
+    console.error('[EditorToolbar] Rotate left failed:', error)
   }
 }
 
@@ -187,7 +187,7 @@ const onRotateRight = async () => {
   try {
     await canvasTransform.rotateClockwise()
   } catch (error) {
-    console.error('[TopBarHeader] Rotate right failed:', error)
+    console.error('[EditorToolbar] Rotate right failed:', error)
   }
 }
 
@@ -195,7 +195,7 @@ const onMirrorHorizontal = async () => {
   try {
     await canvasTransform.mirrorHorizontal()
   } catch (error) {
-    console.error('[TopBarHeader] Mirror horizontal failed:', error)
+    console.error('[EditorToolbar] Mirror horizontal failed:', error)
   }
 }
 
@@ -203,7 +203,7 @@ const onMirrorVertical = async () => {
   try {
     await canvasTransform.mirrorVertical()
   } catch (error) {
-    console.error('[TopBarHeader] Mirror vertical failed:', error)
+    console.error('[EditorToolbar] Mirror vertical failed:', error)
   }
 }
 

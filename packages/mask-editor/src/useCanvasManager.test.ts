@@ -128,14 +128,20 @@ describe('useCanvasManager', () => {
       }
     )
 
-    it.for(['imgCanvas', 'imgCtx'] as const)(
-      'rejects initialization without %s',
+    it.for(['imgCanvas', 'imgCtx', 'rgbCtx'] as const)(
+      'leaves the image unchanged when initialization lacks %s',
       async (field) => {
+        const previousImage = new Image(7, 4)
+        mockStore.image = previousImage
         mockStore[field] = null
 
         await expect(
-          useCanvasManager().initializeImages(new Image(), new Image())
+          useCanvasManager().initializeImages(new Image(3, 2), new Image(3, 2))
         ).rejects.toThrow('Canvas elements or contexts not available')
+
+        expect(mockStore.image).toBe(previousImage)
+        expect(mockStore.maskCanvas?.width).toBe(0)
+        expect(mockStore.maskCanvas?.height).toBe(0)
       }
     )
   })

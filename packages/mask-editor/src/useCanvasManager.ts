@@ -119,9 +119,16 @@ export function useCanvasManager() {
     maskImage: HTMLImageElement,
     paintImage: HTMLImageElement | null = null
   ): Promise<HTMLImageElement> => {
-    const { imgCanvas, maskCanvas, rgbCanvas, imgCtx, maskCtx } = store
+    const { imgCanvas, maskCanvas, rgbCanvas, imgCtx, maskCtx, rgbCtx } = store
 
-    if (!imgCanvas || !maskCanvas || !rgbCanvas || !imgCtx || !maskCtx) {
+    if (
+      !imgCanvas ||
+      !maskCanvas ||
+      !rgbCanvas ||
+      !imgCtx ||
+      !maskCtx ||
+      !rgbCtx
+    ) {
       throw new Error('Canvas elements or contexts not available')
     }
 
