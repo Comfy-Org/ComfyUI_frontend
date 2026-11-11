@@ -1329,7 +1329,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
         packTypeColors.set(type, color)
         applyPackTypeColors()
+        let registered = true
         return () => {
+          if (!registered) return
+          registered = false
           packTypeColors.delete(type)
           delete LGraphCanvas.link_type_colors[type]
         }
@@ -1468,6 +1471,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           return undefined
         }
       }
+
+      const invokeAttached = <T>(
+        hook: string,
+        node: LGraphNode,
+        callback: () => T
+      ): T | undefined => (node.graph ? invoke(hook, callback) : undefined)
 
       const invokeAsync = async <T>(
         hook: string,
@@ -1646,15 +1655,16 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installLifecycleHooks = () => {
         if (created.length || widgets.length || hidden.length) {
           install('onAdded', (node) => {
-            const id = String(node.id)
-            for (const { def: widget, handleFor, isActive } of widgets) {
+            for (const { def: widget, handleForNode, isActive } of widgets) {
               if (isActive()) {
-                invoke('addWidget', () => handleFor(id).widgets.add(widget))
+                invokeAttached('addWidget', node, () =>
+                  handleForNode(node).widgets.add(widget)
+                )
               }
             }
-            for (const { name, handleFor, isActive } of hidden) {
+            for (const { name, handleForNode, isActive } of hidden) {
               if (!isActive()) continue
-              const widget = handleFor(id).widgets.get(name)
+              const widget = handleForNode(node).widgets.get(name)
               if (widget) invoke('hideWidget', () => widget.setHidden(true))
             }
             const loading = isLoadingGraph()
@@ -1662,9 +1672,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               restored: loading || restoredNodes.has(node),
               loading
             })
-            for (const { run, handleFor, isActive } of created) {
+            for (const { run, handleForNode, isActive } of created) {
               if (isActive())
-                invoke('onCreated', () => run(handleFor(id), event))
+                invokeAttached('onCreated', node, () =>
+                  run(handleForNode(node), event)
+                )
             }
           })
         }
@@ -1672,10 +1684,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         if (executed.length) {
           install('onExecuted', (node, message) => {
             const result = toExecutionResult(message)
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of executed) {
+            for (const { run, handleForNode, isActive } of executed) {
               if (isActive()) {
-                invoke('onExecuted', () => run(handleFor(id), result))
+                invokeAttached('onExecuted', node, () =>
+                  run(handleForNode(node), result)
+                )
               }
             }
           })
@@ -1685,10 +1698,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           install('onConfigure', (node, serialised) => {
             const data = (extensionValue(serialised) ??
               {}) as unknown as Record<string, unknown>
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of configured) {
+            for (const { run, handleForNode, isActive } of configured) {
               if (isActive()) {
-                invoke('onConfigured', () => run(handleFor(id), data))
+                invokeAttached('onConfigured', node, () =>
+                  run(handleForNode(node), data)
+                )
               }
             }
           })
@@ -1714,10 +1728,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 replacement = previous
               }
             })
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of propertyChanges) {
+            for (const { run, handleForNode, isActive } of propertyChanges) {
               if (isActive()) {
-                invoke('onPropertyChanged', () => run(handleFor(id), event))
+                invokeAttached('onPropertyChanged', node, () =>
+                  run(handleForNode(node), event)
+                )
               }
             }
             return replacement
@@ -1772,21 +1787,23 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installVisualLifecycleHooks = () => {
         if (resized.length) {
           install('onResize', (node, [width, height]) => {
-            const id = String(node.id)
             const size: Size = Object.freeze({ width, height })
-            for (const { run, handleFor, isActive } of resized) {
+            for (const { run, handleForNode, isActive } of resized) {
               if (isActive())
-                invoke('onResized', () => run(handleFor(id), size))
+                invokeAttached('onResized', node, () =>
+                  run(handleForNode(node), size)
+                )
             }
           })
         }
 
         if (hovered.length) {
           const dispatchHover = (node: LGraphNode, hovering: boolean) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of hovered) {
+            for (const { run, handleForNode, isActive } of hovered) {
               if (isActive()) {
-                invoke('onHover', () => run(handleFor(id), hovering))
+                invokeAttached('onHover', node, () =>
+                  run(handleForNode(node), hovering)
+                )
               }
             }
           }
@@ -1796,9 +1813,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
         if (doubleClicked.length) {
           install('onDblClick', (node) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of doubleClicked) {
-              if (isActive()) invoke('onDoubleClick', () => run(handleFor(id)))
+            for (const { run, handleForNode, isActive } of doubleClicked) {
+              if (isActive())
+                invokeAttached('onDoubleClick', node, () =>
+                  run(handleForNode(node))
+                )
             }
           })
         }
@@ -1807,27 +1826,33 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installInteractionHooks = () => {
         if (dragOver.length) {
           const previous = nodeType.prototype.onDragOver
-          nodeType.prototype.onDragOver = function (event: DragEvent) {
+          nodeType.prototype.onDragOver = function (
+            this: LGraphNode,
+            event: DragEvent
+          ) {
             if (previous?.call(this, event) === true) return true
-            const id = String(this.id)
             return dragOver.some(
-              ({ run, handleFor, isActive }) =>
+              ({ run, handleForNode, isActive }) =>
                 isActive() &&
-                invoke('onDragOver', () => run(handleFor(id), event)) === true
+                invokeAttached('onDragOver', this, () =>
+                  run(handleForNode(this), event)
+                ) === true
             )
           }
         }
 
         if (dropped.length) {
           const previous = nodeType.prototype.onDragDrop
-          nodeType.prototype.onDragDrop = async function (event: DragEvent) {
+          nodeType.prototype.onDragDrop = async function (
+            this: LGraphNode,
+            event: DragEvent
+          ) {
             if ((await previous?.call(this, event)) === true) return true
-            const id = String(this.id)
-            for (const { run, handleFor, isActive } of dropped) {
+            for (const { run, handleForNode, isActive } of dropped) {
               if (
                 isActive() &&
                 (await invokeAsync('onDrop', () =>
-                  run(handleFor(id), event)
+                  run(handleForNode(this), event)
                 )) === true
               ) {
                 return true
@@ -1857,11 +1882,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 peerNodeId: peer ? String(peer.id) : undefined,
                 peerIndex: peer?.slot
               })
-              const id = String(node.id)
-              for (const { run, handleFor, isActive } of connections) {
+              for (const { run, handleForNode, isActive } of connections) {
                 if (isActive()) {
-                  invoke('onConnectionsChanged', () =>
-                    run(handleFor(id), event)
+                  invokeAttached('onConnectionsChanged', node, () =>
+                    run(handleForNode(node), event)
                   )
                 }
               }
@@ -1874,10 +1898,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           ;(nodeType.prototype as Record<string, unknown>).onSerialize =
             function (this: LGraphNode, o: Record<string, unknown>) {
               ;(previous as ((o: unknown) => void) | undefined)?.call(this, o)
-              const id = String(this.id)
-              for (const { run, handleFor, isActive } of serialized) {
+              for (const { run, handleForNode, isActive } of serialized) {
                 if (!isActive()) continue
-                const extra = invoke('onSerialize', () => run(handleFor(id)))
+                const extra = invokeAttached('onSerialize', this, () =>
+                  run(handleForNode(this))
+                )
                 if (!extra) continue
                 for (const [key, value] of Object.entries(extra)) {
                   // Core fields stay ours. A pack rewriting `type` or
@@ -1900,12 +1925,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             node: LGraphNode,
             event: BeforeConnectEvent
           ): boolean => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of beforeConnect) {
+            for (const { run, handleForNode, isActive } of beforeConnect) {
               if (
                 isActive() &&
-                invoke('onBeforeConnect', () => run(handleFor(id), event)) ===
-                  false
+                invokeAttached('onBeforeConnect', node, () =>
+                  run(handleForNode(node), event)
+                ) === false
               ) {
                 return false
               }

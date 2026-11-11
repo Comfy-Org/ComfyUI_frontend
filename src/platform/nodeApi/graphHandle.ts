@@ -365,6 +365,35 @@ function reportDroppedReplacementLinks(
   )
 }
 
+const isAsyncFunction = (callback: unknown): boolean =>
+  Object.prototype.toString.call(callback) === '[object AsyncFunction]'
+
+type OwnedNodeHandles = ReturnType<typeof createNodeHandles>
+
+function createOwnedNodeHandles(
+  getOwner: () => LGraph | undefined,
+  namespace: string,
+  getResolvers: () => ReadonlyMap<string, Resolver>
+): OwnedNodeHandles {
+  const nodeById = (nodeId: string) =>
+    getOwner()?.getNodeById(toNodeId(nodeId)) ?? undefined
+  const widgetHandles = createWidgetHandles(getOwner, namespace)
+  const inputsFor = weakCache<SlotCollection<InputSlotHandle>>((nodeId) =>
+    createInputCollection(getOwner, () => nodeById(nodeId), getResolvers)
+  )
+  const outputsFor = weakCache<SlotCollection<OutputSlotHandle>>((nodeId) =>
+    createOutputCollection(getOwner, () => nodeById(nodeId))
+  )
+  const widgetsFor = weakCache<WidgetCollection>((nodeId) =>
+    createWidgetCollection(() => nodeById(nodeId), widgetHandles, nodeId)
+  )
+  return createNodeHandles(
+    getOwner,
+    { inputs: inputsFor, outputs: outputsFor, widgets: widgetsFor },
+    namespace
+  )
+}
+
 export function createGraphApi(
   getGraph: () => LGraph | null | undefined,
   /** API major, so handle caches never mix shapes across majors. */
@@ -379,6 +408,9 @@ export function createGraphApi(
   // surface is a frozen literal and `const { replace } = comfy.graph` is
   // ordinary use, which would otherwise throw.
   const runAsBatch: GraphHandle['batch'] = (mutations) => {
+    if (isAsyncFunction(mutations)) {
+      throw new ComfyApiError('graph.batch() requires a synchronous callback.')
+    }
     const graph = getGraph()
     const run = () => {
       graph?.beforeChange()
@@ -399,26 +431,30 @@ export function createGraphApi(
     return result
   }
 
-  const widgetHandles = createWidgetHandles(getGraph, namespace)
-
-  const inputsFor = weakCache<SlotCollection<InputSlotHandle>>((nodeId) =>
-    createInputCollection(getGraph, () => nodeById(nodeId), getResolvers)
+  const detachedHandles = createOwnedNodeHandles(
+    () => undefined,
+    namespace,
+    getResolvers
   )
-  const outputsFor = weakCache<SlotCollection<OutputSlotHandle>>((nodeId) =>
-    createOutputCollection(getGraph, () => nodeById(nodeId))
-  )
-  const widgetsFor = weakCache<WidgetCollection>((nodeId) =>
-    createWidgetCollection(() => nodeById(nodeId), widgetHandles, nodeId)
-  )
-
-  const nodeHandles = createNodeHandles(
-    getGraph,
-    { inputs: inputsFor, outputs: outputsFor, widgets: widgetsFor },
-    namespace
-  )
+  const ownedHandles = new WeakMap<LGraph, OwnedNodeHandles>()
+  const nodeHandles = (): OwnedNodeHandles => {
+    const graph = getGraph()
+    if (!graph) return detachedHandles
+    let owned = ownedHandles.get(graph)
+    if (!owned) {
+      const owner = new WeakRef(graph)
+      owned = createOwnedNodeHandles(
+        () => owner.deref(),
+        namespace,
+        getResolvers
+      )
+      ownedHandles.set(graph, owned)
+    }
+    return owned
+  }
 
   const handleFor = (nodeId: string) =>
-    nodeHandles.handleFor(nodeId) as NodeHandle
+    nodeHandles().handleFor(nodeId) as NodeHandle
 
   const groupHandle = createGroupHandles(handleFor)
   const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
@@ -438,7 +474,7 @@ export function createGraphApi(
       return getGraph()?.id ?? ''
     },
 
-    node: (id) => nodeHandles.liveHandleFor(id) as NodeHandle | undefined,
+    node: (id) => nodeHandles().liveHandleFor(id) as NodeHandle | undefined,
 
     nodes: () =>
       Object.freeze(
