@@ -12,7 +12,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-import { ComfyApiError } from './errors'
+import { ComfyApiError, ComfyDeletedError } from './errors'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
 import type { Supplier } from './resolution'
@@ -730,6 +730,69 @@ describe('groups', () => {
 
     handle.setTitle('New')
     expect(group.title).toBe('New')
+  })
+
+  it('keeps a kept group through undo and retires it once deleted', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphGroup('Sampling'))
+    const [kept] = createGraphApi(() => graph).groups()
+
+    graph.configure(graph.serialize())
+    kept.setTitle('Renamed')
+
+    expect(kept.isDeleted).toBe(false)
+    expect(graph.groups[0].title).toBe('Renamed')
+
+    graph.remove(graph.groups[0])
+
+    expect(kept.isDeleted).toBe(true)
+    expect(kept.getTitle()).toBe('')
+    expect(() => kept.setTitle('Gone')).toThrow(ComfyDeletedError)
+  })
+
+  it("lists a kept group's nodes from the group's own graph", () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const member = new LGraphNode('member', 'TestNode')
+    const sameId = new LGraphNode('same id elsewhere', 'TestNode')
+    first.add(member)
+    second.add(sameId)
+    member.pos = [60, 60]
+    member.size = [80, 40]
+    const group = new LGraphGroup('Sampling')
+    first.add(group)
+    group._bounding.set([20, 20, 400, 300])
+    member.updateArea()
+    let active = first
+    const api = createGraphApi(() => active)
+    const [kept] = api.groups()
+
+    active = second
+
+    expect(sameId.id).toBe(member.id)
+    expect(kept.nodes().map((node) => node.getTitle())).toEqual(['member'])
+  })
+
+  it('centers on a kept group only while its graph is on screen', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const group = new LGraphGroup('Sampling')
+    first.add(group)
+    group._bounding.set([1000, 1000, 200, 100])
+    const [kept] = createGraphApi(() => first).groups()
+    const elsewhere = testCanvas(second)
+    LGraphCanvas.active_canvas = elsewhere
+
+    kept.centerOn()
+
+    expect([...elsewhere.ds.offset]).toEqual([0, 0])
+
+    const onScreen = testCanvas(first)
+    LGraphCanvas.active_canvas = onScreen
+
+    kept.centerOn()
+
+    expect([...onScreen.ds.offset]).toEqual([-700, -750])
   })
 })
 

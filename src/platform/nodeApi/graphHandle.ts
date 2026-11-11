@@ -33,6 +33,7 @@ import type {
   SlotCollection
 } from './slotHandle'
 import { currentDocumentGeneration } from './appReady'
+import { followGraph } from './graphOwner'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
 
@@ -371,17 +372,6 @@ const isAsyncFunction = (callback: unknown): boolean =>
 
 type OwnedNodeHandles = ReturnType<typeof createNodeHandles>
 
-function ownerOf(graph: LGraph): () => LGraph | undefined {
-  const generation = currentDocumentGeneration()
-  const root = new WeakRef(graph.rootGraph)
-  const { id } = graph
-  return () => {
-    if (currentDocumentGeneration() !== generation) return undefined
-    const live = root.deref()
-    return live?.id === id ? live : live?.subgraphs.get(id)
-  }
-}
-
 function createOwnedNodeHandles(
   getOwner: () => LGraph | undefined,
   namespace: string,
@@ -456,20 +446,26 @@ export function createGraphApi(
       readonly handles: OwnedNodeHandles
     }
   >()
-  const nodeHandles = (): OwnedNodeHandles => {
-    const graph = getGraph()
-    if (!graph) return detachedHandles
+  const handlesIn = (graph: LGraph): OwnedNodeHandles => {
     const generation = currentDocumentGeneration()
     let owned = ownedHandles.get(graph)
     if (owned?.generation !== generation || owned.graphId !== graph.id) {
       owned = {
         generation,
         graphId: graph.id,
-        handles: createOwnedNodeHandles(ownerOf(graph), namespace, getResolvers)
+        handles: createOwnedNodeHandles(
+          followGraph(graph),
+          namespace,
+          getResolvers
+        )
       }
       ownedHandles.set(graph, owned)
     }
     return owned.handles
+  }
+  const nodeHandles = (): OwnedNodeHandles => {
+    const graph = getGraph()
+    return graph ? handlesIn(graph) : detachedHandles
   }
 
   const handleFor = (nodeId: string) =>
@@ -482,7 +478,11 @@ export function createGraphApi(
       : undefined
   }
 
-  const groupHandle = createGroupHandles(handleFor)
+  const groupHandle = createGroupHandles((node) =>
+    node.graph
+      ? (handlesIn(node.graph).handleFor(String(node.id)) as NodeHandle)
+      : undefined
+  )
   const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
 
   const requireGraph = (action: string): LGraph => {
@@ -727,7 +727,7 @@ function createGraphScopeHandles(
     if (existing?.generation === generation) return existing.handle
 
     const { id } = graph
-    const owner = ownerOf(graph)
+    const owner = followGraph(graph)
     const scoped = createGraphApi(
       owner,
       `graph:${id}`,

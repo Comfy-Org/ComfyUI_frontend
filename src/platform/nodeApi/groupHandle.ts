@@ -11,12 +11,16 @@
  * dragged out of a group leaves it, with nothing recorded anywhere.
  */
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
+import type { HandleCommon } from './closedProxy'
+import { ComfyDeletedError } from './errors'
+import { followGraph } from './graphOwner'
 import type { Bounds, NodeHandle } from './nodeHandle'
 
-export interface GroupHandle {
+export interface GroupHandle extends HandleCommon {
   readonly id: string
   getTitle(): string
   setTitle(title: string): void
@@ -37,43 +41,54 @@ export interface GroupHandle {
 }
 
 export function createGroupHandles(
-  handleFor: (nodeId: string) => NodeHandle | undefined
+  handleForNode: (node: LGraphNode) => NodeHandle | undefined
 ) {
   const cache = new WeakMap<LGraphGroup, GroupHandle>()
   return function groupHandle(group: LGraphGroup): GroupHandle {
     const cached = cache.get(group)
     if (cached) return cached
-    const contained = () => {
-      // The group's own recompute, so membership matches what the renderer
-      // draws rather than a rectangle test that drifts from it.
-      group.recomputeInsideNodes()
-      return group._nodes
+    const id = String(group.id)
+    const owner = group.graph ? followGraph(group.graph) : () => undefined
+    const live = () =>
+      owner()?._groups.find((candidate) => candidate.id === group.id)
+    const writable = (property: string) => {
+      const found = live()
+      if (!found) throw new ComfyDeletedError('group', id, property)
+      return found
     }
 
-    const handle = Object.freeze({
-      id: String(group.id),
-      getTitle: () => group.title,
+    const handle: GroupHandle = Object.freeze({
+      id,
+      get isDeleted() {
+        return !live()
+      },
+      getTitle: () => live()?.title ?? '',
       setTitle: (title: string) => {
-        group.title = title
+        writable('title').title = title
       },
-      getColor: () => group.color,
+      getColor: () => live()?.color,
       setColor: (color: string) => {
-        group.color = color
+        writable('color').color = color
       },
-      nodes: () =>
-        Object.freeze(
-          contained()
-            .map((node) => handleFor(String(node.id)))
+      nodes: () => {
+        const found = live()
+        if (!found) return Object.freeze([])
+        found.recomputeInsideNodes()
+        return Object.freeze(
+          found._nodes
+            .map((node) => handleForNode(node))
             .filter((node): node is NodeHandle => !!node)
-        ),
+        )
+      },
       getBounds: () => {
-        const [x, y, width, height] = group._bounding
+        const [x, y, width, height] = live()?._bounding ?? [0, 0, 0, 0]
         return Object.freeze({ x, y, width, height })
       },
       centerOn: () => {
         const canvas = extensionValue(LGraphCanvas.active_canvas)
-        if (!canvas) return
-        const [x, y, width, height] = group._bounding
+        const found = live()
+        if (!canvas || !found || canvas.graph !== found.graph) return
+        const [x, y, width, height] = found._bounding
         const { scale } = canvas.ds
         const dpi = window.devicePixelRatio || 1
         canvas.ds.offset[0] =
