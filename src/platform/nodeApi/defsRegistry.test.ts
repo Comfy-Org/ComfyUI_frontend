@@ -29,10 +29,12 @@ import type { Comfy } from './comfyApi'
 import type {
   DefSelector,
   NodeCreatedEvent,
+  NodeDef,
   NodeDefBuilder,
   UnplacedLinkEvent
 } from './defsRegistry'
 import type { NodeHandle } from './nodeHandle'
+import type { SuppliedEdge } from './resolution'
 
 const RAW_DEF = {
   name: 'KSampler',
@@ -172,15 +174,18 @@ describe('defs.extend', () => {
 
     it('is frozen, so an extension cannot mutate what the next one sees', () => {
       const registry = createDefRegistry()
+      const seen: NodeDef[] = []
       registry
         .forMajor(() => comfy.graph.node('1')!)
-        .extend('KSampler', ({ def }) => {
-          expect(() => {
-            // @ts-expect-error -- the point of the test
-            def.title = 'hijacked'
-          }).toThrow()
-        })
+        .extend('KSampler', ({ def }) => seen.push(def))
       registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+
+      expect(seen).toHaveLength(1)
+      expect(() => {
+        // @ts-expect-error -- the point of the test
+        seen[0].title = 'hijacked'
+      }).toThrow(TypeError)
+      expect(seen[0].title).toBe(RAW_DEF.display_name)
     })
   })
 
@@ -1034,17 +1039,24 @@ describe('setSupply', () => {
 
   it('composes suppliers registered by different extensions', async () => {
     const registry = createDefRegistry()
-    const first = vi.fn(() => [])
-    const second = vi.fn(() => [])
+    const fromFirst: SuppliedEdge = {
+      to: { nodeId: '2', input: 0 },
+      from: { output: 0 }
+    }
+    const fromSecond: SuppliedEdge = {
+      to: { nodeId: '3', input: 1 },
+      from: { literal: 7 }
+    }
     const api = registry.forMajor((id) => comfy.graph.node(id)!)
-    api.extend('KSampler', (b) => b.setSupply(first))
-    api.extend('KSampler', (b) => b.setSupply(second))
+    api.extend('KSampler', (b) => b.setSupply(() => [fromFirst]))
+    api.extend('KSampler', (b) => b.setSupply(() => [fromSecond]))
     registry.applyTo(nodeClass('KSampler'), RAW_DEF)
 
-    await frontendSupplierMap().get('KSampler')!(undefined as never)
+    const edges = await frontendSupplierMap().get('KSampler')!(
+      undefined as never
+    )
 
-    expect(first).toHaveBeenCalledOnce()
-    expect(second).toHaveBeenCalledOnce()
+    expect(edges).toEqual([fromFirst, fromSecond])
   })
 
   it('clears a supplier when the definition is reapplied', () => {
