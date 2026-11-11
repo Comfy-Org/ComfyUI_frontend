@@ -508,14 +508,18 @@ export function createBillingApi({
         handleAxiosError(err, 'listTopupCheckouts')
       }
     },
-    async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    async getTopupCheckout(
+      sessionId: string,
+      signal?: AbortSignal
+    ): Promise<HostedTopupCheckout> {
       const auth = await requestAuth()
+      signal?.throwIfAborted()
       try {
         const response = await client.get<HostedTopupCheckout>(
           resolveUrl(
             `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
           ),
-          { ...auth, timeout: 10_000 }
+          { ...auth, timeout: 10_000, signal }
         )
         return response.data
       } catch (err) {

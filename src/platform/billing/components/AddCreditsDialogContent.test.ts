@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -22,14 +22,20 @@ import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
+import type { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+
 import AddCreditsDialogContent from './AddCreditsDialogContent.vue'
+
+type BalanceIncreased = Parameters<
+  typeof watchForTopupBalanceUpdate
+>[0]['onBalanceIncreased']
 
 const RETURN_URL = 'https://billing.comfy.org/return/topup'
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_1'
 
 const hoisted = vi.hoisted(() => ({
   createHostedCheckout: vi.fn(),
-  balanceIncreased: undefined as (() => Promise<unknown>) | undefined
+  balanceIncreased: undefined as BalanceIncreased
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -39,22 +45,27 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string) => `https://platform.test${path}`
+  platformLink: (path) => `https://platform.test${path}`
 }))
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/billing/composables/useTopupOperation'),
   async () => {
     const { computed } = await import('vue')
     return {
       useTopupOperation: () => ({
-        topupOperation: computed(() => null),
+        billingClient: 'sdk',
+        isAddingCredits: computed(() => false),
+        topupOperation: computed(() => undefined),
+        topup: vi.fn(),
         createHostedCheckout: hoisted.createHostedCheckout,
+        dismissOperation: vi.fn(),
+        adoptPendingOperation: vi.fn(),
         quoteTopup: async () => 10_550
       })
     }
   }
 )
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/billing/composables/useProcessingTopupPayment'),
   async () => {
     const { computed } = await import('vue')
@@ -63,7 +74,7 @@ vi.mock<unknown>(
     }
   }
 )
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/billing/composables/useAutoTopUpSetupOffer'),
   () => ({
     useAutoTopUpSetupOffer: () => ({
@@ -73,39 +84,31 @@ vi.mock<unknown>(
     })
   })
 )
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/billing/composables/useTopUpPlanCreditCopy'),
   async () => {
     const { computed } = await import('vue')
     return { useAddCreditsPlanLine: () => computed(() => undefined) }
   }
 )
-vi.mock<unknown>(
-  import('@/platform/billing/composables/usePendingTopup'),
-  () => ({
-    usePendingTopup: () => ({
-      startPendingTopup: vi.fn(),
-      clearPendingTopup: vi.fn()
-    })
+vi.mock(import('@/platform/billing/composables/usePendingTopup'), () => ({
+  usePendingTopup: () => ({
+    startPendingTopup: vi.fn(),
+    consumeCompletedTopup: vi.fn(),
+    pendingTopupNeedsRefresh: vi.fn(),
+    clearPendingTopup: vi.fn()
   })
-)
-vi.mock<unknown>(
-  import('@/platform/billing/composables/topupBalanceRefresh'),
-  () => ({
-    watchForTopupBalanceUpdate: ({
-      onBalanceIncreased
-    }: {
-      onBalanceIncreased: () => Promise<unknown>
-    }) => {
-      hoisted.balanceIncreased = onBalanceIncreased
-      return () => {}
-    }
-  })
-)
-vi.mock<unknown>(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
+}))
+vi.mock(import('@/platform/billing/composables/topupBalanceRefresh'), () => ({
+  watchForTopupBalanceUpdate: ({ onBalanceIncreased }) => {
+    hoisted.balanceIncreased = onBalanceIncreased
+    return () => {}
+  }
+}))
+vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
   topupCheckoutReturnUrl: () => RETURN_URL
 }))
-vi.mock<unknown>(import('@/platform/billing/billingTab'), () => ({
+vi.mock(import('@/platform/billing/billingTab'), () => ({
   reserveBillingTab: () => ({ navigate: vi.fn(), close: vi.fn() })
 }))
 
@@ -142,10 +145,10 @@ function renderDialog({ atCheckout }: { atCheckout: boolean }) {
     value: []
   })
   mockBillingContext()
-  render(AddCreditsDialogContent, {
+  const { unmount } = render(AddCreditsDialogContent, {
     global: { plugins: [i18n] }
   })
-  return userEvent.setup()
+  return { user: userEvent.setup(), unmount }
 }
 
 const checkbox = () =>
@@ -153,16 +156,16 @@ const checkbox = () =>
 const continueButton = () => screen.getByRole('button', { name: 'Continue' })
 
 async function payWithAutoTopUp(served: Partial<HostedTopupCheckout>) {
-  const user = renderDialog({ atCheckout: true })
+  const rendered = renderDialog({ atCheckout: true })
   vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
     servedCheckout(served)
   )
-  await user.click(
+  await rendered.user.click(
     await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
   )
-  await user.click(continueButton())
+  await rendered.user.click(continueButton())
   await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
-  await hoisted.balanceIncreased!()
+  return rendered
 }
 
 describe('AddCreditsDialogContent auto top-up with the purchase', () => {
@@ -173,11 +176,10 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
       url: CHECKOUT_URL,
       sessionId: 'cs_1'
     })
-    vi.spyOn(billingApi, 'getTopupCheckout')
   })
 
   it('offers no checkbox and sends no settings with billing_auto_top_up_at_checkout_enabled off', async () => {
-    const user = renderDialog({ atCheckout: false })
+    const { user } = renderDialog({ atCheckout: false })
     expect(checkbox()).toBeNull()
 
     await user.click(continueButton())
@@ -203,6 +205,7 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
         monthly_budget_is_default: true
       }
     })
+    await hoisted.balanceIncreased!()
 
     expect(hoisted.createHostedCheckout).toHaveBeenCalledWith(
       5000,
@@ -214,27 +217,41 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
         monthly_budget_cents: null
       }
     )
-    expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_1')
+    expect(billingApi.getTopupCheckout).toHaveBeenCalledWith(
+      'cs_1',
+      expect.any(AbortSignal)
+    )
     expect(
       await screen.findByTestId('add-credits-auto-top-up-on')
     ).toBeVisible()
   })
 
-  it.for([
-    { name: 'failed', served: { auto_top_up_activation: 'failed' } },
-    {
-      name: 'not_attempted',
-      served: { auto_top_up_activation: 'not_attempted' }
-    }
-  ] as const)(
-    'says auto top-up did not turn on when the checkout read reports $name',
-    async ({ served }) => {
-      await payWithAutoTopUp(served)
+  it('shows the served activation failure', async () => {
+    await payWithAutoTopUp({ auto_top_up_activation: 'failed' })
+    await hoisted.balanceIncreased!()
 
-      expect(
-        await screen.findByTestId('add-credits-auto-top-up-failed')
-      ).toBeVisible()
-      expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
-    }
-  )
+    expect(
+      await screen.findByTestId('add-credits-auto-top-up-failed')
+    ).toBeVisible()
+    expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
+  })
+
+  it('stops reading a pending activation once the dialog unmounts', async () => {
+    const { unmount } = await payWithAutoTopUp({
+      auto_top_up_activation: 'pending'
+    })
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const landing = hoisted.balanceIncreased!()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+
+    unmount()
+    await vi.runAllTimersAsync()
+    await landing
+
+    expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+  })
 })

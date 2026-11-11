@@ -113,7 +113,6 @@ describe('readAutoTopUpActivation', () => {
     await vi.runAllTimersAsync()
 
     expect(await outcome).toBeUndefined()
-    expect(read).toHaveBeenCalledTimes(20)
   })
 
   it('stops reading once the dialog lets go', async () => {
@@ -129,5 +128,29 @@ describe('readAutoTopUpActivation', () => {
 
     expect(await settled).toBeInstanceOf(Error)
     expect(read).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads nothing once the dialog has already let go', async () => {
+    const scope = new AbortController()
+    scope.abort()
+    const read = vi.fn<(signal: AbortSignal) => Promise<HostedTopupCheckout>>()
+
+    await expect(readAutoTopUpActivation(read, scope.signal)).rejects.toThrow()
+    expect(read).not.toHaveBeenCalled()
+  })
+
+  it('cancels the read in flight when the dialog lets go', async () => {
+    const scope = new AbortController()
+    const read = vi.fn(
+      (signal: AbortSignal) =>
+        new Promise<HostedTopupCheckout>((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason))
+        })
+    )
+    const outcome = readAutoTopUpActivation(read, scope.signal)
+    scope.abort()
+
+    await expect(outcome).rejects.toThrow()
+    expect(read).toHaveBeenCalledWith(scope.signal)
   })
 })

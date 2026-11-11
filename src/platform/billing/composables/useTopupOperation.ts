@@ -66,17 +66,20 @@ export function useTopupOperation() {
     signal?: AbortSignal,
     autoTopUp?: TopupAutoTopUpSettings
   ): Promise<HostedCheckoutSession> {
-    const mint = () =>
-      mintHostedCheckout(amountCents, returnUrl, signal, autoTopUp)
     for (const retryDelayMs of CHECKOUT_RETRY_DELAYS_MS) {
       try {
-        return await mint()
+        return await mintHostedCheckout(
+          amountCents,
+          returnUrl,
+          signal,
+          autoTopUp
+        )
       } catch (error) {
         if (!isRetryableCheckoutRefusal(error)) throw error
         await delay(retryDelayMs, { signal })
       }
     }
-    return mint()
+    return mintHostedCheckout(amountCents, returnUrl, signal, autoTopUp)
   }
 
   async function mintHostedCheckout(

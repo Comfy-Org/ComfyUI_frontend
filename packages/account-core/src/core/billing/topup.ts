@@ -462,9 +462,6 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     )
     if (response.status === 'error') return response
 
-    // The generated contract only requires a URL; the page a host will open
-    // on the customer's behalf has to be https as well, like every
-    // continuation the lifecycle hands out.
     const { data, httpStatus } = response.value
     const url = validateActionUrl(data.checkout_url)
     if (url === undefined) {

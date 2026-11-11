@@ -159,7 +159,7 @@ const ports: AddCreditsPorts = {
         const sessionId = activationSessionId
         if (sessionId === undefined) return landed()
         const activation = await readAutoTopUpActivation(
-          () => billingApi.getTopupCheckout(sessionId),
+          (signal) => billingApi.getTopupCheckout(sessionId, signal),
           scope.signal
         ).catch(() => null)
         if (activation !== null) landed(activation)
