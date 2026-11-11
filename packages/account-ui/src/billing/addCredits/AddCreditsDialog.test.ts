@@ -186,8 +186,8 @@ describe('AddCreditsDialog amount step', () => {
   it.for([
     { input: '3', error: 'Minimum is $5.' },
     {
-      input: '10001',
-      error: 'The largest top-up is $10,000. Add more with another top-up.'
+      input: '2501',
+      error: 'The largest top-up is $2,500. Add more with another top-up.'
     },
     { input: '12.50', error: 'Whole dollars only.' }
   ])(

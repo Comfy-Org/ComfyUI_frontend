@@ -1,3 +1,4 @@
+import { zCreateTopupCheckoutRequest } from '@comfyorg/ingest-types/zod'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -9,6 +10,17 @@ import {
 const BOUNDS = ADD_CREDITS_FALLBACK_BOUNDS
 
 describe('checkAddCreditsAmount', () => {
+  it('accepts no fallback amount the hosted checkout request refuses', () => {
+    for (const amount_cents of [BOUNDS.minCents, BOUNDS.maxCents]) {
+      expect(
+        zCreateTopupCheckoutRequest.safeParse({
+          amount_cents,
+          return_url: 'https://cloud.comfy.org/billing/return'
+        })
+      ).toMatchObject({ success: true })
+    }
+  })
+
   it.for([
     { input: '', expected: { status: 'empty' } },
     { input: '   ', expected: { status: 'empty' } },
@@ -16,10 +28,10 @@ describe('checkAddCreditsAmount', () => {
     { input: '12.', expected: { status: 'valid', cents: 1200 } },
     { input: '12.00', expected: { status: 'valid', cents: 1200 } },
     { input: '5', expected: { status: 'valid', cents: 500 } },
-    { input: '10000', expected: { status: 'valid', cents: 1_000_000 } },
+    { input: '2500', expected: { status: 'valid', cents: 250_000 } },
     { input: '3', expected: { status: 'invalid', error: 'below_min' } },
     { input: '0.5', expected: { status: 'invalid', error: 'below_min' } },
-    { input: '10001', expected: { status: 'invalid', error: 'above_max' } },
+    { input: '2501', expected: { status: 'invalid', error: 'above_max' } },
     { input: '12.34', expected: { status: 'invalid', error: 'whole_dollars' } },
     { input: '12.5', expected: { status: 'invalid', error: 'whole_dollars' } },
     { input: 'abc', expected: { status: 'invalid', error: 'whole_dollars' } },
