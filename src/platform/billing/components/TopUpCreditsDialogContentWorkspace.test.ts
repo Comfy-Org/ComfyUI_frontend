@@ -51,7 +51,7 @@ import {
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -76,7 +76,11 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'),
+  () =>
+    import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
+)
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -756,6 +760,93 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByText(/This top-up covers that first/)
     ).not.toBeInTheDocument()
+  })
+
+  const SERVED_MINIMUM: Partial<BalanceInfo> = {
+    minTopupCents: 2_500,
+    minTopupCredits: 5_275
+  }
+  const SERVED_MAXIMUM: Partial<BalanceInfo> = {
+    maxTopupCents: 5_000,
+    maxTopupCredits: 10_550
+  }
+
+  it.for<{
+    name: string
+    balance: Partial<BalanceInfo>
+    preset: string
+    message: RegExp
+  }>([
+    {
+      name: 'below the served minimum',
+      balance: SERVED_MINIMUM,
+      preset: '$10',
+      message: /5,275 credits minimum/
+    },
+    {
+      name: 'above the served maximum',
+      balance: SERVED_MAXIMUM,
+      preset: '$100',
+      message: /10,550 credits maximum/
+    }
+  ])(
+    'blocks an amount $name and names the bound',
+    async ({ balance, preset, message }) => {
+      renderWithBalance(balance)
+
+      await userEvent.click(screen.getByRole('button', { name: preset }))
+
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
+      expect(screen.getByText(message)).toBeVisible()
+    }
+  )
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; preset: string }>([
+    { name: 'at the served minimum', balance: SERVED_MINIMUM, preset: '$25' },
+    { name: 'above $5 when no minimum is served', balance: {}, preset: '$10' },
+    {
+      name: 'above $5 when the minimum has no served credits',
+      balance: { minTopupCents: 2_500 },
+      preset: '$10'
+    },
+    { name: 'at the served maximum', balance: SERVED_MAXIMUM, preset: '$50' },
+    {
+      name: 'under $10,000 when no maximum is served',
+      balance: {},
+      preset: '$100'
+    },
+    {
+      name: 'under $10,000 when the maximum has no served credits',
+      balance: { maxTopupCents: 5_000 },
+      preset: '$100'
+    }
+  ])('allows an amount $name', async ({ balance, preset }) => {
+    renderWithBalance(balance)
+
+    await userEvent.click(screen.getByRole('button', { name: preset }))
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    expect(screen.queryByText(/credits minimum/)).not.toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; cap: string }>([
+    {
+      name: 'the served maximum credits',
+      balance: SERVED_MAXIMUM,
+      cap: '10550'
+    },
+    {
+      name: '$10,000 in credits when no maximum is served',
+      balance: {},
+      cap: '2110000'
+    }
+  ])('caps the credits input at $name', ({ balance, cap }) => {
+    renderWithBalance(balance)
+
+    expect(screen.getByRole('spinbutton', { name: 'Credits' })).toHaveAttribute(
+      'aria-valuemax',
+      cap
+    )
   })
 
   describe('without a default payment method', () => {

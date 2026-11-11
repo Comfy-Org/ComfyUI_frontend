@@ -31,6 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
+  inputId?: string
   items: FormDropdownItem[]
   /** Items used for display in the input field. Falls back to items if not provided. */
   displayItems?: FormDropdownItem[]
@@ -69,6 +70,7 @@ interface Props {
 const { t } = useI18n()
 
 const {
+  inputId,
   placeholder,
   multiple = false,
   uploadable = false,
@@ -315,26 +317,30 @@ function showPicker() {
 
 <template>
   <div ref="triggerAnchorRef">
-    <FormDropdownInput
-      ref="triggerRef"
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      :is-uploading
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
     <PopoverRoot v-model:open="isOpen">
-      <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
+      <FormDropdownInput
+        ref="triggerRef"
+        :input-id
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :items
+        :display-items
+        :max-selectable
+        :selected
+        :uploadable
+        :disabled
+        :accept
+        :is-uploading
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
+      >
+        <template #anchor="{ element }">
+          <PopoverAnchor as="template" :reference="element" />
+        </template>
+      </FormDropdownInput>
       <PopoverContent
-        align="start"
+        align="end"
         class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"

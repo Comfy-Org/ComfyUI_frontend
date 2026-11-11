@@ -4,129 +4,85 @@
   "description": "Shared technical module, not a business domain. The Vue-side host around the LiteGraph canvas: the canvas Pinia store (active canvas, read-only and picking mode, selection mirror, node picking), viewport and device-pixel-ratio sizing, camera state normalization, redraw scheduling, auto-pan, wheel and pointer routing, interaction-mode reads, slot link drag UI state, Canvas2D link path rendering, and adapters that translate LiteGraph links, selection, slot geometry, link drops, and legacy layout to and from the layout store. The LiteGraph canvas view-controller (graph-canvas), link connection, the selection store, settings, and graph layout storage remain outside this record.",
   "modules": [
     {
-      "path": "src/components/graph/CanvasModeSelector.vue",
-      "role": "presentation"
+      "path": "src/components/graph/CanvasModeSelector.vue"
     },
     {
-      "path": "src/components/graph/GraphCanvasMenu.vue",
-      "role": "presentation"
+      "path": "src/components/graph/GraphCanvasMenu.vue"
     },
     {
-      "path": "src/components/graph/LinkOverlayCanvas.vue",
-      "role": "presentation"
+      "path": "src/components/graph/LinkOverlayCanvas.vue"
     },
     {
-      "path": "src/components/graph/NodeSelectionModeBanner.vue",
-      "role": "presentation"
+      "path": "src/components/graph/NodeSelectionModeBanner.vue"
     },
     {
-      "path": "src/components/graph/NodeTooltip.vue",
-      "role": "presentation"
+      "path": "src/components/graph/NodeTooltip.vue"
     },
     {
-      "path": "src/components/graph/SelectionRectangle.vue",
-      "role": "presentation"
+      "path": "src/components/graph/SelectionRectangle.vue"
     },
     {
-      "path": "src/components/graph/TitleEditor.vue",
-      "role": "presentation"
+      "path": "src/components/graph/TitleEditor.vue"
     },
     {
-      "path": "src/components/graph/modals/**",
-      "role": "presentation"
+      "path": "src/components/graph/modals/**"
     },
     {
-      "path": "src/components/graph/nodeProgressCanvasSync.ts",
-      "role": "integration"
+      "path": "src/components/graph/nodeProgressCanvasSync.ts"
     },
     {
-      "path": "src/composables/canvas/useFocusNode.ts",
-      "role": "application"
+      "path": "src/composables/canvas/useFocusNode.ts"
     },
     {
-      "path": "src/composables/canvas/visibleCanvasViewport.ts",
-      "role": "infrastructure"
+      "path": "src/composables/canvas/visibleCanvasViewport.ts"
     },
     {
-      "path": "src/composables/element/**",
-      "role": "infrastructure"
+      "path": "src/composables/element/**"
     },
     {
-      "path": "src/composables/useZoomControls.ts",
-      "role": "application"
+      "path": "src/composables/useZoomControls.ts"
     },
     {
-      "path": "src/renderer/core/canvas/__mocks__/**",
-      "role": "application"
+      "path": "src/renderer/core/canvas/__mocks__/**"
     },
     {
-      "path": "src/renderer/core/canvas/__tests__/**",
-      "role": "application"
+      "path": "src/renderer/core/canvas/__tests__/**"
     },
     {
-      "path": "src/renderer/core/canvas/__tests__/cameraState.test.ts",
-      "role": "domain"
+      "path": "src/renderer/core/canvas/cameraState.ts"
     },
     {
-      "path": "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
-      "role": "infrastructure"
+      "path": "src/renderer/core/canvas/canvasRedrawBudget.test.ts"
     },
     {
-      "path": "src/renderer/core/canvas/cameraState.ts",
-      "role": "domain"
+      "path": "src/renderer/core/canvas/canvasStore.ts"
     },
     {
-      "path": "src/renderer/core/canvas/canvasRedrawBudget.test.ts",
-      "role": "application"
+      "path": "src/renderer/core/canvas/canvasViewport.ts"
     },
     {
-      "path": "src/renderer/core/canvas/canvasStore.ts",
-      "role": "application"
+      "path": "src/renderer/core/canvas/interaction/**"
     },
     {
-      "path": "src/renderer/core/canvas/canvasViewport.ts",
-      "role": "infrastructure"
+      "path": "src/renderer/core/canvas/links/**"
     },
     {
-      "path": "src/renderer/core/canvas/interaction/**",
-      "role": "application"
+      "path": "src/renderer/core/canvas/litegraph/**"
     },
     {
-      "path": "src/renderer/core/canvas/interaction/canvasPointerEvent.ts",
-      "role": "integration"
+      "path": "src/renderer/core/canvas/pathRenderer.ts"
     },
     {
-      "path": "src/renderer/core/canvas/links/**",
-      "role": "integration"
+      "path": "src/renderer/core/canvas/useAutoPan.ts"
     },
     {
-      "path": "src/renderer/core/canvas/links/slotLinkDragUIState.ts",
-      "role": "application"
+      "path": "src/renderer/core/canvas/useCanvasInteractions.ts"
     },
     {
-      "path": "src/renderer/core/canvas/litegraph/**",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/canvas/pathRenderer.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/core/canvas/useAutoPan.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/canvas/useCanvasInteractions.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/canvas/useCanvasScheduler.ts",
-      "role": "application"
+      "path": "src/renderer/core/canvas/useCanvasScheduler.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Canvas store, interaction mode, and redraw scheduling preserve canvas state",

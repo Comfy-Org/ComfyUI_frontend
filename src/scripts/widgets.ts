@@ -27,7 +27,7 @@ import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composab
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { useVideoConcatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoConcatWidget'
 import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 import type { ComfyWidgetConstructor } from '@/types/comfy'

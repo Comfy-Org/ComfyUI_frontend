@@ -26,7 +26,7 @@ import {
 import { effectScope, markRaw, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -110,7 +110,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
@@ -123,7 +123,7 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -313,9 +313,11 @@ describe('ComfyApp', () => {
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
+    mockWorkflowService.beforeLoadNewGraph.mockReturnValue(vi.fn())
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -535,6 +537,51 @@ describe('ComfyApp', () => {
       expect(useToast().toasts).toEqual([])
     })
 
+    it('replaces canvas ownership after preparing the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(replaceCanvas).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(replaceCanvas.mock.invocationCallOrder[0])
+    })
+
+    it('waits for the beforeLoadGraph hook before replacing canvas ownership', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+      let finishHook = () => {}
+      const hook = new Promise<void>((resolve) => {
+        finishHook = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async () => hook
+      )
+
+      const load = app.loadGraphData(createWorkflowGraphData())
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+
+      expect(replaceCanvas).not.toHaveBeenCalled()
+
+      finishHook()
+      await load
+
+      expect(replaceCanvas).toHaveBeenCalledOnce()
+    })
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -655,6 +702,111 @@ describe('ComfyApp', () => {
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('does not configure or activate a graph whose load stopped being current during beforeConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        { ...createWorkflowGraphData(), extra: { loadedFrom: 'superseded' } },
+        false,
+        true,
+        null,
+        { isCurrent: () => current, workflowNavigationId: 9 }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBeUndefined()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('does not activate a graph whose load stopped being current during afterConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        true,
+        null,
+        {
+          isCurrent: () => current,
+          workflowNavigationId: 9
+        }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+    })
+
+    it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.rootGraph.extra.loadedFrom = 'newer'
+
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        null,
+        { isCurrent: () => false }
+      )
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBe('newer')
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('beforeLoadGraph')
     })
 
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
@@ -2308,6 +2460,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2334,6 +2487,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false
       })
     })
@@ -2360,6 +2514,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: true,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2387,6 +2542,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -4306,6 +4462,79 @@ describe('ComfyApp', () => {
       expect(nodeOutputStore.getNodeOutputByExecutionId(executionId)).toEqual({
         text: ['job-a']
       })
+      expect(
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
+      ).toEqual(['blob:1'])
+    })
+
+    it('routes unmapped outputs and previews by the frame workflow id alone', () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
+      )
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      function handlerFor(event: Parameters<typeof api.addEventListener>[0]) {
+        const handler = addEventListener.mock.calls.find(
+          ([name]) => name === event
+        )?.[1]
+        if (typeof handler !== 'function')
+          throw new Error('Expected registered function handler')
+        return handler
+      }
+      function executedEvent(jobId: string, workflowId: string) {
+        return new CustomEvent('executed', {
+          detail: {
+            node: '1',
+            display_node: '1',
+            prompt_id: jobId,
+            workflow_id: workflowId,
+            output: { text: [jobId] }
+          }
+        })
+      }
+      function previewEvent(
+        jobId: string,
+        blobText: string,
+        workflowId: string
+      ) {
+        return new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob([blobText]),
+            nodeId: '1',
+            parentNodeId: '1',
+            displayNodeId: '1',
+            realNodeId: '1',
+            jobId,
+            workflowId
+          }
+        })
+      }
+
+      handlerFor('executed')(executedEvent('job-own-output', workflowAId))
+      handlerFor('b_preview_with_metadata')(
+        previewEvent('job-own-preview', 'a', workflowAId)
+      )
+      handlerFor('executed')(executedEvent('job-foreign-output', workflowBId))
+      handlerFor('b_preview_with_metadata')(
+        previewEvent('job-foreign-preview', 'bb', workflowBId)
+      )
+
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = createNodeExecutionId([1])
+      expect(
+        nodeOutputStore.getNodeOutputByExecutionId(executionId),
+        "the later foreign output must not overwrite the visible tab's"
+      ).toEqual({ text: ['job-own-output'] })
       expect(
         nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
       ).toEqual(['blob:1'])

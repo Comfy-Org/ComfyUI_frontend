@@ -61,6 +61,17 @@
                 {{ hero.description }}
               </span>
             </div>
+            <Button
+              v-if="canAskAgent"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              data-testid="error-card-ask-agent"
+              :aria-label="askAgentLabel"
+              @click="handleAskAgent"
+            >
+              {{ t('rightSidePanel.askAgent') }}
+            </Button>
           </div>
           <DeploymentBuildActions
             v-if="buildDeployment"
@@ -246,6 +257,7 @@
               >
                 {{ group.displayMessage }}
               </p>
+              <CloudErrorAction :catalog-id="group.catalogId" />
             </div>
 
             <!-- Missing Node Packs -->
@@ -436,17 +448,23 @@ import MissingModelCard from '@/platform/workflowErrors/missingModel/components/
 import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import Button from '@comfyorg/design-system/button/Button'
+import CloudErrorAction from '@/platform/openOnCloud/components/CloudErrorAction.vue'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from './buildAgentErrorContext'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 interface ExecutionItemListEntry {
   key: string
@@ -468,6 +486,7 @@ const { selectedItems = [] } = defineProps<{
 
 const emit = defineEmits<{
   locateNode: [nodeId: string, executionIdMap?: Map<string, LGraphNode>]
+  issueCount: [count: number]
 }>()
 
 /** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
@@ -510,6 +529,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 const DEPRECATED_NODES_KEY = 'deprecated_nodes'
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
 const expandDetailsToken = ref(0)
@@ -1000,4 +1020,53 @@ function handleReplaceGroup(group: SwapNodeGroup) {
 function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
 }
+
+const missingGroupContext = computed(() => ({
+  missingPackGroups: missingPackGroups.value,
+  swapNodeGroups: swapNodeGroups.value,
+  missingModelGroups: missingModelGroups.value,
+  missingMediaGroups: missingMediaGroups.value
+}))
+
+const askAgentLabel = computed(() => {
+  const groups = filteredGroups.value
+  const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
+  return t('rightSidePanel.askAgentAbout', { title })
+})
+
+const allIssuesContext = computed(() =>
+  buildAllErrorContext(allErrorGroups.value, missingGroupContext.value, {
+    label: t('agent.errorContext.allLabel')
+  })
+)
+
+watch(
+  () => allIssuesContext.value.count,
+  (count) => emit('issueCount', count),
+  { immediate: true }
+)
+
+function handleAskAgent() {
+  const groups = filteredGroups.value
+  if (groups.length === 0) return
+  if (groups.length === 1) {
+    askAgentAboutIssues(
+      buildGroupErrorContext(groups[0], missingGroupContext.value)
+    )
+    return
+  }
+  askAgentAboutIssues(
+    buildAllErrorContext(groups, missingGroupContext.value, {
+      label: hero.value.title,
+      scope: 'card'
+    })
+  )
+}
+
+function askAboutAllIssues() {
+  if (allIssuesContext.value.count === 0) return
+  askAgentAboutIssues(allIssuesContext.value)
+}
+
+defineExpose({ askAboutAllIssues })
 </script>

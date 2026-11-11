@@ -494,8 +494,8 @@ describe('useErrorGroups', () => {
       ])
       await nextTick()
 
-      const errorIndices = groups.allErrorGroups.value.flatMap(
-        (group, index) => (group.severity === 'error' ? [index] : [])
+      const errorIndices = groups.allErrorGroups.value.flatMap((group, index) =>
+        group.severity === 'error' ? [index] : []
       )
       const missingIndices = groups.allErrorGroups.value.flatMap(
         (group, index) => (group.severity === 'missing' ? [index] : [])
