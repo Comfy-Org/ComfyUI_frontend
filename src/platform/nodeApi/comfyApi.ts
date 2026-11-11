@@ -563,13 +563,7 @@ export function applyDefExtensions(
 
 let singleton: Comfy | undefined
 
-/**
- * The app-wide instance. The graph provider is injected by the app layer rather
- * than imported here, so this module stays a leaf: it depends on litegraph
- * types only, never on stores or the app.
- *
- * @knipIgnoreUsedByStackedPR magicPatch/verify builds its instance through this
- */
+/** Returns the shared instance, creating it with this provider if absent. */
 export function useComfyApi(
   getGraph: () => LGraph | null | undefined,
   host?: ComfyApiHost
