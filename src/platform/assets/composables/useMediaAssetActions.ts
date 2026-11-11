@@ -59,7 +59,10 @@ function createAssetWidgetPath(asset: AssetItem): string {
     : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
-    filename: getAssetStoredFilename(asset),
+    filename: getAssetStoredFilename(
+      asset,
+      asset.hash ?? getStoredOutputIdentity(asset)?.hash
+    ),
     subfolder: getOutputSubfolder(asset) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })

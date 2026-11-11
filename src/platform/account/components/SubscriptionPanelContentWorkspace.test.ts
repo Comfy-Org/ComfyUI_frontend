@@ -9,6 +9,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { getActivePinia } from 'pinia'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
@@ -59,6 +60,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -633,6 +635,33 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
+      it.for([
+        { enabled: true, startsInFuture: true, showsEndDate: false },
+        { enabled: false, startsInFuture: true, showsEndDate: true },
+        { enabled: true, startsInFuture: false, showsEndDate: true },
+        { enabled: false, startsInFuture: false, showsEndDate: true }
+      ])(
+        'selects notice timing with new UX $enabled and future start $startsInFuture',
+        ({ enabled, startsInFuture, showsEndDate }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+          const iso = endInDays(10)
+          useBillingCapabilities().endingNoticeStartsAt = computed(() =>
+            receiveServerFact(
+              'ending_notice_starts_at',
+              startsInFuture
+                ? new Date(NOW.getTime() + DAY).toISOString()
+                : null
+            )
+          )
+
+          renderComponent()
+
+          expect(
+            screen.queryByText(`Ends on ${formatPanelDate(iso)}`) !== null
+          ).toBe(showsEndDate)
+        }
+      )
+
       // The capability alone decides Reactivate — the server closes it for
       // sales-managed tiers (hideLifecycleCapabilities), and the client adds
       // no guard of its own on top (settled with the reviewer on #16934).
@@ -725,20 +754,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).not.toBeInTheDocument()
       })
 
-      it('keeps the stock cancelled treatment when no ending notice start is served', () => {
-        endInDays(30)
-        useBillingCapabilities().endingNoticeStartsAt =
-          endingNoticeStartsAtFact(null)
-        renderComponent()
+      it.for([
+        { enabled: true, showsCancelled: true },
+        { enabled: false, showsCancelled: false }
+      ])(
+        'selects Enterprise treatment with new UX $enabled when no notice start is served',
+        ({ enabled, showsCancelled }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+          const iso = endInDays(30)
+          useBillingCapabilities().endingNoticeStartsAt =
+            endingNoticeStartsAtFact(null)
+          renderComponent()
 
-        expect(screen.getByText('Canceled')).toBeInTheDocument()
-        expect(
-          screen.getByTestId('subscription-state-card')
-        ).toBeInTheDocument()
-        expect(
-          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
-        ).toBeInTheDocument()
-      })
+          expect(screen.queryByText('Canceled') !== null).toBe(showsCancelled)
+          expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+            showsCancelled
+          )
+          expect(
+            screen.queryByText(`Ends on ${formatPanelDate(iso)}`) !== null
+          ).toBe(showsCancelled)
+        }
+      )
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {

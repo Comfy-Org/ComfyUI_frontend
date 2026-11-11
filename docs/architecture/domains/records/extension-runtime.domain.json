@@ -13,6 +13,12 @@
       "path": "src/extensions/core/index.ts"
     },
     {
+      "path": "src/extensions/core/clipspace.ts"
+    },
+    {
+      "path": "src/scripts/clipspace.ts"
+    },
+    {
       "path": "src/scripts/__mocks__/**"
     },
     {
@@ -66,6 +72,13 @@
   ],
   "publicEntryPoints": [],
   "characterizationScenarios": [
+    {
+      "name": "Clipspace copies and pastes node images",
+      "checks": [
+        "src/scripts/clipspace.test.ts",
+        "src/extensions/core/index.test.ts"
+      ]
+    },
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
       "checks": [
