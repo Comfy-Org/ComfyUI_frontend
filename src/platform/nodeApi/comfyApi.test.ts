@@ -198,6 +198,54 @@ describe('comfy API root', () => {
     })
   })
 
+  describe('graph ownership', () => {
+    it('keeps a retained handle bound to the graph that minted it', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      first.add(inFirst)
+      second.add(inSecond)
+      expect(inSecond.id).toBe(inFirst.id)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+
+      active = second
+      retained.setTitle('retargeted')
+
+      expect(inSecond.title).toBe('second')
+      expect(inFirst.title).toBe('retargeted')
+    })
+
+    it('keeps retained slot and widget collections bound to their graph', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      inFirst.addWidget('number', 'amount', 1, () => {})
+      inSecond.addWidget('number', 'amount', 2, () => {})
+      inFirst.addOutput('out', 'IMAGE')
+      inSecond.addOutput('out', 'IMAGE')
+      first.add(inFirst)
+      second.add(inSecond)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+      const widgets = retained.widgets
+      const outputs = retained.outputs
+
+      active = second
+      widgets.get('amount')!.setValue(9)
+      outputs.byName('out')!.modify({ label: 'renamed' })
+
+      expect(inSecond.widgets![0].value).toBe(2)
+      expect(inFirst.widgets![0].value).toBe(9)
+      expect(inSecond.outputs[0].label).toBeUndefined()
+      expect(inFirst.outputs[0].label).toBe('renamed')
+    })
+  })
+
   describe('workflow access', () => {
     it('opens workflow data through the host document service', async () => {
       const openWorkflow = vi.fn(() => Promise.resolve())
