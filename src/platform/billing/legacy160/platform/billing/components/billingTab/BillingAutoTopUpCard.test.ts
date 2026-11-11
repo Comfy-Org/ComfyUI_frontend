@@ -37,8 +37,11 @@ vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
-    `https://platform.test${path}?correlation_id=${correlationId}`
+  platformLink: (path: string, correlationId?: string) => {
+    const url = new URL(`https://platform.test${path}`)
+    if (correlationId) url.searchParams.set('correlation_id', correlationId)
+    return url.href
+  }
 }))
 
 const configured: AutoReloadSettings = {
@@ -328,7 +331,9 @@ describe('BillingAutoTopUpCard', () => {
       expect(link).toHaveAttribute(
         'href',
         expect.stringMatching(
-          /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
+          action === 'Turn on'
+            ? /^https:\/\/platform\.test\/profile\/billing\?auto_top_up=setup&correlation_id=.+$/
+            : /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
         )
       )
       expect(link).toContainHTML(expectedIcon)

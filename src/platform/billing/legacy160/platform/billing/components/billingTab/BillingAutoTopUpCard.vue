@@ -96,6 +96,7 @@ import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/legacy160/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
+import { AUTO_TOP_UP_SETUP_PATH } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
@@ -419,8 +420,11 @@ const view = computed(() => {
   return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
-const { href, track } = usePlatformHandoff('/profile/billing', () => ({
-  target: 'auto_top_up',
-  action: view.value?.status.action.id ?? 'turn_on'
-}))
+const action = computed(() => view.value?.status.action.id ?? 'turn_on')
+
+const { href, track } = usePlatformHandoff(
+  () =>
+    action.value === 'turn_on' ? AUTO_TOP_UP_SETUP_PATH : '/profile/billing',
+  () => ({ target: 'auto_top_up', action: action.value })
+)
 </script>
