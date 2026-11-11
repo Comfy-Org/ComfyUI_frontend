@@ -42,9 +42,7 @@
     },
     {
       "name": "Mask PNG encoding round-trips through the decoder fixture",
-      "checks": [
-        "packages/mask-editor/src/pngEncodeUtil.test.ts"
-      ]
+      "checks": ["packages/mask-editor/src/pngEncodeUtil.test.ts"]
     },
     {
       "name": "Core extensions register the clipspace and mask editor and open the editor from node menus",
