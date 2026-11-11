@@ -185,6 +185,20 @@ const guards = new Set<() => boolean | Promise<boolean>>()
 /** How long every guard together may take before the run proceeds regardless. */
 const GUARD_TIMEOUT_MS = 5_000
 
+const AUTO_QUEUE_MODES: readonly AutoQueueMode[] = [
+  'disabled',
+  'change',
+  'instant'
+]
+
+function assertAutoQueueMode(mode: unknown): asserts mode is AutoQueueMode {
+  if (!AUTO_QUEUE_MODES.includes(mode as AutoQueueMode)) {
+    throw new ComfyApiError(
+      `Automatic queuing mode must be one of ${AUTO_QUEUE_MODES.join(', ')}.`
+    )
+  }
+}
+
 function assertBatchCount(count: number): void {
   if (!Number.isSafeInteger(count) || count < 1) {
     throw new ComfyApiError('Batch count must be a positive integer.')
@@ -410,6 +424,7 @@ export function createQueueApi(
     },
 
     setAutoQueueMode(mode: AutoQueueMode) {
+      assertAutoQueueMode(mode)
       useQueueSettingsStore().mode =
         mode === 'instant' ? 'instant-running' : mode
     },

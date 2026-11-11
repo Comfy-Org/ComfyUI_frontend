@@ -9,6 +9,7 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createComfyApi } from './comfyApi'
+import { ComfyApiError } from './errors'
 import { mayRun } from './queueHandle'
 import type { RunRejectedEvent } from './queueHandle'
 
@@ -156,6 +157,17 @@ describe('comfy.queue', () => {
 
     comfy.queue.setAutoQueueMode('instant')
     expect(settings.mode).toBe('instant-running')
+  })
+
+  it('rejects an unknown automatic queuing mode and keeps the current one', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const settings = useQueueSettingsStore()
+    settings.mode = 'change'
+
+    expect(() => comfy.queue.setAutoQueueMode('bogus' as never)).toThrow(
+      ComfyApiError
+    )
+    expect(settings.mode).toBe('change')
   })
 
   it('reads and changes the default batch count', () => {
