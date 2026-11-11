@@ -747,15 +747,17 @@ describe('centering the view on a node', () => {
     const node = new LGraphNode('T', 'TestNode')
     graph.add(node)
     node.pos = [800, 600]
+    node.size = [200, 100]
     const canvas = testCanvas(graph)
     LGraphCanvas.active_canvas = canvas
-    const scale = canvas.ds.scale
+    canvas.ds.scale = 2
+    canvas.dpr = 2
     const api = createGraphApi(() => graph)
 
     api.centerOn(api.nodes()[0])
 
-    expect(canvas.ds.offset).not.toEqual([0, 0])
-    expect(canvas.ds.scale).toBe(scale)
+    expect(canvas.ds.offset).toEqual([-800, -575])
+    expect(canvas.ds.scale).toBe(2)
   })
 })
 
