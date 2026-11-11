@@ -102,6 +102,7 @@ import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionC
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import {
+  currentDocumentGeneration,
   currentDocumentId,
   onWorkflowLoaded,
   resetAppReadyForTest
@@ -992,25 +993,31 @@ describe('ComfyApp', () => {
       const workflowLoaded = vi.fn()
       onTestFinished(onWorkflowLoaded(workflowLoaded))
 
+      const generationBefore = currentDocumentGeneration()
       await app.loadGraphData(changed, false, false, workflow)
       const documentId = currentDocumentId()
+      const generation = currentDocumentGeneration()
       expect(documentId).toBeDefined()
+      expect(generation).not.toBe(generationBefore)
       tracker.undoQueue.push(saved)
 
       await tracker.undo()
 
       expect(app.rootGraph.extra.marker).toBe('saved')
       expect(currentDocumentId()).toBe(documentId)
+      expect(currentDocumentGeneration()).toBe(generation)
 
       await tracker.redo()
 
       expect(app.rootGraph.extra.marker).toBe('changed')
       expect(currentDocumentId()).toBe(documentId)
+      expect(currentDocumentGeneration()).toBe(generation)
       expect(workflowLoaded).toHaveBeenCalledTimes(1)
 
       await app.loadGraphData(changed, false, false, workflow)
 
       expect(currentDocumentId()).not.toBe(documentId)
+      expect(currentDocumentGeneration()).not.toBe(generation)
       expect(workflowLoaded).toHaveBeenCalledTimes(2)
     })
 
@@ -1594,6 +1601,65 @@ describe('ComfyApp', () => {
           })
         )
         expect(intents.map(({ source }) => source)).not.toContain('local')
+      }
+    )
+
+    it.for([
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'KSampler', inputs: {} } },
+            'sampler.json'
+          )
+      },
+      {
+        format: 'A1111',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              const sampler = LiteGraph.createNode('KSampler')
+              assert(sampler)
+              incomingGraph.add(sampler)
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'starts a new document before a $format import adds its nodes',
+      async ({ load }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const addedIn: number[] = []
+        class KSampler extends LGraphNode {
+          override onAdded() {
+            addedIn.push(currentDocumentGeneration())
+          }
+        }
+        LiteGraph.registerNodeType('KSampler', KSampler)
+        const before = currentDocumentGeneration()
+
+        try {
+          await load()
+        } finally {
+          LiteGraph.unregisterNodeType('KSampler')
+        }
+
+        expect(addedIn).toHaveLength(1)
+        expect(addedIn[0]).not.toBe(before)
       }
     )
 

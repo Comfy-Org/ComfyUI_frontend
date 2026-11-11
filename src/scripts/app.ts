@@ -138,6 +138,7 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import {
+  beginDocument,
   currentDocumentId,
   notifyWorkflowLoaded
 } from '@/platform/nodeApi/appReady'
@@ -1433,6 +1434,8 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        if (!restoreDocumentId || restoreDocumentId !== currentDocumentId())
+          beginDocument()
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         const originalMainGraphRenderer =
@@ -2314,6 +2317,7 @@ export class ComfyApp implements IComfyApp {
               }
               releaseCaptureSuppression = beginChangeCaptureSuppression()
               this.canvas.setGraph(this.rootGraph)
+              beginDocument()
             }
           )
           switch (outcome) {
@@ -2512,6 +2516,7 @@ export class ComfyApp implements IComfyApp {
       releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())
+      beginDocument()
 
       const ids = Object.keys(apiData)
       const localNodeIdsByApiId = new Map<string, NodeId>()
