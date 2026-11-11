@@ -559,4 +559,38 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(store.stateFor(model).status).toBe('idle')
   })
+  it('controls a download without a job id by its source URL', () => {
+    installDesktopHost()
+    const pauseDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, pauseDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading', { id: undefined })
+
+    store.pause(model)
+
+    expect(pauseDownload).toHaveBeenCalledWith(model.url)
+  })
+
+  it('reports a download control the host rejects', async () => {
+    installDesktopHost()
+    const failure = new Error('cannot cancel')
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      cancelDownload: vi.fn().mockRejectedValue(failure)
+    }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading')
+
+    store.cancel(model)
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'platform',
+        errorType: 'error_controlling_model_download',
+        tags: { action: 'cancelDownload' }
+      })
+    )
+  })
 })

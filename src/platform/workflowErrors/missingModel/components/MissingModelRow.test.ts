@@ -735,6 +735,9 @@ describe('MissingModelRow', () => {
       vi.fn<
         (url: string, filename: string, directory: string) => Promise<boolean>
       >()
+    const hostPauseDownload = vi.fn<(ref: string) => Promise<boolean>>()
+    const hostResumeDownload = vi.fn<(ref: string) => Promise<boolean>>()
+    const hostCancelDownload = vi.fn<(ref: string) => Promise<boolean>>()
 
     function emitHostProgress(progress: Partial<ComfyDownloadProgress>) {
       const event: ComfyDownloadProgress = {
@@ -768,6 +771,9 @@ describe('MissingModelRow', () => {
       window.__comfyDesktop2 = {
         isRemote: () => false,
         downloadModel: hostDownloadModel,
+        pauseDownload: hostPauseDownload.mockResolvedValue(true),
+        resumeDownload: hostResumeDownload.mockResolvedValue(true),
+        cancelDownload: hostCancelDownload.mockResolvedValue(true),
         onDownloadProgress: (listener) => {
           progressListeners.push(listener)
           return () => {}
@@ -874,6 +880,43 @@ describe('MissingModelRow', () => {
           name: 'Downloading model.safetensors'
         })
       ).toBeVisible()
+    })
+
+    it('pauses and resumes a running download through the host job', async () => {
+      renderHostRow()
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ receivedBytes: 1, totalBytes: 4 })
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Pause download for model.safetensors'
+        })
+      )
+      emitHostProgress({ status: 'paused', receivedBytes: 1, totalBytes: 4 })
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Resume download for model.safetensors'
+        })
+      )
+
+      expect(hostPauseDownload).toHaveBeenCalledWith('job-1')
+      expect(hostResumeDownload).toHaveBeenCalledWith('job-1')
+    })
+
+    it('offers Download again after cancelling a running download', async () => {
+      renderHostRow()
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ receivedBytes: 1, totalBytes: 4 })
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Cancel download for model.safetensors'
+        })
+      )
+      emitHostProgress({ status: 'cancelled' })
+
+      expect(hostCancelDownload).toHaveBeenCalledWith('job-1')
+      expect(await screen.findByTestId('missing-model-download')).toBeVisible()
     })
   })
 })

@@ -366,6 +366,47 @@ export const useMissingModelDownloadStore = defineStore(
       )
     }
 
-    return { stateFor, download, startTracking }
+    function controlRef(model: ModelWithUrl): string | undefined {
+      const download = downloads.get(getModelFileKey(model))
+      if (
+        download?.state.status !== 'pending' &&
+        download?.state.status !== 'downloading'
+      )
+        return undefined
+      return download.jobId ?? download.url
+    }
+
+    function canControl(model: ModelWithUrl): boolean {
+      return (
+        tracking &&
+        !!window.__comfyDesktop2?.cancelDownload &&
+        controlRef(model) !== undefined
+      )
+    }
+
+    function control(
+      model: ModelWithUrl,
+      action: 'pauseDownload' | 'resumeDownload' | 'cancelDownload'
+    ) {
+      const ref = controlRef(model)
+      if (ref === undefined) return
+      void window.__comfyDesktop2?.[action]?.(ref).catch((error: unknown) => {
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_controlling_model_download',
+          tags: { action }
+        })
+      })
+    }
+
+    return {
+      stateFor,
+      download,
+      startTracking,
+      canControl,
+      pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
+      resume: (model: ModelWithUrl) => control(model, 'resumeDownload'),
+      cancel: (model: ModelWithUrl) => control(model, 'cancelDownload')
+    }
   }
 )
