@@ -1,7 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, effectScope } from 'vue'
+
+import type { SavedPaymentMethod } from '@comfyorg/billing-core'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import {
   autoTopUpCardState,
   loadedAutoTopUp
@@ -12,11 +16,37 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
+vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
+
+const visa: SavedPaymentMethod = {
+  id: 'pm_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '4242',
+  is_default: true
+}
+const mastercard: SavedPaymentMethod = {
+  id: 'pm_mc',
+  type: 'card',
+  brand: 'mastercard',
+  last4: '5555',
+  is_default: false
+}
+
+function readPaymentMethods() {
+  return vi.mocked(useBillingSdkStore().readPaymentMethods)
+}
+
+function serveSavedMethods(methods: SavedPaymentMethod[]) {
+  readPaymentMethods().mockResolvedValue({ status: 'ok', value: methods })
+}
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string) => `https://platform.test${path}`
 }))
@@ -37,10 +67,17 @@ function offerFor({
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
   capabilities.autoTopUpSetup = computed(() => ({ state: 'ready' }))
   autoTopUpCardState.value = loadedAutoTopUp(status)
-  return useAddCreditsAutoTopUpOffer()
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(useAddCreditsAutoTopUpOffer)!
 }
 
 describe('useAddCreditsAutoTopUpOffer', () => {
+  beforeEach(() => {
+    activateBillingScope('actor-a', 'workspace-a')
+    serveSavedMethods([])
+  })
+
   it('says auto top-up is on with a link to Billing when the served status is on', () => {
     const { offer, billingUrl } = offerFor({ status: 'on' })
 
@@ -59,13 +96,81 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       atCheckout: false,
       kind: 'hidden'
     }
-  ])('offers $kind while off when $name', ({ atCheckout, kind }) => {
-    expect(offerFor({ status: 'off', atCheckout }).offer.value.kind).toBe(kind)
+  ])('offers $kind while off when $name', async ({ atCheckout, kind }) => {
+    const { offer } = offerFor({ status: 'off', atCheckout })
+
+    await vi.waitFor(() => expect(offer.value.kind).toBe(kind))
   })
 
   it('shows nothing when the auto top-up rollout is off', () => {
     expect(
       offerFor({ status: 'on', rollout: false, atCheckout: true }).offer.value
     ).toEqual({ kind: 'hidden' })
+  })
+
+  describe('the consent card at checkout', () => {
+    it.for([
+      {
+        name: 'names the default card when the workspace has one',
+        methods: [mastercard, visa],
+        defaultCard: { brand: 'visa', last4: '4242' }
+      },
+      {
+        name: 'says there is no default card when none is marked default',
+        methods: [mastercard],
+        defaultCard: null
+      },
+      {
+        name: 'says there is no default card when there are no saved cards',
+        methods: [],
+        defaultCard: null
+      }
+    ])('$name', async ({ methods, defaultCard }) => {
+      serveSavedMethods(methods)
+      const { offer } = offerFor({ status: 'off', atCheckout: true })
+
+      await vi.waitFor(() =>
+        expect(offer.value).toMatchObject({ kind: 'checkbox', defaultCard })
+      )
+    })
+
+    it('offers no checkbox and reports when the saved cards read fails', async () => {
+      readPaymentMethods().mockResolvedValue({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+      const { offer } = offerFor({ status: 'off', atCheckout: true })
+
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
+      expect(offer.value).toEqual({ kind: 'hidden' })
+    })
+
+    it('offers no checkbox when the default is not one it can name as a card', async () => {
+      serveSavedMethods([
+        { id: 'pm_bank', type: 'us_bank_account', is_default: true }
+      ])
+      const { offer } = offerFor({ status: 'off', atCheckout: true })
+
+      await vi.waitFor(() =>
+        expect(readPaymentMethods()).toHaveBeenCalledOnce()
+      )
+      await Promise.resolve()
+      expect(offer.value).toEqual({ kind: 'hidden' })
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('offers no checkbox while the saved cards read is in flight', () => {
+      readPaymentMethods().mockReturnValue(new Promise(() => {}))
+
+      expect(offerFor({ status: 'off', atCheckout: true }).offer.value).toEqual(
+        { kind: 'hidden' }
+      )
+    })
+
+    it('reads no saved cards when auto top-up at checkout is off', () => {
+      offerFor({ status: 'off', atCheckout: false })
+
+      expect(readPaymentMethods()).not.toHaveBeenCalled()
+    })
   })
 })
