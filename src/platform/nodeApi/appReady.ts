@@ -74,6 +74,22 @@ const workflowLoaded = new Set<() => void>()
  */
 let documentId: UUID | undefined
 
+let documentGeneration = 0
+
+/**
+ * Called by the host just before it configures a newly loaded document, so
+ * handles to the nodes it replaces stop resolving. Not called for an undo or
+ * redo, which restores the same document.
+ */
+export function beginDocument(): void {
+  documentGeneration++
+}
+
+/** Which loaded document the graph's nodes belong to. */
+export function currentDocumentGeneration(): number {
+  return documentGeneration
+}
+
 /** Called by the host each time a workflow finishes being configured. */
 export function notifyWorkflowLoaded(): void {
   documentId = createUuidv4()
@@ -96,4 +112,5 @@ export function resetAppReadyForTest(): void {
   waiting.clear()
   workflowLoaded.clear()
   documentId = undefined
+  documentGeneration = 0
 }
