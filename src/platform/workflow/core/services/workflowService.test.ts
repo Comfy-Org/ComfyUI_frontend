@@ -934,6 +934,50 @@ describe('useWorkflowService', () => {
       })
     })
 
+    it('keeps a preview that arrived while a superseded open was loading', async () => {
+      const workflows = useWorkflowStore()
+      const nodeOutputs = useNodeOutputStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      workflows.activeWorkflow = current
+      nodeOutputs.nodePreviewImages = {
+        '1': ['/api/view?filename=older.png'],
+        '2': ['/api/view?filename=other.png']
+      }
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          useWorkflowService().beforeLoadNewGraph()
+          nodeOutputs.resetAllOutputsAndPreviews()
+          if (workflow === loading) {
+            nodeOutputs.nodePreviewImages = {
+              '1': ['/api/view?filename=newer.png']
+            }
+            currentRequest = false
+          }
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(nodeOutputs.nodePreviewImages).toEqual({
+        '1': ['/api/view?filename=newer.png'],
+        '2': ['/api/view?filename=other.png']
+      })
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
