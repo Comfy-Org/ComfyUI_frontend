@@ -330,6 +330,12 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
+    get billingNewUxEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
+        remoteConfig.value.billing_new_ux_enabled
+      )
+    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -445,6 +451,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
+      [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:

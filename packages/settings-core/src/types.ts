@@ -1,5 +1,5 @@
 import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
-import type { ColorPalettes } from './colorPaletteSchema'
+import type { ThemePresets } from '@comfyorg/theme-core/themePresetSchema'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@comfyorg/object-info-parser'
 import type { LinkReleaseTriggerAction } from './searchBoxTypes'
@@ -14,7 +14,7 @@ export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 export type Settings = {
   'Comfy.AgentPanel.OnboardedScopes': Array<string>
   'Comfy.ColorPalette': string
-  'Comfy.CustomColorPalettes': ColorPalettes
+  'Comfy.CustomColorPalettes': ThemePresets
   'Comfy.Canvas.BackgroundImage'?: string
   'Comfy.ConfirmClear': boolean
   'Comfy.DevMode': boolean

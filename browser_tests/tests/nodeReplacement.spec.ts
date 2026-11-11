@@ -173,9 +173,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
             if (mode.vueNodesEnabled) {
               await expect(
-                comfyPage.vueNodes
-                  .getWidgetByName('KSampler', 'denoise')
-                  .locator('input')
+                comfyPage.vueNodes.getWidgetByName('KSampler', 'denoise')
               ).toHaveValue(/^1(?:\.0+)?$/)
             }
           })
