@@ -140,7 +140,7 @@
       <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
         :copy="autoTopUpMemberCopy"
-        :view="capabilities.autoTopUpMemberView.value"
+        :view="autoTopUpMemberView"
         :locale
       />
     </section>
@@ -267,12 +267,14 @@ import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHa
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
 import { useAutoTopUpCardSection } from '@/platform/billing/composables/useAutoTopUpCardSection'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
 import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
 import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+const { flags } = useFeatureFlags()
 const billing = useBillingContext()
 const workspaceStore = useTeamWorkspaceStore()
 const capabilities = useBillingCapabilities()
@@ -363,6 +365,9 @@ const {
   () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
 )
 const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
+const autoTopUpMemberView = computed(() =>
+  flags.billingNewUxEnabled ? capabilities.autoTopUpMemberView.value : null
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:

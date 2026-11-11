@@ -6,6 +6,7 @@ on:
     paths:
       - 'packages/design-system/**'
       - 'packages/tailwind-utils/**'
+      - 'packages/mask-editor/src/ui/style.css'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'

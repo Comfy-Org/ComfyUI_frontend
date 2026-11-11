@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { rgbToHsl } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { Rgb } from './color'
-import { parseToRgb, rgbToHsl } from './color'
+import { parseToRgb } from './color'
 
 describe('parseToRgb', () => {
   it.for<[string, Rgb]>([

@@ -1473,9 +1473,15 @@ importers:
       '@alloc/quick-lru':
         specifier: 'catalog:'
         version: 5.2.0
+      '@comfyorg/design-system':
+        specifier: workspace:*
+        version: link:../design-system
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../tailwind-utils
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.44(typescript@6.0.3))
@@ -1491,13 +1497,31 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.44(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.10(vue@3.5.44(typescript@6.0.3))
     devDependencies:
       '@pinia/testing':
         specifier: 'catalog:'
         version: 2.0.1(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3)))
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)(vitest@5.0.5)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@testing-library/vue':
+        specifier: 'catalog:'
+        version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.10(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
@@ -1516,6 +1540,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.11(typescript@6.0.3)
 
   packages/object-info-parser:
     dependencies:
