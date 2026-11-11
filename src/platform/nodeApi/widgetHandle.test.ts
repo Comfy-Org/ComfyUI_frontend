@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Installs LGraphNode.prototype.addDOMWidget as a side effect.
 import '@/scripts/domWidget'
+import { graphToPrompt } from '@/utils/executionUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 
@@ -1232,5 +1233,65 @@ describe('setHeight', () => {
   it('refuses a height that is not a usable number', () => {
     expect(() => widgets.get('seed')!.setHeight(Number.NaN)).toThrow()
     expect(() => widgets.get('seed')!.setHeight(-1)).toThrow()
+  })
+})
+
+describe('keeping a widget value out of one destination', () => {
+  async function savedAndSent(
+    prepare: (widgets: WidgetCollection, node: LGraphNode) => void
+  ) {
+    const graph = new LGraph()
+    const node = new LGraphNode('Probe')
+    node.comfyClass = 'Probe'
+    node.serialize_widgets = true
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    const widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+    prepare(widgets, node)
+    widgets.add({ type: 'text', name: 'next', value: 'kept' })
+    const { output } = await graphToPrompt(graph)
+    return {
+      saved: node.serialize().widgets_values,
+      sent: output[String(node.id)].inputs
+    }
+  }
+
+  it('omits a value from the prompt but still saves it, as the legacy override did', async () => {
+    const legacy = await savedAndSent((widgets, node) => {
+      widgets.add({ type: 'text', name: 'text', value: 'derived' })
+      node.widgets![0].serializeValue = async () => undefined
+    })
+    const converted = await savedAndSent((widgets) =>
+      widgets.add({
+        type: 'text',
+        name: 'text',
+        value: 'derived',
+        options: { serialize: false }
+      })
+    )
+
+    expect(converted).toEqual(legacy)
+    expect(converted).toEqual({
+      saved: ['derived', 'kept'],
+      sent: { next: 'kept' }
+    })
+  })
+
+  it('keeps a value out of the saved workflow but still sends it', async () => {
+    const result = await savedAndSent((widgets) =>
+      widgets.add({
+        type: 'text',
+        name: 'text',
+        value: 'derived',
+        serialize: false
+      })
+    )
+
+    expect(result.sent).toEqual({ text: 'derived', next: 'kept' })
+    expect(result.saved).not.toContain('derived')
   })
 })
