@@ -11,12 +11,15 @@
         tabindex="-1"
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
-        class="h-full w-6 shrink-0 rounded-none"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
       >
-        <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
+        <i
+          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          aria-hidden="true"
+        />
       </Button>
     </template>
     <template #between><slot name="between" /></template>
@@ -73,12 +76,15 @@
             tabindex="-1"
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
-            class="h-full w-6 shrink-0 rounded-none"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
           >
-            <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
+            <i
+              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+              aria-hidden="true"
+            />
           </Button>
         </div>
       </ComboboxAnchor>
@@ -109,7 +115,7 @@
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-primary"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
             <i
               class="icon-[lucide--search] text-sm text-muted-foreground"
@@ -163,7 +169,13 @@
                         { escapeParameter: false }
                       )
                 "
-                class="flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none hover:bg-secondary data-highlighted:bg-secondary data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30"
+                :class="
+                  cn(
+                    'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                    'hover:bg-secondary data-highlighted:bg-secondary',
+                    'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
+                  )
+                "
                 @select="handleOptionSelect($event, option)"
               >
                 <i

@@ -754,8 +754,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-[calc(var(--node-radius)+7px)]')
+    expect(overlay).not.toHaveClass('rounded-[calc(var(--node-radius)+3px)]')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {
@@ -773,9 +773,30 @@ describe('LGraphNode', () => {
     })
 
     const wrapper = screen.getByTestId('node-inner-wrapper')
-    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).toHaveClass('before:rounded-(--node-radius)')
     expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
+
+  it.for([
+    { label: 'normal', mode: LGraphEventMode.ALWAYS, expectedOpacity: '0.6' },
+    { label: 'muted', mode: LGraphEventMode.NEVER, expectedOpacity: '0.3' },
+    { label: 'bypassed', mode: LGraphEventMode.BYPASS, expectedOpacity: '0.3' }
+  ])(
+    'composes global opacity with the $label node mode',
+    ({ mode, expectedOpacity }) => {
+      vi.mocked(useSettingStore().get).mockImplementation((key) => {
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+        if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
+        if (key === 'Comfy.Node.Opacity') return 0.6
+      })
+
+      const { container } = renderLGraphNode({
+        nodeData: { ...mockNodeData, mode }
+      })
+
+      expect(getNodeRoot(container).style.opacity).toBe(expectedOpacity)
+    }
+  )
 
   it('drops the height var while collapsed and restores the size on expand', async () => {
     const { container, rerender } = renderLGraphNode({

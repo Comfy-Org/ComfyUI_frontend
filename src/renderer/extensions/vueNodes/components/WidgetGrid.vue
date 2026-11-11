@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -55,7 +55,14 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="grid min-w-0 grid-cols-1">
+                <div
+                  :class="
+                    cn(
+                      'grid min-w-0 grid-cols-1',
+                      row.rowSize === 'min-content' && 'self-center'
+                    )
+                  "
+                >
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -86,7 +93,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
+
+import { useResizeObserver } from '@vueuse/core'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -243,13 +259,29 @@ const layoutKey = computed(() =>
     .join('|')
 )
 
+function syncOffsets() {
+  const rootGraphId = canvasStore.rootGraphId
+  if (syncLayout && grid.value && rootGraphId && nodeId) {
+    syncSlotOffsets(grid.value, rootGraphId, nodeId)
+  }
+}
+
+const rows = shallowRef<HTMLElement[]>([])
+useResizeObserver(rows, syncOffsets)
+
+function trackRows() {
+  rows.value =
+    syncLayout && nodeId && grid.value
+      ? [...grid.value.querySelectorAll<HTMLElement>('[data-widget-name]')]
+      : []
+}
+
+onMounted(trackRows)
 watch(
   layoutKey,
   () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && grid.value && rootGraphId && nodeId) {
-      syncSlotOffsets(grid.value, rootGraphId, nodeId)
-    }
+    trackRows()
+    syncOffsets()
   },
   { flush: 'post' }
 )

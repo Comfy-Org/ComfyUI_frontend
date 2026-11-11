@@ -140,6 +140,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
+  billing_new_ux_enabled?: boolean
   v1_payment_recovery?: boolean
   unified_billing_settings?: boolean
   /** Restores the in-app pricing table where the Plans page dialogs and same-tab redirect now go. */
