@@ -4,8 +4,8 @@ import type {
   IVideoConcatWidget,
   IWidgetVideoConcatOptions
 } from '@comfyorg/graph-model/widgets'
-import { isVideoConcatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isVideoConcatInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useVideoConcatWidget = (): ComfyWidgetConstructorV2 => {

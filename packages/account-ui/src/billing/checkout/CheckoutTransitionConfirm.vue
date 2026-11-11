@@ -27,7 +27,7 @@
         :title="bannerTitle"
         :segments="bannerSegments"
         :checkbox-label="
-          exceedsMonthlyThreshold
+          requiresChargeConsent
             ? copy.reactivation.checkboxLabel(chargeDisplay)
             : null
         "
@@ -115,7 +115,7 @@
 /**
  * The confirm step of a change to an existing subscription: what it switches
  * to and when, what is charged today, and — for a subscription set to end —
- * the reactivation the change implies, which a large enough charge has to be
+ * the reactivation the change implies, which the server may require
  * acknowledged before the confirm unlocks. A host following a payment it did
  * not quote here replaces the plan and charge through the `summary` slot and
  * `summaryReplaced`.
@@ -158,11 +158,8 @@ const {
   copy,
   locale,
   subscriptionLoaded,
-  subscriptionCancelled = false,
-  subscriptionEndDate = null,
   isLoading = false,
   actionUrl = null,
-  forceReactivation = false,
   authenticationState = null,
   authenticationError = null,
   reconciliationOperationId = null,
@@ -184,13 +181,8 @@ const {
   /** False until the subscription status has loaded once; the confirm stays
    *  disabled until then. */
   subscriptionLoaded: boolean
-  subscriptionCancelled?: boolean
-  subscriptionEndDate?: string | Date | null
   isLoading?: boolean
   actionUrl?: string | null
-  /** Server-authoritative fallback for legacy status reads that omit a
-   * scheduled cancellation until subscribe enforces the consent gate. */
-  forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
   reconciliationOperationId?: string | null
@@ -207,7 +199,7 @@ const {
 
 const emit = defineEmits<{
   /** True only once the reactivation banner was shown and confirmed (checkbox
-   *  ticked above the charge threshold, since the button is gated on it). */
+   *  ticked when the server requires charge consent). */
   confirm: [confirmReactivation: boolean]
   back: []
   applyPromotionCode: [code: string]
@@ -243,18 +235,11 @@ const isImmediate = computed(() => previewData.is_immediate)
 const newIsYearly = computed(() =>
   isAnnualDuration(previewData.new_plan.duration)
 )
-const currentIsYearly = computed(() =>
-  isAnnualDuration(previewData.current_plan?.duration)
-)
-
-const isCancelled = computed(
-  () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
-)
 
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
 >(() => {
-  if (!isCancelled.value) return null
+  if (previewData.requires_reactivation_confirmation !== true) return null
   switch (previewData.transition_type) {
     case 'upgrade':
       return 'upgrade'
@@ -266,40 +251,17 @@ const reactivationVariant = computed<
       return null
   }
 })
-// The banner and threshold math read the end date and the current plan;
-// without them the banner would render broken copy or force the checkbox on
-// a bogus $0 threshold.
-const cancelAt = computed(
-  () => subscriptionEndDate ?? previewData.current_plan?.period_end
-)
+const cancelAt = computed(() => previewData.cancel_at)
 
 const isReactivating = computed(
-  () =>
-    isCancelled.value &&
-    reactivationVariant.value !== null &&
-    !!cancelAt.value &&
-    !!previewData.current_plan
+  () => reactivationVariant.value !== null && !!cancelAt.value
 )
 
-// seat_summary.total_cost_cents is the whole-subscription price; price_cents
-// is per-seat and understates the threshold on multi-seat team plans. ANNUAL
-// divides by 12 for a monthly equivalent.
-const currentMonthlyPriceCents = computed(() => {
-  const current = previewData.current_plan
-  if (!current) return 0
-  const totalCents = current.seat_summary.total_cost_cents
-  return currentIsYearly.value ? totalCents / 12 : totalCents
-})
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
-// The downgrade copy always says "you won't be charged today" with no amount
-// shown, so it never gets the checkbox even if cost_today_cents is positive.
-const exceedsMonthlyThreshold = computed(
-  () =>
-    isReactivating.value &&
-    reactivationVariant.value !== 'downgrade' &&
-    chargeCents.value > currentMonthlyPriceCents.value
+const requiresChargeConsent = computed(
+  () => previewData.requires_reactivation_charge_confirmation === true
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`
@@ -318,7 +280,7 @@ watch(
 const confirmDisabled = computed(
   () =>
     !subscriptionLoaded ||
-    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
+    (requiresChargeConsent.value && !reactivationConfirmed.value)
 )
 const confirmBlocked = computed(
   () =>
@@ -329,7 +291,7 @@ const confirmBlocked = computed(
 const confirmReactivation = computed(
   () =>
     isReactivating.value &&
-    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
+    (!requiresChargeConsent.value || reactivationConfirmed.value)
 )
 
 const bannerTitle = computed(() =>

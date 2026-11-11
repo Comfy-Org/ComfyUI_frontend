@@ -30,12 +30,11 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowListing> =>
-      listing([
-        { id: 'wf-saved', name: 'saved' },
-        { id: 'wf-current', name: 'current' }
-      ])
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing([
+      { id: 'wf-saved', name: 'saved' },
+      { id: 'wf-current', name: 'current' }
+    ])
   )
   const cloudRows = new Map([
     ['wf-saved', 1],
@@ -900,9 +899,7 @@ describe('picking a target tab', () => {
     vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
       async (tab) => {
         if (!tab.isLoaded)
-          throw new Error(
-            `Cannot save workflow '${tab.path}' before it is loaded`
-          )
+          throw new Error('Cannot save a workflow before it is loaded')
         saved = true
         return true
       }
@@ -966,9 +963,7 @@ describe('picking a target tab', () => {
     vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
       async (tab) => {
         if (!tab.isLoaded)
-          throw new Error(
-            `Cannot save workflow '${tab.path}' before it is loaded`
-          )
+          throw new Error('Cannot save a workflow before it is loaded')
         saved = true
         return true
       }

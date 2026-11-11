@@ -122,40 +122,6 @@ export class SubscriptionHelper {
     }
     this.routeHandlers.push({ pattern: statusPattern, handler: statusHandler })
     await this.page.route(statusPattern, statusHandler)
-
-    const balancePattern = '**/customers/balance'
-    const balanceHandler = async (route: Route) => {
-      await route.fulfill({ json: this.balanceResponse })
-    }
-    this.routeHandlers.push({
-      pattern: balancePattern,
-      handler: balanceHandler
-    })
-    await this.page.route(balancePattern, balanceHandler)
-
-    const checkoutPattern = '**/customers/cloud-subscription-checkout**'
-    const checkoutHandler = async (route: Route) => {
-      await route.fulfill({
-        json: { checkout_url: 'https://checkout.stripe.com/mock' }
-      })
-    }
-    this.routeHandlers.push({
-      pattern: checkoutPattern,
-      handler: checkoutHandler
-    })
-    await this.page.route(checkoutPattern, checkoutHandler)
-
-    const billingPortalPattern = '**/customers/billing'
-    const billingPortalHandler = async (route: Route) => {
-      await route.fulfill({
-        json: { billing_portal_url: 'https://billing.example/portal' }
-      })
-    }
-    this.routeHandlers.push({
-      pattern: billingPortalPattern,
-      handler: billingPortalHandler
-    })
-    await this.page.route(billingPortalPattern, billingPortalHandler)
   }
 
   configure(...operators: SubscriptionOperator[]): void {

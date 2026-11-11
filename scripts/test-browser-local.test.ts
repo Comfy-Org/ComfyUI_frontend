@@ -62,6 +62,20 @@ writeFileSync(process.env.CAPTURE, JSON.stringify({
 }
 
 describe('local browser test launcher', () => {
+  it('runs a native package manager without interpreting it as JavaScript', () => {
+    const invocation = getPnpmInvocation(
+      ['--eval', 'process.stdout.write("native launcher")'],
+      process.execPath
+    )
+    const result = spawnSync(invocation.command, invocation.args, {
+      encoding: 'utf8',
+      timeout: 10_000
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('native launcher')
+  })
+
   it('runs pnpm through Node without a shell', () => {
     expect(getPnpmInvocation(['test:browser', 'spec.ts'], '/pnpm.mjs')).toEqual(
       {

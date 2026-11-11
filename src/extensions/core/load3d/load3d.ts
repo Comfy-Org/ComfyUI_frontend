@@ -12,7 +12,7 @@ import {
   useLoad3d
 } from '@/extensions/core/load3d/composables/useLoad3d'
 import type { Load3dCachedOutput } from '@/extensions/core/load3d/composables/useLoad3d'
-import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import { createNodeExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
   CameraState,
@@ -88,15 +88,9 @@ export const load3dExtension: ComfyExtension = {
     }
   ],
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    // Only show menu items for Load3D nodes
     if (node.constructor.comfyClass !== 'Load3D') return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
-
-    if (load3d.isSplatModel()) return []
-
-    return createExportMenuItems(load3d)
+    return createNodeExportMenuItems(node)
   },
 
   async nodeCreated(node: LGraphNode) {
@@ -290,15 +284,9 @@ export const preview3DExtension: ComfyExtension = {
   },
 
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    // Only show menu items for Preview3D nodes
     if (node.constructor.comfyClass !== 'Preview3D') return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
-
-    if (load3d.isSplatModel()) return []
-
-    return createExportMenuItems(load3d)
+    return createNodeExportMenuItems(node)
   },
 
   async nodeCreated(node: LGraphNode) {
@@ -470,12 +458,7 @@ function createPreview3DAdvancedExtension(
     getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
       if (node.constructor.comfyClass !== comfyClass) return []
 
-      const load3d = useLoad3dService().getLoad3d(node)
-      if (!load3d) return []
-
-      if (load3d.isSplatModel()) return []
-
-      return createExportMenuItems(load3d)
+      return createNodeExportMenuItems(node)
     },
 
     async nodeCreated(node: LGraphNode) {

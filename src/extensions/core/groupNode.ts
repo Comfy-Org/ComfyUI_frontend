@@ -21,7 +21,7 @@ import type {
   ComfyNodeDef,
   ComfyOutputTypesSpec,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'

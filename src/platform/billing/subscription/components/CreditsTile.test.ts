@@ -1,10 +1,12 @@
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -16,8 +18,15 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTelemetry } from '@comfyorg/telemetry'
-import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
-import { useCustomerEventsService } from '@/services/customerEventsService'
+import type {
+  BillingEventsResponse,
+  BillingTopUpDenial,
+  TeamCreditStopSummary
+} from '@comfyorg/billing-core'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspaceIdentity'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 
 type Balance = Pick<
   BalanceInfo,
@@ -30,6 +39,13 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
+
+const eventsPage = (
+  events: Partial<BillingEventsResponse['events'][number]>[]
+) =>
+  fromPartial<Awaited<ReturnType<typeof readWorkspaceBillingEvents>>>({
+    events
+  })
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -56,9 +72,15 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
+
 vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/services/customerEventsService'))
+vi.mock(import('@/platform/billing/composables/readWorkspaceBillingEvents'))
+
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
+
+vi.mock(import('@/platform/workspace/ports/workspaceIdentity'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -72,6 +94,18 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
+      workspacePanel: {
+        billingStatus: { updatePayment: 'Update payment' }
+      },
       subscription: {
         totalCredits: 'Total credits',
         remaining: 'remaining',
@@ -147,7 +181,19 @@ function createDeferred() {
 }
 
 describe('CreditsTile', () => {
+  const workspaceIdentity = reactive({
+    workspaces: [],
+    activeWorkspace: null as WorkspaceIdentityAccess['activeWorkspace'],
+    activeWorkspaceId: null as string | null,
+    initSettled: true,
+    isInPersonalWorkspace: false,
+    workspaceTransitionGeneration: 0,
+    identityGeneration: 0
+  })
+
   beforeEach(() => {
+    workspaceIdentity.activeWorkspaceId = null
+    vi.mocked(useWorkspaceIdentity).mockReturnValue(workspaceIdentity)
     const errorHandling = useErrorHandling()
     errorHandling.wrapWithErrorHandlingAsync =
       (action, errorHandler) =>
@@ -209,6 +255,14 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     state.telemetryUnavailable = false
     mockIsCloud.value = true
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -521,18 +575,73 @@ describe('CreditsTile', () => {
     }
   )
 
-  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
+    {
+      denial: 'topup_purchases_paused',
+      reason: "Buying credits isn't available right now. Try again later."
+    },
+    {
+      denial: 'payment_past_due',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      denial: 'creator_only_provisioning',
+      reason: "Adding credits isn't available for this workspace right now."
+    },
+    {
+      denial: undefined,
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for a $denial refusal',
+    ({ denial, reason }) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+    }
+  )
+
+  it.for(['not_workspace_owner', 'not_a_member'] as const)(
+    'hides Add credits for a %s refusal',
+    (denial) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('enables Add credits when the server allows a top-up', () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => true)
+    renderTile()
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+  })
+
+  it('keeps a past-due owner a way to update payment', async () => {
     activeProSubscription()
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
     useBillingCapabilities().paymentRecoveryAvailable =
       paymentRecoveryAvailableFact(true)
     renderTile()
 
-    await userEvent.click(screen.getByText('Add credits'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
 
-    expect(
-      useBillingDialogs().showTopUpCreditsDialog
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
+    expect(usePaymentRecoveryDialog().updatePayment).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
@@ -849,7 +958,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledTimes(2)
   })
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
@@ -884,7 +993,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledOnce()
   })
 
   it('clears a confirmed top-up before the next focus', async () => {
@@ -896,9 +1005,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events
-    })
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage(events)
+    )
 
     renderTile()
 
@@ -913,7 +1022,38 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
-    expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+  })
+
+  it('drops a reply that lands after the active workspace changed', async () => {
+    activeProSubscription()
+    workspaceIdentity.activeWorkspaceId = 'ws-1'
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    let resolveReply!: (
+      value: Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+    ) => void
+    const reply = new Promise<
+      Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+    >((resolve) => {
+      resolveReply = resolve
+    })
+    vi.mocked(readWorkspaceBillingEvents).mockReturnValueOnce(reply)
+
+    renderTile()
+    await waitFor(() => expect(readWorkspaceBillingEvents).toHaveBeenCalled())
+    workspaceIdentity.activeWorkspaceId = 'ws-2'
+    resolveReply(
+      eventsPage([
+        {
+          event_type: 'topup_completed',
+          createdAt: new Date(Date.now() + 1000).toISOString()
+        }
+      ])
+    )
+    await reply
+
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+    expect(useTelemetry()?.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
   it('closes a confirmed top-up with one succeeded event measured from its start', async () => {
@@ -924,14 +1064,14 @@ describe('CreditsTile', () => {
       'pending_topup_timestamp',
       String(confirmedAtMs - 90_000)
     )
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events: [
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage([
         {
           event_type: 'credit_added',
           createdAt: new Date(confirmedAtMs - 1000).toISOString()
         }
-      ]
-    })
+      ])
+    )
 
     renderTile()
 
@@ -964,9 +1104,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events
-    })
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage(events)
+    )
 
     renderTile()
 
@@ -980,16 +1120,15 @@ describe('CreditsTile', () => {
   it('retries completion reconciliation after a request failure', async () => {
     activeProSubscription()
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [
       {
         event_type: 'credit_added',
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ events: retryEvents })
+    vi.mocked(readWorkspaceBillingEvents)
+      .mockRejectedValueOnce(new Error('events unavailable'))
+      .mockResolvedValueOnce(eventsPage(retryEvents))
 
     renderTile()
     await waitFor(() =>
@@ -1004,7 +1143,51 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a pending top-up and reads no events while routing is unknown', async () => {
+    activeProSubscription()
+    useBillingRouting().shouldUseWorkspaceBilling = computed(() => false)
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+  })
+
+  it('reconciles a pending top-up once routing becomes known', async () => {
+    activeProSubscription()
+    const workspaceBilling = ref(false)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => workspaceBilling.value
+    )
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage([
+        {
+          event_type: 'topup_completed',
+          createdAt: new Date(Date.now() + 1000).toISOString()
+        }
+      ])
+    )
+
+    renderTile()
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+    )
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+
+    workspaceBilling.value = true
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {

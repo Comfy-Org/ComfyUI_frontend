@@ -185,6 +185,28 @@ describe('bootstrapStore', () => {
       expect(api.prefetchNodeDefs).not.toHaveBeenCalled()
     })
 
+    it('traces the identity boot and the sign-in wait between Firebase init and the user store', async () => {
+      const settle = vi.spyOn(bootstrapTracer, 'settle')
+      const store = useBootstrapStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+
+      useAuthStore().isInitialized = true
+      await vi.waitFor(() => expect(bootCloudIdentity).toHaveBeenCalledOnce())
+      useAuthStore().currentUser = fromPartial({ uid: 'user-123' })
+      await bootstrapPromise
+
+      const authGatePhases = settle.mock.calls
+        .map(([phase]) => phase)
+        .filter((phase) => phase.startsWith('auth-gate/'))
+      expect(authGatePhases).toEqual([
+        'auth-gate/initialized',
+        'auth-gate/identity',
+        'auth-gate/sign-in',
+        'auth-gate/user-store',
+        'auth-gate/needs-login'
+      ])
+    })
+
     it('retries once and keeps authenticated stores gated if Firebase resolves signed out', async () => {
       vi.useFakeTimers()
       try {

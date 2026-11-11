@@ -6,7 +6,7 @@ import type { useBillingRouting as realUseBillingRouting } from '@/platform/bill
 const defaults: ReturnType<typeof realUseBillingRouting> = {
   type: computed(() => 'workspace'),
   shouldUseWorkspaceBilling: computed(() => true),
-  shouldUseUnifiedPricing: computed(() => false)
+  shouldUseUnifiedPricing: computed(() => true)
 }
 
 const billingRouting = { ...defaults }
