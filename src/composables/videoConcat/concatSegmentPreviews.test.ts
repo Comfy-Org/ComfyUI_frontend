@@ -35,7 +35,7 @@ function nodeInSubgraph() {
 }
 
 function preview(filename: string, source: [string, number]) {
-  return ['video0', source, { filename, subfolder: '', type: 'temp' }]
+  return { name: 'video0', filename, subfolder: '', type: 'temp', source }
 }
 
 function viewUrl(filename: string) {
@@ -46,17 +46,7 @@ describe('parseSegmentPreviews', () => {
   it.for([
     { value: undefined },
     { value: 'segments' },
-    { value: [['video0', ['1', 0], { filename: 'a.mp4', type: 'somewhere' }]] },
-    {
-      value: [
-        {
-          name: 'video0',
-          filename: 'a.mp4',
-          type: 'temp',
-          source: ['1', 0]
-        }
-      ]
-    }
+    { value: [{ filename: 'a.mp4', type: 'somewhere' }] }
   ])('ignores malformed output $value', ({ value }) => {
     expect(parseSegmentPreviews(value)).toEqual([])
   })

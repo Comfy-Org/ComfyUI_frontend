@@ -47,6 +47,7 @@ describe('useBillingBanner', () => {
       audience: ref<'none' | 'team' | 'personal' | null>('team'),
       endingNoticeStartsAt: ref<string | null>(null),
       billingStatus: ref<BillingStatus | null>('paid'),
+      isTeamPlan: ref(true),
       tier: ref<SubscriptionInfo['tier']>(null),
       subscription: ref<
         | (Pick<SubscriptionInfo, 'hasFunds'> &
@@ -61,6 +62,7 @@ describe('useBillingBanner', () => {
       () => billing.canAccessSubscriptionFeatures.value
     )
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
+    billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.subscription = computed(() =>
       billing.subscription.value &&
       (billing.canAccessSubscriptionFeatures.value || billing.tier.value)
@@ -102,11 +104,54 @@ describe('useBillingBanner', () => {
       )
     }))
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     scope = effectScope()
   })
 
   afterEach(() => scope.stop())
+
+  it.for([
+    { tier: 'TEAM', team: true, audience: 'team', kind: 'outOfCredits' },
+    { tier: 'PRO', team: false, audience: 'personal', kind: 'outOfCredits' },
+    { tier: 'FREE', team: false, audience: null, kind: null },
+    { tier: 'ENTERPRISE', team: true, audience: null, kind: null }
+  ] as const)(
+    'keeps the 1.60 $tier audience with no served notice facts while the new UX is off',
+    async ({ tier, team, audience, kind }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      const billing = setupBilling()
+      billing.audience.value = null
+      billing.tier.value = tier
+      billing.isTeamPlan.value = team
+      billing.subscription.value = { hasFunds: false }
+
+      const banner = useBillingBanner()
+      await nextTick()
+
+      expect(banner.audience.value).toBe(audience)
+      expect(banner.kind.value).toBe(kind)
+    }
+  )
+
+  it('switches a mounted banner between legacy and served notices when the rollout changes', async () => {
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    const billing = setupBilling()
+    billing.tier.value = 'PRO'
+    billing.isTeamPlan.value = false
+    billing.audience.value = 'none'
+    billing.subscription.value = { hasFunds: false }
+    const banner = useBillingBanner()
+    expect(banner.kind.value).toBe('outOfCredits')
+
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    await nextTick()
+    expect(banner.kind.value).toBeNull()
+
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    await nextTick()
+    expect(banner.kind.value).toBe('outOfCredits')
+  })
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
@@ -218,6 +263,30 @@ describe('useBillingBanner', () => {
     beforeEach(() => {
       vi.useFakeTimers({ now: NOW })
     })
+
+    it.for([
+      { endsInDays: 15, kind: null },
+      { endsInDays: 14, kind: 'ending' },
+      { endsInDays: -1, kind: 'ending' }
+    ])(
+      'keeps the 1.60 notice window at $endsInDays days with the new UX off',
+      async ({ endsInDays, kind: expected }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+        const billing = setupBilling()
+        billing.tier.value = 'ENTERPRISE'
+        billing.audience.value = null
+        billing.subscription.value = {
+          hasFunds: false,
+          isCancelled: true,
+          endDate: new Date(NOW + endsInDays * DAY).toISOString()
+        }
+
+        const { kind } = useBillingBanner()
+        await nextTick()
+
+        expect(kind.value).toBe(expected)
+      }
+    )
 
     it.for([
       { startsInDays: 1, kind: null },
