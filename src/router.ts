@@ -189,6 +189,7 @@ function installCloudAuthGuards(router: Router): void {
     }
   }
   const watchedSessions = new WeakSet<object>()
+  /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
     const webSession = useCloudWebSessionStore()
     if (watchedSessions.has(webSession)) return
@@ -218,6 +219,7 @@ function installCloudAuthGuards(router: Router): void {
     })
     let hadAccount = false
     let rerouteEnabled = false
+    let lastUid: string | undefined
     watch(
       [
         account,
@@ -225,8 +227,9 @@ function installCloudAuthGuards(router: Router): void {
         remoteConfigState,
         () => authStore.currentUser?.uid
       ],
-      ([state, enabled, configState, uid], [, , , previousUid]) => {
-        if (uid && previousUid && uid !== previousUid) rerouteEnabled = false
+      ([state, enabled, configState, uid]) => {
+        if (uid && lastUid && uid !== lastUid) rerouteEnabled = false
+        if (uid) lastUid = uid
         if (state === 'signed_in') {
           hadAccount = true
           if (enabled || AUTHORITATIVE_CONFIG_STATES.has(configState))
@@ -243,6 +246,7 @@ function installCloudAuthGuards(router: Router): void {
       { immediate: true }
     )
   }
+  /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
     query: LocationQueryRaw
