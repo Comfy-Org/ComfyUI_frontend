@@ -129,7 +129,6 @@ test.describe('Save Video preview of an undecodable output', () => {
       .poll(() => canvasPreviewVideo(page))
       .toEqual({ file: PLAYABLE, decoded: true })
 
-    // The failure probe is fetched once both load attempts are spent.
     const failureProbed = page.waitForRequest(
       (request) =>
         request.resourceType() === 'fetch' && filenameOf(request.url()) === SLOW
