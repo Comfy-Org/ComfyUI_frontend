@@ -356,13 +356,16 @@ describe('MissingModelCard (OSS)', () => {
     expect(getRows()[0].hasAttribute('data-directory')).toBe(false)
   })
 
-  it('shows Download all at the bottom when one model is downloadable', () => {
+  it('shows Download all above the model rows when one model is downloadable', () => {
     mountCard({
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
     })
 
     const actions = screen.getByTestId('missing-model-actions')
     expect(actions).toBeVisible()
+    expect(actions.compareDocumentPosition(getRows()[0])).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
     expect(
       within(actions).getByRole('button', { name: /Download all/ })
     ).toBeVisible()
@@ -504,6 +507,43 @@ describe('MissingModelCard (OSS)', () => {
       {}
     )
   })
+
+  it.for([
+    {
+      known: 'every size',
+      fileSizes: {
+        'https://huggingface.co/comfy/test/resolve/main/first.safetensors': 2048,
+        'https://huggingface.co/comfy/test/resolve/main/second.safetensors': 2048
+      },
+      label: /^Download all \(4 KB\)$/
+    },
+    {
+      known: 'one of two sizes',
+      fileSizes: {
+        'https://huggingface.co/comfy/test/resolve/main/first.safetensors': 2048
+      },
+      label: /^Download all$/
+    }
+  ])(
+    'labels Download all as $label when $known is known',
+    async ({ fileSizes, label }) => {
+      mountCard({
+        missingModelGroups: [
+          makeGroup({
+            withDownloadUrls: true,
+            modelNames: ['first.safetensors', 'second.safetensors']
+          })
+        ]
+      })
+
+      Object.assign(useMissingModelStore().fileSizes, fileSizes)
+      await nextTick()
+
+      expect(
+        screen.getByTestId('missing-model-download-all')
+      ).toHaveTextContent(label, { normalizeWhitespace: true })
+    }
+  )
 
   it('hides Download all when no model is downloadable', () => {
     mountCard()

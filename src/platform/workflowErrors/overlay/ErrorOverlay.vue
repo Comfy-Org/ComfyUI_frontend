@@ -63,6 +63,10 @@
                 : t('errorOverlay.viewDetails')
             }}
           </Button>
+          <ErrorOverlayDownloadAllModels
+            :missing-model-groups="downloadableMissingModelGroups"
+            @downloaded="emit('viewErrors', overlayGroupKeys)"
+          />
         </div>
 
         <Button
@@ -88,6 +92,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
+import ErrorOverlayDownloadAllModels from '@/platform/workflowErrors/overlay/ErrorOverlayDownloadAllModels.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
@@ -99,6 +104,7 @@ const executionErrorStore = useExecutionErrorStore()
 const {
   hasError,
   hasMissingNodes,
+  downloadableMissingModelGroups,
   isVisible,
   overlayMessage,
   overlayTitle,
