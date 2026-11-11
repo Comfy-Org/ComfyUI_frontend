@@ -1,3 +1,5 @@
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import { createTemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
@@ -35,12 +37,14 @@ export function toTemplateModelDownloadState(
 
 /** Template model downloads, shared with the Errors tab wherever the host reports progress. */
 export function useTemplateModelDownloads(
-  options: Parameters<typeof useTemplateModelRowDownloads>[0]
+  options: Parameters<typeof useTemplateModelRowDownloads>[0],
+  missingModels: readonly ModelFile[] = []
 ): TemplateModelRowDownloads {
-  if (!hostReportsModelDownloadProgress()) {
+  const store = useMissingModelDownloadStore()
+  if (!hostReportsModelDownloadProgress() || !store.tracksHostProgress()) {
     return useTemplateModelRowDownloads(options)
   }
-  const store = useMissingModelDownloadStore()
+  store.reopenFinished(missingModels)
   return {
     stateFor: (model) => toTemplateModelDownloadState(store.stateFor(model)),
     request: (model) => store.download(model),

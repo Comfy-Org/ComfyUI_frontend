@@ -1337,7 +1337,12 @@ async function showAssetSetupIfNeeded(
   )
     return false
 
-  const rowDownloads = useTemplateModelDownloads({ folderPaths })
+  const rowDownloads = useTemplateModelDownloads(
+    { folderPaths },
+    availability.flatMap(({ model, status }) =>
+      status === 'missing' ? [model] : []
+    )
+  )
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),

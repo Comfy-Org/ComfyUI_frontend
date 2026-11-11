@@ -187,16 +187,18 @@
         >
           {{ t('rightSidePanel.missingModels.retryDownload') }}
         </Button>
-        <template v-else-if="showDownloadAction && canControlHostDownload">
+        <template
+          v-else-if="showDownloadAction && (canToggleHostPause || canCancel)"
+        >
           <Button
-            v-if="hostDownloadState.status === 'downloading'"
+            v-if="canToggleHostPause"
             data-testid="missing-model-download-pause"
             variant="muted-textonly"
             size="icon-sm"
             class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
             :aria-label="
               t(
-                hostDownloadState.paused
+                isHostDownloadPaused
                   ? 'rightSidePanel.missingModels.resumeDownloadModel'
                   : 'rightSidePanel.missingModels.pauseDownloadModel',
                 { model: model.name },
@@ -208,13 +210,14 @@
             <i
               aria-hidden="true"
               :class="
-                hostDownloadState.paused
+                isHostDownloadPaused
                   ? 'icon-[lucide--play]'
                   : 'icon-[lucide--pause]'
               "
             />
           </Button>
           <Button
+            v-if="canCancel"
             data-testid="missing-model-download-cancel"
             variant="muted-textonly"
             size="icon-sm"
@@ -511,10 +514,30 @@ const hostDownloadState = computed(() =>
     ? missingModelDownloadStore.stateFor(hostDownloadModel.value)
     : { status: 'idle' as const }
 )
-const canControlHostDownload = computed(
+const isHostDownloadPaused = computed(
+  () =>
+    hostDownloadState.value.status === 'downloading' &&
+    hostDownloadState.value.paused
+)
+const canToggleHostPause = computed(() => {
+  const target = hostDownloadModel.value
+  const state = hostDownloadState.value
+  return (
+    !!target &&
+    state.status === 'downloading' &&
+    missingModelDownloadStore.canControl(
+      target,
+      state.paused ? 'resumeDownload' : 'pauseDownload'
+    )
+  )
+})
+const canCancel = computed(
   () =>
     !!hostDownloadModel.value &&
-    missingModelDownloadStore.canControl(hostDownloadModel.value)
+    missingModelDownloadStore.canControl(
+      hostDownloadModel.value,
+      'cancelDownload'
+    )
 )
 
 function cancelHostDownload() {

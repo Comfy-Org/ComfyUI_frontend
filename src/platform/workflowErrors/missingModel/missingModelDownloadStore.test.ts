@@ -593,4 +593,64 @@ describe(useMissingModelDownloadStore, () => {
       })
     )
   })
+  it('keeps a finished download no missing model needs when a re-check settles', async () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('completed')
+
+    await settleRefresh()
+
+    expect(store.stateFor(model).status).toBe('done')
+  })
+
+  it('offers only the controls the host provides', () => {
+    installDesktopHost()
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      cancelDownload: vi.fn().mockResolvedValue(true)
+    }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading')
+
+    expect(store.canControl(model, 'cancelDownload')).toBe(true)
+    expect(store.canControl(model, 'pauseDownload')).toBe(false)
+  })
+
+  it('reports a download control that throws', () => {
+    installDesktopHost()
+    const failure = new Error('bridge gone')
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      pauseDownload: () => {
+        throw failure
+      }
+    }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading')
+
+    store.pause(model)
+
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'platform',
+      errorType: 'error_controlling_model_download',
+      tags: { action: 'pauseDownload' }
+    })
+  })
+
+  it('controls a later job without an id by URL rather than the ended job id', () => {
+    installDesktopHost()
+    const pauseDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, pauseDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('error', { id: 'job-1' })
+    emitHostProgress('pending', { id: undefined })
+
+    store.pause(model)
+
+    expect(pauseDownload).toHaveBeenCalledWith(model.url)
+  })
 })

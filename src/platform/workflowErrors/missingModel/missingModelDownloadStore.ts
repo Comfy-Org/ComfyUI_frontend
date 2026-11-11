@@ -156,6 +156,8 @@ function nextHostDownload(
   }
 }
 
+type DownloadControl = 'pauseDownload' | 'resumeDownload' | 'cancelDownload'
+
 /** Desktop 2 model downloads, mirrored by destination wherever they started. */
 export const useMissingModelDownloadStore = defineStore(
   'missingModelDownload',
@@ -183,20 +185,31 @@ export const useMissingModelDownloadStore = defineStore(
       void missingModelStore.refreshMissingModels()
     }
 
-    function reopenStillMissing(
-      candidates: readonly MissingModelCandidate[] | null
+    function reopenFinished(
+      models: readonly { name: string; directory?: string }[],
+      only: (download: HostDownload) => boolean = () => true
     ) {
-      if (refreshPending || missingModelStore.isRefreshingMissingModels) return
       const missing = new Set(
-        (candidates ?? []).flatMap(({ name, directory }) =>
+        models.flatMap(({ name, directory }) =>
           directory ? [getModelFileKey({ name, directory })] : []
         )
       )
       for (const [key, download] of downloads) {
-        if (download.state.status === 'done' && missing.has(key)) {
+        if (
+          download.state.status === 'done' &&
+          missing.has(key) &&
+          only(download)
+        ) {
           downloads.set(key, { ...download, state: IDLE })
         }
       }
+    }
+
+    function reopenStillMissing(
+      candidates: readonly MissingModelCandidate[] | null
+    ) {
+      if (refreshPending || missingModelStore.isRefreshingMissingModels) return
+      reopenFinished(candidates ?? [])
     }
 
     watch(() => missingModelStore.missingModelCandidates, reopenStillMissing)
@@ -215,7 +228,10 @@ export const useMissingModelDownloadStore = defineStore(
         }
         const finished = finishedBeforeRefresh
         finishedBeforeRefresh = new Set()
-        resetWhere((download) => finished.has(download))
+        reopenFinished(
+          missingModelStore.missingModelCandidates ?? [],
+          (download) => finished.has(download)
+        )
         flushRefresh()
       }
     )
@@ -373,36 +389,46 @@ export const useMissingModelDownloadStore = defineStore(
         download?.state.status !== 'downloading'
       )
         return undefined
-      return download.jobId ?? download.url
+      return download.jobId !== undefined &&
+        !download.endedJobs.has(download.jobId)
+        ? download.jobId
+        : download.url
     }
 
-    function canControl(model: ModelWithUrl): boolean {
+    function canControl(model: ModelWithUrl, action: DownloadControl): boolean {
       return (
         tracking &&
-        !!window.__comfyDesktop2?.cancelDownload &&
+        typeof window.__comfyDesktop2?.[action] === 'function' &&
         controlRef(model) !== undefined
       )
     }
 
-    function control(
-      model: ModelWithUrl,
-      action: 'pauseDownload' | 'resumeDownload' | 'cancelDownload'
-    ) {
+    function reportControlFailure(error: unknown, action: DownloadControl) {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'error_controlling_model_download',
+        tags: { action }
+      })
+    }
+
+    function control(model: ModelWithUrl, action: DownloadControl) {
       const ref = controlRef(model)
       if (ref === undefined) return
-      void window.__comfyDesktop2?.[action]?.(ref).catch((error: unknown) => {
-        reportError(error, {
-          surface: 'platform',
-          errorType: 'error_controlling_model_download',
-          tags: { action }
-        })
-      })
+      try {
+        void Promise.resolve(window.__comfyDesktop2?.[action]?.(ref)).catch(
+          (error: unknown) => reportControlFailure(error, action)
+        )
+      } catch (error) {
+        reportControlFailure(error, action)
+      }
     }
 
     return {
       stateFor,
       download,
       startTracking,
+      tracksHostProgress: () => tracking,
+      reopenFinished,
       canControl,
       pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
       resume: (model: ModelWithUrl) => control(model, 'resumeDownload'),

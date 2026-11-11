@@ -77,6 +77,32 @@ describe(useTemplateModelDownloads, () => {
       folderPaths: { checkpoints: ['/models'] }
     })
   })
+
+  it('keeps a dialog-scoped tracker while host progress is not being tracked', () => {
+    installDesktopHost()
+
+    useTemplateModelDownloads({ folderPaths: {} })
+
+    expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
+  })
+
+  it('reopens a finished download the dialog finds missing', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress({
+      id: 'job-1',
+      url: model.url,
+      filename: model.name,
+      directory: model.directory,
+      status: 'completed',
+      progress: 1
+    })
+
+    const downloads = useTemplateModelDownloads({ folderPaths: {} }, [model])
+
+    expect(downloads.stateFor(model).status).toBe('idle')
+  })
 })
 
 describe(toTemplateModelDownloadState, () => {
