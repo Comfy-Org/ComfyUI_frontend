@@ -1711,9 +1711,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
 
         if (configured.length) {
-          install('onConfigure', (node, serialised) => {
-            const data = (extensionValue(serialised) ??
-              {}) as unknown as Record<string, unknown>
+          const deliverConfigured = (
+            node: LGraphNode,
+            data: Record<string, unknown>
+          ) => {
             for (const { run, handleForNode, isActive } of configured) {
               if (isActive()) {
                 invokeAttached('onConfigured', node, () =>
@@ -1721,6 +1722,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 )
               }
             }
+          }
+          const configuredDetached = new WeakMap<
+            LGraphNode,
+            Record<string, unknown>
+          >()
+          install('onConfigure', (node, serialised) => {
+            const data = (extensionValue(serialised) ??
+              {}) as unknown as Record<string, unknown>
+            if (node.graph) deliverConfigured(node, data)
+            else configuredDetached.set(node, data)
+          })
+          install('onAdded', (node) => {
+            const data = configuredDetached.get(node)
+            if (!data) return
+            configuredDetached.delete(node)
+            deliverConfigured(node, data)
           })
         }
 

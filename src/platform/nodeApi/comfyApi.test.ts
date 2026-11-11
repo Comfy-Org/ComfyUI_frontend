@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -17,9 +18,6 @@ import {
 } from './comfyApi'
 import { beginDocument } from './appReady'
 import { ComfyUnsupportedError } from './errors'
-
-const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 describe('comfy API root', () => {
   let graph: LGraph
@@ -315,22 +313,40 @@ describe('comfy API root', () => {
       }
     })
 
-    it('delivers no lifecycle callback for a node outside any graph', () => {
+    it('configures a clone once it joins a graph, and never while detached', () => {
       const comfy = createComfyApi(() => graph)
-      const configured = vi.fn()
-      comfy.defs.extend('DetachedProbe', (builder) =>
-        builder.onConfigured(configured)
-      )
+      const delivered: [string, string, unknown][] = []
+      comfy.defs.extend('DetachedProbe', (builder) => {
+        builder.onCreated((node) => delivered.push(['created', node.id, null]))
+        builder.onConfigured((node, data) =>
+          delivered.push([
+            'configured',
+            node.id,
+            (data.properties as Record<string, unknown>).marker
+          ])
+        )
+      })
       const dispose = comfy.defs.define({ type: 'DetachedProbe' })
 
       try {
         const original = LiteGraph.createNode('DetachedProbe')!
+        original.properties.marker = 'kept'
         graph.add(original)
-        reportError.mockClear()
+        original.configure(original.serialize())
+        const clone = original.clone()!
 
-        original.clone()
+        expect(delivered).toEqual([
+          ['created', String(original.id), null],
+          ['configured', String(original.id), 'kept']
+        ])
 
-        expect(configured).not.toHaveBeenCalled()
+        graph.add(clone)
+
+        expect(clone.id).not.toBe(original.id)
+        expect(delivered.slice(2)).toEqual([
+          ['created', String(clone.id), null],
+          ['configured', String(clone.id), 'kept']
+        ])
         expect(reportError).not.toHaveBeenCalled()
       } finally {
         dispose()
