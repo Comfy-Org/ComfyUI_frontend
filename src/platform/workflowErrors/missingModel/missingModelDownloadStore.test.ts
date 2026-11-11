@@ -302,14 +302,46 @@ describe(useMissingModelDownloadStore, () => {
       tags: { host: 'desktop2' }
     })
   })
-  it('keeps no finished entry when no missing model is loaded', () => {
+  it('keeps a finished download that no missing model needs', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()
     store.startTracking()
 
     emitHostProgress('completed')
 
+    expect(store.stateFor(model).status).toBe('done')
+  })
+
+  it('reopens a finished download once a scan reports it missing again', async () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('completed')
+
+    seedMissingModel()
+    await nextTick()
+
     expect(store.stateFor(model).status).toBe('idle')
+  })
+
+  it('keeps a just-finished download while its re-check runs', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const missingModelStore = useMissingModelStore()
+    vi.spyOn(missingModelStore, 'refreshMissingModels').mockImplementation(
+      () => {
+        missingModelStore.isRefreshingMissingModels = true
+        return new Promise(() => {})
+      }
+    )
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('completed')
+
+    seedMissingModel()
+    await nextTick()
+
+    expect(store.stateFor(model).status).toBe('done')
   })
 
   it('clears a finished download once any re-check settles', async () => {

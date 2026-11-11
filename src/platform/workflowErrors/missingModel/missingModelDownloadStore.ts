@@ -144,13 +144,12 @@ function endedJobsAfter(
 function nextHostDownload(
   current: HostDownload | undefined,
   progress: ComfyDownloadProgress,
-  state: MissingModelDownloadState,
-  isMissing: boolean
+  state: MissingModelDownloadState
 ): HostDownload {
   return {
     name: progress.filename,
     url: progress.url,
-    state: state.status === 'done' && !isMissing ? IDLE : state,
+    state,
     jobId: progress.id ?? current?.jobId,
     jobEnded: isHostTerminal(progress.status),
     endedJobs: endedJobsAfter(current, progress)
@@ -183,6 +182,24 @@ export const useMissingModelDownloadStore = defineStore(
       refreshPending = false
       void missingModelStore.refreshMissingModels()
     }
+
+    function reopenStillMissing(
+      candidates: readonly MissingModelCandidate[] | null
+    ) {
+      if (refreshPending || missingModelStore.isRefreshingMissingModels) return
+      const missing = new Set(
+        (candidates ?? []).flatMap(({ name, directory }) =>
+          directory ? [getModelFileKey({ name, directory })] : []
+        )
+      )
+      for (const [key, download] of downloads) {
+        if (download.state.status === 'done' && missing.has(key)) {
+          downloads.set(key, { ...download, state: IDLE })
+        }
+      }
+    }
+
+    watch(() => missingModelStore.missingModelCandidates, reopenStillMissing)
 
     let finishedBeforeRefresh = new Set<HostDownload>()
     watch(
@@ -228,7 +245,7 @@ export const useMissingModelDownloadStore = defineStore(
         missingModelStore.missingModelCandidates,
         progress
       )
-      downloads.set(key, nextHostDownload(current, progress, state, isMissing))
+      downloads.set(key, nextHostDownload(current, progress, state))
       if (state.status === 'done' && current?.state.status !== 'done') {
         requestRefresh(isMissing)
       }
