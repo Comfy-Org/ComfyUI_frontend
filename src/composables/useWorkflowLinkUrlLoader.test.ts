@@ -537,6 +537,49 @@ describe('workflow-id links', () => {
       reported: new Error('Could not read workflow link'),
       errorType: 'error_loading_workflow_link',
       errorName: 'SyntaxError'
+    },
+    {
+      name: 'custom node code throws an error under its own name',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        thrown.name = 'Customer Jane Doe'
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
+    },
+    {
+      name: 'custom node code throws an error whose name changes between reads',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        const names = ['Error', 'Customer Jane Doe']
+        Object.defineProperty(thrown, 'name', {
+          get: () => names.shift() ?? 'Customer Jane Doe'
+        })
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'Error'
+    },
+    {
+      name: 'an error name cannot be read',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        Object.defineProperty(thrown, 'name', {
+          get: () => {
+            throw new Error('Customer Jane Doe')
+          }
+        })
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
     }
   ])(
     'reports that $name without the file name or the error text',
@@ -664,6 +707,73 @@ describe('workflow-id links', () => {
     signIn.release()
     await newerLink
     expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
+  })
+
+  it('leaves a newer malformed link a navigation guard holds while an older malformed link is rejected', async () => {
+    const request = vi.spyOn(api, 'fetchApi')
+    await navigate({ workflowId: 'bad1' })
+    const signIn = holdNavigation((to) => to.query.workflowId === 'bad2')
+    const newerLink = navigate({ workflowId: 'bad2', topup: '1' })
+    await signIn.arrived
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+
+    expect(request).not.toHaveBeenCalled()
+    expect(currentQuery()).toEqual({ workflowId: 'bad1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe('bad2')
+    signIn.release()
+    await newerLink
+    expect(currentQuery()).toEqual({ workflowId: 'bad2', topup: '1' })
+  })
+
+  it('leaves a newer empty link a navigation guard holds after a newer guard-held link superseded the lookup', async () => {
+    const respond = holdLookup()
+    await navigate({ workflowId: ID })
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    const newerHold = holdNavigation(isNewerLink)
+    const emptyHold = holdNavigation((to) => to.query.workflowId === '')
+
+    const attempt = loader.openWorkflowLinkFromUrl()
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await newerHold.arrived
+    const emptyLink = navigate({ workflowId: '', topup: '1' })
+    await emptyHold.arrived
+    respond()
+
+    expect(await attempt).toBe('pending')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+    newerHold.release()
+    emptyHold.release()
+    await Promise.all([newerLink, emptyLink])
+    expect(currentQuery()).toEqual({ workflowId: '', topup: '1' })
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ topup: '1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(loader.hasLinkInFlight()).toBe(false)
+  })
+
+  it('reports an empty link once when another navigation cancels its URL cleanup, and clears it later', async () => {
+    await navigate({ workflowId: '' })
+    const cleanup = holdNavigation((to) => isUrlCleanup(to) && !to.query.keep)
+
+    const attempt = loader.openWorkflowLinkFromUrl(true)
+    await cleanup.arrived
+    await navigate({ keep: 'yes' })
+    cleanup.release()
+
+    expect(await attempt).toBe('failed')
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(',')
+    expect(loader.hasLinkInFlight()).toBe(false)
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ keep: 'yes' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(useToast().toasts).toHaveLength(1)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
   })
 
   it('keeps a boot link opened when another navigation cancels its URL cleanup, and clears it later without reopening', async () => {

@@ -58,15 +58,36 @@ function isWorkflowId(value: unknown): value is string {
   return typeof value === 'string' && workflowIdSchema.safeParse(value).success
 }
 
-function isSameLink(carried: unknown, workflowId: unknown): boolean {
-  return (
-    carried === workflowId ||
-    (!isWorkflowId(carried) && !isWorkflowId(workflowId))
-  )
+function linkIdentity(value: unknown): unknown {
+  if (value === null || value === '') return ','
+  if (!Array.isArray(value)) return value
+  if (value.length === 1) return linkIdentity(value[0])
+  return value.map((entry: unknown) => entry ?? '').join(',')
 }
 
+function isSameLink(carried: unknown, workflowId: unknown): boolean {
+  return linkIdentity(carried) === linkIdentity(workflowId)
+}
+
+const BUILT_IN_ERROR_NAMES: ReadonlySet<string> = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'ReferenceError',
+  'EvalError',
+  'URIError',
+  'AggregateError'
+])
+
 function failureContext(cause: unknown) {
-  return { error_name: cause instanceof Error ? cause.name : typeof cause }
+  try {
+    if (!(cause instanceof Error)) return { error_name: typeof cause }
+    const name = cause.name
+    return { error_name: BUILT_IN_ERROR_NAMES.has(name) ? name : 'other' }
+  } catch {
+    return { error_name: 'other' }
+  }
 }
 
 function isWorkflowPath(path: string): boolean {
@@ -299,7 +320,7 @@ function useWorkflowLinkUrlLoaderInternal() {
   function completedStatus(value: unknown, workspaceId: string | null) {
     if (
       !completed ||
-      completed.value !== value ||
+      !isSameLink(completed.value, value) ||
       completed.workspaceId !== workspaceId
     )
       return undefined
@@ -320,7 +341,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     workflowId: unknown,
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
-    startedLinks.add(workflowId)
+    startedLinks.add(linkIdentity(workflowId))
     const ownership = attemptOwnership(workflowId, workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
@@ -345,7 +366,11 @@ function useWorkflowLinkUrlLoaderInternal() {
 
   function hasLinkInFlight(): boolean {
     const { route, stash } = linkCarriers()
-    return stash !== undefined && stash !== route && !startedLinks.has(stash)
+    return (
+      stash !== undefined &&
+      !isSameLink(stash, route) &&
+      !startedLinks.has(linkIdentity(stash))
+    )
   }
 
   return { openWorkflowLinkFromUrl, isLinkSettled, hasLinkInFlight }
