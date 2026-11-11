@@ -46,10 +46,6 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-vi.mock(import('@/utils/formatUtil'), () => ({
-  formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
-}))
-
 vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))

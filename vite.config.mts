@@ -58,7 +58,6 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/lib/litegraph/src/node',
   'src/lib/litegraph/src/subgraph',
   'src/lib/litegraph/src/utils',
-  'packages/assets-core/src',
   'src/platform/assets/adapters',
   'src/platform/assets/composables',
   'src/platform/assets/integration',

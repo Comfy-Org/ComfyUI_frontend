@@ -82,6 +82,7 @@ jobs:
           pnpm --recursive --no-sort --workspace-concurrency=2 --no-bail \
             --filter @comfyorg/account-core \
             --filter @comfyorg/account-ui \
+            --filter @comfyorg/assets-core \
             --filter @comfyorg/billing-contract \
             --filter @comfyorg/layer-editor \
             --filter @comfyorg/layer-editor-ui \
@@ -150,7 +151,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/layer-editor/coverage/lcov.info,packages/layer-editor-ui/coverage/lcov.info,packages/mask-editor/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info,packages/viewport3d/coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/assets-core/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/layer-editor/coverage/lcov.info,packages/layer-editor-ui/coverage/lcov.info,packages/mask-editor/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info,packages/viewport3d/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
