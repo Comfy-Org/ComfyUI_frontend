@@ -891,7 +891,7 @@ function unconnectedInputOf(
   properties: Readonly<Record<string, unknown>>,
   groups: ReadonlyMap<string, GroupMembership[]>
 ): UnconnectedInput {
-  return {
+  return Object.freeze({
     nodeId: String(node.id),
     nodeType: extensionValue(node.type) ?? '',
     input: index,
@@ -904,7 +904,7 @@ function unconnectedInputOf(
     nodeColor: node.color,
     nodeProperties: properties,
     nodeGroups: Object.freeze(groups.get(String(node.id)) ?? [])
-  }
+  })
 }
 
 function unconnectedInputsOf(

@@ -667,6 +667,37 @@ describe('supply-side resolution', () => {
     expect(model?.isWidgetInput).toBe(false)
   })
 
+  it('keeps one supplier from changing the candidates another supplier sees', () => {
+    class Meddler extends LGraphNode {
+      constructor() {
+        super('Meddler')
+      }
+    }
+    LiteGraph.registerNodeType('Meddler', Meddler)
+    cleanups.push(() => LiteGraph.unregisterNodeType('Meddler'))
+    spawn('Meddler')
+    const source = spawn('Broadcaster')
+    const sink = spawn('Sink')
+    const retype: Supplier = (view) => {
+      const model = view.unconnectedInputs().find((i) => i.type === 'MODEL')!
+      Reflect.set(model, 'type', 'CLIP')
+      return []
+    }
+
+    const supplied = supply(
+      new Map<string, Supplier>([
+        ['Meddler', retype],
+        ['Broadcaster', broadcastModel]
+      ])
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'output',
+      nodeId: String(source.id),
+      output: 0
+    })
+  })
+
   it('does nothing at all when no pack registered a supplier', () => {
     spawn('Broadcaster')
     spawn('Sink')
