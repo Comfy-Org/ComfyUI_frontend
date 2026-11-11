@@ -10,6 +10,7 @@
  * `node.getScreenRect()`; this only says that the answer may have changed, so
  * the pan offset and zoom factor stay the renderer's business.
  */
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
@@ -20,17 +21,27 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 let chained: object | undefined
 
-/** Chains onto the view's own change hook, preserving whoever holds it. */
+function notifyListeners(): void {
+  for (const listener of listeners) {
+    try {
+      listener()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_api_viewport_listener_failure',
+        surface: 'graph'
+      })
+    }
+  }
+}
+
 function chainOnto(canvas: LGraphCanvas): void {
   const { ds } = canvas
-  // One chain per DragAndScale. The canvas is replaced on some graph swaps, so
-  // the identity is what is tracked rather than a boolean.
   if (chained === ds) return
   chained = ds
   const previous = ds.onChanged
   ds.onChanged = function (this: unknown, scale, offset) {
     previous?.call(this as never, scale, offset)
-    for (const listener of listeners) listener()
+    notifyListeners()
   }
 }
 
@@ -41,7 +52,7 @@ function tryChain(): void {
 
 function announce(): void {
   tryChain()
-  for (const listener of listeners) listener()
+  notifyListeners()
 }
 
 export function createViewportObserver() {
