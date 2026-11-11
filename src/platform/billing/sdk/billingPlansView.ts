@@ -32,6 +32,15 @@ function projectCredits(
   return credits === undefined ? undefined : { credits }
 }
 
+/** An absent list price stays absent; one a number cannot hold exactly fails the plan. */
+function projectListPrice(
+  raw: DecodedPlan['list_price_cents']
+): Pick<Plan, 'list_price_cents'> | undefined {
+  if (raw === undefined) return {}
+  const list_price_cents = asSafeNumber(raw)
+  return list_price_cents === undefined ? undefined : { list_price_cents }
+}
+
 function projectFeatureItem({
   params,
   ...item
@@ -51,9 +60,11 @@ function projectFeatureItems(
 function projectPlan({
   credits: rawCredits,
   feature_items: rawFeatureItems,
+  list_price_cents: rawListPrice,
   ...plan
 }: DecodedPlan): Plan | undefined {
   const credits = projectCredits(rawCredits)
+  const listPrice = projectListPrice(rawListPrice)
   const featureItems = projectFeatureItems(rawFeatureItems)
   const credits_cents = asSafeNumber(plan.credits_cents)
   const max_seats = asSafeNumber(plan.max_seats)
@@ -64,6 +75,7 @@ function projectPlan({
   )
   if (
     credits === undefined ||
+    listPrice === undefined ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||
@@ -74,6 +86,7 @@ function projectPlan({
   return {
     ...plan,
     ...credits,
+    ...listPrice,
     ...featureItems,
     credits_cents,
     max_seats,
