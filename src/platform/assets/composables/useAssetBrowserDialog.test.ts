@@ -6,7 +6,7 @@ import {
   registerAssetBrowserModalComponent,
   useAssetBrowserDialog
 } from '@/platform/assets/composables/useAssetBrowserDialog'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
 import { useDialogStore } from '@/stores/dialogStore'
 

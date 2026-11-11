@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,

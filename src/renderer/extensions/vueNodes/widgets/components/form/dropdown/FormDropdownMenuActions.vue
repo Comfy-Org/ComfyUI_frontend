@@ -11,7 +11,7 @@ import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'

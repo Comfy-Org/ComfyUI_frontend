@@ -20,7 +20,7 @@ const stubTab = (id: string): SidebarTabExtension => ({
   component: {}
 })
 
-vi.mock(import('@/composables/sidebarTabs/useAssetsSidebarTab'), () => ({
+vi.mock(import('@/platform/assets/integration/useAssetsSidebarTab'), () => ({
   useAssetsSidebarTab: () => stubTab('assets')
 }))
 vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
@@ -29,9 +29,12 @@ vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
 vi.mock(import('@/composables/sidebarTabs/useNodeLibrarySidebarTab'), () => ({
   useNodeLibrarySidebarTab: () => stubTab('node-library')
 }))
-vi.mock(import('@/composables/sidebarTabs/useModelLibrarySidebarTab'), () => ({
-  useModelLibrarySidebarTab: () => stubTab('model-library')
-}))
+vi.mock(
+  import('@/platform/assets/integration/useModelLibrarySidebarTab'),
+  () => ({
+    useModelLibrarySidebarTab: () => stubTab('model-library')
+  })
+)
 vi.mock(
   import('@/platform/workflow/management/composables/useWorkflowsSidebarTab'),
   () => ({ useWorkflowsSidebarTab: () => stubTab('workflows') })

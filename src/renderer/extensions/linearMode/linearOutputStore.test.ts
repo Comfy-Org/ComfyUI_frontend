@@ -14,7 +14,7 @@ import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 
 import { api as apiTarget } from '@/scripts/api'
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
 vi.mock(import('@/composables/useAppMode'))
 

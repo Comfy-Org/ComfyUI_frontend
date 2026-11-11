@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -36,7 +36,19 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'), () => ({
+  useMediaAssetActions: vi.fn(() => ({
+    downloadAssets: vi.fn(),
+    deleteAssets: vi.fn(async () => false),
+    copyJobId: vi.fn(async () => {}),
+    addWorkflow: vi.fn(async () => {}),
+    addMultipleToWorkflow: vi.fn(async () => {}),
+    openWorkflow: vi.fn(async () => {}),
+    openMultipleWorkflows: vi.fn(async () => {}),
+    exportWorkflow: vi.fn(async () => {}),
+    exportMultipleWorkflows: vi.fn(async () => {})
+  }))
+}))
 
 vi.mock(import('@/scripts/app'))
 

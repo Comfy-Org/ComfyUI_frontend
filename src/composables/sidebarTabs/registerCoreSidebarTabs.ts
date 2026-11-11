@@ -1,8 +1,8 @@
 import { watch } from 'vue'
 
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useAssetsSidebarTab } from '@/platform/assets/integration/useAssetsSidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
-import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
+import { useModelLibrarySidebarTab } from '@/platform/assets/integration/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'

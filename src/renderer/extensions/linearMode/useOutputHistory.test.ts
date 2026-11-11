@@ -2,19 +2,19 @@ import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOut
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
     tags?.[0] === 'output' ? 'output' : 'input',
   mapInputFileToAssetItem: vi.fn(),

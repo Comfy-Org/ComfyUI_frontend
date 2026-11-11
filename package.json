@@ -99,6 +99,7 @@
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/api-client": "workspace:*",
+    "@comfyorg/assets-core": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",

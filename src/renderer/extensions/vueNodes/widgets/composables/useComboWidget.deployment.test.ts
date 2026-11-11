@@ -18,7 +18,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { ComfyWidgets } from '@/scripts/widgets'

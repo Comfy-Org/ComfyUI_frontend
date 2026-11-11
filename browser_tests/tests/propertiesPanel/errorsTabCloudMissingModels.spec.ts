@@ -26,7 +26,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
+import type { AssetMetadata } from '@comfyorg/assets-core/schema'
 
 const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'

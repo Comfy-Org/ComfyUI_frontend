@@ -14,7 +14,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -130,9 +130,12 @@ vi.mock<unknown>(
 )
 
 const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
-}))
+vi.mock(
+  import('@/platform/assets/integration/startModelNodeDragFromAsset'),
+  () => ({
+    startModelNodeDragFromAsset: mockStartModelNodeDrag
+  })
+)
 
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn(),

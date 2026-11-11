@@ -219,8 +219,8 @@ import {
   getEditableModelType,
   getSourceName,
   resolveModelTypeTagUpdate
-} from '@/platform/assets/utils/assetMetadataUtils'
-import { useAssetsStore } from '@/stores/assetsStore'
+} from '@comfyorg/assets-core/metadata'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'

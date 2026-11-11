@@ -4,7 +4,7 @@ import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
+import AssetsSidebarTab from '@/platform/assets/components/sidebar/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'

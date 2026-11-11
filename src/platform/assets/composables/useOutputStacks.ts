@@ -1,9 +1,9 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 export type OutputStackListItem = {

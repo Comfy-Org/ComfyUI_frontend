@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   getAssetFileUrl,
   getAssetInlineMediaUrl,
-  getAssetSubfolder,
   getAssetUrl,
   getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
+import { getAssetSubfolder } from '@comfyorg/assets-core/metadata'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 

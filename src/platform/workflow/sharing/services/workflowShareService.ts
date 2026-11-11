@@ -1,17 +1,14 @@
-import type {
-  HubWorkflowDetail,
-  ImportPublishedAssetsRequest,
-  AssetInfo
-} from '@comfyorg/ingest-types'
+import type { HubWorkflowDetail, AssetInfo } from '@comfyorg/ingest-types'
 import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type {
   PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
@@ -280,19 +277,13 @@ export function useWorkflowShareService() {
     assetIds: string[],
     shareId?: string
   ): Promise<void> {
-    const body: ImportPublishedAssetsRequest = {
+    const result = await assetService.importPublishedAssets({
       published_asset_ids: assetIds,
       ...(shareId ? { share_id: shareId } : {})
-    }
-
-    const response = await api.fetchApi('/assets/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
     })
 
-    if (!response.ok) {
-      throw new Error(`Failed to import assets: ${response.status}`)
+    if (!result.ok) {
+      throw new Error(`Failed to import assets: ${result.status}`)
     }
 
     await useAssetsStore().inputAssets.invalidate()

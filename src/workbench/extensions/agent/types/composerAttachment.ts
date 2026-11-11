@@ -1,4 +1,4 @@
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 
 export type AttachmentValidationError = 'invalid-video' | 'unsupported-type'
 

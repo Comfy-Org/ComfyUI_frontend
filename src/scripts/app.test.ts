@@ -118,8 +118,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
@@ -179,7 +179,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock(import('@/utils/eventUtils'), { spy: true })
+vi.mock(import('@/platform/assets/integration/assetDrop'), { spy: true })
 
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 

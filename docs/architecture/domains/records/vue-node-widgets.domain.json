@@ -49,9 +49,6 @@
       "path": "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts"
     },
     {
@@ -199,7 +196,7 @@
         "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.asset-mode.test.ts",
         "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts",
-        "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.test.ts",
+        "src/platform/assets/composables/useAssetWidgetData.test.ts",
         "browser_tests/tests/vueNodes/widgets/combo/comboWidget.spec.ts",
         "browser_tests/tests/remoteWidgets.spec.ts"
       ]

@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())

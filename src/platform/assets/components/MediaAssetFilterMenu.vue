@@ -153,7 +153,7 @@ import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
-import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@comfyorg/assets-core/media'
 
 const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
   required: true

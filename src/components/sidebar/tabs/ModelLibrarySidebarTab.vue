@@ -85,12 +85,12 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {
   ModelFolder,

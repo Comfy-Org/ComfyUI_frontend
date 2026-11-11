@@ -158,7 +158,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import Button from '@comfyorg/design-system/button/Button'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import {
   formatDuration,
   formatSize,
@@ -168,7 +168,7 @@ import {
 } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import { getAssetType } from '@/platform/assets/adapters/outputAssetMappers'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import {
   getAssetInlineMediaUrl,
@@ -176,13 +176,13 @@ import {
   resolveMediaSrc
 } from '@/platform/assets/utils/assetUrlUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   getAssetDisplayName,
   resolveDisplayImageDimensions
-} from '@/platform/assets/utils/assetMetadataUtils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
+} from '@comfyorg/assets-core/metadata'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import { MediaAssetKey } from '@/platform/assets/composables/mediaAssetContext'
 import MediaTitle from '@comfyorg/design-system/media/MediaTitle'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>

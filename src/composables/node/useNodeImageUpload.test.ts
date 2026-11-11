@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { Mock } from 'vitest'
 
 let mockInvalidateInputs: Mock<

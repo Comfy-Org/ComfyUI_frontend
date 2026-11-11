@@ -1,0 +1,62 @@
+{
+  "name": "@comfyorg/assets-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./schema": {
+      "@comfyorg/assets-core": "./src/schema.ts",
+      "types": "./dist-types/schema.d.ts",
+      "default": "./src/schema.ts"
+    },
+    "./metadata": {
+      "@comfyorg/assets-core": "./src/metadata.ts",
+      "types": "./dist-types/metadata.d.ts",
+      "default": "./src/metadata.ts"
+    },
+    "./filtering": {
+      "@comfyorg/assets-core": "./src/filtering.ts",
+      "types": "./dist-types/filtering.d.ts",
+      "default": "./src/filtering.ts"
+    },
+    "./media": {
+      "@comfyorg/assets-core": "./src/media.ts",
+      "types": "./dist-types/media.d.ts",
+      "default": "./src/media.ts"
+    },
+    "./imports": {
+      "@comfyorg/assets-core": "./src/imports.ts",
+      "types": "./dist-types/imports.d.ts",
+      "default": "./src/imports.ts"
+    },
+    "./selection": {
+      "@comfyorg/assets-core": "./src/selection.ts",
+      "types": "./dist-types/selection.d.ts",
+      "default": "./src/selection.ts"
+    },
+    "./query": {
+      "@comfyorg/assets-core": "./src/query.ts",
+      "types": "./dist-types/query.d.ts",
+      "default": "./src/query.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "build:declarations": "tsc -b tsconfig.declarations.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "es-toolkit": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@total-typescript/shoehorn": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

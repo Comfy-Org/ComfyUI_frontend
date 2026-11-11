@@ -1,4 +1,4 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export interface InProgressItem {

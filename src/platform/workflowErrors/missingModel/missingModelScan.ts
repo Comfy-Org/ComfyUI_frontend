@@ -12,8 +12,8 @@ import {
 } from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate } from './types'
 import { findModelReplacements } from './modelReplacements'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@comfyorg/assets-core/metadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   inputForWidget,
   promotedInputWidgets
@@ -31,7 +31,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@comfyorg/graph-model/widgets'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   collectAllNodes,
