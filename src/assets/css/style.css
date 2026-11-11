@@ -1,6 +1,8 @@
 @import '@comfyorg/design-system/css/style.css';
+@import '@comfyorg/mask-editor/ui/style.css';
 
 @source '../../../packages/layer-editor-ui/src';
+@source '../../../packages/mask-editor/src/ui';
 
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);

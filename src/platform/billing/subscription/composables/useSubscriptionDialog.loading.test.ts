@@ -56,6 +56,7 @@ it('declines the refusal takeover without opening an empty dialog when the prici
 })
 
 it('declines a refused run without opening an empty dialog when the Plans tab is blocked and the Plans link dialog cannot load', async () => {
+  vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
   vi.mocked(useFeatureFlags().flags).pricingTableFallback = false
   vi.spyOn(window, 'open').mockReturnValue(null)
 

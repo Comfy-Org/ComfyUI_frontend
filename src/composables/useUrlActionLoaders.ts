@@ -133,7 +133,6 @@ function sweepStep(
   return {
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
-      if (loader?.hasLinkInFlight()) return
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       const params = [
@@ -147,14 +146,17 @@ function sweepStep(
   }
 }
 
-/**
- * Orders the deep-link loaders: the deployment link first, since with
- * `?deployment` it owns `?workspace` too (it switches, then picks after the
- * reload); then workspace, so `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets` all act on the requested workspace rather
- * than the one the app happened to load with. Only the loaders present
- * (cloud-gated by the caller) become steps.
- */
+function deferredToNewerLink(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  steps: UrlActionStep[]
+): UrlActionStep[] {
+  if (!loader) return steps
+  return steps.map(({ failureMessage, run }) => ({
+    failureMessage,
+    run: () => (loader.hasLinkInFlight() ? undefined : run())
+  }))
+}
+
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
   router: ReturnType<typeof useRouter>
@@ -169,60 +171,63 @@ function buildUrlActionSteps(
     })
   }
   steps.push(...workflowLinkSteps(loaders.workflowLinkUrlLoader))
+
+  const laterSteps: UrlActionStep[] = []
   if (loaders.inviteUrlLoader) {
     const loader = loaders.inviteUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load invite from URL:',
       run: () => loader.loadInviteFromUrl()
     })
   }
   if (loaders.createWorkspaceUrlLoader) {
     const loader = loaders.createWorkspaceUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load create workspace from URL:',
       run: () => loader.loadCreateWorkspaceFromUrl()
     })
   }
   if (loaders.pricingTableUrlLoader) {
     const loader = loaders.pricingTableUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load pricing table from URL:',
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load top-up dialog from URL:',
       run: () => loader.loadTopUpFromUrl()
     })
   }
   if (loaders.settingsUrlLoader) {
     const loader = loaders.settingsUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load settings panel from URL:',
       run: () => loader.loadSettingsFromUrl()
     })
   }
   if (loaders.assetsUrlLoader) {
     const loader = loaders.assetsUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to open assets panel from URL:',
       run: () => loader.loadAssetsFromUrl()
     })
   }
   if (loaders.localHandoffUrlLoader) {
     const loader = loaders.localHandoffUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to open the workflow handed over from local:',
       run: () => loader.loadLocalHandoffFromUrl()
     })
   }
+  laterSteps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
 
-  steps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
-
-  return steps
+  return [
+    ...steps,
+    ...deferredToNewerLink(loaders.workflowLinkUrlLoader, laterSteps)
+  ]
 }
 
 /**
