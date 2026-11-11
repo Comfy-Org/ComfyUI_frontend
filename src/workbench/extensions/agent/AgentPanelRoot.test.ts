@@ -5910,7 +5910,7 @@ describe('AgentPanelRoot history', () => {
       )
     }
 
-    it('keeps the current chat when the active tab has no matching thread', async () => {
+    it('shows a blank chat for the active tab when it has no matching thread', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
       workflowStore.activeWorkflow = second
@@ -5935,8 +5935,9 @@ describe('AgentPanelRoot history', () => {
       await activateTabAsUser(second)
       await settleFollow()
 
-      expect(useAgentConversationStore().threadId).toBe('th-first')
-      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
       expect(loadedThreads).toEqual(['th-first'])
     })
 
@@ -7266,7 +7267,12 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-open'])
       )
+      // A draft holds the open chat on screen across the switch to a tab with
+      // no chat; clearing it afterwards does not re-run the follow.
+      await userEvent.type(screen.getByRole('textbox'), 'Draft')
       await activateTabAsUser(second)
+      await settleFollow()
+      await userEvent.clear(screen.getByRole('textbox'))
 
       await userEvent.click(
         await screen.findByRole('button', {

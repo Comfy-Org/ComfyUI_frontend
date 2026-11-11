@@ -176,6 +176,9 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
         await workflowService.loadBlankWorkflow()
+        // A new tab is a tab the user switched to: the agent panel follows it.
+        const created = workflowStore.activeWorkflow
+        if (created) workflowStore.reportUserActivation(created)
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
           previous_workflow_had_nodes: previousWorkflowHadNodes

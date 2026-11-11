@@ -1929,8 +1929,18 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
   adoptWorkflowTarget: adoptFollowedWorkflow,
-  adoptRestoredWorkflowTab
+  adoptRestoredWorkflowTab,
+  startBlankChat: startBlankChatForTab
 })
+
+// Follow-only reset: the user is not engaged (no draft, send or selection), so
+// there is nothing to cancel. Leaves `errorAttachRun` alone, so an error attach
+// that follows into a tab with no chat still completes.
+function startBlankChatForTab(): void {
+  provisionalTitle.value = undefined
+  newChat()
+  agentPanelStore.startFollowingVisibleWorkflow()
+}
 
 const {
   failure: followFailure,
@@ -2010,7 +2020,7 @@ if (
   selectedTarget.value !== null &&
   selectedTarget.value.path !== mountedOn.path
 )
-  void followTab(mountedOn)
+  void followTab(mountedOn, { blankWhenNoChat: false })
 
 function warnWorkflowChanged(): void {
   toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })

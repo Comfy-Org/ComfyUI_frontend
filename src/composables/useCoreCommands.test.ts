@@ -337,6 +337,22 @@ describe('useCoreCommands', () => {
     })
   })
 
+  describe('NewBlankWorkflow command', () => {
+    it('reports the new tab as a user activation, so the agent chat follows it', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+      const created = mockWorkflowStore.activeWorkflow
+      const newBlank = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.NewBlankWorkflow'
+      )!
+
+      await newBlank.function()
+
+      expect(mockWorkflowStore.reportUserActivation).toHaveBeenCalledWith(
+        created
+      )
+    })
+  })
+
   describe('PasteFromClipboardWithConnect command', () => {
     // An unresolved key renders as its own path, and this one reads as valid
     // English, so asserting the shipped string would pass either way. Only a
