@@ -1096,7 +1096,7 @@ describe('BillingStatusBanner', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('sends an Enterprise owner to sales', async () => {
+    it('sends an Enterprise owner to sales with the white button, like Choose a plan', async () => {
       endedPlan('ENTERPRISE')
       state.isTeamPlan = false
       useBillingCapabilities().planKind = computed(() =>
@@ -1108,6 +1108,9 @@ describe('BillingStatusBanner', () => {
       expect(screen.getByRole('status')).toHaveTextContent(
         'Your Enterprise plan ended on September 12, 2026'
       )
+      expect(
+        screen.getByRole('button', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
       await userEvent.click(
         screen.getByRole('button', { name: 'Contact sales' })
       )
@@ -1202,10 +1205,14 @@ describe('BillingStatusBanner', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('sends owners to sales', async () => {
+    it('sends owners to sales with a grey button, since nothing is blocked yet', async () => {
       enterpriseEndingIn(10)
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'secondary')
 
       await userEvent.click(
         screen.getByRole('button', { name: 'Contact sales' })

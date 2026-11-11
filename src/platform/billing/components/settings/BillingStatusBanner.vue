@@ -63,7 +63,7 @@
         </Button>
         <Button
           v-else-if="banner.action === 'contactSales'"
-          variant="secondary"
+          :variant="contactSalesVariant"
           size="lg"
           @click="handleContactSales"
         >
@@ -182,6 +182,8 @@ interface BannerView {
   title: string
   body: string
   action: BannerAction | null
+  /** The banner's action is the one way out, so it takes the white button. */
+  primaryAction?: boolean
   dismissible: boolean
 }
 
@@ -284,6 +286,7 @@ const planEndedView = (): BannerView => {
     title: copy.title,
     body: canManage.value ? copy.ownerBody : copy.memberBody,
     action: planEndedAction(),
+    primaryAction: true,
     dismissible: true
   }
 }
@@ -420,6 +423,10 @@ const banner = computed<BannerView | null>(() => {
   const view = bannerViews[kind.value]()
   return view && section === 'billing' ? forBillingTab(view) : view
 })
+
+const contactSalesVariant = computed(() =>
+  banner.value?.primaryAction ? 'inverted' : 'secondary'
+)
 
 function handleAddCredits() {
   void showTopUpCreditsDialog()

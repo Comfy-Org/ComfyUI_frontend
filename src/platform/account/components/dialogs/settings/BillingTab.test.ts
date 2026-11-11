@@ -1571,6 +1571,26 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
     })
 
+    it('keeps Contact sales the one white action when an Enterprise plan has ended at 0', async () => {
+      arrange({
+        balance: zeroBalance,
+        planKind: 'sales_managed',
+        canOpenPlans: false,
+        subscriptionStatus: 'ended',
+        subscription: {
+          ...activeSubscription,
+          tier: 'ENTERPRISE',
+          isActive: false
+        }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).toEqual(['secondary'])
+    })
+
     it('keeps Subscribe the one white button with no plan at 0', () => {
       arrange({
         balance: zeroBalance,
