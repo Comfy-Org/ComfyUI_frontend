@@ -133,7 +133,6 @@ function sweepStep(
   return {
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
-      if (loader?.hasLinkInFlight()) return
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       const params = [
@@ -145,6 +144,16 @@ function sweepStep(
       await router.replace({ query })
     }
   }
+}
+
+function unlessLinkInFlight(
+  loader: UrlActionLoaders['workflowLinkUrlLoader'],
+  steps: UrlActionStep[]
+): UrlActionStep[] {
+  return steps.map(({ failureMessage, run }) => ({
+    failureMessage,
+    run: () => (loader?.hasLinkInFlight() ? undefined : run())
+  }))
 }
 
 /**
@@ -169,58 +178,59 @@ function buildUrlActionSteps(
     })
   }
   steps.push(...workflowLinkSteps(loaders.workflowLinkUrlLoader))
+  const laterSteps: UrlActionStep[] = []
   if (loaders.inviteUrlLoader) {
     const loader = loaders.inviteUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load invite from URL:',
       run: () => loader.loadInviteFromUrl()
     })
   }
   if (loaders.createWorkspaceUrlLoader) {
     const loader = loaders.createWorkspaceUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load create workspace from URL:',
       run: () => loader.loadCreateWorkspaceFromUrl()
     })
   }
   if (loaders.pricingTableUrlLoader) {
     const loader = loaders.pricingTableUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load pricing table from URL:',
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load top-up dialog from URL:',
       run: () => loader.loadTopUpFromUrl()
     })
   }
   if (loaders.settingsUrlLoader) {
     const loader = loaders.settingsUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to load settings panel from URL:',
       run: () => loader.loadSettingsFromUrl()
     })
   }
   if (loaders.assetsUrlLoader) {
     const loader = loaders.assetsUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to open assets panel from URL:',
       run: () => loader.loadAssetsFromUrl()
     })
   }
   if (loaders.localHandoffUrlLoader) {
     const loader = loaders.localHandoffUrlLoader
-    steps.push({
+    laterSteps.push({
       failureMessage: 'Failed to open the workflow handed over from local:',
       run: () => loader.loadLocalHandoffFromUrl()
     })
   }
 
-  steps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
+  laterSteps.push(sweepStep(loaders.workflowLinkUrlLoader, router))
+  steps.push(...unlessLinkInFlight(loaders.workflowLinkUrlLoader, laterSteps))
 
   return steps
 }

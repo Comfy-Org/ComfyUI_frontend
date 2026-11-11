@@ -243,7 +243,8 @@ function useWorkflowLinkUrlLoaderInternal() {
         return { kind: 'error' }
       }
       const opened = await useWorkflowService().openWorkflow(workflow, {
-        isCurrent
+        isCurrent,
+        reportLoadFailure: false
       })
       return opened ? { kind: 'opened' } : { kind: 'error' }
     } catch (cause) {

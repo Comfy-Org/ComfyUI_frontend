@@ -50,8 +50,12 @@ older stashed link rather than clearing the stash: an older link cannot keep
 the empty one from being rejected as invalid, and while a guard holds the empty
 link, an earlier lookup still sees a newer link in flight and its cleanup
 cannot cancel that navigation. While the stash holds a link the loader never
-started and the URL does not show, the sweep makes no replace either, so that
-link's navigation is not cancelled.
+started and the URL does not show, no URL action after the workflow-id link
+runs, the sweep included: any replace would cancel that link's navigation. The
+actions before it still run, since at boot the stash can hold a link the
+loader has not reached yet. A load the link no longer owns, such as one still
+waiting on an extension hook when the next link arrives, stops before the graph
+is configured and again before the workflow is activated.
 
 The reply and the 409 body are validated with the generated
 `@comfyorg/ingest-types` schemas. The spec types the 409 as `ErrorResponse` and
@@ -64,7 +68,8 @@ failing error's class name when it is a built-in JavaScript error class, or
 `other` for any other name or a name that cannot be read. They never carry the
 caught error, its message or a name it chose: a failed file read names the
 file, a parser error quotes the reply, and custom node code that runs while the
-workflow loads can throw an error under any name.
+workflow loads can throw an error under any name. The workflow service leaves
+a failed link open to the loader's report and does not report it itself.
 
 ## Alternatives considered
 

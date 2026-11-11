@@ -204,17 +204,20 @@ export function resetWorkflowLoadQueueForTests(): {
 
 function queueWorkflowLoad<T>(
   load: () => Promise<T>,
-  workflowPath?: string
+  {
+    workflowPath,
+    reportFailure = true
+  }: { workflowPath?: string; reportFailure?: boolean } = {}
 ): Promise<T> {
   pendingWorkflowLoads++
   const result = workflowLoadTail.then(load)
   const settledResult = result
     .catch((error) => {
-      // Keep fire-and-forget load failures observable.
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'workflow_load_failure'
-      })
+      if (reportFailure)
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'workflow_load_failure'
+        })
       return undefined
     })
     .finally(() => {
@@ -231,6 +234,36 @@ function queueWorkflowLoad<T>(
     pendingWorkflowLoadsByPath.set(workflowPath, settledResult)
   }
   return result
+}
+
+function loadWorkflowGraph(
+  workflow: ComfyWorkflow,
+  navigationIntentId: number,
+  loadFromRemote: boolean,
+  options: {
+    force?: boolean
+    isCurrent?: () => boolean
+    keepSavedBaseline?: boolean
+  }
+) {
+  workflow.changeTracker?.prepareForSave()
+  const load = () =>
+    useApp().loadGraphData(
+      toRaw(workflow.activeState) as ComfyWorkflowJSON,
+      true,
+      true,
+      workflow,
+      {
+        checkForRerouteMigration: false,
+        deferWarnings: true,
+        skipAssetScans: !loadFromRemote && !options.force,
+        workflowNavigationId: navigationIntentId,
+        isCurrent: options.isCurrent
+      }
+    )
+  return options.keepSavedBaseline && workflow.isModified
+    ? keepingSavedBaseline(workflow, load)
+    : load()
 }
 
 const unreadableWorkflowToastIds = new Map<string, ToastId>()
@@ -551,6 +584,7 @@ export const useWorkflowService = () => {
       isCurrent?: () => boolean
       initiator?: 'user'
       keepSavedBaseline?: boolean
+      reportLoadFailure?: boolean
     } = {}
   ): Promise<boolean> => {
     if (options.isCurrent?.() === false) return Promise.resolve(false)
@@ -569,6 +603,10 @@ export const useWorkflowService = () => {
     const navigationIntentId =
       options.navigationIntentId ??
       useSubgraphNavigationStore().beginWorkflowNavigation()
+    const queueOptions = {
+      workflowPath: workflow.path,
+      reportFailure: options.reportLoadFailure !== false
+    }
     return queueWorkflowLoad(async () => {
       let wasUnreadable = false
       try {
@@ -588,27 +626,17 @@ export const useWorkflowService = () => {
           return false
         }
 
-        workflow.changeTracker?.prepareForSave()
-        const load = () =>
-          useApp().loadGraphData(
-            toRaw(workflow.activeState) as ComfyWorkflowJSON,
-            true,
-            true,
-            workflow,
-            {
-              checkForRerouteMigration: false,
-              deferWarnings: true,
-              skipAssetScans: !loadFromRemote && !options.force,
-              workflowNavigationId: navigationIntentId
-            }
-          )
-        const loaded =
-          options.keepSavedBaseline && workflow.isModified
-            ? await keepingSavedBaseline(workflow, load)
-            : await load()
+        const loaded = await loadWorkflowGraph(
+          workflow,
+          navigationIntentId,
+          loadFromRemote,
+          options
+        )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
+          if (loadFromRemote && options.isCurrent?.() === false)
+            discardSupersededLoad(workflow, wasModified)
           return false
         }
         dismissUnreadableWorkflowToast(workflow)
@@ -629,7 +657,7 @@ export const useWorkflowService = () => {
         if (wasUnreadable && !isUnreadableWorkflow(workflow))
           dismissUnreadableWorkflowToast(workflow)
       }
-    }, workflow.path)
+    }, queueOptions)
   }
 
   const markUnreadable = (workflow: ComfyWorkflow) => {
@@ -802,14 +830,17 @@ export const useWorkflowService = () => {
   const loadWorkflowInBackground = (
     workflow: ComfyWorkflow
   ): Promise<ComfyWorkflow> =>
-    queueWorkflowLoad(async () => {
-      const loaded: ComfyWorkflow = await workflow.load()
-      if (loaded.initialMode === undefined)
-        loaded.initialMode =
-          linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
-          linearModeToAppMode(loaded.activeState?.extra?.linearMode)
-      return loaded
-    }, workflow.path)
+    queueWorkflowLoad(
+      async () => {
+        const loaded: ComfyWorkflow = await workflow.load()
+        if (loaded.initialMode === undefined)
+          loaded.initialMode =
+            linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
+            linearModeToAppMode(loaded.activeState?.extra?.linearMode)
+        return loaded
+      },
+      { workflowPath: workflow.path }
+    )
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path

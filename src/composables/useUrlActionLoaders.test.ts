@@ -516,7 +516,7 @@ describe('useUrlActionLoaders', () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it('lets a newer workflow-id link held in a navigation guard land instead of cancelling it', async () => {
+  it('runs only the loaders before the workflow-id link while a newer one waits in a navigation guard, so it lands', async () => {
     await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
     workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
     workflowLinkUrlLoader.isLinkSettled.mockImplementation(
@@ -536,7 +536,8 @@ describe('useUrlActionLoaders', () => {
     releaseGuard()
     await newerLink
 
-    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
+    expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workflowId: 'workflow-b'
     })

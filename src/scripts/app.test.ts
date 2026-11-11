@@ -703,6 +703,52 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
+    it.for([
+      { hook: 'beforeConfigureGraph', configureCalls: 0 },
+      { hook: 'afterConfigureGraph', configureCalls: 1 }
+    ] as const)(
+      'resolves false without activating the workflow when its caller gives the load up during $hook',
+      async ({ hook, configureCalls }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        const configure = vi.spyOn(graph, 'configure')
+        let releaseHook!: () => void
+        const paused = new Promise<void>((resolve) => {
+          releaseHook = resolve
+        })
+        let reachedHook = false
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (name) => {
+            if (name !== hook) return
+            reachedHook = true
+            await paused
+          }
+        )
+        let owned = true
+
+        const load = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { isCurrent: () => owned }
+        )
+        await vi.waitFor(() => expect(reachedHook).toBe(true))
+        owned = false
+        releaseHook()
+
+        await expect(load).resolves.toBe(false)
+        expect(configure).toHaveBeenCalledTimes(configureCalls)
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      }
+    )
+
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

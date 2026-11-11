@@ -786,6 +786,44 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('drops a fetched workflow and keeps the current one when the graph load sees the open superseded', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const loading = createModeTestWorkflow({
+        path: 'workflows/closed.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = current
+      vi.spyOn(loading, 'load').mockImplementation(async () => {
+        loading.originalContent = '{}'
+        loading.content = '{}'
+        loading.changeTracker = createMockChangeTracker()
+        return loading
+      })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementationOnce(
+        async (_data, _clean, _restoreView, _workflow, options) => {
+          currentRequest = false
+          return options?.isCurrent?.() !== false
+        }
+      )
+
+      const opened = await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(opened).toBe(false)
+      expect(loading.isLoaded).toBe(false)
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(app.loadGraphData).toHaveBeenLastCalledWith(
+        expect.anything(),
+        true,
+        true,
+        current,
+        expect.anything()
+      )
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
