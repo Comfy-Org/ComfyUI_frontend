@@ -1233,6 +1233,62 @@ describe('useBillingCapabilities', () => {
       expect(billingCapabilities.canTopUp.value).toBe(true)
     })
 
+    it.for([
+      { name: '403', error: new WorkspaceApiError('forbidden', 403) },
+      {
+        name: 'AuthStoreError',
+        error: Object.assign(new Error('no token'), { name: 'AuthStoreError' })
+      }
+    ])(
+      'leaves a $name denial alone on a session heartbeat',
+      async ({ error }) => {
+        localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+        const webSession = useCloudWebSessionStore()
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
+          error
+        )
+        await billingCapabilities.initialize()
+
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('does not read again once its scope is disposed mid-flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities).mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectRead = reject
+        })
+      )
+      const initialized = billingCapabilities.initialize()
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+
+      scope.stop()
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
     it('reads again when the flag arrives while the denied read is in flight', async () => {
       useCloudWebSessionStore().state = {
         phase: 'signed_in',

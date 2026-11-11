@@ -25,9 +25,16 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 type CapabilityReadState =
   | { status: 'idle' }
   | {
-      status: 'pending' | 'denied'
+      status: 'pending'
       authUid: string
       workspaceId: string
+    }
+  | {
+      status: 'denied'
+      authUid: string
+      workspaceId: string
+      /** A 401, which restoring the web session can fix. */
+      sessionLapsed: boolean
     }
   | {
       status: 'unavailable'
@@ -85,7 +92,9 @@ function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const webSession = useCloudWebSessionStore()
   const { flags } = useFeatureFlags()
-  const lapseRecoveryEnabled = () => flags.webSessionLapseRecoveryEnabled
+  function lapseRecoveryEnabled(): boolean {
+    return flags.webSessionLapseRecoveryEnabled
+  }
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -377,7 +386,9 @@ function useBillingCapabilitiesInternal() {
     void fetchCapabilities()
   })
 
+  let disposed = false
   onScopeDispose(() => {
+    disposed = true
     clearRefreshTimer()
     stopRevisionListener()
   })
@@ -510,6 +521,8 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
+        const sessionLapsed =
+          error instanceof WorkspaceApiError && error.status === 401
         if (!denied) trackCapabilityRead(false)
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
@@ -523,13 +536,13 @@ function useBillingCapabilitiesInternal() {
           }
         } else {
           readState.value = denied
-            ? { status: 'denied', authUid: userId, workspaceId }
+            ? { status: 'denied', authUid: userId, workspaceId, sessionLapsed }
             : unavailableState(userId, workspaceId)
         }
         scheduleRefresh()
         // A flag that arrived mid-flight missed the fetch layer's 401 replay.
         refetchAfterSettle =
-          denied &&
+          sessionLapsed &&
           !recoveryEnabledAtStart &&
           lapseRecoveryEnabled() &&
           webSession.state.phase === 'signed_in'
@@ -555,7 +568,7 @@ function useBillingCapabilitiesInternal() {
           // Deferred to here so the refetch is not deduped onto the request
           // it replaces. It cannot loop: this one is issued after the revision
           // that marked it, so only a further mutation can mark it in turn.
-          if (refetchAfterSettle) void fetchCapabilities()
+          if (refetchAfterSettle && !disposed) void fetchCapabilities()
         }
       }
     })()
@@ -602,9 +615,11 @@ function useBillingCapabilitiesInternal() {
   watch(
     [() => webSession.state, lapseRecoveryEnabled],
     ([state, recoveryEnabled]) => {
+      const read = readState.value
       if (
         state.phase === 'signed_in' &&
-        readState.value.status === 'denied' &&
+        read.status === 'denied' &&
+        read.sessionLapsed &&
         recoveryEnabled
       ) {
         void fetchCapabilities()
