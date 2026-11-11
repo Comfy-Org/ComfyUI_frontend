@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest'
 
 import { noUnknownDoubleAssertion } from './restrictedSyntax'
 
@@ -448,64 +448,12 @@ describe('restricted syntax rules', () => {
     )
   })
 
-  it('rejects unknown double assertions and fixes test fixtures', () => {
+  it('rejects unknown double assertions', () => {
     const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
     expect(doubleAssertionFindings).toHaveLength(9)
     expect(
       doubleAssertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
-
-    const fixture = path.join(probeDirs.source, 'doubleAssertion.test.ts')
-    expect(fixProbe(fixture)).toBe(0)
-    expect(readFileSync(fixture, 'utf8')).toContain(
-      "const fixture = fromAny<Fixture, unknown>({ value: 'ok' })"
-    )
-    expect(readFileSync(fixture, 'utf8')).toContain(
-      'const unresolved = fromAny<Fixture, unknown>(value)'
-    )
-
-    const aliasedFixture = path.join(
-      probeDirs.source,
-      'aliasedDoubleAssertion.test.ts'
-    )
-    expect(fixProbe(aliasedFixture)).toBe(0)
-    expect(readFileSync(aliasedFixture, 'utf8')).toContain(
-      'const fixture = coerce<Fixture, unknown>(value)'
-    )
-
-    const missingHelper = path.join(probeDirs.source, 'missingHelper.test.ts')
-    const typeOnlyHelper = path.join(
-      probeDirs.source,
-      'typeOnlyDoubleAssertion.test.ts'
-    )
-    expect(fixProbe(missingHelper)).toBe(1)
-    expect(fixProbe(typeOnlyHelper)).toBe(0)
-    expect(readFileSync(missingHelper, 'utf8')).toContain(
-      "import { fromAny } from '@total-typescript/shoehorn'"
-    )
-    expect(readFileSync(missingHelper, 'utf8')).toContain(
-      'const fixture = fromAny<Fixture, unknown>(value)'
-    )
-    expect(readFileSync(missingHelper, 'utf8')).toContain(
-      'const other = fromAny<OtherFixture, unknown>(anotherValue)'
-    )
-    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
-      "import { fromAny as fromAnyRuntime } from '@total-typescript/shoehorn'"
-    )
-    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
-      'const fixture = fromAnyRuntime<Fixture, unknown>(value)'
-    )
-    const collidingHelpers = path.join(
-      probeDirs.source,
-      'collidingHelpers.test.ts'
-    )
-    expect(fixProbe(collidingHelpers)).toBe(0)
-    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
-      "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'"
-    )
-    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
-      'const fixture = fromAnyRuntime2<Fixture, unknown>(value)'
-    )
     expect(
       doubleAssertionFindings.some(({ filename }) =>
         filename.endsWith('doubleAssertion.ts')
@@ -517,6 +465,62 @@ describe('restricted syntax rules', () => {
       )
     ).toBe(true)
   })
+
+  it.for([
+    {
+      filename: 'doubleAssertion.test.ts',
+      status: 0,
+      expectedLines: [
+        "const fixture = fromAny<Fixture, unknown>({ value: 'ok' })",
+        'const unresolved = fromAny<Fixture, unknown>(value)'
+      ]
+    },
+    {
+      filename: 'aliasedDoubleAssertion.test.ts',
+      status: 0,
+      expectedLines: ['const fixture = coerce<Fixture, unknown>(value)']
+    },
+    {
+      filename: 'missingHelper.test.ts',
+      status: 1,
+      expectedLines: [
+        "import { fromAny } from '@total-typescript/shoehorn'",
+        'const fixture = fromAny<Fixture, unknown>(value)',
+        'const other = fromAny<OtherFixture, unknown>(anotherValue)'
+      ]
+    },
+    {
+      filename: 'typeOnlyDoubleAssertion.test.ts',
+      status: 0,
+      expectedLines: [
+        "import { fromAny as fromAnyRuntime } from '@total-typescript/shoehorn'",
+        'const fixture = fromAnyRuntime<Fixture, unknown>(value)'
+      ]
+    },
+    {
+      filename: 'collidingHelpers.test.ts',
+      status: 0,
+      expectedLines: [
+        "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'",
+        'const fixture = fromAnyRuntime2<Fixture, unknown>(value)'
+      ]
+    }
+  ])(
+    'fixes double assertions in $filename',
+    ({ filename, status, expectedLines }) => {
+      const file = path.join(probeDirs.source, filename)
+      const probe = probes.find((probe) => probe.file === file)
+      assert.isDefined(probe)
+      writeFileSync(file, probe.source)
+
+      expect(fixProbe(file)).toBe(status)
+      expect(readFileSync(file, 'utf8').split('\n')).toEqual(
+        expect.arrayContaining(
+          expectedLines.map((line) => expect.stringContaining(line))
+        )
+      )
+    }
+  )
 
   it('does not autofix browser tests with Windows path separators', () => {
     let reports = 0
