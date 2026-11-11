@@ -208,6 +208,7 @@ function measureEntries(
         nodeId,
         size: measuredSize
       })
+      element.dataset.measured = ''
     }
 
     let updates = updatesByType.get(elementType)
