@@ -32,7 +32,6 @@ function projectCredits(
   return credits === undefined ? undefined : { credits }
 }
 
-/** An absent list price stays absent; one a number cannot hold exactly fails the plan. */
 function projectListPrice(
   raw: DecodedPlan['list_price_cents']
 ): Pick<Plan, 'list_price_cents'> | undefined {
