@@ -100,6 +100,7 @@ let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
+let canvasShowsActiveWorkflow = true
 
 /** The registry key: raw instance, so reactive proxies and raw references agree. */
 function closingKey(workflow: ComfyWorkflow): ComfyWorkflow {
@@ -188,6 +189,7 @@ export function resetWorkflowLoadQueueForTests(): {
   pendingWorkflowLoads = 0
   pendingWorkflowLoadsByPath.clear()
   closingWorkflowCounts.clear()
+  canvasShowsActiveWorkflow = true
   return drained
 }
 
@@ -815,49 +817,43 @@ export const useWorkflowService = () => {
    * a new graph.
    */
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
-    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
-      // despite `LoadedComfyWorkflow`'s declared type.
-      const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
-      if (tracker) {
-        tracker.deactivate()
-      } else {
-        reportWorkflowStateAnomaly(
-          'Active workflow has no change tracker before loading a new graph',
-          'beforeLoadNewGraph',
+      if (canvasShowsActiveWorkflow) {
+        const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
+        if (tracker) {
+          tracker.deactivate()
+        } else {
+          reportWorkflowStateAnomaly(
+            'Active workflow has no change tracker before loading a new graph',
+            'beforeLoadNewGraph',
+            activeWorkflow,
+            { isActive: true }
+          )
+        }
+        persistActiveWorkflowDraft(activeWorkflow)
+        const modelCandidates = useMissingModelStore().missingModelCandidates
+        const mediaCandidates = useMissingMediaStore().missingMediaCandidates
+        const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
+        updatePendingWarnings(activeWorkflow, {
+          missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
+          missingModelCandidates: modelCandidates ?? undefined,
+          missingMediaCandidates: mediaCandidates ?? undefined
+        })
+
+        useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
+
+        void workflowThumbnail.storeThumbnail(
           activeWorkflow,
-          { isActive: true }
+          workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
         )
       }
-      persistActiveWorkflowDraft(activeWorkflow)
-      // Cache missing model/media/node state for restore on tab switch.
-      // Always overwrite to reflect the current store state (e.g. after
-      // muting a node cleared its errors).
-      const modelCandidates = useMissingModelStore().missingModelCandidates
-      const mediaCandidates = useMissingMediaStore().missingMediaCandidates
-      const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
-      updatePendingWarnings(activeWorkflow, {
-        missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
-        missingModelCandidates: modelCandidates ?? undefined,
-        missingMediaCandidates: mediaCandidates ?? undefined
-      })
-
-      // Hand the previews to the store before `app.clean()` revokes them
-      useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
-
-      // Capture thumbnail before loading new graph
-      void workflowThumbnail.storeThumbnail(
-        activeWorkflow,
-        workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
-      )
       domWidgetStore.clear()
 
-      // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    canvasShowsActiveWorkflow = false
   }
 
   /**
@@ -879,6 +875,7 @@ export const useWorkflowService = () => {
     const graphState = useApp().rootGraphOrUndefined?.state
     await activateLoadedWorkflow(value, workflowData, shareId)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    canvasShowsActiveWorkflow = true
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
