@@ -681,7 +681,7 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(pauseDownload).not.toHaveBeenCalled()
   })
-  it('can cancel a request before the host reports on it', () => {
+  it('can cancel a request before the host reports on it', async () => {
     installDesktopHost()
     const cancelDownload = vi.fn().mockResolvedValue(true)
     window.__comfyDesktop2 = { ...window.__comfyDesktop2, cancelDownload }
@@ -692,6 +692,27 @@ describe(useMissingModelDownloadStore, () => {
     store.cancel(model)
 
     expect(cancelDownload).toHaveBeenCalledWith(model.url)
-    expect(store.stateFor(model).status).toBe('idle')
+    await vi.waitFor(() => expect(store.stateFor(model).status).toBe('idle'))
+  })
+  it('keeps a request the host refused to cancel and reports the refusal', async () => {
+    installDesktopHost()
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      cancelDownload: vi.fn().mockResolvedValue(false)
+    }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+    store.cancel(model)
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'platform',
+        errorType: 'error_controlling_model_download',
+        tags: { action: 'cancelDownload' }
+      })
+    )
+    expect(store.stateFor(model).status).toBe('requested')
   })
 })

@@ -415,19 +415,34 @@ export const useMissingModelDownloadStore = defineStore(
       })
     }
 
-    function withdrawUnreportedRequest(model: ModelWithUrl) {
+    function withdrawUnreportedRequest(
+      model: ModelWithUrl,
+      request: number | undefined
+    ) {
       const key = getModelFileKey(model)
       const download = downloads.get(key)
-      if (download?.state.status !== 'requested') return
+      if (
+        request === undefined ||
+        download?.request !== request ||
+        download.state.status !== 'requested'
+      )
+        return
       downloads.set(key, { ...download, state: IDLE })
     }
 
     function control(model: ModelWithUrl, action: DownloadControl) {
       const target = controlRef(model)
       if (target === undefined) return
-      if (action === 'cancelDownload') withdrawUnreportedRequest(model)
+      const request = downloads.get(getModelFileKey(model))?.request
       try {
-        void Promise.resolve(window.__comfyDesktop2?.[action]?.(target)).catch(
+        void Promise.resolve(window.__comfyDesktop2?.[action]?.(target)).then(
+          (accepted) => {
+            if (accepted === false) {
+              reportControlFailure(new Error(`Host refused ${action}`), action)
+            } else if (action === 'cancelDownload') {
+              withdrawUnreportedRequest(model, request)
+            }
+          },
           (error: unknown) => reportControlFailure(error, action)
         )
       } catch (error) {
