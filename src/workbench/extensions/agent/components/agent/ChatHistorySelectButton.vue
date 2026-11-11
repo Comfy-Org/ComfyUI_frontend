@@ -22,7 +22,8 @@ const {
   ranges = {},
   current = false,
   loading = false,
-  failed = false
+  failed = false,
+  working = false
 } = defineProps<{
   title: string
   preview?: string
@@ -32,15 +33,22 @@ const {
   current?: boolean
   loading?: boolean
   failed?: boolean
+  /** The agent has a turn running in this chat. */
+  working?: boolean
 }>()
 const emit = defineEmits<{ select: [] }>()
 const { t } = useI18n()
 const displayTitle = computed(() => title.trim() || t('agent.untitledChat'))
 const errorId = useId()
 const detailsId = useId()
+const workingId = useId()
 const describedBy = computed(
   () =>
-    [date === undefined ? undefined : detailsId, failed ? errorId : undefined]
+    [
+      date === undefined ? undefined : detailsId,
+      working ? workingId : undefined,
+      failed ? errorId : undefined
+    ]
       .filter(Boolean)
       .join(' ') || undefined
 )
@@ -72,7 +80,11 @@ const titleParts = computed(() =>
       <span class="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           :class="
-            cn('truncate', date !== undefined && 'font-medium text-foreground')
+            cn(
+              'truncate',
+              date !== undefined && 'font-medium text-foreground',
+              working && 'agent-shimmer-text'
+            )
           "
           ><ChatHistoryHighlight :parts="titleParts"
         /></span>
@@ -91,6 +103,9 @@ const titleParts = computed(() =>
         class="icon-[lucide--loader-circle] animate-spin"
       />
     </Button>
+    <span v-if="working" :id="workingId" class="sr-only">{{
+      t('agent.historyWorking')
+    }}</span>
     <span v-if="loading" role="status" class="sr-only">{{
       t('g.loading')
     }}</span>

@@ -51,6 +51,45 @@ describe('ChatHistorySelectButton', () => {
     expect(button.innerHTML).not.toContain('lucide')
   })
 
+  it('shimmers the title and describes the row as working only while the agent works', async () => {
+    const { rerender } = render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(screen.getByText('Portrait chat')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+    expect(button).not.toHaveAccessibleDescription(
+      i18n.global.t('agent.historyWorking')
+    )
+
+    await rerender({ working: true })
+
+    expect(screen.getByText('Portrait chat')).toHaveClass('agent-shimmer-text')
+    expect(button).toHaveAccessibleDescription(
+      i18n.global.t('agent.historyWorking')
+    )
+
+    await rerender({ working: false })
+
+    expect(screen.getByText('Portrait chat')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+  })
+
+  it('keeps the opening spinner and the working shimmer independent', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat', loading: true, working: true },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(screen.getByText('Portrait chat')).toHaveClass('agent-shimmer-text')
+    expect(button.innerHTML).toContain('lucide--loader-circle')
+  })
+
   it('describes a result row with its preview, date, current marker and workflow', () => {
     render(ChatHistorySelectButton, {
       props: {

@@ -2617,6 +2617,60 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
+  it('shimmers the history row of the chat the agent is working in, and stops when the turn ends', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input).includes('/messages')) return json(200, [])
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-active',
+            title: 'Working chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          }),
+          agentThread({
+            id: 'th-idle',
+            title: 'Idle chat',
+            last_message_at: '2026-09-24T00:00:00Z'
+          })
+        ])
+      )
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('history-working')
+    conversation.startTurn(turnId)
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Working chat',
+        description: i18n.global.t('agent.historyWorking')
+      })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Idle chat' })
+    ).not.toHaveAccessibleDescription(i18n.global.t('agent.historyWorking'))
+
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th-active', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Working chat' })
+      ).not.toHaveAccessibleDescription(i18n.global.t('agent.historyWorking'))
+    )
+  })
+
   it('refreshes workspace billing after an active turn becomes idle', async () => {
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

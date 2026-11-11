@@ -6238,6 +6238,7 @@
     "historyMatchWorkflow": "Workflow:",
     "historyIncomplete": "Some chats could not be loaded. Showing the ones we have.",
     "historyOpenFailed": "Could not open. Select this chat to retry.",
+    "historyWorking": "Agent is working",
     "copyMarkdown": "Copy as markdown",
     "delete": "Delete",
     "untitledChat": "Untitled",

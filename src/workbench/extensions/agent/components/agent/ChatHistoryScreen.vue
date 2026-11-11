@@ -24,12 +24,15 @@ const {
   groups,
   workflowNameFor = () => undefined,
   loadingId = null,
-  failedId = null
+  failedId = null,
+  workingIds = new Set<string>()
 } = defineProps<{
   groups: HistoryGroups
   workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   loadingId?: string | null
   failedId?: string | null
+  /** Chats with a turn running; their rows shimmer. */
+  workingIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
   back: []
@@ -362,6 +365,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               :current="result?.isCurrent"
               :loading="loadingId === session.id"
               :failed="failedId === session.id"
+              :working="workingIds.has(session.id)"
               @select="pick(session)"
             />
             <Button
