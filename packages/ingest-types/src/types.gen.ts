@@ -19,6 +19,22 @@ export type AcceptInviteResponse = {
 }
 
 /**
+ * The auto top-up settings a purchase was accepted with, echoed so checkout and its done state show exactly what turns on. Present only on a purchase sent with auto_top_up.
+ */
+export type AcceptedAutoTopUpSettings = {
+  /**
+   * The stored monthly limit; the ceiling when the owner set no limit.
+   */
+  monthly_budget_cents: number
+  /**
+   * True when the owner set no limit and the ceiling was stored.
+   */
+  monthly_budget_is_default: boolean
+  target_credits: number
+  threshold_credits: number
+}
+
+/**
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export type AgentAdmissionError = {
@@ -1574,6 +1590,16 @@ export type AutoReloadSettingsRequest = {
   target_credits?: number
   threshold_credits: number
 }
+
+/**
+ * Did auto top-up turn on with a purchase sent with auto_top_up; absent otherwise, so absence is not "off". pending: payment or activation has not finished; keep polling. on: on with auto_top_up's settings. failed: payment and credits stand but auto top-up did not turn on; send the owner to set it up in Billing. not_attempted: the payment did not succeed (or the checkout expired). Not the current status; read GET /api/billing/auto-reload.
+ */
+export type AutoTopUpActivation = 'pending' | 'on' | 'failed' | 'not_attempted'
+
+/**
+ * Only when auto_top_up_activation is failed. An auto_top_up_setup reason (GET /api/billing/capabilities) or activation_error. For support and analytics, not copy.
+ */
+export type AutoTopUpActivationReason = string
 
 /**
  * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
@@ -3147,6 +3173,9 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  auto_top_up?: AcceptedAutoTopUpSettings
+  auto_top_up_activation?: AutoTopUpActivation
+  auto_top_up_activation_reason?: AutoTopUpActivationReason
   /**
    * true exactly when POST /api/billing/ops/{id}/cancel would deliver
    * the abandon for this caller: a pending plan change or initial
@@ -3930,6 +3959,7 @@ export type CreateTopupCheckoutRequest = {
    *
    */
   amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
   /**
    * Optional client-provided key. Forwarded to Stripe so a double-submit
    * collapses onto one session instead of minting two payable links.
@@ -3974,7 +4004,7 @@ export type CreateTopupQuoteRequest = {
 }
 
 /**
- * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
+ * Legacy on-file top-up. Explicit payment authority, save/default fields and auto_top_up require the dedicated interactive route and are rejected here, including null or false values.
  */
 export type CreateTopupRequest = {
   /**
@@ -4993,6 +5023,9 @@ export type HostedTopupCheckout = {
    * Original credit purchase amount before promotions, not the settled payment amount.
    */
   amount_cents: number
+  auto_top_up?: AcceptedAutoTopUpSettings
+  auto_top_up_activation?: AutoTopUpActivation
+  auto_top_up_activation_reason?: AutoTopUpActivationReason
   /**
    * Actual USD Stripe total after promotions, including a confirmed fully discounted zero. Null when unavailable; use this for payment messages, not amount_cents.
    */
@@ -5407,6 +5440,7 @@ export type InteractiveTopupRequest = {
    * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
    */
   amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
   /**
    * Client-minted identifier for one checkout attempt, generated when
    * the customer starts checkout and sent on every request and
@@ -8352,6 +8386,28 @@ export type ToolCallSummary = {
 export type TopUpPurchaseAmount = {
   amount_cents: number
   currency: 'usd'
+}
+
+/**
+ * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
+ * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
+ * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
+ * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
+ *
+ */
+export type TopupAutoTopUpSettings = {
+  /**
+   * Owner monthly limit in USD cents. Absent or null means no owner limit and is stored as max_monthly_budget_cents, with monthly_budget_is_default true.
+   */
+  monthly_budget_cents?: number | null
+  /**
+   * The balance each auto top-up buys back up to.
+   */
+  target_credits: number
+  /**
+   * Auto top-up runs when the balance drops below this many credits.
+   */
+  threshold_credits: number
 }
 
 /**
