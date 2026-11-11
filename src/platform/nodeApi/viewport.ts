@@ -15,6 +15,7 @@ import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
+import { addListener } from './listeners'
 import type { Unsubscribe } from './widgetHandle'
 
 type Listener = () => void
@@ -74,7 +75,7 @@ function announce(): void {
 
 export function createViewportObserver() {
   return (listener: Listener): Unsubscribe => {
-    listeners.add(listener)
+    const remove = addListener(listeners, listener)
 
     tryChain()
     if (listeners.size === 1) {
@@ -82,8 +83,7 @@ export function createViewportObserver() {
     }
 
     return () => {
-      listeners.delete(listener)
-      if (listeners.size) return
+      if (!remove() || listeners.size) return
       window.removeEventListener('resize', announce)
       unchain()
     }

@@ -24,6 +24,7 @@ import { st } from '@/i18n'
 import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { ComfyApiError } from './errors'
+import { addListener } from './listeners'
 import type { NodeHandle, Size } from './nodeHandle'
 import { slotShapeOf } from './slotHandle'
 import type { SlotShape } from './slotHandle'
@@ -1018,8 +1019,7 @@ export function notifyDefsRefreshed(): void {
 }
 
 function onDefsRefreshed(listener: () => void): Unsubscribe {
-  refreshListeners.add(listener)
-  return () => refreshListeners.delete(listener)
+  return addListener(refreshListeners, listener)
 }
 
 /** The resolvers currently registered, for `resolveFrontendNodes`. */
