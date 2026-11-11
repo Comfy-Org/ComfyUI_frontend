@@ -29,14 +29,16 @@ test.describe('Billing rollout', () => {
       enabled: false,
       memberColumns: 0,
       primaryAction: 'Add credits',
-      newDialogs: 0
+      newDialogs: 0,
+      legacy160Markers: 1
     },
     {
       version: '1.61',
       enabled: true,
       memberColumns: 1,
       primaryAction: 'Continue',
-      newDialogs: 1
+      newDialogs: 1,
+      legacy160Markers: 0
     }
   ]) {
     test.describe(
@@ -44,6 +46,44 @@ test.describe('Billing rollout', () => {
       { tag: '@cloud' },
       () => {
         test.use({ billingNewUx: false })
+
+        test('selects the release Billing tab', async ({ comfyPage }) => {
+          const { page } = comfyPage
+          test.setTimeout(60_000)
+          const billing = new CloudWorkspaceMockHelper(page)
+          await billing.setup(
+            DEFAULT_TEAM_MEMBERS,
+            workspace('personal', 'owner'),
+            {
+              ...PERSONAL_BILLING_STATUS,
+              billing_status: 'paid',
+              is_active: true,
+              subscription_status: 'active',
+              subscription_tier: 'PRO',
+              subscription_duration: 'MONTHLY',
+              plan_slug: 'pro-monthly'
+            }
+          )
+          await page.route('**/api/features', (route) =>
+            route.fulfill(
+              jsonRoute({
+                billing_new_ux_enabled: release.enabled,
+                unified_billing_settings: true
+              })
+            )
+          )
+          await page.route('**/api/billing/payment-methods', (route) =>
+            route.fulfill(jsonRoute([]))
+          )
+
+          const content = await billing.openPlanAndCreditsSettings('Billing')
+          const tab = content.getByTestId('billing-tab')
+          await expect(tab).toBeVisible()
+          await expect(tab.getByTestId('billing-plan-row')).toBeVisible()
+          await expect(
+            content.locator('[data-billing-release="1.60"]')
+          ).toHaveCount(release.legacy160Markers)
+        })
 
         test('selects the release Activity columns and Add credits UI from the same account facts', async ({
           comfyPage
@@ -95,6 +135,9 @@ test.describe('Billing rollout', () => {
           )
 
           const content = await billing.openPlanAndCreditsSettings()
+          await expect(
+            content.locator('[data-billing-release="1.60"]')
+          ).toHaveCount(release.legacy160Markers)
           await content
             .getByRole('button', { name: 'Activity', exact: true })
             .click()
