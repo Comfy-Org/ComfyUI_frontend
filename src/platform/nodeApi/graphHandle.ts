@@ -651,16 +651,9 @@ export function createGraphApi(
     links() {
       const graph = getGraph()
       if (!graph) return Object.freeze([])
-
-      // Store-backed, via the sanctioned slotLinks helpers — never the
-      // internal `graph._links` map, and floating links are excluded.
-      const infos = graph.nodes.flatMap((node) =>
-        node.outputs.flatMap((_, slot) =>
-          outputLinks(graph, node.id, slot)
-            .map((link) => toLinkInfo(graph, link))
-            .filter((info): info is LinkInfo => info !== undefined)
-        )
-      )
+      const infos = [...graph.links.values()]
+        .map((link) => toLinkInfo(graph, link))
+        .filter((info): info is LinkInfo => info !== undefined)
       return Object.freeze(infos)
     },
 

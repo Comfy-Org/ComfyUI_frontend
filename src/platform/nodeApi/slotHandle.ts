@@ -8,6 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -30,6 +31,10 @@ import { describeSlotRef, resolveSlotRef, slotIdOf } from './slotRef'
 import type { SlotId, SlotRef } from './slotRef'
 import type { WidgetValue } from './widgetHandle'
 
+/**
+ * Inside a subgraph, a link to the subgraph's own input or output has that
+ * boundary's id as its node id, and no node handle exists for it.
+ */
 export interface LinkInfo {
   readonly id: string
   readonly sourceNodeId: string
@@ -291,21 +296,10 @@ const typeOf = (slot: INodeInputSlot | INodeOutputSlot) =>
     ? slot.type
     : String(extensionValue(slot.type) ?? '*')
 
-export function toLinkInfo(
-  graph: LGraph,
-  link: {
-    id: unknown
-    origin_id: unknown
-    origin_slot: number
-    target_id: unknown
-    target_slot: number
-    type: unknown
-  }
-): LinkInfo | undefined {
-  const origin = graph.getNodeById(toNodeId(String(link.origin_id)))
-  const target = graph.getNodeById(toNodeId(String(link.target_id)))
-  const outSlot = origin?.outputs[link.origin_slot]
-  const inSlot = target?.inputs[link.target_slot]
+export function toLinkInfo(graph: LGraph, link: LLink): LinkInfo | undefined {
+  const { input, output, subgraphInput, subgraphOutput } = link.resolve(graph)
+  const outSlot = output ?? subgraphInput
+  const inSlot = input ?? subgraphOutput
   if (!outSlot || !inSlot) return undefined
 
   return Object.freeze({
@@ -314,7 +308,10 @@ export function toLinkInfo(
     sourceSlotId: slotIdOf(outSlot),
     targetNodeId: String(link.target_id),
     targetSlotId: slotIdOf(inSlot),
-    type: typeof link.type === 'string' ? link.type : String(link.type ?? '*'),
+    type:
+      typeof link.type === 'string'
+        ? link.type
+        : String(extensionValue(link.type) ?? '*'),
     sourceIndex: link.origin_slot,
     targetIndex: link.target_slot
   })

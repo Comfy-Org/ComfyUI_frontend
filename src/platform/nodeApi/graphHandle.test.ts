@@ -8,6 +8,10 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
@@ -873,6 +877,53 @@ describe('subgraphs', () => {
     expect(api.root()?.id).toBe(root.id)
     expect(api.root()?.node(String(top.id))?.getTitle()).toBe('Top')
     expect(api.root()?.node(String(inner.id))).toBeUndefined()
+  })
+
+  it('lists every link while a subgraph is active, including those at its boundary, but no floating link', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: 'INT' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [
+        { name: 'mask', type: 'MASK' },
+        { name: 'image', type: 'IMAGE' }
+      ]
+    })
+    const [first, second] = ['First', 'Second'].map((title) => {
+      const relay = new LGraphNode(title, 'Relay')
+      relay.addInput('in', 'IMAGE')
+      relay.addOutput('out', 'IMAGE')
+      subgraph.add(relay)
+      return relay
+    })
+    subgraph.inputNode.slots[1].connect(first.inputs[0], first)
+    first.connect(0, second, 0)
+    subgraph.outputNode.slots[1].connect(second.outputs[0], second)
+    second.connectFloatingReroute([0, 0], second.outputs[0])
+    expect(subgraph.floatingLinks.size).toBe(1)
+
+    const links = createGraphApi(() => subgraph).links()
+
+    expect(links).toHaveLength(3)
+    expect(links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceNodeId: String(SUBGRAPH_INPUT_ID),
+          sourceIndex: 1,
+          targetNodeId: String(first.id)
+        }),
+        expect.objectContaining({
+          sourceNodeId: String(first.id),
+          targetNodeId: String(second.id)
+        }),
+        expect.objectContaining({
+          sourceNodeId: String(second.id),
+          targetNodeId: String(SUBGRAPH_OUTPUT_ID),
+          targetIndex: 1
+        })
+      ])
+    )
   })
 
   it('reports the groups drawn inside a subgraph', () => {
