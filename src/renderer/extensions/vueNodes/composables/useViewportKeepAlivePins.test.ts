@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, shallowRef } from 'vue'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
@@ -43,6 +43,25 @@ describe('useViewportKeepAlivePins', () => {
     await nextTick()
 
     expect(pinnedNodeIds.value).toEqual(expected)
+  })
+
+  it('scans a root that arrives after setup', async () => {
+    const root = shallowRef<HTMLElement | null>(null)
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const { pinnedNodeIds } = scope.run(() =>
+      useViewportKeepAlivePins({
+        getRoot: () => root.value,
+        getLinkConnector: () => null
+      })
+    )!
+    await nextTick()
+    expect(pinnedNodeIds.value).toEqual(new Set())
+
+    root.value = nodeWith('stateful', '<iframe src="about:blank"></iframe>')
+    await nextTick()
+
+    expect(pinnedNodeIds.value).toEqual(new Set(['stateful']))
   })
 
   it('retains media during playback and releases it on pause', async () => {

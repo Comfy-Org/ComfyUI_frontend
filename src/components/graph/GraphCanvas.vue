@@ -347,7 +347,7 @@ const allNodes = computed((): NodeState[] => {
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
 const { pinnedNodeIds } = useViewportKeepAlivePins({
-  getRoot: () => transformPaneRef.value?.element ?? null,
+  getRoot: () => vueNodeDropTarget.value,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
 })
 const { activeNodeIds } = useViewportKeepAlive({
