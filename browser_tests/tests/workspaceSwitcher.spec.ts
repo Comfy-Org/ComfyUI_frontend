@@ -48,11 +48,16 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
-    const panelBox = await panel.boundingBox()
-    const profileBox = await profileMenu.boundingBox()
-    expect(panelBox).not.toBeNull()
-    expect(profileBox).not.toBeNull()
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+    await expect
+      .poll(async () => {
+        const [panelBox, profileBox] = await Promise.all([
+          panel.boundingBox(),
+          profileMenu.boundingBox()
+        ])
+        if (!panelBox || !profileBox) return Number.POSITIVE_INFINITY
+        return panelBox.x + panelBox.width - profileBox.x
+      })
+      .toBeLessThanOrEqual(0)
   })
 
   test.describe('on a phone-width viewport', () => {
@@ -145,6 +150,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('credits-menu-item').hover()
     await expect(page.getByTestId('add-credits-button')).toBeEnabled()
     const longWorkspaceCapabilities = page.waitForResponse(
       (response) =>
@@ -161,6 +167,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.waitForAppReady()
 
     await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('credits-menu-item').hover()
     await expect(page.getByTestId('add-credits-button')).toBeDisabled()
   })
 

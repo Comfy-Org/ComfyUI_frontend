@@ -786,6 +786,19 @@ describe('Load3DConfiguration "none" model handling', () => {
     expect(clearModelSpy).not.toHaveBeenCalled()
   })
 
+  it('clears the kept model when a reloaded node restores "none"', async () => {
+    keepingLoadedModel(load3d, () =>
+      new Load3DConfiguration(load3d).configure({
+        modelWidget: reactiveWidget('none'),
+        loadFolder: 'input'
+      })
+    )
+    await flush()
+
+    expect(clearModelSpy).toHaveBeenCalledOnce()
+    expect(loadModelSpy).not.toHaveBeenCalled()
+  })
+
   it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {
     const config = new Load3DConfiguration(load3d)
     const widget = reactiveWidget('model.glb')

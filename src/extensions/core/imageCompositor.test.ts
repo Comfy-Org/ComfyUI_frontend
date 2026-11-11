@@ -7,7 +7,7 @@ import {
   getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

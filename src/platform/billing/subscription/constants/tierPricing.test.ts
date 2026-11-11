@@ -6,6 +6,7 @@ import {
   isSalesManagedTier,
   isUnknownTier,
   hasEndingNoticeStarted,
+  isWithinEnterpriseEndingNotice,
   toTierKey
 } from './tierPricing'
 
@@ -116,4 +117,19 @@ describe('hasEndingNoticeStarted', () => {
       expect(hasEndingNoticeStarted(startsAt, NOW)).toBe(started)
     }
   )
+})
+
+describe('isWithinEnterpriseEndingNotice', () => {
+  const NOW = Date.parse('2026-09-03T12:00:00Z')
+
+  it.for([
+    { endDate: '2026-09-17T12:00:00.001Z', within: false },
+    { endDate: '2026-09-17T12:00:00Z', within: true },
+    { endDate: '2026-09-01T12:00:00Z', within: true },
+    { endDate: null, within: false },
+    { endDate: undefined, within: false },
+    { endDate: 'not-a-date', within: false }
+  ])('keeps the legacy 14-day window for $endDate', ({ endDate, within }) => {
+    expect(isWithinEnterpriseEndingNotice(endDate, NOW)).toBe(within)
+  })
 })

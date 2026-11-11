@@ -124,14 +124,11 @@ async function setupRefusedPlanChange(page: Page, portalUrl: string) {
   return portalOpens
 }
 
-/** The avatar menu's Plans and pricing entry, then the Standard tier's action. */
 async function changeToStandardYearly(page: Page) {
-  await page.goto(APP_URL)
+  await page.goto(`${APP_URL}/?pricing=1`)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
   })
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
   await expect(
     page.getByRole('heading', { name: 'Choose a Plan' })
   ).toBeVisible({ timeout: 45_000 })

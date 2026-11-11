@@ -1308,3 +1308,31 @@ test.describe('Workflow Persistence', () => {
       .toBeLessThanOrEqual(101)
   })
 })
+
+const workflowListing404Test = test.extend({
+  initialLocalStorage: {
+    'Comfy.Workflow.LastOpenPaths:personal': JSON.stringify({
+      workspaceId: 'personal',
+      paths: ['workflows/missing.json'],
+      activeIndex: 0
+    })
+  },
+  page: async ({ page }, use) => {
+    await page.route('**/api/userdata?dir=workflows&*', (route) =>
+      route.fulfill({ status: 404 })
+    )
+    await use(page)
+  }
+})
+
+workflowListing404Test(
+  'Loads the default workflow when the workflow listing returns 404',
+  async ({ comfyPage }) => {
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .toEqual(['Unsaved Workflow'])
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(0)
+  }
+)

@@ -66,6 +66,7 @@ declare global {
     __cnSelfCheckTimer?: ReturnType<typeof setInterval>
     __cnTapInstalled?: boolean
     __graphReadyHeartbeat?: boolean
+    __seededServerFlags?: Record<string, unknown>
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
     __captureHostTelemetry?: (captured: {

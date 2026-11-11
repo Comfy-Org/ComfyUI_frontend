@@ -129,6 +129,15 @@ export function hasEndingNoticeStarted(
   return !Number.isNaN(start) && now >= start
 }
 
+export function isWithinEnterpriseEndingNotice(
+  endDate: string | null | undefined,
+  now: number = Date.now()
+): boolean {
+  if (!endDate) return false
+  const end = Date.parse(endDate)
+  return !Number.isNaN(end) && end - now <= 14 * 24 * 60 * 60 * 1000
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(

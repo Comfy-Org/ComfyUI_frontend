@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
 import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
-import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+import { useCompositorAutoSave } from '@/renderer/extensions/layerEditor/compositor/useCompositorAutoSave'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -56,29 +56,26 @@ vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
   ) => slots.default?.()
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/layerEditor/composables/useLayerEditorSession'),
-  () => ({
-    isTextEditingTarget: (target: EventTarget | null) =>
-      (target as HTMLElement | null)?.tagName === 'INPUT',
-    useLayerEditorSession: () => session
-  })
-)
+vi.mock<unknown>(import('@comfyorg/layer-editor/vue'), () => ({
+  isTextEditingTarget: (target: EventTarget | null) =>
+    (target as HTMLElement | null)?.tagName === 'INPUT',
+  useLayerEditorSession: () => session
+}))
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/compositorSave'),
+  import('@/renderer/extensions/layerEditor/compositor/compositorSave'),
   () => ({
     saveCompositorLayerState: saveLayerState,
     saveCompositorPreview: savePreview
   })
 )
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/useCompositorAutoSave'),
+  import('@/renderer/extensions/layerEditor/compositor/useCompositorAutoSave'),
   () => ({
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
 vi.mock(
-  import('@/renderer/extensions/compositor/composables/compositorSession'),
+  import('@/renderer/extensions/layerEditor/compositor/compositorSession'),
   () => ({
     loadCompositorSession
   })

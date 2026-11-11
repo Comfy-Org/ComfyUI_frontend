@@ -371,7 +371,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._state.disabled = this.disabled ?? false
   }
 
-  // fallow-ignore-next-line unused-class-member
   element?: HTMLElement
   callback?(
     value: TWidget['value'],

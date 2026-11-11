@@ -1,351 +1,165 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
-import MaskEditorContent from '@/renderer/extensions/maskEditor/components/MaskEditorContent.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-import { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const mockKeyboard = vi.hoisted(() => ({
-  addListeners: vi.fn(),
-  removeListeners: vi.fn()
-}))
-
-const mockPanZoom = vi.hoisted(() => ({
-  initializeCanvasPanZoom: vi.fn().mockResolvedValue(undefined),
-  invalidatePanZoom: vi.fn().mockResolvedValue(undefined)
-}))
-
-const mockBrushDrawing = vi.hoisted(() => ({
-  initGPUResources: vi.fn().mockResolvedValue(undefined),
-  initPreviewCanvas: vi.fn()
-}))
-
-const mockToolManager = vi.hoisted(() => ({
-  brushDrawing: mockBrushDrawing
-}))
+import MaskEditorContent from './MaskEditorContent.vue'
 
 const mockBrushPersistence = vi.hoisted(() => ({
   loadAndApply: vi.fn(),
   save: vi.fn()
 }))
 
-const mockImageLoader = vi.hoisted(() => ({
-  loadImages: vi.fn().mockResolvedValue({ width: 100, height: 100 })
-}))
-
-const mockMaskEditorLoader = vi.hoisted(() => ({
-  loadFromNode: vi.fn().mockResolvedValue(undefined)
-}))
-
-let mockStore: ReturnType<typeof useMaskEditorStore>
-
-vi.mock<unknown>(import('@comfyorg/mask-editor/useKeyboard'), () => ({
-  useKeyboard: () => mockKeyboard
-}))
-
-vi.mock<unknown>(import('@comfyorg/mask-editor/usePanAndZoom'), () => ({
-  usePanAndZoom: () => mockPanZoom
-}))
-
-vi.mock<unknown>(import('@comfyorg/mask-editor/useToolManager'), () => ({
-  useToolManager: vi.fn(() => mockToolManager)
+const mockLoader = vi.hoisted(() => ({
+  loadFromNode: vi.fn(async (): Promise<void> => undefined)
 }))
 
 vi.mock(
   import('@/renderer/extensions/maskEditor/composables/useBrushPersistence'),
-  () => ({
-    useBrushPersistence: () => mockBrushPersistence
-  })
-)
-
-vi.mock(
-  import('@/renderer/extensions/maskEditor/composables/useImageLoader'),
-  () => ({
-    useImageLoader: () => mockImageLoader
-  })
+  () => ({ useBrushPersistence: () => mockBrushPersistence })
 )
 
 vi.mock(
   import('@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'),
-  () => ({
-    useMaskEditorLoader: () => mockMaskEditorLoader
-  })
+  () => ({ useMaskEditorLoader: () => mockLoader })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/ToolPanel.vue'),
-  () => ({
-    default: {
-      name: 'ToolPanelStub',
-      props: ['toolManager'],
-      template: '<div data-testid="tool-panel-stub" />'
-    }
+const canvasError = new Error('canvas initialization failed')
+const EditorCanvasStub = defineComponent({
+  props: ['baseImage', 'maskImage', 'paintImage', 'brushAdjustment'],
+  emits: ['error'],
+  setup: () => ({ canvasError }),
+  template: `
+    <div>
+      <img alt="Base" :src="baseImage.src" />
+      <img alt="Mask" :src="maskImage.src" />
+      <img v-if="paintImage" alt="Paint" :src="paintImage.src" />
+      <output aria-label="Brush adjustment">{{ JSON.stringify(brushAdjustment) }}</output>
+      <button @click="$emit('error', canvasError)">Fail initialization</button>
+    </div>
+  `
+})
+
+function renderContent(node = new LGraphNode('Mask editor fixture')) {
+  return render(MaskEditorContent, {
+    props: { node },
+    global: { stubs: { EditorCanvas: EditorCanvasStub } }
   })
-)
+}
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/PointerZone.vue'),
-  () => ({
-    default: {
-      name: 'PointerZoneStub',
-      props: ['toolManager', 'panZoom'],
-      template: '<div data-testid="pointer-zone-stub" />'
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/SidePanel.vue'),
-  () => ({
-    default: {
-      name: 'SidePanelStub',
-      props: ['toolManager'],
-      template: '<div data-testid="side-panel-stub" />'
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/BrushCursor.vue'),
-  () => ({
-    default: {
-      name: 'BrushCursorStub',
-      props: ['containerRef'],
-      template: '<div data-testid="brush-cursor-stub" />'
-    }
-  })
-)
-
-const observeSpy = vi.fn()
-const disconnectSpy = vi.fn()
-let lastResizeCallback: ResizeObserverCallback | null = null
-
-class MockResizeObserver {
-  observe = observeSpy
-  disconnect = disconnectSpy
-  unobserve = vi.fn()
-  constructor(cb: ResizeObserverCallback) {
-    lastResizeCallback = cb
+function setDecodedImages() {
+  const baseImage = new Image()
+  baseImage.src = '/base.png'
+  const maskImage = new Image()
+  maskImage.src = '/mask.png'
+  const paintImage = new Image()
+  paintImage.src = '/paint.png'
+  useMaskEditorDataStore().inputData = {
+    baseLayer: { image: baseImage, url: baseImage.src },
+    maskLayer: { image: maskImage, url: maskImage.src },
+    paintLayer: { image: paintImage, url: paintImage.src },
+    sourceRef: { filename: 'base.png' },
+    nodeId: toNodeId(1)
   }
 }
 
-const fakeNode = new LGraphNode('test-node')
-
-const renderContent = () =>
-  render(MaskEditorContent, { props: { node: fakeNode } })
-
 describe('MaskEditorContent', () => {
-  beforeEach(() => {
-    mockStore = useMaskEditorStore()
-    vi.spyOn(mockStore.canvasHistory, 'saveInitialState').mockImplementation(
-      () => {}
+  it('loads the selected node without mounting the canvas before images arrive', () => {
+    const node = new LGraphNode('Selected image')
+    renderContent(node)
+
+    expect(mockLoader.loadFromNode).toHaveBeenCalledWith(
+      node,
+      expect.any(AbortSignal)
     )
-    vi.spyOn(mockStore.canvasHistory, 'clearStates').mockImplementation(
-      () => {}
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('forwards decoded layers and configured brush adjustment to the canvas', async () => {
+    vi.mocked(useSettingStore().get)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(2.5)
+    renderContent()
+
+    setDecodedImages()
+
+    expect(await screen.findByRole('img', { name: 'Base' })).toHaveAttribute(
+      'src',
+      'http://localhost:3000/base.png'
     )
-    mockMaskEditorLoader.loadFromNode.mockResolvedValue(undefined)
-    mockImageLoader.loadImages.mockResolvedValue({ width: 100, height: 100 })
-    mockPanZoom.initializeCanvasPanZoom.mockResolvedValue(undefined)
-    mockBrushDrawing.initGPUResources.mockResolvedValue(undefined)
-    vi.stubGlobal('ResizeObserver', MockResizeObserver)
+    expect(screen.getByRole('img', { name: 'Mask' })).toHaveAttribute(
+      'src',
+      'http://localhost:3000/mask.png'
+    )
+    expect(screen.getByRole('img', { name: 'Paint' })).toHaveAttribute(
+      'src',
+      'http://localhost:3000/paint.png'
+    )
+    expect(screen.getByLabelText('Brush adjustment')).toHaveTextContent(
+      '{"useDominantAxis":true,"brushAdjustmentSpeed":2.5}'
+    )
   })
 
-  describe('mount', () => {
-    it('should add keyboard listeners on mount', () => {
-      renderContent()
-      expect(mockKeyboard.addListeners).toHaveBeenCalledTimes(1)
-    })
+  it('does not mount stale decoded layers while the current load is pending', async () => {
+    setDecodedImages()
+    let finishLoad = () => {}
+    mockLoader.loadFromNode.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+    renderContent()
 
-    it('should observe the container with a ResizeObserver', async () => {
-      renderContent()
-      await waitFor(() => expect(observeSpy).toHaveBeenCalledTimes(1))
-    })
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    finishLoad()
 
-    it('should invalidate pan/zoom on resize', async () => {
-      renderContent()
-      await waitFor(() => expect(observeSpy).toHaveBeenCalled())
-      mockPanZoom.invalidatePanZoom.mockClear()
-
-      lastResizeCallback?.([], {} as ResizeObserver)
-      await new Promise((r) => setTimeout(r, 0))
-
-      expect(mockPanZoom.invalidatePanZoom).toHaveBeenCalledTimes(1)
-    })
-
-    it('should assign canvas refs to the store before init', async () => {
-      renderContent()
-      await waitFor(() => expect(mockStore.maskCanvas).not.toBeNull())
-      expect(mockStore.rgbCanvas).not.toBeNull()
-      expect(mockStore.imgCanvas).not.toBeNull()
-      expect(mockStore.canvasContainer).not.toBeNull()
-      expect(mockStore.canvasBackground).not.toBeNull()
-    })
+    expect(await screen.findByRole('img', { name: 'Base' })).toBeInTheDocument()
   })
 
-  describe('init flow', () => {
-    it('should run the init chain in the documented order', async () => {
-      renderContent()
+  it('restores brush settings and saves them while clearing app data on unmount', () => {
+    const dataStore = useMaskEditorDataStore()
+    const { unmount } = renderContent()
 
-      await waitFor(() => {
-        expect(mockBrushDrawing.initPreviewCanvas).toHaveBeenCalled()
-      })
+    expect(mockBrushPersistence.loadAndApply).toHaveBeenCalledTimes(1)
+    unmount()
 
-      const orderOf = (fn: { mock: { invocationCallOrder: number[] } }) =>
-        fn.mock.invocationCallOrder[0]
-
-      expect(orderOf(mockMaskEditorLoader.loadFromNode)).toBeLessThan(
-        orderOf(mockImageLoader.loadImages)
-      )
-      expect(orderOf(mockImageLoader.loadImages)).toBeLessThan(
-        orderOf(mockPanZoom.initializeCanvasPanZoom)
-      )
-      expect(orderOf(mockPanZoom.initializeCanvasPanZoom)).toBeLessThan(
-        orderOf(vi.mocked(mockStore.canvasHistory).saveInitialState)
-      )
-      expect(
-        orderOf(vi.mocked(mockStore.canvasHistory).saveInitialState)
-      ).toBeLessThan(orderOf(mockBrushDrawing.initGPUResources))
-      expect(orderOf(mockBrushDrawing.initGPUResources)).toBeLessThan(
-        orderOf(mockBrushDrawing.initPreviewCanvas)
-      )
-      expect(mockMaskEditorLoader.loadFromNode).toHaveBeenCalledWith(fakeNode)
-    })
-
-    it('should reveal the child UI components after init succeeds', async () => {
-      renderContent()
-
-      expect(await screen.findByTestId('tool-panel-stub')).toBeInTheDocument()
-      expect(await screen.findByTestId('pointer-zone-stub')).toBeInTheDocument()
-      expect(await screen.findByTestId('side-panel-stub')).toBeInTheDocument()
-      expect(await screen.findByTestId('brush-cursor-stub')).toBeInTheDocument()
-    })
-
-    it('should size the GPU preview canvas to match the mask canvas', async () => {
-      // Force the mask canvas to non-default dimensions during init so the
-      // assertion below proves the source actually copies width/height across
-      // (default 300x150 on both would make the test tautological).
-      mockBrushDrawing.initGPUResources.mockImplementationOnce(async () => {
-        if (mockStore.maskCanvas) {
-          mockStore.maskCanvas.width = 999
-          mockStore.maskCanvas.height = 777
-        }
-      })
-      renderContent()
-
-      await waitFor(() => {
-        expect(mockBrushDrawing.initPreviewCanvas).toHaveBeenCalled()
-      })
-
-      const previewCanvas = mockBrushDrawing.initPreviewCanvas.mock
-        .calls[0][0] as HTMLCanvasElement
-      expect(previewCanvas.width).toBe(999)
-      expect(previewCanvas.height).toBe(777)
-    })
+    expect(mockBrushPersistence.save).toHaveBeenCalledTimes(1)
+    expect(dataStore.reset).toHaveBeenCalledTimes(1)
   })
 
-  describe('init error', () => {
-    it('should close the dialog and log when loader.loadFromNode rejects', async () => {
-      mockMaskEditorLoader.loadFromNode.mockRejectedValueOnce(
-        new Error('load failed')
-      )
+  it('closes the dialog and reports node loading failures', async () => {
+    const error = new Error('load failed')
+    mockLoader.loadFromNode.mockRejectedValueOnce(error)
+    renderContent()
 
-      renderContent()
-
-      await waitFor(() => {
-        expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
-      })
-      expect(console.error).toHaveBeenCalledWith(
-        '[MaskEditorContent] Initialization failed:',
-        expect.any(Error)
-      )
-    })
-
-    it('should close the dialog and log when initializeCanvasPanZoom rejects', async () => {
-      mockPanZoom.initializeCanvasPanZoom.mockRejectedValueOnce(
-        new Error('panzoom failed')
-      )
-
-      renderContent()
-
-      await waitFor(() => {
-        expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
-      })
-      expect(console.error).toHaveBeenCalledWith(
-        '[MaskEditorContent] Initialization failed:',
-        expect.any(Error)
-      )
-    })
+    await waitFor(() =>
+      expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      '[MaskEditorContent] Initialization failed:',
+      error
+    )
   })
 
-  describe('drag handling', () => {
-    it('should prevent default on dragstart with Ctrl held', () => {
-      renderContent()
-      const root = screen.getByTestId('mask-editor-root')
+  it('closes the dialog and reports errors emitted by the canvas', async () => {
+    setDecodedImages()
+    renderContent()
 
-      const event = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true
-      })
-      // happy-dom doesn't propagate ctrlKey through the DragEvent constructor.
-      Object.defineProperty(event, 'ctrlKey', { value: true })
-      root.dispatchEvent(event)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Fail initialization' })
+    )
 
-      expect(event.defaultPrevented).toBe(true)
-    })
-
-    it('should not prevent default on plain dragstart without Ctrl', () => {
-      renderContent()
-      const root = screen.getByTestId('mask-editor-root')
-
-      const event = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true
-      })
-      Object.defineProperty(event, 'ctrlKey', { value: false })
-      root.dispatchEvent(event)
-
-      expect(event.defaultPrevented).toBe(false)
-    })
-  })
-
-  describe('brush settings', () => {
-    it('loads persisted brush settings and passes the brush adjustment settings to the tool manager', () => {
-      vi.mocked(useSettingStore().get).mockImplementation(
-        (key: string) =>
-          ({
-            'Comfy.MaskEditor.UseDominantAxis': true,
-            'Comfy.MaskEditor.BrushAdjustmentSpeed': 2.5
-          })[key]
-      )
-
-      renderContent()
-
-      expect(mockBrushPersistence.loadAndApply).toHaveBeenCalledTimes(1)
-      expect(useToolManager).toHaveBeenCalledWith(mockKeyboard, mockPanZoom, {
-        useDominantAxis: true,
-        brushAdjustmentSpeed: 2.5
-      })
-    })
-  })
-
-  describe('unmount cleanup', () => {
-    it('should run the full cleanup chain on unmount', async () => {
-      const { unmount } = renderContent()
-      await waitFor(() =>
-        expect(mockBrushDrawing.initGPUResources).toHaveBeenCalled()
-      )
-
-      unmount()
-
-      expect(mockBrushPersistence.save).toHaveBeenCalledTimes(1)
-      expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
-      expect(mockStore.canvasHistory.clearStates).toHaveBeenCalledTimes(1)
-      expect(mockStore.resetState).toHaveBeenCalledTimes(1)
-      expect(useMaskEditorDataStore().reset).toHaveBeenCalledTimes(1)
-    })
+    expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
+    expect(console.error).toHaveBeenCalledWith(
+      '[MaskEditorContent] Initialization failed:',
+      canvasError
+    )
   })
 })
