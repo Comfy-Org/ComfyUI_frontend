@@ -30,7 +30,7 @@ test.describe('Billing rollout', () => {
       memberColumns: 0,
       primaryAction: 'Add credits',
       newDialogs: 0,
-      legacyBillingTabs: 1
+      legacy160Markers: 1
     },
     {
       version: '1.61',
@@ -38,7 +38,7 @@ test.describe('Billing rollout', () => {
       memberColumns: 1,
       primaryAction: 'Continue',
       newDialogs: 1,
-      legacyBillingTabs: 0
+      legacy160Markers: 0
     }
   ]) {
     test.describe(
@@ -82,7 +82,7 @@ test.describe('Billing rollout', () => {
           await expect(tab.getByTestId('billing-plan-row')).toBeVisible()
           await expect(
             content.locator('[data-billing-release="1.60"]')
-          ).toHaveCount(release.legacyBillingTabs)
+          ).toHaveCount(release.legacy160Markers)
         })
 
         test('selects the release Activity columns and Add credits UI from the same account facts', async ({
@@ -135,6 +135,9 @@ test.describe('Billing rollout', () => {
           )
 
           const content = await billing.openPlanAndCreditsSettings()
+          await expect(
+            content.locator('[data-billing-release="1.60"]')
+          ).toHaveCount(release.legacy160Markers)
           await content
             .getByRole('button', { name: 'Activity', exact: true })
             .click()
