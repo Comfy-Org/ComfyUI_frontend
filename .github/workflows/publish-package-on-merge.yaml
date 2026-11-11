@@ -98,6 +98,34 @@ jobs:
       contents: read
       actions: write
     steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      # max-parallel orders this run only. A dependency released by another
+      # merge's run may still be publishing, so wait for it on the registry.
+      - name: Wait for workspace dependencies on npm
+        env:
+          PACKAGE: ${{ matrix.package }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPS=$(jq -r '[.dependencies // {}, .peerDependencies // {}] | add | to_entries[] | select(.value | startswith("workspace:")) | .key' "packages/$PACKAGE/package.json")
+          for DEP in $DEPS; do
+            DEP_VERSION=$(jq -r .version "packages/${DEP#@comfyorg/}/package.json")
+            for _ in $(seq 1 60); do
+              if [ -n "$(npm view "$DEP@$DEP_VERSION" version 2>/dev/null || true)" ]; then
+                echo "$DEP@$DEP_VERSION is on npm."
+                continue 2
+              fi
+              sleep 30
+            done
+            echo "::error title=Dependency not published::$DEP@$DEP_VERSION is not on npm after 30 minutes; not publishing $PACKAGE."
+            exit 1
+          done
+
       - name: Dispatch the trusted publish workflow and wait for it
         env:
           GH_TOKEN: ${{ github.token }}
