@@ -557,3 +557,27 @@ describe('BillingOpStatusSchema charge_breakdown', () => {
     expect(BillingOpStatusSchema.safeParse(wire(2 ** 53)).success).toBe(false)
   })
 })
+
+describe('BillingOpStatusSchema auto_top_up', () => {
+  it('reads the accepted settings as numbers', () => {
+    const parsed = BillingOpStatusSchema.parse({
+      id: 'op-1',
+      status: 'succeeded',
+      started_at: '2026-09-14T00:00:00.000Z',
+      auto_top_up: {
+        threshold_credits: 1000,
+        target_credits: 5000,
+        monthly_budget_cents: 2000,
+        monthly_budget_is_default: false
+      },
+      auto_top_up_activation: 'on'
+    })
+    expect(parsed.auto_top_up).toEqual({
+      threshold_credits: 1000,
+      target_credits: 5000,
+      monthly_budget_cents: 2000,
+      monthly_budget_is_default: false
+    })
+    expect(parsed.auto_top_up_activation).toBe('on')
+  })
+})
