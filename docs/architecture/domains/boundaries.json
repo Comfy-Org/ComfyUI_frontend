@@ -20,10 +20,6 @@
         "patterns": ["src/renderer/core/canvas/litegraph/slotCalculations.ts"]
       },
       {
-        "name": "color-palettes/public",
-        "patterns": ["src/stores/workspace/colorPaletteStore.ts"]
-      },
-      {
         "name": "comfyui-api/public",
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
@@ -2090,7 +2086,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2119,35 +2114,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
-          "comfyui-api/public",
-          "graph-layout/public",
-          "image-compare/public",
-          "image-compositor/public",
-          "image-crop/public",
-          "ingest-api/public",
-          "keybindings/public",
-          "link-connection/public",
-          "litegraph-api/public",
-          "mask-editor/public",
-          "painter/public",
-          "remote-config/public",
-          "server-facts/public",
-          "settings/public",
-          "vue-node-renderer/public",
-          "webcam-capture/public",
-          "_inventory",
-          "_inventory/outer-1",
-          "_inventory/outer-2",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "color-palettes/public",
-        "allow": [
-          "account/public",
-          "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2175,7 +2141,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2203,7 +2168,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2231,7 +2195,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2260,7 +2223,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2289,7 +2251,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2318,7 +2279,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2347,7 +2307,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2375,7 +2334,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2403,7 +2361,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2431,7 +2388,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2460,7 +2416,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2489,7 +2444,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2517,7 +2471,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2546,7 +2499,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2574,7 +2526,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2602,7 +2553,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2631,7 +2581,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2660,7 +2609,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2688,7 +2636,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2717,7 +2664,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2746,7 +2692,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2775,7 +2720,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2804,7 +2748,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2833,7 +2776,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2862,7 +2804,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2891,7 +2832,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2920,7 +2860,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2948,7 +2887,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
@@ -2976,7 +2914,6 @@
         "allow": [
           "account/public",
           "canvas-renderer/public",
-          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "image-compare/public",
