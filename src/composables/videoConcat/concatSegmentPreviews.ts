@@ -5,19 +5,14 @@ import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { executionIdFromState } from '@/utils/graphTraversalUtil'
 
-const zSegmentPreview = z
-  .tuple([
-    z.string(),
-    z.tuple([z.string(), z.number()]).nullish(),
-    z.object({
-      filename: z.string(),
-      subfolder: z.string().default(''),
-      type: resultItemType
-    })
-  ])
-  .transform(([name, source, file]) => ({ name, source, ...file }))
+const zSegmentPreview = z.object({
+  filename: z.string(),
+  subfolder: z.string().default(''),
+  type: resultItemType,
+  source: z.tuple([z.string(), z.number()]).nullish()
+})
 
-type SegmentPreview = z.output<typeof zSegmentPreview>
+type SegmentPreview = z.infer<typeof zSegmentPreview>
 
 export function parseSegmentPreviews(value: unknown): SegmentPreview[] {
   const parsed = z.array(zSegmentPreview).safeParse(value)
