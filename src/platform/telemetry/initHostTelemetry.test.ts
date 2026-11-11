@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
+import { setTelemetryRegistry, useTelemetry } from '@comfyorg/telemetry'
 import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 describe('initHostTelemetry', () => {
   afterEach(() => {

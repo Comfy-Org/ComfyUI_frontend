@@ -26,7 +26,8 @@ import {
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
@@ -162,6 +163,22 @@ function installCloudAuthGuards(router: Router): void {
       delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
     ])
   }
+  async function signInOrCurrentUser(
+    check: () => Promise<CloudSignIn>
+  ): Promise<CloudSignIn> {
+    try {
+      return await check()
+    } catch (error) {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'cloud_sign_in_check_failed',
+        level: 'warning'
+      })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      return useCurrentUser().isLoggedIn.value ? 'signed_in' : 'signed_out'
+    }
+  }
   const watchedSessions = new WeakSet<object>()
   /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
@@ -226,12 +243,14 @@ function installCloudAuthGuards(router: Router): void {
       }
     }
 
-    let signIn = isPublicRoute(to)
-      ? await publicRouteSignIn()
-      : await cloudSignIn()
+    let signIn = await signInOrCurrentUser(() =>
+      isPublicRoute(to) ? publicRouteSignIn() : cloudSignIn()
+    )
     if (signIn === 'pending' && !isPublicRoute(to)) {
-      await useCloudWebSessionStore().whenDecided()
-      signIn = await cloudSignIn()
+      signIn = await signInOrCurrentUser(async () => {
+        await useCloudWebSessionStore().whenDecided()
+        return cloudSignIn()
+      })
     }
     const needsFirebaseForDesktopCode =
       signIn === 'signed_in' &&

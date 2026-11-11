@@ -1,6 +1,6 @@
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 /** Lightness litegraph applies to node colors in a light color scheme. */
 export const LIGHT_THEME_NODE_LIGHTNESS = 0.5
@@ -14,7 +14,7 @@ export function toLightThemeNodeColor(color: string): string {
 export function applyLightThemeColor(color?: string): string {
   if (!color) return ''
 
-  if (useColorPaletteStore().colorScheme !== 'light') return color
+  if (useThemeStore().colorScheme !== 'light') return color
 
   return toLightThemeNodeColor(color)
 }

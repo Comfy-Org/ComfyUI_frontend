@@ -10,6 +10,7 @@ export function createBillingCapabilities(
   overrides: Partial<BillingCapabilities> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
       // (user, workspace) and the SDK reader checks both halves
@@ -32,6 +33,8 @@ export function createBillingCapabilities(
       can_view_team_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_subscription: true,
       can_open_plans: true,
       can_run_workflows: false,
@@ -76,6 +79,7 @@ export function createWorkspaceBillingCapabilities(
     can_reactivate: isOwner,
     can_subscribe_self_serve: isOwner,
     can_top_up: isOwner,
+    can_view_auto_top_up_member_notice: !isOwner,
     ...overrides
   })
 }

@@ -1,7 +1,8 @@
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import { MinimapDataSource } from './data/MinimapDataSource'
 import type {
@@ -47,15 +48,15 @@ function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
 }
 
 function getMinimapColors(): MinimapColors {
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
-  const key = `${palette.id}:${colorPaletteStore.colorScheme}`
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
+  const key = `${palette.id}:${themeStore.colorScheme}`
   if (cachedColors?.key !== key) {
     cachedColors = {
       key,
       colors: readMinimapColors(
-        colorPaletteStore.colorScheme === 'light',
-        palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR
+        themeStore.colorScheme === 'light',
+        palette.canvas.nodeSelectedTitleColor
       )
     }
   }
@@ -158,9 +159,6 @@ function renderNodeDecorations(
   }
 }
 
-/**
- * Render nodes on the minimap with performance optimizations
- */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
@@ -174,17 +172,14 @@ function renderNodes(
 
   ctx.save()
 
-  // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
-    Array<{
-      x: number
-      y: number
-      w: number
-      h: number
-      hasErrors?: boolean
-      executionState?: MinimapNodeExecutionState | null
-    }>
+    Array<
+      CompactRect & {
+        hasErrors?: boolean
+        executionState?: MinimapNodeExecutionState | null
+      }
+    >
   >()
 
   for (const node of nodes) {
@@ -209,7 +204,6 @@ function renderNodes(
     })
   }
 
-  // Batch render nodes by color
   for (const [color, nodes] of nodesByColor) {
     ctx.fillStyle = color
     for (const node of nodes) {

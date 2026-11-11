@@ -73,12 +73,12 @@ package. Do not adopt Changesets yet.
 
 Four workflows carry it:
 
-| Workflow                        | Trigger                                | What it does                                                                                                                         |
-| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                           |
-| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
-| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
-| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
+| Workflow                        | Trigger                                | What it does                                                                                                                                                               |
+| ------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                                                                 |
+| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                                                                  |
+| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, dispatches `publish-package.yaml` on `main` for every package whose version changed, writes the release links to an artifact, and posts to Slack |
+| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                                                                |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
@@ -120,10 +120,10 @@ The decisions inside those workflows:
   alpha of an auth package should be able to verify where the tarball came
   from.
 - **No unmerged pull-request run reaches the registry credentials.** The
-  on-merge path runs on the merge commit of a reviewed, `Release`-labelled PR,
-  and the credentialed job refuses a `workflow_dispatch` on any ref but
-  `main`, so a branch cannot hand `NPM_TOKEN` its own tree by pressing the
-  button. A write-access holder can still edit that guard on a branch and
+  on-merge path starts only from a merged, reviewed, `Release`-labelled PR and
+  publishes `main`, and the credentialed job refuses a `workflow_dispatch` on
+  any ref but `main`, so a branch cannot hand `NPM_TOKEN` its own tree by
+  pressing the button. A write-access holder can still edit that guard on a branch and
   dispatch it; the control for that is a protected publish environment with a
   branch rule, which this ADR does not yet claim.
 

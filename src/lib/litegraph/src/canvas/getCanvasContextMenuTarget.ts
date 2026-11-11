@@ -1,18 +1,18 @@
 import type {
   LGraphCanvas,
   LGraphGroup
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 import {
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { findRerouteAtPoint } from './hitTesting'
 import {

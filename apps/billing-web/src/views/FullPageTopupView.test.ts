@@ -14,6 +14,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -894,6 +895,53 @@ describe('FullPageTopupView paying once', () => {
     expect(resent).toStrictEqual(first)
   })
 
+  it.for([
+    {
+      code: 'TOPUP_RATE_LIMITED',
+      httpStatus: 429,
+      message:
+        'Too many top-ups in a short time. Try again later or contact support.'
+    },
+    {
+      code: 'TOPUP_PURCHASES_PAUSED',
+      httpStatus: 403,
+      message:
+        'Credit purchases are paused right now. Try again later or contact support.'
+    }
+  ])(
+    'a Pay the server refuses with $code shows its sentence and the next Pay is a new purchase',
+    async ({ code, httpStatus, message }) => {
+      const fake = renderTopup({
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA] }
+      })
+      fake.createInteractiveTopup
+        .mockResolvedValueOnce({
+          status: 'error',
+          code: httpStatus === 403 ? 'ACCESS_DENIED' : 'REQUEST_FAILED',
+          httpStatus,
+          serverCode: readBillingErrorCode({ code, message }),
+          serverMessage: message
+        })
+        .mockResolvedValueOnce(SUCCEEDED)
+      await screen.findByText('Add credits · Acme Team')
+      const recoversBefore = fake.recover.mock.calls.length
+
+      await userEvent.click(payButton())
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      expect(fake.recover.mock.calls.length).toBe(recoversBefore)
+      await userEvent.click(payButton())
+      await waitFor(() =>
+        expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+      )
+      const [first, next] = fake.createInteractiveTopup.mock.calls.map(
+        ([request]) => request
+      )
+      expect(next).not.toStrictEqual(first)
+    }
+  )
+
   it('a Pay blocked by a pending operation follows that operation, never a retry card', async () => {
     const fake = renderTopup({
       topupQuote: PAYS_ONCE,
@@ -916,6 +964,36 @@ describe('FullPageTopupView paying once', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(payButton()).toBeDisabled()
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the Payment not verified card on the same form while the lifecycle goes on reading the refused challenge as pending', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup.mockImplementation(() => new Promise(() => {}))
+    await screen.findByText('Add credits · Acme Team')
+    const refused: PendingBillingOperation = {
+      ...topupInFlight({ authenticationState: 'failed_retryable' }),
+      awaitedHere: true,
+      challenge: { clientSecret: 'cs', status: 'failed' }
+    }
+
+    await userEvent.click(payButton())
+    fake.publishOperation(refused)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment not verified'
+    )
+    const mounts = form.mounts
+
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 1 })
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 2 })
+
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Payment not verified')
+    expect(form.mounts).toBe(mounts)
+    expect(fake.quoteTopup).toHaveBeenCalledOnce()
   })
 
   it('keeps an unanswered purchase on its key when the pending operation recovery found is declined, since nothing ties that operation to this Pay', async () => {

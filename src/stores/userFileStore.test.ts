@@ -100,7 +100,7 @@ describe('useUserFileStore', () => {
         } as Response)
 
         await expect(file.load()).rejects.toThrow(
-          "Failed to load file 'file1.txt': 404 Not Found"
+          'Failed to load file: 404 Not Found'
         )
       })
     })

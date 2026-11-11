@@ -5,8 +5,10 @@ import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 import {
+  setBillingCapabilitiesMock,
   setCanSubscribeSelfServeMock,
-  setCanTopUpMock
+  setCanTopUpMock,
+  setBillingNoticePlanMock
 } from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useBillingUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useBillingUI'
@@ -16,7 +18,7 @@ import BillingStatusBanner from './BillingStatusBanner.vue'
 /**
  * The single billing banner slot for team and personal plans (FE-1246), rendered in
  * priority order: paused > payment declined > out of credits > ending. At most
- * one state shows at a time. Each story drives the real `deriveBillingBanner`
+ * one state shows at a time. Each story drives the real `deriveBillingStatusBanner`
  * through the stubbed billing context, so these are the states the backend can
  * actually emit — not hand-set banner kinds.
  *
@@ -30,7 +32,13 @@ import BillingStatusBanner from './BillingStatusBanner.vue'
 const meta: Meta<typeof BillingStatusBanner> = {
   title: 'Platform/Workspace/BillingStatusBanner',
   component: BillingStatusBanner,
-  parameters: { layout: 'fullscreen' }
+  parameters: { layout: 'fullscreen' },
+  argTypes: {
+    section: {
+      control: 'select',
+      options: ['planCredits', 'members', 'allowlist', 'billing']
+    }
+  }
 }
 
 export default meta
@@ -69,17 +77,34 @@ const member: Partial<WorkspaceUIMockState> = {
 function story(
   billing: Partial<BillingContextMockState>,
   workspace: Partial<WorkspaceUIMockState>,
-  capabilities: { canTopUp?: boolean; canSubscribeSelfServe?: boolean } = {}
+  capabilities: {
+    canTopUp?: boolean
+    canSubscribeSelfServe?: boolean
+    canOpenPlans?: boolean
+  } = {}
 ): Story {
+  const canManageSubscription = workspace.canManageSubscription ?? true
+  const served = {
+    canTopUp: true,
+    canSubscribeSelfServe: false,
+    canOpenPlans: canManageSubscription,
+    ...capabilities
+  }
   return {
     beforeEach() {
-      // Dates in the copy go through vue-i18n's `d()`, so pin the locale rather
-      // than inherit the developer's.
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
+      setBillingNoticePlanMock({
+        isTeamPlan: billing.isTeamPlan ?? true,
+        ...billing.subscription
+      })
       setWorkspaceUIMock(workspace)
-      setCanTopUpMock(capabilities.canTopUp ?? true)
-      setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
+      setBillingCapabilitiesMock({
+        canManageSubscription,
+        canOpenPlans: served.canOpenPlans
+      })
+      setCanTopUpMock(served.canTopUp)
+      setCanSubscribeSelfServeMock(served.canSubscribeSelfServe)
     }
   }
 }

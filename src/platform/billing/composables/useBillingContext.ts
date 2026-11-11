@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -28,12 +30,10 @@ import type {
   BillingActions,
   BillingContext,
   BillingPortalOutcome,
-  CancelRail,
-  BillingState,
+  BillingStatusReadOptions,
   SubscriptionInfo
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
-import { useLegacyBilling } from './useLegacyBilling'
 import type { WorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 
@@ -59,15 +59,10 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
 }
 
 /**
- * Unified billing context that selects billing state and account actions by
- * billing rail. When unified pricing is enabled, its catalog and checkout
- * actions use workspace billing independently so legacy Stripe workspaces can
- * migrate plans while balance, top-up, and subscription management stay legacy.
+ * Unified billing context over workspace billing.
  *
- * - Workspace not loaded yet (`unknown`): no billing call is made until it is
- * - OSS/Desktop: workspace billing once the Cloud-backed workspace loads
- * - Unified pricing: plan catalog and checkout via /api/billing/*
- * - Other state and actions: legacy or workspace billing selected by rail
+ * - Workspace not loaded yet (`unknown`): reads are empty and no billing call
+ *   is made until routing is known
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -102,19 +97,9 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  */
 function useBillingContextInternal(): BillingContext {
   const store = useWorkspaceIdentity()
-  const { type, shouldUseUnifiedPricing } = useBillingRouting()
+  const { type } = useBillingRouting()
 
-  const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
-    null
-  )
   const workspaceBillingRef = shallowRef<WorkspaceBilling | null>(null)
-
-  const getLegacyBilling = () => {
-    if (!legacyBillingRef.value) {
-      legacyBillingRef.value = useLegacyBilling()
-    }
-    return legacyBillingRef.value
-  }
 
   const getWorkspaceBilling = () => {
     if (!workspaceBillingRef.value) {
@@ -123,16 +108,12 @@ function useBillingContextInternal(): BillingContext {
     return workspaceBillingRef.value
   }
 
+  let freshStatusReadOwed = false
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const activeContext = computed(() =>
-    type.value === 'workspace' ? getWorkspaceBilling() : getLegacyBilling()
-  )
-  const checkoutContext = computed(() =>
-    shouldUseUnifiedPricing.value ? getWorkspaceBilling() : activeContext.value
-  )
+  const activeContext = computed(() => getWorkspaceBilling())
 
   // Proxy state from active context
   const subscription = computed<SubscriptionInfo | null>(() =>
@@ -143,14 +124,18 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.balance)
   )
 
-  const plans = computed(() => toValue(checkoutContext.value.plans))
+  const plans = computed(() => toValue(activeContext.value.plans))
 
   const currentPlanSlug = computed(() =>
-    toValue(checkoutContext.value.currentPlanSlug)
+    toValue(activeContext.value.currentPlanSlug)
   )
 
   const teamCreditStops = computed(() =>
-    toValue(checkoutContext.value.teamCreditStops)
+    toValue(activeContext.value.teamCreditStops)
+  )
+
+  const subscriptionPaymentRecovery = computed(() =>
+    toValue(activeContext.value.subscriptionPaymentRecovery)
   )
 
   const currentTeamCreditStop = computed(() =>
@@ -163,7 +148,9 @@ function useBillingContextInternal(): BillingContext {
   )
 
   const canAccessSubscriptionFeatures = computed(() =>
-    toValue(activeContext.value.canAccessSubscriptionFeatures)
+    type.value === 'unknown'
+      ? !isCloud
+      : toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -221,6 +208,12 @@ function useBillingContextInternal(): BillingContext {
   const renewalInvoice = computed(() =>
     toValue(activeContext.value.renewalInvoice)
   )
+  const periodCreditGrant = computed(() =>
+    toValue(activeContext.value.periodCreditGrant)
+  )
+  const nextCreditRefillAt = computed(() =>
+    toValue(activeContext.value.nextCreditRefillAt)
+  )
 
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value !== 'workspace') return 1
@@ -257,7 +250,6 @@ function useBillingContextInternal(): BillingContext {
   // active one), so a stale response can't resolve into a ready state for the
   // wrong workspace.
   function resetBillingState() {
-    legacyBillingRef.value = null
     workspaceBillingRef.value = null
     isInitialized.value = false
     isLoading.value = false
@@ -276,9 +268,23 @@ function useBillingContextInternal(): BillingContext {
       } catch (err) {
         console.error('Failed to initialize billing context:', err)
       }
+      await runOwedFreshStatusRead()
     },
     { immediate: true }
   )
+
+  async function runOwedFreshStatusRead(): Promise<void> {
+    if (!freshStatusReadOwed || type.value === 'unknown') return
+    freshStatusReadOwed = false
+    try {
+      await activeContext.value.fetchStatus({ fresh: true })
+    } catch (err) {
+      reportError(err, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    }
+  }
 
   // Rejects on timeout. Resolves false when the user switched workspace during
   // the wait, so the caller stops silently.
@@ -308,8 +314,6 @@ function useBillingContextInternal(): BillingContext {
     )
   }
 
-  // For actions whose caller shows no outcome: reports a timeout once, as
-  // legacy actions did on failure, and resolves false so the caller stops.
   async function whenRoutingKnown(): Promise<boolean> {
     try {
       return await waitForRouting()
@@ -319,11 +323,29 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
+  let inFlightInit: {
+    adapter: WorkspaceBilling
+    promise: Promise<void>
+  } | null = null
+
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
     if (!(await whenRoutingKnown())) return
 
     const adapter = activeContext.value
+    if (inFlightInit?.adapter === adapter) return inFlightInit.promise
+
+    const promise = initializeAdapter(adapter)
+    const entry = { adapter, promise }
+    inFlightInit = entry
+    try {
+      await promise
+    } finally {
+      if (inFlightInit === entry) inFlightInit = null
+    }
+  }
+
+  async function initializeAdapter(adapter: WorkspaceBilling): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
@@ -340,11 +362,20 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  // Passive reads do nothing while unknown; the watcher above re-initializes
-  // once the workspace type loads.
-  async function fetchStatus(): Promise<void> {
-    if (type.value === 'unknown') return
-    return activeContext.value.fetchStatus()
+  function deferFreshReadUntilRoutingKnown(
+    options?: BillingStatusReadOptions
+  ): void {
+    freshStatusReadOwed ||= options?.fresh === true
+  }
+
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    if (type.value === 'unknown') {
+      deferFreshReadUntilRoutingKnown(options)
+      return
+    }
+    return activeContext.value.fetchStatus(options)
   }
 
   async function fetchBalance(): Promise<void> {
@@ -356,28 +387,19 @@ function useBillingContextInternal(): BillingContext {
   // and are never retried, so they wait instead of skipping.
   async function reconcileSubscriptionSuccess(): Promise<void> {
     if (!(await whenRoutingKnown())) return
-    const checkout = checkoutContext.value
-    await checkout.fetchStatus()
-
     const account = activeContext.value
-    if (account !== checkout) await account.fetchStatus()
+    await account.fetchStatus()
     await account.fetchBalance()
   }
 
   /**
-   * Reads the checkout rail's status, which resumes any operation the server
+   * Reads the billing status, which resumes any operation the server
    * reports pending. True once that operation was adopted, so a caller
    * watching for a payment taken elsewhere can hand off to its own polling.
    */
   async function readCheckoutOperation(): Promise<boolean> {
     if (!(await whenRoutingKnown())) return false
-    const checkout = checkoutContext.value
-    const workspace = workspaceBillingRef.value
-    if (workspace === null || checkout !== workspace) {
-      await checkout.fetchStatus()
-      return false
-    }
-    return workspace.readAndAdoptPendingOperation()
+    return activeContext.value.readAndAdoptPendingOperation()
   }
 
   function refreshFor(scope: BillingRefreshScope): Promise<unknown> {
@@ -390,7 +412,7 @@ function useBillingContextInternal(): BillingContext {
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     if (!(await whenRoutingKnown())) return
-    return checkoutContext.value.subscribe(planSlug, options)
+    return activeContext.value.subscribe(planSlug, options)
   }
 
   async function previewSubscribe(
@@ -398,7 +420,7 @@ function useBillingContextInternal(): BillingContext {
     options?: PreviewSubscribeOptions
   ) {
     if (!(await whenRoutingKnown())) return null
-    return checkoutContext.value.previewSubscribe(planSlug, options)
+    return activeContext.value.previewSubscribe(planSlug, options)
   }
 
   async function manageSubscription(): Promise<BillingPortalOutcome> {
@@ -410,9 +432,7 @@ function useBillingContextInternal(): BillingContext {
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
     await waitForRoutingInSameWorkspace()
-    const rail: CancelRail = type.value === 'workspace' ? 'workspace' : 'legacy'
     await activeContext.value.cancelSubscription(isScopeCurrent)
-    return rail
   }
 
   async function resubscribe(
@@ -438,7 +458,7 @@ function useBillingContextInternal(): BillingContext {
 
   async function fetchPlans() {
     if (type.value === 'unknown') return
-    return checkoutContext.value.fetchPlans()
+    return activeContext.value.fetchPlans()
   }
 
   return {
@@ -449,6 +469,7 @@ function useBillingContextInternal(): BillingContext {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
@@ -466,6 +487,8 @@ function useBillingContextInternal(): BillingContext {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
+    nextCreditRefillAt,
     getMaxSeats,
 
     initialize,

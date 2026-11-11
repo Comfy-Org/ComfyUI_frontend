@@ -33,6 +33,7 @@ export interface TopupOperationView {
   readonly actionUrl: string | null
   readonly phase: BillingOperationPhase | null
   readonly authenticationState: BillingAuthenticationState | null
+  readonly authenticationDeadline?: string
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
   readonly errorMessage: string | null
@@ -67,6 +68,7 @@ export function projectTopupOperation(
     actionUrl: state.actionUrl ?? null,
     phase: state.serverPhase ?? null,
     authenticationState,
+    authenticationDeadline: state.authenticationDeadline,
     isAuthenticating: state.challenge?.status === 'in_progress',
     canRetryAuthentication: state.challenge?.status === 'required',
     errorMessage:
@@ -104,11 +106,15 @@ function topupFailureError(
     )
   }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  const serverMessage =
+    'serverMessage' in failure ? failure.serverMessage : undefined
   return new WorkspaceApiError(
-    t('credits.topUp.unknownError'),
+    serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
-    topupFailureCategory(failure)
+    topupFailureCategory(failure),
+    undefined,
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
   )
 }
 

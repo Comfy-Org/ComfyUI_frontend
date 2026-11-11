@@ -1,8 +1,8 @@
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
-import type { DocResetData } from '@comfyorg/ingest-types'
+import type { DocOpsResultData, DocResetData } from '@comfyorg/ingest-types'
 import { zDocSubscribedData, zDocUpdateData } from '@comfyorg/ingest-types/zod'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 
@@ -60,6 +60,7 @@ export interface DocOpsResult {
   seq?: number
   applied: string[]
   skipped: string[]
+  lwwDropped?: DocOpsResultData['lww_dropped']
   code?: string
   message?: string
   /** Validated diagnostics for the first rejected operation in a batch. */
@@ -135,6 +136,7 @@ interface WireData {
   message?: unknown
   applied?: unknown
   skipped?: unknown
+  lww_dropped?: unknown
   failed?: unknown
   state?: unknown
   expires_at?: unknown
@@ -426,7 +428,10 @@ const serverFrameParsers: ServerFrameParsers = {
     if (typeof data.ok !== 'boolean') return null
     const applied = parseOptionalStringArray(data.applied)
     const skipped = parseOptionalStringArray(data.skipped)
-    if (applied === null || skipped === null) return null
+    const lwwDropped = parseOptionalStringArray(data.lww_dropped)
+    if (applied === null || skipped === null || lwwDropped === null) return null
+    const skippedIds = new Set(skipped)
+    if (lwwDropped.some((opId) => !skippedIds.has(opId))) return null
     const failed = parseDocOpFailure(data.failed) ?? undefined
     return {
       type: 'doc_ops_result',
@@ -435,6 +440,7 @@ const serverFrameParsers: ServerFrameParsers = {
         ok: data.ok,
         applied,
         skipped,
+        ...(lwwDropped.length > 0 && { lwwDropped }),
         ...parseResultMetadata(data),
         ...(failed !== undefined && { failed })
       }

@@ -127,6 +127,16 @@ describe('HDRIManager', () => {
 
       expect(scene.environment).toBeNull()
     })
+
+    it('remembers the URL it loaded until cleared', async () => {
+      expect(manager.loadedUrl).toBeNull()
+
+      await manager.loadHDRI('http://example.com/env.hdr')
+      expect(manager.loadedUrl).toBe('http://example.com/env.hdr')
+
+      manager.clear()
+      expect(manager.loadedUrl).toBeNull()
+    })
   })
 
   describe('setEnabled', () => {

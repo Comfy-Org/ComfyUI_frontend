@@ -1,9 +1,9 @@
-import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { LLink } from '@comfyorg/graph-model/entityRegistry'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ISerialisedNode } from './types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { EndpointPatch } from '@/stores/linkStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Follows serialized link endpoints through node-id remints during

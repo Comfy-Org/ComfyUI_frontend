@@ -59,7 +59,7 @@ vi.mock(import('@/platform/billing/api/billingApi'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
@@ -67,6 +67,7 @@ vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
 }))
 
 const STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
@@ -84,6 +85,7 @@ const READ_AT = 1_700_000_000_000
 
 /** The status the SDK's reader decodes, before the host projects it. */
 const DECODED_STATUS: BillingStatusData = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,

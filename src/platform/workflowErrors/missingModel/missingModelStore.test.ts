@@ -2,11 +2,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { st, t } from '@/i18n'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -24,7 +24,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 import { useMissingModelStore } from './missingModelStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 function makeModelCandidate(
   name: string,

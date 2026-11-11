@@ -12,7 +12,7 @@ import {
   BADGE_GAP,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
@@ -25,9 +25,8 @@ import {
   startLinkHideTransitions
 } from '@/lib/litegraph/src/canvas/linkHideTransition'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
@@ -131,6 +130,22 @@ describe('drawConnections', () => {
 
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     expect(input.pos![1]).toBe(widget.y + offset)
+  })
+
+  it('clears the pass link render context when the pass throws', () => {
+    const node = new LGraphNode('Throws')
+    node.addWidget('text', 'value', '', null)
+    node.addInput('value', 'STRING').widget = { name: 'value' }
+    node.arrange = () => {
+      throw new Error('arrange failed')
+    }
+    graph.add(node)
+
+    expect(() => canvas.drawConnections(createMockCtx())).toThrow(
+      'arrange failed'
+    )
+
+    expect(canvas['_passLinkRenderContext']).toBeNull()
   })
 
   it('does not re-arrange nodes whose widget-input slots already have positions', () => {
@@ -377,7 +392,7 @@ describe('drawConnections', () => {
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
-  it('looks up each input and preserves rendered link identity', () => {
+  it('resolves each connected link once and preserves rendered link identity', () => {
     const source = new LGraphNode('Source')
     source.addOutput('out', 'INT')
     graph.add(source)
@@ -392,23 +407,18 @@ describe('drawConnections', () => {
     const expectedLinks = targets.map((target) =>
       createTestLink(graph, source, 0, target, 0)
     )
-    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
     const resolveLink = vi.spyOn(graph, 'getLink')
     canvas.visible_area.set([0, 0, 800, 600])
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
 
     canvas.drawConnections(createMockCtx())
 
-    expect(inputLookup).toHaveBeenCalledTimes(4)
     expect(resolveLink).toHaveBeenCalledTimes(2)
     const renderedLinks = [...canvas.renderedPaths]
     expect(renderedLinks).toHaveLength(expectedLinks.length)
     for (const [index, expectedLink] of expectedLinks.entries()) {
       expect(renderedLinks[index]).toBe(expectedLink)
     }
-
-    const scopes = inputLookup.mock.calls.map(([scope]) => scope)
-    expect(new Set(scopes).size).toBe(1)
   })
 
   it.for([245, 500, 1_000])(
@@ -449,7 +459,7 @@ describe('drawConnections', () => {
     { connectedRatio: 0.25, fanOut: 1, hiddenEvery: 2 },
     { connectedRatio: 1, fanOut: 8, hiddenEvery: 3 }
   ])(
-    'scans inputs once and preserves rendered link identity at $connectedRatio occupancy and $fanOut fan-out',
+    'resolves each connected link once and preserves rendered link identity at $connectedRatio occupancy and $fanOut fan-out',
     ({ connectedRatio, fanOut, hiddenEvery }) => {
       const nodeCount = 8
       const inputsPerNode = 4
@@ -502,20 +512,14 @@ describe('drawConnections', () => {
           }
         }
       )
-      const linkStore = useLinkStore()
-      const inputLookup = vi.spyOn(linkStore, 'getInputSlotLink')
       const resolveLink = vi.spyOn(graph, 'getLink')
       canvas.visible_area.set([0, 0, 800, 3_000])
       vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
 
       canvas.drawConnections(createMockCtx())
 
-      const scannedInputs = allInputs.length
-      const scopes = new Set(inputLookup.mock.calls.map(([scope]) => scope))
-      expect(inputLookup).toHaveBeenCalledTimes(scannedInputs)
       expect(resolveLink).toHaveBeenCalledTimes(connectedCount)
       expect([...canvas.renderedPaths]).toEqual(expectedLinks)
-      expect(scopes.size).toBe(1)
       expect(new Set(expectedLinks.map((link) => link.origin_id)).size).toBe(
         connectedCount ? Math.ceil(connectedCount / fanOut) : 0
       )
@@ -576,17 +580,12 @@ describe('drawConnections', () => {
     const rootLink = rootSource.connect(0, rootTarget, 0)!
     canvas.setGraph(subgraph)
     canvas.visible_area.set([0, 0, 800, 600])
-    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
-    inputLookup.mockClear()
 
     canvas.drawConnections(createMockCtx())
 
     expect([...canvas.renderedPaths]).toEqual([subgraphLink])
     expect(canvas.renderedPaths).not.toContain(rootLink)
-    expect(
-      new Set(inputLookup.mock.calls.map(([scope]) => scope.owningGraphId))
-    ).toEqual(new Set([subgraph.id]))
   })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')

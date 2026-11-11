@@ -97,7 +97,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
   }
 )

@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, onScopeDispose, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   publishSkillPack,

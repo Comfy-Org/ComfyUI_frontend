@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { clamp } from 'es-toolkit/compat'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -8,7 +8,7 @@ import type {
   ComboWidgetValues,
   IComboWidget,
   IStringComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 

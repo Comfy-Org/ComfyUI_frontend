@@ -45,16 +45,9 @@ export enum ColorComparisonMethod {
   HSL = 'hsl',
   LAB = 'lab'
 }
+export type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
-export interface Point {
-  x: number
-  y: number
-}
-
-export interface Offset {
-  x: number
-  y: number
-}
+export type { Point2D as Offset } from '@comfyorg/shared-frontend-utils/geometry'
 
 export interface Brush {
   type: BrushShape

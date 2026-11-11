@@ -10,7 +10,7 @@
         {{ props.item.name }}
         <Tooltip v-if="props.item.tooltip">
           <TooltipTrigger as-child>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </TooltipTrigger>
           <TooltipContent>{{ props.item.tooltip }}</TooltipContent>
         </Tooltip>
@@ -48,7 +48,7 @@ import Switch from '@comfyorg/design-system/switch/Switch'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { FormItem } from '@/platform/settings/types'
+import type { FormItem } from '@comfyorg/settings-core/types'
 
 const formValue = defineModel<unknown>('formValue')
 const props = defineProps<{
