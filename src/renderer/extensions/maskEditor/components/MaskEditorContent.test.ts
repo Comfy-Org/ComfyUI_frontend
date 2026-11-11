@@ -1,7 +1,10 @@
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+import type { MaskEditorTool } from '@comfyorg/mask-editor/extensionTypes'
+import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/stores/maskEditorExtensionStore'
 import { defineComponent } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -42,6 +45,8 @@ const EditorCanvasStub = defineComponent({
       <img v-if="paintImage" alt="Paint" :src="paintImage.src" />
       <output aria-label="Brush adjustment">{{ JSON.stringify(brushAdjustment) }}</output>
       <button @click="$emit('error', canvasError)">Fail initialization</button>
+      <slot name="extension-tools" />
+      <slot name="extension-settings" />
     </div>
   `
 })
@@ -49,7 +54,12 @@ const EditorCanvasStub = defineComponent({
 function renderContent(node = new LGraphNode('Mask editor fixture')) {
   return render(MaskEditorContent, {
     props: { node },
-    global: { stubs: { EditorCanvas: EditorCanvasStub } }
+    global: {
+      stubs: { EditorCanvas: EditorCanvasStub },
+      plugins: [
+        createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+      ]
+    }
   })
 }
 
@@ -70,6 +80,41 @@ function setDecodedImages() {
 }
 
 describe('MaskEditorContent', () => {
+  it('hosts registered tool controls and aborts the session when the editor closes', async () => {
+    let signal: AbortSignal | undefined
+    const tool: MaskEditorTool = {
+      id: 'test.canvas-slots',
+      label: 'Fixture segmentation',
+      createSession(context) {
+        signal = context.signal
+        return {
+          mountPanel(container) {
+            container.textContent = 'Segmentation controls'
+          }
+        }
+      }
+    }
+    const registration = useMaskEditorExtensionStore().registerTool(tool)
+    expect(registration.ok).toBe(true)
+    setDecodedImages()
+    const { unmount } = renderContent()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Fixture segmentation' })
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Fixture segmentation' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(await screen.findByText('Segmentation controls')).toBeInTheDocument()
+    assert.exists(signal)
+    expect(signal.aborted).toBe(false)
+
+    unmount()
+
+    expect(signal.aborted).toBe(true)
+  })
+
   it('loads the selected node without mounting the canvas before images arrive', () => {
     const node = new LGraphNode('Selected image')
     renderContent(node)

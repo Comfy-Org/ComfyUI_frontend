@@ -9,7 +9,7 @@
         :class="
           cn(
             'maskEditor_toolPanelContainer hover:bg-accent',
-            !extensionTools?.active.value &&
+            !extensionActive &&
               currentTool === tool &&
               'maskEditor_toolPanelContainerSelected'
           )
@@ -21,31 +21,7 @@
         </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
-      <Button
-        v-for="tool in extensionTools?.tools.value"
-        :key="tool.id"
-        type="button"
-        variant="textonly"
-        size="unset"
-        :aria-label="tool.label"
-        :aria-pressed="extensionTools?.active.value?.tool.id === tool.id"
-        :title="tool.label"
-        :data-tool="tool.id"
-        :class="
-          cn(
-            'maskEditor_toolPanelContainer rounded-none',
-            extensionTools?.active.value?.tool.id === tool.id &&
-              'maskEditor_toolPanelContainerSelected'
-          )
-        "
-        @click="extensionTools?.activate(tool.id)"
-      >
-        <i
-          :class="cn('size-6', tool.icon ?? 'icon-[lucide--puzzle]')"
-          aria-hidden="true"
-        />
-        <span class="maskEditor_toolPanelIndicator" />
-      </Button>
+      <slot />
     </div>
 
     <div
@@ -63,11 +39,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MaskEditorExtensionTools } from '@/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
 
 import MaskEditorToolIcon from './MaskEditorToolIcon.vue'
 import type { useToolManager } from '#/useToolManager'
@@ -75,9 +49,9 @@ import type { Tools } from '#/types'
 import { allTools } from '#/types'
 import { useMaskEditorStore } from '#/maskEditorStore'
 
-const { toolManager, extensionTools } = defineProps<{
+const { toolManager, extensionActive = false } = defineProps<{
+  extensionActive?: boolean
   toolManager: ReturnType<typeof useToolManager>
-  extensionTools?: MaskEditorExtensionTools
 }>()
 
 const { t } = useI18n()

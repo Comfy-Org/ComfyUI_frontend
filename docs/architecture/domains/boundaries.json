@@ -94,7 +94,8 @@
           "packages/mask-editor/src/ui/EditorToolbar.vue",
           "packages/mask-editor/src/ui/style.css",
           "packages/mask-editor/src/extensionTypes.ts",
-          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
+          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts",
+          "packages/mask-editor/src/useCoordinateTransform.ts"
         ]
       },
       {

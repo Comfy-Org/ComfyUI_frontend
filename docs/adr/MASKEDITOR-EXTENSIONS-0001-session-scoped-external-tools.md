@@ -25,6 +25,11 @@ events, a panel mount container, point overlays, and a mask-only commit method.
 The frontend owns input routing, rendering, history, and node persistence.
 Inference and tool-specific controls remain extension code.
 
+The reusable editor receives an input delegate and point overlays, and exposes
+slots for tool buttons and settings. The application owns registration, sessions,
+and panel mounting; the package does not import application stores or UI. This
+retains the boundary in [ADR-MASKEDITOR-0001](MASKEDITOR-0001-reusable-editor-and-host-ownership.md).
+
 Use a monotonic document revision to reject stale commits, and AbortSignals
 to notify extensions when work is obsolete. Disposal prevents old contexts
 from mutating reopened editors even when an extension ignores cancellation.
