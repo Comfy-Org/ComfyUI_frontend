@@ -72,6 +72,7 @@ const CANCELLED_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -173,14 +174,6 @@ async function mockCloudBoot(
       )
     )
   })
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 0,
-        currency: 'usd'
-      } satisfies BillingBalanceResponse)
-    )
-  )
 
   // Both lifecycle routes answer POST only. A regression to GET would
   // otherwise be served the success fixture and pass every assertion below,

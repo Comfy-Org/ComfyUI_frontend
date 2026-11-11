@@ -13,6 +13,7 @@ import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilitie
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const OWNER = workspace('personal', 'owner')
@@ -69,6 +70,8 @@ async function openPricingTable(
 }
 
 test.describe('Pricing table plan action', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('renders the plan action the server sent, not the capability the tier implies', async ({
     page
   }) => {

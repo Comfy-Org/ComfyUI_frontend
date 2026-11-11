@@ -2,9 +2,14 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import {
+  inputLink,
+  inputLinkId,
+  outputLinks
+} from '@/lib/litegraph/src/node/slotLinks'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
@@ -30,6 +35,11 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
+interface WidgetAssignment {
+  name: string
+  value: TWidgetValue
+}
 
 interface ReplacementGroup {
   type: string
@@ -83,7 +93,7 @@ function planReplacementTopology(
   }
 
   for (const inputMap of replacement.input_mapping ?? []) {
-    if (!('old_id' in inputMap) || isDotNotation(inputMap.new_id)) continue
+    if (!('old_id' in inputMap)) continue
     const oldSlot = oldNode.inputs.findIndex(
       (input) => input.name === inputMap.old_id
     )
@@ -150,63 +160,72 @@ function planReplacementTopology(
   return { error, updates: [...updates.values()], removals }
 }
 
-function readOldWidgetValue(
+function savedWidgetValues(
   serialized: ISerialisedNode,
-  oldWidgetIds: string[] | null,
-  oldInputName: string
-): TWidgetValue | undefined {
-  const named = serialized.widgets_values_named
-  if (named) {
-    return Object.hasOwn(named, oldInputName) ? named[oldInputName] : undefined
-  }
-
-  if (!oldWidgetIds || !serialized.widgets_values) return undefined
-
-  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
-  if (oldWidgetIdx === -1) return undefined
-
-  return serialized.widgets_values[oldWidgetIdx]
+  replacement: NodeReplacement
+): Record<string, TWidgetValue> {
+  if (serialized.widgets_values_named) return serialized.widgets_values_named
+  const values = serialized.widgets_values ?? []
+  const names =
+    replacement.old_widget_ids ??
+    soleMappedWidgetName(serialized, replacement, values.length)
+  return Object.fromEntries(
+    names.flatMap((name, idx) =>
+      values[idx] === undefined ? [] : [[name, values[idx]]]
+    )
+  )
 }
 
-function transferWidgetValue(
+function soleMappedWidgetName(
   serialized: ISerialisedNode,
-  oldWidgetIds: string[] | null,
-  oldInputName: string,
-  newNode: LGraphNode,
-  newInputName: string
-): void {
-  const oldValue = readOldWidgetValue(serialized, oldWidgetIds, oldInputName)
-  if (oldValue === undefined) return
-
-  const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
-  if (newWidget) {
-    try {
-      newWidget.value = oldValue
-      newWidget.callback?.(oldValue)
-    } catch (error) {
-      console.error(`Failed to transfer widget ${newInputName}`, error)
-    }
-  }
+  replacement: NodeReplacement,
+  valueCount: number
+): string[] {
+  if (valueCount !== 1) return []
+  const socketOnlyInputs = new Set(
+    serialized.inputs?.flatMap((input) => (input.widget ? [] : [input.name]))
+  )
+  const widgetIds = (replacement.input_mapping ?? []).flatMap((inputMap) =>
+    'old_id' in inputMap && !socketOnlyInputs.has(inputMap.old_id)
+      ? [inputMap.old_id]
+      : []
+  )
+  return widgetIds.length === 1 ? widgetIds : []
 }
 
-function applySetValue(
+function mappingDepth(inputMap: { new_id: string }): number {
+  return inputMap.new_id.split('.').length
+}
+
+function assignMappedInputs(
   newNode: LGraphNode,
-  inputName: string,
-  value: unknown
-): void {
-  const widget = newNode.widgets?.find((w) => w.name === inputName)
-  if (widget) {
+  replacement: NodeReplacement,
+  savedValues: Record<string, TWidgetValue>
+): WidgetAssignment[] {
+  const assigned: WidgetAssignment[] = []
+  function assign(name: string, value: unknown) {
+    const widget = newNode.widgets?.find((w) => w.name === name)
+    if (!widget) return
     try {
       widget.value = value as TWidgetValue
-      widget.callback?.(widget.value)
+      assigned.push({ name, value: widget.value })
     } catch (error) {
-      console.error(`Failed to set widget ${inputName}`, error)
+      console.error(`Failed to set widget ${name}`, error)
     }
   }
-}
-
-function isDotNotation(id: string): boolean {
-  return id.includes('.')
+  const inputMaps = [...(replacement.input_mapping ?? [])].sort(
+    (a, b) => mappingDepth(a) - mappingDepth(b)
+  )
+  for (const inputMap of inputMaps) {
+    if ('set_value' in inputMap) {
+      assign(inputMap.new_id, inputMap.set_value)
+      continue
+    }
+    growAutogrowInput(newNode, inputMap.new_id)
+    if (Object.hasOwn(savedValues, inputMap.old_id))
+      assign(inputMap.new_id, savedValues[inputMap.old_id])
+  }
+  return assigned
 }
 
 /** Auto-generates identity mapping by name for same-structure replacements without backend mapping. */
@@ -278,6 +297,11 @@ function replaceWithMapping(
       newNode.properties['Node name for S&R'] = replacement.new_node_id
     }
   }
+  const assignedWidgets = assignMappedInputs(
+    newNode,
+    replacement,
+    savedWidgetValues(serialized, replacement)
+  )
 
   const topologyPlan = planReplacementTopology(
     node,
@@ -375,20 +399,14 @@ function replaceWithMapping(
   node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
-  if (replacement.input_mapping) {
-    for (const inputMap of replacement.input_mapping) {
-      if ('old_id' in inputMap) {
-        if (isDotNotation(inputMap.new_id)) continue
-        transferWidgetValue(
-          serialized,
-          replacement.old_widget_ids,
-          inputMap.old_id,
-          newNode,
-          inputMap.new_id
-        )
-      } else if (!isDotNotation(inputMap.new_id)) {
-        applySetValue(newNode, inputMap.new_id, inputMap.set_value)
-      }
+  for (const { name, value } of assignedWidgets) {
+    const widget = newNode.widgets?.find((w) => w.name === name)
+    if (!widget) continue
+    try {
+      if (widget.value !== value) widget.value = value
+      widget.callback?.(value)
+    } catch (error) {
+      console.error(`Failed to set widget ${name}`, error)
     }
   }
   for (const widget of newNode.widgets ?? []) {
@@ -397,6 +415,23 @@ function replaceWithMapping(
       widget.setNodeId(newNode.id)
     } catch (error) {
       console.error(`Failed to bind replacement widget ${widget.name}`, error)
+    }
+  }
+  const connectedInputs = newNode.inputs.flatMap((input, slot) => {
+    const link = inputLink(nodeGraph, newNode.id, slot)
+    return link ? [{ input, link }] : []
+  })
+  for (const { input, link } of connectedInputs) {
+    try {
+      newNode.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        newNode.inputs.indexOf(input),
+        true,
+        link,
+        input
+      )
+    } catch (error) {
+      console.error(`Failed to notify connected link ${link.id}`, error)
     }
   }
 
@@ -478,7 +513,7 @@ export function useNodeReplacement() {
         return !!originalType && targetTypes.has(originalType)
       })
 
-      for (const node of placeholders) {
+      for (const node of new Set(placeholders)) {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
 

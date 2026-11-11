@@ -54,6 +54,16 @@
       "count": 1
     }
   },
+  "packages/api-client/src/ComfyApi.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "packages/settings-core/src/settingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "packages/telemetry/src/redactTelemetryUrls.ts": {
     "regexp/no-dupe-characters-character-class": {
       "count": 13
@@ -141,7 +151,7 @@
   },
   "src/composables/auth/useAuthActions.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/composables/canvas/useFocusNode.test.ts": {
@@ -165,11 +175,6 @@
     }
   },
   "src/composables/useCoreCommands.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useImageCrop.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -368,7 +373,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/litegraph/src/subgraph/Subgraph.ts": {
@@ -501,11 +506,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -571,21 +571,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/subscription/components/PricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -606,11 +591,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/platform/cloud/oauth/oauthApi.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -628,6 +608,11 @@
   },
   "src/platform/cloud/onboarding/survey/surveySchema.test.ts": {
     "comfy/prefer-array-containing": {
+      "count": 2
+    }
+  },
+  "src/platform/extensions/stores/extensionStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 2
     }
   },
@@ -651,11 +636,6 @@
       "count": 1
     }
   },
-  "src/platform/settings/settingStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/telemetry/TelemetryRegistry.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -673,7 +653,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/workflow/management/stores/workflowStore.ts": {
@@ -712,11 +692,6 @@
     }
   },
   "src/platform/workflow/sharing/utils/shareAuthAttribution.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }
@@ -831,29 +806,9 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
@@ -981,11 +936,6 @@
       "count": 10
     }
   },
-  "src/scripts/api.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
   "src/scripts/app.getNodeDefs.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1042,11 +992,6 @@
       "count": 1
     }
   },
-  "src/services/extensionLoader.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1082,11 +1027,6 @@
       "count": 1
     }
   },
-  "src/stores/extensionStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/stores/nodeBookmarkStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
@@ -1112,11 +1052,6 @@
       "count": 1
     }
   },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/types/extensionTypes.ts": {
     "comfy/no-reexports": {
       "count": 2
@@ -1124,7 +1059,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 50
+      "count": 35
     }
   },
   "src/types/slotId.test.ts": {

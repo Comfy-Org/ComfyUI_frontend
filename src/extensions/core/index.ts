@@ -1,6 +1,11 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
+import type { Surface } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { clipspaceExtension } from './clipspace'
 import { contextMenuFilterExtension } from './contextMenuFilter'
@@ -16,7 +21,7 @@ import { imageCompositorExtension } from './imageCompositor'
 import { imageCropExtension } from './imageCrop'
 import { layerEditorExtension } from './layerEditor'
 import { load3dLazyExtension } from './load3d/load3dLazy'
-import { maskEditorExtension } from './maskeditor'
+import { maskEditorExtension } from '@/renderer/extensions/maskEditor/extension'
 import { noteNodeExtension } from './noteNode'
 import { painterExtension } from './painter'
 import { previewAnyExtension } from './previewAny'
@@ -74,6 +79,83 @@ function register(extension: ComfyExtension) {
   disposers.push(useExtensionService().registerExtension(extension))
 }
 
+function isNamedComfyExtension(value: unknown): value is ComfyExtension {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof value.name === 'string'
+  )
+}
+
+async function loadGuardedCoreExtension<
+  Name extends string,
+  Extension extends ComfyExtension
+>(
+  importExtension: () => Promise<Partial<Record<Name, Extension>> | undefined>,
+  exportName: Name,
+  errorType: string,
+  surface: Surface
+): Promise<Extension | undefined> {
+  let module: Partial<Record<Name, Extension>> | undefined
+  try {
+    module = await importExtension()
+  } catch (cause) {
+    const error = new Error(`Failed to load module for ${exportName}`, {
+      cause
+    })
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, { surface, errorType })
+    return undefined
+  }
+
+  const extension =
+    module !== undefined && Object.hasOwn(module, exportName)
+      ? module[exportName]
+      : undefined
+
+  if (!isNamedComfyExtension(extension)) {
+    const error = new TypeError(`${exportName} did not load from its module`)
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, { surface, errorType })
+    return undefined
+  }
+
+  return extension as Extension
+}
+
+function wireSessionCookieLogoutFallback(): () => void {
+  const { onUserLogout } = useCurrentUser()
+  return onUserLogout(() => {
+    clearOAuthRequestId()
+    void useSessionCookie().deleteSession()
+  })
+}
+
+async function loadAgentPanelExtension() {
+  const agentPanelModule: unknown = await import('./agentPanel')
+  const registerAgentPanelExtension =
+    typeof agentPanelModule === 'object' &&
+    agentPanelModule !== null &&
+    'registerAgentPanelExtension' in agentPanelModule
+      ? agentPanelModule.registerAgentPanelExtension
+      : undefined
+
+  if (typeof registerAgentPanelExtension !== 'function') {
+    const error = new TypeError(
+      'Agent panel extension module did not provide a registration function'
+    )
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_loading_agent_panel_extension'
+    })
+    return
+  }
+
+  registerAgentPanelExtension()
+}
+
 async function registerInOrder() {
   baseCoreExtensions.forEach(register)
 
@@ -84,18 +166,45 @@ async function registerInOrder() {
   await registerElectronAdapterExtension()
 
   if (__DISTRIBUTION__ === 'cloud') {
-    register((await import('./cloudRemoteConfig')).cloudRemoteConfigExtension)
-    register((await import('./cloudBadges')).cloudBadgesExtension)
-    register((await import('./cloudSessionCookie')).cloudSessionCookieExtension)
+    const cloudRemoteConfig = await loadGuardedCoreExtension(
+      () => import('./cloudRemoteConfig'),
+      'cloudRemoteConfigExtension',
+      'error_loading_cloud_remote_config_extension',
+      'platform'
+    )
+    if (cloudRemoteConfig) register(cloudRemoteConfig)
+
+    const cloudBadges = await loadGuardedCoreExtension(
+      () => import('./cloudBadges'),
+      'cloudBadgesExtension',
+      'error_loading_cloud_badges_extension',
+      'platform'
+    )
+    if (cloudBadges) register(cloudBadges)
+
+    const cloudSessionCookie = await loadGuardedCoreExtension(
+      () => import('./cloudSessionCookie'),
+      'cloudSessionCookieExtension',
+      'error_loading_cloud_session_cookie_extension',
+      'auth'
+    )
+    if (cloudSessionCookie) {
+      register(cloudSessionCookie)
+    } else {
+      disposers.push(wireSessionCookieLogoutFallback())
+    }
   }
 
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
+  await loadAgentPanelExtension()
 
   if (isCloud || isNightly) {
-    register(
-      (await import('./cloudFeedbackTopbarButton')).feedbackButtonExtension
+    const feedbackButton = await loadGuardedCoreExtension(
+      () => import('./cloudFeedbackTopbarButton'),
+      'feedbackButtonExtension',
+      'error_loading_feedback_button_extension',
+      'workspace'
     )
+    if (feedbackButton) register(feedbackButton)
   }
 }
 

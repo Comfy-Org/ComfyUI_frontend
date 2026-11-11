@@ -12,8 +12,8 @@ import { unflattenOutputAssets } from '@/platform/assets/composables/media/asset
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
@@ -155,7 +155,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+      const { container } = renderCard({
+        asset: { ...asset, display_name: 'Display A', tags: ['output'] }
+      })
 
       const { event, add } = dispatchDragStart(container)
 

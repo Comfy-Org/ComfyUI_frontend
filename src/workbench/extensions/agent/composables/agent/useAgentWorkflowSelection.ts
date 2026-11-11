@@ -4,6 +4,7 @@ import { computed, nextTick, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -143,13 +144,20 @@ export function useAgentWorkflowSelection({
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }
+    const needsSave = () => tab.isTemporary && cloudIdFor(tab) === undefined
     try {
-      if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+      if (needsSave()) {
         if (!(await refreshCloudWorkflowIds())) return fail()
         if (!isCurrent()) return
-        const filename = nextSaveFilename(tab)
-        if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-          return fail()
+        if (!tab.isLoaded) {
+          await workflowService.loadWorkflowInBackground(tab)
+          if (!isCurrent()) return
+        }
+        if (needsSave()) {
+          const filename = nextSaveFilename(tab)
+          if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+            return fail()
+        }
       }
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
@@ -328,23 +336,38 @@ export function useAgentWorkflowSelection({
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
-        warnRestoreFailed()
+        failRestore(
+          workflowId,
+          new Error('No saved workflow resolves to the chat target')
+        )
         return RESTORE_ABANDONED
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
-        warnRestoreFailed()
+        failRestore(
+          workflowId,
+          new Error('The chat target workflow did not open')
+        )
         return RESTORE_ABANDONED
       }
       commitWorkflowTarget(target, workflowId, 'restored')
       return { ready: true, committedWorkflowId: workflowId }
-    } catch {
+    } catch (error) {
       if (!isCurrent()) return RESTORE_ABANDONED
-      warnRestoreFailed()
+      failRestore(workflowId, error)
       return RESTORE_ABANDONED
     }
+  }
+
+  function failRestore(workflowId: string, cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId }
+    })
+    warnRestoreFailed()
   }
 
   function adoptTarget(workflow: ComfyWorkflow, workflowId: string): void {
