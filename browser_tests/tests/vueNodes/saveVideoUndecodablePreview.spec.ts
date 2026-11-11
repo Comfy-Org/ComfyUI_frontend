@@ -14,6 +14,8 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const PLAYABLE = 'video-preview-square.webm'
+const WIDE = 'video-preview-wide.webm'
+const PORTRAIT = 'video-preview-portrait.webm'
 const UNDECODABLE = 'save-video-prores.mov'
 const SLOW = 'slow.webm'
 const IMAGE = 'ok.png'
@@ -57,10 +59,12 @@ function canvasPreviewVideo(page: Page) {
 test.describe('Save Video preview of an undecodable output', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await mockViewFiles(comfyPage.page, {
-      [PLAYABLE]: {
-        path: assetPath(`video/${PLAYABLE}`),
-        contentType: 'video/webm'
-      },
+      ...Object.fromEntries(
+        [PLAYABLE, WIDE, PORTRAIT].map((file) => [
+          file,
+          { path: assetPath(`video/${file}`), contentType: 'video/webm' }
+        ])
+      ),
       [UNDECODABLE]: {
         path: assetPath(`video/${UNDECODABLE}`),
         contentType: 'video/quicktime'
@@ -138,6 +142,43 @@ test.describe('Save Video preview of an undecodable output', () => {
       file: PLAYABLE,
       decoded: true
     })
+  })
+
+  test('canvas renderer fits the preview height to each video and keeps its width', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const { page } = comfyPage
+    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    const nodeId = await addNode(comfyPage, 'SaveVideo')
+    const sizes = () =>
+      page.evaluate((id) => {
+        const node = window.app!.graph.getNodeById(id)!
+        const preview = node.widgets
+          ?.find((w) => w.name === 'video-preview')
+          ?.computeLayoutSize?.(node)
+        return {
+          previewWidth: preview?.minWidth,
+          previewHeight: preview?.minHeight ?? 0,
+          nodeWidth: node.size[0]
+        }
+      }, nodeId)
+
+    execution.executed('', nodeId, output(WIDE))
+    await expect
+      .poll(() => canvasPreviewVideo(page))
+      .toEqual({ file: WIDE, decoded: true })
+    const wide = await sizes()
+
+    execution.executed('', nodeId, output(PORTRAIT))
+    await expect
+      .poll(() => canvasPreviewVideo(page))
+      .toEqual({ file: PORTRAIT, decoded: true })
+    const portrait = await sizes()
+
+    expect(portrait.previewWidth).toBe(wide.previewWidth)
+    expect(portrait.nodeWidth).toBe(wide.nodeWidth)
+    expect(portrait.previewHeight).toBeGreaterThan(wide.previewHeight)
   })
 
   test('canvas renderer drops the previous image when the new one fails to load', async ({
