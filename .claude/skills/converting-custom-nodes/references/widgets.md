@@ -188,20 +188,38 @@ consistent with every other disabled widget instead of being hand-rolled.
 | `ComfyWidgets.MARKDOWN`                         | `'markdown'`                                |
 | `ComfyWidgets.COLOR`                            | `'color'`                                   |
 
-### Keeping a widget out of the saved workflow
+### Keeping a widget out of the prompt, or out of the saved workflow
+
+These are two destinations with two switches. Convert each to its own.
 
 ```js
-// before
-widget.serializeValue = async () => {} // per widget
-this.serialize_widgets = false // whole node
+// before: the value is saved in the workflow and not sent in the prompt
+widget.serializeValue = async () => {}
 
 // after
-node.widgets.add({ type: 'textarea', name: 'text', serialize: false })
+node.widgets.add({
+  type: 'textarea',
+  name: 'text',
+  options: { serialize: false }
+})
+// or, for a widget that already exists
+widget.setOption('serialize', false)
+```
+
+```js
+// before: none of the node's widget values are saved in the workflow
+this.serialize_widgets = false
+
+// after
 node.setSerializeWidgets(false)
 ```
 
-Both are wire-format switches, so a conversion that drops them changes what the
-saved workflow contains. `serialize` is orthogonal to `hidden` and `disabled`:
+`serialize: false` on a widget definition is a third thing: that one widget is
+not saved in the workflow, and is still sent in the prompt. It does not replace
+a `serializeValue` override.
+
+All three are wire-format switches, so a conversion that drops or swaps one
+changes what the saved workflow or the prompt contains. `serialize` is orthogonal to `hidden` and `disabled`:
 a widget can be visible and unsaved, or hidden and saved.
 
 `add` throws if the name is already taken — rebuild is remove-then-add, and the

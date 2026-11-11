@@ -151,7 +151,9 @@ behavior instead of reassigning a size callback.
 ### Declared widgets
 
 `WidgetDef.serialize` controls whether an added widget writes to the saved
-workflow:
+workflow. The value is still sent in the prompt. To save a value without
+sending it, which is what a legacy `serializeValue` override returning nothing
+did, set `options: { serialize: false }` instead.
 
 ```js
 definition.addWidget({

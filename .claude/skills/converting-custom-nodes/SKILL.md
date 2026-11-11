@@ -474,7 +474,11 @@ old) => …)`**, which is additive: no other pack can drop your listener by
 forgetting to call through.
 
 **If you are converting `widget.serializeValue`** — classify its return. A
-constant `undefined` becomes `serialize: false`; a synchronous substitute uses
+constant `undefined` keeps the value out of the prompt while still saving it:
+that is `options: { serialize: false }` on a widget the pack adds, or
+`widget.setOption('serialize', false)` on an existing one. It is not
+`serialize: false`, which stops the value being saved and still sends it. A
+synchronous substitute uses
 `widget.on('beforeSerialize', event => event.setSerializedValue(value))`. If it
 awaits derived state, an async `comfy.queue.guard` may commit that state before
 the prompt is built, but guards time out after five seconds. Anything that can

@@ -672,12 +672,13 @@ instead of turning it into a socket.
 
 Classify the behavior:
 
-| Old behavior                                | Published mechanism                                        |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| Pack-owned widget never serializes          | Create it with `serialize: false`                          |
-| Mounted value saves but is not sent         | `serialize: true`, `sendToPrompt: false`                   |
-| Substitute a value for one destination      | `beforeSerialize`                                          |
-| Asynchronously prepare data before queueing | `comfy.queue.guard()` followed by a normal committed value |
+| Old behavior                                | Published mechanism                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| Returns `undefined`: saved but not sent     | `options: { serialize: false }`, or `setOption('serialize', false)` |
+| Pack-owned widget is not saved              | Create it with `serialize: false`; it is still sent                 |
+| Mounted value saves but is not sent         | `serialize: true`, `sendToPrompt: false`                            |
+| Substitute a value for one destination      | `beforeSerialize`                                                   |
+| Asynchronously prepare data before queueing | `comfy.queue.guard()` followed by a normal committed value          |
 
 ```js
 widget.on('beforeSerialize', (event) => {
