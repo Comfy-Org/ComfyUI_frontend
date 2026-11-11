@@ -2,7 +2,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -52,6 +52,26 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+vi.mock<unknown>(
+  import('@/platform/account/components/dialogs/settings/BillingTab.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      __esModule: true,
+      default: defineComponent(() => () => h('p', 'current billing tab'))
+    }
+  }
+)
+vi.mock<unknown>(
+  import('@/platform/billing/legacy160/BillingTabLegacy.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      __esModule: true,
+      default: defineComponent(() => () => h('p', '1.60 billing tab'))
+    }
+  }
+)
 
 interface MockSettingParams {
   id: string
@@ -253,6 +273,29 @@ describe('useSettingUI', () => {
         key: 'workspace',
         label: 'Billing'
       })
+    })
+
+    it('renders the 1.60 Billing tab until billing_new_ux_enabled turns on', async () => {
+      env.state.isCloud = true
+      const flags = vi.mocked(useFeatureFlags().flags)
+      flags.unifiedBillingSettingsEnabled = true
+      flags.billingNewUxEnabled = false
+      onTestFinished(() => {
+        flags.unifiedBillingSettingsEnabled = false
+        flags.billingNewUxEnabled = false
+      })
+      const billingTab =
+        useSettingUI('workspace').findPanelByKey('workspace')?.component
+      if (!billingTab) throw new Error('Billing panel missing')
+      render(billingTab)
+
+      expect(await screen.findByText('1.60 billing tab')).toBeTruthy()
+      expect(screen.queryByText('current billing tab')).toBeNull()
+
+      flags.billingNewUxEnabled = true
+
+      expect(await screen.findByText('current billing tab')).toBeTruthy()
+      expect(screen.queryByText('1.60 billing tab')).toBeNull()
     })
 
     it('keeps Plan & Credits on local when unified billing settings is off', () => {
