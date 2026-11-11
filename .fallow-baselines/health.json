@@ -83,7 +83,7 @@
         "count": 1
       }
     },
-    "scripts/bundle-categories.js": {
+    "tools/ci/src/bundle-categories.js": {
       "crap_moderate": {
         "count": 1
       }
@@ -93,7 +93,7 @@
         "count": 3
       }
     },
-    "scripts/cicd/extract-playwright-counts.ts": {
+    "tools/ci/src/cicd/extract-playwright-counts.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -107,7 +107,7 @@
         "count": 1
       }
     },
-    "scripts/cicd/resolve-comfyui-release.ts": {
+    "tools/ci/src/cicd/resolve-comfyui-release.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -120,7 +120,7 @@
         "count": 1
       }
     },
-    "scripts/coverage-slack-notify.ts": {
+    "tools/ci/src/coverage-slack-notify.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -136,7 +136,7 @@
         "count": 1
       }
     },
-    "scripts/perf-report.ts": {
+    "tools/ci/src/perf-report.ts": {
       "complexity_critical": {
         "count": 2
       },
@@ -161,12 +161,12 @@
         "count": 1
       }
     },
-    "scripts/size-collect.js": {
+    "tools/ci/src/size-collect.js": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "scripts/size-report.js": {
+    "tools/ci/src/size-report.js": {
       "crap_critical": {
         "count": 3
       },
@@ -3199,9 +3199,9 @@
     "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
     "src/platform/customNodes/manager/composables/useManagerDialog.ts:circular dependency",
     "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
-    "scripts/cicd/extract-playwright-counts.ts:complexity",
+    "tools/ci/src/cicd/extract-playwright-counts.ts:complexity",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
-    "scripts/cicd/resolve-comfyui-release.ts:complexity",
-    "scripts/perf-report.ts:complexity"
+    "tools/ci/src/cicd/resolve-comfyui-release.ts:complexity",
+    "tools/ci/src/perf-report.ts:complexity"
   ]
 }

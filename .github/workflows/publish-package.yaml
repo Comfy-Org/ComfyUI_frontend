@@ -209,7 +209,7 @@ jobs:
           NAME: ${{ steps.pkg.outputs.name }}
           VERSION: ${{ steps.pkg.outputs.version }}
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+        run: pnpm exec tsx tools/ci/src/cicd/resolve-npm-dist-tag.ts
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'

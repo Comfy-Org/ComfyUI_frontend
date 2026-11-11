@@ -16,7 +16,7 @@ import { orderE2eCoverage } from './coverage-e2e-order'
 
 const HEAD = 'head-sha'
 const SCRIPT = join(import.meta.dirname, 'coverage-e2e-order.ts')
-const TSX = join(import.meta.dirname, '../../node_modules/.bin/tsx')
+const TSX = join(import.meta.dirname, '../../../../node_modules/.bin/tsx')
 const CURRENT = 'temp/e2e-coverage'
 const BASELINE = 'temp/e2e-coverage-baseline'
 

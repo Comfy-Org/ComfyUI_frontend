@@ -35,7 +35,7 @@ if (sizeStatus === 'ready' && hasSizeData) {
   try {
     const sizeReport = execFileSync(
       'pnpm',
-      ['exec', 'tsx', 'scripts/size-report.ts'],
+      ['exec', 'tsx', 'tools/ci/src/size-report.ts'],
       { encoding: 'utf-8' }
     ).trimEnd()
     lines.push(sizeReport)
@@ -62,7 +62,7 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   try {
     const perfReport = execFileSync(
       'pnpm',
-      ['exec', 'tsx', 'scripts/perf-report.ts'],
+      ['exec', 'tsx', 'tools/ci/src/perf-report.ts'],
       { encoding: 'utf-8' }
     ).trimEnd()
     lines.push(perfReport)
@@ -89,7 +89,7 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
       [
         'exec',
         'tsx',
-        'scripts/coverage-report.ts',
+        'tools/ci/src/coverage-report.ts',
         'temp/coverage/coverage.lcov'
       ],
       { encoding: 'utf-8' }

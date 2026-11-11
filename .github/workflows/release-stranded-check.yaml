@@ -38,7 +38,7 @@ jobs:
         id: check
         run: |
           set -o pipefail
-          pnpm exec tsx scripts/cicd/check-stranded-release-commits.ts 2>&1 | tee report.txt
+          pnpm exec tsx tools/ci/src/cicd/check-stranded-release-commits.ts 2>&1 | tee report.txt
 
       - name: Build Slack payload
         # Only on failure — a passing guard should stay silent.

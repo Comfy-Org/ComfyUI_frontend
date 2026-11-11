@@ -5,9 +5,9 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import type { PerfMeasurement } from '../browser_tests/fixtures/helpers/PerformanceHelper'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = join(import.meta.dirname, '../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'perf-report.ts')
 

@@ -101,7 +101,7 @@ jobs:
             echo "::warning::SLACK_FRONTEND_CHANNEL_ID is unset — skipping the Slack post."
             exit 0
           fi
-          pnpm exec tsx scripts/cicd/release-slack-changelog.ts
+          pnpm exec tsx tools/ci/src/cicd/release-slack-changelog.ts
 
       # Renders what was (or would have been) posted, so a run with the channel
       # variable still unset shows the message rather than only saying it
@@ -114,7 +114,7 @@ jobs:
           DRY_RUN: 'true'
         run: |
           set -uo pipefail
-          pnpm exec tsx scripts/cicd/release-slack-changelog.ts > preview.txt 2>&1 || true
+          pnpm exec tsx tools/ci/src/cicd/release-slack-changelog.ts > preview.txt 2>&1 || true
           {
             echo '## Release Slack changelog'
             echo ''

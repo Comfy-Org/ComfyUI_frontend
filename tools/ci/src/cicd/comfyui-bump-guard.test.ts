@@ -136,7 +136,7 @@ function runCreatePrStep({
   const root = ownedTempDir('bump-step-')
   const bin = path.join(root, 'bin')
   const comfyui = path.join(root, 'comfyui')
-  const guardDir = path.join(root, 'frontend-scripts/scripts/cicd')
+  const guardDir = path.join(root, 'frontend-scripts/tools/ci/src/cicd')
   for (const dir of [bin, comfyui, guardDir])
     mkdirSync(dir, { recursive: true })
   copyFileSync(SCRIPT, path.join(guardDir, 'comfyui-bump-guard.sh'))

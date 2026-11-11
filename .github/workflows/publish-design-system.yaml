@@ -148,11 +148,11 @@ jobs:
 
       - name: Verify compiled imports are declared dependencies
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
+        run: pnpm exec tsx tools/ci/src/cicd/check-design-system-imports.ts
 
       - name: Check an isolated packed consumer
         if: steps.check_npm.outputs.exists == 'false'
-        run: scripts/cicd/check-design-system-consumer.sh
+        run: tools/ci/src/cicd/check-design-system-consumer.sh
 
       - name: Resolve dist-tag
         id: dist_tag
@@ -161,7 +161,7 @@ jobs:
           NAME: ${{ steps.pkg.outputs.name }}
           VERSION: ${{ steps.pkg.outputs.version }}
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+        run: pnpm exec tsx tools/ci/src/cicd/resolve-npm-dist-tag.ts
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'

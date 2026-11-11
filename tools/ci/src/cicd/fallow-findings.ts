@@ -145,7 +145,7 @@ export function renderReport(report: FallowReport): string {
       ? [
           'Fallow reports a failing verdict, but this renderer found no findings it',
           'knows how to describe. Open the run log and the `Audit new findings`',
-          'step — and please extend `scripts/cicd/fallow-findings.ts` so the next',
+          'step — and please extend `tools/ci/src/cicd/fallow-findings.ts` so the next',
           'person does not have to.'
         ].join('\n')
       : 'No new findings in the changed files.'

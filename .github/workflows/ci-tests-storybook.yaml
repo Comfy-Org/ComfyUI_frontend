@@ -162,7 +162,7 @@ jobs:
           path: storybook-static
 
       - name: Make deployment script executable
-        run: chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
+        run: chmod +x tools/ci/src/cicd/pr-storybook-deploy-and-comment.sh
 
       - name: Deploy Storybook and generate section
         env:
@@ -174,7 +174,7 @@ jobs:
           SUMMARY_FILE: storybook-section.md
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
+          ./tools/ci/src/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "$BRANCH_NAME" \
             "completed"

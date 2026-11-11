@@ -15,8 +15,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
-import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
+import type { QuarantinedPack } from '@e2e/fixtures/customNode/manifest'
+import { connectivityExpectations } from '@e2e/fixtures/customNode/connectivityExpectations'
 import {
   customNodesManifest,
   FRONTEND_ASSET_EXCLUSIONS,
@@ -26,13 +26,13 @@ import {
   loadUnjoinedYamlPacks,
   packIdentity,
   staleLocalExpectations
-} from '../browser_tests/fixtures/customNode/manifest'
-import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
+} from '@e2e/fixtures/customNode/manifest'
+import { consoleErrorExclusionsForPacks } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   CUSTOM_NODE_TIER_NODE_EXCLUSIONS,
   tierNodeExclusionProblems
-} from '../browser_tests/fixtures/customNode/tierNodeExclusions'
-import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
+} from '@e2e/fixtures/customNode/tierNodeExclusions'
+import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '@e2e/fixtures/customNode/valueDrift'
 import {
   provesRefIsMissing,
   provesRequirementIsUnsatisfiable

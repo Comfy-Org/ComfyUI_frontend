@@ -288,7 +288,7 @@ jobs:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
           GH_REPO: ${{ github.repository }}
           PENDING_TARGETS: ${{ steps.filter-targets.outputs.pending-targets }}
-        run: bash scripts/cicd/pr-backport-commits.sh
+        run: bash tools/ci/src/cicd/pr-backport-commits.sh
 
       - name: Create PR for each successful backport
         id: create-prs

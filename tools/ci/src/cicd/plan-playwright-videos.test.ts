@@ -19,7 +19,7 @@ import { z } from 'zod'
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
 const bash = '/bin/bash'
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
-const bin = join(import.meta.dirname, '../../node_modules/.bin')
+const bin = join(import.meta.dirname, '../../../../node_modules/.bin')
 
 function fixture(
   chromiumCount: number,

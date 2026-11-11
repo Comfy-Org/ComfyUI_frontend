@@ -49,7 +49,7 @@ async function runAgainstRegistry(status: number, body: unknown) {
   const output = join(root, 'output')
   await promisify(execFile)(
     process.execPath,
-    ['--import', 'tsx', resolve('scripts/cicd/resolve-npm-dist-tag.ts')],
+    ['--import', 'tsx', resolve('tools/ci/src/cicd/resolve-npm-dist-tag.ts')],
     {
       env: {
         ...process.env,
@@ -129,7 +129,7 @@ it.for(publishers)(
     )
     expect(publish?.env?.DIST_TAG).toBe('${{ steps.dist_tag.outputs.tag }}')
     expect(steps.find((step) => step.id === 'dist_tag')?.run).toBe(
-      'pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts'
+      'pnpm exec tsx tools/ci/src/cicd/resolve-npm-dist-tag.ts'
     )
   }
 )

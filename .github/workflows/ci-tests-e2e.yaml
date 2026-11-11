@@ -578,7 +578,7 @@ jobs:
           SUMMARY_FILE: playwright-section.md
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          bash ./tools/ci/src/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "$BRANCH_NAME" \
             "completed"
