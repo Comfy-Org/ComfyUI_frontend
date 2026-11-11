@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createMockCanvasRenderingContext2D,
@@ -267,6 +268,21 @@ describe('LGraphCanvas.startRendering', () => {
         errorType: 'error_rendering_canvas_initial_frame'
       })
     )
+  })
+
+  it('hands the configured frame interval to update callbacks', () => {
+    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {})
+    const canvas = new LGraphCanvas(createTestCanvasElement(), new LGraph(), {
+      skip_events: true,
+      skip_render: true
+    })
+    canvas.maximumFps = 10
+    const intervals: number[] = []
+    onCanvasFrame(canvas, 'update', (ms) => intervals.push(ms))
+
+    canvas.startRendering()
+
+    expect(intervals).toEqual([100])
   })
 
   it('keeps scheduling frames when the first frame succeeds', () => {

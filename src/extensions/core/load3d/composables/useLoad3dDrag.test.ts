@@ -10,10 +10,10 @@ vi.mock(import('@/i18n'))
 
 function createMockDragEvent(
   type: string,
-  options: { hasFiles?: boolean; files?: File[] } = {}
+  options: { hasFiles?: boolean; files?: File[]; types?: string[] } = {}
 ): DragEvent {
   const files = options.files || []
-  const types = options.hasFiles ? ['Files'] : []
+  const types = options.types ?? (options.hasFiles ? ['Files'] : [])
 
   const dataTransfer: Partial<DataTransfer> = {
     types,
@@ -21,13 +21,13 @@ function createMockDragEvent(
     dropEffect: 'none'
   }
 
-  const event: Partial<DragEvent> = {
-    type,
-    dataTransfer: dataTransfer as DataTransfer
-  }
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
 
   return event as DragEvent
 }
+
+const ASSET_DRAG_TYPES = ['application/x-comfy-asset-info', 'text/uri-list']
 
 describe('useLoad3dDrag', () => {
   let mockOnModelDrop: (file: File) => void | Promise<void>
@@ -215,6 +215,59 @@ describe('useLoad3dDrag', () => {
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
+    })
+  })
+
+  describe('event ownership', () => {
+    it.for([
+      { name: 'dragover', handler: 'handleDragOver' },
+      { name: 'drop', handler: 'handleDrop' }
+    ] as const)(
+      'leaves a $name without files to the node',
+      async ({ name, handler }) => {
+        const drag = useLoad3dDrag({ onModelDrop: mockOnModelDrop })
+        const event = createMockDragEvent(name, { types: ASSET_DRAG_TYPES })
+
+        await drag[handler](event)
+
+        expect(event.defaultPrevented).toBe(false)
+        expect(event.cancelBubble).toBe(false)
+        expect(drag.isDragging.value).toBe(false)
+        expect(mockOnModelDrop).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { name: 'dragover', handler: 'handleDragOver', disabled: false },
+      { name: 'drop', handler: 'handleDrop', disabled: false },
+      { name: 'dragover', handler: 'handleDragOver', disabled: true },
+      { name: 'drop', handler: 'handleDrop', disabled: true }
+    ] as const)(
+      'claims a $name carrying files when disabled is $disabled',
+      async ({ name, handler, disabled }) => {
+        const drag = useLoad3dDrag({ onModelDrop: mockOnModelDrop, disabled })
+        const event = createMockDragEvent(name, {
+          hasFiles: true,
+          files: [new File([], 'model.glb')]
+        })
+
+        await drag[handler](event)
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(event.cancelBubble).toBe(true)
+      }
+    )
+
+    it('claims an asset drag while disabled so it never reaches the canvas', async () => {
+      const { handleDrop } = useLoad3dDrag({
+        onModelDrop: mockOnModelDrop,
+        disabled: true
+      })
+      const event = createMockDragEvent('drop', { types: ASSET_DRAG_TYPES })
+
+      await handleDrop(event)
+
+      expect(event.defaultPrevented).toBe(true)
     })
   })
 

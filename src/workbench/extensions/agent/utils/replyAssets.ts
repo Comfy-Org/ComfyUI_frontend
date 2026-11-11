@@ -1,6 +1,7 @@
 import type { Token } from 'marked'
 
 import { isMediaRoute } from '@comfyorg/api-client/sessionMediaUrl'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -269,6 +270,7 @@ export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
     nodeId: '',
     mediaType: asset.kind === 'image' ? 'images' : asset.kind,
     mediaTypeIsResolved: true,
-    url: asset.url
+    url: asset.url,
+    filenameIsDisplayName: isCloud
   }
 }

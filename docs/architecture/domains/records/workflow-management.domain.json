@@ -28,6 +28,9 @@
       "path": "src/composables/useWorkflowActionsMenu.ts"
     },
     {
+      "path": "src/platform/workflow/core/canvasTrackerOwnership.ts"
+    },
+    {
       "path": "src/platform/workflow/core/services/**"
     },
     {
