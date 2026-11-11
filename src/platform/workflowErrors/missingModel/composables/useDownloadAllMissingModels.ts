@@ -28,6 +28,13 @@ export function useDownloadAllMissingModels(
       }).length
   )
 
+  const isEveryModelVerifiedUngated = computed(() =>
+    downloadableModels.value.every(
+      (model) =>
+        fileSizeFor(model.url) !== undefined && !gatedRepoUrlFor(model.url)
+    )
+  )
+
   const downloadAllLabel = computed(() => {
     const base = t('rightSidePanel.missingModels.downloadAll')
     const sizes = downloadableModels.value.map((model) =>
@@ -47,6 +54,7 @@ export function useDownloadAllMissingModels(
   return {
     downloadableModels,
     gatedModelCount,
+    isEveryModelVerifiedUngated,
     downloadAllLabel,
     downloadAllModels
   }

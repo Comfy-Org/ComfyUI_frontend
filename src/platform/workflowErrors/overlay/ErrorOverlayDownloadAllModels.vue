@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="downloadableModels.length > 0 && gatedModelCount === 0"
+    v-if="downloadableModels.length > 0 && isEveryModelVerifiedUngated"
     variant="secondary"
     size="sm"
     class="min-w-0"
@@ -25,7 +25,7 @@ const emit = defineEmits<{ downloaded: [] }>()
 
 const {
   downloadableModels,
-  gatedModelCount,
+  isEveryModelVerifiedUngated,
   downloadAllLabel,
   downloadAllModels
 } = useDownloadAllMissingModels(() => missingModelGroups)

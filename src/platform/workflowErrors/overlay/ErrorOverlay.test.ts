@@ -204,6 +204,11 @@ describe('ErrorOverlay', () => {
 
   it('downloads every missing model from the toast and opens its errors', async () => {
     vi.mocked(downloadModel).mockImplementation(() => {})
+    for (const name of ['a.safetensors', 'b.safetensors']) {
+      useMissingModelStore().fileSizes[
+        `https://huggingface.co/comfy/test/resolve/main/${name}`
+      ] = 1024
+    }
     mockAllErrorGroups.value = [missingModelErrorGroup(2)]
     mockErrorGroups.missingModelGroups.value = [
       downloadableMissingModelGroup(['a.safetensors', 'b.safetensors'])
@@ -220,6 +225,9 @@ describe('ErrorOverlay', () => {
   })
 
   it('offers no download from the toast when other issues accompany missing models', () => {
+    useMissingModelStore().fileSizes[
+      'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
+    ] = 1024
     mockAllErrorGroups.value = [
       missingModelErrorGroup(1),
       {
@@ -244,26 +252,29 @@ describe('ErrorOverlay', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers no download from the toast when a missing model is gated', async () => {
-    mockAllErrorGroups.value = [missingModelErrorGroup(1)]
-    mockErrorGroups.missingModelGroups.value = [
-      downloadableMissingModelGroup(['a.safetensors'])
-    ]
-    useExecutionErrorStore().showErrorOverlay()
-    renderOverlay()
-    expect(
-      screen.getByTestId('error-overlay-download-all-models')
-    ).toBeVisible()
+  it.for([
+    { metadata: 'unresolved', size: undefined, gated: false, offered: false },
+    { metadata: 'sized', size: 1024, gated: false, offered: true },
+    { metadata: 'gated', size: 1024, gated: true, offered: false }
+  ])(
+    'offers Download all from the toast only once metadata is $metadata and ungated',
+    ({ size, gated, offered }) => {
+      const url = 'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
+      const store = useMissingModelStore()
+      if (size !== undefined) store.fileSizes[url] = size
+      if (gated) store.gatedRepoUrls[url] = 'https://huggingface.co/comfy/test'
+      mockAllErrorGroups.value = [missingModelErrorGroup(1)]
+      mockErrorGroups.missingModelGroups.value = [
+        downloadableMissingModelGroup(['a.safetensors'])
+      ]
+      useExecutionErrorStore().showErrorOverlay()
+      renderOverlay()
 
-    useMissingModelStore().gatedRepoUrls[
-      'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
-    ] = 'https://huggingface.co/comfy/test'
-    await nextTick()
-
-    expect(
-      screen.queryByTestId('error-overlay-download-all-models')
-    ).not.toBeInTheDocument()
-  })
+      expect(
+        screen.queryByTestId('error-overlay-download-all-models') !== null
+      ).toBe(offered)
+    }
+  )
 
   it('renders a single overlay message without list markup', async () => {
     mockAllErrorGroups.value = [
