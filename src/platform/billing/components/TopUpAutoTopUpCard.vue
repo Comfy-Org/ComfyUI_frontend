@@ -27,6 +27,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { computed, watch } from 'vue'
 
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
+import { AUTO_TOP_UP_SETUP_PATH } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
@@ -56,7 +57,7 @@ const visible = computed(() => {
   return read.kind === 'loaded' && read.settings.status === 'off'
 })
 
-const { href, track } = usePlatformHandoff('/profile/billing', {
+const { href, track } = usePlatformHandoff(AUTO_TOP_UP_SETUP_PATH, {
   target: 'auto_top_up',
   action: 'turn_on'
 })
