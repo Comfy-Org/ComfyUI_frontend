@@ -1439,6 +1439,18 @@ describe(assetService.getAssetsPageForNodeType, () => {
 })
 
 describe(assetService.getAssetsForNodeType, () => {
+  it('asks for public models explicitly instead of relying on the server default', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })])
+    )
+
+    await assetService.getAssetsForNodeType('CheckpointLoaderSimple')
+
+    const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
+  })
+
   it('returns just the assets array from the page response', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
@@ -1460,3 +1472,34 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.getWorkspaceLibraryAssetsPage, () => {
+  it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {
+    const row = validAsset({
+      loader_path: 'artist/style.safetensors',
+      is_immutable: true
+    })
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({
+        assets: [row],
+        total: 2,
+        has_more: true,
+        next_cursor: 'library-next'
+      })
+    )
+    const response = await assetService.getWorkspaceLibraryAssetsPage({
+      after: 'library-first',
+      signal: controller.signal
+    })
+    expect(response.assets).toEqual([row])
+    expect(response.next_cursor).toBe('library-next')
+    const [url, options] = vi.mocked(api.fetchApi).mock.calls[0]
+    const params = new URL(url, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models')
+    expect(params.get('workspace_library')).toBe('true')
+    expect(params.get('include_public')).toBe('false')
+    expect(params.get('after')).toBe('library-first')
+    expect(options?.signal).toBe(controller.signal)
+  })
+})

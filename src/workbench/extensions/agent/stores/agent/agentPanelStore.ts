@@ -1,3 +1,4 @@
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
@@ -113,6 +114,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -442,6 +444,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingErrorContext,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,

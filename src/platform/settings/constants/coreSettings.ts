@@ -6,6 +6,7 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
@@ -303,6 +304,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Cloud notification shown',
     type: 'hidden',
     defaultValue: false
+  },
+  {
+    id: AGENT_ONBOARDED_SCOPES_SETTING_ID,
+    name: 'Agent onboarding tour completed for these account scopes',
+    type: 'hidden',
+    defaultValue: []
   },
   {
     id: 'Comfy.DeploymentSwitcher.Seen',
@@ -955,7 +962,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },

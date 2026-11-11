@@ -3,11 +3,21 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { defineComponent, nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -19,6 +29,7 @@ import {
 } from '@/utils/__tests__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -29,12 +40,18 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  nodeError,
+  runtimeError,
+  validationError
+} from '@/utils/__tests__/nodeErrorHelpers'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
@@ -241,6 +258,62 @@ describe('ErrorGroupList selection emphasis', () => {
       callback(0)
       return 0
     })
+  })
+
+  it('opens cloud deployment from a reported out-of-memory issue', async () => {
+    const pinia = getActivePinia()!
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    useExecutionErrorStore(pinia).recordExecutionError({
+      ...runtimeError('1'),
+      exception_type: 'torch.OutOfMemoryError',
+      exception_message: 'CUDA out of memory'
+    })
+    const { user } = renderList(pinia)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Deploy your setup to Comfy Cloud'
+      })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore(pinia).isDialogOpen('global-run-on-comfy-cloud')
+      ).toBe(true)
+    )
+  })
+
+  it('opens only the group named by view details', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+
+    const samplerSection = getSectionByTitle('Missing connection')
+    const loaderSection = getSectionByTitle('Validation failed')
+    await user.click(
+      within(samplerSection).getByRole('button', { name: 'Collapse' })
+    )
+    await user.click(
+      within(loaderSection).getByRole('button', { name: 'Collapse' })
+    )
+    expect(isSectionExpanded(samplerSection)).toBe(false)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+
+    const groupKey = samplerSection.getAttribute('data-group-key')
+    assert.exists(groupKey)
+    useRightSidePanelStore(pinia).requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(isSectionExpanded(samplerSection)).toBe(true)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+    expect(
+      within(samplerSection).getByText(
+        'SamplerNode is missing a required input: clip'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(loaderSection).queryByText('Something odd happened')
+    ).not.toBeInTheDocument()
   })
 
   it('expands matched groups, collapses others, and restores on deselect', async () => {

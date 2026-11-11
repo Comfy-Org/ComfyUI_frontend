@@ -1086,6 +1086,55 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
   })
 
+  it.for([
+    {
+      value: 'sky.exr',
+      preview: { filename: 'sky.exr', subfolder: '', type: 'input' as const }
+    },
+    {
+      value: 'renders/sky.exr [output]',
+      preview: {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output' as const
+      }
+    }
+  ])(
+    'keeps the resolved preview of $value when the widget path writes it again',
+    ({ value, preview }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 5 })
+      const resolved = { ...preview, preview_id: 'preview-1' }
+      store.nodeOutputs['5'] = { images: [resolved] }
+
+      store.setNodeOutputs(node, value)
+
+      expect(store.nodeOutputs['5']?.images).toEqual([resolved])
+      expect(app.nodeOutputs['5']?.images).toEqual([resolved])
+    }
+  )
+
+  it('replaces a resolved preview when the widget path writes another value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.nodeOutputs['5'] = {
+      images: [
+        { filename: 'sky.exr', subfolder: '', type: 'output', preview_id: 'p' }
+      ]
+    }
+
+    store.setNodeOutputs(node, 'other.exr [output]')
+
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
+    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })

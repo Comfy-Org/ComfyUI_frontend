@@ -1,5 +1,4 @@
 import { useDialogService } from '@/services/dialogService'
-import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
@@ -17,6 +16,12 @@ import type {
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import {
+  navigateToPlatformPlans,
+  openPlatformPlans
+} from '@/platform/billing/openPlatformPlans'
+import { t } from '@/i18n'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -32,7 +37,12 @@ import {
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 const DIALOG_KEY = 'subscription-required'
-const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
+
+interface PlansLinkCopy {
+  title: string
+  body: string
+  linkLabel: string
+}
 
 function paymentIntentSourceOf(
   options?: SubscriptionDialogOptions
@@ -53,8 +63,7 @@ function getInitialPlanMode(
 }
 
 export const useSubscriptionDialog = () => {
-  const { shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
-    useBillingRouting()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useWorkspaceIdentity()
@@ -64,11 +73,15 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function trackModalOpened(reason?: PaymentIntentSource) {
+  function trackModalOpened(
+    reason?: PaymentIntentSource,
+    refusalType?: string
+  ) {
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
       reason,
+      ...(refusalType && { refusal_type: refusalType }),
       ...getWorkspaceTelemetryContext()
     })
   }
@@ -86,9 +99,10 @@ export const useSubscriptionDialog = () => {
 
   function trackPaywallEntry(
     reason?: PaymentIntentSource,
-    paymentIntentSource?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource,
+    refusalType?: string
   ) {
-    trackModalOpened(reason)
+    trackModalOpened(reason, refusalType)
     trackPaywallShown(paymentIntentSource)
   }
 
@@ -111,87 +125,151 @@ export const useSubscriptionDialog = () => {
     return true
   }
 
+  function runRefusedCopy(): PlansLinkCopy {
+    const { subscriptionState } = useBillingContext()
+    const { available, maxAvailable } = useFreeTierQuota()
+    const body =
+      subscriptionState.value === 'ended'
+        ? t('subscription.plansLink.runRefusedEnded')
+        : subscriptionState.value === 'never_subscribed' &&
+            maxAvailable.value > 0 &&
+            available.value === 0
+          ? t('subscription.plansLink.runRefusedFreeRunsUsed', {
+              total: maxAvailable.value
+            })
+          : t('subscription.plansLink.runRefusedNoPlan')
+    return {
+      title: t('subscription.plansLink.runRefusedTitle'),
+      body,
+      linkLabel: t('subscription.plansLink.choosePlan')
+    }
+  }
+
+  async function showPlansLinkDialog(copy: PlansLinkCopy): Promise<void> {
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: (
+        await import('@/platform/billing/components/PlatformPlansLinkDialog.vue')
+      ).default,
+      props: { ...copy, onClose: hide }
+    })
+  }
+
+  async function handOffToPlatformPlans(
+    options: SubscriptionDialogOptions | undefined,
+    trackEntry: () => void
+  ): Promise<void> {
+    if (options?.runRefused) {
+      await showPlansLinkDialog(runRefusedCopy())
+      trackEntry()
+      return
+    }
+    if (options?.sameTab) {
+      trackPaywallShown(paymentIntentSourceOf(options))
+      navigateToPlatformPlans()
+      return
+    }
+    if (openPlatformPlans()) {
+      trackPaywallShown(paymentIntentSourceOf(options))
+      return
+    }
+    await showPlansLinkDialog({
+      title: t('subscription.plansLink.blockedTitle'),
+      body: t('subscription.plansLink.blockedBody'),
+      linkLabel: t('subscription.plansLink.openPlansPage')
+    })
+    trackEntry()
+  }
+
+  function usesPlansLinkDialog(): boolean {
+    return flags.billingNewUxEnabled && !flags.pricingTableFallback
+  }
+
   async function showPricingTable(
     options?: SubscriptionDialogOptions
   ): Promise<boolean> {
     if (!isCloud) return false
     try {
+      const {
+        whenRoutingKnown,
+        currentPlanSlug,
+        isLegacyTeamPlan,
+        isTeamPlan
+      } = useBillingContext()
+      if (!(await whenRoutingKnown())) return false
       const paymentIntentSource = paymentIntentSourceOf(options)
       if (await showInactiveMemberDialog(paymentIntentSource)) return true
 
-      const legacyPricingDialogProps = {
+      const { reason, creditsLocked, refusalType } = options ?? {}
+      const dialogProps = {
+        onClose: hide,
+        reason,
+        paymentIntentSource,
+        creditsLocked
+      }
+      const trackEntry = () =>
+        trackPaywallEntry(reason, paymentIntentSource, refusalType)
+
+      if (!options?.resumingCheckout) {
+        if (usesPlansLinkDialog()) {
+          await handOffToPlatformPlans(options, trackEntry)
+          return true
+        }
+        if (openPlatformPlans()) {
+          trackPaywallShown(paymentIntentSource)
+          return true
+        }
+      }
+
+      const nonDismissableDialogProps = {
         dismissOnPointerDownOutside: false
       } as const
 
-      if (shouldUseUnifiedPricing.value) {
-        const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
-          useBillingContext()
-        if (isLegacyTeamPlan.value) {
-          const personalInitialCheckout =
-            options?.initialCheckout?.planMode === 'personal'
-              ? options.initialCheckout
-              : undefined
-          dialogService.showLayoutDialog({
-            key: DIALOG_KEY,
-            component: (
-              await import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
-            ).default,
-            props: {
-              onClose: hide,
-              reason: options?.reason,
-              paymentIntentSource,
-              ...(personalInitialCheckout
-                ? {
-                    initialCheckout: personalInitialCheckout,
-                    isPersonal: true
-                  }
-                : {})
-            },
-            dialogComponentProps: legacyPricingDialogProps
-          })
-          trackPaywallEntry(options?.reason, paymentIntentSource)
-          return true
-        }
-
+      if (isLegacyTeamPlan.value) {
+        const personalInitialCheckout =
+          options?.initialCheckout?.planMode === 'personal'
+            ? options.initialCheckout
+            : undefined
         dialogService.showLayoutDialog({
           key: DIALOG_KEY,
           component: (
-            await import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
+            await import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
           ).default,
           props: {
-            onClose: hide,
-            reason: options?.reason,
-            paymentIntentSource,
-            initialCheckout: options?.initialCheckout,
-            initialPlanMode: getInitialPlanMode(
-              options?.planMode,
-              isTeamPlan.value,
-              currentPlanSlug.value !== null,
-              workspaceStore.isInPersonalWorkspace
-            )
+            ...dialogProps,
+            ...(personalInitialCheckout
+              ? {
+                  initialCheckout: personalInitialCheckout,
+                  isPersonal: true
+                }
+              : {})
           },
-          dialogComponentProps: {
-            dismissOnPointerDownOutside: false
-          }
+          dialogComponentProps: nonDismissableDialogProps
         })
-        trackPaywallEntry(options?.reason, paymentIntentSource)
+        trackEntry()
         return true
       }
 
       dialogService.showLayoutDialog({
         key: DIALOG_KEY,
         component: (
-          await import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue')
+          await import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
         ).default,
         props: {
-          onClose: hide,
-          reason: options?.reason,
-          paymentIntentSource,
-          onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+          ...dialogProps,
+          initialCheckout: options?.initialCheckout,
+          initialPlanMode: getInitialPlanMode(
+            options?.planMode,
+            isTeamPlan.value,
+            currentPlanSlug.value !== null,
+            workspaceStore.isInPersonalWorkspace
+          )
         },
-        dialogComponentProps: legacyPricingDialogProps
+        dialogComponentProps: {
+          dismissOnPointerDownOutside: false
+        }
       })
-      trackPaywallEntry(options?.reason, paymentIntentSource)
+      trackEntry()
       return true
     } catch (error) {
       reportError(error, {
@@ -200,23 +278,6 @@ export const useSubscriptionDialog = () => {
       })
       return false
     }
-  }
-
-  function startTeamWorkspaceUpgradeFlow() {
-    hide()
-    openTeamWorkspaceDialog(() => {
-      try {
-        sessionStorage.setItem(RESUME_PRICING_KEY, '1')
-      } catch {
-        return
-      }
-    }).catch((error) => {
-      console.error(
-        '[useSubscriptionDialog] Failed to open team workspaces dialog:',
-        error
-      )
-      void showPricingTable()
-    })
   }
 
   async function restoreCheckoutSelection(
@@ -300,6 +361,7 @@ export const useSubscriptionDialog = () => {
     const initialCheckout = await restoreCheckoutSelection(pending)
     await showPricingTable({
       planMode: pending.selection.planMode,
+      resumingCheckout: true,
       ...(initialCheckout && { initialCheckout })
     })
   }
@@ -307,28 +369,12 @@ export const useSubscriptionDialog = () => {
   async function resumePendingPricingFlow(): Promise<void> {
     const pendingCheckout = getPendingSubscriptionCheckout()
     if (pendingCheckout) return resumePendingCheckout(pendingCheckout)
-
-    try {
-      const pending = sessionStorage.getItem(RESUME_PRICING_KEY)
-      if (!pending) return
-      sessionStorage.removeItem(RESUME_PRICING_KEY)
-
-      if (!workspaceStore.isInPersonalWorkspace) {
-        await showPricingTable({
-          reason: 'team_upgrade_resume',
-          planMode: 'team'
-        })
-      }
-    } catch {
-      return
-    }
   }
 
   return {
     show: showPricingTable,
     showPricingTable,
     hide,
-    startTeamWorkspaceUpgradeFlow,
     resumePendingPricingFlow
   }
 }

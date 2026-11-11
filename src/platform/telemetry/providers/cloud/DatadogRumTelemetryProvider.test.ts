@@ -7,8 +7,8 @@ import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { DEFAULT_LIGHT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
@@ -62,7 +62,7 @@ describe('DatadogRumTelemetryProvider', () => {
   ])(
     'reports the active $paletteId theme after startup',
     ({ paletteId, expectedScheme }) => {
-      useColorPaletteStore().activePaletteId = paletteId
+      useThemeStore().activePresetId = paletteId
       const registry = new TelemetryRegistry()
       registry.registerProvider(new DatadogRumTelemetryProvider())
 
@@ -71,6 +71,7 @@ describe('DatadogRumTelemetryProvider', () => {
         total_ms: 123,
         phase_count: 0,
         untraced_ms: 123,
+        hidden_ms: 0,
         phases: {}
       })
 
@@ -82,8 +83,8 @@ describe('DatadogRumTelemetryProvider', () => {
   )
 
   it('reports custom themes without sending their user-defined IDs', () => {
-    useColorPaletteStore().addCustomPalette({
-      ...DEFAULT_LIGHT_COLOR_PALETTE,
+    useThemeStore().addCustomPreset({
+      ...DEFAULT_LIGHT_THEME_PRESET,
       id: 'private-palette-name'
     })
 
@@ -92,6 +93,7 @@ describe('DatadogRumTelemetryProvider', () => {
       total_ms: 123,
       phase_count: 0,
       untraced_ms: 123,
+      hidden_ms: 0,
       phases: {}
     })
 
@@ -109,6 +111,7 @@ describe('DatadogRumTelemetryProvider', () => {
         total_ms: 123,
         phase_count: 0,
         untraced_ms: 123,
+        hidden_ms: 0,
         phases: {}
       })
 

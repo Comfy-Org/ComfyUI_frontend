@@ -12,6 +12,7 @@
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
+        @play="handlePlay"
         @pause="handlePause"
         @error="handleError"
       />
@@ -141,6 +142,7 @@ import MenuItemContent from '@comfyorg/design-system/menu/MenuItemContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
 
 import { formatTime } from '@/utils/formatUtil'
+import { reloadFailedMedia } from '@/utils/mediaReloadUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -194,7 +196,7 @@ const togglePlayPause = async () => {
 
   isPlaying.value = true
   try {
-    if (audio.error) audio.load()
+    if (audio.error) reloadFailedMedia(audio)
     await audio.play()
     if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
   } catch (error) {
@@ -257,6 +259,12 @@ const handleTimeUpdate = () => {
   if (audioRef.value) {
     currentTime.value = audioRef.value.currentTime
   }
+}
+
+const handlePlay = () => {
+  if (!audioRef.value || audioRef.value.paused) return
+  isPlaying.value = true
+  toast.dismiss(playbackErrorToastId)
 }
 
 const handlePause = () => {
@@ -331,15 +339,11 @@ const menuItems = computed(() => [
   }
 ])
 
-watch(modelValue, (value) => {
+watch(modelValue, () => {
   playAttempt++
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
   audioRef.value?.pause()
-  if (value) {
-    audioRef.value?.load()
-    return
-  }
   currentTime.value = 0
   duration.value = 0
 })
