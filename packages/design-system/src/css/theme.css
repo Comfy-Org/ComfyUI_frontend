@@ -254,8 +254,6 @@ audio.comfy-audio.empty-audio-widget {
     font-size 0.1s ease;
 }
 
-@import './_mask-editor.css';
-
 /* ===================== Skeleton Shimmer ===================== */
 .skeleton-shimmer {
   background:

@@ -51,9 +51,9 @@ const GRAPH_ID = 'maskeditor-loader-test'
 
 function createLoadImageNode(
   widgetValue: string,
-  images?: LGraphNode['images']
+  images?: LGraphNode['images'],
+  nodeId = toNodeId(7)
 ): LGraphNode {
-  const nodeId = toNodeId(7)
   useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
     type: 'string',
     value: widgetValue,
@@ -88,6 +88,33 @@ describe('useMaskEditorLoader', () => {
     mockDataStore.inputData = null
     mockDataStore.sourceNode = null
     vi.stubGlobal('Image', MockImage)
+  })
+
+  it('does not publish a closed editor load after the next editor has loaded', async () => {
+    const pending: VoidFunction[] = []
+    vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
+      pending.push(callback)
+    })
+    const controller = new AbortController()
+    const oldNode = createLoadImageNode('old.png [input]')
+    const oldLoad = useMaskEditorLoader().loadFromNode(
+      oldNode,
+      controller.signal
+    )
+    controller.abort()
+    vi.mocked(globalThis.queueMicrotask).mockRestore()
+    const currentNode = createLoadImageNode(
+      'current.png [input]',
+      undefined,
+      toNodeId(8)
+    )
+    await useMaskEditorLoader().loadFromNode(currentNode)
+
+    pending.forEach((complete) => complete())
+    await oldLoad
+
+    expect(mockDataStore.inputData?.sourceRef.filename).toBe('current.png')
+    expect(mockDataStore.sourceNode).toBe(currentNode)
   })
 
   it('loads layer files from the input root for saves without a subfolder prefix', async () => {
