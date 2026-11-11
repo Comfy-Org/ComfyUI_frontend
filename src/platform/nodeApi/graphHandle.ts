@@ -475,6 +475,13 @@ export function createGraphApi(
   const handleFor = (nodeId: string) =>
     nodeHandles().handleFor(nodeId) as NodeHandle
 
+  const nodeOnScreen = (handle: NodeHandle): LGraphNode | undefined => {
+    const graph = getGraph()
+    return graph && handle.graphId === graph.id
+      ? (graph.getNodeById(toNodeId(handle.id)) ?? undefined)
+      : undefined
+  }
+
   const groupHandle = createGroupHandles(handleFor)
   const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
 
@@ -577,9 +584,8 @@ export function createGraphApi(
     select(nodes, { add = false } = {}) {
       const canvas = extensionValue(LGraphCanvas.active_canvas)
       if (!canvas) return
-      const graph = getGraph()
       const resolved = nodes
-        .map((node) => graph?.getNodeById(toNodeId(node.id)))
+        .map((node) => nodeOnScreen(node))
         .filter((node) => !!node)
       if (!add) canvas.deselectAll()
       if (resolved.length) canvas.selectNodes(resolved, add)
@@ -623,7 +629,7 @@ export function createGraphApi(
     },
 
     centerOn(node) {
-      const target = getGraph()?.getNodeById(toNodeId(node.id))
+      const target = nodeOnScreen(node)
       if (target) {
         extensionValue(LGraphCanvas.active_canvas)?.centerOnNode(target)
       }

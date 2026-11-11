@@ -1,13 +1,22 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionStore } from '@/stores/executionStore'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 import { api as backendApi } from '@/scripts/api'
 
 import {
@@ -319,6 +328,45 @@ describe('comfy API root', () => {
 
       expect(inSecond.title).toBe('second')
       expect(inFirst.title).toBe('retargeted')
+    })
+
+    it('selects and centers on a kept handle only while its graph is on screen', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const elsewhere = new LGraphNode('elsewhere')
+      const onScreen = new LGraphNode('on screen')
+      first.add(elsewhere)
+      second.add(onScreen)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const kept = comfy.graph.node(String(elsewhere.id))!
+      active = second
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        second,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const centerOnNode = vi.spyOn(canvas, 'centerOnNode')
+
+      comfy.graph.select([kept])
+      comfy.graph.centerOn(kept)
+
+      expect(elsewhere.id).toBe(onScreen.id)
+      expect(comfy.graph.selection()).toEqual([])
+      expect(centerOnNode).not.toHaveBeenCalled()
+
+      const visible = comfy.graph.node(String(onScreen.id))!
+      comfy.graph.select([visible])
+      comfy.graph.centerOn(visible)
+
+      expect(comfy.graph.selection().map((node) => node.getTitle())).toEqual([
+        'on screen'
+      ])
+      expect(centerOnNode).toHaveBeenCalledWith(onScreen)
     })
 
     it('keeps retained slot and widget collections bound to their graph', () => {
