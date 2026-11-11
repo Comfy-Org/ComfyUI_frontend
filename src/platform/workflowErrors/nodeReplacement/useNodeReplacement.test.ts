@@ -2121,7 +2121,7 @@ describe('useNodeReplacement', () => {
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
       const { replaceNodesInPlace } = useNodeReplacement()
-      replaceNodesInPlace([
+      const result = replaceNodesInPlace([
         makeMissingNodeType('PaddedNode', {
           new_node_id: 'ImageScaleBy',
           old_node_id: 'PaddedNode',
@@ -2131,6 +2131,7 @@ describe('useNodeReplacement', () => {
         })
       ])
 
+      expect(result).toEqual(['PaddedNode'])
       expect(newNode.widgets![0].value).toBe(expected)
     })
   })
