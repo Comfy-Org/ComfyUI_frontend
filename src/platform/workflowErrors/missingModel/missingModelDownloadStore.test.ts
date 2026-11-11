@@ -46,7 +46,11 @@ const hostDownloadModel =
 
 function seedMissingModel() {
   useMissingModelStore().setMissingModels([
-    fromPartial<MissingModelCandidate>({ name: model.name, isMissing: true })
+    fromPartial<MissingModelCandidate>({
+      name: model.name,
+      directory: model.directory,
+      isMissing: true
+    })
   ])
 }
 
@@ -98,7 +102,11 @@ describe(useMissingModelDownloadStore, () => {
       .spyOn(missingModelStore, 'refreshMissingModels')
       .mockResolvedValue(undefined)
     missingModelStore.setMissingModels([
-      fromPartial<MissingModelCandidate>({ name: model.name, isMissing: true })
+      fromPartial<MissingModelCandidate>({
+        name: model.name,
+        directory: model.directory,
+        isMissing: true
+      })
     ])
     missingModelStore.isRefreshingMissingModels = true
     const store = useMissingModelDownloadStore()
@@ -337,5 +345,81 @@ describe(useMissingModelDownloadStore, () => {
     })
 
     expect(store.stateFor(model).status).toBe('downloading')
+  })
+  it('keeps a finished download finished when a late event carries no job id', () => {
+    installDesktopHost()
+    seedMissingModel()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('completed')
+    emitHostProgress('downloading', { id: undefined })
+
+    expect(store.stateFor(model).status).toBe('done')
+  })
+
+  it('does not request a model again once its download finished', () => {
+    installDesktopHost()
+    seedMissingModel()
+    vi.spyOn(useMissingModelStore(), 'refreshMissingModels').mockReturnValue(
+      new Promise(() => {})
+    )
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('completed')
+
+    store.download(model)
+
+    expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('does not re-check missing models when an unrelated download finishes', () => {
+    installDesktopHost()
+    seedMissingModel()
+    const refreshMissingModels = vi
+      .spyOn(useMissingModelStore(), 'refreshMissingModels')
+      .mockResolvedValue(undefined)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('completed', {
+      filename: 'other.safetensors',
+      url: 'https://huggingface.co/comfy/test/resolve/main/other.safetensors'
+    })
+
+    expect(refreshMissingModels).not.toHaveBeenCalled()
+  })
+
+  it('forgets failed downloads and still resets when unsubscribing throws', () => {
+    installDesktopHost()
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      onDownloadProgress: (listener) => {
+        progressListeners.push(listener)
+        return () => {
+          throw new Error('unsubscribe failed')
+        }
+      }
+    }
+    const store = useMissingModelDownloadStore()
+    const stopTracking = store.startTracking()
+    emitHostProgress('error')
+
+    expect(stopTracking).toThrow('unsubscribe failed')
+    expect(store.stateFor(model).status).toBe('idle')
+  })
+
+  it('treats received bytes beyond the total as an unknown total', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('downloading', {
+      progress: 0.4,
+      receivedBytes: 2048,
+      totalBytes: 1024
+    })
+
+    expect(store.stateFor(model)).toMatchObject({ fraction: 0.4 })
   })
 })

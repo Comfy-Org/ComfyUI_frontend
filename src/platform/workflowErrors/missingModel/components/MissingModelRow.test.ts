@@ -804,6 +804,7 @@ describe('MissingModelRow', () => {
       missingModelStore.setMissingModels([
         fromPartial<MissingModelCandidate>({
           name: 'model.safetensors',
+          directory: 'checkpoints',
           isMissing: true
         })
       ])
@@ -828,6 +829,7 @@ describe('MissingModelRow', () => {
       missingModelStore.setMissingModels([
         fromPartial<MissingModelCandidate>({
           name: 'model.safetensors',
+          directory: 'checkpoints',
           isMissing: true
         })
       ])

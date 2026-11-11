@@ -19,6 +19,12 @@ describe(formatDownloadedBytes, () => {
       label: '256 MB'
     },
     { case: 'a zero total', received: 256 * MB, total: 0, label: '256 MB' },
+    {
+      case: 'more received than the total',
+      received: 2048 * MB,
+      total: 1024 * MB,
+      label: '2 GB'
+    },
     { case: 'no counts', received: null, total: null, label: undefined }
   ])('labels a download with $case as $label', ({ received, total, label }) => {
     expect(

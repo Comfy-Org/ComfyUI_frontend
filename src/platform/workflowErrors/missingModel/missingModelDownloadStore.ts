@@ -46,8 +46,8 @@ function validCount(value: number | undefined): number | null {
 function progressFraction(progress: ComfyDownloadProgress): number | null {
   const received = validCount(progress.receivedBytes)
   const total = validCount(progress.totalBytes)
-  if (received !== null && total !== null && total > 0) {
-    return Math.min(1, received / total)
+  if (received !== null && total !== null && total > 0 && received <= total) {
+    return received / total
   }
   return Number.isFinite(progress.progress) &&
     progress.progress >= 0 &&
@@ -98,8 +98,11 @@ function acceptsEvent(
   progress: ComfyDownloadProgress
 ): boolean {
   if (!current) return true
-  if (progress.id !== undefined && current.endedJobs.has(progress.id))
+  if (progress.id === undefined) {
+    if (current.state.status === 'done') return false
+  } else if (current.endedJobs.has(progress.id)) {
     return false
+  }
   return !isActive(current.state) || current.url === progress.url
 }
 
@@ -174,12 +177,16 @@ export const useMissingModelDownloadStore = defineStore(
         isTerminal(state) && jobId !== undefined
           ? new Set([...(current?.endedJobs ?? []), jobId])
           : (current?.endedJobs ?? new Set<string>())
-      const hasMissingModels =
-        !!missingModelStore.missingModelCandidates?.length
+      const isMissing = !!missingModelStore.missingModelCandidates?.some(
+        (candidate) =>
+          candidate.name === progress.filename &&
+          (progress.directory === undefined ||
+            candidate.directory === progress.directory)
+      )
       downloads.set(key, {
         name: progress.filename,
         url: progress.url,
-        state: state.status === 'done' && !hasMissingModels ? IDLE : state,
+        state: state.status === 'done' && !isMissing ? IDLE : state,
         jobId,
         endedJobs
       })
@@ -187,7 +194,7 @@ export const useMissingModelDownloadStore = defineStore(
       if (
         state.status === 'done' &&
         current?.state.status !== 'done' &&
-        hasMissingModels
+        isMissing
       ) {
         refreshPending = true
         flushRefresh()
@@ -198,12 +205,15 @@ export const useMissingModelDownloadStore = defineStore(
       if (!hostReportsModelDownloadProgress()) return () => undefined
       const stop =
         window.__comfyDesktop2?.onDownloadProgress?.(applyHostProgress)
-      if (!stop) return () => undefined
+      if (typeof stop !== 'function') return () => undefined
       tracking = true
       return () => {
         tracking = false
-        stop()
-        resetWhere((download) => isActive(download.state))
+        try {
+          stop()
+        } finally {
+          resetWhere(() => true)
+        }
       }
     }
 
@@ -233,7 +243,11 @@ export const useMissingModelDownloadStore = defineStore(
       }
       const key = getModelFileKey(model)
       const current = downloads.get(key)
-      if (current && isActive(current.state)) return
+      if (
+        current &&
+        (isActive(current.state) || current.state.status === 'done')
+      )
+        return
 
       const request = ++nextRequest
       downloads.set(key, {
