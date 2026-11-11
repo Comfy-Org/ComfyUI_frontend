@@ -45,7 +45,6 @@ export type AddCreditsState =
   | { readonly step: 'auto_top_up_failed'; readonly setupUrl?: string }
   | { readonly step: 'landed' }
 
-/** What the server reports about turning auto top-up on with a paid top-up. */
 export type AutoTopUpActivationOutcome =
   | { readonly status: 'on'; readonly settings: AutoTopUpActivation }
   | { readonly status: 'failed' }

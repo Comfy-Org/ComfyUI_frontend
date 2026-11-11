@@ -260,7 +260,6 @@ export function footerCopyFor(
   }
 }
 
-/** The Billing auto top-up dialog's message for a field error, word for word. */
 export function autoTopUpFieldMessage(
   error: AutoTopUpFieldError,
   values: AutoTopUpFormValues,
@@ -300,7 +299,6 @@ export function autoTopUpFieldMessage(
 
 export const BILLING_TOKEN = '{billing}'
 
-/** The consent by card, split around where the Billing link renders. */
 export function autoTopUpConsentParts(
   defaultCard: AutoTopUpDefaultCard | null,
   max: string,

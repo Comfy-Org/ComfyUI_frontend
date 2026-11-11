@@ -15,19 +15,21 @@ import {
   validateAutoTopUp
 } from '@comfyorg/account-core/billing'
 
-/** What Continue sends about auto top-up with this purchase. */
 export type AddCreditsAutoTopUpRequest =
   | { readonly kind: 'not_offered' }
   | { readonly kind: 'unchecked' }
   | { readonly kind: 'invalid' }
   | { readonly kind: 'checked'; readonly activation: AutoTopUpActivation }
 
+export type AutoTopUpEdit = {
+  [K in keyof AutoTopUpFormInput]: [field: K, value: AutoTopUpFormInput[K]]
+}[keyof AutoTopUpFormInput]
+
 export function useAddCreditsAutoTopUp(
   offer: MaybeRefOrGetter<AddCreditsAutoTopUpOffer>,
   amountCents: MaybeRefOrGetter<number | undefined>
 ) {
   const checked = shallowRef(false)
-  const targetEdited = shallowRef(false)
   const edits = shallowRef<Partial<AutoTopUpFormInput>>({})
 
   const creditsPicked = computed(() =>
@@ -39,7 +41,7 @@ export function useAddCreditsAutoTopUp(
       ...startAutoTopUpForm(creditsPicked.value),
       ...edits.value
     }
-    return targetEdited.value
+    return edits.value.target !== undefined
       ? merged
       : {
           ...merged,
@@ -69,8 +71,7 @@ export function useAddCreditsAutoTopUp(
       : { kind: 'checked', activation }
   })
 
-  function edit(field: keyof AutoTopUpFormInput, value: string | boolean) {
-    if (field === 'target') targetEdited.value = true
+  function edit(...[field, value]: AutoTopUpEdit) {
     edits.value = { ...edits.value, [field]: value }
   }
 
