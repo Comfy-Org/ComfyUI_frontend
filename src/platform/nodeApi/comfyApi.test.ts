@@ -17,6 +17,9 @@ import {
 } from './comfyApi'
 import { ComfyUnsupportedError } from './errors'
 
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
+
 describe('comfy API root', () => {
   let graph: LGraph
 
@@ -243,6 +246,58 @@ describe('comfy API root', () => {
       expect(inFirst.widgets![0].value).toBe(9)
       expect(inSecond.outputs[0].label).toBeUndefined()
       expect(inFirst.outputs[0].label).toBe('renamed')
+    })
+
+    it('hands a lifecycle callback the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const created: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('OwnedProbe', (builder) =>
+        builder.onCreated((node) =>
+          created.push([node.graphId, node.getTitle()])
+        )
+      )
+      const dispose = comfy.defs.define({ type: 'OwnedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('OwnedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('OwnedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        expect(created).toEqual([
+          [root.id, 'outer'],
+          [subgraph.id, 'inner']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('delivers no lifecycle callback for a node outside any graph', () => {
+      const comfy = createComfyApi(() => graph)
+      const configured = vi.fn()
+      comfy.defs.extend('DetachedProbe', (builder) =>
+        builder.onConfigured(configured)
+      )
+      const dispose = comfy.defs.define({ type: 'DetachedProbe' })
+
+      try {
+        const original = LiteGraph.createNode('DetachedProbe')!
+        graph.add(original)
+        reportError.mockClear()
+
+        original.clone()
+
+        expect(configured).not.toHaveBeenCalled()
+        expect(reportError).not.toHaveBeenCalled()
+      } finally {
+        dispose()
+      }
     })
   })
 
