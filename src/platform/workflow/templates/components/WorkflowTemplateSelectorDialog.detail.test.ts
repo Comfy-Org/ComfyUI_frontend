@@ -13,7 +13,10 @@ import type {
   WorkflowTemplates
 } from '@comfyorg/api-client/templateTypes'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type {
+  PreparedWorkflowTemplate,
+  useTemplateWorkflows
+} from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type {
   TemplateSortMode,
@@ -23,9 +26,10 @@ import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/temp
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const fixtures = await vi.hoisted(async () => {
-  const { zLegacyLoadableWorkflow } =
+  const { zComfyWorkflow } =
     await import('@comfyorg/graph-model/workflowSchema')
   const activeModel = {
     name: 'active-model.safetensors',
@@ -68,8 +72,10 @@ const fixtures = await vi.hoisted(async () => {
     data: {
       strict: true,
       template,
-      json: zLegacyLoadableWorkflow.parse({
+      json: zComfyWorkflow.parse({
         version: 0.4,
+        last_node_id: 5,
+        last_link_id: 0,
         nodes: [
           {
             id: 1,
@@ -94,11 +100,18 @@ const fixtures = await vi.hoisted(async () => {
               widgets_values: [model.name]
             })
           )
-        ],
+        ].map((node) => ({
+          pos: [0, 0],
+          size: [200, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          ...node
+        })),
         links: []
       })
     }
-  }
+  } satisfies PreparedWorkflowTemplate
   const customPrepared = {
     ...prepared,
     sourceModule: 'custom.extension'
@@ -153,7 +166,9 @@ const mocks = vi.hoisted(() => ({
   openPreparedWorkflowTemplate: vi.fn<
     () => Promise<'loaded' | 'graph-failed' | 'not-started'>
   >(async () => 'loaded'),
-  prepareWorkflowTemplate: vi.fn(async () => fixtures.prepared),
+  prepareWorkflowTemplate: vi.fn<
+    ReturnType<typeof useTemplateWorkflows>['prepareWorkflowTemplate']
+  >(async () => fixtures.prepared),
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
@@ -347,23 +362,24 @@ function samplePrepared({
   strict?: boolean
   nodeType?: string
   sourceRevision?: string | null
-} = {}) {
+} = {}): PreparedWorkflowTemplate {
   const models: ModelFile[] = []
+  const json = zComfyWorkflow.parse({
+    ...fixtures.prepared.data.json,
+    nodes: [
+      {
+        ...fixtures.prepared.data.json.nodes[0],
+        type: nodeType,
+        properties: { models },
+        widgets_values: ['subject.png']
+      }
+    ],
+    links: []
+  })
   return {
     ...fixtures.prepared,
     data: {
-      strict,
-      json: {
-        nodes: [
-          {
-            ...fixtures.prepared.data.json.nodes[0],
-            type: nodeType,
-            properties: { models },
-            widgets_values: ['subject.png']
-          }
-        ],
-        links: []
-      },
+      ...(strict ? { strict: true, json } : { strict: false, json }),
       template: {
         ...fixtures.template,
         io: {

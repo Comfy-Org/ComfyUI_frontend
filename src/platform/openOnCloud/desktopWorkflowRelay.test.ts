@@ -26,11 +26,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-assert('happyDOM' in window)
-const { happyDOM } = window
-assert.instanceOf(happyDOM, DetachedWindowAPI)
-
 function openAt(url: string) {
+  assert('happyDOM' in window)
+  const { happyDOM } = window
+  assert.instanceOf(happyDOM, DetachedWindowAPI)
   const previous = window.location.href
   happyDOM.setURL(url)
   onTestFinished(() => happyDOM.setURL(previous))
