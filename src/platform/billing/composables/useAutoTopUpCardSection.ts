@@ -10,8 +10,8 @@ import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTo
 import { useAutoTopUpCardCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { AUTO_TOP_UP_SETUP_PATH } from '@/platform/billing/composables/useAutoTopUpSetupOffer'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 /** The auto top-up card's served state, copy and Platform link while the card is shown. */
@@ -93,8 +93,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
   )
 
   const { href, track } = usePlatformHandoff(
-    () =>
-      action.value === 'turn_on' ? AUTO_TOP_UP_SETUP_PATH : '/profile/billing',
+    () => platformAutoTopUpPath(action.value),
     () => ({ target: 'auto_top_up', action: action.value })
   )
 

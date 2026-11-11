@@ -4,15 +4,13 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
-
-/** Platform Billing with its Turn on auto top-up dialog open on arrival. */
-export const AUTO_TOP_UP_SETUP_PATH = '/profile/billing?auto_top_up=setup'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 
 /** Platform Billing's Turn on auto top-up link while the served facts offer it, and the offer's telemetry. */
 export function useAutoTopUpSetupOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
-  const { href, track } = usePlatformHandoff(AUTO_TOP_UP_SETUP_PATH, {
+  const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
     target: 'auto_top_up',
     action: 'turn_on'
   })
