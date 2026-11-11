@@ -779,6 +779,45 @@ describe('a defined node type', () => {
       stop()
     }
   })
+
+  it('leaves a later definition in place when an earlier disposer runs again', () => {
+    const api = createComfyApi(() => new LGraph())
+    const relay = {
+      type: 'ReusedRelay',
+      execution: 'frontend',
+      inputs: [{ name: 'in', type: 'IMAGE' }],
+      outputs: [{ name: 'out', type: 'IMAGE' }],
+      resolve: () => ({})
+    } as const
+    const disposeFirst = api.defs.define(relay)
+    disposeFirst()
+    const disposeSecond = api.defs.define(relay)
+
+    try {
+      disposeFirst()
+
+      expect(LiteGraph.createNode('ReusedRelay')).not.toBeNull()
+      expect(api.defs.has('ReusedRelay')).toBe(true)
+      expect(frontendResolverMap().has('ReusedRelay')).toBe(true)
+    } finally {
+      disposeSecond()
+    }
+  })
+
+  it('leaves a class registered over the definition in place when disposed', () => {
+    const api = createComfyApi(() => new LGraph())
+    const dispose = api.defs.define({ type: 'RegisteredOver' })
+    class Replacement extends LGraphNode {}
+    LiteGraph.registerNodeType('RegisteredOver', Replacement)
+
+    try {
+      dispose()
+
+      expect(LiteGraph.registered_node_types.RegisteredOver).toBe(Replacement)
+    } finally {
+      LiteGraph.unregisterNodeType('RegisteredOver')
+    }
+  })
 })
 
 describe('how a node arrived', () => {

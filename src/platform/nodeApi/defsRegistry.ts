@@ -1294,6 +1294,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
     LiteGraph.registerNodeType(type, Defined)
 
     return () => {
+      if (!registration.active) return
       registration.active = false
       registrations.delete(registration)
       frontendResolvers.delete(type)
@@ -1301,7 +1302,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       promptInputProjectors.delete(type)
       previewSubscribers.delete(type)
       unplacedLinkSubscribers.delete(type)
-      LiteGraph.unregisterNodeType(type)
+      if (LiteGraph.registered_node_types[type] === Defined) {
+        LiteGraph.unregisterNodeType(type)
+      }
       known.delete(type)
     }
   }
