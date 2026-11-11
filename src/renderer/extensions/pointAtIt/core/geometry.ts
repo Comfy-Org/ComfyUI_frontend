@@ -15,6 +15,8 @@ export type Side = 'right' | 'left' | 'below' | 'above'
 const COVERAGE_GRID = 5
 const PLACEMENT_GAP = 12
 const VIEWPORT_MARGIN = 8
+const ATTACH_GAP = 16
+const TAIL_INSET = 20
 
 export function rectContains(rect: Rect, point: Point): boolean {
   return (
@@ -106,6 +108,21 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(value, Math.max(min, max)))
 }
 
+function pullInside(position: Point, size: Size, viewport: Size): Point {
+  return {
+    x: clamp(
+      position.x,
+      VIEWPORT_MARGIN,
+      viewport.width - size.width - VIEWPORT_MARGIN
+    ),
+    y: clamp(
+      position.y,
+      VIEWPORT_MARGIN,
+      viewport.height - size.height - VIEWPORT_MARGIN
+    )
+  }
+}
+
 /**
  * Top-left corner for a box placed next to `anchor`: the first side in
  * `order` where it fits the window, otherwise the first side pulled inside.
@@ -120,21 +137,61 @@ export function placeBeside(
   const chosen =
     candidates.find((candidate) => fits(candidate, size, viewport)) ??
     candidates[0]
+  return pullInside(chosen, size, viewport)
+}
+
+export interface Attachment {
+  position: Point
+  side: Side
+  tail: number
+}
+
+function attachedPosition(anchor: Rect, size: Size, side: Side): Point {
+  const centre = rectCenter(anchor)
+  if (side === 'right')
+    return {
+      x: anchor.x + anchor.width + ATTACH_GAP,
+      y: centre.y - TAIL_INSET
+    }
+  if (side === 'left')
+    return {
+      x: anchor.x - size.width - ATTACH_GAP,
+      y: centre.y - TAIL_INSET
+    }
+  if (side === 'below')
+    return {
+      x: centre.x - TAIL_INSET,
+      y: anchor.y + anchor.height + ATTACH_GAP
+    }
+  return { x: centre.x - TAIL_INSET, y: anchor.y - size.height - ATTACH_GAP }
+}
+
+export function placeAttached(
+  anchor: Rect,
+  size: Size,
+  viewport: Size,
+  order: readonly Side[]
+): Attachment {
+  const candidates = order.map((side) => ({
+    side,
+    position: attachedPosition(anchor, size, side)
+  }))
+  const chosen =
+    candidates.find((candidate) => fits(candidate.position, size, viewport)) ??
+    candidates[0]
+  const position = pullInside(chosen.position, size, viewport)
+  const centre = rectCenter(anchor)
+  const alongX = chosen.side === 'above' || chosen.side === 'below'
+  const reach = alongX ? centre.x - position.x : centre.y - position.y
+  const extent = alongX ? size.width : size.height
   return {
-    x: clamp(
-      chosen.x,
-      VIEWPORT_MARGIN,
-      viewport.width - size.width - VIEWPORT_MARGIN
-    ),
-    y: clamp(
-      chosen.y,
-      VIEWPORT_MARGIN,
-      viewport.height - size.height - VIEWPORT_MARGIN
-    )
+    position,
+    side: chosen.side,
+    tail: clamp(reach, TAIL_INSET, extent - TAIL_INSET)
   }
 }
 
-const FLIGHT_MS = 450
+export const FLIGHT_MS = 450
 
 /** Where a pointer flying from `from` to `to` is after `elapsedMs`. */
 export function flightPosition(

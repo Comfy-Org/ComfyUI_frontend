@@ -11,6 +11,7 @@
     }"
   />
   <div
+    v-if="!view.landed"
     data-testid="point-at-it-pointer"
     class="absolute top-0 left-0 flex items-start gap-1"
     :style="{
@@ -31,11 +32,33 @@
     ref="bubble"
     data-testid="point-at-it-bubble"
     class="pointer-events-auto absolute flex w-80 flex-col gap-2 rounded-lg border border-solid border-border bg-background p-3 shadow-md"
-    :style="{ left: `${position.x}px`, top: `${position.y}px` }"
+    :style="{
+      left: `${placement.position.x}px`,
+      top: `${placement.position.y}px`
+    }"
   >
-    <p v-if="answers" class="m-0 truncate text-xs text-muted-foreground">
-      {{ messages.answersComment(answers.number, answers.label) }}
-    </p>
+    <span
+      v-if="view.ring"
+      data-testid="point-at-it-tail"
+      aria-hidden="true"
+      :class="
+        cn(
+          'absolute size-2.5 -translate-1/2 rotate-45 border-solid border-border bg-background',
+          tail.classes
+        )
+      "
+      :style="tail.style"
+    />
+    <div v-if="answers" class="flex items-center gap-2">
+      <span
+        class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-foreground"
+      >
+        {{ answers.number }}
+      </span>
+      <p class="m-0 truncate text-xs text-muted-foreground">
+        {{ messages.answersComment(answers.label) }}
+      </p>
+    </div>
     <div class="flex items-start gap-2">
       <p class="m-0 flex-1 whitespace-pre-line">{{ step.text }}</p>
       <Button
@@ -84,8 +107,9 @@ import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import { placeBeside } from './geometry'
+import { placeAttached } from './geometry'
 import type { Side } from './geometry'
 import { messages } from './messages'
 import type { GuidanceStep } from './replyValidation'
@@ -117,12 +141,31 @@ const windowSize = useWindowSize()
 
 const isLast = computed(() => index === total - 1)
 
-const position = computed(() =>
-  placeBeside(
+const placement = computed(() =>
+  placeAttached(
     view.ring ?? { ...view.pointer, width: 0, height: 0 },
     { width: bubbleSize.width.value, height: bubbleSize.height.value },
     { width: windowSize.width.value, height: windowSize.height.value },
     step.target?.kind === 'control' ? UNDER_CONTROL : BESIDE_TARGET
   )
 )
+
+const TAIL_BORDERS: Record<Side, string> = {
+  right: 'border-b border-l',
+  left: 'border-t border-r',
+  below: 'border-t border-l',
+  above: 'border-b border-r'
+}
+
+const tail = computed(() => {
+  const { side, tail: offset } = placement.value
+  const at = `${offset}px`
+  const style = {
+    right: { left: '0', top: at },
+    left: { left: '100%', top: at },
+    below: { left: at, top: '0' },
+    above: { left: at, top: '100%' }
+  }[side]
+  return { classes: TAIL_BORDERS[side], style }
+})
 </script>

@@ -66,7 +66,7 @@
       class="absolute rounded-md ring-2 ring-primary"
       :style="rectStyle(draftAnchor)"
     />
-    <template v-for="pin in pins" :key="pin.id">
+    <template v-for="pin in shownPins" :key="pin.id">
       <Button
         v-if="pin.rect"
         variant="primary"
@@ -205,9 +205,16 @@ const draftTargetNote = computed(() => {
   const pin = pins.value.find((candidate) => candidate.id === draftKey.value)
   return pin?.missing ? messages.targetGoneNote : messages.targetHiddenNote
 })
+const answeredId = computed(() =>
+  state.value.phase === 'guiding'
+    ? state.value.steps[state.value.index].annotationId
+    : null
+)
+const shownPins = computed(() =>
+  pins.value.filter((pin) => pin.id !== answeredId.value)
+)
 const answeredComment = computed(() => {
-  if (state.value.phase !== 'guiding') return null
-  const { annotationId } = state.value.steps[state.value.index]
+  const annotationId = answeredId.value
   const index = annotations.value.findIndex(
     (annotation) => annotation.id === annotationId
   )

@@ -8,7 +8,13 @@ import { reduceAnnotations } from './annotationList'
 import type { Annotation, AnnotationEvent } from './annotationList'
 import { pointConfig } from './config'
 import type { PointConfig } from './config'
-import { flightPosition, isInView, rectCenter, unionRects } from './geometry'
+import {
+  FLIGHT_MS,
+  flightPosition,
+  isInView,
+  rectCenter,
+  unionRects
+} from './geometry'
 import type { Point, Rect } from './geometry'
 import { draftForSelection, matchMark, targetAtPoint } from './markMatching'
 import type { PickedTarget } from './markMatching'
@@ -52,6 +58,7 @@ interface SessionOptions {
 export interface GuidanceView {
   ring: Rect | null
   pointer: Point
+  landed: boolean
 }
 
 /** Where a comment's pin is drawn; `rect` is null when its target is not drawn. */
@@ -206,7 +213,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
           ? startWatch(host.readTarget(wait.of)?.value, performance.now())
           : null
     }
-    view.value = { ring: null, pointer: from }
+    view.value = { ring: null, pointer: from, landed: false }
     revealIfHidden(step.target)
   }
 
@@ -296,7 +303,12 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       return
     }
     const ring = reading?.rect ?? null
-    const next = { ring, pointer: pointerAt(stepRun, step.target, ring, now) }
+    const pointer = pointerAt(stepRun, step.target, ring, now)
+    const landed =
+      ring !== null &&
+      stepRun.flightStartedAt !== null &&
+      now - stepRun.flightStartedAt >= FLIGHT_MS
+    const next = { ring, pointer, landed }
     if (!sameJson(view.value, next)) view.value = next
   }
 

@@ -24,8 +24,7 @@ export const messages = {
   editFailed: 'That setting did not accept the value.',
   stepOf: (index: number, total: number) =>
     `${index} of ${total} · Esc to stop`,
-  answersComment: (number: number, label: string) =>
-    `Answers comment ${number} · ${label}`,
+  answersComment: (label: string) => `Answers comment · ${label}`,
   trayTitle: 'Point at it · POC',
   annotate: 'Annotate',
   annotateKey: keyLabel,

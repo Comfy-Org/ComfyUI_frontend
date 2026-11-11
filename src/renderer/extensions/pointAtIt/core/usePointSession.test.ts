@@ -600,7 +600,8 @@ describe('usePointSession: interface elements', () => {
     })
     expect(session.view.value).toEqual({
       ring: { x: 1180, y: 8, width: 80, height: 32 },
-      pointer: { x: 1220, y: 40 }
+      pointer: { x: 1220, y: 40 },
+      landed: true
     })
   })
 })
@@ -738,12 +739,15 @@ describe('usePointSession: guidance', () => {
     const { host, session } = startGuidance('how do I make this wider?')
 
     expect(session.view.value?.pointer).toEqual({ x: 700, y: 295 })
+    vi.advanceTimersByTime(FRAME_MS * 2)
+    expect(session.view.value?.landed).toBe(false)
     vi.advanceTimersByTime(600)
 
     expect(host.revealed).toEqual([])
     expect(session.view.value).toEqual({
       ring: { x: 260, y: 384, width: 180, height: 18 },
-      pointer: { x: 424, y: 393 }
+      pointer: { x: 424, y: 393 },
+      landed: true
     })
   })
 
@@ -756,7 +760,8 @@ describe('usePointSession: guidance', () => {
 
     expect(session.view.value).toEqual({
       ring: { x: 60, y: 84, width: 90, height: 9 },
-      pointer: { x: 134, y: 88.5 }
+      pointer: { x: 134, y: 88.5 },
+      landed: true
     })
   })
 
@@ -828,7 +833,8 @@ describe('usePointSession: guidance', () => {
 
     expect(session.view.value).toEqual({
       ring: null,
-      pointer: { x: 700, y: 295 }
+      pointer: { x: 700, y: 295 },
+      landed: false
     })
 
     session.finish()
