@@ -44,6 +44,12 @@ test('a handoff tab shows the full-page checkout that billing capabilities serve
     )
   ).toEqual([])
   await expect(page).not.toHaveURL(/\/sign-in/)
+  expect(
+    await page.evaluate(async () =>
+      (await indexedDB.databases()).map((database) => database.name)
+    ),
+    'billing-web never starts its own Firebase sign-in in a handoff tab'
+  ).not.toContain('firebaseLocalStorageDb')
 })
 
 test('a handoff tab shows the embedded checkout when billing capabilities serve it', async ({
