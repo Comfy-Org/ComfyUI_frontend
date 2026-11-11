@@ -9,10 +9,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { effectScope } from 'vue'
-import type { EffectScope } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import type { NavigationFailure, RouteLocationNormalized } from 'vue-router'
+import { createApp, effectScope } from 'vue'
+import type { App, EffectScope } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import type {
+  LocationQueryRaw,
+  RouteLocationNormalized,
+  Router
+} from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
@@ -21,7 +25,9 @@ import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -32,7 +38,6 @@ import '@/scripts/changeTracker'
 
 import { useWorkflowLinkUrlLoader } from './useWorkflowLinkUrlLoader'
 
-vi.mock(import('vue-router'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -88,40 +93,6 @@ function holdLookup() {
   return () => respond()
 }
 
-function navigateToLink(workflowId: string) {
-  const query = useRoute().query
-  Object.keys(query).forEach((key) => {
-    delete query[key]
-  })
-  query.workflowId = workflowId
-  capturePreservedQuery(NAMESPACE, { workflowId }, ['workflowId'])
-}
-
-function stashLink(workflowId: string) {
-  capturePreservedQuery(NAMESPACE, { workflowId }, ['workflowId'])
-}
-
-const HOME: RouteLocationNormalized = {
-  path: '/',
-  fullPath: '/',
-  name: undefined,
-  params: {},
-  query: {},
-  hash: '',
-  matched: [],
-  meta: {},
-  redirectedFrom: undefined
-}
-
-function cancelledNavigation(): NavigationFailure {
-  const cancelled: NavigationFailure['type'] = 8
-  return Object.assign(new Error('Navigation cancelled'), {
-    type: cancelled,
-    from: HOME,
-    to: HOME
-  })
-}
-
 function refuse(status: number, body: object) {
   vi.spyOn(api, 'fetchApi').mockResolvedValue(Response.json(body, { status }))
 }
@@ -133,38 +104,84 @@ async function openExistingTab() {
   return { store, existing, active: store.activeWorkflow }
 }
 
+function isUrlCleanup(to: RouteLocationNormalized): boolean {
+  return !('workflowId' in to.query)
+}
+
+function isNewerLink(to: RouteLocationNormalized): boolean {
+  return to.query.workflowId === NEXT_ID
+}
+
 describe('workflow-id links', () => {
-  let loader: ReturnType<typeof useWorkflowLinkUrlLoader>
+  let router: Router
+  let app: App
   let scope: EffectScope
-  beforeEach(() => {
-    scope = effectScope()
-    onTestFinished(() => scope.stop())
-    const scopedLoader = scope.run(useWorkflowLinkUrlLoader)
-    assert.exists(scopedLoader)
-    loader = scopedLoader
+  let loader: ReturnType<typeof useWorkflowLinkUrlLoader>
+
+  function inApp<T>(composable: () => T): T {
+    const result = app.runWithContext(() => scope.run(composable))
+    assert.exists(result)
+    return result
+  }
+
+  function currentQuery() {
+    return router.currentRoute.value.query
+  }
+
+  async function navigate(query: LocationQueryRaw) {
+    await router.push({ path: '/', query })
+  }
+
+  function holdNavigation(matches: (to: RouteLocationNormalized) => boolean) {
+    let arrive: () => void = () => {}
+    let release: () => void = () => {}
+    const arrived = new Promise<void>((resolve) => {
+      arrive = resolve
+    })
+    const released = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const removeGuard = router.beforeEach(async (to) => {
+      if (!matches(to)) return
+      arrive()
+      await released
+    })
+    return {
+      arrived,
+      release: () => {
+        removeGuard()
+        release()
+      }
+    }
+  }
+
+  function runUrlActions() {
+    return inApp(useUrlActionLoaders).runUrlActionLoaders()
+  }
+
+  beforeEach(async () => {
     distribution.isCloud = true
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE)
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-    vi.mocked(useRouter().replace).mockImplementation(async (to) => {
-      const query = useRoute().query
-      Object.keys(query).forEach((key) => {
-        delete query[key]
-      })
-      if (typeof to === 'object' && 'query' in to)
-        Object.assign(query, to.query)
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { render: () => null } }]
     })
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+    app = createApp({})
+    app.use(router)
+    await router.push('/')
+    scope = effectScope()
+    onTestFinished(() => scope.stop())
+    loader = inApp(useWorkflowLinkUrlLoader)
   })
 
   it('opens the sidebar file the workflow id names, in front of restored tabs', async () => {
     serveFile()
-    Object.assign(useRoute().query, {
-      workflowId: ID,
-      workflows: 'other',
-      keep: 'yes'
-    })
+    await navigate({ workflowId: ID, workflows: 'other', keep: 'yes' })
     const { store, existing } = await openExistingTab()
     vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async (workflow) => {
@@ -184,7 +201,7 @@ describe('workflow-id links', () => {
       existing.path,
       PATH
     ])
-    expect(useRoute().query).toEqual({ keep: 'yes' })
+    expect(currentQuery()).toEqual({ keep: 'yes' })
     expect(
       useTelemetry()?.trackWorkflowLinkOpened
     ).toHaveBeenCalledExactlyOnceWith({
@@ -223,7 +240,7 @@ describe('workflow-id links', () => {
     ])
     const store = useWorkflowStore()
     await store.loadWorkflows()
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async (workflow) => {
         await store.openWorkflow(workflow)
@@ -238,31 +255,30 @@ describe('workflow-id links', () => {
 
   it('reports one result across boot consumers when URL cleanup fails', async () => {
     serveFile()
-    Object.assign(useRoute().query, { workflowId: ID })
-    vi.mocked(useRouter().replace).mockRejectedValueOnce(new Error('cancelled'))
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
-    const scope = effectScope()
-    try {
-      const consumers = scope.run(() => [
-        useWorkflowLinkUrlLoader(),
-        useWorkflowLinkUrlLoader()
-      ])
-      assert.exists(consumers)
+    const failCleanupOnce = vi
+      .fn(() => true)
+      .mockImplementationOnce(() => {
+        throw new Error('cancelled')
+      })
+    router.beforeEach(failCleanupOnce)
+    const consumers = [
+      inApp(useWorkflowLinkUrlLoader),
+      inApp(useWorkflowLinkUrlLoader)
+    ]
 
-      expect(await consumers[0].openWorkflowLinkFromUrl()).toBe('opened')
-      await consumers[1].openWorkflowLinkFromUrl(true)
+    expect(await consumers[0].openWorkflowLinkFromUrl()).toBe('opened')
+    await consumers[1].openWorkflowLinkFromUrl(true)
 
-      expect(api.fetchApi).toHaveBeenCalledTimes(1)
-      expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
-      expect(useRoute().query).toEqual({})
-    } finally {
-      scope.stop()
-    }
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
+    expect(currentQuery()).toEqual({})
   })
 
   it('opens nothing and leaves restored tabs on 404', async () => {
     refuse(404, { code: 'NOT_FOUND', message: 'not found' })
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
     const { store, existing, active } = await openExistingTab()
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
@@ -273,7 +289,7 @@ describe('workflow-id links', () => {
       "Couldn't open this workflow"
     ])
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-    expect(useRoute().query).toEqual({})
+    expect(currentQuery()).toEqual({})
     expect(
       useTelemetry()?.trackWorkflowLinkOpened
     ).toHaveBeenCalledExactlyOnceWith({
@@ -326,7 +342,7 @@ describe('workflow-id links', () => {
         message: 'workflows/Car swap.json is out of sync',
         ...body
       })
-      Object.assign(useRoute().query, { workflowId: ID, workflows: 'Car swap' })
+      await navigate({ workflowId: ID, workflows: 'Car swap' })
       const { store, existing, active } = await openExistingTab()
       const contentRead = vi.spyOn(api, 'getUserData')
 
@@ -340,7 +356,7 @@ describe('workflow-id links', () => {
       expect(useToast().toasts.map(({ title }) => title)).toEqual([
         "Couldn't open this workflow"
       ])
-      expect(useRoute().query).toEqual({})
+      expect(currentQuery()).toEqual({})
       expect(
         useTelemetry()?.trackWorkflowLinkOpened
       ).toHaveBeenCalledExactlyOnceWith({
@@ -364,7 +380,7 @@ describe('workflow-id links', () => {
     'treats a 409 with $name as out of sync for an unknown reason',
     async ({ response }) => {
       vi.spyOn(api, 'fetchApi').mockResolvedValue(response())
-      Object.assign(useRoute().query, { workflowId: ID })
+      await navigate({ workflowId: ID })
 
       expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
 
@@ -383,24 +399,36 @@ describe('workflow-id links', () => {
     'rejects malformed workflowId %j without a request',
     async (workflowId) => {
       const request = vi.spyOn(api, 'fetchApi')
-      Object.assign(useRoute().query, { workflowId })
+      await navigate({ workflowId })
 
       expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
 
       expect(request).not.toHaveBeenCalled()
       expect(useToast().toasts[0]?.title).toBe("Couldn't open this workflow")
-      expect(useRoute().query).toEqual({})
+      expect(currentQuery()).toEqual({})
     }
   )
+
+  it('rejects an empty workflowId while an older link is still stashed', async () => {
+    const request = vi.spyOn(api, 'fetchApi')
+    capturePreservedQuery(NAMESPACE, { workflowId: ID }, ['workflowId'])
+    await navigate({ workflowId: '' })
+
+    expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
+
+    expect(request).not.toHaveBeenCalled()
+    expect(useToast().toasts[0]?.title).toBe("Couldn't open this workflow")
+    expect(currentQuery()).toEqual({})
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(loader.hasLinkInFlight()).toBe(false)
+  })
 
   it.for(['workspace', 'deployment'])(
     'keeps a stashed link until the %s navigation finishes',
     async (namespace) => {
       const request = vi.spyOn(api, 'fetchApi')
-      capturePreservedQuery(NAMESPACE, { workflowId: ID }, ['workflowId'])
-      capturePreservedQuery(namespace, { [namespace]: 'destination' }, [
-        namespace
-      ])
+      await navigate({ workflowId: ID, [namespace]: 'destination' })
+      await navigate({})
 
       expect(await loader.openWorkflowLinkFromUrl()).toBe('pending')
 
@@ -419,12 +447,12 @@ describe('workflow-id links', () => {
   it('does nothing outside Cloud', async () => {
     distribution.isCloud = false
     const request = vi.spyOn(api, 'fetchApi')
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('absent')
 
     expect(request).not.toHaveBeenCalled()
-    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(currentQuery()).toEqual({ workflowId: ID })
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
   })
 
@@ -460,7 +488,7 @@ describe('workflow-id links', () => {
     'reports $name as an opening error rather than a missing workflow',
     async ({ response }) => {
       vi.spyOn(api, 'fetchApi').mockResolvedValue(response())
-      Object.assign(useRoute().query, { workflowId: ID })
+      await navigate({ workflowId: ID })
 
       expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
 
@@ -483,6 +511,94 @@ describe('workflow-id links', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'the linked file cannot be read',
+      fail: () => {
+        serveFile('workflows/Customer Jane Doe.json')
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(
+          new Error(
+            "Failed to load file 'workflows/Customer Jane Doe.json': 500 Internal Server Error"
+          )
+        )
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'Error'
+    },
+    {
+      name: 'the lookup reply is not JSON',
+      fail: () => {
+        vi.spyOn(api, 'fetchApi').mockResolvedValue(
+          new Response('workflows/Customer Jane Doe.json')
+        )
+      },
+      reported: new Error('Could not read workflow link'),
+      errorType: 'error_loading_workflow_link',
+      errorName: 'SyntaxError'
+    },
+    {
+      name: 'custom node code throws an error under its own name',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        thrown.name = 'Customer Jane Doe'
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
+    },
+    {
+      name: 'custom node code throws an error whose name changes between reads',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        const names = ['Error', 'Customer Jane Doe']
+        Object.defineProperty(thrown, 'name', {
+          get: () => names.shift() ?? 'Customer Jane Doe'
+        })
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'Error'
+    },
+    {
+      name: 'an error name cannot be read',
+      fail: () => {
+        serveFile()
+        const thrown = new Error('Widget size failed')
+        Object.defineProperty(thrown, 'name', {
+          get: () => {
+            throw new Error('Customer Jane Doe')
+          }
+        })
+        vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(thrown)
+      },
+      reported: new Error('Could not open workflow link'),
+      errorType: 'error_opening_workflow_link',
+      errorName: 'other'
+    }
+  ])(
+    'reports that $name without the file name or the error text',
+    async ({ fail, reported, errorType, errorName }) => {
+      fail()
+      await navigate({ workflowId: ID })
+
+      expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(reported, {
+        surface: 'graph',
+        errorType,
+        context: { error_name: errorName }
+      })
+      expect(vi.mocked(reportError).mock.calls[0]?.[0]).not.toHaveProperty(
+        'cause'
+      )
+    }
+  )
+
   it('keeps the intent if the workspace changes during the lookup', async () => {
     vi.spyOn(api, 'fetchApi').mockImplementation(async () => {
       Object.assign(useTeamWorkspaceStore(), {
@@ -490,27 +606,27 @@ describe('workflow-id links', () => {
       })
       return new Response(null, { status: 404 })
     })
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('pending')
 
-    expect(useRoute().query.workflowId).toBe(ID)
+    expect(currentQuery().workflowId).toBe(ID)
     expect(useToast().toasts).toEqual([])
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
   })
 
   it('leaves a link the browser navigated to while an earlier lookup waited', async () => {
     const respond = holdLookup()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
 
     const attempt = loader.openWorkflowLinkFromUrl()
-    navigateToLink(NEXT_ID)
+    await navigate({ workflowId: NEXT_ID })
     respond()
 
     expect(await attempt).toBe('pending')
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-    expect(useRoute().query).toEqual({ workflowId: NEXT_ID })
+    expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
     expect(useToast().toasts).toEqual([])
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
@@ -518,7 +634,7 @@ describe('workflow-id links', () => {
 
   it('opens and clears nothing when the editor unmounts while the lookup waits', async () => {
     const respond = holdLookup()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
 
     const attempt = loader.openWorkflowLinkFromUrl()
@@ -527,7 +643,7 @@ describe('workflow-id links', () => {
 
     expect(await attempt).toBe('pending')
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(currentQuery()).toEqual({ workflowId: ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(ID)
     expect(useToast().toasts).toEqual([])
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
@@ -535,37 +651,32 @@ describe('workflow-id links', () => {
 
   it.for([
     {
-      name: 'finished navigating there',
-      navigate: async () => navigateToLink(NEXT_ID),
+      name: 'finished navigating to a newer link',
+      newer: { workflowId: NEXT_ID },
       route: NEXT_ID,
       stash: NEXT_ID
     },
     {
-      name: 'holds it in a navigation guard',
-      navigate: async () => {
-        stashLink(NEXT_ID)
-        return cancelledNavigation()
-      },
-      route: ID,
-      stash: NEXT_ID
-    },
-    {
-      name: 'cancelled the cleanup first',
-      navigate: async () => cancelledNavigation(),
+      name: 'navigated elsewhere with the same link',
+      newer: { workflowId: ID, keep: 'yes' },
       route: ID,
       stash: ID
     }
   ])(
-    'leaves a newer link when the browser $name while an opened link cleared the URL',
-    async ({ navigate, route, stash }) => {
+    'leaves the link when the browser $name while an opened link cleared the URL',
+    async ({ newer, route, stash }) => {
       serveFile()
-      navigateToLink(ID)
+      await navigate({ workflowId: ID })
       vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
-      vi.mocked(useRouter().replace).mockImplementation(navigate)
+      const cleanup = holdNavigation(isUrlCleanup)
 
-      expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
+      const attempt = loader.openWorkflowLinkFromUrl(true)
+      await cleanup.arrived
+      await navigate(newer)
+      cleanup.release()
 
-      expect(useRoute().query.workflowId).toBe(route)
+      expect(await attempt).toBe('opened')
+      expect(currentQuery().workflowId).toBe(route)
       expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(stash)
       expect(
         useTelemetry()?.trackWorkflowLinkOpened
@@ -576,28 +687,97 @@ describe('workflow-id links', () => {
     }
   )
 
-  it('leaves a newer link the browser navigated to while a settled link cleared the URL again', async () => {
+  it('leaves a newer link a navigation guard holds while an opened link cleared the URL', async () => {
     serveFile()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
-    vi.mocked(useRouter().replace).mockRejectedValueOnce(new Error('cancelled'))
-    expect(await loader.openWorkflowLinkFromUrl()).toBe('opened')
-    vi.mocked(useRouter().replace).mockImplementation(async () => {
-      stashLink(NEXT_ID)
-      return cancelledNavigation()
-    })
+    const cleanup = holdNavigation(isUrlCleanup)
+    const signIn = holdNavigation(isNewerLink)
 
-    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
+    const attempt = loader.openWorkflowLinkFromUrl(true)
+    await cleanup.arrived
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await signIn.arrived
+    cleanup.release()
 
-    expect(api.fetchApi).toHaveBeenCalledTimes(1)
-    expect(useRoute().query.workflowId).toBe(ID)
+    expect(await attempt).toBe('opened')
+    expect(currentQuery()).toEqual({ workflowId: ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    signIn.release()
+    await newerLink
+    expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
+  })
+
+  it('leaves a newer malformed link a navigation guard holds while an older malformed link is rejected', async () => {
+    const request = vi.spyOn(api, 'fetchApi')
+    await navigate({ workflowId: 'bad1' })
+    const signIn = holdNavigation((to) => to.query.workflowId === 'bad2')
+    const newerLink = navigate({ workflowId: 'bad2', topup: '1' })
+    await signIn.arrived
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('pending')
+
+    expect(request).not.toHaveBeenCalled()
+    expect(currentQuery()).toEqual({ workflowId: 'bad1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe('bad2')
+    signIn.release()
+    await newerLink
+    expect(currentQuery()).toEqual({ workflowId: 'bad2', topup: '1' })
+  })
+
+  it('leaves a newer empty link a navigation guard holds after a newer guard-held link superseded the lookup', async () => {
+    const respond = holdLookup()
+    await navigate({ workflowId: ID })
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    const newerHold = holdNavigation(isNewerLink)
+    const emptyHold = holdNavigation((to) => to.query.workflowId === '')
+
+    const attempt = loader.openWorkflowLinkFromUrl()
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await newerHold.arrived
+    const emptyLink = navigate({ workflowId: '', topup: '1' })
+    await emptyHold.arrived
+    respond()
+
+    expect(await attempt).toBe('pending')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
+    newerHold.release()
+    emptyHold.release()
+    await Promise.all([newerLink, emptyLink])
+    expect(currentQuery()).toEqual({ workflowId: '', topup: '1' })
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ topup: '1' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(loader.hasLinkInFlight()).toBe(false)
+  })
+
+  it('reports an empty link once when another navigation cancels its URL cleanup, and clears it later', async () => {
+    await navigate({ workflowId: '' })
+    const cleanup = holdNavigation((to) => isUrlCleanup(to) && !to.query.keep)
+
+    const attempt = loader.openWorkflowLinkFromUrl(true)
+    await cleanup.arrived
+    await navigate({ keep: 'yes' })
+    cleanup.release()
+
+    expect(await attempt).toBe('failed')
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(',')
+    expect(loader.hasLinkInFlight()).toBe(false)
+
+    expect(await loader.openWorkflowLinkFromUrl(true)).toBe('failed')
+
+    expect(currentQuery()).toEqual({ keep: 'yes' })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
+    expect(useToast().toasts).toHaveLength(1)
     expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps a boot link opened when an unrelated navigation cancels its URL cleanup, and clears it later without reopening', async () => {
+  it('keeps a boot link opened when another navigation cancels its URL cleanup, and clears it later without reopening', async () => {
     serveFile()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     const { store } = await openExistingTab()
     vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async (workflow) => {
@@ -605,54 +785,54 @@ describe('workflow-id links', () => {
         return true
       }
     )
-    vi.mocked(useRouter().replace).mockResolvedValueOnce(cancelledNavigation())
-    const linkedLoader = scope.run(useLinkedWorkflowUrlLoader)
-    assert.exists(linkedLoader)
+    const cleanup = holdNavigation(isUrlCleanup)
+    const linkedLoader = inApp(useLinkedWorkflowUrlLoader)
 
-    expect(await linkedLoader.openLinkedWorkflowFromUrl()).toBe('opened')
+    const boot = linkedLoader.openLinkedWorkflowFromUrl()
+    await cleanup.arrived
+    await navigate({ workflowId: ID, keep: 'yes' })
+    cleanup.release()
+
+    expect(await boot).toBe('opened')
     expect(store.activeWorkflow?.path).toBe(PATH)
-    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(currentQuery()).toEqual({ workflowId: ID, keep: 'yes' })
 
     expect(await loader.openWorkflowLinkFromUrl(true)).toBe('opened')
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(store.activeWorkflow?.path).toBe(PATH)
-    expect(useRoute().query).toEqual({})
+    expect(currentQuery()).toEqual({ keep: 'yes' })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBeUndefined()
     expect(useTelemetry()?.trackWorkflowLinkOpened).toHaveBeenCalledTimes(1)
   })
 
-  function runUrlActions() {
-    Object.assign(useRouter(), { currentRoute: { value: useRoute() } })
-    const urlActions = scope.run(useUrlActionLoaders)
-    assert.exists(urlActions)
-    return urlActions.runUrlActionLoaders()
-  }
-
-  function holdNewerLinkInGuard() {
-    vi.mocked(useRouter().replace).mockImplementation(async () => {
-      stashLink(NEXT_ID)
-      return cancelledNavigation()
-    })
-  }
-
   it('runs the URL actions without another replace while a newer link waits in a navigation guard', async () => {
     serveFile()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
-    holdNewerLinkInGuard()
+    const replace = vi.spyOn(router, 'replace')
+    const cleanup = holdNavigation(isUrlCleanup)
+    const signIn = holdNavigation(isNewerLink)
 
-    await runUrlActions()
+    const actions = runUrlActions()
+    await cleanup.arrived
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await signIn.arrived
+    cleanup.release()
+    await actions
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-    expect(useRouter().replace).toHaveBeenCalledOnce()
-    expect(useRoute().query).toEqual({ workflowId: ID })
+    expect(replace).toHaveBeenCalledOnce()
+    expect(currentQuery()).toEqual({ workflowId: ID })
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    signIn.release()
+    await newerLink
+    expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
   })
 
-  it('keeps a boot link opened and makes no other replace while a newer link waits in a navigation guard', async () => {
+  it('lets a newer link held in a navigation guard land when the URL actions run after the boot link opened', async () => {
     serveFile()
-    navigateToLink(ID)
+    await navigate({ workflowId: ID })
     const { store } = await openExistingTab()
     vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async (workflow) => {
@@ -660,19 +840,26 @@ describe('workflow-id links', () => {
         return true
       }
     )
-    vi.mocked(useRouter().replace).mockResolvedValueOnce(cancelledNavigation())
-    const linkedLoader = scope.run(useLinkedWorkflowUrlLoader)
-    assert.exists(linkedLoader)
-    expect(await linkedLoader.openLinkedWorkflowFromUrl()).toBe('opened')
-    holdNewerLinkInGuard()
+    const replace = vi.spyOn(router, 'replace')
+    const cleanup = holdNavigation(isUrlCleanup)
+    const signIn = holdNavigation(isNewerLink)
+    const linkedLoader = inApp(useLinkedWorkflowUrlLoader)
 
+    const boot = linkedLoader.openLinkedWorkflowFromUrl()
+    await cleanup.arrived
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await signIn.arrived
+    cleanup.release()
+    expect(await boot).toBe('opened')
     await runUrlActions()
+    signIn.release()
+    await newerLink
 
+    expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
+    expect(replace).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(store.activeWorkflow?.path).toBe(PATH)
-    expect(useRouter().replace).toHaveBeenCalledTimes(2)
-    expect(useRoute().query).toEqual({ workflowId: ID })
-    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
   })
 
   it('clears the other URL actions while a link from the stash waits for a workspace change', async () => {
@@ -682,13 +869,14 @@ describe('workflow-id links', () => {
       })
       return new Response(null, { status: 404 })
     })
-    stashLink(ID)
-    Object.assign(useRoute().query, { topup: '1' })
+    await navigate({ workflowId: ID })
+    await navigate({ topup: '1' })
+    const replace = vi.spyOn(router, 'replace')
 
     await runUrlActions()
 
-    expect(useRouter().replace).toHaveBeenCalledOnce()
-    expect(useRoute().query).toEqual({})
+    expect(replace).toHaveBeenCalledOnce()
+    expect(currentQuery()).toEqual({})
     expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(ID)
     expect(useTelemetry()?.trackWorkflowLinkOpened).not.toHaveBeenCalled()
   })
@@ -696,7 +884,7 @@ describe('workflow-id links', () => {
   it('reports an opening error when the sidebar file is not in the workflow list after a sync', async () => {
     serveFile()
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue([])
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('failed')
 
@@ -712,7 +900,7 @@ describe('workflow-id links', () => {
 
   it('keeps tabs unchanged when the sidebar file cannot be opened', async () => {
     serveFile()
-    Object.assign(useRoute().query, { workflowId: ID })
+    await navigate({ workflowId: ID })
     const { store, existing, active } = await openExistingTab()
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(false)
 
