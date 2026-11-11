@@ -338,7 +338,7 @@ test.describe(
         .getByLabel('text', { exact: true })
       const agentEditedField = agentConversation.vueNodes
         .getNodeLocator('3')
-        .getByLabel('steps', { exact: true })
+        .getByRole('spinbutton', { name: 'steps', exact: true })
       const localValue = 'keep this completed local edit'
 
       await agentConversation.sendPrompt(0)
@@ -355,7 +355,7 @@ test.describe(
       })
       await agentConversation.waitForTurnComplete()
 
-      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(agentEditedField).toHaveValue('30')
       await expect(textField).toHaveValue(localValue)
     })
   }
