@@ -468,6 +468,40 @@ describe('auth token priority chain', () => {
       expect(header).toEqual({ 'X-API-KEY': 'test-key' })
     })
 
+    it('getWorkspaceAuthHeader sends the stored API key when an API key is the only login', async () => {
+      authStateCallback(null)
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeaderOrThrow()).resolves.toEqual({
+        'X-API-KEY': 'test-key'
+      })
+    })
+
+    it('getWorkspaceAuthHeader keeps the unified Cloud JWT for a signed-in user', async () => {
+      useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer unified-jwt'
+      })
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('getWorkspaceAuthHeader never sends a stored API key for a signed-in user whose mint failed', async () => {
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
+    })
+
     it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
