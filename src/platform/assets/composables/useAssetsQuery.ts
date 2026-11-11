@@ -3,12 +3,12 @@ import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetResponseSchema } from '@comfyorg/assets-core/schema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { api } from '@/scripts/api'
 import { getPagedList, usePreemptableQueue } from '@/utils/pagedList'
 import type { SharedPagedListState, PagedList } from '@/utils/pagedList'
-import { encodeParams } from '@/utils/requestUtil'
+import { encodeParams } from '@comfyorg/assets-core/query'
 
 interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void

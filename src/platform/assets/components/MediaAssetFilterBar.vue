@@ -89,7 +89,7 @@ import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
-import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@comfyorg/assets-core/media'
 
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'

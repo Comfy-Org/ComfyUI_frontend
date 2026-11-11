@@ -14,7 +14,7 @@ import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
-import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import { createAssetWidget } from '@/platform/assets/integration/createAssetWidget'
 import {
   getComboSpecComboOptions,
   isComboInputSpec

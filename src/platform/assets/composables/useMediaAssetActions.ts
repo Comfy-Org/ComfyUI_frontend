@@ -1,81 +1,48 @@
-import { compact, uniqBy } from 'es-toolkit'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
-import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
-  extractApiPromptFromAsset,
-  extractWorkflowFromAsset
-} from '@/platform/workflow/utils/workflowExtractionUtil'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
-import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
-import type { WorkflowOpenResult } from '@/platform/workflow/core/services/workflowActionsService'
-import { useLitegraphService } from '@/services/litegraphService'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+  reconcileDeletedAssetReferences,
+  useAssetEditorActions
+} from '@/platform/assets/integration/assetEditorActions'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { MediaAssetKey } from '@/platform/assets/composables/mediaAssetContext'
+import { assetService } from '@/platform/assets/services/assetService'
+import {
+  buildAssetDeletionPlan,
+  getDeletionNames,
+  getDeletionOperationCount
+} from '@/platform/assets/utils/assetDeletionPlan'
+import type {
+  AssetDeletion,
+  DeleteOperation,
+  JobDeletion
+} from '@/platform/assets/utils/assetDeletionPlan'
+import {
+  buildAssetExportRequest,
+  expandAssetsForDownload,
+  hasGroupedAssetOutputs
+} from '@/platform/assets/utils/assetExportPlan'
 import {
   getAssetDisplayName,
-  getAssetStoredFilename,
-  getOutputSubfolder
-} from '@/platform/assets/utils/assetMetadataUtils'
-import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
+  getAssetType
+} from '@comfyorg/assets-core/metadata'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
-import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
-import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
-import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
 import { getTotalAssetOutputCount } from '@/platform/assets/utils/outputAssetCountUtil'
-import {
-  getStoredOutputIdentity,
-  resolveOutputAssetItems
-} from '@/platform/assets/utils/outputAssetUtil'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { isResultItemType } from '@/utils/typeGuardUtil'
+import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
-import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import { useAssetDownload } from './useAssetDownload'
+import type { AssetDownload } from '@/platform/assets/types/assetDownload'
 import { useAssetZipExport } from './useAssetZipExport'
-import type { AssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
-
-function createAssetWidgetPath(asset: AssetItem): string {
-  const assetType = isGeneratedTempOutput(asset)
-    ? 'temp'
-    : getAssetType(asset, 'input')
-
-  return createAnnotatedPath({
-    filename: getAssetStoredFilename(asset),
-    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
-    type: isResultItemType(assetType) ? assetType : undefined
-  })
-}
-
-function widgetValueVariants(
-  name: string | undefined,
-  type: string | undefined,
-  subfolder?: string,
-  hash?: string
-): string[] {
-  const rootFolder = isResultItemType(type) ? type : undefined
-  return compact([name, hash]).map((filename) =>
-    createAnnotatedPath(filename, { rootFolder, subfolder })
-  )
-}
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -85,44 +52,31 @@ export function useMediaAssetActions() {
   const mediaContext = inject(MediaAssetKey, null)
   const { copyToClipboard } = useCopyToClipboard()
   const { flags } = useFeatureFlags()
-  const workflowActions = useWorkflowActionsService()
-  const litegraphService = useLitegraphService()
-  const nodeDefStore = useNodeDefStore()
+  const { insertAssetLoader, openAssetWorkflow, exportAssetWorkflow } =
+    useAssetEditorActions()
   const { downloadFiles } = useAssetDownload()
   const { startZipExport } = useAssetZipExport()
 
-  /**
-   * Download one or more assets.
-   * When the assets system is enabled, creates a ZIP export via the
-   * backend when called with 2+ assets or with any asset whose job has
-   * `outputCount > 1`.
-   * Otherwise downloads each file directly, expanding grouped assets
-   * (`outputCount > 1`) into their individual outputs.
-   * With no argument, uses the asset from `MediaAssetKey` context.
-   */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
       assets ?? (mediaContext?.asset.value ? [mediaContext.asset.value] : [])
     if (targetAssets.length === 0) return
 
-    const hasMultiOutputJobs = targetAssets.some((a) => {
-      const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
-      return typeof count === 'number' && count > 1
-    })
-
+    const hasMultiOutputJobs = hasGroupedAssetOutputs(targetAssets)
     if (
       flags.assetsEnabled &&
       (targetAssets.length > 1 || hasMultiOutputJobs)
     ) {
-      void downloadAssetsAsZip(targetAssets)
+      void startZipExport(
+        buildAssetExportRequest(targetAssets),
+        getTotalAssetOutputCount(targetAssets)
+      )
       return
     }
-
     if (hasMultiOutputJobs) {
       void downloadAssetsIndividually(targetAssets)
       return
     }
-
     void downloadFiles(targetAssets.map(createAssetDownload))
   }
 
@@ -130,10 +84,6 @@ export function useMediaAssetActions() {
     const url = getAssetFileUrl(asset)
     const filename = getAssetDisplayName(asset)
     if (!isCloud) return { mode: 'direct', url, filename }
-
-    // Required: a bare fetch sends no Authorization header and authenticates by
-    // session cookie, which resolves to the personal workspace — an asset owned
-    // by any other workspace then reads as missing.
     return {
       mode: 'fetch',
       url,
@@ -142,103 +92,18 @@ export function useMediaAssetActions() {
     }
   }
 
-  async function expandAssetForDownload(
-    asset: AssetItem
-  ): Promise<AssetItem[]> {
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    if (
-      !metadata ||
-      typeof metadata.outputCount !== 'number' ||
-      metadata.outputCount <= 1
-    ) {
-      return [asset]
-    }
-
-    try {
-      const resolved = await resolveOutputAssetItems(metadata, {
-        createdAt: asset.created_at
-      })
-      return resolved.length > 0 ? resolved : [asset]
-    } catch (error) {
-      console.error('Failed to expand grouped asset for download:', error)
-      return [asset]
-    }
-  }
-
   async function downloadAssetsIndividually(assets: AssetItem[]) {
-    const expanded = await Promise.all(assets.map(expandAssetForDownload))
-    const seenAssetIds = new Set<string>()
-    const filesToDownload = expanded.flat().filter((asset) => {
-      if (seenAssetIds.has(asset.id)) return false
-      seenAssetIds.add(asset.id)
-      return true
-    })
-
-    await downloadFiles(filesToDownload.map(createAssetDownload))
-  }
-
-  async function downloadAssetsAsZip(assets: AssetItem[]) {
-    const jobIds: string[] = []
-    const assetIds: string[] = []
-    const namesByJobId = new Map<string, Set<string>>()
-    const wholeJobIds = new Set<string>()
-
-    for (const asset of assets) {
-      const assetType = getAssetType(asset)
-      const metadata = getOutputAssetMetadata(asset.user_metadata)
-      const jobId = metadata?.jobId
-      if (jobId && (assetType === 'output' || assetType === 'temp')) {
-        if (!jobIds.includes(jobId)) {
-          jobIds.push(jobId)
-        }
-        // When outputCount is set, the asset is a job-level selection
-        // from the gallery and the user wants all outputs for that job.
-        if (metadata.outputCount != null) {
-          wholeJobIds.add(jobId)
-        } else if (asset.name) {
-          const names = namesByJobId.get(jobId) ?? new Set<string>()
-          names.add(asset.name)
-          namesByJobId.set(jobId, names)
-        }
-      } else {
-        assetIds.push(asset.id)
-      }
-    }
-
-    // A job-level selection outranks any name filter a sibling child of the
-    // same job contributed, whichever order they were selected in.
-    const jobAssetNameFilters = Object.fromEntries(
-      [...namesByJobId]
-        .filter(([jobId]) => !wholeJobIds.has(jobId))
-        .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
-    )
-
-    const spansMultipleJobs = jobIds.length > 1
-    const namingStrategy = spansMultipleJobs ? 'group_by_job_time' : 'preserve'
-
-    await startZipExport(
-      {
-        ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
-        ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
-        ...(Object.keys(jobAssetNameFilters).length > 0
-          ? { job_asset_name_filters: jobAssetNameFilters }
-          : {}),
-        naming_strategy: namingStrategy,
-        include_previews: true
-      },
-      getTotalAssetOutputCount(assets)
-    )
+    const expanded = await expandAssetsForDownload(assets)
+    await downloadFiles(expanded.map(createAssetDownload))
   }
 
   const copyJobId = async (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
-
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const jobId =
       metadata?.jobId ||
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
-
     if (!jobId) {
       toast.warning(t('g.warning'), {
         description: t('mediaAsset.noJobIdFound'),
@@ -246,120 +111,36 @@ export function useMediaAssetActions() {
       })
       return
     }
-
     await copyToClipboard(jobId)
   }
 
-  /**
-   * Add a loader node to the current workflow for this asset
-   * Uses shared utility to detect appropriate node type based on file extension
-   */
   const addWorkflow = async (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
-
-    // Detect node type using shared utility
-    const { nodeType, widgetName } = detectNodeTypeFromFilename(
-      targetAsset.name
-    )
-
-    if (!nodeType || !widgetName) {
+    const result = insertAssetLoader(targetAsset)
+    if (result.kind === 'unsupported') {
       toast.warning(t('g.warning'), {
         description: t('mediaAsset.unsupportedFileType'),
         duration: 2000
       })
-      return
-    }
-
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-
-    const node = withNodeAddSource('programmatic', () =>
-      litegraphService.addNodeOnGraph(nodeDef, {
-        pos: litegraphService.getCanvasCenter()
-      })
-    )
-
-    if (!node) {
+    } else if (result.kind === 'failed') {
       toast.error(t('g.error'), {
         description: t('mediaAsset.failedToCreateNode')
       })
-      return
-    }
-
-    const annotated = createAssetWidgetPath(targetAsset)
-
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
-      widget.value = annotated
-      widget.callback?.(annotated)
-    }
-    node.graph?.setDirtyCanvas(true, true)
-
-    toast.success(t('g.success'), {
-      description: t('mediaAsset.nodeAddedToWorkflow', { nodeType }),
-      duration: 2000
-    })
-  }
-
-  /**
-   * Open the asset's stored API-format graph as a new workflow, the way the
-   * canvas already does when an API-format JSON file is dropped onto it.
-   *
-   * Layout is invented and groups/reroutes cannot survive API format, so the
-   * result is reopenable rather than faithful. It is only handed to the editor
-   * — nothing is written back to the job or the asset.
-   */
-  const openApiPromptAsWorkflow = async (
-    asset: AssetItem,
-    filename: string
-  ): Promise<WorkflowOpenResult> => {
-    try {
-      const apiPrompt = await extractApiPromptFromAsset(asset)
-      if (!app.isApiJson(apiPrompt)) return { success: false }
-
-      await app.loadApiJson(apiPrompt, filename)
-      return { success: true }
-    } catch (error) {
-      console.error('Failed to open API graph as workflow:', error)
-      reportError(error, {
-        surface: 'assets',
-        errorType: 'asset_api_prompt_open_failure'
+    } else {
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.nodeAddedToWorkflow', {
+          nodeType: result.nodeType
+        }),
+        duration: 2000
       })
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : undefined,
-        errorPresentation: isGraphLoadFailurePresented(error)
-          ? 'handled'
-          : undefined
-      }
     }
   }
 
-  /**
-   * Open an asset's workflow in a new tab, falling back to the stored API
-   * graph for assets whose job embeds no workflow (API submissions)
-   */
-  const isAlreadyPresented = (result: WorkflowOpenResult) =>
-    result.errorPresentation === 'handled'
-
-  const openAssetWorkflow = async (asset: AssetItem) => {
-    const { workflow, filename } = await extractWorkflowFromAsset(asset)
-
-    return workflow
-      ? await workflowActions.openWorkflowAction(workflow, filename)
-      : await openApiPromptAsWorkflow(asset, filename)
-  }
-
-  /**
-   * Open the workflow from this asset in a new tab
-   * Uses shared workflow extraction and action service
-   */
   const openWorkflow = async (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
-
     const result = await openAssetWorkflow(targetAsset)
-
     if (result.success) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.workflowOpenedInNewTab'),
@@ -367,34 +148,18 @@ export function useMediaAssetActions() {
       })
       return
     }
-
-    if (isAlreadyPresented(result)) return
-
+    if (result.errorPresentation === 'handled') return
     toast.warning(t('g.warning'), {
       description: result.error || t('mediaAsset.noWorkflowDataFound'),
       duration: 2000
     })
   }
 
-  /**
-   * Export the workflow from this asset as a JSON file
-   * Uses shared workflow extraction and action service
-   */
   const exportWorkflow = async (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
-
-    // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
-
-    // Use shared action service
-    const result = await workflowActions.exportWorkflowAction(
-      workflow,
-      filename
-    )
-
+    const result = await exportAssetWorkflow(targetAsset)
     if (result.cancelled) return
-
     if (!result.success) {
       const kind = result.error?.includes('No workflow') ? 'warning' : 'error'
       toast[kind](t(`g.${kind}`), {
@@ -409,53 +174,14 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Add multiple assets to the current workflow
-   * Creates loader nodes for each asset
-   */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
-    const NODE_OFFSET = 50
-    let nodeIndex = 0
     let succeeded = 0
     let failed = 0
-
     for (const asset of assets) {
-      const { nodeType, widgetName } = detectNodeTypeFromFilename(asset.name)
-
-      if (!nodeType || !widgetName) {
-        failed++
-        continue
-      }
-
-      const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-
-      const center = litegraphService.getCanvasCenter()
-      const node = withNodeAddSource('programmatic', () =>
-        litegraphService.addNodeOnGraph(nodeDef, {
-          pos: [
-            center[0] + nodeIndex * NODE_OFFSET,
-            center[1] + nodeIndex * NODE_OFFSET
-          ]
-        })
-      )
-
-      if (!node) {
-        failed++
-        continue
-      }
-
-      const annotated = createAssetWidgetPath(asset)
-
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      if (widget) {
-        widget.value = annotated
-        widget.callback?.(annotated)
-      }
-      node.graph?.setDirtyCanvas(true, true)
-      succeeded++
-      nodeIndex++
+      const result = insertAssetLoader(asset, succeeded)
+      if (result.kind === 'success') succeeded++
+      else failed++
     }
-
     if (failed === 0) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.selection.nodesAddedToWorkflow', {
@@ -478,29 +204,22 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Open workflows from multiple assets in new tabs
-   */
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
     let succeeded = 0
     let failed = 0
     let alreadyPresented = 0
-
     for (const asset of assets) {
       try {
         const result = await openAssetWorkflow(asset)
-
-        if (result.success) {
-          succeeded++
-        } else {
+        if (result.success) succeeded++
+        else {
           failed++
-          if (isAlreadyPresented(result)) alreadyPresented++
+          if (result.errorPresentation === 'handled') alreadyPresented++
         }
       } catch {
         failed++
       }
     }
-
     if (failed === 0) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.selection.workflowsOpened', {
@@ -509,8 +228,7 @@ export function useMediaAssetActions() {
         duration: 2000
       })
     } else if (succeeded === 0) {
-      const everyFailureAlreadyPresented = alreadyPresented === failed
-      if (!everyFailureAlreadyPresented)
+      if (alreadyPresented !== failed)
         toast.warning(t('g.warning'), {
           description: t('mediaAsset.selection.noWorkflowsFound'),
           duration: 3000
@@ -526,34 +244,19 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Export workflows from multiple assets as JSON files
-   */
   const exportMultipleWorkflows = async (assets: AssetItem[]) => {
     let succeeded = 0
     let failed = 0
-
     for (const asset of assets) {
       try {
-        const { workflow, filename } = await extractWorkflowFromAsset(asset)
-        const result = await workflowActions.exportWorkflowAction(
-          workflow,
-          filename
-        )
-
-        if (result.success) {
-          succeeded++
-        } else if (!result.cancelled) {
-          failed++
-        }
+        const result = await exportAssetWorkflow(asset)
+        if (result.success) succeeded++
+        else if (!result.cancelled) failed++
       } catch {
         failed++
       }
     }
-
-    // All cancelled
     if (succeeded === 0 && failed === 0) return
-
     if (failed === 0) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.selection.workflowsExported', {
@@ -577,110 +280,10 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Show confirmation dialog and delete asset(s) if confirmed
-   * @param assets Single asset or array of assets to delete
-   * @returns true if user confirmed and deletion was attempted, false if cancelled
-   */
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
-    interface BaseDeleteOperation {
-      kind: string
-      dependents?: DeleteOperation[]
-      markDeletionId?: AssetId
-      name?: string
-    }
-    interface AssetDeletion extends BaseDeleteOperation {
-      kind: 'asset'
-      variants: string[]
-      id: AssetId
-      tags?: string[]
-    }
-    interface JobDeletion extends BaseDeleteOperation {
-      kind: 'job'
-      id: string
-    }
-    type DeleteOperation = AssetDeletion | JobDeletion
-
-    function getDeletionPlan(): DeleteOperation[] {
-      if (!flags.assetsEnabled) {
-        const operations: JobDeletion[] = assets.flatMap((asset) => {
-          const markDeletionId = asset.id
-          const { jobId } = getOutputAssetMetadata(asset.user_metadata) ?? {}
-          if (!jobId) return []
-
-          const name = getAssetDisplayName(asset)
-          return [{ kind: 'job', id: jobId, name, markDeletionId }]
-        })
-        return uniqBy(operations, (op) => op.id)
-      }
-      return assets.flatMap((asset) => {
-        const markDeletionId = asset.id
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        const childAssets: AssetDeletion[] = (
-          metadata?.allOutputs ?? []
-        ).flatMap((output) => {
-          if (!output.assetId) return []
-
-          const variants = widgetValueVariants(
-            output.filename,
-            output.type,
-            output.subfolder,
-            output.hash
-          )
-          return {
-            kind: 'asset',
-            markDeletionId,
-            name: output.display_name || output.filename,
-            id: output.assetId,
-            tags: asset.tags,
-            variants
-          }
-        })
-        if (childAssets.length > 0) return childAssets
-
-        const stored = getStoredOutputIdentity(asset)
-        const variants = widgetValueVariants(
-          asset.name,
-          isGeneratedTempOutput(asset)
-            ? 'temp'
-            : (stored?.type ?? getAssetType(asset, 'input')),
-          getOutputSubfolder(asset.user_metadata),
-          asset.hash ?? stored?.hash
-        )
-        return [
-          {
-            kind: 'asset',
-            id: asset.id,
-            markDeletionId,
-            name: getAssetDisplayName(asset),
-            tags: asset.tags,
-            variants
-          }
-        ]
-      })
-    }
-
-    function getNames(operation: DeleteOperation): string[] {
-      return [
-        ...(operation.name ? [operation.name] : []),
-        ...(operation.dependents ? operation.dependents.flatMap(getNames) : [])
-      ]
-    }
-    function getOperationCount(
-      kind: string,
-      operation: DeleteOperation[]
-    ): number {
-      return operation.reduce((tally, op) => {
-        const selfCount = op.kind === kind ? 1 : 0
-        const dependents = getOperationCount(kind, op.dependents ?? [])
-        return tally + selfCount + dependents
-      }, 0)
-    }
-
     const deletedVariants = new Set<string>()
     const invalidatedModelTags = new Set<string>()
-
     let deletedAssetCount = 0
     async function deleteAsset(operation: AssetDeletion) {
       await assetService.deleteAsset(operation.id)
@@ -709,7 +312,6 @@ export function useMediaAssetActions() {
           ).flat()
           if (failedDependents.length) return failedDependents
         }
-
         try {
           if (operation.kind === 'asset') await deleteAsset(operation)
           else await deleteJob(operation)
@@ -720,15 +322,15 @@ export function useMediaAssetActions() {
         if (operation.markDeletionId)
           assetsStore.setAssetDeleting(operation.markDeletionId, false)
       }
-
       return []
     }
 
-    const deletionPlan = getDeletionPlan()
+    const deletionPlan = buildAssetDeletionPlan(assets, {
+      assetsEnabled: flags.assetsEnabled
+    })
     if (!deletionPlan.length) return false
-
-    const plannedAssetCount = getOperationCount('asset', deletionPlan)
-    const plannedJobCount = getOperationCount('job', deletionPlan)
+    const plannedAssetCount = getDeletionOperationCount('asset', deletionPlan)
+    const plannedJobCount = getDeletionOperationCount('job', deletionPlan)
     const deleteConfirmed = await dialogService.confirm({
       title: t('mediaAsset.deleteItems'),
       type: 'delete',
@@ -737,50 +339,33 @@ export function useMediaAssetActions() {
         : flags.assetDeletionEnabled
           ? t('mediaAsset.deletePermanent')
           : t('mediaAsset.deleteTombstone'),
-      itemList: deletionPlan.flatMap(getNames)
+      itemList: deletionPlan.flatMap(getDeletionNames)
     })
     if (!deleteConfirmed) return false
-
     const failedDeletions = (
       await Promise.all(deletionPlan.map(performDelete))
     ).flat()
 
-    const rootGraph = app.rootGraph
-    if (deletedVariants.size) {
-      const nodeOutputStore = useNodeOutputStore()
-      markDeletedAssetsAsMissingMedia(rootGraph, deletedVariants)
-      clearNodePreviewCacheForValues(rootGraph, deletedVariants, (node) =>
-        nodeOutputStore.removeNodeOutputsForNode(node)
-      )
-      clearDeletedAssetWidgetValues(rootGraph, deletedVariants)
-      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-    }
-
+    reconcileDeletedAssetReferences(deletedVariants)
     for (const category of invalidatedModelTags)
       assetsStore.invalidateModelsForCategory(category)
-
     if (!flags.assetsEnabled) {
-      const hasOutputAssets = assets.some((a) => {
-        const type = getAssetType(a)
+      const hasOutputAssets = assets.some((asset) => {
+        const type = getAssetType(asset)
         return type === 'output' || type === 'temp'
       })
-      const hasInputAssets = assets.some((a) => getAssetType(a) === 'input')
-
-      if (hasOutputAssets) {
-        await assetsStore.outputAssets.invalidate()
-      }
-      if (hasInputAssets) {
-        await assetsStore.inputAssets.invalidate()
-      }
+      const hasInputAssets = assets.some(
+        (asset) => getAssetType(asset) === 'input'
+      )
+      if (hasOutputAssets) await assetsStore.outputAssets.invalidate()
+      if (hasInputAssets) await assetsStore.inputAssets.invalidate()
     }
-
     const outcome =
       failedDeletions.length === 0
         ? 'success'
         : deletedJobCount || deletedAssetCount
           ? 'warning'
           : 'error'
-
     const resultMessages: string[] = []
     if (plannedAssetCount) {
       resultMessages.push(
@@ -796,7 +381,6 @@ export function useMediaAssetActions() {
         t('mediaAsset.jobsDeleted', { total: plannedJobCount }, deletedJobCount)
       )
     }
-
     toast[outcome](t(`mediaAsset.assetDelete.${outcome}`), {
       description: resultMessages.join('\n'),
       duration: outcome === 'success' ? 2000 : 5000

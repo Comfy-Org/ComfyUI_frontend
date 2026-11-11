@@ -1,7 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { withHdrImageType } from '@/utils/eventUtils'
 import { parseUrl } from '@/utils/urlSafety'

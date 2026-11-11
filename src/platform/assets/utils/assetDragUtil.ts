@@ -14,11 +14,14 @@ import { api } from '@/scripts/api'
 import {
   getAssetType,
   isGeneratedTempOutput
-} from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetUrlFilename, getOutputSubfolder } from './assetMetadataUtils'
+} from '@/platform/assets/adapters/outputAssetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { MIME_ASSET_INFO } from '@/platform/assets/integration/assetDrop'
+import {
+  getAssetUrlFilename,
+  getOutputSubfolder
+} from '@comfyorg/assets-core/metadata'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
 import { parseUrl } from '@/utils/urlSafety'

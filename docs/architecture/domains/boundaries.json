@@ -16,6 +16,53 @@
         ]
       },
       {
+        "name": "assets/public",
+        "patterns": [
+          "packages/assets-core/src/schema.ts",
+          "packages/assets-core/src/metadata.ts",
+          "packages/assets-core/src/filtering.ts",
+          "packages/assets-core/src/media.ts",
+          "packages/assets-core/src/imports.ts",
+          "packages/assets-core/src/selection.ts",
+          "packages/assets-core/src/query.ts",
+          "src/platform/assets/adapters/outputAssetMappers.ts",
+          "src/platform/assets/adapters/outputAssetResolver.ts",
+          "src/platform/assets/components/AssetBrowserModal.vue",
+          "src/platform/assets/components/AssetExportProgressDialog.vue",
+          "src/platform/assets/components/AssetsListItem.vue",
+          "src/platform/assets/components/ModelImportProgressDialog.vue",
+          "src/platform/assets/components/sidebar/AssetsSidebarTab.vue",
+          "src/platform/assets/composables/useAssetBrowserDialog.ts",
+          "src/platform/assets/composables/useAssetDownload.ts",
+          "src/platform/assets/composables/useAssetFilterOptions.ts",
+          "src/platform/assets/composables/useAssetWidgetData.ts",
+          "src/platform/assets/composables/useAssetsUrlLoader.ts",
+          "src/platform/assets/composables/useMediaAssetActions.ts",
+          "src/platform/assets/composables/useModelUpload.ts",
+          "src/platform/assets/constants/assetEvents.ts",
+          "src/platform/assets/integration/assetDrop.ts",
+          "src/platform/assets/integration/createAssetWidget.ts",
+          "src/platform/assets/integration/openModelLibraryBrowser.ts",
+          "src/platform/assets/integration/resolveWidgetValueAsset.ts",
+          "src/platform/assets/integration/startModelNodeDragFromAsset.ts",
+          "src/platform/assets/integration/useAssetsSidebarTab.ts",
+          "src/platform/assets/integration/useModelLibrarySidebarTab.ts",
+          "src/platform/assets/integration/useNodeOutputsExport.ts",
+          "src/platform/assets/services/assetService.ts",
+          "src/platform/assets/stores/assetDownloadStore.ts",
+          "src/platform/assets/stores/assetsStore.ts",
+          "src/platform/assets/stores/useAssetSelectionStore.ts",
+          "src/platform/assets/types/assetDownload.ts",
+          "src/platform/assets/types/modelImport.ts",
+          "src/platform/assets/types/outputAssetMetadata.ts",
+          "src/platform/assets/utils/assetDragUtil.ts",
+          "src/platform/assets/utils/assetPreviewUtil.ts",
+          "src/platform/assets/utils/assetUrlUtil.ts",
+          "src/platform/assets/utils/categoryLabel.ts",
+          "src/platform/assets/utils/mediaIconUtil.ts"
+        ]
+      },
+      {
         "name": "comfyui-api/public",
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
@@ -64,6 +111,7 @@
           "src/platform/remote/ingest/webSessionAdapter.ts",
           "src/platform/remote/ingest/capabilityRevision.ts",
           "packages/ingest-types/src/index.ts",
+          "packages/ingest-types/src/types.gen.ts",
           "packages/ingest-types/src/zod.gen.ts"
         ]
       },
@@ -393,25 +441,6 @@
           "src/utils/electronMirrorCheck.ts",
           "src/utils/envUtil.ts",
           "src/vite-env.d.ts",
-          "src/components/toast/**",
-          "src/composables/useProgressBarBackground.ts",
-          "src/lib/litegraph/src/widgets/AssetWidget.ts",
-          "src/platform/assets/**",
-          "src/stores/assetDownloadStore.ts",
-          "src/stores/assetDownloadStore.test.ts",
-          "src/stores/assetExportStore.ts",
-          "src/stores/assetExportStore.test.ts",
-          "src/stores/assetsStore.ts",
-          "src/stores/assetsStore.test.ts",
-          "src/stores/workspace/assetsSidebarBadgeStore.ts",
-          "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
-          "src/utils/__tests__/eventUtils.test.ts",
-          "src/utils/eventUtils.ts",
-          "src/utils/eventUtils.test.ts",
-          "src/utils/loaderNodeUtil.ts",
-          "src/utils/loaderNodeUtil.test.ts",
-          "src/utils/requestUtil.ts",
-          "src/utils/requestUtil.test.ts",
           "src/base/common/async.ts",
           "src/utils/createCancelToken.ts",
           "src/utils/pagedList.ts",
@@ -658,6 +687,8 @@
           "src/composables/useDismissableOverlay.test.ts",
           "src/composables/usePragmaticDragAndDrop.ts",
           "src/composables/usePragmaticDragAndDrop.test.ts",
+          "src/utils/eventUtils.ts",
+          "src/utils/eventUtils.test.ts",
           "src/extensions/core/load3d/components/cameraAngle/**",
           "src/extensions/core/load3d/components/cameraInfo/**",
           "src/extensions/core/load3d/composables/useCameraAngle.ts",
@@ -1219,6 +1250,7 @@
           "src/lib/litegraph/src/litegraphInstance.ts",
           "src/lib/litegraph/src/polyfills.ts",
           "src/lib/litegraph/src/utils/feedback.ts",
+          "src/lib/litegraph/src/widgets/AssetWidget.ts",
           "src/utils/markdownRendererUtil.ts",
           "src/utils/markdownRendererUtil.test.ts",
           "src/components/sidebar/tabs/queue/**",
@@ -1293,6 +1325,7 @@
           "src/stores/electronDownloadStore.test.ts",
           "src/stores/modelStore.ts",
           "src/stores/modelStore.test.ts",
+          "src/stores/modelNodeMappings.ts",
           "src/stores/modelToNodeStore.ts",
           "src/stores/modelToNodeStore.test.ts",
           "src/platform/navigation/**",
@@ -1355,8 +1388,7 @@
           "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.test.ts",
           "src/components/sidebar/tabs/nodeLibrary/**",
           "src/composables/node/__mocks__/**",
-          "src/composables/node/startModelNodeDragFromAsset.ts",
-          "src/composables/node/startModelNodeDragFromAsset.test.ts",
+          "src/composables/node/startModelLoaderDrag.ts",
           "src/composables/node/useNodeDragToCanvas.ts",
           "src/composables/node/useNodeDragToCanvas.test.ts",
           "src/composables/node/useNodePreviewAndDrag.ts",
@@ -1702,9 +1734,6 @@
           "src/lib/litegraph/src/widgets/CurveWidget.ts",
           "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.desktop.test.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
@@ -1906,6 +1935,10 @@
         ]
       },
       {
+        "name": "assets",
+        "patterns": ["packages/assets-core/src/**", "src/platform/assets/**"]
+      },
+      {
         "name": "image-compare",
         "patterns": [
           "src/extensions/core/imageCompare.ts",
@@ -1991,8 +2024,6 @@
         "patterns": [
           "src/constants/**",
           "src/views/**",
-          "src/components/sidebar/tabs/**",
-          "src/composables/sidebarTabs/**",
           "src/config/**",
           "packages/account-core/src/**",
           "src/services/__mocks__/**",
@@ -2030,6 +2061,7 @@
           "src/composables/node/**",
           "src/renderer/extensions/vueNodes/widgets/components/**",
           "src/renderer/extensions/vueNodes/widgets/utils/**",
+          "src/components/sidebar/**",
           "src/platform/workflow/**",
           "src/components/topbar/**"
         ]
@@ -2039,8 +2071,7 @@
         "patterns": [
           "src/base/**",
           "src/platform/updates/**",
-          "packages/viewport3d/src/**",
-          "src/components/sidebar/**"
+          "packages/viewport3d/src/**"
         ]
       },
       {
@@ -2053,6 +2084,7 @@
         "from": "account/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2072,9 +2104,33 @@
         ]
       },
       {
+        "from": "assets/public",
+        "allow": [
+          "account/public",
+          "assets/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "assets",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "comfyui-api/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2096,6 +2152,7 @@
         "from": "image-compare/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2118,6 +2175,7 @@
         "from": "image-compositor/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2140,6 +2198,7 @@
         "from": "image-crop/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2162,6 +2221,7 @@
         "from": "ingest-api/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2184,6 +2244,7 @@
         "from": "keybindings/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2205,6 +2266,7 @@
         "from": "mask-editor/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2227,6 +2289,7 @@
         "from": "painter/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2249,6 +2312,7 @@
         "from": "remote-config/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2270,6 +2334,7 @@
         "from": "server-facts/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2292,6 +2357,7 @@
         "from": "webcam-capture/public",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2314,6 +2380,7 @@
         "from": "account",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2336,6 +2403,7 @@
         "from": "_inventory",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2354,9 +2422,33 @@
         ]
       },
       {
+        "from": "assets",
+        "allow": [
+          "account/public",
+          "assets/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "assets",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compare",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2379,6 +2471,7 @@
         "from": "image-compositor",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2401,6 +2494,7 @@
         "from": "image-crop",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2423,6 +2517,7 @@
         "from": "ingest-api",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2445,6 +2540,7 @@
         "from": "mask-editor",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2467,6 +2563,7 @@
         "from": "painter",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2489,6 +2586,7 @@
         "from": "server-facts",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2511,6 +2609,7 @@
         "from": "webcam-capture",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2533,6 +2632,7 @@
         "from": "_inventory/outer-1",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2554,6 +2654,7 @@
         "from": "_inventory/outer-2",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",
@@ -2575,6 +2676,7 @@
         "from": "unclassified",
         "allow": [
           "account/public",
+          "assets/public",
           "comfyui-api/public",
           "image-compare/public",
           "image-compositor/public",

@@ -8,7 +8,7 @@ import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -19,17 +19,14 @@ const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock(
-  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
-  () => ({
-    useAssetWidgetData: () => ({
-      category: computed(() => 'checkpoints'),
-      assets: computed(() => mockAssetsData.items),
-      isLoading: computed(() => false),
-      error: computed(() => null)
-    })
+vi.mock(import('@/platform/assets/composables/useAssetWidgetData'), () => ({
+  useAssetWidgetData: () => ({
+    category: computed(() => 'checkpoints'),
+    assets: computed(() => mockAssetsData.items),
+    isLoading: computed(() => false),
+    error: computed(() => null)
   })
-)
+}))
 
 const { mockMediaAssets } = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports
@@ -48,7 +45,7 @@ const { mockMediaAssets } = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023", "ES2023.Array"],
+    "types": ["node"],
+    "paths": {},
+    "customConditions": ["@comfyorg/assets-core"]
+  },
+  "include": ["src/**/*.ts"]
+}

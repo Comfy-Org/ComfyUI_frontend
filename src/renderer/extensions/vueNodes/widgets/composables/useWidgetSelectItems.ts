@@ -9,7 +9,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import {
   filterItemByBaseModels,
   filterItemByOwnership
-} from '@/platform/assets/utils/assetFilterUtils'
+} from '@comfyorg/assets-core/filtering'
 import {
   getAssetBaseModels,
   getAssetDisplayFilename,
@@ -17,18 +17,18 @@ import {
   getAssetFilename,
   getAssetUrlFilename,
   getOutputSubfolder
-} from '@/platform/assets/utils/assetMetadataUtils'
+} from '@comfyorg/assets-core/metadata'
 import type {
   FilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import type { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
+import { isGeneratedTempOutput } from '@/platform/assets/adapters/outputAssetMappers'
+import type { OutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'

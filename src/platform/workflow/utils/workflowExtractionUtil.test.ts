@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetItemSchema } from '@comfyorg/assets-core/schema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobWorkflow: vi.fn(),

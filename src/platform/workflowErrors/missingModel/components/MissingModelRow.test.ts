@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
-} from '@/platform/assets/composables/useUploadModelWizard'
+} from '@/platform/assets/types/modelImport'
 import {
   downloadModel,
   fetchModelMetadata,

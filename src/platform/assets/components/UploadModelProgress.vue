@@ -130,8 +130,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
-import type { UploadModelTypeMismatch } from '@/platform/assets/composables/useUploadModelWizard'
+import type { AssetMetadata } from '@comfyorg/assets-core/schema'
+import type { UploadModelTypeMismatch } from '@/platform/assets/types/modelImport'
 
 const { typeMismatch } = defineProps<{
   result: 'processing' | 'success' | 'error'

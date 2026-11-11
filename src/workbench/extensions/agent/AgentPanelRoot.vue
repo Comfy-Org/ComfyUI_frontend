@@ -42,12 +42,15 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  MIME_ASSET_INFO,
+  getDroppedAsset
+} from '@/platform/assets/integration/assetDrop'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
-import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/platform/assets/integration/assetDrop'
+import { fetchDroppedFile } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { DroppedAsset } from '@/utils/eventUtils'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -2542,7 +2545,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
 
   const result = await attachment.addDeferredFile(
     asset.name,
-    (signal) => fetchDroppedAsset(asset, { signal, nameFromSource: true }),
+    (signal) => fetchDroppedFile(asset, { signal, nameFromSource: true }),
     sourceKey
   )
   if (result === 'fetch_failed')

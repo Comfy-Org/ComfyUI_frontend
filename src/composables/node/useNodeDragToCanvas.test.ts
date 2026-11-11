@@ -8,7 +8,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useLitegraphService } from '@/services/litegraphService'
-import { startModelLoaderDrag } from './startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from './startModelLoaderDrag'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

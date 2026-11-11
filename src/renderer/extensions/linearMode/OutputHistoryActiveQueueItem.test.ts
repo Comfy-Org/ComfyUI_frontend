@@ -8,7 +8,7 @@ import OutputHistoryActiveQueueItem from './OutputHistoryActiveQueueItem.vue'
 
 const i18n = createI18n({ legacy: false, locale: 'en' })
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
 function renderComponent(queueCount: number) {
   return render(OutputHistoryActiveQueueItem, {

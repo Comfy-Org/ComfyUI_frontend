@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 interface AssetSpec {
   id: string

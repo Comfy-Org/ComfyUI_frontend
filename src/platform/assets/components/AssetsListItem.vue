@@ -114,7 +114,7 @@
 import { computed, useId } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import { useProgressBarBackground } from '@/platform/assets/composables/useProgressBarBackground'
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 

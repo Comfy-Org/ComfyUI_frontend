@@ -2,26 +2,23 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock(
-  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
-  () => ({
-    useAssetWidgetData: () => ({
-      category: computed(() => 'checkpoints'),
-      assets: computed(() => mockAssetsData.items),
-      isLoading: computed(() => false),
-      error: computed(() => null)
-    })
+vi.mock(import('@/platform/assets/composables/useAssetWidgetData'), () => ({
+  useAssetWidgetData: () => ({
+    category: computed(() => 'checkpoints'),
+    assets: computed(() => mockAssetsData.items),
+    isLoading: computed(() => false),
+    error: computed(() => null)
   })
-)
+}))
 
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
@@ -46,7 +43,7 @@ vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 
 function makeResolvedOutput(
   id: string,

@@ -1,6 +1,6 @@
 import { useDialogStore } from '@/stores/dialogStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { useAssetExportStore } from '@/platform/assets/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -13,26 +13,24 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import {
-  MediaAssetKey,
-  parseAssetInfo
-} from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { unflattenOutputAssets } from '@/platform/assets/adapters/outputAssetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import { MediaAssetKey } from '@/platform/assets/composables/mediaAssetContext'
+import { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
+import type { AssetId, AssetItem } from '@comfyorg/assets-core/schema'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
 import { seedMediaNodeDefs } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
 import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
-import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
-import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
-import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
-import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { detectNodeTypeFromFilename } from '@/platform/assets/integration/loaderNodeUtil'
+import { clearDeletedAssetWidgetValues } from '@/platform/assets/integration/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '@/platform/assets/integration/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/integration/markDeletedAssetsAsMissingMedia'
+import { getAssetType } from '@comfyorg/assets-core/metadata'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
@@ -94,12 +92,12 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
 
 vi.mock(import('@/services/litegraphService'))
 
-vi.mock(import('@/utils/loaderNodeUtil'))
+vi.mock(import('@/platform/assets/integration/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
 
 vi.mock(import('@/utils/typeGuardUtil'), { spy: true })
 
-vi.mock(import('@/platform/assets/utils/assetTypeUtil'), { spy: true })
+vi.mock(import('@comfyorg/assets-core/metadata'), { spy: true })
 const mockGetAssetType = vi.mocked(getAssetType)
 
 const mockGetOutputAssetMetadata = vi.hoisted(() =>
@@ -109,14 +107,11 @@ const mockGetOutputAssetMetadata = vi.hoisted(() =>
     ) => Record<string, unknown> | null
   >(() => null)
 )
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: mockGetOutputAssetMetadata
-  })
-)
+vi.mock<unknown>(import('@/platform/assets/types/outputAssetMetadata'), () => ({
+  getOutputAssetMetadata: mockGetOutputAssetMetadata
+}))
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'), { spy: true })
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
@@ -175,12 +170,15 @@ const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/assets/utils/clearNodePreviewCacheForValues'), {
-  spy: true
-})
+vi.mock(
+  import('@/platform/assets/integration/clearNodePreviewCacheForValues'),
+  {
+    spy: true
+  }
+)
 const mockClearNodePreviewCache = vi.mocked(clearNodePreviewCacheForValues)
 
-vi.mock(import('@/platform/assets/utils/clearDeletedAssetWidgetValues'), {
+vi.mock(import('@/platform/assets/integration/clearDeletedAssetWidgetValues'), {
   spy: true
 })
 const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
@@ -190,9 +188,12 @@ vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaScan'), {
 })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
-vi.mock(import('@/platform/assets/utils/markDeletedAssetsAsMissingMedia'), {
-  spy: true
-})
+vi.mock(
+  import('@/platform/assets/integration/markDeletedAssetsAsMissingMedia'),
+  {
+    spy: true
+  }
+)
 const mockMarkMissingMedia = vi.mocked(markDeletedAssetsAsMissingMedia)
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {

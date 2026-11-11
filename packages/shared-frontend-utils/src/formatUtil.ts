@@ -627,7 +627,14 @@ const TEXT_EXTENSIONS = [
   'log'
 ] as const
 
-const MEDIA_TYPES = ['image', 'video', 'audio', '3D', 'text', 'other'] as const
+export const MEDIA_TYPES = [
+  'image',
+  'video',
+  'audio',
+  '3D',
+  'text',
+  'other'
+] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership

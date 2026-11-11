@@ -87,8 +87,8 @@ import { computed } from 'vue'
 
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
+import type { UploadModelDialogContext } from '@/platform/assets/types/modelImport'
+import type { AssetMetadata } from '@comfyorg/assets-core/schema'
 
 const { uploadContext } = defineProps<{
   metadata?: AssetMetadata

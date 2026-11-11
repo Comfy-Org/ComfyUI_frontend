@@ -15,7 +15,7 @@ import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import type { LayoutMode, SortOption } from './types'

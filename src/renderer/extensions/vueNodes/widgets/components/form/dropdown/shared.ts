@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
-import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
-import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import type { AssetSortOption } from '@comfyorg/assets-core/filtering'
+import { sortAssets } from '@comfyorg/assets-core/filtering'
 
 import type { FormDropdownItem, SortOption } from './types'
 

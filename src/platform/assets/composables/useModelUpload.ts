@@ -6,7 +6,7 @@ import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDia
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
-} from '@/platform/assets/composables/useUploadModelWizard'
+} from '@/platform/assets/types/modelImport'
 import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
 import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'

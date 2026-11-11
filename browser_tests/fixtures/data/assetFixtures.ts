@@ -1,6 +1,6 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 /**
  * Core-native asset shape: the ingest Asset plus the `loader_path` contract

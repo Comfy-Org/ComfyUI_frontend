@@ -3,22 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-
-interface DirectAssetDownload {
-  mode: 'direct'
-  url: string
-  filename: string
-}
-
-export interface FetchedAssetDownload {
-  mode: 'fetch'
-  url: string
-  filename: string
-  fetch?: (url: string) => Promise<Response>
-  preferResponseFilename?: boolean
-}
-
-export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
+import type { AssetDownload } from '@/platform/assets/types/assetDownload'
 
 export function useAssetDownload() {
   const { t } = useI18n()

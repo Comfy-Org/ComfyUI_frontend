@@ -2,11 +2,11 @@ import { useElementHover, useEventListener } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   normalizeMarqueeRect,
   selectMarqueeIds
-} from '@/platform/assets/utils/marqueeSelectionUtil'
+} from '@comfyorg/assets-core/selection'
 import { clipRectToBounds } from '@/utils/mathUtil'
 import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 

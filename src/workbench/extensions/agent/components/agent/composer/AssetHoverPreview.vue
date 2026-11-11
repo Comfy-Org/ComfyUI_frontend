@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'

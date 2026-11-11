@@ -119,11 +119,6 @@
       "count": 1
     }
   },
-  "src/components/sidebar/tabs/AssetsSidebarTab.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -451,37 +446,12 @@
       "count": 21
     }
   },
-  "src/platform/assets/utils/assetFilterUtils.ts": {
-    "comfy/no-positional-boolean-params": {
+  "src/platform/assets/stores/assetsStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/assetMetadataUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 8
     }
   },
   "src/platform/assets/utils/assetPreviewUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.property.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -1038,11 +1008,6 @@
     }
   },
   "src/stores/apiKeyAuthStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }

@@ -1,18 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type {
-  AssetItem,
-  AssetResponse
-} from '@/platform/assets/schemas/assetSchema'
-import {
-  MISSING_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
+import { MISSING_TAG } from '@comfyorg/assets-core/metadata'
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 

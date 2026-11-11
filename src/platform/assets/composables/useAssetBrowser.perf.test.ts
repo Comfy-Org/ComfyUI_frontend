@@ -4,8 +4,8 @@ import { createApp, defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import * as assetMetadataUtils from '@/platform/assets/utils/assetMetadataUtils'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import * as assetMetadataUtils from '@comfyorg/assets-core/metadata'
 
 const ASSET_COUNT = 200
 const CATEGORIES = ['inputs', 'outputs'] as const

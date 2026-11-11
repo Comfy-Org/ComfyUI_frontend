@@ -31,7 +31,7 @@ import {
 } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
