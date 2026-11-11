@@ -34,7 +34,7 @@
       />
     </span>
     <span
-      class="w-14 shrink-0 truncate text-right text-2xs/tight text-muted-foreground tabular-nums"
+      class="min-w-8 shrink-0 text-right text-2xs/tight text-muted-foreground tabular-nums"
     >
       {{ progressLabel }}
     </span>
