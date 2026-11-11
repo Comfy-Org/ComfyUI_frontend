@@ -8,11 +8,16 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisation'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-import { ComfyApiError } from './errors'
+import { ComfyApiError, ComfyDeletedError } from './errors'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
 import type { Supplier } from './resolution'
@@ -552,6 +557,89 @@ describe('replacing a node', () => {
     warn.mockRestore()
   })
 
+  function smallInsideSubgraph() {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'seed', type: 'INT' },
+        { name: 'ctx', type: 'CTX' }
+      ],
+      outputs: [
+        { name: 'mask', type: 'MASK' },
+        { name: 'ctx', type: 'CTX' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const node = LiteGraph.createNode('Small')!
+    subgraph.add(node)
+    subgraph.inputNode.slots[1].connect(node.inputs[0], node)
+    subgraph.outputNode.slots[1].connect(node.outputs[0], node)
+    return { subgraph, node, inner: createGraphApi(() => subgraph) }
+  }
+
+  it("keeps the links to the subgraph's own input and output", () => {
+    const { subgraph, node, inner } = smallInsideSubgraph()
+
+    const rebuilt = inner.replace(String(node.id), 'Small')!
+    const input = rebuilt.inputs.byName('ctx')!
+    const output = rebuilt.outputs.byName('ctx')!
+
+    expect(input.source()).toEqual({
+      nodeId: String(SUBGRAPH_INPUT_ID),
+      outputIndex: 1
+    })
+    expect(output.targets()).toEqual([
+      { nodeId: String(SUBGRAPH_OUTPUT_ID), inputIndex: 1 }
+    ])
+    expect(subgraph.inputs[1].linkIds.map(String)).toEqual([input.link()!.id])
+    expect(subgraph.outputs[1].linkIds.map(String)).toEqual([
+      output.links()[0].id
+    ])
+  })
+
+  it('drops and warns about a subgraph boundary link the new type cannot take', () => {
+    class Retyped extends LGraphNode {
+      constructor() {
+        super('Retyped', 'Retyped')
+        this.addInput('ctx', 'MODEL')
+        this.addOutput('ctx', 'MODEL')
+      }
+    }
+    LiteGraph.registerNodeType('Retyped', Retyped)
+    const warn = vi.mocked(console.warn)
+    const { subgraph, node, inner } = smallInsideSubgraph()
+
+    const swapped = inner.replace(String(node.id), 'Retyped')!
+
+    expect(swapped.inputs.byName('ctx')!.isConnected).toBe(false)
+    expect(swapped.outputs.byName('ctx')!.isConnected).toBe(false)
+    expect(subgraph.inputs[1].linkIds).toEqual([])
+    expect(subgraph.outputs[1].linkIds).toEqual([])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("input 'ctx', output 'ctx'")
+    )
+  })
+
+  it.for([
+    {
+      side: 'input',
+      link: (id: string): SerialisedLLinkArray => [9, 99, 0, id, 0, 'CTX']
+    },
+    {
+      side: 'output',
+      link: (id: string): SerialisedLLinkArray => [9, id, 0, 99, 0, 'CTX']
+    }
+  ])('still replaces a node whose $side link has no other end', ({ link }) => {
+    const broken = small()
+    const saved = graph.serialize()
+    saved.links = [link(broken.id)]
+    graph.configure(saved)
+    expect(graph.links.size).toBe(1)
+
+    expect(api.replace(broken.id, 'Big')?.type).toBe('Big')
+    expect(api.node(broken.id)?.type).not.toBe('Small')
+  })
+
   it('is one undo step', () => {
     // Not a call count: graph.remove opens its own scope, and nesting is fine
     // because ChangeTracker counts. What must hold is that the count returns
@@ -659,15 +747,17 @@ describe('centering the view on a node', () => {
     const node = new LGraphNode('T', 'TestNode')
     graph.add(node)
     node.pos = [800, 600]
+    node.size = [200, 100]
     const canvas = testCanvas(graph)
     LGraphCanvas.active_canvas = canvas
-    const scale = canvas.ds.scale
+    canvas.ds.scale = 2
+    canvas.dpr = 2
     const api = createGraphApi(() => graph)
 
     api.centerOn(api.nodes()[0])
 
-    expect(canvas.ds.offset).not.toEqual([0, 0])
-    expect(canvas.ds.scale).toBe(scale)
+    expect(canvas.ds.offset).toEqual([-800, -575])
+    expect(canvas.ds.scale).toBe(2)
   })
 })
 
@@ -730,6 +820,69 @@ describe('groups', () => {
 
     handle.setTitle('New')
     expect(group.title).toBe('New')
+  })
+
+  it('keeps a kept group through undo and retires it once deleted', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphGroup('Sampling'))
+    const [kept] = createGraphApi(() => graph).groups()
+
+    graph.configure(graph.serialize())
+    kept.setTitle('Renamed')
+
+    expect(kept.isDeleted).toBe(false)
+    expect(graph.groups[0].title).toBe('Renamed')
+
+    graph.remove(graph.groups[0])
+
+    expect(kept.isDeleted).toBe(true)
+    expect(kept.getTitle()).toBe('')
+    expect(() => kept.setTitle('Gone')).toThrow(ComfyDeletedError)
+  })
+
+  it("lists a kept group's nodes from the group's own graph", () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const member = new LGraphNode('member', 'TestNode')
+    const sameId = new LGraphNode('same id elsewhere', 'TestNode')
+    first.add(member)
+    second.add(sameId)
+    member.pos = [60, 60]
+    member.size = [80, 40]
+    const group = new LGraphGroup('Sampling')
+    first.add(group)
+    group._bounding.set([20, 20, 400, 300])
+    member.updateArea()
+    let active = first
+    const api = createGraphApi(() => active)
+    const [kept] = api.groups()
+
+    active = second
+
+    expect(sameId.id).toBe(member.id)
+    expect(kept.nodes().map((node) => node.getTitle())).toEqual(['member'])
+  })
+
+  it('centers on a kept group only while its graph is on screen', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const group = new LGraphGroup('Sampling')
+    first.add(group)
+    group._bounding.set([1000, 1000, 200, 100])
+    const [kept] = createGraphApi(() => first).groups()
+    const elsewhere = testCanvas(second)
+    LGraphCanvas.active_canvas = elsewhere
+
+    kept.centerOn()
+
+    expect([...elsewhere.ds.offset]).toEqual([0, 0])
+
+    const onScreen = testCanvas(first)
+    LGraphCanvas.active_canvas = onScreen
+
+    kept.centerOn()
+
+    expect([...onScreen.ds.offset]).toEqual([-700, -750])
   })
 })
 
@@ -810,6 +963,53 @@ describe('subgraphs', () => {
     expect(api.root()?.id).toBe(root.id)
     expect(api.root()?.node(String(top.id))?.getTitle()).toBe('Top')
     expect(api.root()?.node(String(inner.id))).toBeUndefined()
+  })
+
+  it('lists every link while a subgraph is active, including those at its boundary, but no floating link', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: 'INT' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [
+        { name: 'mask', type: 'MASK' },
+        { name: 'image', type: 'IMAGE' }
+      ]
+    })
+    const [first, second] = ['First', 'Second'].map((title) => {
+      const relay = new LGraphNode(title, 'Relay')
+      relay.addInput('in', 'IMAGE')
+      relay.addOutput('out', 'IMAGE')
+      subgraph.add(relay)
+      return relay
+    })
+    subgraph.inputNode.slots[1].connect(first.inputs[0], first)
+    first.connect(0, second, 0)
+    subgraph.outputNode.slots[1].connect(second.outputs[0], second)
+    second.connectFloatingReroute([0, 0], second.outputs[0])
+    expect(subgraph.floatingLinks.size).toBe(1)
+
+    const links = createGraphApi(() => subgraph).links()
+
+    expect(links).toHaveLength(3)
+    expect(links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceNodeId: String(SUBGRAPH_INPUT_ID),
+          sourceIndex: 1,
+          targetNodeId: String(first.id)
+        }),
+        expect.objectContaining({
+          sourceNodeId: String(first.id),
+          targetNodeId: String(second.id)
+        }),
+        expect.objectContaining({
+          sourceNodeId: String(second.id),
+          targetNodeId: String(SUBGRAPH_OUTPUT_ID),
+          targetIndex: 1
+        })
+      ])
+    )
   })
 
   it('reports the groups drawn inside a subgraph', () => {

@@ -1,12 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionStore } from '@/stores/executionStore'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 import { api as backendApi } from '@/scripts/api'
 
 import {
@@ -17,9 +27,6 @@ import {
 } from './comfyApi'
 import { beginDocument } from './appReady'
 import { ComfyUnsupportedError } from './errors'
-
-const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 describe('comfy API root', () => {
   let graph: LGraph
@@ -54,6 +61,34 @@ describe('comfy API root', () => {
     expect(api().major).toBe(LATEST_MAJOR)
     expect(String(api().major)).toBe(NODE_API_VERSION.split('.')[0])
   })
+
+  it('reports its version as major, minor and patch', () => {
+    const version = api().getApiVersion()
+
+    expect(version.slice(0, 2).join('.')).toBe(NODE_API_VERSION)
+    expect(version[2]).toBe(0)
+    expect(Object.isFrozen(version)).toBe(true)
+  })
+
+  it('compares its version with one written the way a pack writes it', () => {
+    const [major, minor, patch] = api().getApiVersion()
+    const at = (text: string) => api().isApiVersionAtLeast(text)
+
+    expect(at(`v${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`v${major}`)).toBe(true)
+    expect(at(`v${major - 1}.9.9`)).toBe(true)
+    expect(at(`v${major}.${minor}.${patch + 1}`)).toBe(false)
+    expect(at(`v${major}.${minor + 1}.0`)).toBe(false)
+    expect(at(`v${major + 1}.0.0`)).toBe(false)
+  })
+
+  it.for(['', 'v', 'v2.x', 'v2.0.', 'latest'])(
+    'refuses the version %j',
+    (text) => {
+      expect(() => api().isApiVersionAtLeast(text)).toThrow(TypeError)
+    }
+  )
 
   describe('capability probing', () => {
     it('reports shipped capabilities', () => {
@@ -227,6 +262,70 @@ describe('comfy API root', () => {
       )
     })
 
+    it('retires a kept handle when its graph is cleared, until undo restores it', () => {
+      const comfy = createComfyApi(() => graph)
+      const dispose = comfy.defs.define({ type: 'ClearProbe' })
+
+      try {
+        const first = LiteGraph.createNode('ClearProbe')!
+        first.title = 'before clear'
+        graph.add(first)
+        const kept = comfy.graph.node(String(first.id))!
+        const beforeClear = graph.serialize()
+
+        graph.clear()
+        const next = LiteGraph.createNode('ClearProbe')!
+        next.title = 'after clear'
+        graph.add(next)
+
+        expect(next.id).toBe(first.id)
+        expect(kept.isDeleted).toBe(true)
+        expect(() => kept.setTitle('retargeted')).toThrow()
+        expect(next.title).toBe('after clear')
+
+        graph.configure(beforeClear)
+
+        expect(kept.isDeleted).toBe(false)
+        expect(kept.getTitle()).toBe('before clear')
+      } finally {
+        dispose()
+      }
+    })
+
+    it('keeps handles into a subgraph when undo rebuilds it', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+      let active: LGraph = subgraph
+      const comfy = createComfyApi(() => active)
+      const dispose = comfy.defs.define({ type: 'RebuiltProbe' })
+
+      try {
+        const inner = LiteGraph.createNode('RebuiltProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+        const kept = comfy.graph.node(String(inner.id))!
+        const scope = comfy.graph
+          .subgraphs()
+          .find(({ id }) => id === subgraph.id)!
+
+        root.configure(root.serialize())
+        const rebuilt = root.subgraphs.get(subgraph.id)!
+        active = rebuilt
+        kept.setTitle('renamed')
+
+        expect(rebuilt).not.toBe(subgraph)
+        expect(kept.isDeleted).toBe(false)
+        expect(rebuilt.getNodeById(inner.id)!.title).toBe('renamed')
+        expect(scope.nodes().map((node) => node.getTitle())).toEqual([
+          'renamed'
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
     it('keeps a handle minted while the new document loads', () => {
       const comfy = createComfyApi(() => graph)
       graph.clear()
@@ -252,10 +351,110 @@ describe('comfy API root', () => {
       const retained = comfy.graph.nodes()[0]
 
       active = second
+      expect(comfy.graph.node(String(inSecond.id))?.getTitle()).toBe('second')
       retained.setTitle('retargeted')
 
       expect(inSecond.title).toBe('second')
       expect(inFirst.title).toBe('retargeted')
+    })
+
+    it('selects and centers on a kept handle only while its graph is on screen', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const elsewhere = new LGraphNode('elsewhere')
+      const onScreen = new LGraphNode('on screen')
+      first.add(elsewhere)
+      second.add(onScreen)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const kept = comfy.graph.node(String(elsewhere.id))!
+      active = second
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        second,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const centerOnNode = vi.spyOn(canvas, 'centerOnNode')
+
+      comfy.graph.select([kept])
+      comfy.graph.centerOn(kept)
+
+      expect(elsewhere.id).toBe(onScreen.id)
+      expect(comfy.graph.selection()).toEqual([])
+      expect(centerOnNode).not.toHaveBeenCalled()
+
+      const visible = comfy.graph.node(String(onScreen.id))!
+      comfy.graph.select([visible])
+      comfy.graph.centerOn(visible)
+
+      expect(comfy.graph.selection().map((node) => node.getTitle())).toEqual([
+        'on screen'
+      ])
+      expect(centerOnNode).toHaveBeenCalledWith(onScreen)
+    })
+
+    it.for(['view first', 'scope first'] as const)(
+      'notifies widget listeners from every handle cache, subscribed %s',
+      (order) => {
+        const comfy = createComfyApi(() => graph)
+        const node = new LGraphNode('n')
+        node.addWidget('number', 'amount', 1, () => {})
+        graph.add(node)
+        const id = String(node.id)
+        const inView = comfy.graph.node(id)!.widgets.get('amount')!
+        const inScope = comfy.graph.root()!.node(id)!.widgets.get('amount')!
+        const viaView: unknown[] = []
+        const viaScope: unknown[] = []
+        const subscribe = {
+          view: () => inView.on('change', (value) => viaView.push(value)),
+          scope: () => inScope.on('change', (value) => viaScope.push(value))
+        }
+        const [first, second] =
+          order === 'view first'
+            ? (['view', 'scope'] as const)
+            : (['scope', 'view'] as const)
+        const stops = {
+          [first]: subscribe[first](),
+          [second]: subscribe[second]()
+        }
+
+        inView.setValue(5)
+        stops.scope()
+        inView.setValue(6)
+
+        expect(viaView).toEqual([5, 6])
+        expect(viaScope).toEqual([5])
+      }
+    )
+
+    it('applies serialize handlers registered through every handle cache', async () => {
+      const comfy = createComfyApi(() => graph)
+      const node = new LGraphNode('n')
+      node.addWidget('text', 'prompt', 'typed', () => {})
+      node.serialize_widgets = true
+      graph.add(node)
+      const id = String(node.id)
+      comfy.graph
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'prompt') event.setSerializedValue('sent')
+        })
+      comfy.graph
+        .root()!
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'workflow') event.setSerializedValue('saved')
+        })
+      const widget = node.widgets![0]
+
+      expect(await widget.serializeValue!(node, 0)).toBe('sent')
+      expect(node.serialize().widgets_values).toEqual(['saved'])
     })
 
     it('keeps retained slot and widget collections bound to their graph', () => {
@@ -315,22 +514,73 @@ describe('comfy API root', () => {
       }
     })
 
-    it('delivers no lifecycle callback for a node outside any graph', () => {
-      const comfy = createComfyApi(() => graph)
-      const configured = vi.fn()
-      comfy.defs.extend('DetachedProbe', (builder) =>
-        builder.onConfigured(configured)
+    it('hands onRemoved the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const removed: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('RemovedProbe', (builder) =>
+        builder.onRemoved((node) =>
+          removed.push([node.graphId, node.getTitle()])
+        )
       )
+      const dispose = comfy.defs.define({ type: 'RemovedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('RemovedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('RemovedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        subgraph.remove(inner)
+        root.remove(outer)
+
+        expect(removed).toEqual([
+          [subgraph.id, 'inner'],
+          [root.id, 'outer']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('configures a clone once it joins a graph, and never while detached', () => {
+      const comfy = createComfyApi(() => graph)
+      const delivered: [string, string, unknown][] = []
+      comfy.defs.extend('DetachedProbe', (builder) => {
+        builder.onCreated((node) => delivered.push(['created', node.id, null]))
+        builder.onConfigured((node, data) =>
+          delivered.push([
+            'configured',
+            node.id,
+            (data.properties as Record<string, unknown>).marker
+          ])
+        )
+      })
       const dispose = comfy.defs.define({ type: 'DetachedProbe' })
 
       try {
         const original = LiteGraph.createNode('DetachedProbe')!
+        original.properties.marker = 'kept'
         graph.add(original)
-        reportError.mockClear()
+        original.configure(original.serialize())
+        const clone = original.clone()!
 
-        original.clone()
+        expect(delivered).toEqual([
+          ['created', String(original.id), null],
+          ['configured', String(original.id), 'kept']
+        ])
 
-        expect(configured).not.toHaveBeenCalled()
+        graph.add(clone)
+
+        expect(clone.id).not.toBe(original.id)
+        expect(delivered.slice(2)).toEqual([
+          ['created', String(clone.id), null],
+          ['configured', String(clone.id), 'kept']
+        ])
         expect(reportError).not.toHaveBeenCalled()
       } finally {
         dispose()
@@ -398,10 +648,8 @@ describe('comfy API root', () => {
       const second = new LGraphNode('Second', 'TestNode')
       graph.add(first)
       graph.add(second)
-      const seen: string[] = []
-      const stop = api().onExecutingNodeChanged((node) => {
-        if (node) seen.push(node.id)
-      })
+      const seen: (string | undefined)[] = []
+      const stop = api().onExecutingNodeChanged((node) => seen.push(node?.id))
 
       useExecutionStore().nodeProgressStates = {
         [String(first.id)]: {
@@ -412,6 +660,8 @@ describe('comfy API root', () => {
           prompt_id: 'test'
         }
       }
+      await nextTick()
+      useExecutionStore().nodeProgressStates = {}
       await nextTick()
       stop()
       useExecutionStore().nodeProgressStates = {
@@ -425,7 +675,7 @@ describe('comfy API root', () => {
       }
       await nextTick()
 
-      expect(seen).toEqual([String(first.id)])
+      expect(seen).toEqual([String(first.id), undefined])
     })
   })
 

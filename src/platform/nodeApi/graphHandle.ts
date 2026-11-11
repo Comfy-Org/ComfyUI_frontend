@@ -5,13 +5,20 @@
  * This is the only module that knows how the pieces fit together; everything
  * below it is independently testable.
  */
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isSubgraphInput,
+  isSubgraphOutput
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type {
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { ComfyApiError } from './errors'
@@ -33,6 +40,7 @@ import type {
   SlotCollection
 } from './slotHandle'
 import { currentDocumentGeneration } from './appReady'
+import { followGraph } from './graphOwner'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
 
@@ -249,30 +257,29 @@ function weakCache<T extends object>(make: (nodeId: string) => T) {
 interface ReplacementSource {
   readonly name: string
   readonly index: number
-  readonly origin: LGraphNode
+  readonly origin: LGraphNode | SubgraphInput
   readonly originSlot: number
 }
 
 interface ReplacementTarget {
   readonly name: string
   readonly index: number
-  readonly target: LGraphNode
+  readonly target: LGraphNode | SubgraphOutput
   readonly targetSlot: number
 }
 
 function replacementSources(
   graph: LGraph,
   node: LGraphNode
-): readonly (ReplacementSource | undefined)[] {
-  const store = useLinkStore()
-  const scope = graphScopeOf(graph)
-  return node.inputs.map((input, index) => {
-    const topology = store.getInputSlotLink(scope, node.id, index)
-    const link = topology === undefined ? undefined : graph.getLink(topology.id)
-    const origin = link ? graph.getNodeById(link.origin_id) : undefined
-    return origin && link
-      ? { name: input.name, index, origin, originSlot: link.origin_slot }
-      : undefined
+): readonly ReplacementSource[] {
+  return node.inputs.flatMap((input, index) => {
+    const link = inputLink(graph, node.id, index)
+    if (!link) return []
+    const { outputNode, output, subgraphInput } = link.resolve(graph)
+    const origin = subgraphInput ?? (output ? outputNode : undefined)
+    return origin
+      ? [{ name: input.name, index, origin, originSlot: link.origin_slot }]
+      : []
   })
 }
 
@@ -282,7 +289,8 @@ function replacementTargets(
 ): readonly ReplacementTarget[] {
   return node.outputs.flatMap((output, index) =>
     outputLinks(graph, node.id, index).flatMap((link) => {
-      const target = graph.getNodeById(link.target_id)
+      const { inputNode, input, subgraphOutput } = link.resolve(graph)
+      const target = subgraphOutput ?? (input ? inputNode : undefined)
       return target
         ? [{ name: output.name, index, target, targetSlot: link.target_slot }]
         : []
@@ -321,34 +329,57 @@ function replacementSlot(
   side: 'input' | 'output',
   name: string,
   index: number
-): string | number {
+): number {
   const found =
     side === 'input' ? node.findInputSlot(name) : node.findOutputSlot(name)
-  return found === -1 ? index : name
+  return found === -1 ? index : found
+}
+
+function reconnectSource(
+  replacement: LGraphNode,
+  { name, index, origin, originSlot }: ReplacementSource
+): boolean {
+  const slot = replacementSlot(replacement, 'input', name, index)
+  if (!isSubgraphInput(origin)) {
+    return origin.connect(originSlot, replacement, slot) !== null
+  }
+  const input = replacement.inputs.at(slot)
+  return (
+    input !== undefined &&
+    LiteGraph.isValidConnection(origin.type, input.type) &&
+    origin.connect(input, replacement) !== undefined
+  )
+}
+
+function reconnectTarget(
+  replacement: LGraphNode,
+  { name, index, target, targetSlot }: ReplacementTarget
+): boolean {
+  const slot = replacementSlot(replacement, 'output', name, index)
+  if (!isSubgraphOutput(target)) {
+    return replacement.connect(slot, target, targetSlot) !== null
+  }
+  const output = replacement.outputs.at(slot)
+  return (
+    output !== undefined && target.connect(output, replacement) !== undefined
+  )
 }
 
 function reconnectReplacement(
   replacement: LGraphNode,
-  sources: readonly (ReplacementSource | undefined)[],
+  sources: readonly ReplacementSource[],
   targets: readonly ReplacementTarget[]
 ): readonly string[] {
   const dropped: string[] = []
   for (const source of sources) {
-    if (!source) continue
-    const made = source.origin.connect(
-      source.originSlot,
-      replacement,
-      replacementSlot(replacement, 'input', source.name, source.index)
-    )
-    if (!made) dropped.push(`input '${source.name}'`)
+    if (!reconnectSource(replacement, source)) {
+      dropped.push(`input '${source.name}'`)
+    }
   }
   for (const target of targets) {
-    const made = replacement.connect(
-      replacementSlot(replacement, 'output', target.name, target.index),
-      target.target,
-      target.targetSlot
-    )
-    if (!made) dropped.push(`output '${target.name}'`)
+    if (!reconnectTarget(replacement, target)) {
+      dropped.push(`output '${target.name}'`)
+    }
   }
   return dropped
 }
@@ -439,22 +470,21 @@ export function createGraphApi(
   )
   const ownedHandles = new WeakMap<
     LGraph,
-    { readonly generation: number; readonly handles: OwnedNodeHandles }
+    {
+      readonly generation: number
+      readonly graphId: string
+      readonly handles: OwnedNodeHandles
+    }
   >()
-  const nodeHandles = (): OwnedNodeHandles => {
-    const graph = getGraph()
-    if (!graph) return detachedHandles
+  const handlesIn = (graph: LGraph): OwnedNodeHandles => {
     const generation = currentDocumentGeneration()
     let owned = ownedHandles.get(graph)
-    if (owned?.generation !== generation) {
-      const owner = new WeakRef(graph)
+    if (owned?.generation !== generation || owned.graphId !== graph.id) {
       owned = {
         generation,
+        graphId: graph.id,
         handles: createOwnedNodeHandles(
-          () =>
-            currentDocumentGeneration() === generation
-              ? owner.deref()
-              : undefined,
+          followGraph(graph),
           namespace,
           getResolvers
         )
@@ -463,11 +493,26 @@ export function createGraphApi(
     }
     return owned.handles
   }
+  const nodeHandles = (): OwnedNodeHandles => {
+    const graph = getGraph()
+    return graph ? handlesIn(graph) : detachedHandles
+  }
 
   const handleFor = (nodeId: string) =>
     nodeHandles().handleFor(nodeId) as NodeHandle
 
-  const groupHandle = createGroupHandles(handleFor)
+  const nodeOnScreen = (handle: NodeHandle): LGraphNode | undefined => {
+    const graph = getGraph()
+    return graph && handle.graphId === graph.id
+      ? (graph.getNodeById(toNodeId(handle.id)) ?? undefined)
+      : undefined
+  }
+
+  const groupHandle = createGroupHandles((node) =>
+    node.graph
+      ? (handlesIn(node.graph).handleFor(String(node.id)) as NodeHandle)
+      : undefined
+  )
   const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
 
   const requireGraph = (action: string): LGraph => {
@@ -530,15 +575,14 @@ export function createGraphApi(
       const graph = getGraph()
       const old = nodeById(id)
       if (!graph || !old) return undefined
+      const sources = replacementSources(graph, old)
+      const targets = replacementTargets(graph, old)
       const replacement = LiteGraph.createNode(type)
       if (!replacement) {
         throw new ComfyApiError(
           `Cannot replace with '${type}': no such node type is registered.`
         )
       }
-
-      const sources = replacementSources(graph, old)
-      const targets = replacementTargets(graph, old)
 
       return runAsBatch(() => {
         graph.add(replacement)
@@ -569,9 +613,8 @@ export function createGraphApi(
     select(nodes, { add = false } = {}) {
       const canvas = extensionValue(LGraphCanvas.active_canvas)
       if (!canvas) return
-      const graph = getGraph()
       const resolved = nodes
-        .map((node) => graph?.getNodeById(toNodeId(node.id)))
+        .map((node) => nodeOnScreen(node))
         .filter((node) => !!node)
       if (!add) canvas.deselectAll()
       if (resolved.length) canvas.selectNodes(resolved, add)
@@ -615,7 +658,7 @@ export function createGraphApi(
     },
 
     centerOn(node) {
-      const target = getGraph()?.getNodeById(toNodeId(node.id))
+      const target = nodeOnScreen(node)
       if (target) {
         extensionValue(LGraphCanvas.active_canvas)?.centerOnNode(target)
       }
@@ -637,16 +680,9 @@ export function createGraphApi(
     links() {
       const graph = getGraph()
       if (!graph) return Object.freeze([])
-
-      // Store-backed, via the sanctioned slotLinks helpers — never the
-      // internal `graph._links` map, and floating links are excluded.
-      const infos = graph.nodes.flatMap((node) =>
-        node.outputs.flatMap((_, slot) =>
-          outputLinks(graph, node.id, slot)
-            .map((link) => toLinkInfo(graph, link))
-            .filter((info): info is LinkInfo => info !== undefined)
-        )
-      )
+      const infos = [...graph.links.values()]
+        .map((link) => toLinkInfo(graph, link))
+        .filter((info): info is LinkInfo => info !== undefined)
       return Object.freeze(infos)
     },
 
@@ -702,15 +738,20 @@ function createGraphScopeHandles(
   getResolvers: () => ReadonlyMap<string, Resolver>,
   getSuppliers: () => ReadonlyMap<string, Supplier>
 ) {
-  const byGraph = new WeakMap<LGraph, GraphScopeHandle>()
+  const byGraph = new WeakMap<
+    LGraph,
+    { readonly generation: number; readonly handle: GraphScopeHandle }
+  >()
 
   return function graphScopeHandle(graph: LGraph): GraphScopeHandle {
-    const id = graph.id
+    const generation = currentDocumentGeneration()
     const existing = byGraph.get(graph)
-    if (existing) return existing
+    if (existing?.generation === generation) return existing.handle
 
+    const { id } = graph
+    const owner = followGraph(graph)
     const scoped = createGraphApi(
-      () => graph,
+      owner,
       `graph:${id}`,
       getResolvers,
       getSuppliers
@@ -718,7 +759,8 @@ function createGraphScopeHandles(
     const handle: GraphScopeHandle = Object.freeze({
       id,
       get name() {
-        const name = 'name' in graph ? graph.name : undefined
+        const live = owner()
+        const name = live && 'name' in live ? live.name : undefined
         return typeof name === 'string' ? name : undefined
       },
       nodes: () => scoped.nodes(),
@@ -726,7 +768,7 @@ function createGraphScopeHandles(
       groups: () => scoped.groups(),
       resolvedSupplies: () => scoped.resolvedSupplies()
     })
-    byGraph.set(graph, handle)
+    byGraph.set(graph, { generation, handle })
     return handle
   }
 }

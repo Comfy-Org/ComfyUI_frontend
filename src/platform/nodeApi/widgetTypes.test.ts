@@ -245,4 +245,26 @@ describe('pack-declared widget types', () => {
       useWidgetStore().inputIsWidget({ name: 'c', type: 'MTB_COLOR' })
     ).toBe(false)
   })
+
+  it('leaves a type another extension registered over it when retired', () => {
+    const stop = defineWidgetType('MTB_COLOR', { render: () => {} })
+    const legacy = () => node.addWidget('text', 'colour', '', () => {})
+    useWidgetStore().registerCustomWidgets({ MTB_COLOR: legacy })
+
+    stop()
+
+    expect(useWidgetStore().widgets.get('MTB_COLOR')).toBe(legacy)
+  })
+
+  it('builds the widget the host would, once another extension registers over it', () => {
+    const stop = defineWidgetType('MTB_COLOR', { render: () => {} })
+    const legacyWidget = node.addWidget('text', 'colour', '', () => {})
+    useWidgetStore().registerCustomWidgets({ MTB_COLOR: () => legacyWidget })
+
+    try {
+      expect(build('MTB_COLOR')?.widget).toBe(legacyWidget)
+    } finally {
+      stop()
+    }
+  })
 })

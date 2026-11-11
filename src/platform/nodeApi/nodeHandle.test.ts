@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -56,6 +57,19 @@ describe('NodeHandle', () => {
       expect(handle().isPinned()).toBe(false)
     })
 
+    it.for([
+      { name: 'a property the node has', key: 'amount', expected: 1 },
+      {
+        name: 'nothing for a name inherited from Object.prototype',
+        key: 'toString',
+        expected: undefined
+      }
+    ])('reads $name', ({ key, expected }) => {
+      node.properties['amount'] = 1
+
+      expect(handle().getProperty(key)).toBe(expected)
+    })
+
     it('returns frozen geometry so reads cannot be written through', () => {
       node.pos = [10, 20]
       const pos = handle().getPosition()
@@ -96,28 +110,30 @@ describe('NodeHandle', () => {
       expect(input!.x).toBeLessThan(output!.x)
     })
 
-    it('reports where the node is on screen, accounting for zoom', () => {
-      // Packs anchoring a floating panel to a node were reading the viewport's
-      // pan and zoom and doing this arithmetic themselves.
-      const canvasEl = document.createElement('canvas')
-      canvasEl.getBoundingClientRect = () => ({ left: 100, top: 50 }) as DOMRect
-      const fake = {
-        canvas: canvasEl,
-        ds: { scale: 2, offset: [10, 20] }
-      } as unknown as typeof LGraphCanvas.active_canvas
+    it('reports where the node is on screen, accounting for pan and zoom', () => {
+      const element = createTestCanvasElement()
+      vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(100, 50, 800, 600)
+      )
+      const canvas = new LGraphCanvas(element, graph, {
+        skip_events: true,
+        skip_render: true
+      })
+      canvas.ds.scale = 2
+      canvas.ds.offset = [10, 20]
       const previous = LGraphCanvas.active_canvas
-      LGraphCanvas.active_canvas = fake
+      LGraphCanvas.active_canvas = canvas
 
       try {
         node.pos = [100, 200]
         node.size = [140, 80]
-        const graph = handle().getBounds()
-        const screen = handle().getScreenRect()!
 
-        expect(screen.x).toBe((graph.x + 10) * 2 + 100)
-        expect(screen.y).toBe((graph.y + 20) * 2 + 50)
-        // Scale is recoverable without publishing it.
-        expect(screen.width / graph.width).toBe(2)
+        expect(handle().getScreenRect()).toEqual({
+          x: 320,
+          y: 430,
+          width: 280,
+          height: 220
+        })
       } finally {
         LGraphCanvas.active_canvas = previous
       }
@@ -157,14 +173,25 @@ describe('NodeHandle', () => {
       expect(widget.value).toBe(7)
     })
 
+    it('refuses a property name that would replace the properties prototype', () => {
+      expect(() =>
+        handle().setProperty('__proto__', { injected: true })
+      ).toThrow(TypeError)
+      expect(Object.getPrototypeOf(node.properties)).toBe(Object.prototype)
+      expect('injected' in node.properties).toBe(false)
+    })
+
     it('maps public mode strings back to the internal enum', () => {
       handle().setMode('never')
       expect(node.mode).toBe(LGraphEventMode.NEVER)
     })
 
-    it('rejects an invalid mode loudly instead of silently ignoring', () => {
+    it.for([
+      { name: 'an unknown mode', mode: 'nonsense' },
+      { name: 'a mode name inherited from Object.prototype', mode: 'toString' }
+    ])('rejects $name loudly and leaves the mode alone', ({ mode }) => {
       expect(() => {
-        handle().setMode('nonsense' as never)
+        handle().setMode(mode as never)
       }).toThrow(/Invalid node mode/)
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
     })

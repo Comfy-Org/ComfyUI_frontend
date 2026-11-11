@@ -380,12 +380,13 @@ export function createNodeHandles(
         },
         getMode: (n) => extensionValue(MODE_TO_PUBLIC[n.mode]) ?? 'always',
         setMode: (n, ...args) => {
-          const mode = extensionValue(MODE_TO_INTERNAL[args[0] as NodeMode])
-          if (mode == null) {
+          const name = String(args[0])
+          if (!Object.hasOwn(MODE_TO_INTERNAL, name)) {
             throw new TypeError(
-              `Invalid node mode '${String(args[0])}'. Expected one of: ${Object.keys(MODE_TO_INTERNAL).join(', ')}.`
+              `Invalid node mode '${name}'. Expected one of: ${Object.keys(MODE_TO_INTERNAL).join(', ')}.`
             )
           }
+          const mode = MODE_TO_INTERNAL[name as NodeMode]
           if (n.mode === mode) return
           n.mode = mode
           markChanged(n)
@@ -432,10 +433,18 @@ export function createNodeHandles(
           n.serialize_widgets = serialize
           markChanged(n)
         },
-        getProperty: (n, ...args) => n.properties[String(args[0])],
+        getProperty: (n, ...args) => {
+          const name = String(args[0])
+          return Object.hasOwn(n.properties, name)
+            ? n.properties[name]
+            : undefined
+        },
         getProperties: (n) => Object.freeze({ ...n.properties }),
         setProperty: (n, ...args) => {
           const name = String(args[0])
+          if (name === '__proto__') {
+            throw new TypeError(`Invalid property name '${name}'.`)
+          }
           const previous = n.properties[name]
           n.setProperty(name, args[1])
           if (n.properties[name] !== previous) markChanged(n)

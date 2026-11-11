@@ -876,11 +876,8 @@ describe('mounted and canvas widgets', () => {
       }
     })
 
-    it('never takes its height from the element it just resized', () => {
-      // With no CSS height a <canvas> lays out at its height ATTRIBUTE — the
-      // backing store, already multiplied by the pixel ratio. Reading that back
-      // grows the widget by `ratio` on every redraw, and the ResizeObserver
-      // makes it a loop. The height has to come from the container instead.
+    it('takes its height from its container, never from the element it just resized', () => {
+      vi.stubGlobal('devicePixelRatio', 2)
       const plot = widgets.canvas({ name: 'free', draw: () => {} })
       const mounted = node.widgets!.at(-1) as unknown as {
         element?: HTMLElement
@@ -890,11 +887,15 @@ describe('mounted and canvas widgets', () => {
         get: () => 9999,
         configurable: true
       })
+      Object.defineProperty(canvas.parentElement!, 'clientHeight', {
+        get: () => 240,
+        configurable: true
+      })
 
       plot.redraw()
 
-      expect(canvas.height).not.toBe(9999)
-      expect(canvas.style.height).not.toBe('9999px')
+      expect(canvas.style.height).toBe('240px')
+      expect(canvas.height).toBe(480)
     })
 
     it('lets a widget claim the right-click, and only if it asks', () => {

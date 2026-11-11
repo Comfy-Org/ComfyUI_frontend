@@ -206,7 +206,11 @@ export interface WidgetHandle extends HandleCommon {
   ): Unsubscribe
 }
 
-/** Where a value is being written, and the chance to change it. */
+/**
+ * Where a value is being written, and the chance to change it.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface WidgetSerializeEvent {
   readonly context: 'workflow' | 'prompt' | 'embedded'
   /** What would be written if no handler intervened. */
@@ -393,24 +397,6 @@ export function createWidgetHandles(
     namespace
   )
 
-  /**
-   * Listeners, keyed by the widget object.
-   *
-   * Not by name: a widget removed and recreated under the same name is a
-   * different widget, and a listener left over from the old one would fire for
-   * a widget its owner never saw. A WeakMap also lets the entry go when the
-   * widget does.
-   */
-  const listeners = new WeakMap<
-    object,
-    {
-      change: Set<(v: WidgetValue, o: WidgetValue) => void>
-      removed: Set<() => void>
-      activate: Set<(v: WidgetValue) => void>
-      beforeSerialize: Set<(e: WidgetSerializeEvent) => void>
-    }
-  >()
-
   const slots = (w: object) => {
     let found = listeners.get(w)
     if (!found) {
@@ -449,8 +435,6 @@ export function createWidgetHandles(
     for (const handler of handlers) handler(event)
     return result
   }
-
-  const lastNotified = new WeakMap<object, WidgetValue>()
 
   function notify(w: object, value: WidgetValue, previous: WidgetValue) {
     if (value === previous) return
@@ -559,12 +543,29 @@ const BRIDGED = Symbol('comfy.widget.bridged')
 const SERIALIZE_BRIDGED = Symbol('comfy.widget.serializeBridged')
 
 /**
- * Non-zero while a `setValue` commit is on the stack.
+ * Listeners, keyed by the widget object and shared by every handle cache, so
+ * the one bridge a widget gets reaches all of them.
  *
- * Module-scoped rather than per-factory because bridges are per-namespace and
- * chain onto each other: pack A's write must read as programmatic to pack B's
- * bridge too. Dispatch is synchronous, so a plain depth counter is exact — and
- * it makes any commit an activate cascade triggers itself programmatic.
+ * Not by name: a widget removed and recreated under the same name is a
+ * different widget, and a listener left over from the old one would fire for
+ * a widget its owner never saw. A WeakMap also lets the entry go when the
+ * widget does.
+ */
+const listeners = new WeakMap<
+  object,
+  {
+    change: Set<(v: WidgetValue, o: WidgetValue) => void>
+    removed: Set<() => void>
+    activate: Set<(v: WidgetValue) => void>
+    beforeSerialize: Set<(e: WidgetSerializeEvent) => void>
+  }
+>()
+const lastNotified = new WeakMap<object, WidgetValue>()
+
+/**
+ * Non-zero while a `setValue` commit is on the stack, from any handle cache.
+ * Dispatch is synchronous, so a plain depth counter is exact, and it makes
+ * any commit an activate cascade triggers itself programmatic.
  */
 let programmaticWrites = 0
 

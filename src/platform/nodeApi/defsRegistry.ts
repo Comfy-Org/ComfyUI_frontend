@@ -608,6 +608,7 @@ interface Registration {
    */
   readonly handleFor: (nodeId: string) => NodeHandle
   readonly handleForNode: (node: LGraphNode) => NodeHandle
+  readonly teardown: (() => void)[]
 }
 
 function whenDefined<T>(value: T | undefined, use: (value: T) => void): void {
@@ -781,7 +782,18 @@ function assertSelector(selector: DefSelector): void {
 }
 
 function matches(selector: DefSelector, def: NodeDef): boolean {
-  if (typeof selector === 'function') return selector(def)
+  if (typeof selector === 'function') {
+    try {
+      return selector(def)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_api_def_selector_failure',
+        surface: 'graph',
+        tags: { node_type: def.type }
+      })
+      return false
+    }
+  }
   if (typeof selector === 'string') return def.type === selector
   if (selector instanceof RegExp) return matchesPattern(selector, def.type)
   // `Array.isArray` does not narrow a `readonly` array out of a union.
@@ -1250,6 +1262,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       handleFor,
       handleForNode,
       active: true,
+      teardown: [],
       apply: (builder) => applyNodeDefinition(builder, definition)
     }
     registrations.add(registration)
@@ -1258,6 +1271,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
     LiteGraph.registerNodeType(type, Defined)
 
     return () => {
+      if (!registration.active) return
       registration.active = false
       registrations.delete(registration)
       frontendResolvers.delete(type)
@@ -1265,7 +1279,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       promptInputProjectors.delete(type)
       previewSubscribers.delete(type)
       unplacedLinkSubscribers.delete(type)
-      LiteGraph.unregisterNodeType(type)
+      if (LiteGraph.registered_node_types[type] === Defined) {
+        LiteGraph.unregisterNodeType(type)
+      }
       known.delete(type)
     }
   }
@@ -1352,12 +1368,15 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           apply,
           handleFor,
           handleForNode,
-          active: true
+          active: true,
+          teardown: []
         }
         registrations.add(registration)
         return () => {
+          if (!registration.active) return
           registration.active = false
           registrations.delete(registration)
+          for (const undo of registration.teardown.splice(0)) undo()
         }
       }
     }),
@@ -1413,6 +1432,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const executionState: {
         frontendOnly: boolean
         resolver?: Resolver
+        owner?: Registration
       } = {
         frontendOnly: false,
         resolver: undefined
@@ -1495,6 +1515,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             },
             setExecution: (execution, resolve) => {
               executionState.frontendOnly = execution === 'frontend'
+              executionState.owner = registration
               if (resolve) {
                 executionState.resolver = (view) =>
                   isActive() ? resolve(view) : Object.freeze({})
@@ -1558,13 +1579,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const commitDefinition = () => {
         known.set(def.type, def)
         if (executionState.frontendOnly) {
+          const { isVirtualNode, resolutionOwned } = nodeType.prototype
+          const { resolver, owner } = executionState
           nodeType.prototype.isVirtualNode = true
-          if (executionState.resolver) {
-            frontendResolvers.set(def.type, executionState.resolver)
+          if (resolver) {
+            frontendResolvers.set(def.type, resolver)
             nodeType.prototype.resolutionOwned = true
           } else {
             frontendResolvers.delete(def.type)
           }
+          owner?.teardown.push(() => {
+            nodeType.prototype.isVirtualNode = isVirtualNode
+            nodeType.prototype.resolutionOwned = resolutionOwned
+            if (frontendResolvers.get(def.type) === resolver) {
+              frontendResolvers.delete(def.type)
+            }
+          })
         } else {
           frontendResolvers.delete(def.type)
         }
@@ -1675,9 +1705,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
 
         if (configured.length) {
-          install('onConfigure', (node, serialised) => {
-            const data = (extensionValue(serialised) ??
-              {}) as unknown as Record<string, unknown>
+          const deliverConfigured = (
+            node: LGraphNode,
+            data: Record<string, unknown>
+          ) => {
             for (const { run, handleForNode, isActive } of configured) {
               if (isActive()) {
                 invokeAttached('onConfigured', node, () =>
@@ -1685,6 +1716,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 )
               }
             }
+          }
+          const configuredDetached = new WeakMap<
+            LGraphNode,
+            Record<string, unknown>
+          >()
+          install('onConfigure', (node, serialised) => {
+            const data = (extensionValue(serialised) ??
+              {}) as unknown as Record<string, unknown>
+            if (node.graph) deliverConfigured(node, data)
+            else configuredDetached.set(node, data)
+          })
+          install('onAdded', (node) => {
+            const data = configuredDetached.get(node)
+            if (!data) return
+            configuredDetached.delete(node)
+            deliverConfigured(node, data)
           })
         }
 
@@ -1831,6 +1878,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             for (const { run, handleForNode, isActive } of dropped) {
               if (
                 isActive() &&
+                this.graph &&
                 (await invokeAsync('onDrop', () =>
                   run(handleForNode(this), event)
                 )) === true
@@ -2011,9 +2059,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
         if (removed.length) {
           install('onRemoved', (node) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of removed) {
-              if (isActive()) invoke('onRemoved', () => run(handleFor(id)))
+            for (const { run, handleForNode, isActive } of removed) {
+              if (isActive()) {
+                invokeAttached('onRemoved', node, () =>
+                  run(handleForNode(node))
+                )
+              }
             }
           })
         }
