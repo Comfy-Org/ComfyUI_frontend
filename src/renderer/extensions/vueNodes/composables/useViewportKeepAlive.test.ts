@@ -8,10 +8,12 @@ import {
   vi
 } from 'vitest'
 import { computed, effectScope, reactive, ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import type { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {
   getKeepAliveBounds,
   useViewportKeepAlive
@@ -21,10 +23,10 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({ useTransformState: () => ({ camera }) })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'), () => ({
+  useTransformState: () =>
+    fromPartial<ReturnType<typeof useTransformState>>({ camera })
+}))
 
 const activeScopes: ReturnType<typeof effectScope>[] = []
 
