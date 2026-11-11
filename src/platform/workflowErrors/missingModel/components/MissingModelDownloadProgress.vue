@@ -34,7 +34,7 @@
       />
     </span>
     <span
-      class="min-w-8 shrink-0 text-right text-2xs/tight text-muted-foreground tabular-nums"
+      class="w-8 shrink-0 text-center text-2xs/tight text-muted-foreground tabular-nums"
     >
       {{ progressLabel }}
     </span>
@@ -47,12 +47,12 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
 
 type ActiveDownloadState = Extract<
-  TemplateModelDownloadState,
-  { status: 'queued' | 'starting' | 'downloading' }
+  MissingModelDownloadState,
+  { status: 'requested' | 'pending' | 'downloading' }
 >
 
 const { state, modelName } = defineProps<{
@@ -69,14 +69,14 @@ const progressPercent = computed(() => {
 })
 
 const progressText = computed(() => {
-  if (state.status === 'queued') {
+  if (state.status === 'requested') {
     return t('rightSidePanel.missingModels.downloadQueued')
   }
-  if (state.status === 'starting') {
+  if (state.status === 'pending') {
     return t('rightSidePanel.missingModels.downloadStarting')
   }
   const bytes = formatDownloadedBytes(state)
-  if (state.activity === 'paused') {
+  if (state.paused) {
     return bytes
       ? t(
           'rightSidePanel.missingModels.downloadPausedProgress',
@@ -90,7 +90,7 @@ const progressText = computed(() => {
 
 const progressLabel = computed(() => {
   if (state.status !== 'downloading') return progressText.value
-  if (state.activity === 'paused') {
+  if (state.paused) {
     return t('rightSidePanel.missingModels.downloadPaused')
   }
   return progressPercent.value === undefined

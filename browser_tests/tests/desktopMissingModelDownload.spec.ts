@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { desktopModelDownloadFixture as test } from '@e2e/fixtures/desktopModelDownloadFixture'
-import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  cleanupFakeModel,
+  loadWorkflowAndOpenErrorsTab
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
@@ -86,5 +89,34 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
       ).toHaveText('Downloaded')
       await expect(group.getByRole('progressbar')).toBeHidden()
     })
+  })
+
+  test('shows a download started outside the errors tab', async ({
+    comfyPage,
+    modelDownloadHost
+  }) => {
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+    const group = comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+    await expect(
+      group.getByTestId(TestIds.dialogs.missingModelDownload)
+    ).toBeVisible()
+
+    await modelDownloadHost.emitProgress({
+      id: 'template-job',
+      url: 'http://localhost:8188/api/devtools/fake_model.safetensors',
+      filename: 'fake_model.safetensors',
+      directory: 'checkpoints',
+      status: 'downloading',
+      progress: 0.25,
+      receivedBytes: 256 * 1024 * 1024,
+      totalBytes: 1024 * 1024 * 1024
+    })
+
+    await expect(
+      group.getByRole('progressbar', {
+        name: 'Downloading fake_model.safetensors'
+      })
+    ).toHaveAttribute('aria-valuenow', '25')
+    expect(await modelDownloadHost.downloads()).toEqual([])
   })
 })

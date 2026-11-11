@@ -344,7 +344,6 @@ import {
   getNodeDisplayLabel
 } from '@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
-import { createTemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
 import MissingModelDownloadProgress from '@/platform/workflowErrors/missingModel/components/MissingModelDownloadProgress.vue'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
@@ -463,12 +462,12 @@ const hostDownloadState = computed(() => {
   const { name, url, directory } = model.representative
   return url && directory
     ? missingModelDownloadStore.stateFor({ name, url, directory })
-    : createTemplateModelDownloadState()
+    : { status: 'idle' as const }
 })
 const activeHostDownload = computed(() => {
   const state = hostDownloadState.value
-  return state.status === 'queued' ||
-    state.status === 'starting' ||
+  return state.status === 'requested' ||
+    state.status === 'pending' ||
     state.status === 'downloading'
     ? state
     : undefined

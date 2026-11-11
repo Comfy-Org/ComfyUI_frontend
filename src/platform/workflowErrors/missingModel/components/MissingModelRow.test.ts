@@ -16,8 +16,12 @@ import {
   fetchModelMetadata,
   openGatedRepoPage
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelViewModel
+} from '@/platform/workflowErrors/missingModel/types'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -763,6 +767,7 @@ describe('MissingModelRow', () => {
           return () => {}
         }
       }
+      useMissingModelDownloadStore().startTracking()
     })
 
     it('shows download progress in place of the Download button', async () => {
@@ -795,8 +800,15 @@ describe('MissingModelRow', () => {
     })
 
     it('marks the model downloaded and re-checks missing models once the download completes', async () => {
+      const missingModelStore = useMissingModelStore()
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          isMissing: true
+        })
+      ])
       const refreshMissingModels = vi
-        .spyOn(useMissingModelStore(), 'refreshMissingModels')
+        .spyOn(missingModelStore, 'refreshMissingModels')
         .mockResolvedValue(undefined)
       renderHostRow()
 
