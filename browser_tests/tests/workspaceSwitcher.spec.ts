@@ -48,12 +48,70 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
-    const panelBox = await panel.boundingBox()
-    const profileBox = await profileMenu.boundingBox()
-    expect(panelBox).not.toBeNull()
-    expect(profileBox).not.toBeNull()
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+    await expect
+      .poll(async () => {
+        const [panelBox, profileBox] = await Promise.all([
+          panel.boundingBox(),
+          profileMenu.boundingBox()
+        ])
+        if (!panelBox || !profileBox) return Number.POSITIVE_INFINITY
+        return panelBox.x + panelBox.width - profileBox.x
+      })
+      .toBeLessThanOrEqual(0)
   })
+
+  for (const { name, viewport, reducedMotion } of [
+    {
+      name: 'desktop',
+      viewport: { width: 1280, height: 720 },
+      reducedMotion: 'no-preference'
+    },
+    {
+      name: 'short viewport',
+      viewport: { width: 1024, height: 600 },
+      reducedMotion: 'no-preference'
+    },
+    {
+      name: 'reduced motion',
+      viewport: { width: 1280, height: 720 },
+      reducedMotion: 'reduce'
+    }
+  ] as const) {
+    test.describe(name, () => {
+      test.use({ viewport, reducedMotion })
+
+      test('keeps the switcher clear throughout its entrance', async ({
+        comfyPage
+      }) => {
+        const page = comfyPage.page
+        await comfyPage.toast.closeToasts()
+        await page.getByRole('button', { name: 'Current user' }).click()
+        await page.addStyleTag({
+          content:
+            '[data-testid="workspace-switcher-panel"] { animation-play-state: paused; }'
+        })
+        await page.getByTestId('workspace-switcher-trigger').click()
+
+        const panel = page.getByTestId('workspace-switcher-panel')
+        await expect(panel).toBeVisible()
+        const profileBox = await page
+          .getByTestId('current-user-popover')
+          .boundingBox()
+        expect(profileBox).not.toBeNull()
+        const rightEdges = await panel.evaluate((element) => {
+          const animations = element.getAnimations()
+          return [0, 0.25, 0.5, 0.75, 1].map((progress) => {
+            animations.forEach((animation) => {
+              animation.currentTime =
+                Number(animation.effect?.getComputedTiming().endTime) * progress
+            })
+            return element.getBoundingClientRect().right
+          })
+        })
+        expect(Math.max(...rightEdges)).toBeLessThanOrEqual(profileBox!.x)
+      })
+    })
+  }
 
   test.describe('on a phone-width viewport', () => {
     test.use({ viewport: { width: 390, height: 844 } })

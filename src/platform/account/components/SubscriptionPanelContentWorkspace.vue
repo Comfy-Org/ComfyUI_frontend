@@ -404,11 +404,14 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
   hasEndingNoticeStarted,
+  isWithinEnterpriseEndingNotice,
   isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
@@ -456,6 +459,7 @@ const {
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
+const { flags } = useFeatureFlags()
 
 const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
@@ -600,20 +604,37 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-const isEndedEnterprise = computed(
-  () => planKind.value === 'sales_managed' && isSubscriptionEnded.value
+const isEnterprisePlan = computed(() =>
+  pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
 )
 
-const hasScheduledEnterpriseEnd = computed(
-  () => endingNoticeStartsAt.value !== null
+const isEndedEnterprise = computed(
+  () =>
+    (flags.billingNewUxEnabled
+      ? planKind.value === 'sales_managed'
+      : isEnterprisePlan.value) && isSubscriptionEnded.value
 )
+
+const hasScheduledEnterpriseEnd = computed(() => {
+  if (flags.billingNewUxEnabled) return endingNoticeStartsAt.value !== null
+  const endDate = subscription.value?.endDate
+  return pendingServerFact(
+    'BE-25244',
+    isEnterprisePlan.value && !!endDate && !Number.isNaN(Date.parse(endDate))
+  )
+})
 
 const now = useTimestamp({ interval: 60_000 })
 
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+    !(flags.billingNewUxEnabled
+      ? hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+      : pendingServerFact(
+          'BE-25244',
+          isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+        ))
 )
 
 const { kind: billingBannerKind } = useBillingBanner()
