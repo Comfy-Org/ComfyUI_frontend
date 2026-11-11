@@ -446,13 +446,9 @@ describe('supply-side resolution', () => {
   )
 
   it('lets a supplier read the type plugged into its own input', () => {
-    // The whole broadcast pattern is "send whatever is plugged into me to
-    // every unconnected input of the same type". Without this a supplier is
-    // type-blind and would feed a CLIP into a MODEL slot in silence.
     const source = spawn('Sink')
     source.addOutput('model', 'MODEL')
     const broadcaster = spawn('Broadcaster')
-    // The real broadcast node takes a value in and rebroadcasts it.
     broadcaster.addInput('anything', '*')
     source.connect(0, broadcaster, 0)
 
@@ -478,7 +474,7 @@ describe('supply-side resolution', () => {
       connected: true,
       sourceNodeId: String(source.id)
     })
-    expect(own[0].connectedType).toBeDefined()
+    expect(own[0].connectedType).toBe('MODEL')
   })
 
   it('reads the type arriving from a subgraph input panel', () => {
