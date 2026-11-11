@@ -856,6 +856,38 @@ describe('useWorkflowService', () => {
       expect(current.isModified).toBe(true)
     })
 
+    it('keeps a workflow pasted while a superseded open was loading', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const pasted = createModeTestWorkflow({ path: 'workflows/pasted.json' })
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      let currentRequest = true
+      vi.mocked(app.loadGraphData)
+        .mockImplementationOnce(async () => {
+          invalidateCanvasTracker()
+          currentRequest = false
+          return false
+        })
+        .mockImplementationOnce(
+          async (_data, _clean, _restore, workflow, options) => {
+            workflows.activeWorkflow = pasted
+            bindCanvasTracker(pasted.changeTracker)
+            if (options?.isCurrent?.() === false) return false
+            workflows.activeWorkflow = workflow as LoadedComfyWorkflow
+            return true
+          }
+        )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(pasted.path)
+      expect(isCanvasOwner(pasted.changeTracker)).toBe(true)
+    })
+
     it('keeps the outputs and previews of a workflow kept by a superseded open', async () => {
       const workflows = useWorkflowStore()
       const nodeOutputs = useNodeOutputStore()
