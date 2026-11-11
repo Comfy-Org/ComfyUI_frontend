@@ -44,12 +44,13 @@
         align="end"
         :class="
           cn(
-            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
-            showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+            'overflow-visible border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            popoverSizeClass
           )
         "
       >
-        <CurrentUserPopoverWorkspace
+        <component
+          :is="workspaceMenu"
           v-if="showWorkspacePopover"
           :account-actions-only="initState !== 'ready'"
           @close="closePopover"
@@ -79,6 +80,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
+import ProfileMenuWorkspace from '@/platform/account/components/ProfileMenuWorkspace.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -105,9 +108,19 @@ const showWorkspaceSkeleton = computed(
 const showWorkspaceIcon = computed(
   () => initState.value === 'ready' && !isInPersonalWorkspace.value
 )
+const { flags } = useFeatureFlags()
+const workspaceMenu = computed(() =>
+  flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
+)
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
 )
+const popoverSizeClass = computed(() => {
+  if (!showWorkspacePopover.value) return 'w-80 rounded-lg'
+  return flags.billingNewUxEnabled
+    ? 'w-72 rounded-xl'
+    : 'w-fit max-w-96 min-w-80 rounded-lg'
+})
 
 const workspaceName = computed(() => {
   if (!showWorkspaceIcon.value) return ''

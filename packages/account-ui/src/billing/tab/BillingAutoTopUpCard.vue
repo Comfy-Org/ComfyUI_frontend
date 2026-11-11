@@ -90,15 +90,16 @@
         :variant="actionVariant"
         :icon="OPEN"
       >
-        <CheckoutButton
+        <BillingBannerActionButton
+          :href="actionHref"
+          :label="copy.actions[view.actionLabel]"
           :variant="actionVariant"
           size="md"
-          :class="cn('shrink-0 no-underline', classes?.action)"
+          :class="classes?.action"
           @click="emit('action', view.action)"
         >
-          {{ copy.actions[view.actionLabel] }}
           <i :class="OPEN" aria-hidden="true" />
-        </CheckoutButton>
+        </BillingBannerActionButton>
       </slot>
     </div>
   </section>
@@ -118,6 +119,7 @@ import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
+import BillingBannerActionButton from './BillingBannerActionButton.vue'
 import BillingInfoTip from './BillingInfoTip.vue'
 import { autoTopUpCardView } from './autoTopUpCardView'
 import type { AutoTopUpCardCopy, AutoTopUpViewKey } from './autoTopUpCardView'
@@ -131,14 +133,14 @@ const DANGER = { border: 'border-destructive', text: 'text-destructive' }
 
 const DOT: Record<AutoTopUpViewKey, string> = {
   failed: 'bg-destructive',
-  turnedOff: 'bg-destructive-background',
+  turnedOff: 'bg-destructive',
   off: 'bg-muted-foreground',
-  on_hold: 'bg-warning-background',
-  paused_by_budget: 'bg-warning-background',
+  on_hold: 'bg-warning',
+  paused_by_budget: 'bg-warning',
   maximumReached: 'bg-warning-background',
   noPaymentMethod: 'bg-muted-foreground',
   noDefaultPaymentMethod: 'bg-muted-foreground',
-  on: 'bg-success-background'
+  on: 'bg-success'
 }
 
 const DEFAULT_VARIANTS: Record<AutoTopUpViewKey, ActionVariant> = {
@@ -153,12 +155,22 @@ const DEFAULT_VARIANTS: Record<AutoTopUpViewKey, ActionVariant> = {
   on: 'secondary'
 }
 
-const { state, offView, setup, copy, locale, variants, classes } = defineProps<{
+const {
+  state,
+  offView,
+  setup,
+  copy,
+  locale,
+  actionHref = null,
+  variants,
+  classes
+} = defineProps<{
   state: AutoTopUpCardState
   offView: AutoTopUpOffView
   setup: AutoTopUpOffViewFacts['setup']
   copy: AutoTopUpCardCopy
   locale: string
+  actionHref?: string | null
   variants?: Partial<Record<AutoTopUpViewKey, ActionVariant>>
   classes?: Partial<
     Record<
