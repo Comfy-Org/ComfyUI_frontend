@@ -856,6 +856,31 @@ describe('useWorkflowService', () => {
       expect(current.isModified).toBe(true)
     })
 
+    it('keeps an uncaptured edit modified when a superseded open skips restoring its workflow', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      current.isModified = true
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, _workflow, options) => {
+          currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(current.isModified).toBe(true)
+    })
+
     it('keeps a workflow pasted while a superseded open was loading', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
