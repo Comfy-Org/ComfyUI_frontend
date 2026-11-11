@@ -93,17 +93,30 @@ jobs:
       fail-fast: true
       max-parallel: 1
       matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
-    uses: ./.github/workflows/publish-package.yaml
-    with:
-      package: ${{ matrix.package }}
-      version: ${{ matrix.version }}
-      dist_tag: ${{ matrix.dist_tag }}
-      ref: ${{ github.event.pull_request.merge_commit_sha }}
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      actions: write
+    steps:
+      - name: Dispatch the trusted publish workflow and wait for it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PACKAGE: ${{ matrix.package }}
+          VERSION: ${{ matrix.version }}
+          DIST_TAG: ${{ matrix.dist_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=$(gh api --method POST \
+            "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
+            -f ref=main \
+            -F return_run_details=true \
+            -f "inputs[package]=$PACKAGE" \
+            -f "inputs[version]=$VERSION" \
+            -f "inputs[dist_tag]=$DIST_TAG" \
+            --jq '.workflow_run_id')
+          gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15
 
   # The release links are written to an artifact here and posted by
   # pr-publish-report.yaml, a workflow_run consumer, so this pull_request-
@@ -128,15 +141,24 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p publish-report
+          PACKAGE_COUNT=$(jq -r '.include | length' <<<"$MATRIX")
           {
+            printf '## 🚀 Release: ✅ Publish jobs finished for %s package' "$PACKAGE_COUNT"
+            [ "$PACKAGE_COUNT" = 1 ] || printf 's'
+            echo ''
+            echo ''
+            echo '<details>'
+            echo '<summary>Details</summary>'
+            echo ''
             echo 'Publish jobs finished successfully:'
             echo ''
             jq -r '
               .include[]
               | "- npm @comfyorg/\(.package): [`\(.version)`](https://www.npmjs.com/package/@comfyorg/\(.package)/v/\(.version)) on `\(.dist_tag)`"
             ' <<<"$MATRIX"
-            echo "- Published from [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
+            echo "- Release PR merged as [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
             echo ''
+            echo '</details>'
           } > publish-report/report.md
           printf '%s' "$PR_NUMBER" > publish-report/pr-number.txt
 
@@ -148,11 +170,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # publish is a matrix call, and GitHub attributes a matrix job's outputs to
-  # whichever entry finished last, so `needs.publish.outputs.published` cannot
-  # say which package published and which was skipped as already-on-npm. The
-  # wording below is therefore true of both outcomes; the per-package answer is
-  # the reusable workflow's `published` output, read by single-call consumers.
   notify_slack:
     name: Notify Slack
     needs:

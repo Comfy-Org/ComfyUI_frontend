@@ -15,14 +15,16 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
+import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
+import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -44,6 +46,8 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -53,10 +57,12 @@ export function useWorkflowPersistenceV2() {
   const router = useRouter()
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
-  const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
-  let openedFolderWorkflows = false
+  const linkedWorkflowUrlLoader = useLinkedWorkflowUrlLoader()
+  let openedLinkedWorkflow = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
+  const LOCAL_HANDOFF_NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
+  const { flags } = useFeatureFlags()
   const draftStore = useWorkflowDraftStoreV2()
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
@@ -249,10 +255,11 @@ export function useWorkflowPersistenceV2() {
     if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved, { isCurrent })
+      if (
+        saved &&
+        (await useWorkflowService().openWorkflow(saved, { isCurrent }))
+      )
         return true
-      }
     }
 
     return await draftStore.loadPersistedWorkflow({
@@ -289,7 +296,13 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
+  const hasLocalHandoffIntent = () =>
+    flags.openOnCloudEnabled &&
+    hasPreservedIntent(LOCAL_HANDOFF_NAMESPACE, LOCAL_HANDOFF_PARAM)
+
+  const resolveStartupOutcome = async (
+    workflowLinkPending = false
+  ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
       return 'restored'
@@ -298,7 +311,10 @@ export function useWorkflowPersistenceV2() {
     await useWorkflowService().loadBlankWorkflow()
     await nextTick()
     discardStartupBlankDraft()
-    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+    return workflowLinkPending ||
+      hasSharedWorkflowIntent() ||
+      hasTemplateUrlIntent() ||
+      hasLocalHandoffIntent()
       ? 'url-intent'
       : 'fresh'
   }
@@ -316,12 +332,14 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
-    openedFolderWorkflows =
-      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
-    if (openedFolderWorkflows) return 'restored'
+    const linkedWorkflow =
+      await linkedWorkflowUrlLoader.openLinkedWorkflowFromUrl()
+    const workflowLinkPending = linkedWorkflow === 'pending'
+    openedLinkedWorkflow = linkedWorkflow === 'opened'
+    if (openedLinkedWorkflow) return 'restored'
 
     if (!workflowPersistenceEnabled.value) {
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(workflowLinkPending)
     }
 
     const isRestoreCurrent = await waitForRestoreIdentity()
@@ -335,10 +353,12 @@ export function useWorkflowPersistenceV2() {
       if (!isRestoreCurrent()) return 'restored'
       const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
       if (!isRestoreCurrent()) return 'restored'
-      return restored ? 'restored' : await resolveStartupOutcome()
+      return restored
+        ? 'restored'
+        : await resolveStartupOutcome(workflowLinkPending)
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      return await resolveStartupOutcome()
+      return await resolveStartupOutcome(workflowLinkPending)
     }
   }
 
@@ -426,6 +446,17 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const stampWithDraftTime = (
+    restored: ComfyWorkflow,
+    draftPath: string,
+    draftData: ComfyWorkflowJSON,
+    draftUpdatedAt: number
+  ) => {
+    const builtFromThisDraft =
+      restored.path === draftPath && isValidUuid(draftData.id)
+    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+  }
+
   const restoreSavedTabs = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
@@ -459,7 +490,8 @@ export function useWorkflowPersistenceV2() {
       if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        workflowStore.createTemporary(draft.name, workflowData)
+        const restored = workflowStore.createTemporary(draft.name, workflowData)
+        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
@@ -476,7 +508,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
-    if (openedFolderWorkflows) return
+    if (openedLinkedWorkflow) return
 
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath

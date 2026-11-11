@@ -350,7 +350,38 @@
       class="mt-auto flex min-h-14 flex-col items-center justify-center gap-2 pt-4 text-sm"
     >
       <div
-        v-if="showPastDueNotice"
+        v-if="showSignupPaymentNotice"
+        role="status"
+        data-testid="pricing-signup-payment-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i
+          class="icon-[lucide--circle-alert] bg-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{ signupPaymentTitle }}
+          {{ t('subscription.signupPaymentRecovery.body') }}
+        </span>
+        <a
+          :href="CONTACT_SUPPORT_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-inter text-sm font-bold text-background no-underline hover:opacity-80"
+        >
+          {{ t('subscription.signupPaymentRecovery.contactSupport') }}
+        </a>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isOpeningPayment"
+          @click="finishPayment"
+        >
+          {{ t('subscription.signupPaymentRecovery.finishPayment') }}
+        </button>
+      </div>
+      <div
+        v-else-if="showPastDueNotice"
         role="status"
         data-testid="pricing-past-due-notice"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
@@ -392,7 +423,11 @@
         </span>
       </div>
       <I18nT
-        v-if="!showPastDueNotice && !showScheduledPlanChange"
+        v-if="
+          !showSignupPaymentNotice &&
+          !showPastDueNotice &&
+          !showScheduledPlanChange
+        "
         keypath="subscription.pricingBlurb"
         tag="p"
         class="m-0 text-center text-muted-foreground"
@@ -460,10 +495,12 @@ import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlid
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
-  amountForBillingCycle
+  amountForBillingCycle,
+  toTierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
@@ -486,7 +523,6 @@ import { formatSubscriptionDate } from '@/platform/billing/components/subscripti
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -520,7 +556,6 @@ const emit = defineEmits<{
 
 const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useBillingUI()
 
 // Every CTA here resolves to a billing write the server authorizes on its own,
 // so each catalog asks whether any write that reaches it is permitted instead of
@@ -532,7 +567,6 @@ const { permissions } = useBillingUI()
 // The team catalog is not reachable by downgrading to personal, so its gate
 // stops at the three writes that do reach it.
 const lifecycleActionPermitted = computed(() => {
-  if (!isCloud) return permissions.value.canManageSubscription
   if (!capabilities.snapshotAuthoritative.value) return true
   return (
     capabilities.canSubscribeSelfServe.value ||
@@ -544,7 +578,6 @@ const lifecycleActionPermitted = computed(() => {
 // Read on its own by the plan-scope toggle, which offers or withholds the whole
 // personal catalog rather than one CTA, so it keeps its own capability.
 const canDowngradeToPersonal = computed(() => {
-  if (!isCloud) return permissions.value.canDowngradeToPersonal
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })
@@ -557,6 +590,7 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -679,6 +713,23 @@ const showPastDueNotice = computed(
   () => isCloud && paymentRecoveryLock.value !== null
 )
 const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
+const {
+  subscriptionPaymentRecovery,
+  recoveryPlanTier,
+  isOpeningPayment,
+  finishPayment
+} = useSubscriptionPaymentRecovery()
+const showSignupPaymentNotice = computed(
+  () => isCloud && subscriptionPaymentRecovery.value !== null
+)
+const signupPaymentTitle = computed(() => {
+  const tierKey = recoveryPlanTier.value && toTierKey(recoveryPlanTier.value)
+  return tierKey
+    ? t('subscription.signupPaymentRecovery.title', {
+        plan: t(`subscription.tiers.${tierKey}.name`)
+      })
+    : t('subscription.signupPaymentRecovery.titleNoPlan')
+})
 watch(
   () => outstandingPaymentRefusals,
   async () => {
@@ -922,6 +973,12 @@ const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
     return date
       ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
       : t('subscription.planUnavailable.subscriptionChangeInProgress')
+  }
+  if (
+    plan.denied_reason === 'billing_operation_in_progress' &&
+    showSignupPaymentNotice.value
+  ) {
+    return undefined
   }
   const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
   return t(key || 'subscription.planUnavailable.generic')

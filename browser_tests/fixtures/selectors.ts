@@ -47,6 +47,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    creditsLockedNotice: 'credits-locked-notice',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
@@ -190,6 +191,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    legacyCanvas: 'legacy-widget-canvas',
+    numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',

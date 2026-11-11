@@ -90,12 +90,18 @@ import type {
   NodeExecutionOutput
 } from '@comfyorg/api-client/executionTypes'
 import type { NodeError } from '@comfyorg/api-client/types'
-import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import {
+  isComboInputSpecV1,
+  isComboInputSpecV2
+} from '@comfyorg/object-info-parser'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import {
+  promptErrorHasLockedCredits,
+  resolveAccountPrecondition
+} from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -770,7 +776,13 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -798,21 +810,27 @@ export class ComfyApp implements IComfyApp {
       })
       if (precondition) {
         void useAccountPreconditionDialog().open(precondition, {
-          nodeType: detail.node_type
+          nodeType: detail.node_type,
+          runRefused: true
         })
       }
       this.canvas.draw(true, true)
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          jobId,
+          workflowId
+        )
+      ) {
         releaseSharedObjectUrl(blobUrl)
         return
       }
@@ -1210,7 +1228,8 @@ export class ComfyApp implements IComfyApp {
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
-      useWorkflowService().beforeLoadNewGraph(clean)
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
+      replaceCanvas()
       ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
 
@@ -1552,9 +1571,11 @@ export class ComfyApp implements IComfyApp {
         })
       )
 
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        missingNodeTypes
+      await withGraphIntentSource('load', () =>
+        useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          missingNodeTypes
+        )
       )
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
@@ -1955,8 +1976,21 @@ export class ComfyApp implements IComfyApp {
                 })
               : undefined
             if (promptPrecondition) {
-              const opened =
-                await useAccountPreconditionDialog().open(promptPrecondition)
+              const opened = await useAccountPreconditionDialog().open(
+                promptPrecondition,
+                {
+                  runRefused: true,
+                  creditsLocked: promptErrorHasLockedCredits(
+                    error instanceof PromptExecutionError
+                      ? error.response.error
+                      : null
+                  ),
+                  ...(promptError?.type &&
+                    promptError.type !== 'error' && {
+                      refusalType: promptError.type
+                    })
+                }
+              )
               if (opened) {
                 console.error(error)
                 break
@@ -2242,7 +2276,9 @@ export class ComfyApp implements IComfyApp {
                   'beforeLoadGraph'
                 )
                 lifecycle.started = true
-                useWorkflowService().beforeLoadNewGraph(false)
+                const replaceCanvas =
+                  useWorkflowService().beforeLoadNewGraph(false)
+                replaceCanvas()
               } finally {
                 useMissingNodesErrorStore().setMissingNodeTypes([])
               }
@@ -2271,9 +2307,11 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
-          await useExtensionService().invokeExtensionsAsync(
-            'afterConfigureGraph',
-            []
+          await withGraphIntentSource('load', () =>
+            useExtensionService().invokeExtensionsAsync(
+              'afterConfigureGraph',
+              []
+            )
           )
           await useWorkflowService().afterLoadNewGraph(
             fileName,
@@ -2436,7 +2474,8 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
-      useWorkflowService().beforeLoadNewGraph(false)
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
+      replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())
@@ -2629,9 +2668,11 @@ export class ComfyApp implements IComfyApp {
         app.rootGraph.arrange()
       })
 
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        missingNodeTypes
+      await withGraphIntentSource('load', () =>
+        useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          missingNodeTypes
+        )
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,

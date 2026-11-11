@@ -94,8 +94,8 @@ test.describe(
           await expect(
             comfyPage.vueNodes.getNodeByTitle('New Subgraph')
           ).toHaveCount(2)
-          await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-          const copy = comfyPage.vueNodes.selectedNodes
+          await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
+          const copy = comfyPage.vueNodes.emphasizedNodes
           await expect(copy).not.toHaveAttribute(
             'data-node-id',
             String(originalRef.id)

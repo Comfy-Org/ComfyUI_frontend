@@ -1,6 +1,8 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
+    <h3
+      class="mt-2.5 text-center font-sans text-[15px] font-bold text-muted-foreground"
+    >
       {{ t('maskEditor.brushSettings') }}
     </h3>
 

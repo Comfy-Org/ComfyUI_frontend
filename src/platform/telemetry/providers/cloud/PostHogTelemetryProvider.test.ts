@@ -183,6 +183,30 @@ describe('PostHogTelemetryProvider', () => {
     setLocation('')
   })
 
+  it.for([
+    { outcome: 'opened', workspace_id: 'workspace-1' },
+    { outcome: 'not_found', workspace_id: 'workspace-1' },
+    { outcome: 'error', workspace_id: null },
+    {
+      outcome: 'out_of_sync',
+      reason: 'content_mismatch',
+      workspace_id: 'workspace-1'
+    }
+  ] as const)(
+    'records the workflow-id link result $outcome with no workflow name, path or id',
+    async (metadata) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWorkflowLinkOpened(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:workflow_link_opened',
+        metadata
+      )
+    }
+  )
+
   describe('initialization', () => {
     it('disables itself when posthog_project_token is not provided', async () => {
       const provider = createProvider({ posthog_project_token: undefined })
@@ -626,7 +650,12 @@ describe('PostHogTelemetryProvider', () => {
         save_error_shown: true
       })
       provider.trackAgentOnboardingShown()
-      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+      provider.trackAgentOnboardingStep({
+        step: 3,
+        card: 'history',
+        total: 3,
+        action: 'finish'
+      })
 
       expect(hoisted.mockCapture.mock.calls).toEqual([
         [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
@@ -635,7 +664,10 @@ describe('PostHogTelemetryProvider', () => {
           { decision: 'dismissed', save_error_shown: true }
         ],
         [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
-        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+        [
+          TelemetryEvents.AGENT_ONBOARDING_STEP,
+          { step: 3, card: 'history', total: 3, action: 'finish' }
+        ]
       ])
     })
 
@@ -883,6 +915,7 @@ describe('PostHogTelemetryProvider', () => {
         outcome: 'timed_out',
         phase_count: 1,
         untraced_ms: 2700,
+        hidden_ms: 0,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1170,7 +1203,8 @@ describe('PostHogTelemetryProvider', () => {
             reason: 'dismissed',
             client_message_id: 'client-message-1',
             held_ms: 1200,
-            thread_id: null
+            thread_id: null,
+            client_session_id: 'client-session-1'
           }),
         properties: {
           gate: 'consent',
@@ -1178,7 +1212,8 @@ describe('PostHogTelemetryProvider', () => {
           reason: 'dismissed',
           client_message_id: 'client-message-1',
           held_ms: 1200,
-          thread_id: null
+          thread_id: null,
+          client_session_id: 'client-session-1'
         }
       }
     ])(

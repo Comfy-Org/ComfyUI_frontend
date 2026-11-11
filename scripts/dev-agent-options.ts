@@ -14,8 +14,10 @@ export interface Options {
   healthPort: number
   help: boolean
   pgExec: string
+  pgPort: number
   record: boolean
   redisExec: string
+  redisPort: number
   target: 'cloud' | 'local'
   temporalPort: number
   temporalUiPort: number
@@ -40,8 +42,10 @@ Options:
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8096)
   --pg-exec CMD         Command taking one SQL string, ending in -c; quote
-                        an argument that contains a space
-  --redis-exec CMD      redis-cli-compatible command for recording
+                        an argument that contains a space; must target --pg-port
+  --pg-port PORT        Record-mode Postgres port (default: 54331)
+  --redis-exec CMD      redis-cli-compatible command targeting --redis-port
+  --redis-port PORT     Record-mode Redis port (default: 6379)
   --engine NAME         Record mode engine: inline or temporal (default: inline)
   --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
   --help                Show this help
@@ -105,8 +109,10 @@ export function parseOptions(args: string[]): Options {
     healthPort: 0,
     help: false,
     pgExec: '',
+    pgPort: 54331,
     record: false,
     redisExec: '',
+    redisPort: 6379,
     target: 'local',
     temporalPort: 7234,
     temporalUiPort: 0
@@ -155,8 +161,16 @@ export function parseOptions(args: string[]): Options {
         options.pgExec = optionValue(args, index, arg)
         index++
         break
+      case '--pg-port':
+        options.pgPort = port(optionValue(args, index, arg), arg)
+        index++
+        break
       case '--redis-exec':
         options.redisExec = optionValue(args, index, arg)
+        index++
+        break
+      case '--redis-port':
+        options.redisPort = port(optionValue(args, index, arg), arg)
         index++
         break
       case '--record':
@@ -234,7 +248,9 @@ export function parseOptions(args: string[]): Options {
       ['agent', options.agentPort],
       ['agent health', options.healthPort],
       ['frontend', options.frontendPort],
-      ['doc host', options.docHostPort]
+      ['doc host', options.docHostPort],
+      ['Postgres', options.pgPort],
+      ['Redis', options.redisPort]
     ]
     for (const [label, portNumber] of taken) {
       if (

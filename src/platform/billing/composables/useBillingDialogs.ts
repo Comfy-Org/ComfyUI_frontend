@@ -1,14 +1,13 @@
 import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import TopUpCreditsDialogContentLegacy from '@/platform/billing/components/TopUpCreditsDialogContentLegacy.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { BillingTopUpDenial } from '@comfyorg/billing-core'
 import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
 } from '@/platform/billing/composables/types'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
 import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -18,7 +17,9 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
+import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -27,6 +28,25 @@ import {
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+
+const DENIED_TOP_UP_OUTCOME: Record<
+  BillingTopUpDenial | 'unresolved',
+  'member' | 'plans' | 'handled' | { toast: string }
+> = {
+  not_workspace_owner: 'member',
+  free_plan: 'plans',
+  no_subscription: 'plans',
+  subscription_ended: 'plans',
+  payment_past_due: 'handled',
+  topup_purchases_paused: { toast: 'credits.topUp.deniedTopupsPaused' },
+  creator_only_provisioning: { toast: 'credits.topUp.deniedCreatorOnly' },
+  tier_not_self_serve: { toast: 'subscription.planUnavailable.salesManaged' },
+  not_a_member: { toast: 'subscription.planUnavailable.notAMember' },
+  subscription_status_unrecognized: {
+    toast: 'subscription.planUnavailable.billingStateUnknown'
+  },
+  unresolved: { toast: 'subscription.planUnavailable.billingStateUnknown' }
+}
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
@@ -40,7 +60,6 @@ export function useBillingDialogs() {
         options?.source ??
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
-    const { type } = useBillingContext()
     const { canTopUp, topUpDenial, isReady, initialize } =
       useBillingCapabilities()
     if (!isReady.value) await initialize()
@@ -50,29 +69,36 @@ export function useBillingDialogs() {
       return usePaymentRecoveryDialog().showPaymentRecoveryDialog()
     }
 
-    if (!canTopUp.value && type.value === 'workspace') {
-      return dialogStore.showDialog({
-        key: 'insufficient-credits-member',
-        component: InsufficientCreditsMemberDialog,
-        props: {
-          onClose: () =>
-            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
-        },
-        dialogComponentProps: {
-          headless: true
-        }
-      })
+    if (!canTopUp.value) {
+      const outcome = DENIED_TOP_UP_OUTCOME[topUpDenial.value ?? 'unresolved']
+      if (outcome === 'member') {
+        return dialogStore.showDialog({
+          key: 'insufficient-credits-member',
+          component: InsufficientCreditsMemberDialog,
+          props: {
+            onClose: () =>
+              dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+          },
+          dialogComponentProps: {
+            headless: true
+          }
+        })
+      }
+      if (outcome === 'plans') {
+        await useSubscriptionDialog().show({
+          reason: options?.source ?? 'out_of_credits'
+        })
+      } else if (outcome !== 'handled') {
+        useToast().error(t(outcome.toast))
+      }
+      return
     }
-    if (!canTopUp.value) return
-
-    // Unknown never selects the legacy content, which buys credits directly.
-    const isWorkspaceRail = type.value !== 'legacy'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: isWorkspaceRail
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy,
+      component: useFeatureFlags().flags.billingNewUxEnabled
+        ? AddCreditsDialogContent
+        : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
         headless: true

@@ -7,9 +7,9 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
-  DEFAULT_DARK_COLOR_PALETTE,
-  DEFAULT_LIGHT_COLOR_PALETTE
-} from '@/constants/coreColorPalettes'
+  DEFAULT_DARK_THEME_PRESET,
+  DEFAULT_LIGHT_THEME_PRESET
+} from '@comfyorg/theme-core/builtInThemePresets'
 
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
 import { t } from '@/i18n'
@@ -22,13 +22,15 @@ import {
 import {
   deleteSelectedLinks,
   hideSelectedLinks,
-  showSelectedLinks
+  showSelectedLinks,
+  toggleNodeLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
+import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
@@ -61,7 +63,7 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -87,18 +89,33 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    subscriptionState,
+    isInitialized,
+    initialize,
+    type: billingType
+  } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
 
-  function blockRunWithoutSubscription(): boolean {
-    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+  async function blockRunWithoutSubscription(): Promise<boolean> {
+    if (!isCloud) return false
+    if (!isInitialized.value) await initialize().catch(() => undefined)
+    if (billingType.value === 'unknown') return true
+    if (canAccessSubscriptionFeatures.value) return false
     if (isSalesManagedTier(subscription.value?.tier)) {
       toast.warning(t('subscription.salesManagedRunBlockedTitle'), {
         description: t('subscription.salesManagedRunBlockedDetail'),
         duration: 5000
       })
     } else {
-      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+      showSubscriptionDialog(
+        subscribeToRunDialogOptions({
+          subscriptionState: subscriptionState.value,
+          hasFunds: subscription.value?.hasFunds
+        })
+      )
     }
     return true
   }
@@ -107,7 +124,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const { showSignInDialog } = useAuthDialogs()
-  const colorPaletteStore = useColorPaletteStore()
+  const themeStore = useThemeStore()
   const authActions = useAuthActions()
   const toast = useToast()
   const canvasStore = useCanvasStore()
@@ -124,7 +141,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
 
-  const { getSelectedNodes, toggleSelectedNodesMode } =
+  const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
@@ -530,7 +547,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -550,7 +567,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -569,7 +586,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
@@ -679,6 +696,16 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Links',
+      icon: 'icon-[lucide--eye-off]',
+      label: 'Hide/Show Links on Selected Nodes',
+      versionAdded: '1.61.0',
+      mutatesGraph: true,
+      function: () => {
+        toggleNodeLinks(app.canvas, getSelectedNodesShallow())
+      }
+    },
+    {
       id: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
       icon: 'icon-[lucide--pin]',
       label: 'Pin/Unpin Selected Nodes',
@@ -740,13 +767,13 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Theme (Dark/Light)',
       versionAdded: '1.3.12',
       function: (() => {
-        let previousDarkTheme: string = DEFAULT_DARK_COLOR_PALETTE.id
-        let previousLightTheme: string = DEFAULT_LIGHT_COLOR_PALETTE.id
+        let previousDarkTheme: string = DEFAULT_DARK_THEME_PRESET.id
+        let previousLightTheme: string = DEFAULT_LIGHT_THEME_PRESET.id
 
         return async () => {
           const settingStore = useSettingStore()
-          const theme = colorPaletteStore.completedActivePalette
-          if (theme.light_theme) {
+          const theme = themeStore.activeTheme
+          if (theme.colorScheme === 'light') {
             previousLightTheme = theme.id
             await settingStore.set('Comfy.ColorPalette', previousDarkTheme)
           } else {
