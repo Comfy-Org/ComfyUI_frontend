@@ -468,13 +468,14 @@ describe('LGraphNode', () => {
       nodeData: { ...mockNodeData, graphId: 'graph-test' }
     })
     const element = document.createElement('div')
+    const promptRow = document.createElement('div')
+    const notesRow = document.createElement('div')
+    promptRow.dataset.widgetName = 'prompt'
+    notesRow.dataset.widgetName = 'notes'
     Object.defineProperty(element, 'offsetHeight', { value: 260 })
-    for (const name of ['prompt', 'notes']) {
-      const row = document.createElement('div')
-      row.dataset.widgetName = name
-      Object.defineProperty(row, 'offsetHeight', { value: 50 })
-      element.append(row)
-    }
+    Object.defineProperty(promptRow, 'offsetHeight', { value: 50 })
+    Object.defineProperty(notesRow, 'offsetHeight', { value: 50 })
+    element.append(promptRow, notesRow)
 
     mockData.resizeCallback?.({ size: { width: 300, height: 500 } }, element)
 
