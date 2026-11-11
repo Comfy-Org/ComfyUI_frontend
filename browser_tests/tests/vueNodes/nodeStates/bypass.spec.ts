@@ -16,7 +16,7 @@ test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
   })
 
   test(
-    'should allow toggling bypass on a selected node with hotkey',
+    'should toggle bypass only on selected nodes with hotkey',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       const [offsetX, offsetY] = await comfyPage.canvasOps.getOffset()
@@ -28,39 +28,32 @@ test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
         .locator('[data-node-id]')
         .filter({ hasText: 'Load Checkpoint' })
         .getByTestId('node-inner-wrapper')
+      const ksamplerNode = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByTestId('node-inner-wrapper')
+      const unselectedNode = comfyPage.vueNodes
+        .getNodeByTitle('Empty Latent Image')
+        .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
+      await expect(unselectedNode).not.toHaveClass(BYPASS_CLASS)
       await expectRegionScreenshot(
         comfyPage.page,
         [checkpointNode],
         'vue-node-bypassed-state.png'
       )
 
+      await comfyPage.page
+        .getByText('KSampler')
+        .click({ modifiers: ['Control'] })
+      await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
+      await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
+      await expect(ksamplerNode).toHaveClass(BYPASS_CLASS)
+      await expect(unselectedNode).not.toHaveClass(BYPASS_CLASS)
+
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
       await expect(checkpointNode).not.toHaveClass(BYPASS_CLASS)
+      await expect(ksamplerNode).not.toHaveClass(BYPASS_CLASS)
+      await expect(unselectedNode).not.toHaveClass(BYPASS_CLASS)
     }
   )
-
-  test('should allow toggling bypass on multiple selected nodes with hotkey', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.getByText('Load Checkpoint').click()
-    await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
-
-    const checkpointNode = comfyPage.page
-      .locator('[data-node-id]')
-      .filter({ hasText: 'Load Checkpoint' })
-      .getByTestId('node-inner-wrapper')
-    const ksamplerNode = comfyPage.page
-      .locator('[data-node-id]')
-      .filter({ hasText: 'KSampler' })
-      .getByTestId('node-inner-wrapper')
-
-    await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
-    await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
-    await expect(ksamplerNode).toHaveClass(BYPASS_CLASS)
-
-    await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
-    await expect(checkpointNode).not.toHaveClass(BYPASS_CLASS)
-    await expect(ksamplerNode).not.toHaveClass(BYPASS_CLASS)
-  })
 })

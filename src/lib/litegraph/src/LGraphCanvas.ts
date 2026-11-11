@@ -5326,15 +5326,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const node of visible_nodes) {
         ctx.save()
 
-        // Draw snap shadow
         if (drawSnapGuides && selectedItems.has(node))
           this.drawSnapGuide(ctx, node)
 
-        // Localise co-ordinates to node position
         ctx.translate(node.pos[0], node.pos[1])
 
-        // Draw
         this.drawNode(node, ctx)
+        if (LiteGraph.vueNodesMode) {
+          for (const widget of node.widgets ?? []) widget.triggerDraw?.()
+        }
 
         ctx.restore()
       }

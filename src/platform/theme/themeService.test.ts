@@ -6,6 +6,7 @@ import { basename, join } from 'node:path'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import {
   useLegacyColorPaletteService,
@@ -49,14 +50,20 @@ describe('useThemeService theme variables', () => {
       foreground: readRootProperty('--node-foreground'),
       radius: readRootProperty('--node-radius'),
       titleSize: readRootProperty('--node-title-font-size'),
-      icons: readRootProperty('--node-icon-style')
+      icons: readRootProperty('--node-icon-style'),
+      widgetHeight: readRootProperty('--node-widget-height'),
+      widgetRadius: readRootProperty('--node-widget-radius'),
+      widgetBorderWidth: readRootProperty('--node-widget-border-width')
     }).toEqual({
       node: '#353535',
       header: '#333',
       foreground: '#AAA',
       radius: '8px',
       titleSize: '14px',
-      icons: 'triangle'
+      icons: 'triangle',
+      widgetHeight: '20px',
+      widgetRadius: '9999px',
+      widgetBorderWidth: '1px'
     })
 
     await service.setActiveTheme('dark')
@@ -64,8 +71,11 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node-radius'),
       readRootProperty('--node-title-font-size'),
-      readRootProperty('--node-icon-style')
-    ]).toEqual(['', '', ''])
+      readRootProperty('--node-icon-style'),
+      readRootProperty('--node-widget-height'),
+      readRootProperty('--node-widget-radius'),
+      readRootProperty('--node-widget-border-width')
+    ]).toEqual(['', '', '', '', '', ''])
   })
 
   it.for([
@@ -409,6 +419,40 @@ describe('useThemeService', () => {
     expect([customValue, readRootProperty(SHADOW_PROPERTY)]).toEqual([
       customShadow,
       ''
+    ])
+  })
+
+  it('applies a palette widget gap to both renderers and restores the default', async () => {
+    clearRootThemeAfterTest()
+    onTestFinished(() => {
+      document.documentElement.style.removeProperty('--node-widget-gap')
+    })
+    const store = useThemeStore()
+    const dark = store.presetsLookup.dark
+    assert.exists(dark)
+    store.addCustomPreset({
+      ...dark,
+      id: 'custom-gap',
+      colors: {
+        ...dark.colors,
+        litegraph_base: { ...dark.colors.litegraph_base, NODE_WIDGET_GAP: 10 }
+      }
+    })
+    const service = useThemeService()
+
+    await service.setActiveTheme('custom-gap')
+    const custom = [
+      readRootProperty('--node-widget-gap'),
+      LiteGraph.NODE_WIDGET_GAP
+    ]
+    await service.setActiveTheme('dark')
+
+    expect([
+      custom,
+      [readRootProperty('--node-widget-gap'), LiteGraph.NODE_WIDGET_GAP]
+    ]).toEqual([
+      ['10px', 10],
+      ['4px', 4]
     ])
   })
 })

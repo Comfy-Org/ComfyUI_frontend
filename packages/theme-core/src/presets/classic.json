@@ -69,6 +69,9 @@
       "node-radius": "8px",
       "node-title-font-size": "14px",
       "node-icon-style": "triangle",
+      "node-widget-height": "20px",
+      "node-widget-radius": "9999px",
+      "node-widget-border-width": "1px",
       "shadow-color": "rgb(0 0 0 / 0.5)"
     }
   }
