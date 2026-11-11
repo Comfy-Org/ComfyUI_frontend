@@ -30,6 +30,27 @@ describe('ChatHistorySelectButton', () => {
     expect(emitted().select).toEqual([[]])
   })
 
+  it('shows no icon at rest and a spinner after the title only while loading', async () => {
+    const { rerender } = render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(button.innerHTML).not.toContain('lucide')
+
+    await rerender({ loading: true })
+
+    expect(button.innerHTML).toContain('lucide--loader-circle')
+    expect(button.innerHTML.indexOf('Portrait chat')).toBeLessThan(
+      button.innerHTML.indexOf('lucide--loader-circle')
+    )
+
+    await rerender({ loading: false })
+
+    expect(button.innerHTML).not.toContain('lucide')
+  })
+
   it('describes a result row with its preview, date, current marker and workflow', () => {
     render(ChatHistorySelectButton, {
       props: {

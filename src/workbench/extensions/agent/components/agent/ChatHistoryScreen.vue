@@ -341,10 +341,6 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
             v-if="renamingId === session.id"
             class="flex min-w-0 flex-1 items-center"
           >
-            <i
-              aria-hidden="true"
-              class="icon-[lucide--circle-check] text-muted-foreground"
-            />
             <Input
               :ref="focusInput"
               v-model="renameDraft"

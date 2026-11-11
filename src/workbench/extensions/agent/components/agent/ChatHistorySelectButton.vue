@@ -69,12 +69,6 @@ const titleParts = computed(() =>
       class="min-w-0 items-start justify-start text-left text-xs font-normal"
       @click="emit('select')"
     >
-      <i
-        v-if="loading"
-        aria-hidden="true"
-        class="icon-[lucide--loader-circle] animate-spin"
-      />
-      <i v-else aria-hidden="true" class="icon-[lucide--circle-check]" />
       <span class="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           :class="
@@ -91,6 +85,11 @@ const titleParts = computed(() =>
           :current
         />
       </span>
+      <i
+        v-if="loading"
+        aria-hidden="true"
+        class="icon-[lucide--loader-circle] animate-spin"
+      />
     </Button>
     <span v-if="loading" role="status" class="sr-only">{{
       t('g.loading')
@@ -99,7 +98,7 @@ const titleParts = computed(() =>
       v-if="failed"
       :id="errorId"
       role="alert"
-      class="pl-6 text-xs whitespace-normal text-destructive"
+      class="text-xs whitespace-normal text-destructive"
       >{{ t('agent.historyOpenFailed') }}</span
     >
   </div>
