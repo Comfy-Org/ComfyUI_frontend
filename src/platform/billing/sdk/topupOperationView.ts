@@ -83,7 +83,7 @@ export function projectTopupOperation(
  * handles, carrying the terminal its status cannot: the decline reason, or
  * that this tab stopped watching, or that support must reconcile it.
  */
-class UncreditedTopupResponse implements CreateTopupResponse {
+export class UncreditedTopupResponse implements CreateTopupResponse {
   readonly topup_id = ''
 
   constructor(

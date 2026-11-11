@@ -60,7 +60,7 @@ function createAssetWidgetPath(asset: AssetItem): string {
 
   return createAnnotatedPath({
     filename: getAssetStoredFilename(asset),
-    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
+    subfolder: getOutputSubfolder(asset) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })
 }
@@ -645,7 +645,7 @@ export function useMediaAssetActions() {
           isGeneratedTempOutput(asset)
             ? 'temp'
             : (stored?.type ?? getAssetType(asset, 'input')),
-          getOutputSubfolder(asset.user_metadata),
+          getOutputSubfolder(asset),
           asset.hash ?? stored?.hash
         )
         return [

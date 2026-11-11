@@ -43,6 +43,8 @@ export interface AddCreditsPorts {
   readonly reserveTab: () => AddCreditsCheckoutTab | null
   /** Calls `landed` once the server reports the top-up went through; returns its stop. */
   readonly watchPayment: (landed: () => void) => () => void
+  /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
+  readonly autoTopUpSetupUrl?: () => Promise<string | null>
 }
 
 export type AddCreditsQuote =
@@ -158,14 +160,27 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
 
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
+  let disposed = false
 
   function armPaymentWatch() {
     if (stopWatch) return
     stopWatch = ports.watchPayment(() => {
       stopWatch?.()
-      dispatch({ type: 'payment_landed' })
-      options.onLanded?.()
+      void land()
     })
+  }
+
+  async function land() {
+    const setupUrl = ports.autoTopUpSetupUrl
+      ? await ports.autoTopUpSetupUrl().catch(() => null)
+      : null
+    if (disposed) return
+    dispatch(
+      setupUrl === null
+        ? { type: 'payment_landed' }
+        : { type: 'payment_landed', autoTopUpSetupUrl: setupUrl }
+    )
+    if (state.value.step === 'landed') options.onLanded?.()
   }
 
   async function openCheckout(amountCents: number) {
@@ -212,6 +227,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   }
 
   onScopeDispose(() => {
+    disposed = true
     quoteScope?.abort()
     checkoutScope?.abort()
     stopWatch?.()

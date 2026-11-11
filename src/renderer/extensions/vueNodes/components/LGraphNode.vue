@@ -7,18 +7,17 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg',
+        'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isEmphasized && 'outline-foreground',
-        executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -47,14 +46,6 @@
       class="absolute right-0 bottom-full"
       :style="badgesStyle"
     />
-    <NodeBloodDrips
-      v-if="
-        !isRerouteNode &&
-        !isCollapsed &&
-        !nodeData.flags?.ghost &&
-        ['spooky', 'zombie'].includes(settingStore.get('Comfy.ColorPalette'))
-      "
-    />
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -65,14 +56,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'pointer-events-none absolute z-0 border-3 outline-none',
+          'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isEmphasized ? 'border-foreground' : 'border-primary'
+          isEmphasized || executing ? 'block border-3' : 'hidden',
+          isEmphasized ? 'border-foreground' : executing && 'border-primary'
         )
       "
     />
@@ -340,7 +331,6 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
-import NodeBloodDrips from './NodeBloodDrips.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
@@ -553,16 +543,16 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-br-xl',
-    default: 'rounded-b-xl'
+    card: 'rounded-br-(--node-radius)',
+    default: 'rounded-b-(--node-radius)'
   })
 )
 
 const shapeClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-tl-xl rounded-br-xl',
-    default: 'rounded-xl'
+    card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
+    default: 'rounded-(--node-radius)'
   })
 )
 
@@ -576,13 +566,14 @@ const isTransparentHeaderless = computed(
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
-  const isExpanded = hasAnyError.value
   return shapeVariantClass(nodeData.shape, {
     box: '',
-    card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+    card: hasAnyError.value
+      ? 'rounded-tl-[calc(var(--node-radius)+11px)] rounded-br-[calc(var(--node-radius)+11px)]'
+      : 'rounded-tl-[calc(var(--node-radius)+7px)] rounded-br-[calc(var(--node-radius)+7px)]',
+    default: hasAnyError.value
+      ? 'rounded-[calc(var(--node-radius)+7px)]'
+      : 'rounded-[calc(var(--node-radius)+3px)]'
   })
 })
 
@@ -592,16 +583,16 @@ const BEFORE_OVERLAY_BASE =
 const bypassOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
   })
 )
 
 const mutedOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: BEFORE_OVERLAY_BASE,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE}`
   })
 )
 

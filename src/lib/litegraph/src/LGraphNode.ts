@@ -2260,7 +2260,7 @@ export class LGraphNode
         } else {
           widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
-        widgets_height += widget_height + 4
+        widgets_height += widget_height + LiteGraph.NODE_WIDGET_GAP
       }
       widgets_height += 8
     }
@@ -4568,7 +4568,11 @@ export class LGraphNode
     const visibleWidgets = this.getLayoutWidgets()
     const layout = layoutNodeBody(
       { bodyHeight, startY, rowGap: 0 },
-      widgetRowSpecs(visibleWidgets, this, LiteGraph.NODE_WIDGET_HEIGHT + 4)
+      widgetRowSpecs(
+        visibleWidgets,
+        this,
+        LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
+      )
     )
     this.freeWidgetSpace = layout.freeSpace
     for (const [i, widget] of visibleWidgets.entries()) {

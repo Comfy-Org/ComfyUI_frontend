@@ -811,11 +811,6 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -1075,11 +1070,6 @@
   "src/stores/userStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/types/extensionTypes.ts": {
