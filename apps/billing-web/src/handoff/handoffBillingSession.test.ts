@@ -154,8 +154,11 @@ describe('createHandoffBillingSession', () => {
 describe('endHandoffAtExpiry', () => {
   it('ends the handoff when the session expires, with nothing calling billing', () => {
     vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const { storage, clock } = setup()
-    const stop = endHandoffAtExpiry(storage, () => clock.now)
+    onTestFinished(endHandoffAtExpiry(storage, () => clock.now))
 
     vi.advanceTimersByTime(30 * 60_000 - 1)
     expect(handoffTab.value).toEqual(live)
@@ -166,6 +169,5 @@ describe('endHandoffAtExpiry', () => {
       kind: 'ended',
       ending: 'session_ended'
     })
-    stop()
   })
 })
