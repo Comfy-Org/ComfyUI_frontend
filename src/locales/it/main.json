@@ -1242,6 +1242,7 @@
     "apiPricing": "Prezzi API",
     "charge": "Addebito",
     "credits": "Crediti",
+    "creditUnit": "Credito | Crediti",
     "creditsAvailable": "Crediti disponibili",
     "details": "Dettagli",
     "eventType": "Tipo di evento",
@@ -1273,10 +1274,6 @@
       "addMoreCredits": "Aggiungi altri crediti",
       "addMoreCreditsToRun": "Aggiungi altri crediti per eseguire",
       "amountToPayLabel": "Importo da pagare in dollari",
-      "autoTopUp": {
-        "prompt": "Stai per esaurire i crediti? Attiva la ricarica automatica.",
-        "setUp": "Configura"
-      },
       "awaitingBankApprovalBody": "La tua banca deve approvare questo pagamento prima che i crediti vengano aggiunti. Puoi completarlo dall'app della tua banca o dal link di pagamento per questo acquisto. Non puoi avviare una nuova ricarica finché questa non viene completata o scade.",
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
@@ -6365,7 +6362,7 @@
     "createWorkspace": "Crea un workspace",
     "failedToSwitch": "Cambio workspace non riuscito",
     "managedByOrganization": "La tua organizzazione gestisce i tuoi workspace, quindi non puoi crearne uno.",
-    "maxWorkspacesReached": "Puoi possedere solo 10 workspace. Elimina uno per crearne uno nuovo.",
+    "maxWorkspacesReached": "Puoi possedere solo {max} workspace. Elimina uno per crearne uno nuovo.",
     "personal": "Personale",
     "roleMember": "Membro",
     "roleOwner": "Proprietario",

@@ -1,4 +1,4 @@
-import { computed, shallowRef } from 'vue'
+import { computed, readonly, ref, shallowRef } from 'vue'
 
 import type {
   DesktopHostAuthBridge,
@@ -24,6 +24,11 @@ let bridgeReportsSignInFailures = false
 let unsubscribe: (() => void) | undefined
 /** Bumped on every session change, so a reply that raced one is dropped. */
 let revision = 0
+let lastTokenReadFailed = false
+const recoveredTokenReads = ref(0)
+
+/** Counts credential reads that succeeded right after a failed one. */
+export const desktopHostTokenRecoveries = readonly(recoveredTokenReads)
 
 function toSession(state: DesktopHostAuthState): DesktopHostSession {
   if (state.status === 'disabled') return { status: 'inactive' }
@@ -93,6 +98,7 @@ export function desktopHostReportsSignInFailures(): boolean {
 export function stopDesktopHostSession(): void {
   unsubscribe?.()
   bridgeReportsSignInFailures = false
+  lastTokenReadFailed = false
   unsubscribe = undefined
   bridge = undefined
   revision++
@@ -116,7 +122,10 @@ async function fetchToken(
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
   const token = await read(current).catch(() => null)
-  return revision === before ? (token ?? undefined) : undefined
+  if (revision !== before) return undefined
+  if (token && lastTokenReadFailed) recoveredTokenReads.value++
+  lastTokenReadFailed = !token
+  return token ?? undefined
 }
 
 /** Runs Desktop's browser sign-in. Resolves true when it ends signed in. */

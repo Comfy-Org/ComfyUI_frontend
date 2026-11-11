@@ -14,12 +14,12 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
 import { computed, useTemplateRef, watch } from 'vue'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -63,12 +63,14 @@ watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   }
 })
 
-useRafFn(
-  () => {
-    if (!props.canvas) {
-      return
-    }
-    syncWithCanvas(props.canvas)
+watch(
+  () => props.canvas,
+  (canvas, _, onCleanup) => {
+    if (!canvas) return
+    syncWithCanvas(canvas)
+    onCleanup(
+      onCanvasFrame(canvas.canvas, 'present', () => syncWithCanvas(canvas))
+    )
   },
   { immediate: true }
 )

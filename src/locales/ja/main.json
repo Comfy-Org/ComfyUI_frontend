@@ -1242,6 +1242,7 @@
     "apiPricing": "API料金",
     "charge": "請求",
     "credits": "クレジット",
+    "creditUnit": "クレジット",
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
@@ -1273,10 +1274,6 @@
       "addMoreCredits": "クレジットを追加",
       "addMoreCreditsToRun": "実行するためにクレジットを追加",
       "amountToPayLabel": "支払う金額（ドル）",
-      "autoTopUp": {
-        "prompt": "クレジットが残り少ないですか？自動チャージを有効にしましょう。",
-        "setUp": "設定する"
-      },
       "awaitingBankApprovalBody": "クレジットが追加される前に、この支払いを銀行が承認する必要があります。銀行のアプリまたはこの購入の支払いリンクから完了できます。この支払いが完了または期限切れになるまで、新しいチャージは開始できません。",
       "buy": "購入",
       "buyCredits": "支払いに進む",
@@ -6365,7 +6362,7 @@
     "createWorkspace": "新しいワークスペースを作成",
     "failedToSwitch": "ワークスペースの切り替えに失敗しました",
     "managedByOrganization": "組織がワークスペースを管理しているため、新しいワークスペースを作成できません。",
-    "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "maxWorkspacesReached": "所有できるワークスペースは{max}個までです。新しく作成するには1つ削除してください。",
     "personal": "個人用",
     "roleMember": "メンバー",
     "roleOwner": "オーナー",

@@ -173,7 +173,10 @@ test.describe('Properties panel - Node selection', () => {
       'a linked widget is suppressed while its slot remains connected',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        const seed = panel.contentArea.getByLabel('seed').locator('input')
+        const seed = panel.contentArea.getByRole('spinbutton', {
+          name: 'seed',
+          exact: true
+        })
         await comfyPage.searchBoxV2.addNode('Int')
         const intNode = await comfyPage.vueNodes.getFixtureByTitle(/Int/)
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')

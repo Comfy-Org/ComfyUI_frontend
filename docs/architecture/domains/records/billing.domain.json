@@ -97,7 +97,7 @@
       "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts"
     },
     {
-      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue"
+      "path": "src/platform/billing/components/AddCreditsDialogContent.vue"
     },
     {
       "path": "src/platform/billing/components/UnifiedPricingTable.stories.ts"
@@ -121,9 +121,6 @@
       "path": "src/platform/billing/composables/activateBillingScope.testUtils.ts"
     },
     {
-      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.ts"
-    },
-    {
       "path": "src/platform/billing/composables/useAutoTopUpBannerKind.ts"
     },
     {
@@ -134,9 +131,6 @@
     },
     {
       "path": "src/platform/billing/composables/billingOperationTestUtils.ts"
-    },
-    {
-      "path": "src/platform/billing/composables/deriveBillingBanner.test.ts"
     },
     {
       "path": "src/platform/billing/composables/readOnRail.ts"
@@ -268,8 +262,7 @@
         "src/platform/billing/stores/billingOperationStore.test.ts",
         "src/platform/billing/composables/useTopupOperation.test.ts",
         "src/platform/billing/composables/usePendingTopup.test.ts",
-        "src/platform/billing/composables/topupBalanceRefresh.test.ts",
-        "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts"
+        "src/platform/billing/composables/topupBalanceRefresh.test.ts"
       ]
     },
     {
@@ -278,7 +271,6 @@
         "src/platform/billing/composables/useBillingCapabilities.test.ts",
         "src/platform/billing/api/capabilityRevision.test.ts",
         "src/platform/billing/composables/useBillingBanner.test.ts",
-        "src/platform/billing/composables/deriveBillingBanner.test.ts",
         "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
         "src/platform/billing/customerAttention.test.ts",
         "src/platform/billing/customerActionParity.test.ts",

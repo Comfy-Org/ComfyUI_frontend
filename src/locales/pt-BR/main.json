@@ -1242,6 +1242,7 @@
     "apiPricing": "Preços da API",
     "charge": "Cobrar",
     "credits": "Créditos",
+    "creditUnit": "Crédito | Créditos",
     "creditsAvailable": "Créditos disponíveis",
     "details": "Detalhes",
     "eventType": "Tipo de evento",
@@ -1273,10 +1274,6 @@
       "addMoreCredits": "Adicionar mais créditos",
       "addMoreCreditsToRun": "Adicione mais créditos para executar",
       "amountToPayLabel": "Valor a pagar em dólares",
-      "autoTopUp": {
-        "prompt": "Está com poucos créditos? Ative a recarga automática.",
-        "setUp": "Configurar"
-      },
       "awaitingBankApprovalBody": "Seu banco precisa aprovar este pagamento antes que seus créditos sejam adicionados. Você pode concluí-lo pelo aplicativo do seu banco ou pelo link de pagamento desta compra. Não é possível iniciar uma nova recarga até que esta seja concluída ou expire.",
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
@@ -6365,7 +6362,7 @@
     "createWorkspace": "Criar novo espaço de trabalho",
     "failedToSwitch": "Falha ao trocar de espaço de trabalho",
     "managedByOrganization": "Sua organização gerencia seus espaços de trabalho, portanto você não pode criar um.",
-    "maxWorkspacesReached": "Você só pode possuir 10 espaços de trabalho. Exclua um para criar um novo.",
+    "maxWorkspacesReached": "Você só pode possuir {max} espaços de trabalho. Exclua um para criar um novo.",
     "personal": "Pessoal",
     "roleMember": "Membro",
     "roleOwner": "Proprietário",

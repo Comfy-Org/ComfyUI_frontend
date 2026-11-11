@@ -1242,6 +1242,7 @@
     "apiPricing": "API 價格",
     "charge": "扣款",
     "credits": "點數",
+    "creditUnit": "點數",
     "creditsAvailable": "可用點數",
     "details": "詳細資料",
     "eventType": "事件類型",
@@ -1273,10 +1274,6 @@
       "addMoreCredits": "儲值點數",
       "addMoreCreditsToRun": "儲值點數以執行",
       "amountToPayLabel": "需支付的美元金額",
-      "autoTopUp": {
-        "prompt": "點數快用完了嗎？開啟自動儲值。",
-        "setUp": "設定"
-      },
       "awaitingBankApprovalBody": "您的銀行需要核准這筆付款，之後才會將點數加入您的帳戶。您可以透過銀行的應用程式或此次購買的付款連結完成核准。在此筆付款完成或到期前，無法開始新的儲值。",
       "buy": "購買",
       "buyCredits": "繼續付款",
@@ -6365,7 +6362,7 @@
     "createWorkspace": "建立新工作區",
     "failedToSwitch": "切換工作區失敗",
     "managedByOrganization": "您的組織管理您的工作區，因此您無法建立工作區。",
-    "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
+    "maxWorkspacesReached": "您最多只能擁有 {max} 個工作區。請刪除一個以建立新工作區。",
     "personal": "個人",
     "roleMember": "成員",
     "roleOwner": "擁有者",

@@ -147,6 +147,8 @@ class Load3DConfiguration {
         modelWidget.value,
         isKeepingLoadedModel(this.load3d)
       )
+    } else if (isKeepingLoadedModel(this.load3d)) {
+      this.load3d.clearModel()
     }
 
     return onModelWidgetUpdate
