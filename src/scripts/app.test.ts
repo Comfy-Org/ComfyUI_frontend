@@ -2438,6 +2438,44 @@ describe('ComfyApp', () => {
       ).toEqual(['promptQueued', 'promptQueueAttemptEnded'])
     })
 
+    it('publishes an accepted submission when building a later one throws', async () => {
+      prepareEmptyPromptQueue()
+      const buildFailure = new Error('prompt build failed')
+      vi.spyOn(app, 'graphToPrompt')
+        .mockResolvedValueOnce({
+          output: {
+            '1': {
+              class_type: 'PreviewAny',
+              inputs: {},
+              _meta: { title: 'PreviewAny' }
+            }
+          },
+          workflow: createWorkflowGraphData()
+        })
+        .mockRejectedValueOnce(buildFailure)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValueOnce({ prompt_id: 'job-1' })
+
+      await expect(app.queuePrompt(-1, 2)).rejects.toBe(buildFailure)
+
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith('promptQueued', {
+        number: -1,
+        batchCount: 1,
+        requestId: expect.any(Number),
+        promptIds: ['job-1'],
+        submissions: [{ promptId: 'job-1', nodeCount: 1 }],
+        rejectedCount: 0
+      })
+      const eventTypes = vi
+        .mocked(api.dispatchCustomEvent)
+        .mock.calls.map(([type]) => type)
+      expect(
+        eventTypes.filter(
+          (type) =>
+            type === 'promptQueued' || type === 'promptQueueAttemptEnded'
+        )
+      ).toEqual(['promptQueued', 'promptQueueAttemptEnded'])
+    })
+
     it('reports accepted jobs whose metadata cannot be stored', async () => {
       prepareEmptyPromptQueue()
       const error = new Error('metadata unavailable')

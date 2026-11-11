@@ -794,10 +794,12 @@ export interface WidgetDef {
   readonly disabled?: boolean
   readonly hidden?: boolean
   /**
-   * Whether the value is written into the saved workflow.
+   * Whether the value is written into the saved workflow. It is still sent in
+   * the prompt.
    *
-   * Replaces `widget.serializeValue = async () => {}`, the idiom packs use to
-   * keep a derived readout out of `widgets_values`. Orthogonal to `hidden`.
+   * To keep a value out of the prompt instead, as the legacy
+   * `widget.serializeValue = async () => {}` did, set `options.serialize` to
+   * `false`: the value is saved and not sent.
    */
   readonly serialize?: boolean
 }
