@@ -250,6 +250,7 @@ describe('comfy API root', () => {
       const retained = comfy.graph.nodes()[0]
 
       active = second
+      expect(comfy.graph.node(String(inSecond.id))?.getTitle()).toBe('second')
       retained.setTitle('retargeted')
 
       expect(inSecond.title).toBe('second')
@@ -447,10 +448,8 @@ describe('comfy API root', () => {
       const second = new LGraphNode('Second', 'TestNode')
       graph.add(first)
       graph.add(second)
-      const seen: string[] = []
-      const stop = api().onExecutingNodeChanged((node) => {
-        if (node) seen.push(node.id)
-      })
+      const seen: (string | undefined)[] = []
+      const stop = api().onExecutingNodeChanged((node) => seen.push(node?.id))
 
       useExecutionStore().nodeProgressStates = {
         [String(first.id)]: {
@@ -461,6 +460,8 @@ describe('comfy API root', () => {
           prompt_id: 'test'
         }
       }
+      await nextTick()
+      useExecutionStore().nodeProgressStates = {}
       await nextTick()
       stop()
       useExecutionStore().nodeProgressStates = {
@@ -474,7 +475,7 @@ describe('comfy API root', () => {
       }
       await nextTick()
 
-      expect(seen).toEqual([String(first.id)])
+      expect(seen).toEqual([String(first.id), undefined])
     })
   })
 
