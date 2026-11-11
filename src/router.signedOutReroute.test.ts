@@ -173,6 +173,27 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     expect(router.currentRoute.value.name).toBe('cloud-survey')
   })
 
+  it('stays on the page when an account switched in after a Firebase sign-out has its flag off and its config fails', async () => {
+    remoteConfig.value = { signed_out_reroute_enabled: true }
+    remoteConfigState.value = 'authenticated'
+    const webSession = useCloudWebSessionStore()
+    webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
+    const router = await openSurveySignedIn()
+
+    useAuthStore().currentUser = null
+    await nextTick()
+    remoteConfig.value = {}
+    remoteConfigState.value = 'error'
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-b' })
+    await nextTick()
+    useAuthStore().currentUser = null
+    webSession.state = { phase: 'signed_out', outcome: 'signed_out' }
+    await nextTick()
+
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.name).toBe('cloud-survey')
+  })
+
   it('lands on sign-in when the remote config fails to load before the account leaves', async () => {
     remoteConfig.value = { signed_out_reroute_enabled: true }
     remoteConfigState.value = 'authenticated'
