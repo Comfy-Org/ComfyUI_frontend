@@ -43,11 +43,10 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
         position.value = { x, y }
         return
       }
-      const stop = onCanvasFrame(canvas.canvas, 'present', () => {
+      const stop = onCanvasFrame(canvas, 'present', () => {
         position.value = { x, y }
         stop()
       })
-      canvas.setDirty(true, true)
       onCleanup(stop)
     },
     { flush: 'sync' }

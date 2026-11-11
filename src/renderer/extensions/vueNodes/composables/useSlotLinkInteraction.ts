@@ -797,8 +797,6 @@ export function useSlotLinkInteraction({
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
       const { linkConnector } = activeAdapter
-      // Escape on the canvas resets the connector without ending this
-      // pointer session. Check after dispatch, since a listener may veto it.
       linkConnector.events.addEventListener(
         'reset',
         () =>
@@ -881,8 +879,7 @@ export function useSlotLinkInteraction({
       }
     }
     autoPan = new AutoPanController({
-      canvas: canvas.canvas,
-      ds: canvas.ds,
+      canvas,
       maxPanSpeed: canvas.auto_pan_speed,
       onPan: () => {
         const [canvasX, canvasY] = conversion.clientPosToCanvasPos([

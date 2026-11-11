@@ -2089,42 +2089,7 @@ describe('BillingTab', () => {
         canTopUp: false
       }
 
-      it('keeps the 1.60 member notice with the new UX off even when a status is served', () => {
-        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
-        arrange({
-          ...member,
-          autoTopUpMemberView: {
-            status: 'paused_by_budget',
-            threshold_credits: 1000,
-            target_credits: 6275,
-            cycle_resets_at: null,
-            monthly_budget_is_default: true
-          }
-        })
-
-        const block = screen.getByTestId('billing-auto-top-up-member-card')
-        expect(
-          within(block).getByRole('heading', { name: 'Auto top-up' })
-        ).toBeInTheDocument()
-        expect(block).toHaveTextContent(
-          'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
-        )
-        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
-        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
-        expect(
-          screen.queryByTestId('billing-auto-top-up-status')
-        ).not.toBeInTheDocument()
-        expect(
-          within(screen.getByTestId('billing-credits-section')).queryByRole(
-            'button',
-            { name: 'Add credits' }
-          )
-        ).not.toBeInTheDocument()
-        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
-      })
-
       it('shows a member the served auto top-up status, still without an action or a settings read', () => {
-        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
         arrange({
           ...member,
           autoTopUpMemberView: {

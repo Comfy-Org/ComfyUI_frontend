@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -50,6 +50,34 @@ function createCanvas() {
 }
 
 describe('LGraphCanvas.startRendering', () => {
+  it.for([
+    { fps: 20, gap: 50 },
+    { fps: 40, gap: 25 }
+  ])(
+    'draws at $gap ms intervals with a $fps FPS cap',
+    ({ fps, gap }, { onTestFinished }) => {
+      stubCanvasGetContext()
+      vi.spyOn(LiteGraph, 'getTime').mockImplementation(() => Date.now())
+      const canvas = new LGraphCanvas(
+        createTestCanvasElement({
+          ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+        }),
+        new LGraph(),
+        { skip_events: true, skip_render: true }
+      )
+      onTestFinished(() => canvas.stopRendering())
+      canvas.maximumFps = fps
+      canvas.startRendering()
+      expect(canvas.frame).toBe(1)
+
+      vi.advanceTimersByTime(gap - 1)
+      expect(canvas.frame).toBe(1)
+
+      vi.advanceTimersByTime(1)
+      expect(canvas.frame).toBe(2)
+    }
+  )
+
   it('finishes constructing, reports, and keeps rendering when the first frame throws', () => {
     const { requestAnimationFrame } = captureFrames()
     const drawFailure = new TypeError('drawImage is patched')
@@ -250,7 +278,7 @@ describe('LGraphCanvas.startRendering', () => {
     })
     canvas.maximumFps = 10
     const intervals: number[] = []
-    onCanvasFrame(canvas.canvas, 'update', (ms) => intervals.push(ms))
+    onCanvasFrame(canvas, 'update', (ms) => intervals.push(ms))
 
     canvas.startRendering()
 
