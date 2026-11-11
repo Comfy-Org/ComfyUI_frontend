@@ -34,6 +34,7 @@ import {
 } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import '@/scripts/changeTracker'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -497,6 +498,8 @@ describe('useWorkflowStore', () => {
 
     it('should not reload an already active workflow', async () => {
       const workflow = await store.createTemporary('test.json').load()
+      expect(workflow).toBeDefined()
+      if (!workflow) return
       vi.spyOn(workflow, 'load')
 
       // Set as active workflow
@@ -529,7 +532,7 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(false)
     })
 
-    it.fails('does not open a workflow when loading fails', async () => {
+    it('does not open a workflow when loading fails', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       vi.mocked(api.getUserData).mockResolvedValue(
@@ -543,7 +546,7 @@ describe('useWorkflowStore', () => {
       expect(console.error).toHaveBeenCalledOnce()
     })
 
-    it.fails('preserves the loaded workflow when a forced refresh is invalid', async () => {
+    it('preserves the loaded workflow when a forced refresh is invalid', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       vi.mocked(api.getUserData).mockResolvedValueOnce(
@@ -555,11 +558,12 @@ describe('useWorkflowStore', () => {
         new Response('{invalid', { status: 200 })
       )
 
-      await expect(workflow.load({ force: true })).resolves.toBeUndefined()
+      await expect(workflow.load({ force: true })).rejects.toBeInstanceOf(
+        UnreadableWorkflowError
+      )
 
       expect(workflow.initialState).toBe(initialState)
       expect(workflow.originalContent).toBe(defaultGraphJSON)
-      expect(console.error).toHaveBeenCalledOnce()
     })
 
     it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
@@ -705,6 +709,7 @@ describe('useWorkflowStore', () => {
       const loadedWorkflow = await store.openWorkflow(workflow)
 
       expect(loadedWorkflow).toBe(workflow)
+      if (!loadedWorkflow) return
       expect(loadedWorkflow.path).toBe('workflows/a.json')
       expect(store.activeWorkflow?.path).toBe('workflows/a.json')
       expect(store.isOpen(loadedWorkflow)).toBe(true)
@@ -822,15 +827,16 @@ describe('useWorkflowStore', () => {
         async function (this: unknown, ...args: unknown[]) {
           const newPath = args[0] as string
           ;(this as typeof workflow).path = newPath
-          return this as typeof workflow
+          return true
         }
       )
 
       // Perform rename
       const newPath = 'workflows/dir/renamed.json'
-      await store.renameWorkflow(workflow, newPath)
+      const result = await store.renameWorkflow(workflow, newPath)
 
       // Check that bookmark was transferred
+      expect(result).toBe(true)
       expect(bookmarkStore.isBookmarked(newPath)).toBe(true)
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
@@ -847,7 +853,7 @@ describe('useWorkflowStore', () => {
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
         async function (this: unknown, ...args: unknown[]) {
           ;(this as typeof workflow).path = args[0] as string
-          return this as typeof workflow
+          return true
         }
       )
 
@@ -868,7 +874,7 @@ describe('useWorkflowStore', () => {
         async function (this: unknown, ...args: unknown[]) {
           const newPath = args[0] as string
           ;(this as typeof workflow).path = newPath
-          return this as typeof workflow
+          return true
         }
       )
 
@@ -881,14 +887,52 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
     })
 
-    it.fails('does not update related state when renaming fails', async () => {
+    it('renames only jobs from the matching workflow instance', async () => {
+      const duplicateId = 'duplicate-workflow-id'
+      const workflow = store.createTemporary('app-to-save.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
+      const otherWorkflow = store.createTemporary('other.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
+      const executionStore = useExecutionStore()
+
+      executionStore.ensureSessionWorkflowPath(
+        'job-1',
+        workflow.path,
+        workflow.instanceId
+      )
+      executionStore.ensureSessionWorkflowPath(
+        'job-other',
+        workflow.path,
+        otherWorkflow.instanceId
+      )
+
+      vi.spyOn(workflow, 'rename').mockImplementation(
+        async (renamedPath: string) => {
+          workflow.path = renamedPath
+          return true
+        }
+      )
+
+      const newPath = 'workflows/saved-app.app.json'
+      await store.renameWorkflow(workflow, newPath)
+
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        newPath
+      )
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-other')).toBe(
+        'workflows/app-to-save.json'
+      )
+    })
+
+    it('does not update related state when renaming fails', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
       await bookmarkStore.setBookmarked(oldPath, true)
-      Object.defineProperty(workflow, 'rename', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(false)
-      })
+      vi.spyOn(workflow, 'rename').mockResolvedValue(false)
 
       const result = await store.renameWorkflow(
         workflow,
@@ -912,7 +956,7 @@ describe('useWorkflowStore', () => {
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
     })
 
-    it.fails('reattaches a temporary workflow when it is reopened', async () => {
+    it('reattaches a temporary workflow when it is reopened', async () => {
       const workflow = store.createTemporary('test.json')
       const otherWorkflow = store.createTemporary('other.json')
       await store.openWorkflow(workflow)
@@ -956,15 +1000,16 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('test.json')
 
       // Mock the necessary methods
-      vi.spyOn(workflow, 'delete').mockResolvedValue()
+      vi.spyOn(workflow, 'delete').mockResolvedValue(true)
 
       // Open the workflow first
       await store.openWorkflow(workflow)
 
       // Delete the workflow
-      await store.deleteWorkflow(workflow)
+      const result = await store.deleteWorkflow(workflow)
 
       // Verify workflow was closed and deleted
+      expect(result).toBe(true)
       expect(workflow.delete).toHaveBeenCalled()
     })
 
@@ -972,7 +1017,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('test.json')
 
       // Mock delete method
-      vi.spyOn(workflow, 'delete').mockResolvedValue()
+      vi.spyOn(workflow, 'delete').mockResolvedValue(true)
 
       // Bookmark the workflow
       await bookmarkStore.setBookmarked(workflow.path, true)
@@ -985,13 +1030,10 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
 
-    it.fails('does not remove related state when deleting fails', async () => {
+    it('does not remove related state when deleting fails', async () => {
       const workflow = store.createTemporary('test.json')
       await bookmarkStore.setBookmarked(workflow.path, true)
-      Object.defineProperty(workflow, 'delete', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(false)
-      })
+      vi.spyOn(workflow, 'delete').mockResolvedValue(false)
 
       const result = await store.deleteWorkflow(workflow)
 
@@ -1003,7 +1045,7 @@ describe('useWorkflowStore', () => {
     it('should remove a deleted workflow without closing other tabs', async () => {
       const survivor = store.createTemporary('survivor.json')
       const doomed = store.createTemporary('doomed.json')
-      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      vi.spyOn(doomed, 'delete').mockResolvedValue(true)
       await store.openWorkflow(survivor)
       await store.openWorkflow(doomed)
       expect(store.openWorkflows.map((w) => w.path)).toEqual([
@@ -1932,6 +1974,7 @@ describe('useWorkflowStore', () => {
 
         const opened = await store.openWorkflow(workflow)
 
+        assert.exists(opened)
         expect(opened.isLoaded).toBe(true)
         expect(opened.initialState).toEqual(defaultGraph)
         expectReported(
@@ -1961,6 +2004,7 @@ describe('useWorkflowStore', () => {
 
       it('does not report an active workflow that is loaded', async () => {
         const workflow = await store.createTemporary('test.json').load()
+        assert.exists(workflow)
         store.activeWorkflow = workflow
 
         await store.openWorkflow(workflow)
@@ -1970,12 +2014,14 @@ describe('useWorkflowStore', () => {
 
       it('reports a never-loaded temporary workflow that aliases the active path', async () => {
         const activeByPath = await store.createTemporary('aliased.json').load()
+        assert.exists(activeByPath)
         const neverLoaded = store.createTemporary('aliased.json')
         neverLoaded.updatePath(activeByPath.path)
         store.activeWorkflow = activeByPath
 
         const opened = await store.openWorkflow(neverLoaded)
 
+        assert.exists(opened)
         expectReported(
           'openWorkflow called on an active workflow that is not loaded',
           {

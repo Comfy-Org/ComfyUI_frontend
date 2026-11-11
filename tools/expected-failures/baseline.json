@@ -68,18 +68,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/subgraph/subgraphCrud.spec.ts:Empty selection conversion shows an error toast and leaves the graph unchanged:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/workflow/failureRecovery.spec.ts:keeps the workflow name when its rename request fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts:propagates failed workflow deletion to the tree:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic input socket is missing:1",
     "classification": "live-defect"
   },
@@ -92,79 +80,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the request reports failure:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the response body is invalid:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not duplicate a workflow that fails to load:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not report success when persistence fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not save and shows an error when an extension rename fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not transform the graph when the workflow cannot be loaded:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:shows an error and does not save when renaming fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not open a workflow when loading fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not remove related state when deleting fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not update related state when renaming fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:preserves the loaded workflow when a forced refresh is invalid:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:reattaches a temporary workflow when it is reopened:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/assetsStore.test.ts:rolls back when the server confirms the update was rejected:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/subgraphStore.test.ts:should not access the canvas when a blueprint fails to open:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/userFileStore.test.ts:does not change the path when renaming fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/userFileStore.test.ts:returns false when deleting fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/userFileStore.test.ts:returns undefined and clears loading state on failed load:1",
     "classification": "live-defect"
   }
 ]

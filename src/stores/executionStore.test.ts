@@ -1270,7 +1270,7 @@ describe('session workflow paths on workflow rename', () => {
   async function renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
     vi.spyOn(workflow, 'rename').mockImplementation(async (renamedPath) => {
       workflow.path = renamedPath
-      return workflow
+      return true
     })
     await useWorkflowStore().renameWorkflow(workflow, newPath)
   }

@@ -322,15 +322,16 @@ function workflowLeafActions(
   const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = {
     contextMenuItems: () => workflowContextMenuItems(workflow),
     draggable: true,
-    handleRename: (newName: string) =>
-      workflowService.renameWorkflow(
+    handleRename: async (newName: string) => {
+      await workflowService.renameWorkflow(
         workflow,
         renamedWorkflowPath(workflow, type, newName)
       )
+    }
   }
   if (!workflow.isTemporary) {
     actions.handleDelete = async () => {
-      await workflowService.deleteWorkflow(workflow)
+      return await workflowService.deleteWorkflow(workflow)
     }
   }
   return actions

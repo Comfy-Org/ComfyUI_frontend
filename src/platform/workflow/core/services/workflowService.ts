@@ -356,7 +356,7 @@ export const useWorkflowService = () => {
 
   async function loadForSave(workflow: ComfyWorkflow): Promise<boolean> {
     if (workflow.isLoaded || workflowStore.isActive(workflow)) return true
-    await loadWorkflowInBackground(workflow)
+    if (!(await loadWorkflowInBackground(workflow))) return false
     if (!lostUnsavedEdits(workflow)) return true
     reportWorkflowStateAnomaly(
       'Modified saved workflow lost its edits before saving',
@@ -393,23 +393,17 @@ export const useWorkflowService = () => {
     const isSelfOverwrite =
       existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
-    if (existingWorkflow && !existingWorkflow.isTemporary) {
+    if (existingWorkflow?.isPersisted) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
-      if (!isSelfOverwrite) {
-        const deleted = await deleteWorkflow(existingWorkflow, true)
-        if (!deleted) return false
-      }
+      if (!isSelfOverwrite && !(await deleteWorkflow(existingWorkflow, true)))
+        return false
     }
 
-    if (isSelfOverwrite) {
-      workflow.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(workflow)
-    } else {
-      let target: ComfyWorkflow
+    let target = workflow
+    if (!isSelfOverwrite) {
       if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
-        target = workflow
+        if (!(await renameWorkflow(workflow, newPath))) return false
       } else {
         target = workflowStore.saveAs(workflow, newPath)
         await openWorkflow(target)
@@ -419,9 +413,9 @@ export const useWorkflowService = () => {
         useApp().rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      target.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(target)
     }
+    target.changeTracker?.prepareForSave()
+    await workflowStore.saveWorkflow(target)
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
@@ -448,9 +442,9 @@ export const useWorkflowService = () => {
           await workflowStore.saveWorkflow(workflow)
           return true
         }
-        await deleteWorkflow(existing, true)
+        if (!(await deleteWorkflow(existing, true))) return false
       }
-      await renameWorkflow(workflow, expectedPath)
+      if (!(await renameWorkflow(workflow, expectedPath))) return false
       toast.info(
         t(
           isApp
@@ -579,8 +573,13 @@ export const useWorkflowService = () => {
         wasUnreadable = unreadableWorkflows.delete(workflow)
         const loadFromRemote = !workflow.isLoaded
         const wasModified = workflow.isModified
-        if (loadFromRemote) {
-          await workflow.load()
+        if (loadFromRemote && !(await workflow.load())) {
+          reportError(new Error(`Failed to load workflow '${workflow.path}'`), {
+            surface: 'graph',
+            errorType: 'workflow_load_failure'
+          })
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
         if (options.isCurrent?.() === false) {
           if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
@@ -801,23 +800,28 @@ export const useWorkflowService = () => {
    */
   const loadWorkflowInBackground = (
     workflow: ComfyWorkflow
-  ): Promise<ComfyWorkflow> =>
+  ): Promise<ComfyWorkflow | undefined> =>
     queueWorkflowLoad(async () => {
-      const loaded: ComfyWorkflow = await workflow.load()
+      const loaded = await workflow.load()
+      if (!loaded) return
       if (loaded.initialMode === undefined)
         loaded.initialMode =
-          linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
-          linearModeToAppMode(loaded.activeState?.extra?.linearMode)
+          linearModeToAppMode(loaded.initialState.extra?.linearMode) ??
+          linearModeToAppMode(loaded.activeState.extra?.linearMode)
       return loaded
     }, workflow.path)
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+      toast.error(t('workflowService.renameFailed'))
+      return false
+    }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
+    return true
   }
 
   /**
@@ -855,7 +859,7 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
+    if (!(await workflowStore.deleteWorkflow(workflow))) return false
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
@@ -970,6 +974,7 @@ export const useWorkflowService = () => {
 
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+      if (!loadedWorkflow) return null
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
       bindCanvasTracker(loadedWorkflow.changeTracker)
       return loadedWorkflow
@@ -1093,6 +1098,7 @@ export const useWorkflowService = () => {
     const canvas = useApp().canvas
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
     if (useApp().canvas !== canvas || canvas.graph !== graph) {
       const replacementKind = useApp().canvas !== canvas ? 'canvas' : 'graph'
       reportError(
@@ -1174,7 +1180,7 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    if (!workflow.isLoaded) await workflow.load()
+    if (!workflow.isLoaded && !(await workflow.load())) return
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
     if (state) state.id = generateUUID()

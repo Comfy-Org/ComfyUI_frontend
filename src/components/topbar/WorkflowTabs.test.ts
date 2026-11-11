@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsTrigger } from 'reka-ui'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
@@ -586,12 +586,16 @@ describe('WorkflowTabs selection and overflow', () => {
 
   beforeEach(async () => {
     const workflowStore = useWorkflowStore()
-    firstWorkflow = await workflowStore
+    const first = await workflowStore
       .createTemporary('First workflow.json')
       .load()
-    secondWorkflow = await workflowStore
+    const second = await workflowStore
       .createTemporary('Second workflow.json')
       .load()
+    assert.exists(first)
+    assert.exists(second)
+    firstWorkflow = first
+    secondWorkflow = second
     workflowStore.attachWorkflow(firstWorkflow, 0)
     workflowStore.attachWorkflow(secondWorkflow, 1)
     workflowStore.activeWorkflow = firstWorkflow
@@ -665,6 +669,7 @@ describe('WorkflowTabs selection and overflow', () => {
     const thirdWorkflow = await useWorkflowStore()
       .createTemporary('Third workflow.json')
       .load()
+    assert.exists(thirdWorkflow)
     useWorkflowStore().attachWorkflow(thirdWorkflow, 2)
     const { user } = renderComponent()
 
@@ -893,6 +898,7 @@ describe('WorkflowTabs scrolling', () => {
   it('does not reveal the active tab after unrelated overflow measurements', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
+    assert(workflow)
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     const { unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))

@@ -1098,7 +1098,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         ...original,
         user_metadata: { note: 'server-confirmed' }
       }
-      vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        kind: 'updated',
+        asset: serverResponse
+      })
 
       await store.updateAssetMetadata(
         original,
@@ -1137,7 +1140,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       ).toEqual({ note: 'before' })
     })
 
-    it.fails('rolls back cached metadata when the server outcome is unknown', async () => {
+    it('rolls back cached metadata when the server outcome is unknown', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-unknown'),
@@ -1148,7 +1151,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         makePage([original])
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      mockFailedUpdate('unknown')
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        kind: 'failed',
+        serverState: 'unknown'
+      })
 
       await store.updateAssetMetadata(
         original,
@@ -1160,7 +1166,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(cached.user_metadata).toEqual({ note: 'before' })
     })
 
-    it.fails('rolls back when the server confirms the update was rejected', async () => {
+    it('rolls back when the server confirms the update was rejected', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-3'),
@@ -2237,8 +2243,11 @@ describe('deployment Model Library', () => {
       page([upload])
     )
     vi.mocked(assetService.updateAsset).mockResolvedValue({
-      ...upload,
-      user_metadata: { name: 'My model' }
+      kind: 'updated',
+      asset: {
+        ...upload,
+        user_metadata: { name: 'My model' }
+      }
     })
     vi.mocked(assetService.removeAssetTags).mockResolvedValue({
       total_tags: ['models']

@@ -914,11 +914,20 @@ export const useAssetsStore = defineStore('assets', () => {
       updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
       try {
-        const updatedAsset = await assetService.updateAsset(asset.id, {
+        const result = await assetService.updateAsset(asset.id, {
           user_metadata: userMetadata
         })
-        updateAssetInCache(asset.id, updatedAsset, cacheKey)
-        return true
+        if (result.kind === 'updated') {
+          updateAssetInCache(asset.id, result.asset, cacheKey)
+          return true
+        }
+        updateAssetInCache(
+          asset.id,
+          { user_metadata: originalMetadata },
+          cacheKey
+        )
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
+        return false
       } catch (error) {
         reportError(error, {
           surface: 'assets',

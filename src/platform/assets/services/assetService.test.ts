@@ -1104,7 +1104,7 @@ describe(assetService.seedModelAssets, () => {
 })
 
 describe(assetService.updateAsset, () => {
-  it.fails('returns unknown server state when the request reports failure', async () => {
+  it('returns unknown server state when the request reports failure', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse({}, { ok: false, status: 500 })
     )
@@ -1115,7 +1115,7 @@ describe(assetService.updateAsset, () => {
     expect(console.error).toHaveBeenCalledOnce()
   })
 
-  it.fails('returns unknown server state when the response body is invalid', async () => {
+  it('returns unknown server state when the response body is invalid', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse({ name: 'no-id-field.safetensors' })
     )
@@ -1135,9 +1135,13 @@ describe(assetService.updateAsset, () => {
       name: 'renamed.safetensors'
     })
 
-    expect(result).toEqual(
-      expect.objectContaining({ id: 'asset-1', name: 'renamed.safetensors' })
-    )
+    expect(result).toEqual({
+      kind: 'updated',
+      asset: expect.objectContaining({
+        id: 'asset-1',
+        name: 'renamed.safetensors'
+      })
+    })
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/assets/asset-1',
       expect.objectContaining({

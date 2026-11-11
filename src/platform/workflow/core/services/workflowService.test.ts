@@ -548,15 +548,12 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
-    it.fails('does not transform the graph when the workflow cannot be loaded', async () => {
+    it('does not transform the graph when the workflow cannot be loaded', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/unavailable.json',
         loaded: false
       })
-      Object.defineProperty(workflow, 'load', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(undefined)
-      })
+      vi.spyOn(workflow, 'load').mockResolvedValue(undefined)
 
       await expect(useWorkflowService().openWorkflow(workflow)).resolves.toBe(
         false
@@ -570,7 +567,7 @@ describe('useWorkflowService', () => {
         expect.objectContaining({
           message: "Failed to load workflow 'workflows/unavailable.json'"
         }),
-        { errorType: 'workflow_load_failure' }
+        { surface: 'graph', errorType: 'workflow_load_failure' }
       )
     })
 
@@ -2380,7 +2377,7 @@ describe('useWorkflowService', () => {
     ])('$name', async ({ silent, expectedPaths }) => {
       const { byName, activated } = openThreeTabs()
       Object.defineProperty(byName('first'), 'delete', {
-        value: vi.fn(async () => {})
+        value: vi.fn(async () => true)
       })
 
       await expect(
@@ -2571,7 +2568,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow()
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
 
@@ -2589,7 +2586,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/reused.json')
       await useWorkflowService().openWorkflow(workflow)
       const { options } = shownToast()
@@ -2614,7 +2611,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/raced.json')
       const lookup = vi
         .spyOn(workflowStore, 'getWorkflowByPath')
@@ -2651,7 +2648,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/repaired.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -2684,7 +2681,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/flaky.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -2998,16 +2995,13 @@ describe('useWorkflowService', () => {
   })
 
   describe('duplicateWorkflow', () => {
-    it.fails('does not duplicate a workflow that fails to load', async () => {
+    it('does not duplicate a workflow that fails to load', async () => {
       const workflowStore = useWorkflowStore()
       const source = createModeTestWorkflow({
         path: 'workflows/source.json',
         loaded: false
       })
-      Object.defineProperty(source, 'load', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(undefined)
-      })
+      vi.spyOn(source, 'load').mockResolvedValue(undefined)
 
       await useWorkflowService().duplicateWorkflow(source)
 
@@ -3798,6 +3792,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -3823,7 +3818,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -3858,12 +3853,9 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it.fails('shows an error and does not save when renaming fails', async () => {
+    it('shows an error and does not save when renaming fails', async () => {
       const workflow = createTemporaryWorkflow()
-      Object.defineProperty(workflowStore, 'renameWorkflow', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(false)
-      })
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
       const addToastSpy = vi.spyOn(useToast(), 'error')
 
       await expect(
@@ -4214,7 +4206,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
@@ -4242,13 +4234,10 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it.fails('does not save and shows an error when an extension rename fails', async () => {
+    it('does not save and shows an error when an extension rename fails', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
-      Object.defineProperty(workflowStore, 'renameWorkflow', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(false)
-      })
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
       const addSpy = vi.spyOn(useToast(), 'error')
 
       await expect(service.saveWorkflow(workflow)).resolves.toBe(false)
@@ -4319,7 +4308,7 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
@@ -4349,14 +4338,11 @@ describe('useWorkflowService', () => {
   })
 
   describe('deleteWorkflow', () => {
-    it.fails('does not report success when persistence fails', async () => {
+    it('does not report success when persistence fails', async () => {
       const workflowStore = useWorkflowStore()
       const workflow = createModeTestWorkflow()
       vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
-      Object.defineProperty(workflowStore, 'deleteWorkflow', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue(false)
-      })
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(false)
       const addSpy = vi.spyOn(useToast(), 'success')
 
       await expect(useWorkflowService().deleteWorkflow(workflow)).resolves.toBe(

@@ -395,7 +395,7 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async load({ force = false }: { force?: boolean } = {}): Promise<
-    this & LoadedComfyWorkflow
+    (this & LoadedComfyWorkflow) | undefined
   > {
     if (!force && this.isLoaded && this.changeTracker) {
       return this as this & LoadedComfyWorkflow
@@ -407,9 +407,18 @@ export class ComfyWorkflow extends UserFile {
         ? readUsableDraft(runtime, this)
         : null
 
-    await super.load({ force })
+    const previousContent = this.content
+    const previousOriginalContent = this.originalContent
+    if (!(await super.load({ force }))) return
 
-    const initialState = parseStoredWorkflow(this)
+    let initialState: ComfyWorkflowJSON
+    try {
+      initialState = parseStoredWorkflow(this)
+    } catch (error) {
+      this.content = previousContent
+      this.originalContent = previousOriginalContent
+      throw error
+    }
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
