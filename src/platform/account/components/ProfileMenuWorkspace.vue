@@ -54,7 +54,7 @@
           :side-offset="8"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2"
+          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
