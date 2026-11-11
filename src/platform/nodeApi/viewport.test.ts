@@ -88,6 +88,55 @@ describe('viewport changes', () => {
   })
 
   it.for([
+    { name: 'nothing else chained onto it', chainOver: () => {} },
+    {
+      name: 'another handler chained over the observer',
+      chainOver: (canvas: LGraphCanvas) => {
+        const observer = canvas.ds.onChanged
+        canvas.ds.onChanged = (scale, offset) => observer?.(scale, offset)
+      }
+    }
+  ])(
+    'delivers a change once after the view returns to a canvas with $name',
+    ({ chainOver }) => {
+      const first = createCanvas()
+      LGraphCanvas.active_canvas = first
+      const seen = vi.fn()
+      createViewportObserver()(seen)
+      chainOver(first)
+      LGraphCanvas.active_canvas = createCanvas()
+      window.dispatchEvent(new Event('resize'))
+      LGraphCanvas.active_canvas = first
+      window.dispatchEvent(new Event('resize'))
+      seen.mockClear()
+
+      first.ds.onChanged?.(2, [0, 0])
+
+      expect(seen).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { name: 'the last subscriber leaves', letGo: (stop: () => void) => stop() },
+    {
+      name: 'the view moves to another canvas',
+      letGo: () => {
+        LGraphCanvas.active_canvas = createCanvas()
+        window.dispatchEvent(new Event('resize'))
+      }
+    }
+  ])('gives the canvas its own change handler back when $name', ({ letGo }) => {
+    const canvas = createCanvas()
+    const own = canvas.ds.onChanged
+    LGraphCanvas.active_canvas = canvas
+    const stop = createViewportObserver()(vi.fn())
+
+    letGo(stop)
+
+    expect(canvas.ds.onChanged).toBe(own)
+  })
+
+  it.for([
     {
       name: 'the view pans',
       act: (canvas: LGraphCanvas) => {

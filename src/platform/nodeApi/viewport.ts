@@ -11,15 +11,23 @@
  * the pan offset and zoom factor stay the renderer's business.
  */
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
 import type { Unsubscribe } from './widgetHandle'
 
 type Listener = () => void
+type ChangeHandler = NonNullable<DragAndScale['onChanged']>
+
+interface Chain {
+  readonly ds: DragAndScale
+  readonly previous: ChangeHandler | undefined
+  readonly handler: ChangeHandler
+}
 
 const listeners = new Set<Listener>()
-let chained: object | undefined
+let chained: Chain | undefined
 
 function notifyListeners(): void {
   for (const listener of listeners) {
@@ -34,15 +42,24 @@ function notifyListeners(): void {
   }
 }
 
+function unchain(): void {
+  if (chained && chained.ds.onChanged === chained.handler) {
+    chained.ds.onChanged = chained.previous
+  }
+  chained = undefined
+}
+
 function chainOnto(canvas: LGraphCanvas): void {
   const { ds } = canvas
-  if (chained === ds) return
-  chained = ds
+  if (chained?.ds === ds) return
+  unchain()
   const previous = ds.onChanged
-  ds.onChanged = function (this: unknown, scale, offset) {
+  const handler: ChangeHandler = function (this: unknown, scale, offset) {
     previous?.call(this as never, scale, offset)
-    notifyListeners()
+    if (chained?.handler === handler) notifyListeners()
   }
+  ds.onChanged = handler
+  chained = { ds, previous, handler }
 }
 
 function tryChain(): void {
@@ -59,8 +76,6 @@ export function createViewportObserver() {
   return (listener: Listener): Unsubscribe => {
     listeners.add(listener)
 
-    // Installed on subscribe rather than at module load: a pack may subscribe
-    // before a canvas exists, and re-trying here costs nothing.
     tryChain()
     if (listeners.size === 1) {
       window.addEventListener('resize', announce)
@@ -68,14 +83,16 @@ export function createViewportObserver() {
 
     return () => {
       listeners.delete(listener)
-      if (!listeners.size) window.removeEventListener('resize', announce)
+      if (listeners.size) return
+      window.removeEventListener('resize', announce)
+      unchain()
     }
   }
 }
 
-/** Test seam — drops chaining state so a fresh canvas can be observed. */
+/** Test seam — drops every subscriber and gives the canvas its handler back. */
 export function resetViewportObserver(): void {
   listeners.clear()
-  chained = undefined
+  unchain()
   window.removeEventListener('resize', announce)
 }
