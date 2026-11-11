@@ -1,6 +1,7 @@
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -430,6 +431,54 @@ describe('comfy.queue', () => {
 
     api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
     stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('finishes every outstanding cleanup when one throws during unsubscribe', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const error = new Error('cleanup failed')
+    const first = vi.fn(() => {
+      throw error
+    })
+    const second = vi.fn()
+    const setup = vi
+      .fn<() => () => void>()
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+    const stop = track(comfy.queue.onBeforeRun(setup))
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
+    expect(stop).not.toThrow()
+    stop()
+
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_cleaning_queue_attempt',
+      surface: 'graph'
+    })
+  })
+
+  it('immediately runs cleanup returned after the listener unsubscribes itself', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const cleanup = vi.fn()
+    const stop = track(
+      comfy.queue.onBeforeRun(() => {
+        stop()
+        return cleanup
+      })
+    )
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
     expect(cleanup).toHaveBeenCalledOnce()
 
     api.dispatchCustomEvent('promptQueueAttemptEnded', {
