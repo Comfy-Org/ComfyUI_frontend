@@ -419,15 +419,10 @@ export const useMissingModelDownloadStore = defineStore(
       model: ModelWithUrl,
       request: number | undefined
     ) {
-      const key = getModelFileKey(model)
-      const download = downloads.get(key)
-      if (
-        request === undefined ||
-        download?.request !== request ||
-        download.state.status !== 'requested'
-      )
-        return
-      downloads.set(key, { ...download, state: IDLE })
+      const current =
+        request === undefined ? undefined : unreportedRequest(model, request)
+      if (!current) return
+      downloads.set(getModelFileKey(model), { ...current, state: IDLE })
     }
 
     function control(model: ModelWithUrl, action: DownloadControl) {

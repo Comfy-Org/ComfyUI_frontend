@@ -683,6 +683,7 @@ describe(useMissingModelDownloadStore, () => {
   })
   it('can cancel a request before the host reports on it', async () => {
     installDesktopHost()
+    hostDownloadModel.mockReturnValueOnce(new Promise(() => {}))
     const cancelDownload = vi.fn().mockResolvedValue(true)
     window.__comfyDesktop2 = { ...window.__comfyDesktop2, cancelDownload }
     const store = useMissingModelDownloadStore()
@@ -696,6 +697,7 @@ describe(useMissingModelDownloadStore, () => {
   })
   it('keeps a request the host refused to cancel and reports the refusal', async () => {
     installDesktopHost()
+    hostDownloadModel.mockReturnValueOnce(new Promise(() => {}))
     window.__comfyDesktop2 = {
       ...window.__comfyDesktop2,
       cancelDownload: vi.fn().mockResolvedValue(false)
