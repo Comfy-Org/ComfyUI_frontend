@@ -369,6 +369,66 @@ describe('comfy API root', () => {
       expect(centerOnNode).toHaveBeenCalledWith(onScreen)
     })
 
+    it.for(['view first', 'scope first'] as const)(
+      'notifies widget listeners from every handle cache, subscribed %s',
+      (order) => {
+        const comfy = createComfyApi(() => graph)
+        const node = new LGraphNode('n')
+        node.addWidget('number', 'amount', 1, () => {})
+        graph.add(node)
+        const id = String(node.id)
+        const inView = comfy.graph.node(id)!.widgets.get('amount')!
+        const inScope = comfy.graph.root()!.node(id)!.widgets.get('amount')!
+        const viaView: unknown[] = []
+        const viaScope: unknown[] = []
+        const subscribe = {
+          view: () => inView.on('change', (value) => viaView.push(value)),
+          scope: () => inScope.on('change', (value) => viaScope.push(value))
+        }
+        const [first, second] =
+          order === 'view first'
+            ? (['view', 'scope'] as const)
+            : (['scope', 'view'] as const)
+        const stops = {
+          [first]: subscribe[first](),
+          [second]: subscribe[second]()
+        }
+
+        inView.setValue(5)
+        stops.scope()
+        inView.setValue(6)
+
+        expect(viaView).toEqual([5, 6])
+        expect(viaScope).toEqual([5])
+      }
+    )
+
+    it('applies serialize handlers registered through every handle cache', async () => {
+      const comfy = createComfyApi(() => graph)
+      const node = new LGraphNode('n')
+      node.addWidget('text', 'prompt', 'typed', () => {})
+      node.serialize_widgets = true
+      graph.add(node)
+      const id = String(node.id)
+      comfy.graph
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'prompt') event.setSerializedValue('sent')
+        })
+      comfy.graph
+        .root()!
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'workflow') event.setSerializedValue('saved')
+        })
+      const widget = node.widgets![0]
+
+      expect(await widget.serializeValue!(node, 0)).toBe('sent')
+      expect(node.serialize().widgets_values).toEqual(['saved'])
+    })
+
     it('keeps retained slot and widget collections bound to their graph', () => {
       const first = new LGraph()
       const second = new LGraph()
