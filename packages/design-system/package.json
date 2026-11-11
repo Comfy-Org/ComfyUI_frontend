@@ -26,6 +26,7 @@
   "type": "module",
   "exports": {
     "./*": "./src/components/*.vue",
+    "./*.vue": "./src/components/*.vue",
     "./lib/badge/badge.variants": "./src/components/badge/badge.variants.ts",
     "./lib/color-picker/types": "./src/components/color-picker/types.ts",
     "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
@@ -74,6 +75,11 @@
   "publishConfig": {
     "exports": {
       "./*": {
+        "types": "./dist/*.vue.d.ts",
+        "import": "./dist/*.vue.js",
+        "default": "./dist/*.vue.js"
+      },
+      "./*.vue": {
         "types": "./dist/*.vue.d.ts",
         "import": "./dist/*.vue.js",
         "default": "./dist/*.vue.js"

@@ -93,7 +93,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
+
+import { useResizeObserver } from '@vueuse/core'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -250,13 +259,29 @@ const layoutKey = computed(() =>
     .join('|')
 )
 
+function syncOffsets() {
+  const rootGraphId = canvasStore.rootGraphId
+  if (syncLayout && grid.value && rootGraphId && nodeId) {
+    syncSlotOffsets(grid.value, rootGraphId, nodeId)
+  }
+}
+
+const rows = shallowRef<HTMLElement[]>([])
+useResizeObserver(rows, syncOffsets)
+
+function trackRows() {
+  rows.value =
+    syncLayout && nodeId && grid.value
+      ? [...grid.value.querySelectorAll<HTMLElement>('[data-widget-name]')]
+      : []
+}
+
+onMounted(trackRows)
 watch(
   layoutKey,
   () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && grid.value && rootGraphId && nodeId) {
-      syncSlotOffsets(grid.value, rootGraphId, nodeId)
-    }
+    trackRows()
+    syncOffsets()
   },
   { flush: 'post' }
 )
