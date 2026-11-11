@@ -3,59 +3,25 @@ import { getNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import type {
   ImageRef,
-  ImageLayer
+  LoadedImageLayer
 } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import {
+  extractWidgetStringValue,
+  parseImageWidgetValue
+} from '@/utils/imageUtil'
 
-export function extractWidgetStringValue(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (
-    value &&
-    typeof value === 'object' &&
-    'filename' in value &&
-    typeof value.filename === 'string'
-  )
-    return value.filename
-  return undefined
-}
-
-// Private image utility functions
-interface ImageLayerFilenames {
-  maskedImage: string
-  paint: string
-  paintedImage: string
-  paintedMaskedImage: string
-}
+import { imageLayerFilenamesIfApplicable } from './layerFilenames'
 
 interface MaskLayersResponse {
   painted_masked?: string
   painted?: string
   paint?: string
   mask?: string
-}
-
-const paintedMaskedImagePrefix = 'clipspace-painted-masked-'
-
-function imageLayerFilenamesIfApplicable(
-  inputImageFilename: string
-): ImageLayerFilenames | undefined {
-  const isPaintedMaskedImageFilename = inputImageFilename.startsWith(
-    paintedMaskedImagePrefix
-  )
-  if (!isPaintedMaskedImageFilename) return undefined
-  const suffix = inputImageFilename.slice(paintedMaskedImagePrefix.length)
-  const timestamp = parseInt(suffix.split('.')[0], 10)
-  return {
-    maskedImage: `clipspace-mask-${timestamp}.png`,
-    paint: `clipspace-paint-${timestamp}.png`,
-    paintedImage: `clipspace-painted-${timestamp}.png`,
-    paintedMaskedImage: `${paintedMaskedImagePrefix}${timestamp}.png`
-  }
 }
 
 function toRef(filename: string, subfolder: string): ImageRef {
@@ -92,7 +58,11 @@ export function useMaskEditorLoader() {
   const dataStore = useMaskEditorDataStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const loadFromNode = async (node: LGraphNode): Promise<void> => {
+  const loadFromNode = async (
+    node: LGraphNode,
+    signal?: AbortSignal
+  ): Promise<void> => {
+    if (signal?.aborted) return
     dataStore.setLoading(true)
 
     try {
@@ -106,10 +76,6 @@ export function useMaskEditorLoader() {
         getNodeWidgetValue(node, IMAGE_WIDGET)
       )
 
-      // If we have a widget filename, we should prioritize it over the node image
-      // because the node image might be stale (e.g. from a previous save)
-      // while the widget value reflects the current selection.
-      // Skip internal reference formats (e.g. "$35-0" used by some plugins like Impact-Pack)
       if (widgetFilename && !widgetFilename.startsWith('$')) {
         const parsed = parseImageWidgetValue(widgetFilename)
         nodeImageRef = {
@@ -132,7 +98,7 @@ export function useMaskEditorLoader() {
             maskLayersFromApi = await response.json()
           }
         } catch {
-          // Fallback to pattern matching if API call fails
+          maskLayersFromApi = undefined
         }
       }
 
@@ -154,11 +120,6 @@ export function useMaskEditorLoader() {
         }
       }
 
-      // Pattern-matched layer files live next to the painted-masked image the
-      // widget points at: the input root for saves under the unified upload
-      // contract (#12318), or the clipspace subfolder for saves made before
-      // it. Cloud resolves the hash filenames from its mask-layers API
-      // server-side, so its refs keep the subfolder they always used.
       const layerSubfolder = maskLayersFromApi
         ? 'clipspace'
         : (nodeImageRef.subfolder ?? '')
@@ -185,7 +146,7 @@ export function useMaskEditorLoader() {
         Promise.all([
           loadImageLayer(baseUrl, 'rgb'),
           loadImageLayer(baseUrl, 'a'),
-          paintUrl ? loadPaintLayer(paintUrl) : Promise.resolve(undefined)
+          paintUrl ? loadImageLayer(paintUrl) : Promise.resolve(undefined)
         ])
 
       const loadInputData = async () => {
@@ -218,14 +179,13 @@ export function useMaskEditorLoader() {
         }
       }
 
-      dataStore.inputData = {
-        ...(await loadInputData()),
-        nodeId: node.id
-      }
-
+      const inputData = await loadInputData()
+      if (signal?.aborted) return
+      dataStore.inputData = { ...inputData, nodeId: node.id }
       dataStore.sourceNode = node
       dataStore.setLoading(false)
     } catch (error) {
+      if (signal?.aborted) return
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to load from node'
       console.error('[MaskEditorLoader]', errorMessage, error)
@@ -317,7 +277,7 @@ export function useMaskEditorLoader() {
   async function loadImageLayer(
     url: string,
     channel?: 'rgb' | 'a'
-  ): Promise<ImageLayer> {
+  ): Promise<LoadedImageLayer> {
     let urlObj: URL
     try {
       urlObj = new URL(url)
@@ -346,20 +306,6 @@ export function useMaskEditorLoader() {
 
       img.src = url
     })
-  }
-
-  async function loadPaintLayer(url: string): Promise<ImageLayer> {
-    let urlObj: URL
-    try {
-      urlObj = new URL(url)
-    } catch {
-      urlObj = new URL(url, window.location.origin)
-    }
-
-    const finalUrl = urlObj.toString()
-    const image = await loadImage(finalUrl)
-
-    return { image, url: finalUrl }
   }
 
   return {

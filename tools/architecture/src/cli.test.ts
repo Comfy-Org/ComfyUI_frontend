@@ -22,10 +22,7 @@ const record = {
   id: 'images',
   capability: 'Images',
   description: 'Image fixture',
-  modules: [
-    { path: 'src/images/**', role: 'domain' },
-    { path: 'src/imageView.vue', role: 'presentation' }
-  ],
+  modules: [{ path: 'src/images/**' }, { path: 'src/imageView.vue' }],
   publicEntryPoints: ['src/images/index.ts'],
   characterizationScenarios: [
     { name: 'keeps its contract', checks: ['src/images/index.test.ts'] }
@@ -71,28 +68,25 @@ describe('loadArchitectureConfiguration', () => {
     },
     {
       name: 'a glob other than a trailing /**',
-      overrides: { modules: [{ path: 'src/images/*.ts', role: 'domain' }] },
+      overrides: { modules: [{ path: 'src/images/*.ts' }] },
       error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'a claim on all of src',
-      overrides: { modules: [{ path: 'src/**', role: 'domain' }] },
+      overrides: { modules: [{ path: 'src/**' }] },
       error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'a package path outside the package src directory',
       overrides: {
-        modules: [{ path: 'packages/widgets/vite.config.ts', role: 'domain' }]
+        modules: [{ path: 'packages/widgets/vite.config.ts' }]
       },
       error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'a module path claimed twice',
       overrides: {
-        modules: [
-          ...record.modules,
-          { path: 'src/images/**', role: 'application' }
-        ]
+        modules: [...record.modules, { path: 'src/images/**' }]
       },
       error: 'src/images/** is claimed by more than one module'
     },
@@ -107,23 +101,35 @@ describe('loadArchitectureConfiguration', () => {
       name: 'a public entry point outside the domain',
       overrides: { publicEntryPoints: ['src/other.ts'] },
       error: 'public entry point is outside its modules'
+    },
+    {
+      name: 'a stylesheet entry point outside the domain',
+      overrides: { publicEntryPoints: ['src/other.css'] },
+      error: 'public entry point is outside its modules'
     }
   ])('rejects $name', ({ overrides, error }) => {
-    const root = createRepository(overrides, { 'src/other.ts': '' })
+    const root = createRepository(overrides, {
+      'src/other.ts': '',
+      'src/other.css': ''
+    })
     expect(loadArchitectureConfiguration(root)).toEqual({
       ok: false,
       errors: [expect.stringContaining(error)]
     })
   })
 
-  it('gives each unlisted test the role of its sibling source file, or else of the longest file path its name extends', () => {
+  it('accepts a public stylesheet within the domain modules', () => {
     const root = createRepository(
-      {
-        modules: [
-          ...record.modules,
-          { path: 'src/imageView.compact.vue', role: 'application' }
-        ]
-      },
+      { publicEntryPoints: ['src/images/style.css'] },
+      { 'src/images/style.css': '' }
+    )
+
+    expect(loadArchitectureConfiguration(root).ok).toBe(true)
+  })
+
+  it('gives each unlisted test the domain of its sibling source file, or else of the longest file path its name extends', () => {
+    const root = createRepository(
+      {},
       {
         'src/imageView.test.ts': '',
         'src/imageView.compact.vue': '<template />',
@@ -131,22 +137,30 @@ describe('loadArchitectureConfiguration', () => {
         'src/imageView.compact.cloud.test.ts': '',
         'src/imageView.unlisted.ts': '',
         'src/imageView.unlisted.test.ts': '',
-        'src/imageViewer.test.ts': ''
+        'src/imageViewer.test.ts': '',
+        'docs/architecture/domains/records/compact.domain.json': JSON.stringify(
+          {
+            ...record,
+            id: 'compact',
+            modules: [{ path: 'src/imageView.compact.vue' }],
+            publicEntryPoints: []
+          }
+        )
       }
     )
     const config = loadValidConfiguration(root)
     expect(
       Object.fromEntries(
-        [...config.claims].map(([file, { module }]) => [file, module.role])
+        [...config.claims].map(([file, claim]) => [file, claim.record.id])
       )
     ).toEqual({
-      'src/images/index.ts': 'domain',
-      'src/images/index.test.ts': 'domain',
-      'src/imageView.vue': 'presentation',
-      'src/imageView.test.ts': 'presentation',
-      'src/imageView.compact.vue': 'application',
-      'src/imageView.compact.test.ts': 'application',
-      'src/imageView.compact.cloud.test.ts': 'application'
+      'src/images/index.ts': 'images',
+      'src/images/index.test.ts': 'images',
+      'src/imageView.vue': 'images',
+      'src/imageView.test.ts': 'images',
+      'src/imageView.compact.vue': 'compact',
+      'src/imageView.compact.test.ts': 'compact',
+      'src/imageView.compact.cloud.test.ts': 'compact'
     })
   })
 
@@ -193,33 +207,42 @@ describe('runArchitecture', () => {
         join(root, 'docs/architecture/domains/boundaries.json'),
         'utf8'
       )
-    ).toContain('"patterns": ["src/images/**"]')
+    ).toContain('"patterns": ["src/images/**", "src/imageView.vue"]')
   })
 
   it('warns about unclassified files and stale or redundant module paths without failing', () => {
-    const file = 'docs/architecture/domains/records/images.domain.json'
+    const images = 'docs/architecture/domains/records/images.domain.json'
+    const viewer = 'docs/architecture/domains/records/viewer.domain.json'
     const root = createRepository(
       {
         modules: [
           ...record.modules,
-          { path: 'src/gone/**', role: 'domain' },
-          { path: 'src/images/index.ts', role: 'application' },
-          { path: 'src/images/index.test.ts', role: 'application' },
-          { path: 'src/images/extra/**', role: 'domain' },
-          { path: 'src/images/extra/b.ts', role: 'application' },
-          { path: 'src/images/extra/b.test.ts', role: 'domain' },
-          { path: 'src/images/view.ts', role: 'presentation' },
-          { path: 'src/images/view.wide.ts', role: 'domain' }
+          { path: 'src/gone/**' },
+          { path: 'src/images/extra/**' },
+          { path: 'src/images/hidden/a.ts' },
+          { path: 'src/images/view.wide.ts' },
+          { path: 'src/images/view.cloud.test.ts' }
         ]
       },
       {
         'src/images/view.ts': '',
+        'src/images/view.test.ts': '',
+        'src/images/view.cloud.test.ts': '',
         'src/images/view.wide.ts': '',
         'src/images/view.wide.cloud.test.ts': '',
         'src/brandNew.ts': '',
         'src/images/extra/a.ts': '',
-        'src/images/extra/b.ts': '',
-        'src/images/extra/b.test.ts': ''
+        'src/images/hidden/a.ts': '',
+        [viewer]: JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [
+            { path: 'src/images/hidden/**' },
+            { path: 'src/images/view.ts' },
+            { path: 'src/images/view.test.ts' }
+          ],
+          publicEntryPoints: []
+        })
       }
     )
     runArchitecture(root, 'update')
@@ -228,27 +251,27 @@ describe('runArchitecture', () => {
       warnings: [
         {
           message: expect.stringContaining(
-            'images path claims no source files because more specific paths claim all of them: src/images/**'
-          ),
-          file
-        },
-        {
-          message: expect.stringContaining(
             'images path matches no source files: src/gone/**'
           ),
-          file
+          file: images
         },
         {
           message: expect.stringContaining(
-            'images path repeats the role of the enclosing src/images/**: src/images/extra/**'
+            'viewer path claims no source files because more specific paths claim all of them: src/images/hidden/**'
           ),
-          file
+          file: viewer
         },
         {
           message: expect.stringContaining(
-            'images path repeats the role of its subject src/images/index.ts: src/images/index.test.ts'
+            'images path repeats the domain of the enclosing src/images/**: src/images/extra/**'
           ),
-          file
+          file: images
+        },
+        {
+          message: expect.stringContaining(
+            'viewer path repeats the domain of its subject src/images/view.ts: src/images/view.test.ts'
+          ),
+          file: viewer
         },
         {
           message: expect.stringContaining(
@@ -486,8 +509,8 @@ describe('buildCatalog', () => {
       []
     )
     expect(catalog.domains[0].modules).toEqual([
-      { path: 'src/images/**', role: 'domain', owners: ['@images-team'] },
-      { path: 'src/imageView.vue', role: 'presentation', owners: ['@fallback'] }
+      { path: 'src/images/**', owners: ['@images-team'] },
+      { path: 'src/imageView.vue', owners: ['@fallback'] }
     ])
   })
 
@@ -499,7 +522,7 @@ describe('buildCatalog', () => {
         'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
           ...record,
           id: 'viewer',
-          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          modules: [{ path: 'src/images/viewer/**' }],
           publicEntryPoints: []
         })
       }
@@ -532,7 +555,7 @@ describe('buildCatalog', () => {
         'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
           ...record,
           id: 'viewer',
-          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          modules: [{ path: 'src/images/viewer/**' }],
           publicEntryPoints: []
         })
       }
@@ -567,10 +590,7 @@ describe('buildCatalog', () => {
   it('reports coverage of src and package src code from directory and exact module paths', () => {
     const root = createRepository(
       {
-        modules: [
-          ...record.modules,
-          { path: 'packages/widgets/src/index.ts', role: 'domain' }
-        ]
+        modules: [...record.modules, { path: 'packages/widgets/src/index.ts' }]
       },
       {
         'src/zeta.tsx': '',

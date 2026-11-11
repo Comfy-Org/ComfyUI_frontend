@@ -5,1438 +5,269 @@ export type ClientOptions = {
 }
 
 /**
- * Workspace entity annotated with the requesting user's role.
+ * Response returned after successfully accepting a workspace invitation.
  */
-export type WorkspaceWithRole = {
+export type AcceptInviteResponse = {
   /**
-   * When the workspace was created
-   */
-  created_at: string
-  id: string
-  /**
-   * When the user joined the workspace (same as created_at for the workspace creator)
-   */
-  joined_at: string
-  name: string
-  plan_summary?: WorkspacePlanSummary
-  role: 'owner' | 'member'
-  subscription_tier?: SubscriptionTier
-  type: 'personal' | 'team'
-}
-
-/**
- * Subscription tier (uppercase to match comfy-api)
- */
-export type SubscriptionTier =
-  | 'FREE'
-  | 'STANDARD'
-  | 'CREATOR'
-  | 'PRO'
-  | 'FOUNDERS_EDITION'
-  | 'TEAM'
-  | 'ENTERPRISE'
-
-/**
- * Workspace-switcher display fact, not spend authorization or plan-action eligibility. Uses billing subscription-state precedence: ending, scheduled changes and activating display as active; renewal payment failures confirmed by the provider display as payment_due. Unknown or unavailable facts omit the entire summary; clients must not infer no_plan from omission.
- */
-export type WorkspacePlanSummary = {
-  /**
-   * User-facing plan name. Null for no_plan or when the exact current/ended plan identity is unavailable; never inferred from cached admission tier.
-   */
-  plan_name: string | null
-  status: 'active' | 'no_plan' | 'paused' | 'payment_due' | 'ended'
-}
-
-/**
- * Abbreviated workspace metadata used in list responses.
- */
-export type WorkspaceSummary = {
-  id: string
-  name: string
-  type: 'personal' | 'team'
-}
-
-/**
- * Per-member action guidance for the authenticated actor; render each field as received rather than deriving it from roles.
- */
-export type WorkspaceMemberCapabilities = {
-  /**
-   * Whether the actor may switch this member to the other supported role. Requires current owner authority and respects directory management, creator protection and the last-owner guard. Non-creator self-demotion is allowed when another owner remains. Not mutation authorization.
-   */
-  can_change_role: boolean
-  /**
-   * Whether the actor may remove this member. Requires current owner authority, refuses self-removal and protects the creator. Directory management alone does not refuse the existing removal route. Not permission to leave the workspace; use can_leave_workspace.
-   */
-  can_remove: boolean
-  /**
-   * Whether a persisted member credit-limit mutation is available. Currently false: no such backend mutation exists. Not a balance, local UI setting, permission to change roles or permission to remove.
-   */
-  can_set_credit_limit: boolean
-}
-
-/**
- * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
- */
-export type WorkspaceDeploymentList = {
-  /**
-   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
-   */
-  builds_visible: boolean
-  /**
-   * The workspace's default deployment, set by an owner through PUT /api/workspaces/{id}/default-deployment; absent when none is set, or when the one set is gone (see gone_default_deployment_id). Present whether or not this browser follows it, so the switcher can label the row.
-   */
-  default_deployment_id?: string
-  /**
-   * The workspace's default deployment, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Members with no pick of their own run on Comfy Cloud, and default_deployment_id is absent. The default stays recorded until an owner sets or clears it, so this is reported on every listing until then.
-   */
-  gone_default_deployment_id?: string
-  /**
-   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it. The response leaves the cookie untouched, so an older listing cannot overwrite a newer pick. The stale cookie remains an explicit browser pick (pick_source `browser`), so a workspace default set later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. Subsequent listings report the same gone id until the cookie changes or expires.
-   */
-  gone_picked_deployment_id?: string
-  items: Array<WorkspaceDeployment>
-  /**
-   * Where the current pick came from: `browser`, this browser's own pick cookie (a deployment, or Comfy Cloud with picked_deployment_id absent); `workspace_default`, the workspace's default deployment because the browser has no pick. Absent when there is neither.
-   */
-  pick_source?: 'browser' | 'workspace_default'
-  /**
-   * The deployment this browser is on: its own pick, read from its pick cookie, or the workspace's default deployment when the browser has no pick (BE-17480); absent when the browser runs on Comfy Cloud. It is always one of the listed deployments: a pick or a default whose deployment is not among them (deleted, or no longer the workspace's) runs on Comfy Cloud, and is reported in gone_picked_deployment_id or gone_default_deployment_id instead. pick_source says which of the two it is.
-   */
-  picked_deployment_id?: string
-}
-
-/**
- * One live deployment of the workspace, as the editor's switcher shows it.
- */
-export type WorkspaceDeployment = {
-  /**
-   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
-   */
-  build_id?: string
-  /**
-   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
-   */
-  build_name?: string
-  /**
-   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
-   */
-  can_start: boolean
-  /**
-   * When the deployment was created.
-   */
-  created_at: string
-  /**
-   * Developer-platform deployment id; what PUT /api/workspaces/{id}/deployment takes.
-   */
-  deployment_id: string
-  /**
-   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
-   */
-  deployment_name?: string
-  /**
-   * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
-   */
-  release_id: string
-  /**
-   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
-   */
-  release_version?: number
-  /**
-   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
-   */
-  status:
-    | 'queued'
-    | 'provisioning'
-    | 'starting'
-    | 'ready'
-    | 'unhealthy'
-    | 'stopping'
-    | 'stop_failed'
-    | 'stopped'
-    | 'failed'
-}
-
-/**
- * Which step the CPU server of the deployment this browser's editor runs on is on.
- */
-export type WorkspaceDeploymentCpuServer = {
-  /**
-   * none: the deployment gets no CPU server (Comfy Cloud, a deployment that is stopping, stop_failed, stopped or failed, or a Release with no route list or no pack route in it), so stop asking. A route list ingest could not read, or a status it does not know, is the 502, never none. creating: none yet, and setting one up takes seconds (a Modal deployment, or one on its way up). building: none yet, and Modal builds the Release's image first, which can take minutes the first time (RunPod). created: the CPU server exists; it may still be starting ComfyUI, which this does not say.
-   */
-  cpu_server: 'none' | 'creating' | 'building' | 'created'
-  /**
-   * The deployment the answer is about. Absent when the editor runs on Comfy Cloud.
-   */
-  deployment_id?: string
-}
-
-/**
- * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
- */
-export type WorkspaceDeletionDenialParams = {
-  /**
-   * Latest authoritative cancel_at across live subscription rows. Absent means no known boundary; never synthesize a date.
-   */
-  effective_at?: string
-}
-
-/**
- * Creation refused because the account has reached its live owner membership threshold for creation.
- */
-export type WorkspaceCreationLimitError = {
-  code: 'OWNED_WORKSPACE_LIMIT'
-  denied_reasons: WorkspaceCreationDenials
-  /**
-   * Owner membership threshold for new workspace creation, including the personal workspace. Other owner assignments can raise the actual count above it.
-   */
-  max_owned_workspaces: number
-  message: string
-}
-
-/**
- * Reasons creation is unavailable. Returned beside can_create_workspace false or on a creation refusal; first applicable reason wins.
- */
-export type WorkspaceCreationDenials = {
-  /**
-   * organization_managed: the SSO organization manages this account's workspaces. owned_workspace_limit: the caller owns at least max_owned_workspaces live workspaces. Reasons are evaluated in this order; an absent reason is no explanation, never permission.
-   */
-  can_create_workspace?: 'organization_managed' | 'owned_workspace_limit'
-}
-
-/**
- * Metadata for a workspace-scoped API key (secret is never returned).
- */
-export type WorkspaceApiKeyInfo = {
-  /**
-   * When the key was created
-   */
-  created_at: string
-  /**
-   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
-   */
-  description: string
-  /**
-   * When the key expires (if set)
-   */
-  expires_at?: string
-  /**
-   * API key ID
-   */
-  id: string
-  /**
-   * First 8 chars after prefix for display
-   */
-  key_prefix: string
-  /**
-   * Last time the key was used
-   */
-  last_used_at?: string
-  /**
-   * User-provided label
-   */
-  name: string
-  /**
-   * When the key was revoked (if revoked)
-   */
-  revoked_at?: string
-  /**
-   * User who created this key
-   */
-  user_id: string
-  /**
-   * Workspace this key belongs to
+   * ID of the workspace joined
    */
   workspace_id: string
+  /**
+   * Name of the workspace joined
+   */
+  workspace_name: string
 }
 
 /**
- * Full workspace entity with configuration and ownership details.
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
-export type Workspace = {
-  created_at: string
-  id: string
-  name: string
-  type: 'personal' | 'team'
-}
-
-/**
- * Metadata for a single workflow version.
- */
-export type WorkflowVersionResponse = {
-  created_at: string
-  created_by: string
-  id: string
-  latest_version: number
-  version: number
-}
-
-/**
- * Full workflow version including the serialized workflow JSON.
- */
-export type WorkflowVersionContentResponse = {
-  created_at: string
-  created_by: string
-  dependency_asset_ids?: Array<string>
-  id: string
-  version: number
-  workflow_json: {
-    [key: string]: unknown
+export type AgentAdmissionError = {
+  error: {
+    /**
+     * A human-readable explanation of why the request was declined, suitable for display.
+     */
+    message: string
+    /**
+     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     */
+    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    /**
+     * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
+     */
+    type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
   }
 }
 
 /**
- * Workflow metadata captured at mint time. The subsequent PUT body is the
- * raw workflow JSON document and nothing else, so everything that would
- * normally accompany workflow_json in POST /api/workflows is declared
- * here instead.
- *
+ * Acknowledgement that the ask is answered and the parked turn was woken; its continuation streams over the WebSocket. `selected` and `other_text` are the answer committed to the ask row. The first answer wins: when an earlier request already committed one (a retry, or another tab), this carries THAT answer, not the request body, so compare it with what you sent before showing it as the user's choice.
  */
-export type WorkflowUploadUrlRequest = {
+export type AgentAnswerAccepted = {
   /**
-   * Default view mode
+   * The committed free-text answer, when there is one.
    */
-  default_view?: 'workflow' | 'app'
+  other_text?: string
   /**
-   * Description of the workflow
+   * The committed option ids (empty when the answer was free text only).
    */
-  description?: string
-  /**
-   * ID of the source workflow if forked
-   */
-  forked_from_workflow_id?: string
-  /**
-   * ID of the source workflow version if forked
-   */
-  forked_from_workflow_version_id?: string
-  /**
-   * Display name for the workflow
-   */
-  name?: string
+  selected: Array<string>
+  status: 'answered'
 }
 
 /**
- * Full workflow entity including metadata and version history.
+ * The user's answer to a pending ask_user prompt. `selected` holds the chosen option ids; a permission gate answers with one id (e.g. the Approve/Deny option). `other_text` carries a free-text answer when the ask set allow_other.
  */
-export type WorkflowResponse = {
-  created_at: string
-  created_by: string
-  default_view?: 'workflow' | 'app'
-  description?: string
-  forked_from?: WorkflowForkedFrom
-  id: string
-  latest_version: number
-  name?: string
-  updated_at: string
+export type AgentAnswerRequest = {
+  /**
+   * Free-text answer; only permitted when the ask set allow_other. Counts as one selection toward the bounds.
+   */
+  other_text?: string
+  /**
+   * Chosen option ids. Must be a subset of the ask's option ids and satisfy its min_selections/max_selections.
+   */
+  selected: Array<string>
 }
 
 /**
- * Reference to the parent workflow from which this workflow was forked.
+ * 409 from the answer route: the ask is no longer pending, or its turn is gone so the answer can never be delivered. `status`, `selected` and `other_text` report the outcome stored on the ask row when the server knows it, with the same rules as the agent_ask_resolved event.
  */
-export type WorkflowForkedFrom = {
-  workflow_id?: string
-  workflow_version_id?: string
+export type AgentAskConflict = {
+  /**
+   * Human-readable error message.
+   */
+  error: string
+  /**
+   * The committed free-text answer, only when `status` is `answered`.
+   */
+  other_text?: string
+  /**
+   * The committed option ids when `status` is `answered`; null otherwise.
+   */
+  selected?: Array<string> | null
+  status?: AgentAskStatus
 }
 
 /**
- * Publishing metadata for a workflow shared to the Hub.
+ * Server-to-client agent_ask frame on /ws. A turn is parked on this ask.
  */
-export type WorkflowPublishInfo = {
+export type AgentAskFrame = {
   /**
-   * Published assets (inputs and models).
+   * The pending ask, discriminated on `kind`, plus the thread it belongs to.
    */
-  assets: Array<AssetInfo>
-  listed: boolean
-  publish_time?: string | null
-  share_id: string
-  workflow_id: string
-}
-
-/**
- * Lightweight asset reference used in workflow publishing payloads.
- */
-export type AssetInfo = {
-  /**
-   * Asset identifier.
-   */
-  id: string
-  /**
-   * Whether the caller already owns this asset.
-   */
-  in_library: boolean
-  /**
-   * Whether this asset is a model.
-   */
-  model: boolean
-  name: string
-  /**
-   * Signed URL for previewing the asset.
-   */
-  preview_url: string
-  /**
-   * Whether this is a public (platform-provided) asset.
-   */
-  public: boolean
-  storage_url: string
-}
-
-/**
- * Paginated list of saved workflows.
- */
-export type WorkflowListResponse = {
-  data: Array<WorkflowResponse>
-  pagination: PaginationInfo
-}
-
-/**
- * Pagination metadata included in list responses. Supports both legacy
- * offset/limit pagination and cursor-based pagination. When cursor-based
- * pagination is used, `next_cursor` is the primary pagination token and
- * `offset`/`total` may be zero.
- *
- */
-export type PaginationInfo = {
-  /**
-   * Whether more items are available beyond this page
-   */
-  has_more: boolean
-  /**
-   * Items per page
-   */
-  limit: number
-  /**
-   * Opaque cursor for the next page. Pass this value as the `after`
-   * query parameter on the next request. Empty or absent when there
-   * are no more results.
-   *
-   */
-  next_cursor?: string
-  /**
-   * Current offset (0-based). Deprecated: use cursor-based pagination.
-   *
-   * @deprecated
-   */
-  offset: number
-  /**
-   * Total number of items matching filters (may be 0 when using cursor pagination)
-   */
-  total: number
-}
-
-/**
- * Response containing assets associated with a workflow.
- */
-export type WorkflowApiAssetsResponse = {
-  assets: Array<AssetInfo>
-}
-
-/**
- * Request body for querying assets associated with a workflow.
- */
-export type WorkflowApiAssetsRequest = {
-  workflow_api_json: {
-    [key: string]: unknown
+  data: AgentPendingAsk & {
+    thread_id: string
   }
+  type: 'agent_ask'
 }
 
 /**
- * The user a web session belongs to
+ * Which card renders an ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text. `paused` is the admission pause card: one Resume option, never free text. `delete_approval` is the delete consent card for nodes the user made: exactly the Delete and Keep options, never free text. The same value is the agent_ask event's `kind`, the message list's `pending_ask.kind`, and an entry of `ask_kinds` on the message POST.
  */
-export type WebSessionUser = {
-  email: string
-  /**
-   * The identity provider's verified-email claim when the session was created
-   */
-  email_verified: boolean
-  /**
-   * Comfy user id
-   */
-  id: string
-  name?: string
-  /**
-   * Sign-in method, for example `google.com` or `password`
-   */
-  sign_in_provider?: string
-}
-
-/**
- * The live web session and the user it belongs to
- */
-export type WebSessionResponse = {
-  /**
-   * The session ends at this time regardless of use
-   */
-  absolute_expires_at: string
-  /**
-   * Send as `X-CSRF-Token` on requests that change data with this session
-   */
-  csrf_token: string
-  /**
-   * Idle expiry. Real use slides it; reading the session does not.
-   */
-  expires_at: string
-  /**
-   * Whether personal billing and personal workspace UI apply to the
-   * account. True for a live personal workspace, and for a legacy
-   * account whose personal workspace is created lazily
-   * (personal_workspace_id still NULL), linked to SSO or not. False
-   * for an account SSO sign-in or the directory created, which has
-   * none, for a personal workspace that was deleted, and for an
-   * account scheduled for deletion. Read from the account's record
-   * (whether SSO created it is recorded when it is made), not inferred
-   * from the sign-in provider.
-   *
-   */
-  has_personal_workspace: boolean
-  user: WebSessionUser
-}
-
-/**
- * Result of validating a set of asset operations.
- */
-export type ValidationResult = {
-  /**
-   * Blocking validation errors that prevent download
-   */
-  errors?: Array<ValidationError>
-  /**
-   * Overall validation status (true if all checks passed)
-   */
-  is_valid: boolean
-  /**
-   * Non-blocking validation warnings (informational only)
-   */
-  warnings?: Array<ValidationError>
-}
-
-/**
- * Details of a single validation error encountered during asset operations.
- */
-export type ValidationError = {
-  /**
-   * Machine-readable error code
-   */
-  code: string
-  /**
-   * Field that failed validation
-   */
-  field: string
-  /**
-   * Human-readable error message
-   */
-  message: string
-}
-
-/**
- * User information response
- */
-export type UserResponse = {
-  /**
-   * Firebase UID of the authenticated user
-   */
-  id: string
-  /**
-   * User status (always "active" for authenticated users)
-   */
-  status: string
-}
-
-/**
- * User data listing entry with file metadata (path, size, modification time).
- */
-export type UserDataResponseFull = {
-  /**
-   * UNIX timestamp of the last modification in milliseconds.
-   */
-  modified?: number
-  path?: string
-  size?: number
-}
-
-export type UsageTimeSeries = {
-  /**
-   * When the numbers were read. An open billing period is still moving.
-   */
-  as_of?: string
-  /**
-   * When per-charge recording began for this environment. The `person` and `source` groupings, and every `filter_*`, hold spend from this instant on: a range starting earlier shows only the recorded part under them, while `product_line` and `model` from the invoice show all of it. Absent where no charges are recorded yet.
-   */
-  attribution_since?: string
-  breakdown: Array<UsageBreakdownRow>
-  buckets: Array<UsageBucket>
-  ending_before: string
-  granularity: 'hour' | 'day' | 'month'
-  group_by:
-    | 'model'
-    | 'endpoint'
-    | 'product'
-    | 'product_line'
-    | 'person'
-    | 'source'
-  /**
-   * One entry per value in `groups` for `product_line`, `person` and `source`; absent for the other groupings.
-   */
-  group_labels?: Array<UsageGroupLabel>
-  groups: Array<string>
-  not_available?: UsageNotAvailable
-  /**
-   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept. `invoice` when a range the ledger does not hold was read from Metronome's invoices narrowed by `filter_product_line` (alone, on `product_line` or `model`): its groups are the invoices' models and accept no further filter. Absent for any other invoice-served answer.
-   */
-  served_from?: 'ledger' | 'invoice'
-  starting_on: string
-  summary: UsageSummary
-}
-
-/**
- * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
- */
-export type UsageBalance = {
-  /**
-   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  amount_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
-   *
-   * @deprecated
-   */
-  amount_micros?: number
-  /**
-   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  cloud_credit_balance_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
-   *
-   * @deprecated
-   */
-  cloud_credit_balance_micros?: number
-  currency?: string
-  /**
-   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  prepaid_balance_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
-   *
-   * @deprecated
-   */
-  prepaid_balance_micros?: number
-}
-
-/**
- * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
- */
-export type UsageSummary = {
-  balance?: UsageBalance
-  /**
-   * Total gross spend over the range, in microamount (1/1,000,000 of the currency unit). Genuinely micros, unlike the balance breakdown.
-   */
-  spend_micros: number
-}
-
-/**
- * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
- */
-export type UsageNotAvailable = {
-  reason: 'no_attribution_source' | 'filter_needs_ledger'
-}
-
-export type UsageGroupLabel = {
-  /**
-   * Only for `model` when the key is a Serverless deployment: `gpu` for the deployment's GPU time, `storage` for its network-volume and container-disk storage.
-   */
-  cost_kind?: 'gpu' | 'storage'
-  /**
-   * For `model` and `source` when the key is a Serverless deployment: the deployment's id. Under Serverless the model level is the deployment, with its GPU time and its storage as separate keys; under `source` each deployment is one key.
-   */
-  deployment_id?: string
-  /**
-   * For `model` and `source` when the key is a Serverless deployment and the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached, and `display_name` then carries the id.
-   */
-  deployment_name?: string
-  /**
-   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`: charges that name no model, such as Agent rounds, partner calls that send none, and Comfy Cloud GPU time), or the key's owner and prefix.
-   */
-  display_name?: string
-  /**
-   * Only for `person` when the member is known; tells two members with one name apart.
-   */
-  email?: string
-  /**
-   * Only for `person`: true when the person is no longer a member of this workspace. Their spend stays under their name.
-   */
-  former_member?: boolean
-  /**
-   * The value as it appears in `groups`, `buckets` and `breakdown`.
-   */
-  key: string
-  /**
-   * Only for `source` when the key is known to this workspace.
-   */
-  key_name?: string
-  /**
-   * Only for `source` when kind is `api_key`.
-   */
-  key_prefix?: string
-  /**
-   * Only for `source` when kind is `api_key` and the key is known to this workspace: true when the key has been revoked. Its spend stays under its name.
-   */
-  key_revoked?: boolean
-  /**
-   * Only for `source`. A `deployment` key is one Serverless deployment's id (`deployment_id` set); the bare key `deployment` is deployment spend recorded without an id.
-   */
-  kind?: 'api_key' | 'session' | 'deployment'
-  /**
-   * Only for `source` when the key's or deployment's owner is known.
-   */
-  owner_display_name?: string
-  /**
-   * Only for `source` when the key's or deployment's owner is known; tells two owners with one name apart.
-   */
-  owner_email?: string
-  /**
-   * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
-   */
-  owner_user_id?: string
-  /**
-   * Only for `model` on a ledger-served answer: the partner the model's charges came through, as the partner catalog's provider id (the id workspace provider policy uses). Absent for a model whose charges name no known partner, a deployment and `unspecified`.
-   */
-  provider?: string
-  /**
-   * With `provider`: the partner's name, e.g. `Black Forest Labs`. Render beside `display_name`; `display_name` stays the model's own name.
-   */
-  provider_display_name?: string
-}
-
-export type UsageBucket = {
-  cost_micros: number
-  group_key: string
-  period_end: string
-  period_start: string
-}
-
-export type UsageBreakdownRow = {
-  cost_micros: number
-  group_key: string
-  /**
-   * Only on a ledger-served answer (`served_from: ledger`): how many distinct charges — jobs, calls, metered hours — the group's spend came from over the range.
-   */
-  run_count?: number
-  share: number
-}
-
-/**
- * A minted single-use upload grant.
- */
-export type UploadGrantResponse = {
-  /**
-   * Seconds until the grant expires if unused.
-   */
-  expires_in: number
-  /**
-   * Relative path (/api/uploads/{id}) to PUT the raw bytes to, resolved
-   * against this API's origin. The unguessable id is the only
-   * credential the upload needs — send no Authorization header or API
-   * key. Single-use: a failed or interrupted upload burns the grant;
-   * mint a new one to retry.
-   *
-   */
-  upload_path: string
-}
-
-/**
- * Request body for updating an existing workspace's settings.
- */
-export type UpdateWorkspaceRequest = {
-  /**
-   * New display name for the workspace
-   */
-  name?: string
-}
-
-/**
- * Request body for updating an existing saved workflow.
- */
-export type UpdateWorkflowRequest = {
-  /**
-   * New default view mode
-   */
-  default_view?: 'workflow' | 'app'
-  /**
-   * New description
-   */
-  description?: string
-  /**
-   * New display name
-   */
-  name?: string
-}
-
-/**
- * Request body for updating an existing user secret.
- */
-export type UpdateSecretRequest = {
-  /**
-   * New name for the secret
-   */
-  name?: string
-  /**
-   * New secret value (API key, token, etc.)
-   */
-  secret_value?: string
-}
-
-/**
- * Request body for changing a workspace member's role.
- */
-export type UpdateMemberRoleRequest = {
-  /**
-   * The role to assign to the member
-   */
-  role: 'owner' | 'member'
-}
-
-/**
- * Request body for updating an existing Hub profile.
- */
-export type UpdateHubProfileRequest = {
-  /**
-   * Token (from /api/hub/assets/upload-url) for a new avatar image. Omit or send null to leave unchanged; send empty string "" to remove.
-   *
-   */
-  avatar_token?: string | null
-  description?: string
-  display_name?: string
-  /**
-   * List of website URLs.
-   */
-  website_urls?: Array<string>
-}
-
-/**
- * What a credit top-up of the requested amount would grant.
- */
-export type TopupQuoteResponse = {
-  /**
-   * The quoted amount, in cents.
-   */
-  amount_cents: number
-  /**
-   * Display credits at 211 per dollar, rounded half up. The top-up
-   * itself grants `amount_cents` of balance.
-   *
-   */
-  credits: number
-  /**
-   * Approximately 12 months from now (the default top-up window); the
-   * actual grant may start an hour or two earlier, and a price-level
-   * validity setting can change it.
-   *
-   */
-  expires_at: string
-  /**
-   * Environment-configured Stripe payment method configuration for
-   * one-time credit top-up checkout. Omitted when not configured.
-   * This metadata does not establish interactive payment eligibility,
-   * ownership of a saved method, or guarantee payment success. The
-   * interactive endpoint independently accepts only cards without
-   * future usage and revalidates payment authority.
-   * Clients must constrain the interactive payment form to that
-   * card-only, no-future-use contract; this configuration alone does
-   * not guarantee its enabled methods are compatible.
-   *
-   */
-  payment_method_configuration_id?: string
-}
-
-/**
- * Requested credit purchase from this operation's validated stored interactive top-up intent. Visible only to callers authorized for payment details. Not the amount charged or proof of payment. Omitted for historical, non-interactive, invalid or non-top-up operations.
- *
- */
-export type TopUpPurchaseAmount = {
-  amount_cents: number
-  currency: 'usd'
-}
-
-/**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
- * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
- */
-export type ToolCallSummary = {
-  /**
-   * Omitted when zero.
-   */
-  duration_ms?: number
-  /**
-   * Present only when status is error.
-   */
-  error_code?: string
-  finished_at?: string
-  /**
-   * This tool-call row's own primary key.
-   */
-  id: string
-  /**
-   * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
-   */
-  job_id?: string
-  /**
-   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
-   */
-  produced_asset?: {
-    /**
-     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
-     */
-    hash: string
-    /**
-     * The server-assigned asset id recorded by the producing call.
-     */
-    id: string
-  }
-  started_at?: string
-  /**
-   * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
-   */
-  status: 'success' | 'error'
-  /**
-   * The provider tool-use id, the same id a live agent_tool_call WebSocket frame carries as tool_call_id — the frontend keys its tool chip on this value so a reload and a resumed live frame for the same call render as one chip, not two. Rows recorded before this id existed have none; id (this row's own primary key) is emitted instead, so the field is never empty, though it then cannot match any live frame.
-   */
-  tool_call_id: string
-  tool_name: string
-}
-
-/**
- * Credit-stop ladder for the pricing slider (BE-1254). Returned by GET /api/billing/plans for every workspace regardless of the caller's token or workspace type (the personal/team distinction was removed); omitted only when the catalog defines no stops.
- */
-export type TeamCreditStops = {
-  /**
-   * Index into stops[] for the slider's initial position
-   */
-  default_stop_index: number
-  stops: Array<TeamCreditStop>
-}
-
-export type PlanActionDeniedReasonParams = {
-  /**
-   * Billing boundary when the already-scheduled successor takes effect.
-   */
-  effective_at?: string
-}
-
-/**
- * Why action is none. Permission refusals precede sales management, parked and running operations, a scheduled successor, transition restrictions, and seats. Scheduled successors include effective_at in denied_reason_params. Unknown or unavailable state fails closed with billing_state_unknown. Absent for an actionable choice.
- */
-export type PlanActionDeniedReason =
-  | 'not_a_member'
-  | 'not_workspace_owner'
-  | 'not_original_owner'
-  | 'sales_managed'
-  | 'billing_operation_parked'
-  | 'billing_operation_in_progress'
-  | 'subscription_change_in_progress'
-  | 'annual_to_monthly_unsupported'
-  | 'same_plan'
-  | 'incompatible_transition'
-  | 'exceeds_max_seats'
-  | 'billing_state_unknown'
-
-/**
- * Action for this exact plan and billing interval. Render as received. Subscribe starts or resumes checkout, change changes the plan now, reactivate removes a scheduled cancellation, downgrade schedules a reduction at the billing boundary, and none disables the choice. This is presentation guidance, not authorization; writes recheck policy.
- */
-export type PlanAction =
-  | 'subscribe'
-  | 'change'
-  | 'reactivate'
-  | 'downgrade'
-  | 'none'
-
-/**
- * Pre/post-discount price for a team credit stop, in cents.
- */
-export type TeamCreditStopPrice = {
-  action: PlanAction
-  denied_reason?: PlanActionDeniedReason
-  denied_reason_params?: PlanActionDeniedReasonParams
-  /**
-   * Pre-discount (struck-through) price in cents
-   */
-  list_price_cents: number
-  /**
-   * What one billing period at this stop is charged, in cents: one month
-   * for monthly, the whole year for yearly. This is the current catalog
-   * amount a new checkout at this stop quotes and invoices; an existing
-   * subscription's invoice can differ. Show this server amount as the
-   * billed total rather than deriving price_cents x 12: Stripe rounds
-   * the per-credit line before applying the discount.
-   *
-   */
-  period_charge_cents: number
-  /**
-   * Post-discount (bold) price in cents
-   */
-  price_cents: number
-}
-
-/**
- * A selectable preset on the team pricing slider. Echoed on subscribe via
- * team_credit_stop_id; the backend owns the resolved amounts. credits is a
- * RAW monthly credit count (not cents). Save% is derived by the FE as
- * (list_price_cents - price_cents) / list_price_cents.
- *
- */
-export type TeamCreditStop = {
-  /**
-   * Raw monthly credit count granted at this stop
-   */
-  credits: number
-  /**
-   * Stable stop id echoed on subscribe (e.g. "team_700")
-   */
-  id: string
-  monthly: TeamCreditStopPrice
-  yearly: TeamCreditStopPrice
-}
-
-/**
- * The team credit stop a workspace is currently subscribed to: the
- * per-workspace slider choice recorded at subscribe time
- * (workspace_subscriptions.team_credit_stop_id). Amounts are owned by the
- * catalog, not the subscription row. Returned on GET /api/billing/status
- * for per-credit Team plans (BE-1254).
- *
- */
-export type TeamCreditStopSummary = {
-  /**
-   * Raw monthly credit count granted at this stop
-   */
-  credits_monthly: number
-  /**
-   * Stable stop id (e.g. "team_200")
-   */
-  id: string
-  /**
-   * Monthly USD commitment for this stop
-   */
-  stop_usd: number
-}
-
-/**
- * Paginated list of background tasks for the authenticated user.
- */
-export type TasksListResponse = {
-  pagination: PaginationInfo
-  /**
-   * Array of tasks ordered by create_time
-   */
-  tasks: Array<TaskEntry>
-}
-
-/**
- * Task data for list views
- */
-export type TaskEntry = {
-  /**
-   * When task completed, failed, or was cancelled (null if not finished)
-   */
-  completed_at?: string
-  /**
-   * Task creation timestamp
-   */
-  create_time: string
-  /**
-   * Unique task identifier
-   */
-  id: string
-  /**
-   * When task execution started (null if not started)
-   */
-  started_at?: string
-  /**
-   * Current task status
-   */
-  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
-  /**
-   * Task type name (e.g., model_upload)
-   */
-  task_name: string
-}
-
-/**
- * Full task details including payload and result
- */
-export type TaskResponse = {
-  /**
-   * When task completed or failed (null if not finished)
-   */
-  completed_at?: string
-  /**
-   * Task creation timestamp
-   */
-  create_time: string
-  /**
-   * Error message on failure (null if not failed)
-   */
-  error_message?: string
-  /**
-   * Unique task identifier
-   */
-  id: string
-  /**
-   * Caller-provided key for idempotent task creation
-   */
-  idempotency_key: string
-  /**
-   * Task input data
-   */
-  payload: {
-    [key: string]: unknown
-  }
-  /**
-   * Task output data (null if not completed)
-   */
-  result?: {
-    [key: string]: unknown
-  }
-  /**
-   * When task execution started (null if not started)
-   */
-  started_at?: string
-  /**
-   * Current task status
-   */
-  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
-  /**
-   * Task type name (e.g., model_upload)
-   */
-  task_name: string
-  /**
-   * Task last update timestamp
-   */
-  update_time: string
-}
-
-/**
- * Response after adding, updating, or removing tags on an asset.
- */
-export type TagsModificationResponse = {
-  /**
-   * Tags that were successfully added (for add operation)
-   */
-  added?: Array<string>
-  /**
-   * Tags that were already present (for add operation)
-   */
-  already_present?: Array<string>
-  /**
-   * Tags that were not present (for remove operation)
-   */
-  not_present?: Array<string>
-  /**
-   * Tags that were successfully removed (for remove operation)
-   */
-  removed?: Array<string>
-  /**
-   * All tags on the asset after the operation
-   */
-  total_tags: Array<string>
-}
-
-/**
- * Metadata for a single tag that can be applied to assets.
- */
-export type TagInfo = {
-  /**
-   * Number of assets using this tag
-   */
-  count: number
-  /**
-   * Tag name
-   */
-  name: string
-}
-
-/**
- * System statistics response
- */
-export type SystemStatsResponse = {
-  devices: Array<{
-    /**
-     * Device name
-     */
-    name: string
-    /**
-     * Device type
-     */
-    type: string
-    /**
-     * Free VRAM in bytes
-     */
-    vram_free?: number
-    /**
-     * Total VRAM in bytes
-     */
-    vram_total?: number
-  }>
-  system: {
-    /**
-     * Command line arguments
-     */
-    argv: Array<string>
-    /**
-     * Cloud ingest service version (commit hash)
-     */
-    cloud_version?: string
-    /**
-     * ComfyUI frontend version (commit hash or tag)
-     */
-    comfyui_frontend_version?: string
-    /**
-     * ComfyUI version
-     */
-    comfyui_version: string
-    /**
-     * How this ComfyUI instance is deployed (e.g. cloud, local-git, local-portable, local-desktop)
-     */
-    deploy_environment?: string
-    /**
-     * Whether using embedded Python
-     */
-    embedded_python: boolean
-    /**
-     * Operating system
-     */
-    os: string
-    /**
-     * Python version
-     */
-    python_version: string
-    /**
-     * PyTorch version
-     */
-    pytorch_version: string
-    /**
-     * Free RAM in bytes
-     */
-    ram_free: number
-    /**
-     * Total RAM in bytes
-     */
-    ram_total: number
-    /**
-     * Workflow templates version
-     */
-    workflow_templates_version?: string
-  }
-}
-
-/**
- * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
- */
-export type SubscriptionState =
-  | 'never_subscribed'
-  | 'active'
-  | 'cancel_scheduled'
-  | 'past_due'
+export type AgentAskKind =
+  | 'ask_user'
+  | 'run_approval'
   | 'paused'
-  | 'activating'
-  | 'ended'
+  | 'delete_approval'
 
 /**
- * Billing period (uppercase to match comfy-api)
+ * One node a `delete_approval` ask names, read from the turn's workflow.
  */
-export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+export type AgentAskNodeRef = {
+  /**
+   * The node id in the workflow.
+   */
+  id: string
+  /**
+   * The node's title, when it has one.
+   */
+  title?: string
+  /**
+   * The node's class type, when the workflow names it.
+   */
+  type?: string
+}
 
-export type SubscriptionDiscount = {
-  /**
-   * What this discount removed from the amount due today.
-   */
-  amount_off_cents?: number
-  code: string
-  /**
-   * How long the underlying coupon keeps applying. May be absent when
-   * the coupon's term is not known, e.g. a plan coupon Stripe does not
-   * echo back.
-   *
-   */
-  duration?: 'once' | 'repeating' | 'forever'
-  /**
-   * The coupon's total term in months when duration is repeating.
-   * Omitted for discounts carried over from the current subscription.
-   *
-   */
-  duration_in_months?: number
-  kind: 'plan' | 'promotion'
-  /**
-   * Customer-facing display name of the underlying coupon. `code` can
-   * be an internal identifier (e.g. team_commitment_7_5); render this
-   * when present.
-   *
-   */
-  name?: string
-  /**
-   * How long the discount applies, as the checkout should state it.
-   * this_payment: a one-time code on a change to a monthly plan, which
-   * covers only today's charge. first_month / first_year: a one-time
-   * code on a new monthly or yearly subscription, or on a change to a
-   * yearly plan. months: a repeating discount, for duration_in_months
-   * months. ongoing: a forever discount. Absent when the term is not
-   * known.
-   *
-   */
-  term?: 'this_payment' | 'first_month' | 'first_year' | 'months' | 'ongoing'
+export type AgentAskOption = {
+  description?: string
+  id: string
+  label: string
 }
 
 /**
- * Response after successfully subscribing to a billing plan.
+ * The `data` of an agent_ask_resolved WebSocket event: the outcome the server committed to the ask row. Every open tab gets the same frame, including tabs that did not send the answer, so a client reads the answer that won from here and never infers it from what it sent.
  */
-export type SubscribeResponse = {
+export type AgentAskResolvedData = {
+  ask_id: string
+  message_id: string
   /**
-   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   * The committed free-text answer. Present only when `status` is `answered` and the answer had free text.
    */
-  billing_op_id: string
+  other_text?: string
   /**
-   * When the subscription became/becomes active (present when status=subscribed or pending_payment)
+   * The committed option ids when `status` is `answered` (empty when the answer was free text only). Null for every other status: an answer that was never delivered is not reported as taking effect.
    */
-  effective_at?: string
-  /**
-   * URL to redirect user to add payment method (present when status=needs_payment_method)
-   */
-  payment_method_url?: string
-  /**
-   * Status of the subscription operation:
-   * - subscribed: Subscription is active immediately
-   * - needs_payment_method: User must add payment method via payment_method_url
-   * - pending_payment: Upgrade initiated, waiting for payment to complete
-   *
-   */
-  status: 'subscribed' | 'needs_payment_method' | 'pending_payment'
+  selected: Array<string> | null
+  status: AgentAskStatus
+  thread_id: string
 }
 
 /**
- * Request body for subscribing a workspace to a billing plan.
+ * Server-to-client agent_ask_resolved frame on /ws. An ask left pending.
  */
-export type SubscribeRequest = {
-  /**
-   * Billing cycle for the team slider contract. When present it must be
-   * consistent with plan_slug (monthly -> team_per_credit_monthly,
-   * yearly -> team_per_credit_annual).
-   *
-   */
-  billing_cycle?: 'monthly' | 'yearly'
-  /**
-   * URL to redirect if user cancels the payment method flow.
-   * If not provided, return_url is used for both success and cancel.
-   *
-   */
-  cancel_url?: string
-  /**
-   * Client-minted identifier for one checkout attempt, generated when
-   * the customer starts checkout and sent on every request and
-   * analytics event of that attempt. Purely for observability: it is
-   * what joins the frontend funnel (which emits events before any
-   * billing op exists) to the backend outcome. Expected to match
-   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
-   * never rejected, so the constraint is intentionally not declared
-   * here as pattern/maxLength -- either would make a conforming
-   * client or request validator reject the request before ingest
-   * ever applies that "ignored, not rejected" behavior.
-   *
-   */
-  checkout_attempt_id?: string
-  /**
-   * Explicit consent to reactivate a subscription that is currently
-   * scheduled to cancel at period end. Set to true when the caller has
-   * confirmed this with the user; omitting it (or sending false) while
-   * a cancellation is scheduled fails the request with
-   * REACTIVATION_CONFIRMATION_REQUIRED instead of silently clearing
-   * the cancellation.
-   *
-   */
-  confirm_reactivation?: boolean
-  /**
-   * Stripe ConfirmationToken created from deferred Payment Element
-   * details. For an initial subscription, the backend creates the exact
-   * invoice PaymentIntent and confirms it with this token.
-   *
-   */
-  confirmation_token?: string
-  /**
-   * Client-provided key to prevent duplicate operations.
-   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
-   *
-   */
-  idempotency_key?: string
-  /**
-   * Target plan slug to subscribe to
-   */
-  plan_slug: string
-  /**
-   * Optional customer-facing Stripe promotion code. The backend
-   * resolves and validates it, then stacks it with plan discounts.
-   *
-   */
-  promotion_code?: string
-  /**
-   * Echoes PreviewSubscribeResponse.proration_at from the preview the
-   * caller consented to. When present, the charge is prorated to this
-   * exact instant instead of the instant this request is processed, so
-   * the amount billed matches exactly what was previewed and consented
-   * to. Optional for backward compatibility: omit to keep today's
-   * behavior (prorate to now). Rejected with PRORATION_QUOTE_EXPIRED if
-   * it is in the future or older than a short window — request a fresh
-   * preview and retry in that case.
-   *
-   */
-  proration_at?: string
-  /**
-   * Opaque quote id returned by PreviewSubscribeResponse.
-   */
-  quote_id?: string
-  /**
-   * Quote version returned by PreviewSubscribeResponse.
-   */
-  quote_version?: number
-  /**
-   * URL to redirect after payment method is added successfully.
-   * Required if the workspace has no payment method on file, when
-   * confirmation_token is provided, or when a selected saved payment
-   * method is redirect-based (any non-card type). Redirect-based flows
-   * require an absolute HTTPS URL; plain HTTP is accepted only for
-   * loopback hosts during local development.
-   *
-   */
-  return_url?: string
-  /**
-   * Optional saved payment method selected for this subscription. It
-   * must be attached to the current workspace's Stripe customer.
-   * Mutually exclusive with confirmation_token.
-   *
-   */
-  saved_payment_method_id?: string
-  /**
-   * Selected team credit-stop preset id (e.g. "team_700") for the
-   * per-credit Team plan. Required when subscribing to a per-credit Team
-   * plan; rejected for non-team plans. The backend owns the resolved
-   * amounts (credits/price) for the stop.
-   *
-   */
-  team_credit_stop_id?: string
+export type AgentAskResolvedFrame = {
+  data: AgentAskResolvedData
+  type: 'agent_ask_resolved'
 }
 
 /**
- * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ * The ask frames the server sends on /ws, discriminated on `type`.
  */
-export type StoredAgentConsentSetting = AgentConsentSettingValue &
-  GlobalSettingUpdatedAt
+export type AgentAskServerFrame = AgentAskFrame | AgentAskResolvedFrame
 
 /**
- * The last-changed timestamp every stored setting carries.
+ * How an ask left pending, as stored on the ask row. `answered` means an answer was committed and delivered to the turn; `cancelled` means the turn ended, was stopped, or could not take the answer; `expired` means the ask timed out. There is no "unknown" status: when an answer request fails with a 5xx the client does not know the outcome and should wait for agent_ask_resolved or refetch the thread.
  */
-export type GlobalSettingUpdatedAt = {
+export type AgentAskStatus = 'answered' | 'cancelled' | 'expired'
+
+export type AgentAttachmentBoundsExceeded = {
+  error: string
+  limits: {
+    max_item_length: number
+    max_items: number
+  }
   /**
-   * When this value was last changed. A write that stores the value already present changes nothing and leaves this alone.
+   * A bounded example of the first overlong reference; empty for count-only violations.
    */
-  updated_at: string
+  overlong_ref: string
+  received_count: number
+  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+}
+
+export type AgentAttachmentError =
+  | ({
+      type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+    } & AgentAttachmentRejected)
+  | ({
+      type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+    } & AgentAttachmentBoundsExceeded)
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows what the file is, with its kind and id, and wires its
+ * filename into the load node that takes it: a 3D model into a Load3D node's model_file
+ * widget, an .exr into a LoadImage node's image widget. No tool opens the file itself: the
+ * cloud turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod, and view_asset cannot decode an EXR.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  read: Array<AgentReadableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   */
+  rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Acknowledgement that a turn cancellation was requested. Cancellation is asynchronous; the terminal message state (status=error with stop copy) arrives over the WebSocket.
+ */
+export type AgentCancelAccepted = {
+  status: 'cancelling'
+}
+
+/**
+ * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ */
+export type AgentCancelUnconfirmed = {
+  /**
+   * `cancel_not_requested` — the engine positively reports no cancellation recorded against a run it can still see, so the stop provably did not land. `cancel_outcome_unknown` — neither answer could be established; the stop may or may not have landed.
+   */
+  code: 'cancel_not_requested' | 'cancel_outcome_unknown'
+  /**
+   * Human-readable error message.
+   */
+  error: string
+  /**
+   * Always true on this response; retrying the same stop is safe.
+   */
+  retryable: boolean
 }
 
 /**
@@ -1454,1842 +285,782 @@ export type AgentConsentSettingValue = {
 }
 
 /**
- * The deployment a start was asked for, and its status after the ask.
+ * The `context` of a `delete_approval` ask: the user-made nodes the agent's delete would remove. The server always lists at least one node, and lists at most 50; any more are counted in `hidden_node_count`, so the card can say how many it did not list.
  */
-export type StartWorkspaceDeploymentResult = {
+export type AgentDeleteApprovalContext = {
+  action: 'delete_nodes'
   /**
-   * The deployment's id (dep-{uuid}).
+   * Nodes the delete would remove past the 50 listed. Omitted when every node is listed.
    */
-  deployment_id: string
-  /**
-   * The status comfy-deploy reports after the start: queued when it accepted the start, or the deployment's current status, unchanged, when it was already up. A job is taken only once the listing shows it ready.
-   */
-  status: string
+  hidden_node_count?: number
+  nodes: Array<AgentAskNodeRef>
 }
 
 /**
- * Server-to-client CRDT document frame carried by the /ws envelope.
+ * Authoritative snapshot of a workflow's agent draft — a snapshot for recovery and tooling.
  */
-export type ServerDocFrame =
-  | DocSubscribedFrame
-  | DocUpdateFrame
-  | DocResetFrame
-  | DocOpsResultFrame
+export type AgentDraftSnapshot = {
+  /**
+   * Full UI/save-format workflow graph (nodes, links, groups, widgets_values).
+   */
+  content: {
+    [key: string]: unknown
+  }
+  /**
+   * Monotonic draft version of the snapshot, for recovery and tooling; not a concurrency token.
+   */
+  version: number
+}
 
 /**
- * First rejected op in an abort-remainder batch.
+ * Error body authored by the comfy-agent service and proxied verbatim through ingest. Errors raised by ingest itself (authentication, an unreachable agent service) use the standard ErrorResponse shape instead.
  */
-export type DocOpFailure = {
-  code: string
-  index: number
+export type AgentError = {
+  /**
+   * Stable discriminator authored only by the local agent host when its local-page security check refuses a request. The currently defined value is agent_loopback_only. Clients must accept unknown values so the host can add refusal reasons without breaking older readers. Absent on errors from the cloud agent service.
+   */
+  code?: string
+  /**
+   * Human-readable error message.
+   */
+  error: string
+  /**
+   * Discriminator for a rejection whose intent the caller must act on rather than re-derive from the status code. Carried only on the identity-header 401 the agent's `requireIdentity` writes, and both values are terminal: `unauthenticated` means no usable identity reached the service, `not_provisioned` means the user is authenticated but carries no workspace and should be provisioned rather than signed out. Absent on every other error, including the other 401s on these routes (the agent's own LocalAuth and RequireM2MSecret, and ingest's proxy guard, which answer with ErrorResponse), so an absent `kind` must not be read as retryable.
+   */
+  kind?: 'unauthenticated' | 'not_provisioned'
+}
+
+/**
+ * The `data` of an agent_extension_changed WebSocket event. The local agent sends it after turning a custom node pack on or off, or removing it. The change is already on disk; dropping the event loses only the informational card.
+ */
+export type AgentExtensionChangedData = {
+  /**
+   * What the agent did to the pack.
+   */
+  action: 'enabled' | 'disabled' | 'removed'
+  /**
+   * Whether this install's signed install record claims the pack.
+   */
+  agent_created: boolean
+  message_id: string
+  /**
+   * The pack's folder name in custom_nodes, without the .disabled suffix.
+   */
+  pack: string
+  /**
+   * Whether ComfyUI must restart for the change to apply.
+   */
+  restart_required: boolean
+  thread_id: string
+}
+
+/**
+ * Server-to-client agent_extension_changed frame on /ws.
+ */
+export type AgentExtensionChangedFrame = {
+  data: AgentExtensionChangedData
+  type: 'agent_extension_changed'
+}
+
+/**
+ * The (workspace, user) the agent service attributes the caller's requests to.
+ */
+export type AgentIdentity = {
+  user_id: string
+  workspace_id: string
+}
+
+/**
+ * Anthropic-shaped error envelope on POST /api/agent/llm/v1/messages, written by the agent's LLM proxy or passed through from Anthropic.
+ */
+export type AgentLlmError = {
+  error: {
+    /**
+     * A human-readable explanation.
+     */
+    message: string
+    /**
+     * Set only on the proxy's admission refusals: the capacity wait (`queue_full`, `queue_position`, `user_inflight`, `workspace_inflight` or `lease_capped`) or the pause (`agent_paused` or `workspace_paused`). Absent on Anthropic's own errors.
+     */
+    reason?: string
+    /**
+     * The error category, such as `rate_limit_error` (a capacity wait, or Anthropic throttling the call) or `paused` (an operator paused the Agent or the workspace). Clients must accept unknown values.
+     */
+    type: string
+  }
+  type: 'error'
+}
+
+/**
+ * A persisted message in an agent thread.
+ */
+export type AgentMessage = {
+  /**
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name carries the validated user-facing filename when name is an opaque storage key; the server may remove a registered emoji selector that does not change the displayed glyph. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows. thinking is an optional array of AgentThinkingEntry on a completed assistant message: the agent_thinking text the live turn showed, one entry per model round in order, so a reload keeps the thinking in the turn's work trace. Omitted when the turn produced none.
+   */
+  content?: {
+    attachment_refs?: Array<{
+      display_name?: string
+      id?: string
+      kind?: string
+      name?: string
+      [key: string]: unknown
+    }>
+    thinking?: Array<AgentThinkingEntry>
+    tool_calls?: Array<ToolCallSummary>
+    [key: string]: unknown
+  }
+  id: string
+  pending_ask?: AgentPendingAsk
+  role: 'user' | 'assistant' | 'tool' | 'system'
+  /**
+   * Monotonic ordering within the thread.
+   */
+  seq: number
+  status: 'streaming' | 'complete' | 'error' | 'interrupted'
+  thread_id: string
+  /**
+   * Groups the user message, assistant reply, and its tool calls.
+   */
+  turn_id: string
+  /**
+   * The workflow/draft this turn operated on. Recorded per message so a thread can span or switch workflows over its lifetime; the thread's own workflow_id is only the active-workflow pointer. Empty for a workflow-less turn.
+   */
+  workflow_id?: string
+}
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export type AgentMessageDoneData = {
+  message_id: string
+  refusal?: AgentTurnRefusal
+  thread_id: string
+  /**
+   * Null on a turn that failed or was refused; its rounds were billed as they ran, and the failed round has no usage.
+   */
+  usage: AgentTurnUsage | null
+}
+
+/**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export type AgentMessageDoneFrame = {
+  data: AgentMessageDoneData
+  type: 'agent_message_done'
+}
+
+/**
+ * The immutable model selection receipt for an accepted turn.
+ */
+export type AgentModelReceipt = {
+  contract: 'v1'
+  /**
+   * Exact model ID to which the turn is pinned.
+   */
+  model_id: string
+  /**
+   * Profile revision pinned for the turn (bootstrap for the configured default profile).
+   */
+  profile_revision: string
+  /**
+   * The supplied model_selection object, or null when omitted.
+   */
+  requested: AgentModelSelection | null
+  source: 'request' | 'deployment_default'
+  strategy: 'anthropic'
+  wire: 'anthropic_messages' | 'openai_chat'
+}
+
+/**
+ * An explicit exact model selection. Unknown properties are refused with 400 so a newer intent is never silently ignored by an older server.
+ */
+export type AgentModelSelection = {
+  /**
+   * Exact model ID, using the agent-llm v1 ID grammar.
+   */
+  model_id: string
+  /**
+   * Reserved dial option ID. It is accepted and recorded in requested while the dial is off, but does not affect resolution.
+   */
+  option_id?: string
+}
+
+export type AgentModelUnavailable = AgentError & {
+  code: 'model_unavailable'
+}
+
+/**
+ * The `context` of a `paused` ask.
+ */
+export type AgentPausedContext = {
+  /**
+   * The card copy (same as the ask's prompt).
+   */
   message: string
-  op_id?: string
+  /**
+   * The binding policy reason, e.g. workspace_paused or no_funds.
+   */
+  reason: string
+  /**
+   * When the turn rechecks admission on its own if nobody presses Resume, so Resume is a shortcut, not the only way out.
+   */
+  recheck_after_seconds: number
 }
 
-export type DocOpsResultData = {
-  applied?: Array<string>
-  code?: string
-  failed?: DocOpFailure
+/**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer. Discriminated on `kind`: narrowing on it gives the kind's `context` schema. The agent_ask WebSocket event's `data` is this same shape plus `thread_id`.
+ */
+export type AgentPendingAsk =
+  | ({
+      kind: 'ask_user'
+    } & AgentPendingAskUser)
+  | ({
+      kind: 'run_approval'
+    } & AgentPendingRunApproval)
+  | ({
+      kind: 'paused'
+    } & AgentPendingPaused)
+  | ({
+      kind: 'delete_approval'
+    } & AgentPendingDeleteApproval)
+
+/**
+ * The fields every pending ask carries, whatever its kind.
+ */
+export type AgentPendingAskBase = {
   /**
-   * The subset of skipped that lost a last-writer-wins race, so a client can tell an overwritten write from a harmless replay. Every id here is also in skipped. Absent when no op lost, and on a host that does not classify outcomes.
+   * When true the UI offers a free-text answer, returned as other_text.
    */
-  lww_dropped?: Array<string>
-  message?: string
-  ok: boolean
+  allow_other: boolean
+  ask_id: string
+  kind: AgentAskKind
+  max_selections: number
+  message_id: string
+  min_selections: number
   /**
-   * The op_id of every op in the doc_ops batch this result answers, verbatim and in submission order, on success and on every refusal, including refusals made before the batch reached the document host. Correlation only: it names the batch, not each op's outcome (see applied, skipped and failed), and it is not an ordering key. Absent only when the batch's op ids could not be read under the doc_ops op_id grammar, which a conforming sender never produces.
+   * Selectable options.
    */
-  op_ids?: Array<string>
-  seq?: number
-  skipped?: Array<string>
-  v: number
+  options: Array<AgentAskOption>
+  prompt: string
+}
+
+/**
+ * A pending `ask_user` prompt. It carries no context.
+ */
+export type AgentPendingAskUser = AgentPendingAskBase & {
+  kind: 'ask_user'
+}
+
+/**
+ * A pending `delete_approval` consent card.
+ */
+export type AgentPendingDeleteApproval = AgentPendingAskBase & {
+  context: AgentDeleteApprovalContext
+  kind: 'delete_approval'
+}
+
+/**
+ * A pending `paused` admission card.
+ */
+export type AgentPendingPaused = AgentPendingAskBase & {
+  context: AgentPausedContext
+  kind: 'paused'
+}
+
+/**
+ * A pending `run_approval` consent card.
+ */
+export type AgentPendingRunApproval = AgentPendingAskBase & {
+  context: AgentRunApprovalContext
+  kind: 'run_approval'
+}
+
+/**
+ * A user turn posted to the agent.
+ */
+export type AgentPostMessageRequest = {
+  /**
+   * The ask cards this client can render. `run_approval` is the run consent card, `ask_user` the generic question card, and `delete_approval` the delete consent card. A turn only parks on a card its client listed here. Omitted means an older client and is read as `["run_approval"]`; an empty array means the client renders none. Per kind: without `run_approval`, a run that the user's run mode requires approval for is not parked and not executed; the `run` tool fails with `run_approval_unavailable` and the agent tells the user to approve it from a client that can, or run it themselves. Without `ask_user`, the agent asks its question in the reply instead of a card. `delete_approval` raises no card yet. Unknown values are ignored, duplicates collapse, and only the first 8 entries are read. `paused` is not negotiated: the pause card is raised for every client, so listing it changes nothing.
+   */
+  ask_kinds?: Array<AgentAskKind>
+  /**
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as extension enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
+   */
+  attachments?: Array<string>
+  /**
+   * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_id?: string
+  /**
+   * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
+   */
+  client_message_id?: string
+  /**
+   * The frontend build that sent this turn (ComfyUI_frontend __COMFYUI_FRONTEND_VERSION__, optionally +commit). Observability only; never changes the turn. Recorded on the turn's trace as `comfy.client.version`. A value longer than 64 bytes, or one containing anything other than ASCII letters, digits, `.`, `+` and `-`, is DROPPED, not rejected — accepted with 202 exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_version?: string
+  /**
+   * The user's message.
+   */
+  content: string
+  /**
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   */
+  current_tab?: string
+  /**
+   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
+   */
+  current_tab_unbound?: boolean
+  /**
+   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. The canvas is authoritative for this send and carries no version token — the draft version returned by GET /api/agent/draft is a projection-cache snapshot counter, not a concurrency token, so there is no version to reconcile and no 409 on this field. Additive — older clients omit the whole object and the agent falls back to the stored draft.
+   */
+  draft?: {
+    /**
+     * Full save-format graph (the frontend's app.graph.serialize() output).
+     */
+    content?: {
+      [key: string]: unknown
+    }
+  }
+  model_selection?: AgentModelSelection
+  /**
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
+   */
+  open_tabs?: Array<{
+    /**
+     * Display name of the tab, shown to the agent so the user can reference tabs by name.
+     */
+    name?: string
+    /**
+     * Cloud workflow id of the open tab.
+     */
+    workflow_id: string
+  }>
+  /**
+   * Optional canvas selection context ("change these nodes").
+   */
+  selection?: {
+    [key: string]: unknown
+  }
+  /**
+   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
+   */
+  workflow_id?: string
+  /**
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
+   */
+  workflow_references?: Array<{
+    name?: string
+    workflow_id: string
+  }>
+}
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export type AgentReadableAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+
+/**
+ * Attachment extensions the agent cannot open but wires into a load node by filename. The 3D
+ * models go into Load3D's model_file widget and are exactly the set Load3D accepts
+ * (comfy_extras/nodes_load_3d.py); .usdz is absent from both lists, so it is not an exclusion
+ * this tier makes. .exr goes into LoadImage's image widget: ComfyUI core v0.40.0 registers it
+ * as an image type, but it is HDR, so view_asset cannot decode it and it is not on the view
+ * tier.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+  | '.exr'
+
+/**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export type AgentRetainedAttachmentExtension = '.avif'
+
+/**
+ * The `context` of a `run_approval` ask. It names the workflow and, for cards opened by content-binding builds, the exact canonical graph the user approved. Older in-flight cards may omit graph_binding; consumers must preserve that explicit legacy compatibility case.
+ */
+export type AgentRunApprovalContext = {
+  /**
+   * The document sequence projected into the approved graph, when document-backed.
+   */
+  doc_seq?: number
+  /**
+   * sha256 means graph_sha256 is enforced; identity_only means no durable graph existed to bind; unavailable means binding failed and execution must be denied.
+   */
+  graph_binding?: 'sha256' | 'identity_only' | 'unavailable'
+  /**
+   * SHA-256 of the canonical graph content the card authorizes.
+   */
+  graph_sha256?: string
+  /**
+   * The workflow the run will execute.
+   */
   workflow_id: string
+  /**
+   * The workflow's display name, when the turn knows it.
+   */
+  workflow_name?: string
 }
 
 /**
- * Host acknowledgement for a doc_ops batch.
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
  */
-export type DocOpsResultFrame = {
-  data: DocOpsResultData
-  type: 'doc_ops_result'
-}
-
-export type DocResetData = {
-  actor?: string
-  lineage_seq: number
-  seq: number
-  v: number
-  workflow_id: string
+export type AgentRunMode = {
+  /**
+   * The credit ceiling for auto_limited. Always present; null for the other two modes. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number and a client is never bounded by a ceiling it did not send.
+   */
+  credit_limit: number | null
+  /**
+   * ask_approval pauses at every run and asks on the consent card; auto runs without asking; auto_limited runs without asking until credit_limit credits have been spent, then asks again.
+   */
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
 }
 
 /**
- * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ * The run mode to save.
  */
-export type DocResetFrame = {
-  data: DocResetData
-  type: 'doc_reset'
-}
-
-export type DocUpdateData = {
-  actor?: string
-  lineage_seq: number
+export type AgentRunModePutRequest = {
   /**
-   * Semantic op IDs whose effects are encoded in this live update. Absent on state-vector catch-up updates, which can fold arbitrary history and have no bounded one-frame op set.
+   * Required and positive for auto_limited; must be absent or null for ask_approval and auto. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number.
    */
-  op_ids?: Array<string>
-  seq: number
-  /**
-   * Standard-base64 encoded Yjs update. Host-to-follower only.
-   */
-  update_b64: string
-  v: number
-  workflow_id: string
+  credit_limit?: number | null
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
 }
 
 /**
- * Host-to-follower incremental Yjs document update.
+ * One of the caller's user-authored skill packs.
  */
-export type DocUpdateFrame = {
-  data: DocUpdateData
-  type: 'doc_update'
-}
-
-export type DocSubscribedData = {
-  code?: string
+export type AgentSkill = {
   /**
-   * Binds a stale-schema refusal to the exact row the client may re-mint. Present only with stale_schema_reseed_required.
+   * The full instruction text.
    */
-  expected_seq?: number
+  body: string
   /**
-   * Current lineage sequence. On an accepted subscription, omission means lineage 0 (the document has not been minted yet).
+   * Lowercase hex sha256 of body, with no algorithm prefix. Stamped on every write, so a client can tell whether the stored pack matches the body it last sent.
    */
-  lineage_seq?: number
+  body_hash: string
   /**
-   * Human-readable rejection reason. The generated Go field is named Reason so it does not collide with the frame's Message method.
-   */
-  message?: string
-  ok: boolean
-  /**
-   * Current document sequence. On an accepted subscription, omission means sequence 0 (the document has not been minted yet).
-   */
-  seq?: number
-  v: number
-  workflow_id: string
-}
-
-/**
- * Server acknowledgement for a doc_subscribe request.
- */
-export type DocSubscribedFrame = {
-  data: DocSubscribedData
-  type: 'doc_subscribed'
-}
-
-/**
- * User secret metadata (the secret value itself is never returned after creation).
- */
-export type SecretResponse = {
-  /**
-   * When the secret was created
+   * RFC3339 timestamp of when the pack was first published.
    */
   created_at: string
   /**
-   * Credential class discriminator (`api_key` or `gcp_service_account`).
+   * One-line trigger description the agent selects the pack from.
    */
-  credential_type?: 'api_key' | 'gcp_service_account'
+  description: string
   /**
-   * Unique identifier for the secret
+   * Server-assigned pack ID.
    */
   id: string
   /**
-   * When the secret was last used for decryption
-   */
-  last_used_at?: string
-  /**
-   * User-provided label for the secret
+   * The pack's flat identifier and the load_skill argument.
    */
   name: string
   /**
-   * Provider identifier (e.g., huggingface, civitai)
-   */
-  provider?: string
-  /**
-   * When the secret was last updated
+   * RFC3339 timestamp of the pack's most recent publish.
    */
   updated_at: string
 }
 
 /**
- * The providers available to the authenticated user in the current workspace.
+ * The caller's skill packs, ordered by name.
  */
-export type SecretProvidersResponse = {
-  data: Array<SecretProvider>
+export type AgentSkillListResponse = {
+  skills: Array<AgentSkill>
 }
 
 /**
- * One way a provider's credential can be entered. When a provider exposes more than one option, clients present a sub-selection; the selected option's credential_type is sent on CreateSecretRequest.
+ * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
  */
-export type CredentialOption = {
+export type AgentSkillPublishRequest = {
   /**
-   * The credential_type to send on CreateSecretRequest when this option is selected.
+   * Accepted only so an `always: true` copied out of a SKILL.md frontmatter is refused with an explanation instead of silently dropped. User packs are on-demand only, so true is rejected.
    */
-  credential_type: 'api_key' | 'gcp_service_account'
+  always?: boolean
   /**
-   * How the credential value is entered. `text` is a single-line secret (an API key); `json_file` is a pasted/uploaded JSON document (e.g. a Vertex service-account key).
+   * The full instruction text, injected only when the pack is loaded. Capped per pack and, together with the caller's other packs, in total; the exact byte limits are deployment configuration and are named in the rejection message when exceeded.
    */
-  input_type: 'text' | 'json_file'
+  body: string
   /**
-   * Human-facing label for this option (e.g. "API key (Google AI Studio)").
+   * One line saying when the agent should load this pack. It is what every prompt carries for an unloaded pack, so it is a trigger description, not a title. Single-line: control characters, including CR and LF, are refused. maxLength is counted in code points, as JSON Schema defines it, and the service counts the same way.
    */
-  label: string
-}
-
-/**
- * A provider the user may configure a secret for, with its display label and credential-entry options.
- */
-export type SecretProvider = {
+  description: string
   /**
-   * The credential-entry options for this provider. A single entry is the common case (an API key); multiple entries (e.g. Gemini's AI Studio API key vs Vertex service account) drive a client-side sub-selection.
-   */
-  credential_options?: Array<CredentialOption>
-  /**
-   * Provider identifier (e.g., huggingface, civitai, runway, gemini)
-   */
-  id: string
-  /**
-   * Human-facing display label for the provider. Falls back to the client registry label, then the raw id, when omitted.
-   */
-  label?: string
-}
-
-/**
- * List of user secrets with metadata only.
- */
-export type SecretListResponse = {
-  data: Array<SecretResponse>
-}
-
-/**
- * A plan change persisted to take effect at a future billing boundary.
- */
-export type ScheduledPlanChange = {
-  /**
-   * Billing boundary when the destination plan takes effect
-   */
-  effective_at: string
-  /**
-   * Destination plan identifier
-   */
-  plan_slug: string
-  /**
-   * Destination Team credit stop. Null for personal plans and legacy Team plans without a credit stop.
-   */
-  team_credit_stop: TeamCreditStopSummary | null
-}
-
-export type SavedPaymentMethod = {
-  /**
-   * Bank of a US bank account. Absent for other types.
-   */
-  bank_name?: string
-  /**
-   * Card brand. Present only for card payment methods.
-   */
-  brand?: string
-  /**
-   * When the method was saved to the customer.
-   */
-  created_at?: string
-  /**
-   * Masked email of a Link payment method (first character and domain, such as `o***@example.com`). Absent for other types. Two methods from one Link account, or two addresses that mask alike, read the same; use `created_at` to tell them apart.
-   */
-  email?: string
-  /**
-   * Display-only card expiry month. Returned with exp_year only when both are known and valid; omitted otherwise, including non-card methods.
-   */
-  exp_month?: number
-  /**
-   * Display-only four-digit card expiry year. Returned with exp_month only when both are known and valid; omitted otherwise, including non-card methods.
-   */
-  exp_year?: number
-  /**
-   * Whether the card has expired, at 00:00 UTC on the first day after its expiry month. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
-   */
-  expired?: boolean
-  /**
-   * Whether the card expires within the next 30 days, including already expired cards, using the UTC expiry-month boundary. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
-   */
-  expiring_soon?: boolean
-  id: string
-  /**
-   * Exactly one item is the default when the returned list is non-empty.
-   */
-  is_default: boolean
-  /**
-   * Last four digits of a card, US bank account or SEPA debit account. Absent for other types, and when a SEPA account's last four characters are not all digits.
-   */
-  last4?: string
-  type: string
-}
-
-export type SsoDiscoverResponse = {
-  /**
-   * Display name of the organization, when `sso` is true
-   */
-  organization_name?: string
-  /**
-   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
-   */
-  required?: boolean
-  /**
-   * The email signs in through its organization's SSO
-   */
-  sso: boolean
-}
-
-/**
- * Response after signing out of all devices
- */
-export type RevokeAllSessionsResponse = {
-  /**
-   * How many web sessions were ended
-   */
-  revoked: number
-}
-
-/**
- * Response after accepting a scheduled-change revert.
- */
-export type RevertScheduledChangeResponse = {
-  billing_op_id: string
-  /**
-   * `pending`: poll GET /api/billing/ops/{id}.
-   */
-  status: 'reverted' | 'pending'
-}
-
-/**
- * Request body for undoing a pending scheduled plan change.
- */
-export type RevertScheduledChangeRequest = {
-  idempotency_key?: string
-}
-
-/**
- * Present only when the session's arm is an offer. Terms come from the server catalog.
- */
-export type RetentionOffer = {
-  duration_in_months: number
-  id: string
-  percent_off: number
-}
-
-export type RetentionFlowSubscription = {
-  currency: string
-  /**
-   * Unix seconds of the next renewal.
-   */
-  period_end: number
-  quantity: number
-  /**
-   * Recurring unit price in the currency's smallest unit.
-   */
-  unit_amount: number
-}
-
-export type RetentionFlowResponse = {
-  /**
-   * The PostHog arm: control or a retention offer ID. Absent when the
-   * subscription is ineligible or the owner is outside the experiment.
-   *
-   */
-  experiment_variant?: string
-  /**
-   * Unix seconds; reopen cancellation to refresh the offer after expiry.
-   */
-  expires_at: number
-  offer?: RetentionOffer
-  session_id: string
-  subscription: RetentionFlowSubscription
-}
-
-export type RetentionFlowEventRequest = {
-  /**
-   * flow_opened is reported at the same point for every arm.
-   */
-  event: 'flow_opened' | 'offer_shown'
-  session_id: string
-}
-
-export type RetentionAcceptance = {
-  billing_op_id: string
-  /**
-   * Show success only once this is succeeded; otherwise poll the billing operation.
-   */
-  status: 'pending' | 'succeeded'
-}
-
-export type RetentionAcceptRequest = {
-  /**
-   * Server-issued session; carries no client-selected coupon or variant.
-   */
-  session_id: string
-}
-
-/**
- * Response after accepting a resubscribe request.
- */
-export type ResubscribeResponse = {
-  /**
-   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
-   */
-  billing_op_id: string
-  /**
-   * Human-readable confirmation message
-   */
-  message?: string
-  /**
-   * Subscription outcome. `active` means the resubscribe committed (the scheduled cancellation was undone); `pending` means the operation is still executing — poll the billing operation for the final outcome.
-   */
-  status: 'active' | 'pending'
-}
-
-/**
- * Request body for reactivating a previously cancelled subscription.
- */
-export type ResubscribeRequest = {
-  /**
-   * Client-provided key to prevent duplicate operations.
-   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
-   *
-   */
-  idempotency_key?: string
-}
-
-/**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
- */
-export type RenewalInvoice = {
-  /**
-   * Amount due in the currency's smallest unit (e.g. cents).
-   */
-  amount_due: number
-  /**
-   * Lowercase ISO currency code.
-   */
-  currency: string
-  /**
-   * Stripe-hosted page where the customer can pay the invoice.
-   */
-  hosted_invoice_url: string
-  /**
-   * When Stripe will next retry automatically; absent when no retry is scheduled.
-   */
-  next_payment_attempt?: string
-}
-
-/**
- * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
- */
-export type ReleaseUnsupportedPacks = {
-  packs: Array<ReleaseUnsupportedPack>
-  /**
-   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
-   */
-  release_id: string | null
-}
-
-/**
- * One declared pack that failed to import on the Release's build, as comfy-builder names it.
- */
-export type ReleaseUnsupportedPack = {
-  /**
-   * Why the pack failed to import: the last line of its import error, or "needs a GPU". Empty when ComfyUI logged no reason.
-   */
-  cause: string
-  /**
-   * The pack's folder under custom_nodes.
-   */
-  folder: string
-  /**
-   * The pack's Comfy Registry id; empty for a pack not installed from the registry.
-   */
-  registry_id: string
-  /**
-   * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
-   */
-  repository: string
-}
-
-/**
- * Response after a queue management action (delete or clear).
- */
-export type QueueManageResponse = {
-  /**
-   * Whether the queue was cleared
-   */
-  cleared?: boolean
-  /**
-   * Array of job IDs that were successfully cancelled
-   */
-  deleted?: Array<string>
-}
-
-/**
- * Request to manage queue operations
- */
-export type QueueManageRequest = {
-  /**
-   * If true, clear all pending jobs from the queue
-   */
-  clear?: boolean
-  /**
-   * Array of job IDs to cancel; pending and running jobs transition to cancelled
-   */
-  delete?: Array<string>
-}
-
-/**
- * Queue information with pending and running jobs
- */
-export type QueueInfo = {
-  /**
-   * Array of pending job items (ordered by creation time, oldest first)
-   */
-  queue_pending?: Array<[unknown, unknown, unknown, unknown, unknown]>
-  /**
-   * Array of currently running job items
-   */
-  queue_running?: Array<[unknown, unknown, unknown, unknown, unknown]>
-}
-
-/**
- * Full detail of a publicly published workflow on the Hub.
- */
-export type PublishedWorkflowDetail = {
-  /**
-   * Published assets with their library status for the caller.
-   */
-  assets: Array<AssetInfo>
-  listed: boolean
-  /**
-   * Human-readable workflow name.
+   * The pack's flat identifier and the load_skill argument: letters, digits, '.', '_' and '-'. Publishing a name already held by the caller replaces that pack. A name matching a built-in always-on pack is refused; a name matching a built-in on-demand pack is accepted, and is the name consumption will resolve to the user's pack. Must contain at least one character that is not a dot: "." and ".." are path segments a normalizing client rewrites.
    */
   name: string
-  publish_time?: string | null
-  share_id: string
-  workflow_id: string
-  /**
-   * The workflow JSON content at publish time.
-   */
-  workflow_json: {
-    [key: string]: unknown
-  }
 }
 
 /**
- * Request body for publishing workflow assets to the Hub.
+ * One model round's thinking as persisted on an assistant message's content.thinking (services/agent/internal/loop.persistedThinking): the round's reasoning text, then its narration, scrubbed exactly as the live agent_thinking frames were. Display data only.
  */
-export type PublishWorkflowAssetsRequest = {
+export type AgentThinkingEntry = {
+  text: string
   /**
-   * IDs of assets (inputs and models) to snapshot.
+   * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
    */
-  asset_ids: Array<string>
+  tool_call_id?: string
+  /**
+   * True where the stored thinking stops being whole: this entry's text was cut at the per-round cap (8,192 characters), or a later round's thinking was dropped because the turn's cap (32,768 characters) was spent. A client should say the reasoning was shortened. Absent when nothing was cut.
+   */
+  truncated?: boolean
 }
 
 /**
- * Request body for publishing or updating a workflow on the Hub.
+ * Optional body for creating an agent thread.
  */
-export type PublishHubWorkflowRequest = {
+export type AgentThreadCreateRequest = {
   /**
-   * IDs of assets (inputs and models) to snapshot.
-   */
-  asset_ids: Array<string>
-  /**
-   * Custom node slugs. Must exist in hub_labels.
-   */
-  custom_nodes?: Array<string>
-  /**
-   * Workflow description for the hub listing.
-   */
-  description?: string
-  /**
-   * Arbitrary metadata (size, vram, open_source, etc.). Reserved keys (extended_description, meta_description, how_to_use, suggested_use_cases, faq_items, content_template) are backend-managed and will be stripped if supplied.
-   */
-  metadata?: {
-    [key: string]: unknown
-  }
-  /**
-   * Model slugs. Must exist in hub_labels.
-   */
-  models?: Array<string>
-  /**
-   * Display name for the published workflow on the hub.
-   */
-  name: string
-  /**
-   * Array of tokens or existing public URLs from the previous published version. Full replacement (PUT semantics). Omit or pass [] to have no sample images.
-   *
-   */
-  sample_image_tokens_or_urls?: Array<string>
-  /**
-   * Searchable tag slugs. Must exist in hub_labels.
-   */
-  tags?: Array<string>
-  /**
-   * Token or existing public URL from the previous published version. Omit to have no comparison image.
-   *
-   */
-  thumbnail_comparison_token_or_url?: string
-  /**
-   * Token (from /api/hub/assets/upload-url) for a new upload, or an existing public URL from the previous published version. Omit to have no thumbnail.
-   *
-   */
-  thumbnail_token_or_url?: string
-  thumbnail_type?: 'image' | 'video' | 'image_comparison'
-  /**
-   * URL to a tutorial for this workflow.
-   */
-  tutorial_url?: string
-  /**
-   * Username of the hub profile to publish under. The authenticated user must belong to the workspace that owns this profile.
-   */
-  username: string
-  /**
-   * Userdata path of the workflow file (e.g. "workflows/my-flow.json").
-   */
-  workflow_filename: string
-}
-
-/**
- * One provider's policy state.
- */
-export type ProviderPolicyEntry = {
-  /**
-   * true = allowlisted. false and absent evaluate identically when enforcing; explicit false is UI review state.
-   */
-  enabled: boolean
-  /**
-   * Catalog provider identifier.
-   */
-  provider_id: string
-}
-
-/**
- * A workspace's partner-provider governance policy document — the exact shape PUT accepts (round-trips; entries come back sorted by provider_id, write order is not significant). Effective rule: enabled(P) = !enforcement_enabled || (the entry for P has enabled=true); absent from the array = unset (deny when enforcing).
- */
-export type ProviderPolicy = {
-  /**
-   * The arming switch. While false the policy is editable but nothing blocks (preview mode).
-   */
-  enforcement_enabled: boolean
-  /**
-   * One entry per reviewed provider. A duplicate provider_id in a write is rejected with 400. Unknown provider_ids are rejected with 422.
-   */
-  providers: Array<ProviderPolicyEntry>
-}
-
-/**
- * The partner-provider governance catalog: every governable provider, identical for all workspaces. A projection of the curated catalog minus the internal api_names.
- */
-export type ProviderCatalogResponse = {
-  /**
-   * Sorted by provider_id.
-   */
-  providers: Array<CatalogProvider>
-}
-
-/**
- * Display data for one governable partner provider.
- */
-export type CatalogProvider = {
-  /**
-   * Panel display label (e.g. "OpenAI (inc. Sora)"). Changeable freely, unlike the provider_id.
-   */
-  display_name: string
-  /**
-   * The provider's owned /object_info category segments (partner/<modality>/<Segment>), e.g. openai -> ["OpenAI", "Sora"]. The panel uses them to group nodes under providers (including merged vendors) and preview which nodes a toggle disables. Empty for route-only vendors (callable and governed; the panel hides their toggles).
-   */
-  node_categories: Array<string>
-  /**
-   * Permanent policy identifier (e.g. "kling", "openai"). Not client-derivable (merged vendors such as OpenAI+Sora).
-   */
-  provider_id: string
-}
-
-/**
- * Response returned after successfully queuing a workflow prompt.
- */
-export type PromptResponse = {
-  /**
-   * Any errors in the nodes of the prompt
-   */
-  node_errors?: {
-    [key: string]: unknown
-  }
-  /**
-   * Priority number in the queue
-   */
-  number?: number
-  /**
-   * Unique identifier for the prompt execution
-   */
-  prompt_id?: string
-}
-
-/**
- * Request body for submitting a ComfyUI workflow prompt for execution.
- */
-export type PromptRequest = {
-  /**
-   * Extra data to be associated with the prompt
-   */
-  extra_data?: {
-    [key: string]: unknown
-  }
-  /**
-   * If true, adds the prompt to the front of the queue
-   */
-  front?: boolean
-  /**
-   * Priority number for the queue (lower numbers have higher priority)
-   */
-  number?: number
-  /**
-   * List of node names to execute
-   */
-  partial_execution_targets?: Array<string>
-  /**
-   * The workflow graph to execute
-   */
-  prompt: {
-    [key: string]: unknown
-  }
-  /**
-   * UUID identifying the cloud workflow entity to associate with this job
+   * Workflow the thread is about. Optional — a thread can exist without a workflow.
    */
   workflow_id?: string
-  /**
-   * UUID identifying the workflow version to associate with this job
-   */
-  workflow_version_id?: string
 }
 
 /**
- * Metadata about the currently running and queued prompts.
+ * Result of creating an agent thread.
  */
-export type PromptInfo = {
-  exec_info?: {
-    /**
-     * Number of items remaining in the queue
-     */
-    queue_remaining?: number
-  }
+export type AgentThreadCreated = {
+  thread_id: string
 }
 
 /**
- * Error response for ComfyUI prompt execution.
+ * A paginated page of the caller's agent threads.
  */
-export type PromptErrorResponse = {
-  [key: string]: unknown
+export type AgentThreadListResponse = {
+  pagination: PaginationInfo
+  threads: Array<AgentThreadSummary>
 }
 
 /**
- * Identity of the workspace-bound terminal subscription, not a checkout target or permission to resubscribe. Historical identity is independent of current plan availability and pricing.
+ * One agent thread row for the history sidebar.
  */
-export type PreviousPlan = {
+export type AgentThreadSummary = {
   /**
-   * Exact recorded plan identifier; never inferred from tier.
+   * Thread creation time (RFC3339).
    */
-  plan_slug: string
+  created_at: string
   /**
-   * Recorded Team commitment-stop choice, when known. No price is inferred.
+   * Thread ID.
    */
-  team_credit_stop_id?: string
+  id: string
+  /**
+   * When the thread was last marked active (RFC3339). Empty when unset.
+   */
+  last_message_at: string
+  /**
+   * Number of messages in the thread.
+   */
+  message_count: number
+  /**
+   * First user message text, truncated. Shown when title is empty.
+   */
+  preview: string
+  /**
+   * Thread status.
+   */
+  status: 'active' | 'archived'
+  /**
+   * Thread title; empty when none has been assigned (fall back to preview).
+   */
+  title: string
+  /**
+   * Thread last-update time (RFC3339).
+   */
+  updated_at: string
+  /**
+   * Associated workflow/draft ID; empty when the thread has none.
+   */
+  workflow_id: string
 }
 
 /**
- * Itemized cost preview for a pending subscription change.
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, doc_seq and doc_lineage_seq appear together and only with both of them, and job_id and job_workflow_id appear together only on a terminal run frame when a job was submitted. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
  */
-export type PreviewSubscribeResponse = {
+export type AgentToolCallData = {
   /**
-   * Whether this subscription change is allowed
+   * Present with doc_seq. The lineage containing every correlated update, so a follower can detect replacement and resync.
    */
-  allowed: boolean
-  amount_due_cents?: number
+  doc_lineage_seq?: number
   /**
-   * Credit from the customer's existing account balance applied to
-   * today's charge (the invoice's starting balance, capped at the
-   * total). Present only on Stripe-rated quotes that invoice today in
-   * embedded checkout, when a credit balance is applied; otherwise
-   * absent. Display only: amount_due_cents already reflects it
-   * (an absent amount_due_cents means 0).
-   *
+   * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
    */
-  balance_applied_cents?: number
+  doc_seq?: number
+  duration_ms?: number
+  error_code?: string
   /**
-   * Amount that will be charged at next billing period in cents
+   * Terminal run frame with a submitted job only. The job (prompt_id) this call submitted. Present with job_workflow_id, including when a later step made the run observation an error.
    */
-  cost_next_period_cents: number
+  job_id?: string
   /**
-   * Amount to charge today in cents (0 for downgrades)
+   * Terminal run frame with a submitted job only. The workflow the job was submitted for, so the client can attribute the job's execution events to that workflow's tab. Present with job_id.
    */
-  cost_today_cents: number
+  job_workflow_id?: string
+  message_id: string
   /**
-   * Credits granted at the next billing period, as a whole credit count,
-   * resolved the same way as credits_today. Absent when the quote was not
-   * priced against Stripe.
-   *
+   * Terminal success or error only. The semantic operations whose effects are carried by published doc_update frames for this call.
    */
-  credits_next_period?: number
+  op_ids?: Array<string>
   /**
-   * Credits that will be granted at next billing period in cents
+   * load_skill only. The skill pack name the call's input names, on its running frame and on its terminal frame, including an unknown_skill error. Omitted on every other tool.
    */
-  credits_next_period_cents: number
+  skill?: string
+  status: 'running' | 'success' | 'error'
+  thread_id: string
+  tool_call_id: string
+  tool_name: string
   /**
-   * Credits granted today, as a whole credit count. Resolved from the
-   * Stripe price metadata by the same rule the invoice grant uses, so it
-   * equals credits_added on the succeeded operation. Display this rather
-   * than converting credits_today_cents, which rounds. Absent when the
-   * quote was not priced against Stripe.
-   *
+   * Terminal success or error only. The workflow whose published doc_update contains op_ids. Replace-canvas doc_reset calls do not carry this correlation.
    */
-  credits_today?: number
+  workflow_id?: string
+}
+
+/**
+ * Server-to-client agent_tool_call frame on /ws. A tool invocation started or reached a terminal state. Closed, like the canonical envelope.
+ */
+export type AgentToolCallFrame = {
+  data: AgentToolCallData
+  type: 'agent_tool_call'
+}
+
+/**
+ * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames. The model selection receipt is present when the backend supports its configured wire. A client that requested selection must treat a missing receipt as selection not applied.
+ */
+export type AgentTurnAccepted = {
   /**
-   * Credits granted today in cents (prorated for mid-period upgrades)
+   * ID of the assistant message that will stream the reply.
    */
-  credits_today_cents: number
-  currency?: string
-  current_plan?: PreviewPlanInfo
-  discounts?: Array<SubscriptionDiscount>
+  message_id: string
+  model_selection?: AgentModelReceipt
+  thread_id: string
+}
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export type AgentTurnRefusal = {
   /**
-   * When the change takes effect
+   * Whether adding credit to the account clears this refusal. True only for no_funds.
    */
-  effective_at: string
+  can_add_credit: boolean
   /**
-   * Whether the change takes effect immediately (true) or at period end (false)
+   * What refused the turn. Clients must treat an unknown kind like payment_required (show the text) rather than fail.
    */
-  is_immediate: boolean
-  new_plan: PreviewPlanInfo
+  kind: 'no_funds' | 'manual_block' | 'payment_required' | 'auth' | 'rate_limit'
   /**
-   * The Stripe payment method configuration governing which payment
-   * methods a checkout offers for this environment. Mount Stripe
-   * Elements with `paymentMethodConfiguration` set to this id instead
-   * of hardcoding payment method types. Present on every successful
-   * preview whenever the environment has one configured, independent
-   * of embedded_checked_enabled; absent when it is not configured.
-   *
-   */
-  payment_method_configuration_id?: string
-  /**
-   * Normalized promotion code accepted by Stripe.
-   */
-  promotion_code?: string
-  /**
-   * The instant cost_today_cents was priced at (Stripe-native transitions
-   * only; absent for other billing rails). Echo this back as proration_at
-   * on POST /billing/subscribe to have the subscribe charge exactly this
-   * previewed amount instead of re-pricing at whatever later instant the
-   * subscribe request happens to arrive.
-   *
-   */
-  proration_at?: string
-  /**
-   * Stripe's prorated charge for the rest of the current period on the
-   * new plan, before discounts. In embedded checkout, present on an
-   * immediate plan change that Stripe prorates, when every discount on
-   * today's invoice is itemized in discounts or none applies; absent on
-   * the monthly-to-yearly reset, scheduled changes and a first
-   * subscription.
-   * When present, proration_remaining_cents minus proration_unused_cents
-   * is the invoice's proration before discounts; other invoice lines are
-   * not itemized.
-   *
-   */
-  proration_remaining_cents?: number
-  /**
-   * Stripe's credit for unused time on the old plan, as a positive
-   * amount to subtract. Present exactly when proration_remaining_cents
-   * is.
-   *
-   */
-  proration_unused_cents?: number
-  /**
-   * Opaque short-lived quote identifier to echo on Subscribe.
-   */
-  quote_id?: string
-  /**
-   * Quote contract version to echo on Subscribe.
-   */
-  quote_version?: number
-  /**
-   * Reason why the change is not allowed (only present if allowed=false)
+   * Ingest's error.reason from the refused 402, verbatim, for logging and analytics. Render from kind and can_add_credit, not from this field.
    */
   reason?: string
-  renewal_amount_cents?: number
-  /**
-   * The next recurring charge and target-plan period end. Current servers
-   * always return this later than effective_at and following the target
-   * plan's billing interval. Optional in the schema for older clients.
-   *
-   */
-  renewal_at?: string
-  /**
-   * Whether this previewed change requires explicit reactivation
-   * consent. Computed from the persisted subscription and a short-lived
-   * cache of Stripe lifecycle state. The subscribe enforcement path
-   * performs its own uncached Stripe lifecycle read.
-   *
-   */
-  requires_reactivation_confirmation?: boolean
-  /**
-   * Stripe's subtotal for today's invoice: before invoice-level
-   * discounts and any customer credit balance, and before tax only for
-   * tax-exclusive prices. On an immediate plan change it is net of the
-   * unused-time credit, so it can be zero or negative. Present only on
-   * Stripe-rated quotes that invoice today and itemize every applied
-   * discount in discounts. The charge is always
-   * cost_today_cents / amount_due_cents.
-   *
-   */
-  subtotal_cents?: number
-  /**
-   * Type of subscription transition
-   */
-  transition_type:
-    | 'new_subscription'
-    | 'upgrade'
-    | 'downgrade'
-    | 'duration_change'
 }
 
 /**
- * Summary of seat costs based on current workspace members
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
  */
-export type PlanSeatSummary = {
+export type AgentTurnUsage = {
+  cache_creation_input_tokens: number
+  cache_read_input_tokens: number
+  charge_micro_usd?: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+}
+
+export type AgentUsageStatusResponse = {
   /**
-   * Total number of seats (owner + members) that would be charged
+   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
    */
-  seat_count: number
-  /**
-   * Total cost for all seats in cents
-   */
-  total_cost_cents: number
-  /**
-   * Total credits granted for all seats in cents
-   */
-  total_credits_cents: number
+  has_used_agent: boolean
 }
 
 /**
- * Plan information for preview display
- */
-export type PreviewPlanInfo = {
-  /**
-   * Per-seat credits in cents
-   */
-  credits_cents: number
-  duration: SubscriptionDuration
-  /**
-   * The plan's price for one billing period before invoice-level
-   * discounts, as rated by Stripe: the compare-at price a checkout
-   * strikes through beside price_cents. Present only on new_plan of
-   * Stripe-rated quotes that itemize every applied discount in
-   * discounts, and only when it is above price_cents, so a client
-   * shows the strikethrough exactly when this field is present.
-   * Same basis as price_cents: the whole subscription for one
-   * billing period. No plan on sale is priced by seat (personal plans
-   * are one seat; Team is priced by its credit stop), so the seat
-   * count changes neither.
-   *
-   */
-  list_price_cents?: number
-  /**
-   * list_price_cents divided by 12 and rounded half up to the nearest
-   * cent, for showing a yearly plan's pre-discount per-month price.
-   * Display only, like monthly_price_cents. Present exactly when
-   * list_price_cents is present on an ANNUAL new_plan, so a client
-   * strikes it through beside monthly_price_cents whenever it is
-   * present.
-   *
-   */
-  monthly_list_price_cents?: number
-  /**
-   * price_cents divided by 12 and rounded half up to the nearest cent,
-   * for showing a yearly plan as a per-month price. Display only: the
-   * yearly charge is still price_cents, and 12 times this value can
-   * differ from it by up to 6 cents. Present only on new_plan, and only
-   * when duration is ANNUAL.
-   *
-   */
-  monthly_price_cents?: number
-  /**
-   * Current billing period end (only for current_plan)
-   */
-  period_end?: string
-  /**
-   * Current billing period start (only for current_plan)
-   */
-  period_start?: string
-  /**
-   * Per-seat price in cents
-   */
-  price_cents: number
-  seat_summary: PlanSeatSummary
-  /**
-   * Plan slug
-   */
-  slug: string
-  tier: SubscriptionTier
-}
-
-/**
- * Request body for previewing the cost of a plan subscription change.
- */
-export type PreviewSubscribeRequest = {
-  /**
-   * Client-minted identifier for one checkout attempt, generated when
-   * the customer starts checkout and sent on every request and
-   * analytics event of that attempt. Purely for observability: it is
-   * what joins the frontend funnel (which emits events before any
-   * billing op exists) to the backend outcome. Expected to match
-   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
-   * never rejected, so the constraint is intentionally not declared
-   * here as pattern/maxLength -- either would make a conforming
-   * client or request validator reject the request before ingest
-   * ever applies that "ignored, not rejected" behavior.
-   *
-   */
-  checkout_attempt_id?: string
-  /**
-   * Target plan slug to preview subscribing to
-   */
-  plan_slug: string
-  /**
-   * Optional Stripe promotion code to validate and include in the exact quote.
-   */
-  promotion_code?: string
-  /**
-   * Selected per-credit Team plan stop to preview.
-   */
-  team_credit_stop_id?: string
-}
-
-export type PlanFeatureItem = {
-  /**
-   * Stable semantic display identifier; additions appear in generated client types.
-   */
-  key:
-    | 'shortRuntime'
-    | 'longRuntime'
-    | 'addCredits'
-    | 'importModels'
-    | 'sharedCreditPool'
-    | 'membersUpTo'
-    | 'perMemberCreditLimits'
-    | 'memberSpendAuditing'
-    | 'sharedWorkflowsAssets'
-    | 'projects'
-  /**
-   * Named raw interpolation values only, never preformatted copy.
-   */
-  params?: {
-    /**
-     * Resolved Team member limit for membersUpTo; use locale plural rules.
-     */
-    count: number
-  }
-  /**
-   * Coming-soon items are display promises, not currently available entitlements.
-   */
-  status: 'available' | 'coming_soon'
-  /**
-   * English fallback for this display item; available items also appear in features.
-   */
-  text: string
-}
-
-/**
- * Why a plan is unavailable. Present exactly when available is false and
- * absent when it is true. Only the first reason that applies is reported,
- * in the order below. Render the value as received; do not recompute it.
- * same_plan: (a) Why can this plan not be picked? (b) It is the plan the workspace is already on. (c) Absent means the plan is not the current one. (d) Not a refusal of a different plan; see incompatible_transition. (e) The plan slug equals the slug of the workspace's active subscription.
- * incompatible_transition: (a) Why is this plan closed for the workspace's current plan? (b) The transition rules never allow it: the Free plan, which is provisioned only through free-tier eligibility, or a switch into the Founders plan. (c) Absent means no such rule applies. (d) Not a temporary state, and not billing_operation_in_progress, billing_operation_parked or annual_to_monthly_unsupported. (e) The target is the Free plan, or the transition matrix refuses the pair for a reason other than annual_to_monthly_unsupported.
- * billing_operation_in_progress: (a) Why can no other plan be picked for now? (b) A subscription-changing billing operation is running for the workspace's active subscription. It settles on its own, so a client may say that plans will be available again shortly. (c) Absent means no such operation is running. (d) Not billing_operation_parked, which does not clear on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is running and none is parked.
- * billing_operation_parked: (a) Why can no other plan be picked until support steps in? (b) A subscription-changing billing operation is parked for reconciliation for the workspace's active subscription: it is either paid but credits not granted, or a replacement subscription that could not finish superseding the old one. It does not clear on its own, so a client must route the user to support and never imply a wait. (c) Absent means no operation is parked. (d) Not billing_operation_in_progress, which settles on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is parked; reported instead of billing_operation_in_progress when both exist.
- * annual_to_monthly_unsupported: (a) Why can a monthly plan not be chosen from an annual plan? (b) The annual commitment binds, so a move to a higher-tier monthly plan is not supported before the term ends. (c) Absent means the transition is not an annual to higher-tier monthly move. (d) Not a downgrade, which is allowed and scheduled, and not incompatible_transition. (e) The transition matrix refuses the pair with its annual-to-monthly tier upgrade rule.
- * exceeds_max_seats: (a) Why is this plan closed to a workspace with many people? (b) The occupied seats exceed the plan's seat limit, counted as the subscribe request counts them: a team plan counts members plus unexpired pending invitations, any other plan counts members alone. (c) Absent means the occupied seats fit the plan. (d) Not a pending-invitation count for non-team plans, where an invitation does not occupy a seat. (e) For a team plan, members + pending invitations is greater than the seat limit; for any other plan, members is greater than the seat limit; a positive workspace override replaces the plan default in both cases.
- * requires_team and requires_personal are part of this enum but are not reported today.
- */
-export type PlanAvailabilityReason =
-  | 'same_plan'
-  | 'incompatible_transition'
-  | 'billing_operation_in_progress'
-  | 'billing_operation_parked'
-  | 'annual_to_monthly_unsupported'
-  | 'exceeds_max_seats'
-  | 'requires_team'
-  | 'requires_personal'
-
-/**
- * Availability and eligibility information for a billing plan.
- */
-export type PlanAvailability = {
-  /**
-   * Whether the workspace can switch to this plan right now. False exactly when reason is present.
-   */
-  available: boolean
-  reason?: PlanAvailabilityReason
-}
-
-/**
- * Billing plan details including pricing, limits, and features.
- */
-export type Plan = {
-  action: PlanAction
-  availability: PlanAvailability
-  /**
-   * Raw credit count (not cents) the plan grants for one billing period,
-   * read from the catalog grant the subscription actually receives. An
-   * annual plan carries the whole year's grant. Omitted when the plan
-   * grants no flat credit amount: per-credit Team plans (see
-   * team_credit_stops), team-only seat plans, zero-grant plans and plans
-   * absent from the catalog.
-   *
-   */
-  credits?: number
-  /**
-   * Per-member credits in cents (base + one seat)
-   */
-  credits_cents: number
-  denied_reason?: PlanActionDeniedReason
-  denied_reason_params?: PlanActionDeniedReasonParams
-  duration: SubscriptionDuration
-  /**
-   * Optional ordered localization companion selected by the server. Only available items appear in the existing features strings; coming-soon items remain separate. Key is a stable semantic identifier, not a client locale path. Clients map known keys to translations and may use text as an English fallback according to their locale policy. Unknown keys never imply entitlements. Omitted for older string-only metadata. Team count uses the resolved max_seats.
-   */
-  feature_items?: Array<PlanFeatureItem>
-  /**
-   * Optional ordered English feature copy for this offer, for display only. Omitted when metadata is unavailable. Team member count uses max_seats. Does not grant entitlements or change plan actions or availability.
-   */
-  features?: Array<string>
-  /**
-   * Maximum number of seats allowed for this plan
-   */
-  max_seats: number
-  /**
-   * Optional display badge for this offer. True recommends a Popular chip; false means no Popular chip. Omitted when metadata is unavailable. False for a matching current or scheduled plan, and for every offer in a known previous plan's tier across billing periods. Unknown previous tier is not inferred. At most one plan per billing period is true, breaking ties by plan slug within each period. Monthly and yearly recommendations can both be true. The server resolves this precedence. Not eligibility.
-   */
-  popular?: boolean
-  /**
-   * Per-member price in cents (base + one seat)
-   */
-  price_cents: number
-  seat_summary: PlanSeatSummary
-  /**
-   * Plan identifier (e.g., "pro-monthly", "team-standard-annual")
-   */
-  slug: string
-  tier: SubscriptionTier
-}
-
-/**
- * Which developer-platform deployment this browser should run on.
- */
-export type PickWorkspaceDeploymentRequest = {
-  /**
-   * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
-   */
-  deployment_id: string
-}
-
-/**
- * Configured credit allowance of the current plan, not remaining balance, an invoice or proof of live provider grants. Amount includes credits and period; none is a proven configured zero. Native-empty or incoherent Enterprise configuration remains unknown, never none. Missing data and unresolved, unsupported, ended or activating plans remain unknown. Unknown or missing means unavailable; clients must not render zero. Does not change eligibility.
- */
-export type PeriodCreditGrant = {
-  /**
-   * Configured whole display credits. Present only for amount.
-   */
-  credits?: number
-  /**
-   * Grant cadence, which may differ from Enterprise invoice cadence. Present only for amount.
-   */
-  period?: SubscriptionDuration
-  state: 'amount' | 'none' | 'unknown'
-}
-
-/**
- * An outstanding workspace invitation that has not yet been accepted.
- */
-export type PendingInvite = {
-  /**
-   * Email address of the invited user
-   */
-  email: string
-  /**
-   * When the invite expires
-   */
-  expires_at: string
-  /**
-   * Invite ID
-   */
-  id: string
-  /**
-   * When the invite was created
-   */
-  invited_at: string
-  /**
-   * Invite token for constructing invite links. Empty for expired invites.
-   */
-  token?: string
-}
-
-/**
- * Response containing a redirect URL to the payment portal.
- */
-export type PaymentPortalResponse = {
-  /**
-   * Stripe Billing Portal URL
-   */
-  url: string
-}
-
-/**
- * Request body for generating a payment portal session URL.
- */
-export type PaymentPortalRequest = {
-  /**
-   * Omitted or empty opens the generic Billing and invoices portal.
-   * payment_method_update opens Stripe's dedicated add-payment-method flow;
-   * completing it sets only customer.invoice_settings.default_payment_method.
-   * It does not update subscription-specific defaults or guarantee renewal recovery.
-   * Completion uses Stripe's hosted confirmation page.
-   *
-   */
-  flow_type?: '' | 'payment_method_update'
-  /**
-   * URL to redirect after the user exits the portal
-   */
-  return_url?: string
-}
-
-/**
- * RFC 6749 §5.1 successful token response.
- */
-export type OAuthTokenResponse = {
-  /**
-   * Resource-bound Cloud JWT (audience matches the protected resource).
-   */
-  access_token: string
-  /**
-   * Access token lifetime in seconds.
-   */
-  expires_in: number
-  /**
-   * Opaque refresh token. Rotates on every successful refresh; presenting an already-rotated token revokes the entire family.
-   */
-  refresh_token: string
-  /**
-   * Space-delimited scopes granted with this token.
-   */
-  scope: string
-  token_type: 'Bearer'
-}
-
-/**
- * RFC 6749 §5.2 error response.
- */
-export type OAuthTokenError = {
-  /**
-   * RFC 6749 §5.2 error code: invalid_request, invalid_client, invalid_grant, unauthorized_client, unsupported_grant_type, invalid_scope.
-   */
-  error: string
-  /**
-   * Human-readable, no leak of internal storage state.
-   */
-  error_description?: string
-}
-
-/**
- * RFC 7591 §3.2.1 successful registration response.
- */
-export type OAuthRegisterResponse = {
-  application_type: 'native' | 'web'
-  /**
-   * Server-generated client_id. Always carries the `comfy-dyn-` prefix.
-   */
-  client_id: string
-  /**
-   * Unix timestamp (seconds) when the client was registered.
-   */
-  client_id_issued_at: number
-  client_name?: string
-  grant_types: Array<string>
-  redirect_uris: Array<string>
-  response_types: Array<string>
-  token_endpoint_auth_method: 'none'
-}
-
-/**
- * RFC 7591 §2 client metadata document. Fields fall into three groups: the ones the server honors, the purely informational ones it accepts and ignores (`scope` plus the client-profile fields `client_uri`, `logo_uri`, `tos_uri`, `policy_uri`, `contacts`, `software_id`, `software_version` — parsed, never persisted, never echoed, per RFC 7591 §2's "MAY ignore" allowance), and the ones it rejects with `invalid_client_metadata` (`resource_grants`, because scopes/grants are server-owned for dynamic clients; `jwks`/`jwks_uri`, because they only apply to the JWT client-authentication methods DCR does not offer). `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
  *
  */
-export type OAuthRegisterRequest = {
-  /**
-   * RFC 7591 §2 application_type. **OPTIONAL** — omit the field to default to `native` (the loopback-friendly policy), rather than the RFC's nominal `web` default; the MCP SDK's DCR client omits it. `native` for desktop / CLI / MCP-spec-strict clients (loopback redirects); `web` for hosted clients (HTTPS only, host must be allowlisted). The realistic MCP-client population is overwhelmingly native/loopback, so defaulting to `web` would silently bounce those clients off the wrong redirect policy. A *present* value must be one of the enum members; any other value rejects with `invalid_client_metadata`. (The server has no runtime enum validation and defensively coerces a null/empty value to `native`, but spec-validating clients should omit the field rather than send `""` — the enum does not permit it.)
-   *
-   */
-  application_type?: 'native' | 'web'
-  /**
-   * Human-readable name shown in the consent UI. Reserved-name list rejects impersonation of major MCP clients.
-   */
-  client_name?: string
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  client_uri?: string | null
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  contacts?: Array<string> | null
-  /**
-   * Optional. Defaults to `["authorization_code","refresh_token"]`.
-   */
-  grant_types?: Array<'authorization_code' | 'refresh_token'>
-  /**
-   * **REJECTED IF PRESENT.** A JWK set only applies to the `private_key_jwt` / `client_secret_jwt` client-authentication methods, which DCR does not offer — `token_endpoint_auth_method` is forced to `none` (public clients only). Accepting it silently would leave the client believing it had negotiated an authentication posture the server never agreed to, so this returns `invalid_client_metadata`.
-   */
-  jwks?: {
-    [key: string]: unknown
-  } | null
-  /**
-   * **REJECTED IF PRESENT.** Same reason as `jwks`: JWT client authentication is not offered by DCR, so a JWK set URI cannot be honored and returns `invalid_client_metadata` rather than being silently dropped.
-   */
-  jwks_uri?: string | null
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  logo_uri?: string | null
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  policy_uri?: string | null
-  /**
-   * 1–5 redirect URIs. Validated against `application_type` policy.
-   */
-  redirect_uris: Array<string>
-  /**
-   * **REJECTED IF PRESENT.** Same reason as `scope`. The set of resources and scopes a dynamic client may request is server-policy, not request-driven.
-   *
-   */
-  resource_grants?: {
-    [key: string]: Array<string>
-  } | null
-  /**
-   * Optional. Defaults to `["code"]`.
-   */
-  response_types?: Array<'code'>
-  /**
-   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server grants the published scope lists of `comfy-mcp` and, when active, `comfy-router`, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
-   *
-   */
-  scope?: string | null
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  software_id?: string | null
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  software_version?: string | null
-  /**
-   * Optional. Any value is accepted and substituted with `none` (RFC 7591 §3.2.1); the registration response reports `none`. Public clients only, so authenticate with PKCE.
-   */
-  token_endpoint_auth_method?: string
-  /**
-   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
-   */
-  tos_uri?: string | null
-}
-
-/**
- * RFC 7591 §3.2.2 error response.
- */
-export type OAuthRegisterError = {
-  error: 'invalid_redirect_uri' | 'invalid_client_metadata'
-  error_description?: string | null
-}
-
-/**
- * Union of the two 400 shapes /oauth/register can emit. `OAuthRegisterError` is the handler-shaped RFC 7591 §3.2.2 error; `ErrorResponse` is the strict-server binding-layer error fired when the request body fails OpenAPI-schema validation before the handler runs, normalized to the standard {code, message} shape by the custom Echo HTTPErrorHandler (BE-1178).
- *
- */
-export type OAuthRegisterBadRequestResponse = OAuthRegisterError | ErrorResponse
-
-/**
- * Standard error response with a machine-readable code and human-readable message.
- */
-export type ErrorResponse = {
-  code: string
-  /**
-   * Present only on an organization-managed POST /api/workspaces refusal; other errors omit it.
-   */
-  denied_reasons?: WorkspaceCreationDenials
-  /**
-   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
-   */
-  details?: {
-    [key: string]: unknown
-  }
-  message: string
-  /**
-   * On `sso_required`: the SSO organization the caller must sign in with (its WorkOS id, `org_...`), the value `GET /api/auth/sso/start?organization=` takes: the organization that owns the account's email domain, else the workspace's. Absent when no sign-in would admit the caller (an account another organization holds, in an SSO organization's workspace), when unknown, and on every other code but `account_outside_organization`, where it is the workspace's organization, which no sign-in of the account joins, and `personal_workspace_disabled`, where it is the organization holding the account.
-   */
-  organization_id?: string
-}
-
-/**
- * OAuth 2.1 protected-resource metadata (RFC 9728).
- */
-export type OAuthProtectedResourceMetadata = {
-  authorization_servers: Array<string>
-  bearer_methods_supported?: Array<string>
-  resource: string
-  scopes_supported: Array<string>
-}
-
-/**
- * One workspace option presented in the OAuth consent challenge. Promoted to a named schema so the generated Go type is referenceable in handlers and tests rather than re-declared as an anonymous struct at every callsite.
- *
- */
-export type OAuthConsentChallengeWorkspace = {
-  id: string
-  name: string
-  role: 'owner' | 'member'
-  type: 'personal' | 'team'
-}
-
-/**
- * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
- *
- */
-export type OAuthConsentChallenge = {
-  /**
-   * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
-   */
-  client_display_name: string
-  /**
-   * Whether the client requesting authorization is a seeded first-party
-   * client (`first_party`) or was created through RFC 7591 dynamic client
-   * registration (`dynamic`). Derived from the client_id: every dynamically
-   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
-   * on a `dynamic` client is registrant-supplied and unverified; the consent
-   * UI must present it as such. Consumers must treat an absent value as
-   * `dynamic`.
-   *
-   */
-  client_provenance: 'first_party' | 'dynamic'
-  /**
-   * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
-   */
-  csrf_token: string
-  /**
-   * Opaque server-side identifier for the authorization-request row. Carried back unchanged in the consent submission.
-   */
-  oauth_request_id: string
-  /**
-   * The exact redirect URI this authorization request was validated
-   * against at GET time (oauth_authorization_requests.redirect_uri,
-   * itself byte-matched to the client registration). The frontend
-   * binds the post-consent navigation to this value, so it needs no
-   * per-client knowledge of callback schemes. Surfaced verbatim;
-   * also suitable for display so users can verify the destination.
-   *
-   */
-  redirect_uri: string
-  /**
-   * Human-readable name of the protected resource, from oauth_resources.display_name.
-   */
-  resource_display_name: string
-  /**
-   * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
-   */
-  scopes: Array<string>
-  /**
-   * Workspaces the user can select from. Membership is re-checked on POST.
-   */
-  workspaces: Array<OAuthConsentChallengeWorkspace>
-}
-
-/**
- * Redirect target produced after a JSON consent submission. The frontend must navigate the browser to this URL so custom-scheme client callbacks work without relying on fetch-visible 302 headers.
- */
-export type OAuthAuthorizeRedirectResponse = {
-  /**
-   * OAuth client redirect URI with either code+state for allow, or error+state for deny.
-   */
-  redirect_url: string
-}
-
-/**
- * OAuth 2.1 authorization-server metadata (RFC 8414).
- */
-export type OAuthAuthorizationServerMetadata = {
-  authorization_endpoint: string
-  code_challenge_methods_supported: Array<string>
-  grant_types_supported: Array<string>
-  issuer: string
-  jwks_uri: string
-  /**
-   * RFC 7591 §3.1 Dynamic Client Registration endpoint. Advertised so MCP-spec-compliant clients can auto-discover and self-register without operator involvement. Present only when DCR is enabled.
-   *
-   */
-  registration_endpoint?: string
-  response_types_supported: Array<string>
-  scopes_supported?: Array<string>
-  token_endpoint: string
-  token_endpoint_auth_methods_supported: Array<string>
-}
-
-/**
- * Metadata describing a single ComfyUI node type and its inputs/outputs.
- */
-export type NodeInfo = {
-  /**
-   * Whether this is an API node
-   */
-  api_node?: boolean
-  /**
-   * Category of the node
-   */
-  category?: string
-  /**
-   * Whether the node is deprecated
-   */
-  deprecated?: boolean
-  /**
-   * Description of the node
-   */
-  description?: string
-  /**
-   * Display name of the node
-   */
-  display_name?: string
-  /**
-   * Whether the node is experimental
-   */
-  experimental?: boolean
-  /**
-   * Input specifications for the node
-   */
-  input?: {
-    [key: string]: unknown
-  }
-  /**
-   * Order of inputs for display
-   */
-  input_order?: {
-    [key: string]: Array<string>
-  }
-  /**
-   * Internal name of the node
-   */
-  name?: string
-  /**
-   * Output types of the node
-   */
-  output?: Array<string>
-  /**
-   * Whether each output is a list
-   */
-  output_is_list?: Array<boolean>
-  /**
-   * Names of the outputs
-   */
-  output_name?: Array<string>
-  /**
-   * Whether this is an output node
-   */
-  output_node?: boolean
-  /**
-   * Tooltips for outputs
-   */
-  output_tooltips?: Array<string>
-  /**
-   * Python module implementing the node
-   */
-  python_module?: string
-}
-
-/**
- * The next charge to the card on file, as Stripe's invoice preview reported it, after proration, discounts, tax and account credit.
- */
-export type NextCharge = {
-  /**
-   * Amount in the currency's smallest unit (e.g. cents).
-   */
-  amount: number
-  /**
-   * Lowercase ISO currency code.
-   */
-  currency: string
-  /**
-   * When the charge is due.
-   */
-  date: string
-  /**
-   * True when the charge prices the pending scheduled plan change (scheduled_change) rather than a renewal of the current plan.
-   */
-  reflects_scheduled_change: boolean
-}
-
-/**
- * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
- */
-export type ModelUploadStarted = {
-  /**
-   * When `upload_url` stops working (15 minutes after the answer).
-   */
-  expires_at: string
-  /**
-   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
-   */
-  headers: {
-    [key: string]: string
-  }
-  /**
-   * The largest file an upload accepts, 2147483648 (2 GiB).
-   */
-  max_size_bytes: number
-  method: 'PUT'
-  /**
-   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
-   */
-  upload_id: string
-  /**
-   * Signed URL for exactly one staged object; works until `expires_at`.
-   */
-  upload_url: string
-}
-
-/**
- * Represents a folder containing models
- */
-export type ModelFolder = {
-  /**
-   * List of paths where models of this type are stored
-   */
-  folders: Array<string>
-  /**
-   * The name of the model folder
-   */
-  name: string
-}
-
-/**
- * Represents a model file with metadata
- */
-export type ModelFile = {
-  /**
-   * The filename of the model
-   */
-  name: string
-  /**
-   * Index of the path where this model is located
-   */
-  pathIndex: number
-}
-
-/**
- * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
- */
-export type ModelDownloadFrame = {
-  data: ModelDownloadData
-  type: 'model_download'
-}
-
-/**
- * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
- */
-export type ModelDownloadData = {
-  /**
-   * Bytes received so far. On done and cached, the file's size.
-   */
-  bytes_downloaded: number
-  /**
-   * The download's Content-Length, or null when the storage response sent none. On cached, the file's size; on done with no Content-Length, the bytes received.
-   */
-  bytes_total: number | null
-  /**
-   * How many files this job fetches; files the release ships are not counted.
-   */
-  count: number
-  /**
-   * The ComfyUI model folder the file goes in.
-   */
-  dir: string
-  /**
-   * The file's 1-based position among the files this job fetches.
-   */
-  index: number
-  /**
-   * The file name the workflow loads, as it appears in the model folder.
-   */
-  name: string
-  /**
-   * bytes_downloaded over bytes_total, from 0 to 1, rounded to four decimal places; null when bytes_total is null or 0. 1 on done and cached.
-   */
-  progress: number | null
-  /**
-   * The Cloud job id, stamped by platform-gateway on every frame it forwards.
-   */
-  prompt_id: string
-  /**
-   * Known values are downloading, done, cached and failed. downloading is sent as the download opens and then at most every 0.5 seconds while bytes arrive; done once the whole file arrived and matched its hash; cached once, instead of the others, when the worker already holds the file; failed when the download stopped. Treat it as an open string: a client shows the file as downloading only while the value is downloading, and reads any other value as the end of that file's download.
-   */
-  status: string
-  /**
-   * The job's workflow id, present when the job has one.
-   */
-  workflow_id?: string
-}
-
-/**
- * Workspace member with profile and role information.
- */
-export type Member = {
-  /**
-   * Actions the authenticated actor may offer for this exact member row. Supplied by the member list; role-update responses may omit it. Absent means unknown, not permission. Writes recheck current membership.
-   */
-  capabilities?: WorkspaceMemberCapabilities
-  /**
-   * User's email address, or an empty string if none is on file.
-   */
-  email: string
-  /**
-   * User ID
-   */
-  id: string
-  /**
-   * Whether this member created the workspace. Derived as member.id == workspace.created_by_user_id; exactly one member per workspace is marked. Personal workspace creators cannot be demoted, removed, or leave; a promoted owner is never marked.
-   */
-  is_original_owner: boolean
-  /**
-   * When the user joined the workspace
-   */
-  joined_at: string
-  /**
-   * The member's role comes from their organization's directory (SSO): it is changed in the organization's identity provider, and a role change here is refused.
-   */
-  managed_by_directory?: boolean
-  /**
-   * User's display name
-   */
-  name: string
-  /**
-   * User's role in the workspace
-   */
-  role: 'owner' | 'member'
-}
-
-/**
- * 400 for a missing `filename` or a `res` that is not a number, on the media routes served outside the generated wrapper.
- */
-export type MediaQueryError = {
-  error: string
-}
-
-/**
- * A 400 from a media route served outside the generated wrapper: ErrorResponse, or MediaQueryError for a bad query parameter.
- */
-export type MediaBadRequestError = ErrorResponse | MediaQueryError
-
-/**
- * Paginated list of workspaces the authenticated user belongs to.
- */
-export type ListWorkspacesResponse = {
-  /**
-   * Whether the client should offer creating another workspace. False for an account managed by an SSO organization or an actor at the served max_owned_workspaces limit. Counts live owner memberships, including the personal workspace and retained memberships hidden from the list; ordinary memberships and deleted workspaces do not count. True means these checks allow creation. POST /api/workspaces rechecks the limit atomically; this fact is not write authorization.
-   */
-  can_create_workspace: boolean
-  /**
-   * The workspace the app should open on sign-in: the workspace of the
-   * SSO organization that manages the caller's account, when the caller
-   * is a member of it. Absent for accounts no SSO organization manages.
-   *
-   */
-  default_workspace_id?: string
-  denied_reasons?: WorkspaceCreationDenials
-  /**
-   * Owner membership count at which new workspace creation is refused, including the personal workspace. This is a creation-only threshold; other owner assignments can raise the actual count above it.
-   */
-  max_owned_workspaces: number
-  workspaces: Array<WorkspaceWithRole>
-}
-
-/**
- * List of API keys associated with the current workspace.
- */
-export type ListWorkspaceApiKeysResponse = {
-  api_keys: Array<WorkspaceApiKeyInfo>
-}
-
-/**
- * Paginated list of available asset tags.
- */
-export type ListTagsResponse = {
-  /**
-   * Whether more tags are available
-   */
-  has_more: boolean
-  /**
-   * List of tags
-   */
-  tags: Array<TagInfo>
-  /**
-   * Total number of tags
-   */
-  total: number
-}
-
-/**
- * List of members in the current workspace.
- */
-export type ListMembersResponse = {
-  members: Array<Member>
-  pagination: PaginationInfo
-}
-
-/**
- * List of pending invitations for the current workspace.
- */
-export type ListInvitesResponse = {
-  invites: Array<PendingInvite>
-}
-
-/**
- * Paginated list of assets belonging to the authenticated user.
- */
-export type ListAssetsResponse = {
-  /**
-   * List of assets matching the query
-   */
-  assets: Array<Asset>
-  /**
-   * Whether more assets are available beyond this page
-   */
-  has_more: boolean
-  /**
-   * Opaque cursor to pass as the `after` query parameter to fetch the
-   * next page. Omitted from the response when there are no more results.
-   *
-   */
-  next_cursor?: string
-  /**
-   * Total number of assets matching the filters
-   */
-  total: number
-}
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+  | '.heic'
+  | '.heif'
 
 /**
  * Represents a user-owned asset (image, video, or other generated output).
@@ -3378,1225 +1149,158 @@ export type Asset = {
 }
 
 /**
- * Reference to a Hub label by ID.
+ * Response returned when a new asset is successfully created.
  */
-export type LabelRef = {
+export type AssetCreated = Asset & {
   /**
-   * Human-readable display name (e.g. "Video Generation", "Flux").
+   * Whether this was a new asset creation (true) or returned existing (false)
    */
-  display_name: string
+  created_new: boolean
+}
+
+/**
+ * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
+ */
+export type AssetDownloadResponse = {
   /**
-   * Slug identifier (e.g. "video-generation", "flux").
+   * Human-readable message
    */
+  message?: string
+  /**
+   * Current task status
+   */
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Task ID for tracking download progress via GET /api/tasks/{task_id}
+   */
+  task_id: string
+}
+
+/**
+ * Lightweight asset reference used in workflow publishing payloads.
+ */
+export type AssetInfo = {
+  /**
+   * Asset identifier.
+   */
+  id: string
+  /**
+   * Whether the caller already owns this asset.
+   */
+  in_library: boolean
+  /**
+   * Whether this asset is a model.
+   */
+  model: boolean
   name: string
+  /**
+   * Signed URL for previewing the asset.
+   */
+  preview_url: string
+  /**
+   * Whether this is a public (platform-provided) asset.
+   */
+  public: boolean
+  storage_url: string
 }
 
 /**
- * JSON Web Key Set containing the public keys used to verify Cloud JWTs.
+ * Metadata for a remotely hosted asset resolved by URL.
  */
-export type JwksResponse = {
-  keys: Array<JwkKey>
-}
-
-/**
- * A single JSON Web Key entry within a JWKS response.
- */
-export type JwkKey = {
-  alg: string
-  crv: string
-  kid: string
-  kty: string
-  use: string
+export type AssetMetadataResponse = {
   /**
-   * Base64url-encoded X coordinate
+   * Size of the asset in bytes (-1 if unknown)
    */
-  x: string
+  content_length: number
   /**
-   * Base64url-encoded Y coordinate
+   * MIME type of the asset
    */
-  y: string
-}
-
-/**
- * Paginated list of jobs for the authenticated user.
- */
-export type JobsListResponse = {
+  content_type?: string
   /**
-   * Array of jobs ordered by specified sort field
+   * Suggested filename for the asset from source
    */
-  jobs: Array<JobEntry>
-  pagination: PaginationInfo
-}
-
-/**
- * Detailed execution error information from ComfyUI
- */
-export type ExecutionError = {
+  filename?: string
   /**
-   * Input values at time of failure (empty object if not available)
-   */
-  current_inputs: {
-    [key: string]: unknown
-  }
-  /**
-   * Output values at time of failure (empty object if not available)
-   */
-  current_outputs: {
-    [key: string]: unknown
-  }
-  /**
-   * Human-readable error message
-   */
-  exception_message: string
-  /**
-   * Python exception type (e.g., "RuntimeError")
-   */
-  exception_type: string
-  /**
-   * ID of the node that failed
-   */
-  node_id: string
-  /**
-   * Type name of the node (e.g., "KSampler")
-   */
-  node_type: string
-  /**
-   * Array of traceback lines (empty array if not available)
-   */
-  traceback: Array<string>
-}
-
-/**
- * The deployment a job ran on and the Release it ran, as they were when the job was sent: deployment_id and release_id stay the same after the deployment is updated to another Release or deleted. build_name and release_version are read from comfy-builder when the job is read, so a renamed Build shows its new name within a few minutes.
- */
-export type JobDeployment = {
-  /**
-   * The name of the Build the Release was cut from, as comfy-builder names it now. Absent when it is not named for this caller: an API-key caller, a caller reading a job outside their active workspace (an admin reading another workspace's job), comfy-builder not configured on this server, minting the token to ask comfy-builder failing, comfy-builder failing or not answering in time, or a Release or Build since deleted.
-   */
-  build_name?: string
-  /**
-   * Developer-platform deployment id.
-   */
-  deployment_id: string
-  /**
-   * The deployment's own name from comfy-deploy, including for a deleted deployment. Read when the job is read and cached for five minutes, so a rename appears after the cache expires; not a job-time snapshot. Absent for unnamed or unavailable deployments, API-key callers, jobs outside the caller's active workspace, or when the service or token mint is unavailable. Does not replace build_name or the stable IDs.
+   * Display name or title for the asset from source
    */
   name?: string
   /**
-   * The Release the job ran.
+   * Preview image as base64-encoded data URL
    */
-  release_id: string
+  preview_image?: string
   /**
-   * The Release's version number within its Build. Absent whenever build_name is.
+   * Tags for categorization from source
    */
-  release_version?: number
+  tags?: Array<string>
+  /**
+   * Validation results for the file
+   */
+  validation?: ValidationResult
 }
 
 /**
- * Lightweight job data for list views (workflow and full outputs excluded)
+ * Histogram of tag counts used for refining asset search results.
  */
-export type JobEntry = {
+export type AssetTagHistogramResponse = {
   /**
-   * Job creation timestamp (Unix timestamp in milliseconds)
+   * Map of tag names to their occurrence counts on matching assets
    */
-  create_time: number
-  /**
-   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
-   */
-  deployment?: JobDeployment
-  /**
-   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
-   */
-  execution_end_time?: number
-  /**
-   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
-   */
-  execution_error?: ExecutionError
-  /**
-   * Workflow execution start timestamp (Unix milliseconds, only present for terminal states)
-   */
-  execution_start_time?: number
-  /**
-   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
-   */
-  executor?: 'cloud_inference' | 'platform_gateway'
-  /**
-   * Unique job identifier
-   */
-  id: string
-  /**
-   * Total number of output files (omitted for non-terminal states)
-   */
-  outputs_count?: number
-  /**
-   * Primary preview output (only present for terminal states)
-   */
-  preview_output?: {
-    [key: string]: unknown
+  tag_counts: {
+    [key: string]: number
   }
-  /**
-   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
-   */
-  previewable_outputs_count?: number
-  /**
-   * User-friendly job status
-   */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
-  /**
-   * UUID identifying the workflow graph definition
-   */
-  workflow_id?: string
 }
 
 /**
- * Response for POST /api/jobs/cancel.
+ * Response returned when an existing asset is successfully updated.
  */
-export type JobsCancelResponse = {
+export type AssetUpdated = {
   /**
-   * Job IDs for which a cancel event was successfully dispatched by this
-   * call. Jobs already in a terminal or cancelling state are idempotently
-   * skipped and will not appear here.
-   *
+   * Display name of the asset. Mirrors name for backwards compatibility.
    */
-  cancelled: Array<string>
-}
-
-/**
- * Request to cancel multiple jobs by ID.
- */
-export type JobsCancelRequest = {
+  display_name?: string | null
   /**
-   * Job identifiers (UUIDs) to cancel.
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
    */
-  job_ids: Array<string>
-}
-
-/**
- * Job status information
- */
-export type JobStatusResponse = {
-  /**
-   * The inference instance assigned to this job (if any)
-   */
-  assigned_inference?: string | null
-  /**
-   * When the job was created
-   */
-  created_at: string
-  /**
-   * Error message if the job failed
-   */
-  error_message?: string | null
-  /**
-   * The job ID
-   */
-  id: string
-  /**
-   * When the job status was last changed
-   */
-  last_state_update?: string
-  /**
-   * Current job status
-   */
-  status:
-    | 'waiting_to_dispatch'
-    | 'pending'
-    | 'in_progress'
-    | 'completed'
-    | 'error'
-    | 'cancelled'
-  /**
-   * When the job was last updated
-   */
-  updated_at: string
-}
-
-/**
- * An asset produced by a job, enriched with the per-output node context
- * (`node_id`, `output_key`, `output_index`) correlated from the job's
- * execution outputs by content hash. The node-context fields are null
- * when the asset cannot be matched to an output entry.
- *
- */
-export type JobOutputAsset = {
-  /**
-   * Timestamp when the asset was created
-   */
-  created_at: string
+  file_path?: string | null
   /**
    * Blake3 hash of the asset content.
    */
   hash?: string
   /**
-   * Unique identifier for the asset
+   * Asset ID
    */
   id: string
   /**
-   * MIME type of the asset
+   * ID of the job that created this asset, if available
+   */
+  job_id?: string | null
+  /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
+  /**
+   * Updated MIME type of the asset
    */
   mime_type?: string
   /**
-   * Name of the asset file
-   */
-  name: string
-  /**
-   * ID of the workflow node that produced this asset, if known
-   */
-  node_id?: string | null
-  /**
-   * Zero-based index of this asset within the node's output slot, if known
-   */
-  output_index?: number | null
-  /**
-   * Output slot key under the producing node (e.g. "images"), if known
-   */
-  output_key?: string | null
-  /**
-   * Relative URL for asset preview/thumbnail
-   */
-  preview_url?: string
-  /**
-   * Size of the asset in bytes
-   */
-  size?: number
-}
-
-/**
- * Where one executed node ran and where its output is shown, as ComfyUI
- * records it in the history `meta`. Live `executed` messages carry the
- * same `display_node`.
- *
- */
-export type JobExecutionMetaEntry = {
-  /**
-   * Canvas node id that shows this output
-   */
-  display_node?: string
-  /**
-   * Executed node id (the `outputs` key), e.g. `15.0.0.3` for an expanded node
-   */
-  node_id?: string
-  /**
-   * Id of the node that expanded this one, or null for a node that was not expanded
-   */
-  parent_node?: string | null
-  /**
-   * Top-level workflow node this node was expanded from (its own id when not expanded)
-   */
-  real_node_id?: string
-  [key: string]: unknown
-}
-
-/**
- * Full job details including workflow and outputs
- */
-export type JobDetailResponse = {
-  /**
-   * Job creation timestamp (Unix timestamp in milliseconds)
-   */
-  create_time: number
-  /**
-   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
-   */
-  deployment?: JobDeployment
-  /**
-   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
-   */
-  execution_end_time?: number
-  /**
-   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
-   */
-  execution_error?: ExecutionError
-  /**
-   * Node-level execution metadata (only for terminal states), keyed by
-   * the executed node id, the same keys as `outputs`. Each entry says
-   * which canvas node shows that node's output, which matters for nodes
-   * that ComfyUI expands at run time (their executed id, such as
-   * `15.0.0.3`, is not on the canvas).
-   *
-   */
-  execution_meta?: {
-    [key: string]: JobExecutionMetaEntry
-  }
-  /**
-   * Workflow execution start timestamp (Unix milliseconds, only present once execution has started)
-   */
-  execution_start_time?: number
-  /**
-   * ComfyUI execution status and timeline (only for terminal states)
-   */
-  execution_status?: {
-    [key: string]: unknown
-  }
-  /**
-   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
-   */
-  executor?: 'cloud_inference' | 'platform_gateway'
-  /**
-   * Unique job identifier
-   */
-  id: string
-  /**
-   * Full outputs object from ComfyUI (only for terminal states)
-   */
-  outputs?: {
-    [key: string]: unknown
-  }
-  /**
-   * Total number of output files (omitted for non-terminal states)
-   */
-  outputs_count?: number
-  /**
-   * Primary preview output (only for terminal states)
-   */
-  preview_output?: {
-    [key: string]: unknown
-  }
-  /**
-   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
-   */
-  previewable_outputs_count?: number
-  /**
-   * 1-based position of this job among the caller's OWN jobs held
-   * behind the same concurrency cap (same user, workspace and auth
-   * method), in the dispatcher's admission order — i.e. the number of
-   * the caller's own capped jobs that will be admitted before this
-   * one, plus one. It is NOT a fleet-wide queue position and says
-   * nothing about other users' jobs. (For an admin reading someone
-   * else's job, the set is that job owner's, not the admin's — the
-   * same scoping `workspace_id`/`user_id` already describe.)
-   *
-   * Null unless `queue_reason` is `concurrency_limit`. May also be
-   * null in that state on the rare rows whose admission ordering
-   * cannot be determined (no recorded state-change timestamp), or if
-   * the count query fails — a missing position never fails the
-   * request.
-   *
-   */
-  queue_position?: number | null
-  /**
-   * Why a still-queued job has not started yet. Present only while
-   * `status` is `pending`; null for every other status.
-   *
-   * `status` deliberately folds every waiting state into `pending`
-   * (the frontend's filter categories depend on that), so this field
-   * is the one that tells the two kinds of waiting apart:
-   *
-   * - `concurrency_limit` — the job is awaiting admission under the
-   * per-user/per-auth-method or aggregate workspace concurrent-job
-   * cap. Other members' running jobs can fill the workspace cap
-   * even when this job's owner has no running jobs. This field
-   * does not distinguish which cap is full.
-   * - `capacity` — the job has passed concurrency admission and is
-   * waiting for an inference worker to become free.
-   *
-   * Detail-only: this field is NOT present on the list view's
-   * `JobEntry`, because deriving `queue_position` for a page of jobs
-   * would cost one extra query per row.
-   *
-   */
-  queue_reason?: 'concurrency_limit' | 'capacity'
-  /**
-   * User-friendly job status
-   */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
-  /**
-   * Last update timestamp (Unix timestamp in milliseconds)
-   */
-  update_time: number
-  /**
-   * ID of the user that owns this job (see the `workspace_id`
-   * description above for why this is always the caller's own id
-   * on a successful response).
-   *
-   */
-  user_id?: string
-  /**
-   * Full ComfyUI workflow (10-100KB, omitted if not available).
-   *
-   * Sensitive credentials are redacted before the response is returned:
-   * `extra_data.api_key_comfy_org`, when present, is replaced with the
-   * literal string `"[REDACTED]"`. The field is preserved (not removed)
-   * so existence checks still pass, but the value is not usable.
-   *
-   */
-  workflow?: {
-    [key: string]: unknown
-  }
-  /**
-   * UUID identifying the workflow graph definition
-   */
-  workflow_id?: string
-  /**
-   * UUID of the cloud workflow version this job is pinned to, if the
-   * submission carried one (see PromptRequest's workflow_version_id).
-   * Absent for jobs submitted without that association, including
-   * every job submitted through the public API v2 today.
-   *
-   */
-  workflow_version_id?: string
-  /**
-   * ID of the workspace that owns this job. A successful (200)
-   * response from this operation is only ever returned for the
-   * caller's own job (see this operation's ownership-scoped
-   * query), so this is always the caller's own workspace —
-   * consumers that also need to correlate this job to its
-   * live-progress broadcast channel (workspace+user scoped; see
-   * the internal common/gateways/broadcast package) can use this
-   * value directly rather than resolving their own identity a
-   * second way.
-   *
-   */
-  workspace_id?: string
-}
-
-/**
- * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
- */
-export type JobCancelResponse = {
-  /**
-   * True when a cancel event was successfully dispatched by this call.
-   * False when the job was already in a terminal or cancelling state,
-   * in which case the call is a no-op (still 200 — idempotent).
-   *
-   */
-  cancelled: boolean
-}
-
-/**
- * Paginated list of the assets produced by a single job.
- */
-export type JobAssetsResponse = {
-  /**
-   * The job's output assets for the requested page (empty when the job produced none)
-   */
-  assets: Array<JobOutputAsset>
-  /**
-   * ID of the job these assets belong to
-   */
-  job_id: string
-  pagination: PaginationInfo
-}
-
-/**
- * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
- */
-export type InteractiveTopupRequest = {
-  /**
-   * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
-   */
-  amount_cents: number
-  /**
-   * Client-minted identifier for one checkout attempt, generated when
-   * the customer starts checkout and sent on every request and
-   * analytics event of that attempt. Purely for observability: it is
-   * what joins the frontend funnel (which emits events before any
-   * billing op exists) to the backend outcome. Expected to match
-   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
-   * never rejected, so the constraint is intentionally not declared
-   * here as pattern/maxLength -- either would make a conforming
-   * client or request validator reject the request before the backend
-   * ever applies that "ignored, not rejected" behavior.
-   *
-   */
-  checkout_attempt_id?: string
-  /**
-   * New-card confirmation authority. Valid only on the dedicated interactive route; mutually exclusive with saved_payment_method_id. At most 255 UTF-8 bytes. No implicit saving.
-   */
-  confirmation_token?: string
-  /**
-   * Required globally unique opaque key for this exact purchase (for example, a UUID), at most 255 UTF-8 bytes. Replays bind amount, actor, customer, selected authority and return URL; changing them returns IDEMPOTENCY_MISMATCH. Never mint a new key while payment is unresolved.
-   *
-   */
-  idempotency_key: string
-  /**
-   * Valid only on the interactive route. True is currently rejected; paying does not change invoice defaults.
-   */
-  make_default?: boolean
-  /**
-   * Required with confirmation_token; at most 2048 bytes before and after URL normalization. Must use an existing allowed HTTPS destination (HTTP only for configured localhost or 127.0.0.1). Bound to the request. Callers must supply credential-free routing URLs: the validator rejects userinfo, fragments, known authentication query keys and recognizable Stripe authority patterns, but cannot identify every opaque secret.
-   *
-   */
-  return_url?: string
-  /**
-   * Valid only on the interactive route. True is currently rejected; pay once does not save a new card.
-   */
-  save_payment_method?: boolean
-  /**
-   * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
-   */
-  saved_payment_method_id?: string
-}
-
-/**
- * Request body for minting an input-image, input-audio or input-video upload grant.
- */
-export type InputUploadUrlRequest = {
-  /**
-   * MIME type of the file to upload. Must be one of the image types
-   * image/jpeg, image/png, image/webp, image/gif, the audio types
-   * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
-   * audio/flac, audio/x-flac, audio/ogg, or the video types video/mp4,
-   * video/webm, video/quicktime.
-   * Advisory: the stored asset's format always follows the uploaded
-   * bytes as identified server-side (decoded for images, sniffed for
-   * audio and video containers).
-   *
-   */
-  content_type: string
-}
-
-/**
- * Result of redeeming an input-image upload grant. Identical in shape to
- * the POST /api/upload/image response.
- *
- */
-export type InputUploadResponse = {
-  /**
-   * Content hash of the stored input image.
-   */
-  name: string
-  /**
-   * Subfolder path where the image was saved (empty for input uploads).
-   */
-  subfolder: string
-  /**
-   * Upload type; always "input".
-   */
-  type: string
-}
-
-/**
- * Response after importing published workflow assets.
- */
-export type ImportPublishedAssetsResponse = {
-  assets: Array<AssetInfo>
-}
-
-/**
- * Request body for importing assets from a published workflow.
- */
-export type ImportPublishedAssetsRequest = {
-  /**
-   * IDs of published assets (inputs and models) to import.
-   */
-  published_asset_ids: Array<string>
-  /**
-   * Optional. Share ID of the published workflow these assets belong to.
-   * When provided (non-null, non-empty): all published_asset_ids must
-   * belong to this share's workflow version; returns
-   * 400/CodeInvalidAssets if the share is not found or any asset does
-   * not belong to it.
-   * When omitted, null, or empty string: no share-scoped validation is
-   * performed and the assets are validated only against global rules
-   * (legacy behaviour, preserved for clients that have not yet adopted
-   * share_id).
-   *
-   */
-  share_id?: string | null
-}
-
-/**
- * Entry in the curated workflow template gallery shown on the home page.
- */
-export type HubWorkflowTemplateEntry = {
-  /**
-   * Content template used for generation (tutorial, showcase, comparison, breakthrough)
-   */
-  contentTemplate?: string
-  /**
-   * Publication date in YYYY-MM-DD format
-   */
-  date?: string
-  description?: string
-  /**
-   * AI-generated extended description of the workflow
-   */
-  extendedDescription?: string
-  /**
-   * AI-generated FAQ items
-   */
-  faqItems?: Array<{
-    answer: string
-    question: string
-  }>
-  /**
-   * AI-generated step-by-step usage instructions
-   */
-  howToUse?: Array<string>
-  includeOnDistributions?: Array<string>
-  io?: {
-    inputs?: Array<{
-      [key: string]: unknown
-    }>
-    outputs?: Array<{
-      [key: string]: unknown
-    }>
-  }
-  /**
-   * Whether App Mode is this workflow's default view.
-   */
-  isApp: boolean
-  /**
-   * Whether the template belongs to a module marked as essential.
-   */
-  isEssential?: boolean
-  logos?: Array<{
-    [key: string]: unknown
-  }>
-  mediaSubtype?: string
-  mediaType?: string
-  /**
-   * AI-generated SEO meta description (under 160 chars)
-   */
-  metaDescription?: string
-  models?: Array<string>
-  /**
-   * Slug identifier for the template
-   */
-  name: string
-  openSource?: boolean
-  profile?: HubProfileSummary
-  requiresCustomNodes?: Array<string>
-  /**
-   * Search ranking score reported upstream.
-   */
-  searchRank?: number
-  /**
-   * Share ID for linking to the hub workflow detail
-   */
-  shareId?: string
-  /**
-   * Workflow asset size in bytes.
-   */
-  size?: number
-  status: HubWorkflowStatus
-  /**
-   * AI-generated suggested use cases
-   */
-  suggestedUseCases?: Array<string>
-  tags?: Array<string>
-  /**
-   * Public URL of the comparison thumbnail
-   */
-  thumbnailComparisonUrl?: string
-  /**
-   * Public URL of the primary thumbnail
-   */
-  thumbnailUrl?: string
-  thumbnailVariant?: string
-  title: string
-  tutorialUrl?: string
-  /**
-   * Usage count reported upstream.
-   */
-  usage?: number
-  /**
-   * Approximate VRAM requirement in bytes.
-   */
-  vram?: number
-}
-
-/**
- * Public workflow status. NULL in the database is represented as pending in API responses.
- */
-export type HubWorkflowStatus =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'deprecated'
-
-/**
- * Abbreviated Hub profile used in workflow listings.
- */
-export type HubProfileSummary = {
-  /**
-   * Public URL of the profile avatar image.
-   */
-  avatar_url?: string
-  display_name?: string
-  username: string
-}
-
-/**
- * Abbreviated Hub workflow metadata used in search and listing results.
- */
-export type HubWorkflowSummary = {
-  custom_nodes?: Array<LabelRef>
-  description?: string
-  /**
-   * Whether App Mode is this workflow's default view.
-   */
-  is_app: boolean
-  metadata?: {
-    [key: string]: unknown
-  }
-  models?: Array<LabelRef>
-  name: string
-  profile: HubProfileSummary
-  publish_time?: string | null
-  sample_image_urls?: Array<string>
-  share_id: string
-  status: HubWorkflowStatus
-  tags?: Array<LabelRef>
-  thumbnail_comparison_url?: string
-  thumbnail_type?: 'image' | 'video' | 'image_comparison'
-  thumbnail_url?: string
-  tutorial_url?: string
-}
-
-/**
- * Paginated list of Hub workflows matching search criteria.
- */
-export type HubWorkflowListResponse = {
-  /**
-   * Cursor for the next page, empty if no more results.
-   */
-  next_cursor?: string
-  /**
-   * Array of HubWorkflowSummary (default) or HubWorkflowDetail (when detail=true).
-   */
-  workflows: Array<HubWorkflowSummary | HubWorkflowDetail>
-}
-
-/**
- * Full Hub workflow detail including versions, assets, and statistics.
- */
-export type HubWorkflowDetail = {
-  /**
-   * Published assets. Each asset's id is the published asset ID (not the original private asset ID).
-   */
-  assets: Array<AssetInfo>
-  custom_nodes?: Array<LabelRef>
-  description?: string
-  /**
-   * Whether App Mode is this workflow's default view.
-   */
-  is_app: boolean
-  metadata?: {
-    [key: string]: unknown
-  }
-  models?: Array<LabelRef>
-  name: string
-  profile: HubProfileSummary
-  publish_time?: string | null
-  sample_image_urls?: Array<string>
-  share_id: string
-  status: HubWorkflowStatus
-  tags?: Array<LabelRef>
-  thumbnail_comparison_url?: string
-  thumbnail_type?: 'image' | 'video' | 'image_comparison'
-  thumbnail_url?: string
-  tutorial_url?: string
-  workflow_id: string
-  workflow_json: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * Response indicating whether a Hub username is available.
- */
-export type HubUsernameCheckResponse = {
-  /**
-   * Whether the username is available for the caller's workspace.
-   */
-  available: boolean
-  /**
-   * Up to 5 available alternative usernames (only present when unavailable).
-   */
-  suggestions?: Array<string>
-  /**
-   * The username that was checked.
-   */
-  username: string
-  /**
-   * If the username format is invalid, describes the format requirement.
-   */
-  validation_error?: string
-}
-
-/**
- * Full public profile for a Hub creator.
- */
-export type HubProfile = {
-  /**
-   * Public URL of the profile avatar image.
-   */
-  avatar_url?: string
-  description?: string
-  display_name?: string
-  username: string
-  /**
-   * List of website URLs.
-   */
-  website_urls?: Array<string>
-}
-
-/**
- * List of available Hub labels for categorizing workflows.
- */
-export type HubLabelListResponse = {
-  /**
-   * Available labels filtered by type (or all if no type specified).
-   */
-  labels: Array<HubLabelInfo>
-}
-
-/**
- * Metadata for a single Hub label.
- */
-export type HubLabelInfo = {
-  /**
-   * Optional description of the label.
-   */
-  description?: string
-  /**
-   * Human-readable display name.
-   */
-  display_name: string
-  /**
-   * Slug identifier.
-   */
-  name: string
-  /**
-   * Label category.
-   */
-  type: 'tag' | 'model' | 'custom_node'
-}
-
-/**
- * Response containing a signed upload URL and the target asset path.
- */
-export type HubAssetUploadUrlResponse = {
-  /**
-   * The public URL where the file will be accessible after upload.
-   */
-  public_url: string
-  /**
-   * Signed token to pass in the publish request. Has a server-determined TTL.
-   */
-  token: string
-  /**
-   * Presigned R2 URL for uploading the file via PUT.
-   */
-  upload_url: string
-}
-
-/**
- * Request body for requesting a signed upload URL for a Hub asset.
- */
-export type HubAssetUploadUrlRequest = {
-  /**
-   * MIME type of the file (e.g. "image/jpeg", "video/mp4"). Validated against a whitelist; the canonical file extension is derived from this value.
-   *
-   */
-  content_type: string
-  /**
-   * Original filename for display purposes. Not used in the storage key.
-   */
-  filename: string
-}
-
-/**
- * Durable discovery record only. Fetch the session endpoint for current payment and credit-fulfillment state; a summary proves neither. An unavailable session remains discoverable without hiding other rows.
- *
- */
-export type HostedTopupCheckoutSummary = {
-  amount_cents: number
-  created_at: string
-  session_id: string
-}
-
-export type HostedTopupCheckoutList = {
-  checkouts: Array<HostedTopupCheckoutSummary>
-  /**
-   * Opaque cursor for the next page, null when exhausted.
-   */
-  next_cursor: string | null
-}
-
-export type HostedTopupCheckout = {
-  /**
-   * Original credit purchase amount before promotions, not the settled payment amount.
-   */
-  amount_cents: number
-  /**
-   * Actual USD Stripe total after promotions, including a confirmed fully discounted zero. Null when unavailable; use this for payment messages, not amount_cents.
-   */
-  payment_amount_cents: number | null
-  session_id: string
-  /**
-   * open means payment has not completed; payment_processing means Checkout completed but payment is not settled; credits_applying means payment is confirmed (including a fully discounted purchase) but the durable credit grant is not yet recorded; fulfilled confirms that grant. expired is an unpaid expired link; failed is a completed checkout whose delayed payment failed. A failed credit grant remains credits_applying until fulfillment succeeds. Render this fact; do not infer payment from a return redirect or Checkout completion.
-   *
-   */
-  state:
-    | 'open'
-    | 'payment_processing'
-    | 'credits_applying'
-    | 'fulfilled'
-    | 'expired'
-    | 'failed'
-}
-
-/**
- * Execution history response with history array.
- * Returns an object with a "history" key containing an array of history entries.
- * Each entry includes prompt_id as a property along with execution data.
- *
- */
-export type HistoryResponse = {
-  /**
-   * Array of history entries ordered by creation time (newest first)
-   */
-  history: Array<HistoryEntry>
-}
-
-/**
- * History entry with prompt_id and execution data
- */
-export type HistoryEntry = {
-  /**
-   * Job creation timestamp (Unix timestamp in milliseconds)
-   */
-  create_time?: number
-  /**
-   * Metadata about the execution and nodes
-   */
-  meta?: {
-    [key: string]: unknown
-  }
-  /**
-   * Output data from execution (generated images, files, etc.)
-   */
-  outputs?: {
-    [key: string]: unknown
-  }
-  /**
-   * Filtered prompt execution data (lightweight format)
-   */
-  prompt?: {
-    /**
-     * Additional execution data (workflow removed from extra_pnginfo)
-     */
-    extra_data?: {
-      [key: string]: unknown
-    }
-    /**
-     * Execution priority
-     */
-    priority?: number
-    /**
-     * The prompt ID
-     */
-    prompt_id?: string
-  }
-  /**
-   * Unique identifier for this prompt execution
-   */
-  prompt_id: string
-  /**
-   * Execution status and timeline information
-   */
-  status?: {
-    [key: string]: unknown
-  }
-  /**
-   * UUID identifying the workflow graph definition
-   */
-  workflow_id?: string
-}
-
-/**
- * Request to manage history operations
- */
-export type HistoryManageRequest = {
-  /**
-   * If true, clear all history for the authenticated user
-   */
-  clear?: boolean
-  /**
-   * Array of job IDs to delete from history
-   */
-  delete?: Array<string>
-}
-
-/**
- * Detailed execution history response for a specific prompt.
- * Returns a dictionary with prompt_id as key and full history data as value.
- *
- */
-export type HistoryDetailResponse = {
-  [key: string]: HistoryDetailEntry
-}
-
-/**
- * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
- */
-export type HistoryDetailEntry = {
-  /**
-   * Metadata about the execution and nodes
-   */
-  meta?: {
-    [key: string]: unknown
-  }
-  /**
-   * Output data from execution (generated images, files, etc.)
-   */
-  outputs?: {
-    [key: string]: unknown
-  }
-  /**
-   * Full prompt execution data
-   */
-  prompt?: {
-    /**
-     * Additional execution data. extra_pnginfo (the workflow graph) is omitted from records persisted after it stopped being stored; older records may still contain it.
-     */
-    extra_data?: {
-      [key: string]: unknown
-    }
-    /**
-     * Output nodes to execute
-     */
-    outputs_to_execute?: Array<string>
-    /**
-     * Execution priority
-     */
-    priority?: number
-    /**
-     * The workflow nodes
-     */
-    prompt?: {
-      [key: string]: unknown
-    }
-    /**
-     * The prompt ID
-     */
-    prompt_id?: string
-  }
-  /**
-   * Execution status and timeline information
-   */
-  status?: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * Metadata for a global subgraph blueprint (without full data)
- */
-export type GlobalSubgraphInfo = {
-  /**
-   * The full subgraph JSON data (may be empty in list view)
-   */
-  data?: string
-  /**
-   * Additional information about the subgraph
-   */
-  info: {
-    /**
-     * The node pack/module that provides this subgraph
-     */
-    node_pack: string
-  }
-  /**
-   * Display name of the subgraph blueprint
-   */
-  name: string
-  /**
-   * Source type of the subgraph - "templates" for workflow templates or "custom_node" for custom node subgraphs
-   */
-  source: string
-}
-
-/**
- * Full data for a global subgraph blueprint
- */
-export type GlobalSubgraphData = {
-  /**
-   * The full subgraph JSON data as a string
-   */
-  data: string
-  /**
-   * Additional information about the subgraph
-   */
-  info: {
-    /**
-     * The node pack/module that provides this subgraph
-     */
-    node_pack: string
-  }
-  /**
-   * Display name of the subgraph blueprint
-   */
-  name: string
-  /**
-   * Source type of the subgraph - "templates" for workflow templates or "custom_node" for custom node subgraphs
-   */
-  source: string
-}
-
-/**
- * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
- */
-export type GlobalSettingValue = {
-  key: 'Comfy.AgentPanel.ConsentAccepted'
-} & AgentConsentSettingValue
-
-/**
- * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
- */
-export type GlobalSettingKey = 'Comfy.AgentPanel.ConsentAccepted'
-
-/**
- * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
- */
-export type GlobalSetting = {
-  key: 'Comfy.AgentPanel.ConsentAccepted'
-} & StoredAgentConsentSetting
-
-/**
- * Individual file entry within a full user data response.
- */
-export type GetUserDataResponseFullFile = {
-  /**
-   * UNIX timestamp of the last modification in milliseconds.
-   */
-  modified?: number
-  /**
-   * File name or path relative to the user directory.
-   */
-  path?: string
-  /**
-   * File size in bytes.
-   */
-  size?: number
-}
-
-/**
- * List of user data file entries (each with path, size, and modification time) returned when full_info=true.
- */
-export type GetUserDataResponseFull = Array<GetUserDataResponseFullFile>
-
-/**
- * Request body for forking an existing workflow into the user's account.
- */
-export type ForkWorkflowRequest = {
-  /**
-   * Name for the forked workflow
+   * Updated name of the asset
    */
   name?: string
   /**
-   * Version number to fork from
+   * Tags associated with the asset
    */
-  source_version: number
+  tags?: Array<string>
+  /**
+   * Timestamp of the update
+   */
+  updated_at: string
+  /**
+   * Updated custom metadata
+   */
+  user_metadata?: {
+    [key: string]: unknown
+  }
 }
-
-/**
- * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
- */
-export type ForbiddenError = ErrorResponse | AuthTypeNotAllowedError
 
 /**
  * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
@@ -4609,1462 +1313,336 @@ export type AuthTypeNotAllowedError = {
   }
 }
 
-/**
- * Response after submitting feedback
- */
-export type FeedbackResponse = {
-  [key: string]: unknown
-}
-
-/**
- * Request to submit user feedback
- */
-export type FeedbackRequest = {
-  /**
-   * The feedback content or message
-   */
-  content?: string
-  /**
-   * Additional metadata about the feedback
-   */
-  metadata?: {
-    [key: string]: unknown
-  }
-  /**
-   * User's rating of ComfyUI Cloud experience (1-5 stars)
-   */
-  rating?: number
-  /**
-   * Type of feedback being submitted
-   */
-  type: 'missing_nodes' | 'general' | 'missing_models'
-}
-
-/**
- * Response containing a signed download URL for an exported asset archive.
- */
-export type ExportDownloadUrlResponse = {
-  /**
-   * When the signed URL expires
-   */
-  expires_at?: string
-  /**
-   * Signed URL for downloading the export ZIP file
-   */
-  url: string
-}
-
-/**
- * Response containing the issued Cloud JWT and its expiry.
- */
-export type ExchangeTokenResponse = {
-  /**
-   * Token expiration time (RFC 3339)
-   */
-  expires_at: string
-  /**
-   * Permission strings for the role
-   */
-  permissions: Array<string>
-  /**
-   * User's role in the workspace
-   */
-  role: 'owner' | 'member'
-  /**
-   * Cloud JWT token
-   */
-  token: string
-  /**
-   * Canonical Comfy user ID the token was minted for: the token's `sub`,
-   * and the same ID `GET /api/billing/capabilities` returns in
-   * `resolved_for.user_id`. Clients scope per-user reads with it. It is
-   * not the Firebase UID, which can differ.
-   *
-   */
-  user_id: string
-  workspace: WorkspaceSummary
-}
-
-/**
- * Optional request body for the token exchange endpoint. The Firebase JWT
- * being exchanged is supplied via the `Authorization: Bearer` header; this
- * body only carries workspace-selection input.
- *
- */
-export type ExchangeTokenRequest = {
-  /**
-   * What the token is for. Omitted mints today's workspace token.
-   * `partner-node` mints a partner-node token: audience
-   * `comfy-partner-node` only, a `sid` claim naming a new renewable
-   * session, and the partner-node lifetime. Only a sign-in mints one
-   * (a Firebase JWT, the web session, or an OAuth access token from a
-   * client in `PARTNER_NODE_OAUTH_CLIENTS`); an API key gets 403
-   * `partner_node_requires_sign_in`. While the mint is switched off
-   * it is 503 `partner_node_token_disabled`. Any other value is 400
-   * `resource_invalid`.
-   *
-   */
-  resource?: 'partner-node'
-  /**
-   * Workspace ID to get token for. Defaults to personal workspace if omitted.
-   */
-  workspace_id?: string
-}
-
-/**
- * Result of redeeming a desktop login code.
- */
-export type DesktopLoginCodeRedeemResponse = {
-  /**
-   * The code is now claimed for the authenticated user.
-   */
-  status: 'redeemed'
-}
-
-/**
- * Request to claim a desktop login code for the authenticated user.
- */
-export type DesktopLoginCodeRedeemRequest = {
-  /**
-   * The login code the desktop app placed in the browser URL.
-   */
+export type AuthenticateRefusal = {
   code: string
+  message: string
+  /**
+   * The SSO organization to sign in with, for `sso_required` when it is known; the value `GET /api/auth/sso/start?organization=` takes
+   */
+  organization_id?: string
+  /**
+   * Path that starts the organization's SSO, for `sso_required`
+   */
+  start_url?: string
 }
 
-/**
- * Exchange poll result. Pending until the code is redeemed in the browser.
- */
-export type DesktopLoginCodeExchangeResponse = {
-  /**
-   * One-time Firebase custom token for the redeeming user. Present only when status is "complete".
-   */
-  custom_token?: string
-  /**
-   * Whether the code has been redeemed yet.
-   */
-  status: 'pending' | 'complete'
-}
-
-/**
- * Request to exchange a redeemed login code for a custom token.
- */
-export type DesktopLoginCodeExchangeRequest = {
-  /**
-   * The login code returned at creation.
-   */
-  code: string
-  /**
-   * PKCE code verifier matching the challenge supplied at creation.
-   */
-  code_verifier: string
-}
-
-/**
- * A freshly minted desktop login code and its polling parameters.
- */
-export type DesktopLoginCodeCreateResponse = {
-  /**
-   * Opaque single-use login code ("dlc_" prefix).
-   */
-  code: string
-  /**
-   * Seconds until the code expires if not redeemed.
-   */
-  expires_in: number
-  /**
-   * Suggested seconds between exchange polls.
-   */
-  poll_interval: number
-}
-
-/**
- * Request to mint a desktop login code.
- */
-export type DesktopLoginCodeCreateRequest = {
-  /**
-   * Desktop app version string.
-   */
-  app_version: string
-  /**
-   * PKCE code challenge - base64url(SHA256(code_verifier)) per RFC 7636 (S256 only).
-   */
-  code_challenge: string
-  /**
-   * Stable identifier of the desktop installation, used only for the login attribution event. Omit when telemetry consent is off - the login flow still works, but no attribution event is emitted.
-   */
-  installation_id?: string
-  /**
-   * Desktop platform identifier (e.g. darwin, win32, linux).
-   */
-  platform: string
-}
-
-export type DeploymentNodeCompatibility = {
-  deployment_id: string
-  /**
-   * The posted node types this deployment's Release does not have, in the order they were posted. Empty when it has them all, and when unknown is true.
-   */
-  missing_node_types: Array<string>
-  /**
-   * True when the node list of the Release this deployment runs could not be read, so it was not checked: the Release is not built yet or is gone, comfy-builder could not be reached or refused the caller, its extensions list could not be read, a browser that picked the deployment failed to load it on the same ingest pod (for good when the Release is gone or its archive is corrupt or too large to ever load, see below; for any other fault, an archive missing from storage among them, only within its 30-second retry window, after which the check follows what a browser's next load gets), its catalog fails to build (in each of the last three a browser that picked the deployment is served Comfy Cloud's catalog), it is past the 16 distinct Releases one check reads (the newest deployments' Releases are read first), or the request ended before it was read. The check reads the catalog and the extensions list but not the extensions archive: a Release whose archive fails to load (missing from storage, corrupt, too large, past 64 MiB unpacked, or an entry whose path escapes the extensions folder) is answered from its catalog, not unknown, until a browser that picked it has failed to load it on the same ingest pod (each pod keeps its own record).
-   */
-  unknown: boolean
-}
-
-/**
- * The node types of the workflow open in the editor.
- */
-export type DeploymentCompatibilityRequest = {
-  /**
-   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
-   */
-  node_types: Array<string>
-}
-
-/**
- * Which of the posted node types each of the workspace's deployments, and Comfy Cloud, does not have.
- */
-export type DeploymentCompatibility = {
-  cloud: CloudNodeCompatibility
-  /**
-   * Every live deployment GET /api/workspaces/{id}/deployments lists, in the same order (newest first).
-   */
-  deployments: Array<DeploymentNodeCompatibility>
-}
-
-export type CloudNodeCompatibility = {
-  /**
-   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
-   */
-  missing_node_types: Array<string>
-}
-
-/**
- * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
- */
-export type DeployToCloudError = {
-  error:
-    | 'offline'
-    | 'multiple_credentials'
-    | 'invalid_api_key_format'
-    | 'invalid_body'
-    | 'missing_credentials'
-    | 'unauthorized'
-    | 'too_large'
-    | 'too_many_bundles'
-    | 'builder_rejected'
-    | 'builder_unavailable'
-    | 'builder_busy'
-  /**
-   * Human-readable detail, present for invalid_body and builder_rejected.
-   */
-  message?: string
-}
-
-/**
- * Response after deleting a session cookie
- */
-export type DeleteSessionResponse = {
-  /**
-   * Whether the session was deleted successfully
-   */
-  success: boolean
-}
-
-/**
- * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
- */
-export type CurrentWorkspaceResponse = {
-  /**
-   * How this request authenticated. Known values are firebase, cookie, comfy_api_key, comfy_admin_key, cloud_api_key and cloud_jwt; treat it as an open string so a new auth method is not a breaking change.
-   */
-  auth_method: string
-  id: string
-  name: string
-  /**
-   * What the caller may do in this workspace, the same list a workspace token minted for it would carry. Read from the live membership on every request. Omitted, like role, when no role resolves. New values are additive.
-   */
-  permissions?: Array<string>
-  /**
-   * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
-   */
-  role?: 'owner' | 'member'
-  type: 'personal' | 'team'
-}
-
-/**
- * Request body for creating a new workspace.
- */
-export type CreateWorkspaceRequest = {
-  /**
-   * Display name for the workspace
-   */
-  name: string
-}
-
-/**
- * Response containing the newly created workspace API key.
- */
-export type CreateWorkspaceApiKeyResponse = {
-  /**
-   * When the key was created
-   */
-  created_at: string
-  /**
-   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
-   */
-  description: string
-  /**
-   * The effective expiration timestamp, which may differ from the one requested: a key minted by an OAuth-authenticated session is capped to the OAuth refresh-token lifetime, so clients must read the lifetime they actually got from this field rather than assume the requested one. Absent only for first-party keys created with no expiry.
-   */
-  expires_at?: string
-  /**
-   * API key ID
-   */
-  id: string
-  /**
-   * The full plaintext API key (only shown once)
-   */
-  key: string
-  /**
-   * First 8 chars after prefix for display
-   */
-  key_prefix: string
-  /**
-   * User-provided label
-   */
-  name: string
-}
-
-/**
- * Request body for creating a new workspace-scoped API key.
- */
-export type CreateWorkspaceApiKeyRequest = {
-  /**
-   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
-   */
-  description?: string
-  /**
-   * Optional expiration timestamp. Keys created by an OAuth-authenticated session (an access token issued by the Comfy OAuth server to a registered client) are always capped to the OAuth refresh-token lifetime (OAUTH_REFRESH_TOKEN_TTL, 30 days by default): omitting this field yields that cap, a longer value is reduced to it, and a shorter value is honoured as-is. Keys created by a first-party session (browser workspace JWT, Firebase) are unaffected and may still be created with no expiry.
-   */
-  expires_at?: string
-  /**
-   * User-provided label for the key
-   */
-  name: string
-}
-
-/**
- * Request body for creating a new version of a saved workflow.
- */
-export type CreateWorkflowVersionRequest = {
-  /**
-   * The version number this change is based on (for optimistic concurrency)
-   */
-  base_version: number
-  /**
-   * The updated ComfyUI workflow JSON
-   */
-  workflow_json: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * Request body for creating a new saved workflow.
- */
-export type CreateWorkflowRequest = {
-  /**
-   * Default view mode
-   */
-  default_view?: 'workflow' | 'app'
-  /**
-   * Description of the workflow
-   */
-  description?: string
-  /**
-   * ID of the source workflow if forked
-   */
-  forked_from_workflow_id?: string
-  /**
-   * ID of the source workflow version if forked
-   */
-  forked_from_workflow_version_id?: string
-  /**
-   * Display name for the workflow
-   */
-  name?: string
-  /**
-   * The ComfyUI workflow JSON
-   */
-  workflow_json: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * Response after successfully purchasing a credit top-up.
- */
-export type CreateTopupResponse = {
-  /**
-   * Amount being charged in cents
-   */
-  amount_cents: number
-  /**
-   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
-   */
-  billing_op_id: string
-  /**
-   * Current status of the top-up
-   */
-  status: 'pending' | 'completed' | 'failed'
-  /**
-   * Unique identifier for the top-up request (same as billing_op_id, deprecated)
-   */
-  topup_id: string
-}
-
-/**
- * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
- */
-export type CreateTopupRequest = {
-  /**
-   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
-   */
-  amount_cents: number
-  /**
-   * Client-minted identifier for one checkout attempt, generated when
-   * the customer starts checkout and sent on every request and
-   * analytics event of that attempt. Purely for observability: it is
-   * what joins the frontend funnel (which emits events before any
-   * billing op exists) to the backend outcome. Expected to match
-   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
-   * never rejected, so the constraint is intentionally not declared
-   * here as pattern/maxLength -- either would make a conforming
-   * client or request validator reject the request before ingest
-   * ever applies that "ignored, not rejected" behavior.
-   *
-   */
-  checkout_attempt_id?: string
-  /**
-   * Client-provided key to prevent duplicate operations.
-   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
-   *
-   */
-  idempotency_key?: string
-}
-
-/**
- * Request body for previewing a credit top-up.
- */
-export type CreateTopupQuoteRequest = {
-  /**
-   * Amount to quote, in cents.
-   */
-  amount_cents: number
-}
-
-/**
- * A hosted Stripe Checkout session for a credit top-up.
- */
-export type CreateTopupCheckoutResponse = {
-  /**
-   * Stripe-hosted Checkout URL to send the customer to.
-   */
-  checkout_url: string
-  /**
-   * Stripe Checkout session id, for support and log correlation. There
-   * is no billing operation to return: the purchase has not happened
-   * yet, and the operation recording it is created once the payment
-   * completes. Nothing needs polling — the credits land on their own.
-   *
-   */
-  session_id?: string
-}
-
-/**
- * Request body for creating a hosted credit top-up checkout session.
- */
-export type CreateTopupCheckoutRequest = {
-  /**
-   * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
-   * credits granted are derived server-side from this amount and
-   * cannot be set by the caller.
-   *
-   */
-  amount_cents: number
-  /**
-   * Optional client-provided key. Forwarded to Stripe so a double-submit
-   * collapses onto one session instead of minting two payable links.
-   *
-   */
-  idempotency_key?: string
-  /**
-   * Where Stripe returns the customer after a completed or cancelled
-   * payment. Must match an allowlisted origin; an arbitrary URL is
-   * rejected rather than redirected to.
-   *
-   */
-  return_url: string
-}
-
-/**
- * Response after creating a session cookie
- */
-export type CreateSessionResponse = {
-  /**
-   * Session expiration time in seconds (5 days)
-   */
-  expiresIn?: number
-  /**
-   * Whether the session was created successfully
-   */
-  success: boolean
-}
-
-/**
- * Request body for creating a new user secret.
- */
-export type CreateSecretRequest = {
-  /**
-   * Credential class discriminator. `api_key` (default) stores an opaque key/token; `gcp_service_account` stores a Google Cloud service-account key JSON, whose value is validated as a service-account key on write. Prefer setting this explicitly over relying on value-shape sniffing.
-   */
-  credential_type?: 'api_key' | 'gcp_service_account'
-  /**
-   * User-provided label for the secret
-   */
-  name: string
-  /**
-   * Optional provider identifier (e.g., huggingface, civitai)
-   */
-  provider?: string
-  /**
-   * The plaintext secret to encrypt and store
-   */
-  secret_value: string
-}
-
-/**
- * Request body for inviting a user to a workspace.
- */
-export type CreateInviteRequest = {
-  /**
-   * Email address to invite
-   */
+export type AuthenticateRequest = {
   email: string
+  /**
+   * Omit to only ask where the email signs in
+   */
+  password?: string
+}
+
+export type AuthenticateResponse = {
+  /**
+   * Seconds until the session ends, when `method` is `session`
+   */
+  expires_in?: number
+  /**
+   * `sso`: go to `start_url`. `password`: ask for the password. `session`: signed in; the web session cookie is set. `firebase`: the password is right but this account still signs in with Firebase on the client.
+   */
+  method: 'sso' | 'password' | 'session' | 'firebase'
+  /**
+   * The SSO organization's display name, when `method` is `sso`
+   */
+  organization_name?: string
+  /**
+   * Path that starts the organization's SSO, when `method` is `sso`; add `return_to`
+   */
+  start_url?: string
 }
 
 /**
- * Request body for creating a new Hub profile.
+ * Expiry of the default card. Carries no identifier.
  */
-export type CreateHubProfileRequest = {
+export type AutoReloadCardExpiry = {
   /**
-   * Token (from /api/hub/assets/upload-url) for an avatar image. Omit to have no avatar.
-   *
+   * True once 00:00 UTC on the first day after the expiry month has passed.
    */
-  avatar_token?: string
-  description?: string
-  display_name?: string
+  expired: boolean
   /**
-   * Unique URL-safe slug for the hub profile. Immutable after creation.
+   * Expiry month, 1 to 12.
    */
-  username: string
+  month: number
   /**
-   * List of website URLs.
+   * Four-digit expiry year.
    */
-  website_urls?: Array<string>
-  /**
-   * ID of the workspace to create the hub profile for. The authenticated user must belong to this workspace.
-   */
-  workspace_id: string
-}
-
-export type ContentCatalogRecord = {
-  data: {
-    [key: string]: unknown
-  }
-  deleted: boolean
-  edit_version: string
-  enabled: boolean
-  kind: 'MODEL' | 'WORKFLOW' | 'APP' | 'TEMPLATE_SET'
-  /**
-   * Integer revision supplying this entity; may precede the requested catalog revision.
-   */
-  revision: number
-  /**
-   * Canonical website pathname for page content; native slug for template sets. Identity is always UID.
-   */
-  slug: string
-  uid: string
-  visibility: 'PUBLIC' | 'STAFF'
-  visible_from?: string
-}
-
-export type ContentCatalogProjection = {
-  generation: number
-  items: Array<ContentCatalogRecord>
-  revision_id: number
+  year: number
 }
 
 /**
- * Credentials the Churnkey embed requires to launch the cancel flow.
- * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
- * server's CHURNKEY_HMAC_SECRET; it is bound to that single customer ID
- * and must not be reused for other customers.
- *
+ * Display facts about a declined payment method. Carries no identifier.
  */
-export type ChurnkeyAuthResponse = {
+export type AutoReloadDeclinedPaymentMethod = {
   /**
-   * Hex-encoded HMAC-SHA256(customer_id, CHURNKEY_HMAC_SECRET)
+   * Card brand as Stripe reports it (for example visa or mastercard); null for non-card methods.
    */
-  auth_hash: string
+  brand: string | null
   /**
-   * Stripe customer ID for the workspace
+   * Last four card digits; null for non-card methods.
    */
-  customer_id: string
+  last4: string | null
   /**
-   * Churnkey environment matching the configured app
-   */
-  mode: 'live' | 'test' | 'sandbox'
-  /**
-   * Stripe subscription a native Churnkey retention offer may apply to.
-   * Present only when the caller is in the native-offer rollout and owns
-   * a Personal workspace on an active paid monthly plan with no billing
-   * change in flight; absent otherwise, and the client then keeps offers
-   * disabled. Present in any mode. Not a signed authorization: the HMAC
-   * covers only the customer ID.
-   *
-   */
-  offer_subscription_id?: string
-}
-
-/**
- * Response after successfully cancelling a subscription.
- */
-export type CancelSubscriptionResponse = {
-  /**
-   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
-   */
-  billing_op_id: string
-  /**
-   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
-   */
-  cancel_at: string
-}
-
-/**
- * Request body for cancelling the current subscription.
- */
-export type CancelSubscriptionRequest = {
-  /**
-   * Client-provided key to prevent duplicate operations.
-   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
-   *
-   */
-  idempotency_key?: string
-}
-
-/**
- * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
- */
-export type CancelSubscriptionAcceptedResponse = {
-  /**
-   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
-   */
-  billing_op_id: string
-  /**
-   * Always `pending` — the cancellation is still executing. Poll the billing operation for the final outcome.
-   */
-  status: 'pending'
-}
-
-export type CccWebsiteRootTabs = {
-  apps: CccWebsiteRootTab
-  models: CccWebsiteRootTab
-  workflows: CccWebsiteRootTab
-}
-
-export type CccWebsiteRootPageInfo = {
-  has_more: boolean
-  page_size: 24
-}
-
-export type CccWebsiteCardFacet = {
-  /**
-   * Staff-only eligible facet count
-   */
-  count?: number
-  label: string
-  value: string
-}
-
-export type CccWebsiteCardFacets = {
-  categories: Array<CccWebsiteCardFacet>
-  models: Array<CccWebsiteCardFacet>
-  use_cases: Array<CccWebsiteCardFacet>
-}
-
-export type CccWebsiteRootTab = {
-  facets: CccWebsiteCardFacets
-  page: CccWebsiteRootPageInfo
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
-}
-
-export type CccWebsiteRootPresentation = {
-  /**
-   * Database observation clock for this complete presentation.
-   */
-  as_of: string
-  items: Array<ContentCatalogRecord>
-  model_directory: CccWebsiteModelDirectory
-  /**
-   * Never reuse the artifact at or after this scheduled visibility boundary. Null means no pending boundary.
-   */
-  next_visibility_at: string | null
-  revision_id: number
-  tabs: CccWebsiteRootTabs
-}
-
-export type CccWebsiteModelDirectory = {
-  /**
-   * Staff-only Draft generation
-   */
-  generation?: number
-  items: Array<{
-    /**
-     * Authored provider label; empty when not set
-     */
-    provider: string
-    /**
-     * Canonical /hub/models path without a trailing slash
-     */
-    slug: string
-    /**
-     * Localized title when reviewed, otherwise source title
-     */
-    title: string
-    uid: string
-  }>
-  revision_id: number
-}
-
-export type CccWebsiteCardsPage = {
-  available_kinds: Array<'MODEL' | 'WORKFLOW' | 'APP'>
-  facets: CccWebsiteCardFacets
-  /**
-   * Staff-only Draft generation
-   */
-  generation?: number
-  has_more: boolean
-  items: Array<ContentCatalogRecord>
-  next_cursor?: string
-  page_size: number
-  previous_cursor?: string
-  revision_id: number
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
-  /**
-   * Staff-only filtered count; omitted for anonymous callers
-   */
-  total?: number
-}
-
-export type CccPublicItemsPage = ContentCatalogProjection & {
-  has_more: boolean
-  /**
-   * Opaque continuation bound to this query and publication identity; omitted on the last page.
-   */
-  next_cursor?: string
-  page_size: number
-}
-
-/**
- * Current Hub page that replaces an old public URL
- */
-export type CccLegacyTarget = {
-  /**
-   * Website path of the Hub page, for example /hub/workflows/<slug>/
-   */
-  path: string
-  /**
-   * Current slug of the record
-   */
-  slug: string
-  type: 'workflow' | 'app' | 'model'
-}
-
-/**
- * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
- */
-export type Cccjson = {
-  /**
-   * Catalog revision of this edit; may be older than the working Draft.
-   */
-  readonly catalog_rev?: number
-  /**
-   * Immutable account that created the resource.
-   */
-  readonly creator_uid?: string
-  /**
-   * SHA-256 of the canonical authored document.
-   */
-  readonly digest?: string
-  readonly draft_generation?: number
-  readonly edit_sequence?: number
-  /**
-   * Tombstone flag. false may be sent back; true is refused (use restore).
-   */
-  readonly is_deleted?: boolean
-  /**
-   * Fixed organization owner; never transferred by a save.
-   */
-  readonly owner_uid?: string
-  /**
-   * This immutable edit; send it back as expected_revision_uid.
-   */
-  readonly revision_uid?: string
-  /**
-   * RFC3339 UTC save time of this exact edit.
-   */
-  readonly saved_at?: string
-  /**
-   * Account that saved this edit.
-   */
-  readonly saved_by_uid?: string
-  /**
-   * Server-assigned logical resource UID.
-   */
-  readonly uid?: string
-  [key: string]: unknown
-}
-
-export type CccCreatorsPage = {
-  items: Array<CccCreatorSummary>
-  next_cursor?: string
-}
-
-export type CccCreatorSummary = {
-  avatar_url: string
-  display_name: string
-  username: string
-  workflow_count: number
-}
-
-export type CccCreatorProfile = {
-  /**
-   * Empty when the creator has no safe https avatar
-   */
-  avatar_url: string
-  bio: string
-  display_name: string
-  links: Array<CccCreatorLink>
-  username: string
-}
-
-export type CccCreatorLink = {
-  label: string
-  /**
-   * An https URL
-   */
-  url: string
-}
-
-export type CccCheckedReviewReceipt = {
-  publish_enabled: boolean
-  receipt_version: 1
-  selected_count: number
-  selected_versions_digest: string
-  selection_digest: string
-  state: CccCatalogState
-  unchecked_count: number
-}
-
-export type CccCatalogState = {
-  draft_generation: number
-  draft_rev: number
-  live_rev: number
-  next_rev: number
-  previous_live_rev: number | null
-}
-
-export type CccAuthoringContext = {
-  actor_uid: string
-  can_apply: boolean
-  can_edit: boolean
-  owner_uid: string
-  state: CccCatalogState
-}
-
-/**
- * Response after bulk-revoking API keys for a workspace member.
- */
-export type BulkRevokeApiKeysResponse = {
-  /**
-   * Number of API keys that were revoked
-   */
-  revoked_count: number
-}
-
-/**
- * A tax identifier for a company Stripe customer. Stripe validates the
- * type/value combination synchronously and verifies VAT/ABN-style IDs
- * asynchronously.
- *
- */
-export type BillingTaxId = {
-  /**
-   * Stripe tax ID type, e.g. `eu_vat`, `us_ein`, `au_abn`. See
-   * https://docs.stripe.com/api/tax_ids/object#tax_id_object-type
-   * for the full list.
-   *
+   * Stripe payment method type, such as card, alipay or link. Render an unknown value generically.
    */
   type: string
-  value: string
 }
 
 /**
- * Current billing and subscription status for a workspace.
+ * Estimated automatic charge for the proposed settings.
  */
-export type BillingStatusResponse = {
+export type AutoReloadPreview = {
   /**
-   * Present when the pending operation cannot proceed without the
-   * customer. Today this is a Stripe-hosted payment page for an invoice
-   * needing authentication (SCA/3DS);
-   * send the customer there to complete payment. Mirrors the field of
-   * the same name on BillingOpStatusResponse. This bearer capability is
-   * returned only to workspace billing managers.
-   *
+   * Balance in credits the priced charge lands at, net of pending usage invoices (the balance auto top-up tops up to, so it can be lower than the balance shown beside it). Absent (or null) when charge_credits is null, and from a billing service that predates the field.
    */
-  action_url?: string
+  balance_after_credits?: number | null
   /**
-   * Durable workspace billing authority. Omitted by older servers and billing-disabled deployments.
+   * Whether the priced charge was cut to the per-charge maximum, so it does not reach the target. Describes the priced charge even when charges_now is false (monthly_budget, paused_by_decline); false when charge_credits is null.
    */
-  billing_rail?: 'legacy_stripe' | 'metronome' | 'stripe'
-  billing_status?: BillingStatus
+  capped?: boolean
   /**
-   * When the subscription will become inactive (if canceled)
+   * Price of charge_credits in cents; null when charge_credits is null.
    */
-  cancel_at?: string
+  charge_cents: number | null
   /**
-   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   * Credits the charge buys; null when the balance is at or above the threshold.
    */
-  current_period_start?: string
+  charge_credits: number | null
   /**
-   * Actual recorded subscription end, only when subscription_state is ended. Null when unknown or not ended; never inferred from cancel_at, period end or update time.
+   * Whether saving would start a charge at the next check.
    */
-  ended_at: string | null
+  charges_now: boolean
   /**
-   * Present when subscription_state is ended but no actual end timestamp was recorded. Render an undated ended state; do not infer a date.
+   * Monthly limit left this cycle in cents, never below 0.
    */
-  ended_at_unavailable_reason?: 'not_recorded'
+  monthly_budget_remaining_cents?: number
   /**
-   * Whether the workspace has available credits
+   * Why saving would not start a charge; null when charges_now is true.
    */
-  has_funds: boolean
-  /**
-   * Whether the workspace has an active subscription
-   */
-  is_active: boolean
-  /**
-   * Owner-only ID of the workspace's newest initial subscription or plan transition, in any status, ordered by creation time then ID. A newer attempt supersedes an older one regardless of completion time. Poll /api/billing/ops/{id} for its checkout state. Independent of pending top-up discovery. Omitted for non-owners, no matching attempt, disabled billing, unavailable reads and older servers; omission is unknown and must not be interpreted as successful checkout or acknowledgment.
-   */
-  latest_subscription_op_id?: string
-  /**
-   * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
-   */
-  max_seats: number
-  /**
-   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null on the legacy_stripe billing rail and for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
-   */
-  next_charge: NextCharge | null
-  /**
-   * Eligible next scheduled credit refill for both the Credits card and out-of-credits banner. Uses the actual positive credit-grant cadence, not an Enterprise invoice anniversary. Present only for a known future refill before cancellation/end; annual grants must be within 31 elapsed days inclusive, evaluated on the server. Omitted when unavailable, ineligible or no future grant is known; omission never means zero. Display only, not a payment guarantee, balance or spending permission.
-   */
-  next_credit_refill_at?: string
-  /**
-   * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
-   */
-  occupied_seats: number
-  /**
-   * Present when a pending operation supports embedded Stripe
-   * authentication. It may be returned alongside a hosted payment page
-   * when both recovery methods are available. This bearer
-   * capability is returned only to workspace billing managers. Pass
-   * directly to Stripe.js; do not log or
-   * persist it in client storage.
-   *
-   */
-  payment_intent_client_secret?: string
-  /**
-   * The workspace's in-flight billing operation, when one exists. Lets a
-   * client recover a payment it has lost the local reference to — a
-   * cleared browser, or simply a different device from the one that
-   * started it — by polling /billing/ops/{id} without having stored the
-   * id. Absent when no operation is pending, and for non-owners, who
-   * cannot act on one.
-   *
-   */
-  pending_billing_op_id?: string
-  /**
-   * How the client should resume `pending_billing_op_id`, not the
-   * internal operation type: a plan change reports `subscription`,
-   * because it resumes exactly like one. A top-up resumes with a
-   * different timeout and completion path, so the two cannot be
-   * told apart by the client. Present whenever
-   * `pending_billing_op_id` is.
-   *
-   */
-  pending_billing_op_type?: 'subscription' | 'topup'
-  /**
-   * Server-resolved configured period allowance. Missing on older servers means unknown, never none; clients must not infer it from tier.
-   */
-  period_credit_grant?: PeriodCreditGrant
-  /**
-   * Plan identifier (e.g., standard-monthly, team-pro-annual)
-   */
-  plan_slug?: string
-  /**
-   * Optional identity only when subscription_state is ended and the workspace's bound terminal subscription and plan can be verified. Visible to all workspace members, not only owners. Absent for unknown history, pointerless or unprojected legacy history, unreadable bindings and older servers. Absence is unknown, not no previous plan. Does not change plan actions or resubscribe eligibility.
-   */
-  previous_plan?: PreviousPlan
-  /**
-   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
-   */
-  renewal_date?: string
-  renewal_invoice?: RenewalInvoice
-  /**
-   * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
-   */
-  scheduled_change: ScheduledPlanChange | null
-  /**
-   * Per-product funds verdict, keyed by product name (currently only "agent" is populated): shared credits OR that product's own scoped balance. This is what decides whether the product still has funds to spend, so a gratis-only workspace correctly reads true even though has_funds (the shared-only verdict) is false. It is not the complete admission verdict — a funded workspace can still be denied for other reasons, e.g. manual_block — so treat it as necessary but not sufficient for gating funds-exhaustion UI. Defaults to agent: true when billing is disabled; omitted only by older servers.
-   */
-  scoped_effective_has_funds?: {
-    [key: string]: boolean
-  }
-  /**
-   * Per-product scoped balance state, keyed by product name (currently only "agent" is populated). True while that product's own dedicated balance remains; false once it is exhausted, regardless of shared credits, and also false if that product has never held a scoped balance of its own — both read the same way: no exclusive allowance to draw from right now. Use this to detect that, not to gate admission — use scoped_effective_has_funds for that. Defaults to agent: true when billing is disabled; omitted only by older servers.
-   */
-  scoped_has_funds?: {
-    [key: string]: boolean
-  }
-  subscription_duration?: SubscriptionDuration
-  /**
-   * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. Also omitted for a native live subscription when a workspace payment_failed label has no authoritative subscription-payment provenance. Unknown states must not be inferred from missing fields.
-   */
-  subscription_state?: SubscriptionState
-  /**
-   * Subscription activity status (scheduled subscriptions are not returned)
-   */
-  subscription_status?: 'active' | 'ended' | 'canceled'
-  subscription_tier?: SubscriptionTier
-  /**
-   * The team credit stop the workspace is currently subscribed to, for per-credit Team plans (BE-1254). Lets clients tell apart team subscriptions, which all share subscription_tier=TEAM. Always present; null for personal plans (use subscription_tier to distinguish those) and for legacy team plans without a credit stop.
-   */
-  team_credit_stop: TeamCreditStopSummary | null
+  not_charging_reason:
+    | 'above_threshold'
+    | 'monthly_budget'
+    | 'paused_by_decline'
+    | null
 }
 
 /**
- * Payment lifecycle status
- */
-export type BillingStatus =
-  | 'awaiting_payment_method'
-  | 'pending_payment'
-  | 'paid'
-  | 'payment_failed'
-  | 'paused'
-  | 'inactive'
-
-/**
- * List of available billing plans for subscription.
- */
-export type BillingPlansResponse = {
-  /**
-   * Current plan slug if subscribed
-   */
-  current_plan_slug?: string
-  plans: Array<Plan>
-  team_credit_stops?: TeamCreditStops
-}
-
-/**
- * Status of an asynchronous billing operation.
- */
-export type BillingOpStatusResponse = {
-  /**
-   * Present while status is "pending" and the operation cannot proceed
-   * without the customer. Today this is a Stripe-hosted payment page for
-   * a subscription whose first invoice needs authentication (SCA/3DS);
-   * send the customer there to complete payment. This bearer capability is
-   * returned only to workspace billing managers. Absent otherwise.
-   *
-   */
-  action_url?: string
-  /**
-   * Display only. What the operation's Stripe invoice collected, in
-   * cents, tax included. Present only for a succeeded operation billed
-   * through a Stripe invoice, and absent whenever that amount could not
-   * be read. Top-ups paid on a hosted checkout page or through
-   * Metronome get neither this nor credits_added. Returned only to
-   * workspace billing managers, like the other payment details.
-   *
-   */
-  amount_charged_cents?: number
-  /**
-   * Original server-owned deadline for this top-up's authentication wait.
-   * Present only while a pending top-up requires customer authentication
-   * and the caller may read its payment details. Historical or unknown
-   * deadlines, terminal and reconciliation states omit it. The server also
-   * omits expired deadlines using its own clock. Absence is not a payment
-   * outcome. Polling and
-   * retries never extend the deadline. At expiry the server begins its
-   * existing payment cleanup; this is not proof that a payment failed.
-   *
-   */
-  authentication_deadline?: string
-  /**
-   * State derived from the PaymentIntent attached to this operation's
-   * exact stored Stripe invoice. Absent when the operation has no
-   * correlated PaymentIntent.
-   *
-   */
-  authentication_state?:
-    | 'requires_action'
-    | 'processing'
-    | 'failed_retryable'
-    | 'succeeded'
-    | 'reconciliation_needed'
-  /**
-   * true exactly when POST /api/billing/ops/{id}/cancel would deliver
-   * the abandon for this caller: a pending plan change or initial
-   * subscription whose workflow is waiting on the customer's
-   * authentication. An already-canceled operation is false even though
-   * the cancel call still answers 200 for it. Decided by the same
-   * check the cancel endpoint runs, so clients must not derive it from
-   * status, phase or authentication_state. false for terminal
-   * operations, other operation types and callers who may not cancel.
-   * Absent when it could not be determined; absent means no claim.
-   *
-   */
-  cancelable?: boolean
-  charge_breakdown?: BillingOpChargeBreakdown
-  /**
-   * Owner-only subscription-checkout banner fact for initial subscriptions and plan transitions. unfinished means awaiting a payment method for a known target plan; verify_payment has a usable payment action; processing means the bank is processing the payment; payment_received means payment succeeded while the operation remains pending; failed is a terminal payment refusal, excluding abandoned/superseded checkouts. none is a known non-banner state, including resolved or reconciliation operations. Omitted for members, other operation types, uncertain provider reads and older servers. Omission is unknown, never an implied none.
-   */
-  checkout_state?:
-    | 'unfinished'
-    | 'verify_payment'
-    | 'processing'
-    | 'payment_received'
-    | 'failed'
-    | 'none'
-  /**
-   * When the operation completed (success or failure)
-   */
-  completed_at?: string
-  /**
-   * Display only. Credits (not cents) actually granted for the
-   * operation's Stripe invoice — for a plan change, the prorated
-   * difference. Present only for a succeeded operation whose grant has
-   * been recorded. Visible to any workspace member who can read the
-   * operation.
-   *
-   */
-  credits_added?: number
-  /**
-   * Coarse classification of why the correlated PaymentIntent's last
-   * payment attempt failed, derived at read time from the provider's
-   * machine-readable error and decline codes — never from provider
-   * message text or payment-method details. Present only when the
-   * intent has recorded a failed attempt and the operation is either
-   * still pending with authentication_state failed_retryable or has
-   * terminally failed. generic means the attempt failed for a reason
-   * outside this vocabulary. payment_not_completed means Stripe explicitly
-   * reported customer non-approval or an expired attempt. Generic failed
-   * attempts and ambiguous provider declines retain their failure meaning.
-   *
-   */
-  decline_reason?:
-    | 'card_declined'
-    | 'insufficient_funds'
-    | 'expired_card'
-    | 'incorrect_cvc'
-    | 'authentication_required'
-    | 'authentication_failed'
-    | 'processing_error'
-    | 'payment_not_completed'
-    | 'generic'
-  /**
-   * PII-safe failure code or generic failure message
-   */
-  error_message?: string
-  /**
-   * Unique identifier for the billing operation
-   */
-  id: string
-  /**
-   * Stripe PaymentIntent client secret for completing requires_action.
-   * This bearer capability is returned only to workspace billing managers
-   * and is absent otherwise.
-   *
-   */
-  payment_intent_client_secret?: string
-  /**
-   * What a pending operation is waiting on, for callers deciding
-   * whether to keep polling or to put the customer back in the loop.
-   * The two awaiting_ values are blocked on the customer and will not
-   * advance on their own: awaiting_payment_method is parked on a hosted
-   * checkout needing a card, awaiting_invoice_payment on an invoice
-   * needing payment or authentication. in_progress means the operation
-   * is ours to finish, so polling is the right response. Deliberately
-   * coarser than the internal phase — phases that differ only in what
-   * the workflow is doing all report in_progress. Absent for a terminal
-   * operation, and for a phase this build does not recognise: absent
-   * means no claim, never an implied in_progress.
-   *
-   */
-  phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
-  plan?: BillingOpReceiptPlan
-  /**
-   * Typed next action for a failed operation. Absent for pending and succeeded operations.
-   */
-  recovery_action?:
-    | 'retry'
-    | 'replace_payment_method'
-    | 'authenticate_payment'
-    | 'contact_support'
-  /**
-   * Whether the customer can recover by starting a new billing operation after performing recovery_action.
-   */
-  retryable?: boolean
-  /**
-   * When the operation was initiated
-   */
-  started_at: string
-  /**
-   * Current status of the operation. reconciliation_needed is terminal
-   * for client polling but requires support reconciliation.
-   *
-   */
-  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
-  topup_purchase_amount?: TopUpPurchaseAmount
-}
-
-/**
- * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present for plan changes,
- * initial subscriptions and resubscribes in every status (pending,
- * failed and succeeded alike), so a recovered pending operation can be
- * labelled with its own plan. Absent when the target plan could not be
- * resolved. Visible to any workspace member who can read the operation.
- * tier and the price fields are absent when the server cannot describe
- * the plan, as for the retired seat-based Team plans, whose rows carry a
- * personal tier and whose price depends on the workspace's seats.
+ * billing-api's automatic top-up settings, server prices and automatic
+ * spend this cycle, passed through unchanged. Credits are whole credits;
+ * amounts are US cents. When `configured` is false, `enabled` is false
+ * and the other setting fields are null.
  *
  */
-export type BillingOpReceiptPlan = {
+export type AutoReloadSettings = {
   /**
-   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
-   * exactly when price_cents is present.
+   * True when the validated default card is already expired or its expiry-month boundary (00:00 UTC on the first day of the following month) is within the next 30 days. Absent or null means unknown, never a healthy-card claim. This includes non-card methods, malformed data, provider errors or a live Stripe default that differs from the recorded default payment method (for example, before a portal-change webhook syncs). Independent of status and charge eligibility; save responses omit the fact. Missing on an older server also means unknown.
    *
    */
-  currency?: string
-  duration: SubscriptionDuration
+  card_expiring_soon?: boolean | null
   /**
-   * price_cents divided by 12 and rounded half up to the nearest cent,
-   * as on the subscribe preview's new_plan. Display only. Present
-   * exactly when price_cents is present on an ANNUAL plan.
+   * Expiry of the validated default card, from the same read as card_expiring_soon; null whenever card_expiring_soon is null or absent, including save responses. Read expired for the state; do not compare month and year against the client clock.
+   */
+  card_expiry: AutoReloadCardExpiry | null
+  configured: boolean
+  /**
+   * When the budget cycle resets; null when no cycle anchor is known.
+   */
+  cycle_resets_at: string | null
+  /**
+   * The payment method whose declines caused the current failed state, for a notice such as "Visa ending 4242 was declined". Set only while paused_by_decline is true or disabled_reason is consecutive_declines; null otherwise, and null when the method cannot be read or is no longer attached. Also null once the default changed to a payment method whose match with the declined one could not be determined (a wallet, or an unreadable method), since the pause then continues on an untried method. Never carries a payment method ID.
+   */
+  declined_payment_method: AutoReloadDeclinedPaymentMethod | null
+  /**
+   * Why the system, not an owner, turned automatic reload off: consecutive_declines. Null after any owner save, or once a different default card re-enables it.
+   */
+  disabled_reason: string | null
+  enabled: boolean
+  /**
+   * When the most recent automatic reload declined, or null.
+   */
+  last_failure_at: string | null
+  /**
+   * Decline code of the most recent declined automatic reload, or null. Fraud codes read as generic_decline. Kept after a later success; read paused_by_decline for the current state.
+   */
+  last_failure_reason: string | null
+  /**
+   * The largest monthly_budget_cents an enabled save accepts.
+   */
+  max_monthly_budget_cents: number
+  /**
+   * The most credits a single automatic reload buys. An enabled save needs target_credits at most threshold_credits plus this; a disable keeps a target saved above it. The smallest automatic reload must also fit the monthly limit (monthly_budget_cents, at most max_monthly_budget_cents). Null when billing-api did not report the cap.
    *
    */
-  monthly_price_cents?: number
+  max_reload_credits: number | null
   /**
-   * The plan's recurring price for one billing period, at
-   * team_credit_stop_id for a per-credit Team plan: a whole year for
-   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
-   * preview, before tax, promotions, account balance and proration,
-   * so it is not what the operation charged; amount_charged_cents is.
-   * Present together with currency, and absent when the plan could
-   * not be priced, including the retired seat-based Team plans.
+   * The fewest credits a single automatic reload buys. An enabled save needs target_credits at least threshold_credits plus this.
+   */
+  min_reload_credits: number
+  monthly_budget_cents: number | null
+  /**
+   * true when the stored monthly limit came from an owner's null (no-limit) save and still equals the current ceiling; the dialog reopens with the limit switch off. False when unconfigured, when the owner sent a limit or disabled, or when the ceiling has since changed. A consecutive-declines system disable keeps the saved value.
    *
    */
-  price_cents?: number
-  slug: string
+  monthly_budget_is_default: boolean
   /**
-   * The per-credit Team credit stop the operation targets (e.g.
-   * team_200). Absent for personal plans and for Team plans without a
-   * credit stop.
+   * Enabled, but no budget cycle is known, monthly_budget_cents is null, or the remaining budget cannot fund even the smallest automatic reload, from one credit below threshold_credits to target_credits. Always false when disabled. Read guidance only; it does not enforce charging.
+   */
+  paused_by_budget: boolean
+  /**
+   * True only when paused_by_budget holds because the unspent part of the monthly limit is positive but smaller than the smallest automatic reload (from one credit below threshold_credits to target_credits); false when the limit is fully used or exceeded, when no cycle or limit is known, and when disabled.
+   */
+  paused_by_budget_remainder: boolean
+  /**
+   * Enabled, but the default card is the one that last declined an automatic reload, so none is attempted until the default card changes. Not the workspace billing status.
+   */
+  paused_by_decline: boolean
+  /**
+   * Current server price of the smallest automatic reload, from one credit below threshold_credits to target_credits (reload_credits + 1 credit, clamped to the reload bounds). Reloads for lower balances cost more, so show it as a starting price. Display only; never sent back.
+   */
+  reload_amount_cents: number | null
+  /**
+   * target_credits minus threshold_credits. Kept for older clients; read target_credits. A reload buys the gap between the balance and target_credits, so it can buy more than this.
+   */
+  reload_credits: number | null
+  /**
+   * Automatic reload spend counted in the current budget cycle.
+   */
+  spent_this_cycle_cents: number
+  /**
+   * The one automatic reload state the card renders, decided by
+   * billing-api so clients never order the separate facts themselves.
+   * Render it as received. Values are listed in precedence order; the
+   * first that holds wins:
+   * - failed: paused_by_decline is true, or the system turned automatic
+   * reload off after consecutive declines (disabled_reason is
+   * consecutive_declines). The card asks for a new payment method.
+   * - off: not configured, or an owner turned it off.
+   * - on_hold: enabled, but the workspace has no default payment method
+   * recorded, so no automatic reload can be attempted.
+   * - paused_by_budget: enabled, and paused_by_budget is true; it
+   * resumes at cycle_resets_at.
+   * - on: enabled and able to reload.
+   * Read guidance, not charging enforcement or the workspace billing
+   * status. An expired card that is still the default reads as on
+   * until a reload declines, then failed. Treat an unknown value as off.
    *
    */
-  team_credit_stop_id?: string
-  tier?: SubscriptionTier
+  status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
+  /**
+   * The balance an automatic reload tops up to: threshold_credits plus reload_credits. Null when not configured, when that sum does not fit in an int64, and from an older billing-api that does not report it.
+   */
+  target_credits: number | null
+  /**
+   * Reload when the balance falls below this many credits.
+   */
+  threshold_credits: number | null
 }
 
 /**
- * One deduction from today's charge. discount is the promotion in the
- * quote's discount shape (kind promotion, without amount_off_cents; the
- * amount is amount_cents), present exactly for promo_code and
- * subscription_discount. Its duration_in_months is set only for
- * promo_code: a carried promotion's remaining term is not the coupon's.
+ * Every listed field is required, and one of target_credits or
+ * reload_credits. reload_credits alone means target_credits =
+ * threshold_credits + reload_credits. On every save, disabled included,
+ * threshold_credits must be a positive whole number of credits and a
+ * non-null monthly_budget_cents positive. When enabled is true:
+ * target_credits must be greater than threshold_credits; target_credits
+ * and reload_credits must agree (reload_credits = target_credits -
+ * threshold_credits) when both are sent; a non-null monthly_budget_cents
+ * must be at most max_monthly_budget_cents, and a null one means no
+ * owner limit and is stored as max_monthly_budget_cents; target_credits
+ * must be at least threshold_credits + min_reload_credits and at most
+ * threshold_credits + max_reload_credits; and the smallest automatic
+ * reload (from one credit below threshold_credits to target_credits)
+ * must cost no more than the budget. A save with enabled false accepts a
+ * null budget, stores it as null, and skips the enabled-only rules. A
+ * save with enabled false is never refused over target_credits or
+ * reload_credits: it stores target_credits minus threshold_credits when
+ * the target is above the threshold, else a positive reload_credits,
+ * else min_reload_credits.
  *
  */
-export type BillingOpChargeReason = {
+export type AutoReloadSettingsRequest = {
+  enabled: boolean
+  monthly_budget_cents: number | null
   /**
-   * What this reason removed from today's charge, as a positive amount.
+   * Older form, target_credits minus threshold_credits; must agree with target_credits when both are sent on an enabled save.
    */
-  amount_cents: number
-  discount?: SubscriptionDiscount
+  reload_credits?: number
   /**
-   * promo_code is the promotion code entered for this operation;
-   * subscription_discount is a promotion the subscription already
-   * carried; account_balance is existing customer credit applied.
-   *
+   * The balance to top up to.
    */
-  kind: 'promo_code' | 'subscription_discount' | 'account_balance'
+  target_credits?: number
+  threshold_credits: number
 }
 
 /**
- * Display only. Why a succeeded subscription operation charged other
- * than its plan rate, read from the operation's paid Stripe invoice.
- * Present only when that invoice collected more than zero and a
- * promotion, the account balance or proration moved the charge off the
- * plan rate; absent means no rows. Plan coupons (the annual or team
- * commitment rate) are part of the rate and are never a reason. Never
- * present for top-ups. Returned only to workspace billing managers,
- * like amount_charged_cents.
+ * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
+ */
+export type AutoTopUpMemberView = {
+  cycle_resets_at: string | null
+  /**
+   * Present only when repeated declined charges automatically disabled auto top-up.
+   */
+  disabled_reason?: 'consecutive_declines'
+  /**
+   * Distinguishes the default maximum from an owner-selected limit, without exposing either amount.
+   */
+  monthly_budget_is_default: boolean
+  /**
+   * Server-resolved display state; card expiry does not change it.
+   */
+  status: 'off' | 'on' | 'on_hold' | 'paused_by_budget' | 'failed'
+  target_credits: number | null
+  threshold_credits: number | null
+}
+
+/**
+ * Recorded account setup guidance, separate from owner authority in
+ * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
+ * means setup is not available. Owner read/disable authority remains separate.
+ * These states do not determine surface visibility. Unified billing settings
+ * show the auto top-up card only when capabilities.can_view_auto_top_up is
+ * true. Paused or payment-failed billing hides it; the manual-purchase
+ * switch does not.
+ * Ready does not authorize a charge or guarantee an off-session payment method.
+ * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
  */
-export type BillingOpChargeBreakdown = {
+export type AutoTopUpSetup = {
   /**
-   * What the invoice collected, tax included.
-   */
-  amount_charged_cents: number
-  currency: string
-  /**
-   * The invoice billed the new plan for the rest of the current
-   * period. A prorated charge is named, never itemized, so reasons is
-   * empty exactly when this is true.
+   * Absent for ready; required for frozen or unavailable. Frozen reasons are
+   * payment_past_due, billing_paused, billing_awaiting_payment_method,
+   * billing_payment_pending, default_payment_method_missing,
+   * default_payment_method_unsupported and billing_operation_parked.
+   * Remaining reasons are unavailable. The first recorded workspace, provider,
+   * rail, billing, subscription, parked-operation or default-payment-method
+   * check that refuses setup supplies the reason.
+   * default_payment_method_unsupported means the default payment method cannot
+   * be charged off-session (Korea-only wallets, WeChat Pay); the owner must set
+   * a different default. It is checked against the payment provider; when
+   * that read fails, the setup stays ready.
+   * Creator-only provisioning replaces otherwise ready or frozen guidance
+   * for a noncreator; existing unavailable account reasons remain.
    *
    */
-  prorated: boolean
-  /**
-   * One row per deduction from today's charge, in display order:
-   * promotions in the invoice's order, then the account balance.
-   *
-   */
-  reasons: Array<BillingOpChargeReason>
-}
-
-export type BillingOpCancelResponse = {
-  billing_op_id: string
-  /**
-   * canceled: the operation was dropped and nothing was charged. cancel_requested: the cancel was delivered but has not settled yet.
-   */
-  status: 'canceled' | 'cancel_requested'
-}
-
-/**
- * Paginated list of billing events for a workspace.
- */
-export type BillingEventsResponse = {
-  /**
-   * When this environment began attributing every charge, the same instant as `attribution_since` on the usage time series. Charges from before it may still name their member and source (many carried them long before); the start is only the instant from which a charge naming no member is known to be unattributed, which each such event states itself with `unattributed`. Absent where no such start is configured, and on the admin history feed.
-   */
-  attribution_since?: string
-  events: Array<BillingEvent>
-  /**
-   * Items per page
-   */
-  limit: number
-  /**
-   * Current page number (1-indexed)
-   */
-  page: number
-  /**
-   * Total number of events
-   */
-  total: number
-  /**
-   * Total number of pages
-   */
-  totalPages: number
-}
-
-/**
- * A single history event. The cloud history-events store is the single source of truth for both billing events (charges, credits, adjustments) and user-facing usage events.
- */
-export type BillingEvent = {
-  /**
-   * That key's name, when the key is known to this workspace (revoked keys included).
-   */
-  api_key_name?: string
-  /**
-   * The API key the charge came through, from the event's `spend_source`; absent for a signed-in session or a deployment.
-   */
-  api_key_prefix?: string
-  /**
-   * True when that key, known to this workspace, has been revoked. Absent when the key is unknown.
-   */
-  api_key_revoked?: boolean
-  /**
-   * When the event occurred
-   */
-  createdAt: string
-  /**
-   * The Serverless deployment the charge came through, from the event's `deployment_id`; absent for a session or an API key.
-   */
-  deployment_id?: string
-  /**
-   * That deployment's name, when the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached.
-   */
-  deployment_name?: string
-  /**
-   * Unique event identifier
-   */
-  event_id: string
-  /**
-   * Type of history event. Billing types (e.g. invoice_paid, checkout_completed, topup_completed) and the migrated user-facing usage types (account_created, credit_added, api_usage_completed, cloud_subscription_created, cloud_subscription_paid, cloud_subscription_credit_added, cloud_workflow_executed, free_tier_credit_granted). Kept as a free-form string for back-compat with existing billing-event consumers.
-   */
-  event_type: string
-  /**
-   * That member's name, or their email when they have no name set.
-   */
-  member_display_name?: string
-  /**
-   * That member's email, so two members with one name can be told apart.
-   */
-  member_email?: string
-  /**
-   * True when that person is no longer a member of this workspace.
-   */
-  member_former?: boolean
-  /**
-   * The member the charge counts toward, from the event's `user_id`; absent when the event names none.
-   */
-  member_user_id?: string
-  /**
-   * Event-specific parameters
-   */
-  params?: {
-    [key: string]: unknown
-  }
-  /**
-   * True for a charge made at or after the instant this environment began attributing every charge (`attribution_since`) that names no member: the system tried and could not say who it was. A charge names a member by any identity the `scope` filter matches it on. Absent on money and lifecycle events, on charges that name a member, on deployment charges (attributed to their deployment), on charges made before attribution began (by the charge's own time where recorded, else when it was written), where no start is configured, and on the admin history feed.
-   */
-  unattributed?: boolean
-}
-
-/**
- * Fields to set on the workspace's Stripe customer. Every group is
- * optional; omit a group to leave that part of the customer unchanged.
- *
- */
-export type BillingCompanyDetailsUpdateRequest = {
-  address?: BillingAddress
-  /**
-   * Legal or trading name to show on invoices.
-   */
-  company_name?: string
-  tax_id?: BillingTaxId
+  reason?:
+    | 'workspace_deleted'
+    | 'workspace_blocked'
+    | 'billing_not_provisioned'
+    | 'billing_rail_not_supported'
+    | 'billing_status_unrecognized'
+    | 'payment_past_due'
+    | 'billing_paused'
+    | 'billing_awaiting_payment_method'
+    | 'billing_payment_pending'
+    | 'subscription_tier_unrecognized'
+    | 'subscription_status_unrecognized'
+    | 'subscription_state_unknown'
+    | 'billing_operation_parked'
+    | 'default_payment_method_missing'
+    | 'default_payment_method_unsupported'
+    | 'creator_only_provisioning'
+  state: 'ready' | 'frozen' | 'unavailable'
 }
 
 /**
@@ -6087,32 +1665,620 @@ export type BillingAddress = {
 }
 
 /**
- * Company billing details on file for the workspace's Stripe customer.
- * A field is absent until the workspace sets it via PATCH
- * /api/billing/company-details.
- *
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
-export type BillingCompanyDetailsResponse = {
-  address?: BillingAddress
-  company_name?: string
-  tax_id?: BillingTaxId
-}
-
-export type BillingCapabilityScope = {
-  user_id: string
-  workspace_id: string
+export type BillingBalanceResponse = {
+  /**
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
+   */
+  amount_micros: number
+  /**
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
+   */
+  cloud_credit_balance_micros?: number
+  /**
+   * Display-only subscription remainder in cents of currency, capped at the known configured period_credit_grant converted at USD1 = 211 credits. Preserves fractional cents and negative balances. A proven zero allowance caps at zero. Omitted when the allowance is unknown, unavailable, or the workspace is unprovisioned. When omitted, display cloud_credit_balance_cents unchanged, without a client-side cap or zero substitution. The cap may show less than spendable credit after a downgrade or on a known-zero plan. Does not change actual cloud_credit_balance_cents, totals, prepaid credit, pending charges or spend authorization.
+   */
+  cloud_credit_display_balance_cents?: number
+  credit_validity?: CreditValidity
+  /**
+   * Currency code
+   */
+  currency: string
+  /**
+   * False when pending charges could not be read. effective_balance_* and pending_charges_* are then omitted, because total minus an unread pending amount would overstate spendable credit. Present on every 200: the zero-balance response for an unprovisioned workspace reports true, because no draft-invoice read happened there to fail. Treat an absent flag as "server predates this field", not as false.
+   */
+  effective_balance_authoritative?: boolean
+  /**
+   * The total balance minus pending charges; negative when charges exceed credit. Cents of `currency`, the same value as `effective_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  effective_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `effective_balance_cents`. The total balance minus pending charges; negative when charges exceed credit.
+   *
+   * @deprecated
+   */
+  effective_balance_micros?: number
+  /**
+   * True when the effective balance is above 0 and at or below the low-balance threshold ($5 of credits). False when the balance is not authoritative.
+   */
+  low_balance?: boolean
+  /**
+   * The most one top-up from this API may charge, in cents. First-purchase responses use the same bounds as purchase validation.
+   */
+  max_topup_cents?: number
+  /**
+   * The whole credits `max_topup_cents` buys. Absent when `max_topup_cents` is.
+   */
+  max_topup_credits?: number
+  /**
+   * The least one manual top-up may buy, in USD cents before tax or discounts. First-purchase responses use the same bounds as purchase validation.
+   */
+  min_topup_cents?: number
+  /**
+   * The whole credits min_topup_cents buys. Absent when min_topup_cents is.
+   */
+  min_topup_credits?: number
+  /**
+   * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  pending_charges_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `pending_charges_cents`. Pending/unbilled charges from draft invoices.
+   *
+   * @deprecated
+   */
+  pending_charges_micros?: number
+  /**
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
+   */
+  prepaid_balance_micros?: number
+  /**
+   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
+   */
+  suggested_topup_amount_cents?: number | null
 }
 
 /**
- * Identifies capability values currently using safe rollout defaults
- * instead of deterministic policy results. A true value is UI guidance,
- * not evidence that the corresponding write will succeed.
+ * Conservative UI guidance. These values do not authorize billing writes;
+ * each write endpoint independently enforces its permission policy.
+ *
+ * Each field answers one UI question for the authenticated user in the
+ * authenticated workspace. Render each as received and never combine fields
+ * into a new decision. False without a matching key in denied_reasons means no
+ * recognised explanation, not necessarily a refusal. A field is never
+ * per-surface: one value serves every screen. The plan-lifecycle fields
+ * (can_subscribe_self_serve, can_cancel, can_reactivate,
+ * can_revert_scheduled_change) require the workspace's creator only when the
+ * rollout mode is not `owner`; every other owner-level field stays open to
+ * every owner.
+ *
+ * When the deployment has billing disabled, this endpoint answers without
+ * consulting billing-api: can_top_up is true; can_manage_members,
+ * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
+ * can_view_auto_top_up follow the owner role, and
+ * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
+ * facts do not promise that billing endpoints are available.
  *
  */
-export type BillingCapabilityRolloutDefaults = {
+export type BillingCapabilities = {
+  /**
+   * - Answers: should the client offer cancelling the subscription?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`) of a paid self-serve subscription that is
+   * running with no cancellation scheduled and no billing operation in flight.
+   * It is also true where there is no local subscription row but that absence
+   * is not authoritative (the state is unknown, not none).
+   * - False: denied_reasons.can_cancel names the branch that decided. False
+   * without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the cancel route enforces its own rules). Not
+   * can_reactivate, which undoes a scheduled cancellation, and not
+   * can_subscribe_self_serve. Not can_top_up or can_manage_billing, which stay
+   * open to every owner. A FREE plan is not a paid subscription, so it has
+   * nothing to cancel.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); the tier is FREE; there is no
+   * subscription row and the absence is authoritative; the tier is
+   * sales-managed or unrecognised; the subscription is reserved but not
+   * running; its status is not recognised; it has ended or been canceled for
+   * good; a billing operation is running or parked; a cancellation is already
+   * scheduled.
+   *
+   */
+  can_cancel: boolean
+  /**
+   * - Answers: should the client offer changing the seat quantity of the
+   * subscription?
+   * - True: the user is a workspace owner with a subscription row on a
+   * self-serve tier whose status is active, or canceled with a cancellation
+   * date still set.
+   * - False: never explained. There is no denied_reasons key for this field, so
+   * false without a reason is the normal case, not a gap.
+   * - Not: authorization (the seat-change route enforces its own rules). Not room
+   * to invite (can_invite_members) and not member management
+   * (can_manage_members). The resolver tests the tier only against the
+   * self-serve list and does not check that the plan is seat-based, so true
+   * does not mean the plan has seats to change: an owner on a FREE plan gets
+   * true. A scheduled cancellation, a scheduled successor plan, a running
+   * billing operation and a past-due payment do not change it.
+   * - False when: the user is not an owner; there is no subscription row, even
+   * where that absence is only unknown; the tier is sales-managed or
+   * unrecognised; the subscription is reserved but not running; its status is
+   * not recognised; it has ended or been canceled for good.
+   *
+   */
+  can_change_seats: boolean
+  /**
+   * - Answers: should the client offer deleting this workspace?
+   * - True: the user is an owner of a team workspace and, when the answer was
+   * read, the user is also its creator when the rollout mode is not owner,
+   * the workspace is not attached to an SSO organization, has no
+   * subscription-changing billing operation running or parked, and has no
+   * live subscription, sales-managed or not.
+   * - False: denied_reasons.can_delete_workspace names the branch that
+   * decided. False without that key means no recognised explanation, not a
+   * refusal: a fact it depends on could not be read, or the team-workspaces
+   * feature is off.
+   * - Not: authorization. It reports what the DELETE /api/workspaces/{id}
+   * handler guards, except creator_guidance applies the creator restriction
+   * to guidance while writes still accept any owner. Only creator mode
+   * enforces that restriction. The handler stays authoritative and re-checks
+   * under the workspace lock, so this answer can be stale. Not a billing
+   * capability: use can_cancel to ask about cancelling a subscription.
+   * - False when: a live subscription is on a sales-managed plan; the user is
+   * not an owner; the user is a non-creator owner and the rollout mode is
+   * not owner; the workspace is personal; the
+   * workspace is attached to an SSO organization; a billing operation is
+   * running or parked; a subscription is still live; a dependent fact could
+   * not be read; the team-workspaces feature is off.
+   *
+   */
+  can_delete_workspace: boolean
+  /**
+   * - Answers: may the user downgrade the workspace's subscription to a personal
+   * plan?
+   * - True: not in practice today. billing-api forces this field to false in
+   * every response, a retired rollout's closed default, so a client must not
+   * wait for it to become true.
+   * - False: always on this server version. There is no denied_reasons key for
+   * this field.
+   * - Not: authorization. Not the same as
+   * rollout_defaults_applied.can_downgrade_to_personal, which is true by design
+   * and says nothing about this value.
+   * - Before that override the resolver would grant it only to the workspace's
+   * original owner (its creator) who also has the owner role, on a running
+   * self-serve subscription with no successor plan scheduled.
+   *
+   */
   can_downgrade_to_personal: boolean
+  /**
+   * Whether to offer workspace name editing to this actor. True for a current owner while workspace features are available. False with no denied_reasons key is unknown or unavailable guidance. Not member management or write authorization; the update route rechecks owner membership. A permission refusal has its matching denial key.
+   */
+  can_edit_workspace: boolean
+  /**
+   * - Answers: should the client offer sending a new workspace invitation right
+   * now?
+   * - True: the user is a workspace owner and the workspace has room: members
+   * plus unexpired pending invitations are below the seat limit, or the limit
+   * is not positive (unlimited).
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization (invitation creation enforces the same limit itself).
+   * Not member management (can_manage_members) and not buying seats
+   * (can_change_seats). Pending invitations count toward capacity. The
+   * resolver ignores tier, subscription status, cancellation and past-due
+   * payment; only the seat limit, which can come from the active plan, reflects
+   * the plan.
+   * - False when: the user is not an owner; the seat limit is 1 (the limit is the
+   * workspace override if set, else the active plan's default max seats, and
+   * defaults to one seat with no active subscription); members plus unexpired
+   * pending invitations have reached the limit; the capacity could not be
+   * read, which fails closed.
+   *
+   */
+  can_invite_members: boolean
+  /**
+   * - Answers: should the client offer leaving this workspace?
+   * - True: the user is a member and no branch below applies. A plain member
+   * of a team workspace who did not create it can leave; an owner who did
+   * not create it can leave only when another owner remains.
+   * - False: denied_reasons.can_leave_workspace names the branch that decided.
+   * False without that key means no recognised explanation, not a refusal: a
+   * fact it depends on could not be read, or the team-workspaces feature is
+   * off.
+   * - Not: authorization. It reports what POST /api/workspace/leave would
+   * decide for the authenticated workspace; the route stays authoritative.
+   * Not can_delete_workspace: leaving ends one membership, deleting removes
+   * the workspace.
+   * - False when: the user is not a member; the membership is managed by the
+   * workspace's SSO organization; the user created this personal workspace;
+   * the user created this team workspace; the user is the only owner.
+   *
+   */
+  can_leave_workspace: boolean
+  /**
+   * - Answers: does this workspace member have owner authority to view
+   * and manage auto top-up, including reading or disabling saved settings?
+   * - When billing-api omits this field, ingest resolves owner authority
+   * from the authenticated workspace role. Explicit upstream booleans are
+   * preserved; null or non-boolean values fail the response. False means
+   * non-owner fallback or an explicit upstream false. No denied_reasons
+   * key explains this role fact.
+   * - Not: service or setup readiness, write authorization or permission
+   * to charge. Missing payment methods, frozen billing or a disabled
+   * billing service do not remove owner authority; these deployment and
+   * setup checks remain separate from whether the actor is an owner.
+   *
+   */
+  can_manage_auto_top_up: boolean
+  /**
+   * - Answers: should the client offer payment-method, invoice, payment-update
+   * and company-details management?
+   * - True: the user is a member of the workspace whose role is owner, except in
+   * the false case below.
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization. Not member management (can_manage_members) and not
+   * buying or subscribing (can_top_up, can_subscribe_self_serve). Independent
+   * of tier, subscription status, cancellation, past-due payment, a running
+   * billing operation and invite capacity.
+   * - False when: the user is not an owner, or is a non-creator owner of a
+   * personal workspace that is missing a billing provider id (not yet
+   * provisioned).
+   *
+   */
+  can_manage_billing: boolean
+  /**
+   * - Answers: should the client offer member-management controls?
+   * - True: the user is a member of the workspace whose role is owner.
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization; individual target restrictions still apply. Not invite
+   * capacity (can_invite_members), seat quantity (can_change_seats) or billing
+   * management (can_manage_billing). Independent of tier, subscription status,
+   * cancellation, past-due payment and billing provisioning.
+   * - False when: the user is not a member, or is a member whose role is not
+   * owner. Nothing else closes it.
+   *
+   */
+  can_manage_members: boolean
+  /**
+   * Whether to offer editing the workspace partner-provider access policy. Requires current owner membership and the partner governance entitlement. A false capability may have its matching denial key; absence means no recognized explanation, including disabled workspace features or unavailable membership. Not permission to read the policy, manage members or authorize a write; the policy route rechecks.
+   */
+  can_manage_partner_node_access: boolean
+  /**
+   * - Answers: does this workspace member have owner authority for the
+   * subscription-management section?
+   * - When billing-api omits this field, ingest resolves owner authority
+   * from the authenticated workspace role. Explicit upstream booleans are
+   * preserved; null or non-boolean values fail the response. False means
+   * non-owner fallback or an explicit upstream false. No denied_reasons
+   * key explains this role fact.
+   * - Not: action availability, service readiness or write authorization.
+   * Portal, payment-method and invoice guidance still uses can_manage_billing,
+   * with provisioning and endpoint-specific checks. Lifecycle actions use
+   * their dedicated capabilities and permissions. This role authority is
+   * independent of plan, billing state and personal-workspace creator.
+   *
+   */
+  can_manage_subscription: boolean
+  /**
+   * Whether to offer this actor the way into Plans (Manage, Explore plans, Choose a plan). Creator-only, whatever the lifecycle rollout mode: false for members and for owners who are not the workspace's creator. Otherwise the same rule as can_subscribe_self_serve, except that a plan change already scheduled (subscription_change_in_progress) does not close it, so the creator can still open Plans to review or revert that change. Which plans are selectable stays with the plans listing. False when an older billing-api omits it. Guidance only; writes recheck.
+   */
+  can_open_plans: boolean
+  /**
+   * - Answers: may the user undo a SCHEDULED cancellation on a subscription that
+   * is still running?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`), the subscription is active or canceled with a
+   * cancellation date still set (running until that date), and no billing
+   * operation is in flight.
+   * - False: denied_reasons.can_reactivate names the branch that decided. False
+   * without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the resubscribe route enforces its own rules). Not a
+   * way back from a plan that has ended: that is can_subscribe_self_serve,
+   * which stays open there. Not an undo of a scheduled plan change, which is
+   * can_revert_scheduled_change. Not can_top_up or can_manage_billing, which stay
+   * open to every owner.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); there is no subscription row at all,
+   * even where that absence is only unknown; the tier is sales-managed or
+   * unrecognised; the subscription is reserved but not running; its status is
+   * not recognised; it has ended or been canceled for good; a billing
+   * operation is running or parked; no cancellation is scheduled.
+   *
+   */
+  can_reactivate: boolean
+  /**
+   * - Answers: may the user undo a plan change that is already scheduled for a
+   * future billing boundary?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`), the subscription is Stripe-billed and has a
+   * pending scheduled change from it, and the revert window is open: more than
+   * one hour before the change takes effect and, when reverting would restore a
+   * cancellation, more than one hour before that cancellation date.
+   * - False: never explained. There is no denied_reasons key for this field, so
+   * it does not say which of the conditions failed, including that the user is
+   * an owner who is not the creator.
+   * - Not: authorization. Not can_reactivate (undo a scheduled cancellation) and
+   * not can_subscribe_self_serve. Not can_top_up or can_manage_billing, which
+   * stay open to every owner. When subscribe is refused with
+   * subscription_change_in_progress, a successor plan is scheduled; this field
+   * says whether that change can still be reverted.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); there is no pending
+   * scheduled change from this subscription; the cutoff has passed; the tier is
+   * sales-managed or unrecognised; the subscription has ended or been canceled
+   * for good.
+   *
+   */
+  can_revert_scheduled_change: boolean
+  /**
+   * Point-in-time Cloud billing guidance for this actor, combining the supplied workflow_run decision with ingest's existing account gate and cutover mode, local enrollment, Google-session requirement, and acting-user allowance. Legacy authority includes the same fail-open behavior as submission. True means these account gates allow the attempt; false has a denial when recognized. Billing-disabled environments return true. False without a reason is unknown where authoritative guidance is unavailable. No allowance is consumed or reserved. This is not authorization for a specific job or project: the submission path rechecks its full context.
+   */
+  can_run_workflows: boolean
+  /**
+   * - Answers: may this user start, recover or change a self-serve plan?
+   * - True: the user is a workspace owner and no resolver branch closed it. When
+   * the rollout mode is not `owner`, the user must also be the workspace's
+   * creator; in mode `owner` any owner qualifies. That includes a workspace
+   * with no plan, a running self-serve plan, and a plan that has ended or been
+   * canceled for good, where it stays open because it is the only path back.
+   * - False: the user is not an owner, the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`), the user is a non-creator
+   * owner of a personal workspace whose billing is not yet provisioned, the
+   * tier is sales-managed or unrecognised, a successor plan is already
+   * scheduled, the subscription is reserved but not running and has no
+   * recoverable checkout, or its status is not recognised.
+   * denied_reasons.can_subscribe_self_serve names the branch that decided.
+   * False without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the subscribe route enforces its own rules). Not
+   * can_top_up (buy credits) or can_manage_billing, which stay open to every
+   * owner. Not can_reactivate (undo a scheduled cancellation) or can_cancel.
+   * One value serves every surface; there is no per-surface variant.
+   *
+   */
   can_subscribe_self_serve: boolean
+  /**
+   * Should this owner be offered a one-off prepaid credit purchase? Known
+   * Free, no-subscription, ended and inactive Enterprise states qualify.
+   * Non-members, non-owner members, non-creator initial personal billing
+   * provisioning and past-due billing (payment_failed or paused) are refused.
+   * Unknown existing subscription tier or status is refused, matching purchase
+   * and quote validation, and so is every purchase while staff pause top-ups.
+   * This is guidance, not authorization: write routes
+   * retain workspace, rail, provider, amount and operation checks. Cloud
+   * workflow execution still requires its existing subscription/run policy.
+   *
+   */
   can_top_up: boolean
+  /**
+   * Whether at least one active catalog choice is an actionable upgrade from the current plan for this actor, including a Free-to-paid choice, longer interval or higher Team credit commitment. Uses the same exact target selector as plan actions, including seats, processing operations and scheduled changes. No current or ended plan is false: subscribe or resubscribe is a separate action. Unknown legacy bindings fail closed. False with no reason is unknown; this guidance does not authorize writes.
+   */
+  can_upgrade: boolean
+  /**
+   * - Answers: should the client show the owner auto top-up card?
+   * - True: owner management authority and top-up eligibility, except
+   * that stopped manual purchases do not hide this card. Paused and
+   * past-due billing still hide it. Render this fact as received.
+   * - False: denied_reasons.can_view_auto_top_up names the first refusal,
+   * the can_manage_auto_top_up reason before the can_top_up reason,
+   * excluding topup_purchases_paused.
+   * - When billing-api omits this field, ingest serves
+   * can_manage_auto_top_up and can_top_up as served here, and takes the
+   * reason from their denied_reasons in the same order. This fallback
+   * stays closed whenever can_top_up is false.
+   * - Not: authorization to enable, edit or charge auto top-up, and not
+   * setup readiness, which auto_top_up_setup reports. auto_top_up_enabled
+   * still gates the rollout.
+   *
+   */
+  can_view_auto_top_up: boolean
+  /**
+   * - Answers: should the client show the member auto top-up notice that
+   * sends a non-owner to a workspace owner?
+   * - True: the actor is a member but not an owner, and the workspace
+   * passes workspace eligibility checks other than stopped manual
+   * purchases. Paused and past-due billing still hide it.
+   * Render it as received; never derive
+   * it from can_top_up, can_manage_auto_top_up or their reasons.
+   * - False: denied_reasons.can_view_auto_top_up_member_notice names the
+   * first refusal.
+   * - When billing-api omits this field, ingest serves true for a member
+   * who is not an owner, with no reason.
+   * - Not: authorization to buy credits or change auto top-up.
+   * auto_top_up_enabled still gates the rollout.
+   *
+   */
+  can_view_auto_top_up_member_notice: boolean
+  /**
+   * Whether to offer the actor's own usage attribution view. Optional for rolling deployments; absent means unknown. True for a current workspace member with usage attribution enabled. Clients must use person/source ledger groupings or person/source filters, which the existing route scopes to the actor for members. This is not permission for the default model grouping, whole-workspace analytics, or other unscoped queries. Query authorization and filters are unchanged. Attribution disabled emits usage_attribution_unavailable; missing denial means unknown.
+   */
+  can_view_own_usage?: boolean
+  /**
+   * Whether to offer the workspace invitation list. True for a current owner while workspace features are available. A false capability may have its matching denied_reasons key; absence means no recognized explanation. This is not capacity to send another invitation; use can_invite_members. The owner-only list route stays authoritative and can include expired invitations despite the word pending.
+   */
+  can_view_pending_invites: boolean
+  /**
+   * Whether to offer whole-workspace usage analytics. True only for a current workspace owner with usage attribution enabled. Members use can_view_own_usage instead. False with no matching denied_reasons key means unknown or unavailable guidance. This does not authorize a read.
+   */
+  can_view_team_usage: boolean
+}
+
+/**
+ * Effective billing UI guidance for one authenticated user and workspace.
+ */
+export type BillingCapabilitiesResponse = {
+  /**
+   * Whether auto top-up is rolled out to this user: the auto_top_up_enabled
+   * rollout flag, evaluated by ingest the same way GET /api/features
+   * evaluates it. Any evaluation failure reads as false. It gates
+   * visibility only; capabilities.can_manage_auto_top_up still decides
+   * who may manage auto top-up.
+   *
+   */
+  auto_top_up_enabled: boolean
+  auto_top_up_member_view?: AutoTopUpMemberView
+  auto_top_up_setup?: AutoTopUpSetup
+  /**
+   * Which set of billing notices speaks to the plan. Rendered as received;
+   * never derive it from tier names, slugs or the workspace type.
+   * - none: no subscription, a reserved (scheduled) row, an ENTERPRISE plan,
+   * or a plan that is neither a Team plan nor a personal paid tier (FREE or
+   * unrecognised). ENTERPRISE wins over every other rule.
+   * - team: a Team plan, meaning the subscription has a team credit stop or a
+   * per-credit or retired seat-based Team plan slug.
+   * - personal: a STANDARD, CREATOR, PRO or FOUNDERS_EDITION plan that is not
+   * a Team plan.
+   * It classifies the workspace's pointed subscription, the one the
+   * subscription status reports; a scheduled replacement never stands in for
+   * it. It ignores the plan's status (an ended plan keeps its audience) and
+   * the user's role. It is not a capability and not authorization. Absent in
+   * the same cases as recovery_route, and when
+   * subscription_state_authoritative is false (unknown, not none).
+   *
+   */
+  billing_notice_audience?: 'none' | 'team' | 'personal'
+  capabilities: BillingCapabilities
+  denied_reason_params?: BillingCapabilityDenialParams
+  denied_reasons?: BillingCapabilityDenials
+  /**
+   * When the ending notice of a canceled ENTERPRISE plan starts: its
+   * cancel_at minus 14 days. The notice applies once the current time is
+   * at or after this instant; compare it on the client clock rather than
+   * caching a yes/no answer. Present only while the plan is ENTERPRISE, the
+   * subscription is canceled and its cancel_at is still in the future.
+   * Absent otherwise (including for self-serve plans, whose ending notice
+   * shows as soon as they are canceled), when billing is disabled, when
+   * talking to a billing-api version that predates it, and when the
+   * upstream value is not a valid timestamp.
+   *
+   */
+  ending_notice_starts_at?: string
+  /**
+   * Time after which the client must refetch this snapshot.
+   */
+  expires_at: string
+  /**
+   * Whether any workspace billing operation needs support reconciliation (paid_ungrantable or supersede_uncancelled), across all operation types including automatic top-ups, and independent of an active plan. Shown only when can_manage_billing is true; true requests the payment support banner, not proof of a charge. False means the local read found no parked operation. Omitted for non-managers, unavailable reads, older servers or disabled billing; omission means unknown, not a healthy payment state.
+   */
+  has_parked_billing_operation?: boolean
+  /**
+   * Whether this actor may use payment management to recover an outstanding
+   * subscription payment. True only when can_manage_billing is true, the
+   * workspace payment state is payment_failed or paused, and the provider
+   * confirms its bound live Stripe subscription is past_due, unpaid, or paused.
+   * False when known ineligible or healthy; no denied_reasons key explains it.
+   * Absent when the live binding or provider state cannot be verified, on
+   * older servers, or when billing is disabled; absence means unknown.
+   * This is not authorization, a promise that a payable invoice or hosted
+   * payment link exists, or permission to subscribe or run workflows.
+   * Use can_manage_billing for general payment-method and invoice management.
+   *
+   */
+  payment_recovery_available?: boolean
+  /**
+   * Who runs the plan lifecycle. Rendered as received; never derive it from
+   * tier names or slugs.
+   * - none: the workspace has no subscription in the capability facts. An
+   * orphaned reserved row on a self-serve tier is reported as none.
+   * - self_serve: a subscription on a tier with a customer-driven lifecycle,
+   * including a FREE plan.
+   * - sales_managed: a subscription on a sales-managed tier. It also covers a
+   * tier the resolver does not recognise.
+   * It classifies the plan by tier only. It says nothing about whether the plan
+   * is running (a reserved or ended subscription still has a kind) and nothing
+   * about what the user may do; that is capabilities. Absent in the same cases as
+   * recovery_route.
+   *
+   */
+  plan_kind?: 'none' | 'self_serve' | 'sales_managed'
+  /**
+   * The single billing action for this actor in the Cloud profile menu's
+   * credits row. Render as received, not derived from other capabilities.
+   * Members and unknown subscription/payment-recovery state receive none.
+   * Enterprise owners receive only permitted Add credits, including on
+   * reserved rows. Reserved self-serve signup rows receive none; use
+   * subscription_payment_recovery on plans for their Finish payment.
+   * For other eligible owners, verified payment recovery wins, then
+   * Subscribe/Resubscribe without a running paid plan, then Add credits
+   * for a running paid plan (even with zero credits), then permitted
+   * Resubscribe for an ending plan. FREE uses Subscribe, not Resubscribe.
+   * A no-plan Subscribe refusal never falls back to Add credits.
+   * This is not global top-up eligibility, other surfaces' button emphasis
+   * or write authorization. can_top_up still permits purchases without
+   * a plan; local clients retain existing guidance. Older servers and
+   * disabled billing omit the field. Absent, invalid or failed reads
+   * must show no row action.
+   *
+   */
+  primary_billing_action?:
+    | 'update_payment'
+    | 'subscribe'
+    | 'resubscribe'
+    | 'add_credits'
+    | 'none'
+  /**
+   * Where the customer goes when the plan has ended. Rendered as received;
+   * never derive it from tier names or slugs.
+   * - none: there is no subscription, or it has not stopped for good (a
+   * canceled plan that still has a cancellation date has not).
+   * - resubscribe: the subscription has stopped for good (ended, or canceled
+   * with no cancellation date) on a self-serve tier. The route is subscribing
+   * again.
+   * - contact_sales: the subscription has stopped for good on a sales-managed
+   * or unrecognised tier. The route is through sales.
+   * It names the route only and deliberately ignores the user's role. Whether
+   * the control is enabled stays with capabilities.can_subscribe_self_serve
+   * and its denied reason. It is not a capability and not authorization.
+   * Absent when billing is disabled, when talking to a billing-api version
+   * that predates it, and when the upstream value is not recognised.
+   *
+   */
+  recovery_route?: 'none' | 'resubscribe' | 'contact_sales'
+  resolved_for: BillingCapabilityScope
+  /**
+   * JavaScript-safe, time-sortable revision for this snapshot. It
+   * increases monotonically within a serving process. Clients should
+   * invalidate on a different X-Capability-Revision value and use
+   * expires_at as the cross-instance freshness bound.
+   *
+   */
+  revision: number
+  rollout_defaults_applied: BillingCapabilityRolloutDefaults
+  /**
+   * Whether a missing subscription row authoritatively means the
+   * workspace has no paid plan. False means a legacy Stripe plan may
+   * exist outside the local projection. The field is absent when
+   * talking to a billing-api version that predates this signal.
+   *
+   */
+  subscription_state_authoritative?: boolean
+}
+
+/**
+ * Optional facts for the matching denied_reasons key; absent facts are unknown and must not be inferred from other fields.
+ */
+export type BillingCapabilityDenialParams = {
+  can_delete_workspace?: WorkspaceDeletionDenialParams
 }
 
 /**
@@ -6636,6 +2802,42 @@ export type BillingCapabilityDenials = {
     | 'sales_managed'
     | 'no_upgrade_available'
   /**
+   * Why can_view_auto_top_up is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the can_manage_auto_top_up refusal, then the can_top_up refusal.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - creator_only_provisioning: Only the creator can provision this workspace billing identity.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Accepted from older billing servers only; current policy does not emit this visibility refusal.
+   *
+   */
+  can_view_auto_top_up?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+  /**
+   * Why can_view_auto_top_up_member_notice is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the role refusal, then the workspace refusals in the order can_top_up reaches them.
+   * - not_a_member: The actor is not a workspace member.
+   * - workspace_owner: The actor is a workspace owner, who sees the owner auto top-up card (can_view_auto_top_up) instead.
+   * - payment_past_due: The failed subscription payment must be resolved before credits can be bought, including a paused workspace.
+   * - tier_not_self_serve: The existing subscription tier is unrecognized.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - topup_purchases_paused: Accepted from older billing servers only; current policy does not emit this visibility refusal.
+   *
+   */
+  can_view_auto_top_up_member_notice?:
+    | 'not_a_member'
+    | 'workspace_owner'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+  /**
    * Why can_view_own_usage is false, in enum order. Attribution disabled emits usage_attribution_unavailable. Missing means no recognized explanation, including disabled team-workspaces or unreadable membership, never permission. This does not explain can_view_team_usage.
    */
   can_view_own_usage?: 'not_a_member' | 'usage_attribution_unavailable'
@@ -6653,1909 +2855,3071 @@ export type BillingCapabilityDenials = {
 }
 
 /**
- * Optional facts for the matching denied_reasons key; absent facts are unknown and must not be inferred from other fields.
- */
-export type BillingCapabilityDenialParams = {
-  can_delete_workspace?: WorkspaceDeletionDenialParams
-}
-
-/**
- * Effective billing UI guidance for one authenticated user and workspace.
- */
-export type BillingCapabilitiesResponse = {
-  /**
-   * Whether auto top-up is rolled out to this user: the auto_top_up_enabled
-   * rollout flag, evaluated by ingest the same way GET /api/features
-   * evaluates it. Any evaluation failure reads as false. It gates
-   * visibility only; capabilities.can_manage_auto_top_up still decides
-   * who may manage auto top-up.
-   *
-   */
-  auto_top_up_enabled: boolean
-  auto_top_up_setup?: AutoTopUpSetup
-  capabilities: BillingCapabilities
-  denied_reason_params?: BillingCapabilityDenialParams
-  denied_reasons?: BillingCapabilityDenials
-  /**
-   * Time after which the client must refetch this snapshot.
-   */
-  expires_at: string
-  /**
-   * Whether any workspace billing operation needs support reconciliation (paid_ungrantable or supersede_uncancelled), across all operation types including automatic top-ups, and independent of an active plan. Shown only when can_manage_billing is true; true requests the payment support banner, not proof of a charge. False means the local read found no parked operation. Omitted for non-managers, unavailable reads, older servers or disabled billing; omission means unknown, not a healthy payment state.
-   */
-  has_parked_billing_operation?: boolean
-  /**
-   * Whether this actor may use payment management to recover an outstanding
-   * subscription payment. True only when can_manage_billing is true, the
-   * workspace payment state is payment_failed or paused, and the provider
-   * confirms its bound live Stripe subscription is past_due, unpaid, or paused.
-   * False when known ineligible or healthy; no denied_reasons key explains it.
-   * Absent when the live binding or provider state cannot be verified, on
-   * older servers, or when billing is disabled; absence means unknown.
-   * This is not authorization, a promise that a payable invoice or hosted
-   * payment link exists, or permission to subscribe or run workflows.
-   * Use can_manage_billing for general payment-method and invoice management.
-   *
-   */
-  payment_recovery_available?: boolean
-  /**
-   * Who runs the plan lifecycle. Rendered as received; never derive it from
-   * tier names or slugs.
-   * - none: the workspace has no subscription in the capability facts. An
-   * orphaned reserved row on a self-serve tier is reported as none.
-   * - self_serve: a subscription on a tier with a customer-driven lifecycle,
-   * including a FREE plan.
-   * - sales_managed: a subscription on a sales-managed tier. It also covers a
-   * tier the resolver does not recognise.
-   * It classifies the plan by tier only. It says nothing about whether the plan
-   * is running (a reserved or ended subscription still has a kind) and nothing
-   * about what the user may do; that is capabilities. Absent in the same cases as
-   * recovery_route.
-   *
-   */
-  plan_kind?: 'none' | 'self_serve' | 'sales_managed'
-  /**
-   * Where the customer goes when the plan has ended. Rendered as received;
-   * never derive it from tier names or slugs.
-   * - none: there is no subscription, or it has not stopped for good (a
-   * canceled plan that still has a cancellation date has not).
-   * - resubscribe: the subscription has stopped for good (ended, or canceled
-   * with no cancellation date) on a self-serve tier. The route is subscribing
-   * again.
-   * - contact_sales: the subscription has stopped for good on a sales-managed
-   * or unrecognised tier. The route is through sales.
-   * It names the route only and deliberately ignores the user's role. Whether
-   * the control is enabled stays with capabilities.can_subscribe_self_serve
-   * and its denied reason. It is not a capability and not authorization.
-   * Absent when billing is disabled, when talking to a billing-api version
-   * that predates it, and when the upstream value is not recognised.
-   *
-   */
-  recovery_route?: 'none' | 'resubscribe' | 'contact_sales'
-  resolved_for: BillingCapabilityScope
-  /**
-   * JavaScript-safe, time-sortable revision for this snapshot. It
-   * increases monotonically within a serving process. Clients should
-   * invalidate on a different X-Capability-Revision value and use
-   * expires_at as the cross-instance freshness bound.
-   *
-   */
-  revision: number
-  rollout_defaults_applied: BillingCapabilityRolloutDefaults
-  /**
-   * Whether a missing subscription row authoritatively means the
-   * workspace has no paid plan. False means a legacy Stripe plan may
-   * exist outside the local projection. The field is absent when
-   * talking to a billing-api version that predates this signal.
-   *
-   */
-  subscription_state_authoritative?: boolean
-}
-
-/**
- * Conservative UI guidance. These values do not authorize billing writes;
- * each write endpoint independently enforces its permission policy.
- *
- * Each field answers one UI question for the authenticated user in the
- * authenticated workspace. Render each as received and never combine fields
- * into a new decision. False without a matching key in denied_reasons means no
- * recognised explanation, not necessarily a refusal. A field is never
- * per-surface: one value serves every screen. The plan-lifecycle fields
- * (can_subscribe_self_serve, can_cancel, can_reactivate,
- * can_revert_scheduled_change) require the workspace's creator only when the
- * rollout mode is not `owner`; every other owner-level field stays open to
- * every owner.
- *
- * When the deployment has billing disabled, this endpoint answers without
- * consulting billing-api: can_top_up is true; can_manage_members,
- * can_invite_members, can_manage_subscription and can_manage_auto_top_up
- * follow the owner role. Other billing-action fields are false. These role
- * facts do not promise that billing endpoints are available.
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
  *
  */
-export type BillingCapabilities = {
-  /**
-   * - Answers: should the client offer cancelling the subscription?
-   * - True: the user is a workspace owner (the workspace's creator when the
-   * rollout mode is not `owner`) of a paid self-serve subscription that is
-   * running with no cancellation scheduled and no billing operation in flight.
-   * It is also true where there is no local subscription row but that absence
-   * is not authoritative (the state is unknown, not none).
-   * - False: denied_reasons.can_cancel names the branch that decided. False
-   * without that key means no recognised explanation, not necessarily a
-   * refusal, for example when billing-api predates the field.
-   * - Not: authorization (the cancel route enforces its own rules). Not
-   * can_reactivate, which undoes a scheduled cancellation, and not
-   * can_subscribe_self_serve. Not can_top_up or can_manage_billing, which stay
-   * open to every owner. A FREE plan is not a paid subscription, so it has
-   * nothing to cancel.
-   * - False when: the user is not an owner; the user is an owner who is not the
-   * workspace's creator (rollout mode not `owner`); the tier is FREE; there is no
-   * subscription row and the absence is authoritative; the tier is
-   * sales-managed or unrecognised; the subscription is reserved but not
-   * running; its status is not recognised; it has ended or been canceled for
-   * good; a billing operation is running or parked; a cancellation is already
-   * scheduled.
-   *
-   */
-  can_cancel: boolean
-  /**
-   * - Answers: should the client offer changing the seat quantity of the
-   * subscription?
-   * - True: the user is a workspace owner with a subscription row on a
-   * self-serve tier whose status is active, or canceled with a cancellation
-   * date still set.
-   * - False: never explained. There is no denied_reasons key for this field, so
-   * false without a reason is the normal case, not a gap.
-   * - Not: authorization (the seat-change route enforces its own rules). Not room
-   * to invite (can_invite_members) and not member management
-   * (can_manage_members). The resolver tests the tier only against the
-   * self-serve list and does not check that the plan is seat-based, so true
-   * does not mean the plan has seats to change: an owner on a FREE plan gets
-   * true. A scheduled cancellation, a scheduled successor plan, a running
-   * billing operation and a past-due payment do not change it.
-   * - False when: the user is not an owner; there is no subscription row, even
-   * where that absence is only unknown; the tier is sales-managed or
-   * unrecognised; the subscription is reserved but not running; its status is
-   * not recognised; it has ended or been canceled for good.
-   *
-   */
-  can_change_seats: boolean
-  /**
-   * - Answers: should the client offer deleting this workspace?
-   * - True: the user is an owner of a team workspace and, when the answer was
-   * read, the user is also its creator when the rollout mode is not owner,
-   * the workspace is not attached to an SSO organization, has no
-   * subscription-changing billing operation running or parked, and has no
-   * live subscription, sales-managed or not.
-   * - False: denied_reasons.can_delete_workspace names the branch that
-   * decided. False without that key means no recognised explanation, not a
-   * refusal: a fact it depends on could not be read, or the team-workspaces
-   * feature is off.
-   * - Not: authorization. It reports what the DELETE /api/workspaces/{id}
-   * handler guards, except creator_guidance applies the creator restriction
-   * to guidance while writes still accept any owner. Only creator mode
-   * enforces that restriction. The handler stays authoritative and re-checks
-   * under the workspace lock, so this answer can be stale. Not a billing
-   * capability: use can_cancel to ask about cancelling a subscription.
-   * - False when: a live subscription is on a sales-managed plan; the user is
-   * not an owner; the user is a non-creator owner and the rollout mode is
-   * not owner; the workspace is personal; the
-   * workspace is attached to an SSO organization; a billing operation is
-   * running or parked; a subscription is still live; a dependent fact could
-   * not be read; the team-workspaces feature is off.
-   *
-   */
-  can_delete_workspace: boolean
-  /**
-   * - Answers: may the user downgrade the workspace's subscription to a personal
-   * plan?
-   * - True: not in practice today. billing-api forces this field to false in
-   * every response, a retired rollout's closed default, so a client must not
-   * wait for it to become true.
-   * - False: always on this server version. There is no denied_reasons key for
-   * this field.
-   * - Not: authorization. Not the same as
-   * rollout_defaults_applied.can_downgrade_to_personal, which is true by design
-   * and says nothing about this value.
-   * - Before that override the resolver would grant it only to the workspace's
-   * original owner (its creator) who also has the owner role, on a running
-   * self-serve subscription with no successor plan scheduled.
-   *
-   */
+export type BillingCapabilityRolloutDefaults = {
   can_downgrade_to_personal: boolean
-  /**
-   * Whether to offer workspace name editing to this actor. True for a current owner while workspace features are available. False with no denied_reasons key is unknown or unavailable guidance. Not member management or write authorization; the update route rechecks owner membership. A permission refusal has its matching denial key.
-   */
-  can_edit_workspace: boolean
-  /**
-   * - Answers: should the client offer sending a new workspace invitation right
-   * now?
-   * - True: the user is a workspace owner and the workspace has room: members
-   * plus unexpired pending invitations are below the seat limit, or the limit
-   * is not positive (unlimited).
-   * - False: never explained. There is no denied_reasons key for this field.
-   * - Not: authorization (invitation creation enforces the same limit itself).
-   * Not member management (can_manage_members) and not buying seats
-   * (can_change_seats). Pending invitations count toward capacity. The
-   * resolver ignores tier, subscription status, cancellation and past-due
-   * payment; only the seat limit, which can come from the active plan, reflects
-   * the plan.
-   * - False when: the user is not an owner; the seat limit is 1 (the limit is the
-   * workspace override if set, else the active plan's default max seats, and
-   * defaults to one seat with no active subscription); members plus unexpired
-   * pending invitations have reached the limit; the capacity could not be
-   * read, which fails closed.
-   *
-   */
-  can_invite_members: boolean
-  /**
-   * - Answers: should the client offer leaving this workspace?
-   * - True: the user is a member and no branch below applies. A plain member
-   * of a team workspace who did not create it can leave; an owner who did
-   * not create it can leave only when another owner remains.
-   * - False: denied_reasons.can_leave_workspace names the branch that decided.
-   * False without that key means no recognised explanation, not a refusal: a
-   * fact it depends on could not be read, or the team-workspaces feature is
-   * off.
-   * - Not: authorization. It reports what POST /api/workspace/leave would
-   * decide for the authenticated workspace; the route stays authoritative.
-   * Not can_delete_workspace: leaving ends one membership, deleting removes
-   * the workspace.
-   * - False when: the user is not a member; the membership is managed by the
-   * workspace's SSO organization; the user created this personal workspace;
-   * the user created this team workspace; the user is the only owner.
-   *
-   */
-  can_leave_workspace: boolean
-  /**
-   * - Answers: does this workspace member have owner authority to view
-   * and manage auto top-up, including reading or disabling saved settings?
-   * - When billing-api omits this field, ingest resolves owner authority
-   * from the authenticated workspace role. Explicit upstream booleans are
-   * preserved; null or non-boolean values fail the response. False means
-   * non-owner fallback or an explicit upstream false. No denied_reasons
-   * key explains this role fact.
-   * - Not: service or setup readiness, write authorization or permission
-   * to charge. Missing payment methods, frozen billing or a disabled
-   * billing service do not remove owner authority; these deployment and
-   * setup checks remain separate from whether the actor is an owner.
-   *
-   */
-  can_manage_auto_top_up: boolean
-  /**
-   * - Answers: should the client offer payment-method, invoice, payment-update
-   * and company-details management?
-   * - True: the user is a member of the workspace whose role is owner, except in
-   * the false case below.
-   * - False: never explained. There is no denied_reasons key for this field.
-   * - Not: authorization. Not member management (can_manage_members) and not
-   * buying or subscribing (can_top_up, can_subscribe_self_serve). Independent
-   * of tier, subscription status, cancellation, past-due payment, a running
-   * billing operation and invite capacity.
-   * - False when: the user is not an owner, or is a non-creator owner of a
-   * personal workspace that is missing a billing provider id (not yet
-   * provisioned).
-   *
-   */
-  can_manage_billing: boolean
-  /**
-   * - Answers: should the client offer member-management controls?
-   * - True: the user is a member of the workspace whose role is owner.
-   * - False: never explained. There is no denied_reasons key for this field.
-   * - Not: authorization; individual target restrictions still apply. Not invite
-   * capacity (can_invite_members), seat quantity (can_change_seats) or billing
-   * management (can_manage_billing). Independent of tier, subscription status,
-   * cancellation, past-due payment and billing provisioning.
-   * - False when: the user is not a member, or is a member whose role is not
-   * owner. Nothing else closes it.
-   *
-   */
-  can_manage_members: boolean
-  /**
-   * Whether to offer editing the workspace partner-provider access policy. Requires current owner membership and the partner governance entitlement. A false capability may have its matching denial key; absence means no recognized explanation, including disabled workspace features or unavailable membership. Not permission to read the policy, manage members or authorize a write; the policy route rechecks.
-   */
-  can_manage_partner_node_access: boolean
-  /**
-   * - Answers: does this workspace member have owner authority for the
-   * subscription-management section?
-   * - When billing-api omits this field, ingest resolves owner authority
-   * from the authenticated workspace role. Explicit upstream booleans are
-   * preserved; null or non-boolean values fail the response. False means
-   * non-owner fallback or an explicit upstream false. No denied_reasons
-   * key explains this role fact.
-   * - Not: action availability, service readiness or write authorization.
-   * Portal, payment-method and invoice guidance still uses can_manage_billing,
-   * with provisioning and endpoint-specific checks. Lifecycle actions use
-   * their dedicated capabilities and permissions. This role authority is
-   * independent of plan, billing state and personal-workspace creator.
-   *
-   */
-  can_manage_subscription: boolean
-  /**
-   * Whether to offer this actor the way into Plans (Manage, Explore plans, Choose a plan). Creator-only, whatever the lifecycle rollout mode: false for members and for owners who are not the workspace's creator. Otherwise the same rule as can_subscribe_self_serve, except that a plan change already scheduled (subscription_change_in_progress) does not close it, so the creator can still open Plans to review or revert that change. Which plans are selectable stays with the plans listing. False when an older billing-api omits it. Guidance only; writes recheck.
-   */
-  can_open_plans: boolean
-  /**
-   * - Answers: may the user undo a SCHEDULED cancellation on a subscription that
-   * is still running?
-   * - True: the user is a workspace owner (the workspace's creator when the
-   * rollout mode is not `owner`), the subscription is active or canceled with a
-   * cancellation date still set (running until that date), and no billing
-   * operation is in flight.
-   * - False: denied_reasons.can_reactivate names the branch that decided. False
-   * without that key means no recognised explanation, not necessarily a
-   * refusal, for example when billing-api predates the field.
-   * - Not: authorization (the resubscribe route enforces its own rules). Not a
-   * way back from a plan that has ended: that is can_subscribe_self_serve,
-   * which stays open there. Not an undo of a scheduled plan change, which is
-   * can_revert_scheduled_change. Not can_top_up or can_manage_billing, which stay
-   * open to every owner.
-   * - False when: the user is not an owner; the user is an owner who is not the
-   * workspace's creator (rollout mode not `owner`); there is no subscription row at all,
-   * even where that absence is only unknown; the tier is sales-managed or
-   * unrecognised; the subscription is reserved but not running; its status is
-   * not recognised; it has ended or been canceled for good; a billing
-   * operation is running or parked; no cancellation is scheduled.
-   *
-   */
-  can_reactivate: boolean
-  /**
-   * - Answers: may the user undo a plan change that is already scheduled for a
-   * future billing boundary?
-   * - True: the user is a workspace owner (the workspace's creator when the
-   * rollout mode is not `owner`), the subscription is Stripe-billed and has a
-   * pending scheduled change from it, and the revert window is open: more than
-   * one hour before the change takes effect and, when reverting would restore a
-   * cancellation, more than one hour before that cancellation date.
-   * - False: never explained. There is no denied_reasons key for this field, so
-   * it does not say which of the conditions failed, including that the user is
-   * an owner who is not the creator.
-   * - Not: authorization. Not can_reactivate (undo a scheduled cancellation) and
-   * not can_subscribe_self_serve. Not can_top_up or can_manage_billing, which
-   * stay open to every owner. When subscribe is refused with
-   * subscription_change_in_progress, a successor plan is scheduled; this field
-   * says whether that change can still be reverted.
-   * - False when: the user is not an owner; the user is an owner who is not the
-   * workspace's creator (rollout mode not `owner`); there is no pending
-   * scheduled change from this subscription; the cutoff has passed; the tier is
-   * sales-managed or unrecognised; the subscription has ended or been canceled
-   * for good.
-   *
-   */
-  can_revert_scheduled_change: boolean
-  /**
-   * Point-in-time Cloud billing guidance for this actor, combining the supplied workflow_run decision with ingest's existing account gate and cutover mode, local enrollment, Google-session requirement, and acting-user allowance. Legacy authority includes the same fail-open behavior as submission. True means these account gates allow the attempt; false has a denial when recognized. Billing-disabled environments return true. False without a reason is unknown where authoritative guidance is unavailable. No allowance is consumed or reserved. This is not authorization for a specific job or project: the submission path rechecks its full context.
-   */
-  can_run_workflows: boolean
-  /**
-   * - Answers: may this user start, recover or change a self-serve plan?
-   * - True: the user is a workspace owner and no resolver branch closed it. When
-   * the rollout mode is not `owner`, the user must also be the workspace's
-   * creator; in mode `owner` any owner qualifies. That includes a workspace
-   * with no plan, a running self-serve plan, and a plan that has ended or been
-   * canceled for good, where it stays open because it is the only path back.
-   * - False: the user is not an owner, the user is an owner who is not the
-   * workspace's creator (rollout mode not `owner`), the user is a non-creator
-   * owner of a personal workspace whose billing is not yet provisioned, the
-   * tier is sales-managed or unrecognised, a successor plan is already
-   * scheduled, the subscription is reserved but not running and has no
-   * recoverable checkout, or its status is not recognised.
-   * denied_reasons.can_subscribe_self_serve names the branch that decided.
-   * False without that key means no recognised explanation, not necessarily a
-   * refusal, for example when billing-api predates the field.
-   * - Not: authorization (the subscribe route enforces its own rules). Not
-   * can_top_up (buy credits) or can_manage_billing, which stay open to every
-   * owner. Not can_reactivate (undo a scheduled cancellation) or can_cancel.
-   * One value serves every surface; there is no per-surface variant.
-   *
-   */
   can_subscribe_self_serve: boolean
-  /**
-   * Should this owner be offered a one-off prepaid credit purchase? Known
-   * Free, no-subscription, ended and inactive Enterprise states qualify.
-   * Non-members, non-owner members, non-creator initial personal billing
-   * provisioning and past-due billing (payment_failed or paused) are refused.
-   * Unknown existing subscription tier or status is refused, matching purchase
-   * and quote validation, and so is every purchase while staff pause top-ups.
-   * This is guidance, not authorization: write routes
-   * retain workspace, rail, provider, amount and operation checks. Cloud
-   * workflow execution still requires its existing subscription/run policy.
-   *
-   */
   can_top_up: boolean
-  /**
-   * Whether at least one active catalog choice is an actionable upgrade from the current plan for this actor, including a Free-to-paid choice, longer interval or higher Team credit commitment. Uses the same exact target selector as plan actions, including seats, processing operations and scheduled changes. No current or ended plan is false: subscribe or resubscribe is a separate action. Unknown legacy bindings fail closed. False with no reason is unknown; this guidance does not authorize writes.
-   */
-  can_upgrade: boolean
-  /**
-   * Whether to offer the actor's own usage attribution view. Optional for rolling deployments; absent means unknown. True for a current workspace member with usage attribution enabled. Clients must use person/source ledger groupings or person/source filters, which the existing route scopes to the actor for members. This is not permission for the default model grouping, whole-workspace analytics, or other unscoped queries. Query authorization and filters are unchanged. Attribution disabled emits usage_attribution_unavailable; missing denial means unknown.
-   */
-  can_view_own_usage?: boolean
-  /**
-   * Whether to offer the workspace invitation list. True for a current owner while workspace features are available. A false capability may have its matching denied_reasons key; absence means no recognized explanation. This is not capacity to send another invitation; use can_invite_members. The owner-only list route stays authoritative and can include expired invitations despite the word pending.
-   */
-  can_view_pending_invites: boolean
-  /**
-   * Whether to offer whole-workspace usage analytics. True only for a current workspace owner with usage attribution enabled. Members use can_view_own_usage instead. False with no matching denied_reasons key means unknown or unavailable guidance. This does not authorize a read.
-   */
-  can_view_team_usage: boolean
 }
 
-/**
- * Recorded account setup guidance, separate from owner authority in
- * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
- * means setup is not available. Owner read/disable authority remains separate.
- * These states do not determine surface visibility. Unified billing settings
- * hide the auto top-up card when can_top_up is false, including paused or
- * payment-failed billing.
- * Ready does not authorize a charge or guarantee an off-session payment method.
- * This fact ignores saved consent and monthly budget. An absent fact is unknown.
- *
- */
-export type AutoTopUpSetup = {
-  /**
-   * Absent for ready; required for frozen or unavailable. Frozen reasons are
-   * payment_past_due, billing_paused, billing_awaiting_payment_method,
-   * billing_payment_pending, default_payment_method_missing,
-   * default_payment_method_unsupported and billing_operation_parked.
-   * Remaining reasons are unavailable. The first recorded workspace, provider,
-   * rail, billing, subscription, parked-operation or default-payment-method
-   * check that refuses setup supplies the reason.
-   * default_payment_method_unsupported means the default payment method cannot
-   * be charged off-session (Korea-only wallets, WeChat Pay); the owner must set
-   * a different default. It is checked against the payment provider; when
-   * that read fails, the setup stays ready.
-   * Creator-only provisioning replaces otherwise ready or frozen guidance
-   * for a noncreator; existing unavailable account reasons remain.
-   *
-   */
-  reason?:
-    | 'workspace_deleted'
-    | 'workspace_blocked'
-    | 'billing_not_provisioned'
-    | 'billing_rail_not_supported'
-    | 'billing_status_unrecognized'
-    | 'payment_past_due'
-    | 'billing_paused'
-    | 'billing_awaiting_payment_method'
-    | 'billing_payment_pending'
-    | 'subscription_tier_unrecognized'
-    | 'subscription_status_unrecognized'
-    | 'subscription_state_unknown'
-    | 'billing_operation_parked'
-    | 'default_payment_method_missing'
-    | 'default_payment_method_unsupported'
-    | 'creator_only_provisioning'
-  state: 'ready' | 'frozen' | 'unavailable'
-}
-
-/**
- * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
- */
-export type BillingBalanceResponse = {
-  /**
-   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  amount_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
-   *
-   * @deprecated
-   */
-  amount_micros: number
-  /**
-   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  cloud_credit_balance_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
-   *
-   * @deprecated
-   */
-  cloud_credit_balance_micros?: number
-  /**
-   * Display-only subscription remainder in cents of currency, capped at the known configured period_credit_grant converted at USD1 = 211 credits. Preserves fractional cents and negative balances. A proven zero allowance caps at zero. Omitted when the allowance is unknown, unavailable, or the workspace is unprovisioned. When omitted, display cloud_credit_balance_cents unchanged, without a client-side cap or zero substitution. The cap may show less than spendable credit after a downgrade or on a known-zero plan. Does not change actual cloud_credit_balance_cents, totals, prepaid credit, pending charges or spend authorization.
-   */
-  cloud_credit_display_balance_cents?: number
-  /**
-   * Currency code
-   */
-  currency: string
-  /**
-   * False when pending charges could not be read. effective_balance_* and pending_charges_* are then omitted, because total minus an unread pending amount would overstate spendable credit. Present on every 200: the zero-balance response for an unprovisioned workspace reports true, because no draft-invoice read happened there to fail. Treat an absent flag as "server predates this field", not as false.
-   */
-  effective_balance_authoritative?: boolean
-  /**
-   * The total balance minus pending charges; negative when charges exceed credit. Cents of `currency`, the same value as `effective_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  effective_balance_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `effective_balance_cents`. The total balance minus pending charges; negative when charges exceed credit.
-   *
-   * @deprecated
-   */
-  effective_balance_micros?: number
-  /**
-   * True when the effective balance is above 0 and at or below the low-balance threshold ($5 of credits). False when the balance is not authoritative.
-   */
-  low_balance?: boolean
-  /**
-   * The most one top-up from this API may charge, in cents. First-purchase responses use the same bounds as purchase validation.
-   */
-  max_topup_cents?: number
-  /**
-   * The whole credits `max_topup_cents` buys. Absent when `max_topup_cents` is.
-   */
-  max_topup_credits?: number
-  /**
-   * The least one manual top-up may buy, in USD cents before tax or discounts. First-purchase responses use the same bounds as purchase validation.
-   */
-  min_topup_cents?: number
-  /**
-   * The whole credits min_topup_cents buys. Absent when min_topup_cents is.
-   */
-  min_topup_credits?: number
-  /**
-   * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  pending_charges_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `pending_charges_cents`. Pending/unbilled charges from draft invoices.
-   *
-   * @deprecated
-   */
-  pending_charges_micros?: number
-  /**
-   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
-   */
-  prepaid_balance_cents?: number
-  /**
-   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
-   *
-   * @deprecated
-   */
-  prepaid_balance_micros?: number
-  /**
-   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
-   */
-  suggested_topup_amount_cents?: number | null
-}
-
-/**
- * Every listed field is required, and one of target_credits or
- * reload_credits. reload_credits alone means target_credits =
- * threshold_credits + reload_credits. On every save, disabled included,
- * threshold_credits must be a positive whole number of credits and a
- * non-null monthly_budget_cents positive. When enabled is true:
- * target_credits must be greater than threshold_credits; target_credits
- * and reload_credits must agree (reload_credits = target_credits -
- * threshold_credits) when both are sent; a non-null monthly_budget_cents
- * must be at most max_monthly_budget_cents, and a null one means no
- * owner limit and is stored as max_monthly_budget_cents; target_credits
- * must be at least threshold_credits + min_reload_credits and at most
- * threshold_credits + max_reload_credits; and the smallest automatic
- * reload (from one credit below threshold_credits to target_credits)
- * must cost no more than the budget. A save with enabled false accepts a
- * null budget, stores it as null, and skips the enabled-only rules. A
- * save with enabled false is never refused over target_credits or
- * reload_credits: it stores target_credits minus threshold_credits when
- * the target is above the threshold, else a positive reload_credits,
- * else min_reload_credits.
- *
- */
-export type AutoReloadSettingsRequest = {
-  enabled: boolean
-  monthly_budget_cents: number | null
-  /**
-   * Older form, target_credits minus threshold_credits; must agree with target_credits when both are sent on an enabled save.
-   */
-  reload_credits?: number
-  /**
-   * The balance to top up to.
-   */
-  target_credits?: number
-  threshold_credits: number
-}
-
-/**
- * billing-api's automatic top-up settings, server prices and automatic
- * spend this cycle, passed through unchanged. Credits are whole credits;
- * amounts are US cents. When `configured` is false, `enabled` is false
- * and the other setting fields are null.
- *
- */
-export type AutoReloadSettings = {
-  /**
-   * True when the validated default card is already expired or its expiry-month boundary (00:00 UTC on the first day of the following month) is within the next 30 days. Absent or null means unknown, never a healthy-card claim. This includes non-card methods, malformed data, provider errors or a live Stripe default that differs from the recorded default payment method (for example, before a portal-change webhook syncs). Independent of status and charge eligibility; save responses omit the fact. Missing on an older server also means unknown.
-   *
-   */
-  card_expiring_soon?: boolean | null
-  /**
-   * Expiry of the validated default card, from the same read as card_expiring_soon; null whenever card_expiring_soon is null or absent, including save responses. Read expired for the state; do not compare month and year against the client clock.
-   */
-  card_expiry: AutoReloadCardExpiry | null
-  configured: boolean
-  /**
-   * When the budget cycle resets; null when no cycle anchor is known.
-   */
-  cycle_resets_at: string | null
-  /**
-   * The payment method whose declines caused the current failed state, for a notice such as "Visa ending 4242 was declined". Set only while paused_by_decline is true or disabled_reason is consecutive_declines; null otherwise, and null when the method cannot be read or is no longer attached. Also null once the default changed to a payment method whose match with the declined one could not be determined (a wallet, or an unreadable method), since the pause then continues on an untried method. Never carries a payment method ID.
-   */
-  declined_payment_method: AutoReloadDeclinedPaymentMethod | null
-  /**
-   * Why the system, not an owner, turned automatic reload off: consecutive_declines. Null after any owner save, or once a different default card re-enables it.
-   */
-  disabled_reason: string | null
-  enabled: boolean
-  /**
-   * When the most recent automatic reload declined, or null.
-   */
-  last_failure_at: string | null
-  /**
-   * Decline code of the most recent declined automatic reload, or null. Fraud codes read as generic_decline. Kept after a later success; read paused_by_decline for the current state.
-   */
-  last_failure_reason: string | null
-  /**
-   * The largest monthly_budget_cents an enabled save accepts.
-   */
-  max_monthly_budget_cents: number
-  /**
-   * The most credits a single automatic reload buys. An enabled save needs target_credits at most threshold_credits plus this; a disable keeps a target saved above it. The smallest automatic reload must also fit the monthly limit (monthly_budget_cents, at most max_monthly_budget_cents). Null when billing-api did not report the cap.
-   *
-   */
-  max_reload_credits: number | null
-  /**
-   * The fewest credits a single automatic reload buys. An enabled save needs target_credits at least threshold_credits plus this.
-   */
-  min_reload_credits: number
-  monthly_budget_cents: number | null
-  /**
-   * true when the stored monthly limit came from an owner's null (no-limit) save and still equals the current ceiling; the dialog reopens with the limit switch off. False when unconfigured, when the owner sent a limit or disabled, or when the ceiling has since changed. A consecutive-declines system disable keeps the saved value.
-   *
-   */
-  monthly_budget_is_default: boolean
-  /**
-   * Enabled, but no budget cycle is known, monthly_budget_cents is null, or the remaining budget cannot fund even the smallest automatic reload, from one credit below threshold_credits to target_credits. Always false when disabled. Read guidance only; it does not enforce charging.
-   */
-  paused_by_budget: boolean
-  /**
-   * True only when paused_by_budget holds because the unspent part of the monthly limit is positive but smaller than the smallest automatic reload (from one credit below threshold_credits to target_credits); false when the limit is fully used or exceeded, when no cycle or limit is known, and when disabled.
-   */
-  paused_by_budget_remainder: boolean
-  /**
-   * Enabled, but the default card is the one that last declined an automatic reload, so none is attempted until the default card changes. Not the workspace billing status.
-   */
-  paused_by_decline: boolean
-  /**
-   * Current server price of the smallest automatic reload, from one credit below threshold_credits to target_credits (reload_credits + 1 credit, clamped to the reload bounds). Reloads for lower balances cost more, so show it as a starting price. Display only; never sent back.
-   */
-  reload_amount_cents: number | null
-  /**
-   * target_credits minus threshold_credits. Kept for older clients; read target_credits. A reload buys the gap between the balance and target_credits, so it can buy more than this.
-   */
-  reload_credits: number | null
-  /**
-   * Automatic reload spend counted in the current budget cycle.
-   */
-  spent_this_cycle_cents: number
-  /**
-   * The one automatic reload state the card renders, decided by
-   * billing-api so clients never order the separate facts themselves.
-   * Render it as received. Values are listed in precedence order; the
-   * first that holds wins:
-   * - failed: paused_by_decline is true, or the system turned automatic
-   * reload off after consecutive declines (disabled_reason is
-   * consecutive_declines). The card asks for a new payment method.
-   * - off: not configured, or an owner turned it off.
-   * - on_hold: enabled, but the workspace has no default payment method
-   * recorded, so no automatic reload can be attempted.
-   * - paused_by_budget: enabled, and paused_by_budget is true; it
-   * resumes at cycle_resets_at.
-   * - on: enabled and able to reload.
-   * Read guidance, not charging enforcement or the workspace billing
-   * status. An expired card that is still the default reads as on
-   * until a reload declines, then failed. Treat an unknown value as off.
-   *
-   */
-  status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
-  /**
-   * The balance an automatic reload tops up to: threshold_credits plus reload_credits. Null when not configured, when that sum does not fit in an int64, and from an older billing-api that does not report it.
-   */
-  target_credits: number | null
-  /**
-   * Reload when the balance falls below this many credits.
-   */
-  threshold_credits: number | null
-}
-
-/**
- * Display facts about a declined payment method. Carries no identifier.
- */
-export type AutoReloadDeclinedPaymentMethod = {
-  /**
-   * Card brand as Stripe reports it (for example visa or mastercard); null for non-card methods.
-   */
-  brand: string | null
-  /**
-   * Last four card digits; null for non-card methods.
-   */
-  last4: string | null
-  /**
-   * Stripe payment method type, such as card, alipay or link. Render an unknown value generically.
-   */
-  type: string
-}
-
-/**
- * Expiry of the default card. Carries no identifier.
- */
-export type AutoReloadCardExpiry = {
-  /**
-   * True once 00:00 UTC on the first day after the expiry month has passed.
-   */
-  expired: boolean
-  /**
-   * Expiry month, 1 to 12.
-   */
-  month: number
-  /**
-   * Four-digit expiry year.
-   */
-  year: number
-}
-
-/**
- * Estimated automatic charge for the proposed settings.
- */
-export type AutoReloadPreview = {
-  /**
-   * Balance in credits the priced charge lands at, net of pending usage invoices (the balance auto top-up tops up to, so it can be lower than the balance shown beside it). Absent (or null) when charge_credits is null, and from a billing service that predates the field.
-   */
-  balance_after_credits?: number | null
-  /**
-   * Whether the priced charge was cut to the per-charge maximum, so it does not reach the target. Describes the priced charge even when charges_now is false (monthly_budget, paused_by_decline); false when charge_credits is null.
-   */
-  capped?: boolean
-  /**
-   * Price of charge_credits in cents; null when charge_credits is null.
-   */
-  charge_cents: number | null
-  /**
-   * Credits the charge buys; null when the balance is at or above the threshold.
-   */
-  charge_credits: number | null
-  /**
-   * Whether saving would start a charge at the next check.
-   */
-  charges_now: boolean
-  /**
-   * Monthly limit left this cycle in cents, never below 0.
-   */
-  monthly_budget_remaining_cents?: number
-  /**
-   * Why saving would not start a charge; null when charges_now is true.
-   */
-  not_charging_reason:
-    | 'above_threshold'
-    | 'monthly_budget'
-    | 'paused_by_decline'
-    | null
-}
-
-export type AuthenticateResponse = {
-  /**
-   * Seconds until the session ends, when `method` is `session`
-   */
-  expires_in?: number
-  /**
-   * `sso`: go to `start_url`. `password`: ask for the password. `session`: signed in; the web session cookie is set. `firebase`: the password is right but this account still signs in with Firebase on the client.
-   */
-  method: 'sso' | 'password' | 'session' | 'firebase'
-  /**
-   * The SSO organization's display name, when `method` is `sso`
-   */
-  organization_name?: string
-  /**
-   * Path that starts the organization's SSO, when `method` is `sso`; add `return_to`
-   */
-  start_url?: string
-}
-
-export type AuthenticateRequest = {
-  email: string
-  /**
-   * Omit to only ask where the email signs in
-   */
-  password?: string
-}
-
-export type AuthenticateRefusal = {
-  code: string
-  message: string
-  /**
-   * The SSO organization to sign in with, for `sso_required` when it is known; the value `GET /api/auth/sso/start?organization=` takes
-   */
-  organization_id?: string
-  /**
-   * Path that starts the organization's SSO, for `sso_required`
-   */
-  start_url?: string
-}
-
-/**
- * Response returned when an existing asset is successfully updated.
- */
-export type AssetUpdated = {
-  /**
-   * Display name of the asset. Mirrors name for backwards compatibility.
-   */
-  display_name?: string | null
-  /**
-   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
-   */
-  file_path?: string | null
-  /**
-   * Blake3 hash of the asset content.
-   */
-  hash?: string
-  /**
-   * Asset ID
-   */
-  id: string
-  /**
-   * ID of the job that created this asset, if available
-   */
-  job_id?: string | null
-  /**
-   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
-   */
-  loader_path?: string | null
-  /**
-   * Updated MIME type of the asset
-   */
-  mime_type?: string
-  /**
-   * Updated name of the asset
-   */
-  name?: string
-  /**
-   * Tags associated with the asset
-   */
-  tags?: Array<string>
-  /**
-   * Timestamp of the update
-   */
-  updated_at: string
-  /**
-   * Updated custom metadata
-   */
-  user_metadata?: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * Histogram of tag counts used for refining asset search results.
- */
-export type AssetTagHistogramResponse = {
-  /**
-   * Map of tag names to their occurrence counts on matching assets
-   */
-  tag_counts: {
-    [key: string]: number
-  }
-}
-
-/**
- * Metadata for a remotely hosted asset resolved by URL.
- */
-export type AssetMetadataResponse = {
-  /**
-   * Size of the asset in bytes (-1 if unknown)
-   */
-  content_length: number
-  /**
-   * MIME type of the asset
-   */
-  content_type?: string
-  /**
-   * Suggested filename for the asset from source
-   */
-  filename?: string
-  /**
-   * Display name or title for the asset from source
-   */
-  name?: string
-  /**
-   * Preview image as base64-encoded data URL
-   */
-  preview_image?: string
-  /**
-   * Tags for categorization from source
-   */
-  tags?: Array<string>
-  /**
-   * Validation results for the file
-   */
-  validation?: ValidationResult
-}
-
-/**
- * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
- */
-export type AssetDownloadResponse = {
-  /**
-   * Human-readable message
-   */
-  message?: string
-  /**
-   * Current task status
-   */
-  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
-  /**
-   * Task ID for tracking download progress via GET /api/tasks/{task_id}
-   */
-  task_id: string
-}
-
-/**
- * Response returned when a new asset is successfully created.
- */
-export type AssetCreated = Asset & {
-  /**
-   * Whether this was a new asset creation (true) or returned existing (false)
-   */
-  created_new: boolean
-}
-
-/**
- * Attachment extensions whose content the model can see: the raster formats Go's image
- * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
- * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
- * allowlist is satisfied by construction rather than by matching this list.
- *
- */
-export type AgentViewableAttachmentExtension =
-  | '.png'
-  | '.jpg'
-  | '.jpeg'
-  | '.gif'
-  | '.webp'
-  | '.bmp'
-  | '.tif'
-  | '.tiff'
-  | '.heic'
-  | '.heif'
-
-/**
- * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
- */
-export type AgentTurnUsage = {
-  cache_creation_input_tokens: number
-  cache_read_input_tokens: number
-  charge_micro_usd?: number
-  input_tokens: number
-  output_tokens: number
-  total_tokens: number
-}
-
-/**
- * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
- */
-export type AgentTurnRefusal = {
-  /**
-   * Whether adding credit to the account clears this refusal. True only for no_funds.
-   */
-  can_add_credit: boolean
-  /**
-   * What refused the turn. Clients must treat an unknown kind like payment_required (show the text) rather than fail.
-   */
-  kind: 'no_funds' | 'manual_block' | 'payment_required' | 'auth' | 'rate_limit'
-  /**
-   * Ingest's error.reason from the refused 402, verbatim, for logging and analytics. Render from kind and can_add_credit, not from this field.
-   */
-  reason?: string
-}
-
-/**
- * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
- */
-export type AgentTurnAccepted = {
-  /**
-   * ID of the assistant message that will stream the reply.
-   */
-  message_id: string
-  thread_id: string
-}
-
-/**
- * Server-to-client agent_tool_call frame on /ws. A tool invocation started or reached a terminal state. Closed, like the canonical envelope.
- */
-export type AgentToolCallFrame = {
-  data: AgentToolCallData
-  type: 'agent_tool_call'
-}
-
-/**
- * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, doc_seq and doc_lineage_seq appear together and only with both of them, and job_id and job_workflow_id appear together only on a terminal run frame when a job was submitted. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
- */
-export type AgentToolCallData = {
-  /**
-   * Present with doc_seq. The lineage containing every correlated update, so a follower can detect replacement and resync.
-   */
-  doc_lineage_seq?: number
-  /**
-   * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
-   */
-  doc_seq?: number
-  duration_ms?: number
-  error_code?: string
-  /**
-   * Terminal run frame with a submitted job only. The job (prompt_id) this call submitted. Present with job_workflow_id, including when a later step made the run observation an error.
-   */
-  job_id?: string
-  /**
-   * Terminal run frame with a submitted job only. The workflow the job was submitted for, so the client can attribute the job's execution events to that workflow's tab. Present with job_id.
-   */
-  job_workflow_id?: string
-  message_id: string
-  /**
-   * Terminal success or error only. The semantic operations whose effects are carried by published doc_update frames for this call.
-   */
-  op_ids?: Array<string>
-  /**
-   * load_skill only. The skill pack name the call's input names, on its running frame and on its terminal frame, including an unknown_skill error. Omitted on every other tool.
-   */
-  skill?: string
-  status: 'running' | 'success' | 'error'
-  thread_id: string
-  tool_call_id: string
-  tool_name: string
-  /**
-   * Terminal success or error only. The workflow whose published doc_update contains op_ids. Replace-canvas doc_reset calls do not carry this correlation.
-   */
-  workflow_id?: string
-}
-
-/**
- * One agent thread row for the history sidebar.
- */
-export type AgentThreadSummary = {
-  /**
-   * Thread creation time (RFC3339).
-   */
-  created_at: string
-  /**
-   * Thread ID.
-   */
-  id: string
-  /**
-   * When the thread was last marked active (RFC3339). Empty when unset.
-   */
-  last_message_at: string
-  /**
-   * Number of messages in the thread.
-   */
-  message_count: number
-  /**
-   * First user message text, truncated. Shown when title is empty.
-   */
-  preview: string
-  /**
-   * Thread status.
-   */
-  status: 'active' | 'archived'
-  /**
-   * Thread title; empty when none has been assigned (fall back to preview).
-   */
-  title: string
-  /**
-   * Thread last-update time (RFC3339).
-   */
-  updated_at: string
-  /**
-   * Associated workflow/draft ID; empty when the thread has none.
-   */
-  workflow_id: string
-}
-
-/**
- * A paginated page of the caller's agent threads.
- */
-export type AgentThreadListResponse = {
-  pagination: PaginationInfo
-  threads: Array<AgentThreadSummary>
-}
-
-/**
- * Result of creating an agent thread.
- */
-export type AgentThreadCreated = {
-  thread_id: string
-}
-
-/**
- * Optional body for creating an agent thread.
- */
-export type AgentThreadCreateRequest = {
-  /**
-   * Workflow the thread is about. Optional — a thread can exist without a workflow.
-   */
-  workflow_id?: string
-}
-
-/**
- * One model round's thinking as persisted on an assistant message's content.thinking (services/agent/internal/loop.persistedThinking): the round's reasoning text, then its narration, scrubbed exactly as the live agent_thinking frames were. Display data only.
- */
-export type AgentThinkingEntry = {
-  text: string
-  /**
-   * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
-   */
-  tool_call_id?: string
-}
-
-/**
- * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
- */
-export type AgentSkillPublishRequest = {
-  /**
-   * Accepted only so an `always: true` copied out of a SKILL.md frontmatter is refused with an explanation instead of silently dropped. User packs are on-demand only, so true is rejected.
-   */
-  always?: boolean
-  /**
-   * The full instruction text, injected only when the pack is loaded. Capped per pack and, together with the caller's other packs, in total; the exact byte limits are deployment configuration and are named in the rejection message when exceeded.
-   */
-  body: string
-  /**
-   * One line saying when the agent should load this pack. It is what every prompt carries for an unloaded pack, so it is a trigger description, not a title. Single-line: control characters, including CR and LF, are refused. maxLength is counted in code points, as JSON Schema defines it, and the service counts the same way.
-   */
-  description: string
-  /**
-   * The pack's flat identifier and the load_skill argument: letters, digits, '.', '_' and '-'. Publishing a name already held by the caller replaces that pack. A name matching a built-in always-on pack is refused; a name matching a built-in on-demand pack is accepted, and is the name consumption will resolve to the user's pack. Must contain at least one character that is not a dot: "." and ".." are path segments a normalizing client rewrites.
-   */
-  name: string
-}
-
-/**
- * The caller's skill packs, ordered by name.
- */
-export type AgentSkillListResponse = {
-  skills: Array<AgentSkill>
-}
-
-/**
- * One of the caller's user-authored skill packs.
- */
-export type AgentSkill = {
-  /**
-   * The full instruction text.
-   */
-  body: string
-  /**
-   * Lowercase hex sha256 of body, with no algorithm prefix. Stamped on every write, so a client can tell whether the stored pack matches the body it last sent.
-   */
-  body_hash: string
-  /**
-   * RFC3339 timestamp of when the pack was first published.
-   */
-  created_at: string
-  /**
-   * One-line trigger description the agent selects the pack from.
-   */
-  description: string
-  /**
-   * Server-assigned pack ID.
-   */
-  id: string
-  /**
-   * The pack's flat identifier and the load_skill argument.
-   */
-  name: string
-  /**
-   * RFC3339 timestamp of the pack's most recent publish.
-   */
-  updated_at: string
-}
-
-/**
- * The run mode to save.
- */
-export type AgentRunModePutRequest = {
-  /**
-   * Required and positive for auto_limited; must be absent or null for ask_approval and auto. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number.
-   */
-  credit_limit?: number | null
-  mode: 'ask_approval' | 'auto' | 'auto_limited'
-}
-
-/**
- * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
- */
-export type AgentRunMode = {
-  /**
-   * The credit ceiling for auto_limited. Always present; null for the other two modes. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number and a client is never bounded by a ceiling it did not send.
-   */
-  credit_limit: number | null
-  /**
-   * ask_approval pauses at every run and asks on the consent card; auto runs without asking; auto_limited runs without asking until credit_limit credits have been spent, then asks again.
-   */
-  mode: 'ask_approval' | 'auto' | 'auto_limited'
-}
-
-/**
- * The `context` of a `run_approval` ask. It names the workflow and, for cards opened by content-binding builds, the exact canonical graph the user approved. Older in-flight cards may omit graph_binding; consumers must preserve that explicit legacy compatibility case.
- */
-export type AgentRunApprovalContext = {
-  /**
-   * The document sequence projected into the approved graph, when document-backed.
-   */
-  doc_seq?: number
-  /**
-   * sha256 means graph_sha256 is enforced; identity_only means no durable graph existed to bind; unavailable means binding failed and execution must be denied.
-   */
-  graph_binding?: 'sha256' | 'identity_only' | 'unavailable'
-  /**
-   * SHA-256 of the canonical graph content the card authorizes.
-   */
-  graph_sha256?: string
-  /**
-   * The workflow the run will execute.
-   */
-  workflow_id: string
-  /**
-   * The workflow's display name, when the turn knows it.
-   */
-  workflow_name?: string
-}
-
-/**
- * Attachment extensions that are accepted so a user can keep them beside a workflow, and
- * nothing more — the agent can neither read the contents nor wire the file in.
- *
- * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
- * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
- * accepted because it was attachable before the policy existed.
- *
- */
-export type AgentRetainedAttachmentExtension = '.avif'
-
-/**
- * Attachment extensions the agent cannot open but wires into a load node by filename. The 3D
- * models go into Load3D's model_file widget and are exactly the set Load3D accepts
- * (comfy_extras/nodes_load_3d.py); .usdz is absent from both lists, so it is not an exclusion
- * this tier makes. .exr goes into LoadImage's image widget: ComfyUI core v0.40.0 registers it
- * as an image type, but it is HDR, so view_asset cannot decode it and it is not on the view
- * tier.
- *
- */
-export type AgentReferenceAttachmentExtension =
-  | '.glb'
-  | '.obj'
-  | '.fbx'
-  | '.gltf'
-  | '.stl'
-  | '.ply'
-  | '.spz'
-  | '.splat'
-  | '.ksplat'
-  | '.exr'
-
-/**
- * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
- * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
- *
- * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
- * wired into a graph. Those are separate questions, so a format becoming a node input later
- * does not move it out of this tier.
- *
- * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
- * but its markup is exactly what a caller would want read.
- *
- */
-export type AgentReadableAttachmentExtension =
-  | '.md'
-  | '.markdown'
-  | '.txt'
-  | '.json'
-  | '.csv'
-  | '.yaml'
-  | '.yml'
-  | '.xml'
-  | '.log'
-  | '.svg'
-
-/**
- * Attachment extensions the agent can only describe from metadata. A subset of the containers
- * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
- * .aac and .wma, which the agreed attachment list rejects.
- *
- */
-export type AgentProbeableAttachmentExtension =
-  | '.mp4'
-  | '.webm'
-  | '.mov'
-  | '.m4v'
-  | '.avi'
-  | '.mkv'
-  | '.mp3'
-  | '.wav'
-  | '.ogg'
-  | '.opus'
-  | '.flac'
-  | '.m4a'
-
-/**
- * A user turn posted to the agent.
- */
-export type AgentPostMessageRequest = {
-  /**
-   * The ask cards this client can render. `run_approval` is the run consent card, `ask_user` the generic question card, and `delete_approval` the delete consent card. A turn only parks on a card its client listed here. Omitted means an older client and is read as `["run_approval"]`; an empty array means the client renders none. Per kind: without `run_approval`, a run that the user's run mode requires approval for is not parked and not executed; the `run` tool fails with `run_approval_unavailable` and the agent tells the user to approve it from a client that can, or run it themselves. Without `ask_user`, the agent asks its question in the reply instead of a card. `delete_approval` raises no card yet. Unknown values are ignored, duplicates collapse, and only the first 8 entries are read. `paused` is not negotiated: the pause card is raised for every client, so listing it changes nothing.
-   */
-  ask_kinds?: Array<AgentAskKind>
-  /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
-   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
-   * receives file bytes here; what it can read or wire depends on the policy tier.
-   *
-   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
-   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
-   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
-   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
-   * resolves to a stored name. A refusal there costs the attachment its asset id and its
-   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
-   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
-   * in says what the agent can do with it, and the tiers differ sharply — a client that
-   * presents them as one flat list misleads the user.
-   *
-   * The constraint is expressed as extension enums rather than on this array because the array
-   * carries FILENAMES, not content types: an extension is what both ends can actually agree
-   * on, and the upload route this list references stores no MIME type for what it accepts.
-   *
-   */
-  attachments?: Array<string>
-  /**
-   * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
-   */
-  client_id?: string
-  /**
-   * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
-   */
-  client_message_id?: string
-  /**
-   * The frontend build that sent this turn (ComfyUI_frontend __COMFYUI_FRONTEND_VERSION__, optionally +commit). Observability only; never changes the turn. Recorded on the turn's trace as `comfy.client.version`. A value longer than 64 bytes, or one containing anything other than ASCII letters, digits, `.`, `+` and `-`, is DROPPED, not rejected — accepted with 202 exactly like omitting the field. Surrounding whitespace is trimmed.
-   */
-  client_version?: string
-  /**
-   * The user's message.
-   */
-  content: string
-  /**
-   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
-   */
-  current_tab?: string
-  /**
-   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
-   */
-  current_tab_unbound?: boolean
-  /**
-   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. The canvas is authoritative for this send and carries no version token — the draft version returned by GET /api/agent/draft is a projection-cache snapshot counter, not a concurrency token, so there is no version to reconcile and no 409 on this field. Additive — older clients omit the whole object and the agent falls back to the stored draft.
-   */
-  draft?: {
-    /**
-     * Full save-format graph (the frontend's app.graph.serialize() output).
-     */
-    content?: {
-      [key: string]: unknown
-    }
-  }
-  /**
-   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
-   */
-  open_tabs?: Array<{
-    /**
-     * Display name of the tab, shown to the agent so the user can reference tabs by name.
-     */
-    name?: string
-    /**
-     * Cloud workflow id of the open tab.
-     */
-    workflow_id: string
-  }>
-  /**
-   * Optional canvas selection context ("change these nodes").
-   */
-  selection?: {
-    [key: string]: unknown
-  }
-  /**
-   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
-   */
-  workflow_id?: string
-  /**
-   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
-   */
-  workflow_references?: Array<{
-    name?: string
-    workflow_id: string
-  }>
-}
-
-/**
- * Which card renders an ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text. `paused` is the admission pause card: one Resume option, never free text. `delete_approval` is the delete consent card for nodes the user made: exactly the Delete and Keep options, never free text. The same value is the agent_ask event's `kind`, the message list's `pending_ask.kind`, and an entry of `ask_kinds` on the message POST.
- */
-export type AgentAskKind =
-  | 'ask_user'
-  | 'run_approval'
-  | 'paused'
-  | 'delete_approval'
-
-/**
- * A pending `run_approval` consent card.
- */
-export type AgentPendingRunApproval = AgentPendingAskBase & {
-  context: AgentRunApprovalContext
-  kind: 'run_approval'
-}
-
-export type AgentAskOption = {
-  description?: string
-  id: string
-  label: string
-}
-
-/**
- * The fields every pending ask carries, whatever its kind.
- */
-export type AgentPendingAskBase = {
-  /**
-   * When true the UI offers a free-text answer, returned as other_text.
-   */
-  allow_other: boolean
-  ask_id: string
-  kind: AgentAskKind
-  max_selections: number
-  message_id: string
-  min_selections: number
-  /**
-   * Selectable options.
-   */
-  options: Array<AgentAskOption>
-  prompt: string
-}
-
-/**
- * A pending `paused` admission card.
- */
-export type AgentPendingPaused = AgentPendingAskBase & {
-  context: AgentPausedContext
-  kind: 'paused'
-}
-
-/**
- * The `context` of a `paused` ask.
- */
-export type AgentPausedContext = {
-  /**
-   * The card copy (same as the ask's prompt).
-   */
-  message: string
-  /**
-   * The binding policy reason, e.g. workspace_paused or no_funds.
-   */
-  reason: string
-  /**
-   * When the turn rechecks admission on its own if nobody presses Resume, so Resume is a shortcut, not the only way out.
-   */
-  recheck_after_seconds: number
-}
-
-/**
- * A pending `delete_approval` consent card.
- */
-export type AgentPendingDeleteApproval = AgentPendingAskBase & {
-  context: AgentDeleteApprovalContext
-  kind: 'delete_approval'
-}
-
-/**
- * One node a `delete_approval` ask names, read from the turn's workflow.
- */
-export type AgentAskNodeRef = {
-  /**
-   * The node id in the workflow.
-   */
-  id: string
-  /**
-   * The node's title, when it has one.
-   */
-  title?: string
-  /**
-   * The node's class type, when the workflow names it.
-   */
-  type?: string
-}
-
-/**
- * The `context` of a `delete_approval` ask: the user-made nodes the agent's delete would remove. The server always lists at least one node, and lists at most 50; any more are counted in `hidden_node_count`, so the card can say how many it did not list.
- */
-export type AgentDeleteApprovalContext = {
-  action: 'delete_nodes'
-  /**
-   * Nodes the delete would remove past the 50 listed. Omitted when every node is listed.
-   */
-  hidden_node_count?: number
-  nodes: Array<AgentAskNodeRef>
-}
-
-/**
- * A pending `ask_user` prompt. It carries no context.
- */
-export type AgentPendingAskUser = AgentPendingAskBase & {
-  kind: 'ask_user'
-}
-
-/**
- * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer. Discriminated on `kind`: narrowing on it gives the kind's `context` schema. The agent_ask WebSocket event's `data` is this same shape plus `thread_id`.
- */
-export type AgentPendingAsk =
-  | ({
-      kind: 'ask_user'
-    } & AgentPendingAskUser)
-  | ({
-      kind: 'run_approval'
-    } & AgentPendingRunApproval)
-  | ({
-      kind: 'paused'
-    } & AgentPendingPaused)
-  | ({
-      kind: 'delete_approval'
-    } & AgentPendingDeleteApproval)
-
-/**
- * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
- */
-export type AgentMessageDoneFrame = {
-  data: AgentMessageDoneData
-  type: 'agent_message_done'
-}
-
-/**
- * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
- */
-export type AgentMessageDoneData = {
-  message_id: string
-  refusal?: AgentTurnRefusal
-  thread_id: string
-  /**
-   * Null on a turn that failed or was refused; its rounds were billed as they ran, and the failed round has no usage.
-   */
-  usage: AgentTurnUsage | null
-}
-
-/**
- * A persisted message in an agent thread.
- */
-export type AgentMessage = {
-  /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name carries the validated user-facing filename when name is an opaque storage key; the server may remove a registered emoji selector that does not change the displayed glyph. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows. thinking is an optional array of AgentThinkingEntry on a completed assistant message: the agent_thinking text the live turn showed, one entry per model round in order, so a reload keeps the thinking in the turn's work trace. Omitted when the turn produced none.
-   */
-  content?: {
-    attachment_refs?: Array<{
-      display_name?: string
-      id?: string
-      kind?: string
-      name?: string
-      [key: string]: unknown
-    }>
-    thinking?: Array<AgentThinkingEntry>
-    tool_calls?: Array<ToolCallSummary>
-    [key: string]: unknown
-  }
-  id: string
-  pending_ask?: AgentPendingAsk
-  role: 'user' | 'assistant' | 'tool' | 'system'
-  /**
-   * Monotonic ordering within the thread.
-   */
-  seq: number
-  status: 'streaming' | 'complete' | 'error' | 'interrupted'
-  thread_id: string
-  /**
-   * Groups the user message, assistant reply, and its tool calls.
-   */
-  turn_id: string
-  /**
-   * The workflow/draft this turn operated on. Recorded per message so a thread can span or switch workflows over its lifetime; the thread's own workflow_id is only the active-workflow pointer. Empty for a workflow-less turn.
-   */
-  workflow_id?: string
-}
-
-/**
- * The (workspace, user) the agent service attributes the caller's requests to.
- */
-export type AgentIdentity = {
+export type BillingCapabilityScope = {
   user_id: string
   workspace_id: string
 }
 
 /**
- * Error body authored by the comfy-agent service and proxied verbatim through ingest. Errors raised by ingest itself (authentication, an unreachable agent service) use the standard ErrorResponse shape instead.
+ * Company billing details on file for the workspace's Stripe customer.
+ * A field is absent until the workspace sets it via PATCH
+ * /api/billing/company-details.
+ *
  */
-export type AgentError = {
-  /**
-   * Stable discriminator authored only by the local agent host when its local-page security check refuses a request. The currently defined value is agent_loopback_only. Clients must accept unknown values so the host can add refusal reasons without breaking older readers. Absent on errors from the cloud agent service.
-   */
-  code?: string
-  /**
-   * Human-readable error message.
-   */
-  error: string
-  /**
-   * Discriminator for a rejection whose intent the caller must act on rather than re-derive from the status code. Carried only on the identity-header 401 the agent's `requireIdentity` writes, and both values are terminal: `unauthenticated` means no usable identity reached the service, `not_provisioned` means the user is authenticated but carries no workspace and should be provisioned rather than signed out. Absent on every other error, including the other 401s on these routes (the agent's own LocalAuth and RequireM2MSecret, and ingest's proxy guard, which answer with ErrorResponse), so an absent `kind` must not be read as retryable.
-   */
-  kind?: 'unauthenticated' | 'not_provisioned'
+export type BillingCompanyDetailsResponse = {
+  address?: BillingAddress
+  company_name?: string
+  tax_id?: BillingTaxId
 }
 
 /**
- * Authoritative snapshot of a workflow's agent draft — a snapshot for recovery and tooling.
+ * Fields to set on the workspace's Stripe customer. Every group is
+ * optional; omit a group to leave that part of the customer unchanged.
+ *
  */
-export type AgentDraftSnapshot = {
+export type BillingCompanyDetailsUpdateRequest = {
+  address?: BillingAddress
   /**
-   * Full UI/save-format workflow graph (nodes, links, groups, widgets_values).
+   * Legal or trading name to show on invoices.
    */
-  content: {
+  company_name?: string
+  tax_id?: BillingTaxId
+}
+
+/**
+ * A single history event. The cloud history-events store is the single source of truth for both billing events (charges, credits, adjustments) and user-facing usage events.
+ */
+export type BillingEvent = {
+  /**
+   * That key's name, when the key is known to this workspace (revoked keys included).
+   */
+  api_key_name?: string
+  /**
+   * The API key the charge came through, from the event's `spend_source`; absent for a signed-in session or a deployment.
+   */
+  api_key_prefix?: string
+  /**
+   * True when that key, known to this workspace, has been revoked. Absent when the key is unknown.
+   */
+  api_key_revoked?: boolean
+  /**
+   * When the event occurred
+   */
+  createdAt: string
+  /**
+   * The Serverless deployment the charge came through, from the event's `deployment_id`; absent for a session or an API key.
+   */
+  deployment_id?: string
+  /**
+   * That deployment's name, when the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached.
+   */
+  deployment_name?: string
+  /**
+   * Unique event identifier
+   */
+  event_id: string
+  /**
+   * Type of history event. Billing types (e.g. invoice_paid, checkout_completed, topup_completed) and the migrated user-facing usage types (account_created, credit_added, api_usage_completed, cloud_subscription_created, cloud_subscription_paid, cloud_subscription_credit_added, cloud_workflow_executed, free_tier_credit_granted). Kept as a free-form string for back-compat with existing billing-event consumers.
+   */
+  event_type: string
+  /**
+   * That member's name, or their email when they have no name set.
+   */
+  member_display_name?: string
+  /**
+   * That member's email, so two members with one name can be told apart.
+   */
+  member_email?: string
+  /**
+   * True when that person is no longer a member of this workspace.
+   */
+  member_former?: boolean
+  /**
+   * The member the charge counts toward, from the event's `user_id`; absent when the event names none.
+   */
+  member_user_id?: string
+  /**
+   * Event-specific parameters
+   */
+  params?: {
     [key: string]: unknown
   }
   /**
-   * Monotonic draft version of the snapshot, for recovery and tooling; not a concurrency token.
+   * True for a charge made at or after the instant this environment began attributing every charge (`attribution_since`) that names no member: the system tried and could not say who it was. A charge names a member by any identity the `scope` filter matches it on. Absent on money and lifecycle events, on charges that name a member, on deployment charges (attributed to their deployment), on charges made before attribution began (by the charge's own time where recorded, else when it was written), where no start is configured, and on the admin history feed.
    */
-  version: number
+  unattributed?: boolean
 }
 
 /**
- * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ * Paginated list of billing events for a workspace.
  */
-export type AgentCancelUnconfirmed = {
+export type BillingEventsResponse = {
   /**
-   * `cancel_not_requested` — the engine positively reports no cancellation recorded against a run it can still see, so the stop provably did not land. `cancel_outcome_unknown` — neither answer could be established; the stop may or may not have landed.
+   * When this environment began attributing every charge, the same instant as `attribution_since` on the usage time series. Charges from before it may still name their member and source (many carried them long before); the start is only the instant from which a charge naming no member is known to be unattributed, which each such event states itself with `unattributed`. Absent where no such start is configured, and on the admin history feed.
    */
-  code: 'cancel_not_requested' | 'cancel_outcome_unknown'
+  attribution_since?: string
+  events: Array<BillingEvent>
   /**
-   * Human-readable error message.
+   * Items per page
    */
-  error: string
+  limit: number
   /**
-   * Always true on this response; retrying the same stop is safe.
+   * Current page number (1-indexed)
    */
-  retryable: boolean
+  page: number
+  /**
+   * Total number of events
+   */
+  total: number
+  /**
+   * Total number of pages
+   */
+  totalPages: number
+}
+
+export type BillingOpCancelResponse = {
+  billing_op_id: string
+  /**
+   * canceled: the operation was dropped and nothing was charged. cancel_requested: the cancel was delivered but has not settled yet.
+   */
+  status: 'canceled' | 'cancel_requested'
 }
 
 /**
- * Acknowledgement that a turn cancellation was requested. Cancellation is asynchronous; the terminal message state (status=error with stop copy) arrives over the WebSocket.
+ * Display only. Why a succeeded subscription operation charged other
+ * than its plan rate, read from the operation's paid Stripe invoice.
+ * Present only when that invoice collected more than zero and a
+ * promotion, the account balance or proration moved the charge off the
+ * plan rate; absent means no rows. Plan coupons (the annual or team
+ * commitment rate) are part of the rate and are never a reason. Never
+ * present for top-ups. Returned only to workspace billing managers,
+ * like amount_charged_cents.
+ *
  */
-export type AgentCancelAccepted = {
-  status: 'cancelling'
+export type BillingOpChargeBreakdown = {
+  /**
+   * What the invoice collected, tax included.
+   */
+  amount_charged_cents: number
+  currency: string
+  /**
+   * The invoice billed the new plan for the rest of the current
+   * period. A prorated charge is named, never itemized, so reasons is
+   * empty exactly when this is true.
+   *
+   */
+  prorated: boolean
+  /**
+   * One row per deduction from today's charge, in display order:
+   * promotions in the invoice's order, then the account balance.
+   *
+   */
+  reasons: Array<BillingOpChargeReason>
 }
 
 /**
- * 422 body when a posted attachment's extension is outside the accepted list. It carries the
- * policy rather than only an error string so a client never has to hardcode the list to
- * explain the refusal — the same reason the list is expressed as enums the frontend generates
- * its types from.
+ * One deduction from today's charge. discount is the promotion in the
+ * quote's discount shape (kind promotion, without amount_off_cents; the
+ * amount is amount_cents), present exactly for promo_code and
+ * subscription_discount. Its duration_in_months is set only for
+ * promo_code: a carried promotion's remaining term is not the coupon's.
  *
  */
-export type AgentAttachmentRejected = {
-  accepted: AgentAttachmentPolicy
-  error: string
+export type BillingOpChargeReason = {
   /**
-   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   * What this reason removed from today's charge, as a positive amount.
    */
-  rejected: Array<string>
+  amount_cents: number
+  discount?: SubscriptionDiscount
   /**
-   * How many references were refused in total, before the list above was capped.
+   * promo_code is the promotion code entered for this operation;
+   * subscription_discount is a promotion the subscription already
+   * carried; account_balance is existing customer credit applied.
+   *
    */
-  rejected_count: number
-  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+  kind: 'promo_code' | 'subscription_discount' | 'account_balance'
 }
 
 /**
- * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
- * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
- * one flat "supported files" list tells the user something false (PM-1855).
- *
- * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
- * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
- * pixels.
- * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
- * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
- * video means cutting a frame out with process_media and viewing that.
- * - `reference`: the agent knows what the file is, with its kind and id, and wires its
- * filename into the load node that takes it: a 3D model into a Load3D node's model_file
- * widget, an .exr into a LoadImage node's image widget. No tool opens the file itself: the
- * cloud turn registers neither a shell nor a file-read tool, by design, as it is a shared
- * multi-tenant pod, and view_asset cannot decode an EXR.
- * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
- * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
- * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
- * later stays in this tier.
- * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
- * .avif, which the turn cannot decode as an image and is not text.
- *
- * The union of the five arrays is the accepted list. Anything absent is rejected.
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
-export type AgentAttachmentPolicy = {
-  probe: Array<AgentProbeableAttachmentExtension>
-  read: Array<AgentReadableAttachmentExtension>
-  reference: Array<AgentReferenceAttachmentExtension>
-  retain: Array<AgentRetainedAttachmentExtension>
-  view: Array<AgentViewableAttachmentExtension>
+export type BillingOpReceiptPlan = {
+  /**
+   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
+   * exactly when price_cents is present.
+   *
+   */
+  currency?: string
+  duration: SubscriptionDuration
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * as on the subscribe preview's new_plan. Display only. Present
+   * exactly when price_cents is present on an ANNUAL plan.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * The plan's recurring price for one billing period, at
+   * team_credit_stop_id for a per-credit Team plan: a whole year for
+   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
+   * preview, before tax, promotions, account balance and proration,
+   * so it is not what the operation charged; amount_charged_cents is.
+   * Present together with currency, and absent when the plan could
+   * not be priced, including the retired seat-based Team plans.
+   *
+   */
+  price_cents?: number
+  slug: string
+  /**
+   * The per-credit Team credit stop the operation targets (e.g.
+   * team_200). Absent for personal plans and for Team plans without a
+   * credit stop.
+   *
+   */
+  team_credit_stop_id?: string
+  tier?: SubscriptionTier
 }
 
-export type AgentAttachmentError =
-  | ({
-      type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
-    } & AgentAttachmentRejected)
-  | ({
-      type: 'ATTACHMENT_BOUNDS_EXCEEDED'
-    } & AgentAttachmentBoundsExceeded)
+/**
+ * Status of an asynchronous billing operation.
+ */
+export type BillingOpStatusResponse = {
+  /**
+   * Present while status is "pending" and the operation cannot proceed
+   * without the customer. Today this is a Stripe-hosted payment page for
+   * a subscription whose first invoice needs authentication (SCA/3DS);
+   * send the customer there to complete payment. This bearer capability is
+   * returned only to workspace billing managers. Absent otherwise.
+   *
+   */
+  action_url?: string
+  /**
+   * Display only. What the operation's Stripe invoice collected, in
+   * cents, tax included. Present only for a succeeded operation billed
+   * through a Stripe invoice, and absent whenever that amount could not
+   * be read. Top-ups paid on a hosted checkout page or through
+   * Metronome get neither this nor credits_added. Returned only to
+   * workspace billing managers, like the other payment details.
+   *
+   */
+  amount_charged_cents?: number
+  /**
+   * Original server-owned deadline for this top-up's authentication wait.
+   * Present only while a pending top-up requires customer authentication
+   * and the caller may read its payment details. Historical or unknown
+   * deadlines, terminal and reconciliation states omit it. The server also
+   * omits expired deadlines using its own clock. Absence is not a payment
+   * outcome. Polling and
+   * retries never extend the deadline. At expiry the server begins its
+   * existing payment cleanup; this is not proof that a payment failed.
+   *
+   */
+  authentication_deadline?: string
+  /**
+   * State derived from the PaymentIntent attached to this operation's
+   * exact stored Stripe invoice. Absent when the operation has no
+   * correlated PaymentIntent.
+   *
+   */
+  authentication_state?:
+    | 'requires_action'
+    | 'processing'
+    | 'failed_retryable'
+    | 'succeeded'
+    | 'reconciliation_needed'
+  /**
+   * true exactly when POST /api/billing/ops/{id}/cancel would deliver
+   * the abandon for this caller: a pending plan change or initial
+   * subscription whose workflow is waiting on the customer's
+   * authentication. An already-canceled operation is false even though
+   * the cancel call still answers 200 for it. Decided by the same
+   * check the cancel endpoint runs, so clients must not derive it from
+   * status, phase or authentication_state. false for terminal
+   * operations, other operation types and callers who may not cancel.
+   * Absent when it could not be determined; absent means no claim.
+   *
+   */
+  cancelable?: boolean
+  charge_breakdown?: BillingOpChargeBreakdown
+  /**
+   * Owner-only subscription-checkout banner fact for initial subscriptions and plan transitions. unfinished means awaiting a payment method for a known target plan; verify_payment has a usable payment action; processing means the bank is processing the payment; payment_received means payment succeeded while the operation remains pending; failed is a terminal payment refusal, excluding abandoned/superseded checkouts. none is a known non-banner state, including resolved or reconciliation operations. Omitted for members, other operation types, uncertain provider reads and older servers. Omission is unknown, never an implied none.
+   */
+  checkout_state?:
+    | 'unfinished'
+    | 'verify_payment'
+    | 'processing'
+    | 'payment_received'
+    | 'failed'
+    | 'none'
+  /**
+   * When the operation completed (success or failure)
+   */
+  completed_at?: string
+  /**
+   * Display only. Credits (not cents) actually granted for the
+   * operation's Stripe invoice — for a plan change, the prorated
+   * difference. Present only for a succeeded operation whose grant has
+   * been recorded. Visible to any workspace member who can read the
+   * operation.
+   *
+   */
+  credits_added?: number
+  /**
+   * Coarse classification of why the correlated PaymentIntent's last
+   * payment attempt failed, derived at read time from the provider's
+   * machine-readable error and decline codes — never from provider
+   * message text or payment-method details. Present only when the
+   * intent has recorded a failed attempt and the operation is either
+   * still pending with authentication_state failed_retryable or has
+   * terminally failed. generic means the attempt failed for a reason
+   * outside this vocabulary. payment_not_completed means Stripe explicitly
+   * reported customer non-approval or an expired attempt. Generic failed
+   * attempts and ambiguous provider declines retain their failure meaning.
+   *
+   */
+  decline_reason?:
+    | 'card_declined'
+    | 'insufficient_funds'
+    | 'expired_card'
+    | 'incorrect_cvc'
+    | 'authentication_required'
+    | 'authentication_failed'
+    | 'processing_error'
+    | 'payment_not_completed'
+    | 'generic'
+  /**
+   * PII-safe failure code or generic failure message
+   */
+  error_message?: string
+  /**
+   * Unique identifier for the billing operation
+   */
+  id: string
+  /**
+   * Stripe PaymentIntent client secret for completing requires_action.
+   * This bearer capability is returned only to workspace billing managers
+   * and is absent otherwise.
+   *
+   */
+  payment_intent_client_secret?: string
+  /**
+   * What a pending operation is waiting on, for callers deciding
+   * whether to keep polling or to put the customer back in the loop.
+   * The two awaiting_ values are blocked on the customer and will not
+   * advance on their own: awaiting_payment_method is parked on a hosted
+   * checkout needing a card, awaiting_invoice_payment on an invoice
+   * needing payment or authentication. in_progress means the operation
+   * is ours to finish, so polling is the right response. Deliberately
+   * coarser than the internal phase — phases that differ only in what
+   * the workflow is doing all report in_progress. Absent for a terminal
+   * operation, and for a phase this build does not recognise: absent
+   * means no claim, never an implied in_progress.
+   *
+   */
+  phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
+  plan?: BillingOpReceiptPlan
+  /**
+   * Typed next action for a failed operation. Absent for pending and succeeded operations.
+   */
+  recovery_action?:
+    | 'retry'
+    | 'replace_payment_method'
+    | 'authenticate_payment'
+    | 'contact_support'
+  /**
+   * Whether the customer can recover by starting a new billing operation after performing recovery_action.
+   */
+  retryable?: boolean
+  /**
+   * When the operation was initiated
+   */
+  started_at: string
+  /**
+   * Current status of the operation. reconciliation_needed is terminal
+   * for client polling but requires support reconciliation.
+   *
+   */
+  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+  topup_purchase_amount?: TopUpPurchaseAmount
+}
 
-export type AgentAttachmentBoundsExceeded = {
-  error: string
-  limits: {
-    max_item_length: number
-    max_items: number
+/**
+ * List of available billing plans for subscription.
+ */
+export type BillingPlansResponse = {
+  /**
+   * Current plan slug if subscribed
+   */
+  current_plan_slug?: string
+  plans: Array<Plan>
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
+  team_credit_stops?: TeamCreditStops
+}
+
+/**
+ * Payment lifecycle status
+ */
+export type BillingStatus =
+  | 'awaiting_payment_method'
+  | 'pending_payment'
+  | 'paid'
+  | 'payment_failed'
+  | 'paused'
+  | 'inactive'
+
+/**
+ * Current billing and subscription status for a workspace.
+ */
+export type BillingStatusResponse = {
+  /**
+   * Present when the pending operation cannot proceed without the
+   * customer. Today this is a Stripe-hosted payment page for an invoice
+   * needing authentication (SCA/3DS);
+   * send the customer there to complete payment. Mirrors the field of
+   * the same name on BillingOpStatusResponse. This bearer capability is
+   * returned only to workspace billing managers.
+   *
+   */
+  action_url?: string
+  /**
+   * Durable workspace billing authority. Omitted by older servers, billing-disabled deployments and workspaces not on the stripe rail.
+   */
+  billing_rail?: 'stripe'
+  billing_status?: BillingStatus
+  /**
+   * When the subscription will become inactive (if canceled)
+   */
+  cancel_at?: string
+  /**
+   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   */
+  current_period_start?: string
+  /**
+   * Actual recorded subscription end, only when subscription_state is ended. Null when unknown or not ended; never inferred from cancel_at, period end or update time.
+   */
+  ended_at: string | null
+  /**
+   * Present when subscription_state is ended but no actual end timestamp was recorded. Render an undated ended state; do not infer a date.
+   */
+  ended_at_unavailable_reason?: 'not_recorded'
+  /**
+   * Whether the workspace has available credits
+   */
+  has_funds: boolean
+  /**
+   * Whether the workspace has an active subscription
+   */
+  is_active: boolean
+  /**
+   * Owner-only ID of the workspace's newest initial subscription or plan transition, in any status, ordered by creation time then ID. A newer attempt supersedes an older one regardless of completion time. Poll /api/billing/ops/{id} for its checkout state. Independent of pending top-up discovery. Omitted for non-owners, no matching attempt, disabled billing, unavailable reads and older servers; omission is unknown and must not be interpreted as successful checkout or acknowledgment.
+   */
+  latest_subscription_op_id?: string
+  /**
+   * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
+   */
+  max_seats: number
+  /**
+   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
+   */
+  next_charge: NextCharge | null
+  /**
+   * Eligible next scheduled credit refill for both the Credits card and out-of-credits banner. Uses the actual positive credit-grant cadence, not an Enterprise invoice anniversary. Present only for a known future refill before cancellation/end; annual grants must be within 31 elapsed days inclusive, evaluated on the server. Omitted when unavailable, ineligible or no future grant is known; omission never means zero. Display only, not a payment guarantee, balance or spending permission.
+   */
+  next_credit_refill_at?: string
+  /**
+   * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
+   */
+  occupied_seats: number
+  /**
+   * Present when a pending operation supports embedded Stripe
+   * authentication. It may be returned alongside a hosted payment page
+   * when both recovery methods are available. This bearer
+   * capability is returned only to workspace billing managers. Pass
+   * directly to Stripe.js; do not log or
+   * persist it in client storage.
+   *
+   */
+  payment_intent_client_secret?: string
+  /**
+   * The workspace's in-flight billing operation, when one exists. Lets a
+   * client recover a payment it has lost the local reference to — a
+   * cleared browser, or simply a different device from the one that
+   * started it — by polling /billing/ops/{id} without having stored the
+   * id. Absent when no operation is pending, and for non-owners, who
+   * cannot act on one.
+   *
+   */
+  pending_billing_op_id?: string
+  /**
+   * How the client should resume `pending_billing_op_id`, not the
+   * internal operation type: a plan change reports `subscription`,
+   * because it resumes exactly like one. A top-up resumes with a
+   * different timeout and completion path, so the two cannot be
+   * told apart by the client. Present whenever
+   * `pending_billing_op_id` is.
+   *
+   */
+  pending_billing_op_type?: 'subscription' | 'topup'
+  /**
+   * Server-resolved configured period allowance. Missing on older servers means unknown, never none; clients must not infer it from tier.
+   */
+  period_credit_grant?: PeriodCreditGrant
+  /**
+   * Plan identifier (e.g., standard-monthly, team-pro-annual)
+   */
+  plan_slug?: string
+  /**
+   * Optional identity only when subscription_state is ended and the workspace's bound terminal subscription and plan can be verified. Visible to all workspace members, not only owners. Absent for unknown history, pointerless or unprojected legacy history, unreadable bindings and older servers. Absence is unknown, not no previous plan. Does not change plan actions or resubscribe eligibility.
+   */
+  previous_plan?: PreviousPlan
+  /**
+   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
+   */
+  renewal_date?: string
+  renewal_invoice?: RenewalInvoice
+  /**
+   * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
+   */
+  scheduled_change: ScheduledPlanChange | null
+  /**
+   * Per-product funds verdict, keyed by product name (currently only "agent" is populated): shared credits OR that product's own scoped balance. This is what decides whether the product still has funds to spend, so a gratis-only workspace correctly reads true even though has_funds (the shared-only verdict) is false. It is not the complete admission verdict — a funded workspace can still be denied for other reasons, e.g. manual_block — so treat it as necessary but not sufficient for gating funds-exhaustion UI. Defaults to agent: true when billing is disabled; omitted only by older servers.
+   */
+  scoped_effective_has_funds?: {
+    [key: string]: boolean
   }
   /**
-   * A bounded example of the first overlong reference; empty for count-only violations.
+   * Per-product scoped balance state, keyed by product name (currently only "agent" is populated). True while that product's own dedicated balance remains; false once it is exhausted, regardless of shared credits, and also false if that product has never held a scoped balance of its own — both read the same way: no exclusive allowance to draw from right now. Use this to detect that, not to gate admission — use scoped_effective_has_funds for that. Defaults to agent: true when billing is disabled; omitted only by older servers.
    */
-  overlong_ref: string
-  received_count: number
-  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
-}
-
-/**
- * How an ask left pending, as stored on the ask row. `answered` means an answer was committed and delivered to the turn; `cancelled` means the turn ended, was stopped, or could not take the answer; `expired` means the ask timed out. There is no "unknown" status: when an answer request fails with a 5xx the client does not know the outcome and should wait for agent_ask_resolved or refetch the thread.
- */
-export type AgentAskStatus = 'answered' | 'cancelled' | 'expired'
-
-/**
- * The ask frames the server sends on /ws, discriminated on `type`.
- */
-export type AgentAskServerFrame = AgentAskFrame | AgentAskResolvedFrame
-
-/**
- * The `data` of an agent_ask_resolved WebSocket event: the outcome the server committed to the ask row. Every open tab gets the same frame, including tabs that did not send the answer, so a client reads the answer that won from here and never infers it from what it sent.
- */
-export type AgentAskResolvedData = {
-  ask_id: string
-  message_id: string
-  /**
-   * The committed free-text answer. Present only when `status` is `answered` and the answer had free text.
-   */
-  other_text?: string
-  /**
-   * The committed option ids when `status` is `answered` (empty when the answer was free text only). Null for every other status: an answer that was never delivered is not reported as taking effect.
-   */
-  selected: Array<string> | null
-  status: AgentAskStatus
-  thread_id: string
-}
-
-/**
- * Server-to-client agent_ask_resolved frame on /ws. An ask left pending.
- */
-export type AgentAskResolvedFrame = {
-  data: AgentAskResolvedData
-  type: 'agent_ask_resolved'
-}
-
-/**
- * Server-to-client agent_ask frame on /ws. A turn is parked on this ask.
- */
-export type AgentAskFrame = {
-  /**
-   * The pending ask, discriminated on `kind`, plus the thread it belongs to.
-   */
-  data: AgentPendingAsk & {
-    thread_id: string
+  scoped_has_funds?: {
+    [key: string]: boolean
   }
-  type: 'agent_ask'
+  subscription_duration?: SubscriptionDuration
+  subscription_payment_recovery?: SubscriptionPaymentRecovery
+  /**
+   * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. Also omitted for a native live subscription when a workspace payment_failed label has no authoritative subscription-payment provenance. Unknown states must not be inferred from missing fields.
+   */
+  subscription_state?: SubscriptionState
+  /**
+   * Subscription activity status (scheduled subscriptions are not returned)
+   */
+  subscription_status?: 'active' | 'ended' | 'canceled'
+  subscription_tier?: SubscriptionTier
+  /**
+   * The team credit stop the workspace is currently subscribed to, for per-credit Team plans (BE-1254). Lets clients tell apart team subscriptions, which all share subscription_tier=TEAM. Always present; null for personal plans (use subscription_tier to distinguish those) and for legacy team plans without a credit stop.
+   */
+  team_credit_stop: TeamCreditStopSummary | null
 }
 
 /**
- * 409 from the answer route: the ask is no longer pending, or its turn is gone so the answer can never be delivered. `status`, `selected` and `other_text` report the outcome stored on the ask row when the server knows it, with the same rules as the agent_ask_resolved event.
+ * A tax identifier for a company Stripe customer. Stripe validates the
+ * type/value combination synchronously and verifies VAT/ABN-style IDs
+ * asynchronously.
+ *
  */
-export type AgentAskConflict = {
+export type BillingTaxId = {
   /**
-   * Human-readable error message.
+   * Stripe tax ID type, e.g. `eu_vat`, `us_ein`, `au_abn`. See
+   * https://docs.stripe.com/api/tax_ids/object#tax_id_object-type
+   * for the full list.
+   *
    */
-  error: string
-  /**
-   * The committed free-text answer, only when `status` is `answered`.
-   */
-  other_text?: string
-  /**
-   * The committed option ids when `status` is `answered`; null otherwise.
-   */
-  selected?: Array<string> | null
-  status?: AgentAskStatus
+  type: string
+  value: string
 }
 
 /**
- * The user's answer to a pending ask_user prompt. `selected` holds the chosen option ids; a permission gate answers with one id (e.g. the Approve/Deny option). `other_text` carries a free-text answer when the ask set allow_other.
+ * Response after bulk-revoking API keys for a workspace member.
  */
-export type AgentAnswerRequest = {
+export type BulkRevokeApiKeysResponse = {
   /**
-   * Free-text answer; only permitted when the ask set allow_other. Counts as one selection toward the bounds.
+   * Number of API keys that were revoked
    */
-  other_text?: string
+  revoked_count: number
+}
+
+export type CccAuthoringContext = {
+  actor_uid: string
+  can_apply: boolean
+  can_edit: boolean
+  owner_uid: string
+  state: CccCatalogState
+}
+
+export type CccCatalogState = {
+  draft_generation: number
+  draft_rev: number
+  live_rev: number
+  next_rev: number
+  previous_live_rev: number | null
+}
+
+export type CccCheckedReviewReceipt = {
+  publish_enabled: boolean
+  receipt_version: 1
+  selected_count: number
+  selected_versions_digest: string
+  selection_digest: string
+  state: CccCatalogState
+  unchecked_count: number
+}
+
+export type CccCreatorLink = {
+  label: string
   /**
-   * Chosen option ids. Must be a subset of the ask's option ids and satisfy its min_selections/max_selections.
+   * An https URL
    */
-  selected: Array<string>
+  url: string
+}
+
+export type CccCreatorProfile = {
+  /**
+   * Empty when the creator has no safe https avatar
+   */
+  avatar_url: string
+  bio: string
+  display_name: string
+  links: Array<CccCreatorLink>
+  username: string
+}
+
+export type CccCreatorSummary = {
+  avatar_url: string
+  display_name: string
+  username: string
+  workflow_count: number
+}
+
+export type CccCreatorsPage = {
+  items: Array<CccCreatorSummary>
+  next_cursor?: string
 }
 
 /**
- * Acknowledgement that the ask is answered and the parked turn was woken; its continuation streams over the WebSocket. `selected` and `other_text` are the answer committed to the ask row. The first answer wins: when an earlier request already committed one (a retry, or another tab), this carries THAT answer, not the request body, so compare it with what you sent before showing it as the user's choice.
+ * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
  */
-export type AgentAnswerAccepted = {
+export type Cccjson = {
   /**
-   * The committed free-text answer, when there is one.
+   * Catalog revision of this edit; may be older than the working Draft.
    */
-  other_text?: string
+  readonly catalog_rev?: number
   /**
-   * The committed option ids (empty when the answer was free text only).
+   * Immutable account that created the resource.
    */
-  selected: Array<string>
-  status: 'answered'
+  readonly creator_uid?: string
+  /**
+   * SHA-256 of the canonical authored document.
+   */
+  readonly digest?: string
+  readonly draft_generation?: number
+  readonly edit_sequence?: number
+  /**
+   * Tombstone flag. false may be sent back; true is refused (use restore).
+   */
+  readonly is_deleted?: boolean
+  /**
+   * Fixed organization owner; never transferred by a save.
+   */
+  readonly owner_uid?: string
+  /**
+   * This immutable edit; send it back as expected_revision_uid.
+   */
+  readonly revision_uid?: string
+  /**
+   * RFC3339 UTC save time of this exact edit.
+   */
+  readonly saved_at?: string
+  /**
+   * Account that saved this edit.
+   */
+  readonly saved_by_uid?: string
+  /**
+   * Server-assigned logical resource UID.
+   */
+  readonly uid?: string
+  [key: string]: unknown
 }
 
 /**
- * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ * Current Hub page that replaces an old public URL
  */
-export type AgentAdmissionError = {
-  error: {
+export type CccLegacyTarget = {
+  /**
+   * Website path of the Hub page, for example /hub/workflows/<slug>/
+   */
+  path: string
+  /**
+   * Current slug of the record
+   */
+  slug: string
+  type: 'workflow' | 'app' | 'model'
+}
+
+export type CccPublicItemsPage = ContentCatalogProjection & {
+  has_more: boolean
+  /**
+   * Opaque continuation bound to this query and publication identity; omitted on the last page.
+   */
+  next_cursor?: string
+  page_size: number
+}
+
+export type CccWebsiteCardFacet = {
+  /**
+   * Staff-only eligible facet count
+   */
+  count?: number
+  label: string
+  value: string
+}
+
+export type CccWebsiteCardFacets = {
+  categories: Array<CccWebsiteCardFacet>
+  models: Array<CccWebsiteCardFacet>
+  use_cases: Array<CccWebsiteCardFacet>
+}
+
+export type CccWebsiteCardsPage = {
+  available_kinds: Array<'MODEL' | 'WORKFLOW' | 'APP'>
+  facets: CccWebsiteCardFacets
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  has_more: boolean
+  items: Array<ContentCatalogRecord>
+  next_cursor?: string
+  page_size: number
+  previous_cursor?: string
+  revision_id: number
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  /**
+   * Staff-only filtered count; omitted for anonymous callers
+   */
+  total?: number
+}
+
+export type CccWebsiteModelDirectory = {
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  items: Array<{
     /**
-     * A human-readable explanation of why the request was declined, suitable for display.
+     * Authored provider label; empty when not set
      */
-    message: string
+    provider: string
     /**
-     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     * Canonical /hub/models path without a trailing slash
      */
-    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    slug: string
     /**
-     * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
+     * Localized title when reviewed, otherwise source title
      */
-    type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
+    title: string
+    uid: string
+  }>
+  revision_id: number
+}
+
+export type CccWebsiteRootPageInfo = {
+  has_more: boolean
+  page_size: 24
+}
+
+export type CccWebsiteRootPresentation = {
+  /**
+   * Database observation clock for this complete presentation.
+   */
+  as_of: string
+  items: Array<ContentCatalogRecord>
+  model_directory: CccWebsiteModelDirectory
+  /**
+   * Never reuse the artifact at or after this scheduled visibility boundary. Null means no pending boundary.
+   */
+  next_visibility_at: string | null
+  revision_id: number
+  tabs: CccWebsiteRootTabs
+}
+
+export type CccWebsiteRootTab = {
+  facets: CccWebsiteCardFacets
+  page: CccWebsiteRootPageInfo
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+}
+
+export type CccWebsiteRootTabs = {
+  apps: CccWebsiteRootTab
+  models: CccWebsiteRootTab
+  workflows: CccWebsiteRootTab
+}
+
+/**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export type CancelSubscriptionAcceptedResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * Always `pending` — the cancellation is still executing. Poll the billing operation for the final outcome.
+   */
+  status: 'pending'
+}
+
+/**
+ * Request body for cancelling the current subscription.
+ */
+export type CancelSubscriptionRequest = {
+  /**
+   * Client-provided key to prevent duplicate operations.
+   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
+   *
+   */
+  idempotency_key?: string
+}
+
+/**
+ * Response after successfully cancelling a subscription.
+ */
+export type CancelSubscriptionResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
+   */
+  cancel_at: string
+}
+
+/**
+ * Display data for one governable partner provider.
+ */
+export type CatalogProvider = {
+  /**
+   * Panel display label (e.g. "OpenAI (inc. Sora)"). Changeable freely, unlike the provider_id.
+   */
+  display_name: string
+  /**
+   * The provider's owned /object_info category segments (partner/<modality>/<Segment>), e.g. openai -> ["OpenAI", "Sora"]. The panel uses them to group nodes under providers (including merged vendors) and preview which nodes a toggle disables. Empty for route-only vendors (callable and governed; the panel hides their toggles).
+   */
+  node_categories: Array<string>
+  /**
+   * Permanent policy identifier (e.g. "kling", "openai"). Not client-derivable (merged vendors such as OpenAI+Sora).
+   */
+  provider_id: string
+}
+
+/**
+ * Credentials the Churnkey embed requires to launch the cancel flow.
+ * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
+ * server's CHURNKEY_HMAC_SECRET; it is bound to that single customer ID
+ * and must not be reused for other customers.
+ *
+ */
+export type ChurnkeyAuthResponse = {
+  /**
+   * Hex-encoded HMAC-SHA256(customer_id, CHURNKEY_HMAC_SECRET)
+   */
+  auth_hash: string
+  /**
+   * Stripe customer ID for the workspace
+   */
+  customer_id: string
+  /**
+   * Churnkey environment matching the configured app
+   */
+  mode: 'live' | 'test' | 'sandbox'
+  /**
+   * Stripe subscription a native Churnkey retention offer may apply to.
+   * Present only when the caller is in the native-offer rollout and owns
+   * a Personal workspace on an active paid monthly plan with no billing
+   * change in flight; absent otherwise, and the client then keeps offers
+   * disabled. Present in any mode. Not a signed authorization: the HMAC
+   * covers only the customer ID.
+   *
+   */
+  offer_subscription_id?: string
+}
+
+/**
+ * Which of the posted node types and models Comfy Cloud does not have.
+ */
+export type CloudCompatibility = {
+  cloud: CloudWorkflowCompatibility
+}
+
+/**
+ * The node types and models of a workflow.
+ */
+export type CloudCompatibilityRequest = {
+  /**
+   * The workflow's models, each with the model folder its loader reads. Duplicates are dropped before counting; more than 500 distinct models is a 400. Leave it out to check node types only.
+   */
+  models?: Array<CompatibilityModel>
+  /**
+   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
+   */
+  node_types: Array<string>
+}
+
+export type CloudNodeCompatibility = {
+  /**
+   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
+   */
+  missing_node_types: Array<string>
+}
+
+export type CloudWorkflowCompatibility = {
+  /**
+   * The posted models Comfy Cloud's model list does not have in the posted folder and, for a signed-in caller, whose upload a run would pick (the newest with that name among the caller's own uploads and the public model catalog) is not in the posted folder either, in the order they were posted. Absent when the request has no `models`.
+   */
+  missing_models?: Array<CompatibilityModel>
+  /**
+   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
+   */
+  missing_node_types: Array<string>
+}
+
+/**
+ * A model file and the ComfyUI model folder it is read from.
+ */
+export type CompatibilityModel = {
+  /**
+   * The model folder, such as `checkpoints` or `loras`.
+   */
+  folder: string
+  /**
+   * The file name, such as `sd_xl_base_1.0.safetensors`.
+   */
+  name: string
+}
+
+export type ContentCatalogProjection = {
+  generation: number
+  items: Array<ContentCatalogRecord>
+  revision_id: number
+}
+
+export type ContentCatalogRecord = {
+  data: {
+    [key: string]: unknown
+  }
+  deleted: boolean
+  edit_version: string
+  enabled: boolean
+  kind: 'MODEL' | 'WORKFLOW' | 'APP' | 'TEMPLATE_SET'
+  /**
+   * When the page's public content last changed: its publication or a later revert. Set on LIVE card reads only.
+   */
+  last_modified?: string
+  /**
+   * Integer revision supplying this entity; may precede the requested catalog revision.
+   */
+  revision: number
+  /**
+   * Canonical website pathname for page content; native slug for template sets. Identity is always UID.
+   */
+  slug: string
+  uid: string
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+}
+
+/**
+ * Request body for creating a new Hub profile.
+ */
+export type CreateHubProfileRequest = {
+  /**
+   * Token (from /api/hub/assets/upload-url) for an avatar image. Omit to have no avatar.
+   *
+   */
+  avatar_token?: string
+  description?: string
+  display_name?: string
+  /**
+   * Unique URL-safe slug for the hub profile. Immutable after creation.
+   */
+  username: string
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+  /**
+   * ID of the workspace to create the hub profile for. The authenticated user must belong to this workspace.
+   */
+  workspace_id: string
+}
+
+/**
+ * Request body for inviting a user to a workspace.
+ */
+export type CreateInviteRequest = {
+  /**
+   * Email address to invite
+   */
+  email: string
+}
+
+/**
+ * Request body for creating a new user secret.
+ */
+export type CreateSecretRequest = {
+  /**
+   * Credential class discriminator. `api_key` (default) stores an opaque key/token; `gcp_service_account` stores a Google Cloud service-account key JSON, whose value is validated as a service-account key on write. Prefer setting this explicitly over relying on value-shape sniffing.
+   */
+  credential_type?: 'api_key' | 'gcp_service_account'
+  /**
+   * User-provided label for the secret
+   */
+  name: string
+  /**
+   * Optional provider identifier (e.g., huggingface, civitai)
+   */
+  provider?: string
+  /**
+   * The plaintext secret to encrypt and store
+   */
+  secret_value: string
+}
+
+/**
+ * Response after creating a session cookie
+ */
+export type CreateSessionResponse = {
+  /**
+   * Session expiration time in seconds (5 days)
+   */
+  expiresIn?: number
+  /**
+   * Whether the session was created successfully
+   */
+  success: boolean
+}
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export type CreateTopupCheckoutRequest = {
+  /**
+   * Amount to charge in cents, before any promotion code the customer
+   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
+   * credits granted are derived server-side from this amount and
+   * cannot be set by the caller.
+   *
+   */
+  amount_cents: number
+  /**
+   * Optional client-provided key. Forwarded to Stripe so a double-submit
+   * collapses onto one session instead of minting two payable links.
+   *
+   */
+  idempotency_key?: string
+  /**
+   * Where Stripe returns the customer after a completed or cancelled
+   * payment. Must match an allowlisted origin; an arbitrary URL is
+   * rejected rather than redirected to.
+   *
+   */
+  return_url: string
+}
+
+/**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export type CreateTopupCheckoutResponse = {
+  /**
+   * Stripe-hosted Checkout URL to send the customer to.
+   */
+  checkout_url: string
+  /**
+   * Stripe Checkout session id, for support and log correlation. There
+   * is no billing operation to return: the purchase has not happened
+   * yet, and the operation recording it is created once the payment
+   * completes. Nothing needs polling — the credits land on their own.
+   *
+   */
+  session_id?: string
+}
+
+/**
+ * Request body for previewing a credit top-up.
+ */
+export type CreateTopupQuoteRequest = {
+  /**
+   * Amount to quote, in cents.
+   */
+  amount_cents: number
+}
+
+/**
+ * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
+ */
+export type CreateTopupRequest = {
+  /**
+   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
+   */
+  amount_cents: number
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * Client-provided key to prevent duplicate operations.
+   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
+   *
+   */
+  idempotency_key?: string
+}
+
+/**
+ * Response after successfully purchasing a credit top-up.
+ */
+export type CreateTopupResponse = {
+  /**
+   * Amount being charged in cents
+   */
+  amount_cents: number
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * Current status of the top-up
+   */
+  status: 'pending' | 'completed' | 'failed'
+  /**
+   * Unique identifier for the top-up request (same as billing_op_id, deprecated)
+   */
+  topup_id: string
+}
+
+/**
+ * Request body for creating a new saved workflow.
+ */
+export type CreateWorkflowRequest = {
+  /**
+   * Default view mode
+   */
+  default_view?: 'workflow' | 'app'
+  /**
+   * Description of the workflow
+   */
+  description?: string
+  /**
+   * ID of the source workflow if forked
+   */
+  forked_from_workflow_id?: string
+  /**
+   * ID of the source workflow version if forked
+   */
+  forked_from_workflow_version_id?: string
+  /**
+   * Display name for the workflow
+   */
+  name?: string
+  /**
+   * The ComfyUI workflow JSON
+   */
+  workflow_json: {
+    [key: string]: unknown
   }
 }
 
 /**
- * Response returned after successfully accepting a workspace invitation.
+ * Request body for creating a new version of a saved workflow.
  */
-export type AcceptInviteResponse = {
+export type CreateWorkflowVersionRequest = {
   /**
-   * ID of the workspace joined
+   * The version number this change is based on (for optimistic concurrency)
+   */
+  base_version: number
+  /**
+   * The updated ComfyUI workflow JSON
+   */
+  workflow_json: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Request body for creating a new workspace-scoped API key.
+ */
+export type CreateWorkspaceApiKeyRequest = {
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description?: string
+  /**
+   * Optional expiration timestamp. Keys created by an OAuth-authenticated session (an access token issued by the Comfy OAuth server to a registered client) are always capped to the OAuth refresh-token lifetime (OAUTH_REFRESH_TOKEN_TTL, 30 days by default): omitting this field yields that cap, a longer value is reduced to it, and a shorter value is honoured as-is. Keys created by a first-party session (browser workspace JWT, Firebase) are unaffected and may still be created with no expiry.
+   */
+  expires_at?: string
+  /**
+   * User-provided label for the key
+   */
+  name: string
+}
+
+/**
+ * Response containing the newly created workspace API key.
+ */
+export type CreateWorkspaceApiKeyResponse = {
+  /**
+   * When the key was created
+   */
+  created_at: string
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description: string
+  /**
+   * The effective expiration timestamp, which may differ from the one requested: a key minted by an OAuth-authenticated session is capped to the OAuth refresh-token lifetime, so clients must read the lifetime they actually got from this field rather than assume the requested one. Absent only for first-party keys created with no expiry.
+   */
+  expires_at?: string
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * The full plaintext API key (only shown once)
+   */
+  key: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * User-provided label
+   */
+  name: string
+}
+
+/**
+ * Request body for creating a new workspace.
+ */
+export type CreateWorkspaceRequest = {
+  /**
+   * Display name for the workspace
+   */
+  name: string
+}
+
+/**
+ * One way a provider's credential can be entered. When a provider exposes more than one option, clients present a sub-selection; the selected option's credential_type is sent on CreateSecretRequest.
+ */
+export type CredentialOption = {
+  /**
+   * The credential_type to send on CreateSecretRequest when this option is selected.
+   */
+  credential_type: 'api_key' | 'gcp_service_account'
+  /**
+   * How the credential value is entered. `text` is a single-line secret (an API key); `json_file` is a pasted/uploaded JSON document (e.g. a Vertex service-account key).
+   */
+  input_type: 'text' | 'json_file'
+  /**
+   * Human-facing label for this option (e.g. "API key (Google AI Studio)").
+   */
+  label: string
+}
+
+/**
+ * Display-only validity of the current shared wallet, including old-contract value and custom grants. Not a new-purchase quote or a spend decision. Missing facts on an older server mean unknown. No default year is inferred.
+ */
+export type CreditValidity = {
+  plan: CreditValidityFact
+  top_up: CreditValidityFact
+}
+
+export type CreditValidityFact = {
+  /**
+   * Exclusive expiry of all current bucket value; only present for expiring.
+   */
+  expires_at?: string
+  /**
+   * Plan only: whether all positive plan contributors are proved to have current recurring grant validity spanning later grant periods. None means one grant period; allowed means more than one. An annual grant period is annual, not monthly. Unknown when lineage or terms are unavailable. Independent of contract-transition rollover.
+   */
+  rollover?: 'none' | 'allowed' | 'unknown'
+  /**
+   * Expiring means every positive contributor has the same authoritative expiry. Mixed means distinct known expiries across positive grants. Unknown includes unavailable or ambiguous terms, no positive value, and historical no-expiry sentinels; missing dates never mean forever.
+   */
+  state: 'expiring' | 'mixed' | 'unknown'
+}
+
+/**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export type CurrentWorkspaceResponse = {
+  /**
+   * How this request authenticated. Known values are firebase, cookie, comfy_api_key, comfy_admin_key, cloud_api_key and cloud_jwt; treat it as an open string so a new auth method is not a breaking change.
+   */
+  auth_method: string
+  id: string
+  name: string
+  /**
+   * What the caller may do in this workspace, the same list a workspace token minted for it would carry. Read from the live membership on every request. Omitted, like role, when no role resolves. New values are additive.
+   */
+  permissions?: Array<string>
+  /**
+   * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
+   */
+  role?: 'owner' | 'member'
+  type: 'personal' | 'team'
+}
+
+/**
+ * Response after deleting a session cookie
+ */
+export type DeleteSessionResponse = {
+  /**
+   * Whether the session was deleted successfully
+   */
+  success: boolean
+}
+
+/**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export type DeployToCloudError = {
+  error:
+    | 'offline'
+    | 'multiple_credentials'
+    | 'invalid_api_key_format'
+    | 'invalid_body'
+    | 'missing_credentials'
+    | 'unauthorized'
+    | 'too_large'
+    | 'too_many_bundles'
+    | 'builder_rejected'
+    | 'builder_unavailable'
+    | 'builder_busy'
+  /**
+   * Human-readable detail, present for invalid_body and builder_rejected.
+   */
+  message?: string
+}
+
+/**
+ * Which of the posted node types each of the workspace's deployments, and Comfy Cloud, does not have.
+ */
+export type DeploymentCompatibility = {
+  cloud: CloudNodeCompatibility
+  /**
+   * Every live deployment GET /api/workspaces/{id}/deployments lists, in the same order (newest first).
+   */
+  deployments: Array<DeploymentNodeCompatibility>
+}
+
+/**
+ * The node types of the workflow open in the editor.
+ */
+export type DeploymentCompatibilityRequest = {
+  /**
+   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
+   */
+  node_types: Array<string>
+}
+
+export type DeploymentNodeCompatibility = {
+  deployment_id: string
+  /**
+   * The posted node types this deployment's Release does not have, in the order they were posted. Empty when it has them all, and when unknown is true.
+   */
+  missing_node_types: Array<string>
+  /**
+   * True when the node list of the Release this deployment runs could not be read, so it was not checked: the Release is not built yet or is gone, comfy-builder could not be reached or refused the caller, its extensions list could not be read, a browser that picked the deployment failed to load it on the same ingest pod (for good when the Release is gone or its archive is corrupt or too large to ever load, see below; for any other fault, an archive missing from storage among them, only within its 30-second retry window, after which the check follows what a browser's next load gets), its catalog fails to build (in each of the last three a browser that picked the deployment is served Comfy Cloud's catalog), it is past the 16 distinct Releases one check reads (the newest deployments' Releases are read first), or the request ended before it was read. The check reads the catalog and the extensions list but not the extensions archive: a Release whose archive fails to load (missing from storage, corrupt, too large, past 64 MiB unpacked, or an entry whose path escapes the extensions folder) is answered from its catalog, not unknown, until a browser that picked it has failed to load it on the same ingest pod (each pod keeps its own record).
+   */
+  unknown: boolean
+}
+
+/**
+ * Request to mint a desktop login code.
+ */
+export type DesktopLoginCodeCreateRequest = {
+  /**
+   * Desktop app version string.
+   */
+  app_version: string
+  /**
+   * PKCE code challenge - base64url(SHA256(code_verifier)) per RFC 7636 (S256 only).
+   */
+  code_challenge: string
+  /**
+   * Stable identifier of the desktop installation, used only for the login attribution event. Omit when telemetry consent is off - the login flow still works, but no attribution event is emitted.
+   */
+  installation_id?: string
+  /**
+   * Desktop platform identifier (e.g. darwin, win32, linux).
+   */
+  platform: string
+}
+
+/**
+ * A freshly minted desktop login code and its polling parameters.
+ */
+export type DesktopLoginCodeCreateResponse = {
+  /**
+   * Opaque single-use login code ("dlc_" prefix).
+   */
+  code: string
+  /**
+   * Seconds until the code expires if not redeemed.
+   */
+  expires_in: number
+  /**
+   * Suggested seconds between exchange polls.
+   */
+  poll_interval: number
+}
+
+/**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export type BillingHandoffCreateRequest = {
+  /**
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
    */
   workspace_id: string
   /**
-   * Name of the workspace joined
+   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
    */
-  workspace_name: string
+  receiver: 'billing_web' | 'platform'
+  /**
+   * Client-asserted; stages the rollout, not a security boundary.
+   */
+  surface: 'local_web' | 'desktop'
+  /**
+   * Version of the issuing app, for logs.
+   */
+  client_version: string
+}
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export type BillingHandoffCreateResponse = {
+  /**
+   * The receiver's handoff page with the token in the fragment. Open it, never display it.
+   */
+  entry_url: string
+  /**
+   * When the handoff can no longer be exchanged.
+   */
+  expires_at: string
+  /**
+   * Id of the stored handoff, for support and logs.
+   */
+  request_id: string
+}
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export type BillingHandoffExchangeRequest = {
+  /**
+   * The raw handoff token from the entry URL fragment.
+   */
+  token: string
+}
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export type BillingHandoffExchangeResponse = {
+  /**
+   * Bearer for billing routes of the bound workspace only.
+   */
+  session_token: string
+  /**
+   * When the session ends; it is never extended. At most 30 minutes, and never after the source sign-in expires.
+   */
+  expires_at: string
+  user: BillingHandoffUser
+  workspace: BillingHandoffWorkspace
+  /**
+   * The user's role in the workspace at exchange time.
+   */
+  role: string
+}
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export type BillingHandoffUser = {
+  /**
+   * Comfy user id.
+   */
+  id: string
+  /**
+   * The user's email address.
+   */
+  email: string
+}
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export type BillingHandoffWorkspace = {
+  /**
+   * Workspace id.
+   */
+  id: string
+  /**
+   * Workspace display name.
+   */
+  name: string
+  /**
+   * Workspace type, personal or team.
+   */
+  type: string
+}
+
+/**
+ * Request to exchange a redeemed login code for a custom token.
+ */
+export type DesktopLoginCodeExchangeRequest = {
+  /**
+   * The login code returned at creation.
+   */
+  code: string
+  /**
+   * PKCE code verifier matching the challenge supplied at creation.
+   */
+  code_verifier: string
+}
+
+/**
+ * Exchange poll result. Pending until the code is redeemed in the browser.
+ */
+export type DesktopLoginCodeExchangeResponse = {
+  /**
+   * One-time Firebase custom token for the redeeming user. Present only when status is "complete".
+   */
+  custom_token?: string
+  /**
+   * Whether the code has been redeemed yet.
+   */
+  status: 'pending' | 'complete'
+}
+
+/**
+ * Request to claim a desktop login code for the authenticated user.
+ */
+export type DesktopLoginCodeRedeemRequest = {
+  /**
+   * The login code the desktop app placed in the browser URL.
+   */
+  code: string
+}
+
+/**
+ * Result of redeeming a desktop login code.
+ */
+export type DesktopLoginCodeRedeemResponse = {
+  /**
+   * The code is now claimed for the authenticated user.
+   */
+  status: 'redeemed'
+}
+
+/**
+ * First rejected op in an abort-remainder batch.
+ */
+export type DocOpFailure = {
+  code: string
+  index: number
+  message: string
+  op_id?: string
+}
+
+export type DocOpsResultData = {
+  applied?: Array<string>
+  code?: string
+  failed?: DocOpFailure
+  /**
+   * The subset of skipped that lost a last-writer-wins race, so a client can tell an overwritten write from a harmless replay. Every id here is also in skipped. Absent when no op lost, and on a host that does not classify outcomes.
+   */
+  lww_dropped?: Array<string>
+  message?: string
+  ok: boolean
+  /**
+   * The op_id of every op in the doc_ops batch this result answers, verbatim and in submission order, on success and on every refusal, including refusals made before the batch reached the document host. Correlation only: it names the batch, not each op's outcome (see applied, skipped and failed), and it is not an ordering key. Absent only when the batch's op ids could not be read under the doc_ops op_id grammar, which a conforming sender never produces.
+   */
+  op_ids?: Array<string>
+  seq?: number
+  skipped?: Array<string>
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export type DocOpsResultFrame = {
+  data: DocOpsResultData
+  type: 'doc_ops_result'
+}
+
+export type DocResetData = {
+  actor?: string
+  lineage_seq: number
+  seq: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export type DocResetFrame = {
+  data: DocResetData
+  type: 'doc_reset'
+}
+
+export type DocSubscribedData = {
+  code?: string
+  /**
+   * Binds a stale-schema refusal to the exact row the client may re-mint. Present only with stale_schema_reseed_required.
+   */
+  expected_seq?: number
+  /**
+   * Current lineage sequence. On an accepted subscription, omission means lineage 0 (the document has not been minted yet).
+   */
+  lineage_seq?: number
+  /**
+   * Human-readable rejection reason. The generated Go field is named Reason so it does not collide with the frame's Message method.
+   */
+  message?: string
+  ok: boolean
+  /**
+   * Current document sequence. On an accepted subscription, omission means sequence 0 (the document has not been minted yet).
+   */
+  seq?: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Server acknowledgement for a doc_subscribe request.
+ */
+export type DocSubscribedFrame = {
+  data: DocSubscribedData
+  type: 'doc_subscribed'
+}
+
+export type DocUpdateData = {
+  actor?: string
+  lineage_seq: number
+  /**
+   * Semantic op IDs whose effects are encoded in this live update. Absent on state-vector catch-up updates, which can fold arbitrary history and have no bounded one-frame op set.
+   */
+  op_ids?: Array<string>
+  seq: number
+  /**
+   * Standard-base64 encoded Yjs update. Host-to-follower only.
+   */
+  update_b64: string
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export type DocUpdateFrame = {
+  data: DocUpdateData
+  type: 'doc_update'
+}
+
+/**
+ * Standard error response with a machine-readable code and human-readable message.
+ */
+export type ErrorResponse = {
+  code: string
+  /**
+   * Present only on an organization-managed POST /api/workspaces refusal; other errors omit it.
+   */
+  denied_reasons?: WorkspaceCreationDenials
+  /**
+   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
+   */
+  details?: {
+    [key: string]: unknown
+  }
+  message: string
+  /**
+   * On `sso_required`: the SSO organization the caller must sign in with (its WorkOS id, `org_...`), the value `GET /api/auth/sso/start?organization=` takes: the organization that owns the account's email domain, else the workspace's. Absent when no sign-in would admit the caller (an account another organization holds, in an SSO organization's workspace), when unknown, and on every other code but `account_outside_organization`, where it is the workspace's organization, which no sign-in of the account joins, and `personal_workspace_disabled`, where it is the organization holding the account.
+   */
+  organization_id?: string
+}
+
+/**
+ * Optional request body for the token exchange endpoint. The Firebase JWT
+ * being exchanged is supplied via the `Authorization: Bearer` header; this
+ * body only carries workspace-selection input.
+ *
+ */
+export type ExchangeTokenRequest = {
+  /**
+   * What the token is for. Omitted mints today's workspace token.
+   * `partner-node` mints a partner-node token: audience
+   * `comfy-partner-node` only, a `sid` claim naming a new renewable
+   * session, and the partner-node lifetime. Only a sign-in mints one
+   * (a Firebase JWT, the web session, or an OAuth access token from a
+   * client in `PARTNER_NODE_OAUTH_CLIENTS`); an API key gets 403
+   * `partner_node_requires_sign_in`. While the mint is switched off
+   * it is 503 `partner_node_token_disabled`. Any other value is 400
+   * `resource_invalid`.
+   *
+   */
+  resource?: 'partner-node'
+  /**
+   * Workspace ID to get token for. Defaults to personal workspace if omitted.
+   */
+  workspace_id?: string
+}
+
+/**
+ * Response containing the issued Cloud JWT and its expiry.
+ */
+export type ExchangeTokenResponse = {
+  /**
+   * Token expiration time (RFC 3339)
+   */
+  expires_at: string
+  /**
+   * Permission strings for the role
+   */
+  permissions: Array<string>
+  /**
+   * User's role in the workspace
+   */
+  role: 'owner' | 'member'
+  /**
+   * Cloud JWT token
+   */
+  token: string
+  /**
+   * Canonical Comfy user ID the token was minted for: the token's `sub`,
+   * and the same ID `GET /api/billing/capabilities` returns in
+   * `resolved_for.user_id`. Clients scope per-user reads with it. It is
+   * not the Firebase UID, which can differ.
+   *
+   */
+  user_id: string
+  workspace: WorkspaceSummary
+}
+
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export type ExecutionError = {
+  /**
+   * Input values at time of failure (empty object if not available)
+   */
+  current_inputs: {
+    [key: string]: unknown
+  }
+  /**
+   * Output values at time of failure (empty object if not available)
+   */
+  current_outputs: {
+    [key: string]: unknown
+  }
+  /**
+   * Human-readable error message
+   */
+  exception_message: string
+  /**
+   * Python exception type (e.g., "RuntimeError")
+   */
+  exception_type: string
+  /**
+   * ID of the node that failed
+   */
+  node_id: string
+  /**
+   * Type name of the node (e.g., "KSampler")
+   */
+  node_type: string
+  /**
+   * Array of traceback lines (empty array if not available)
+   */
+  traceback: Array<string>
+}
+
+/**
+ * Response containing a signed download URL for an exported asset archive.
+ */
+export type ExportDownloadUrlResponse = {
+  /**
+   * When the signed URL expires
+   */
+  expires_at?: string
+  /**
+   * Signed URL for downloading the export ZIP file
+   */
+  url: string
+}
+
+/**
+ * Request to submit user feedback
+ */
+export type FeedbackRequest = {
+  /**
+   * The feedback content or message
+   */
+  content?: string
+  /**
+   * Additional metadata about the feedback
+   */
+  metadata?: {
+    [key: string]: unknown
+  }
+  /**
+   * User's rating of ComfyUI Cloud experience (1-5 stars)
+   */
+  rating?: number
+  /**
+   * Type of feedback being submitted
+   */
+  type: 'missing_nodes' | 'general' | 'missing_models'
+}
+
+/**
+ * Response after submitting feedback
+ */
+export type FeedbackResponse = {
+  [key: string]: unknown
+}
+
+/**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export type ForbiddenError = ErrorResponse | AuthTypeNotAllowedError
+
+/**
+ * Request body for forking an existing workflow into the user's account.
+ */
+export type ForkWorkflowRequest = {
+  /**
+   * Name for the forked workflow
+   */
+  name?: string
+  /**
+   * Version number to fork from
+   */
+  source_version: number
+}
+
+/**
+ * List of user data file entries (each with path, size, and modification time) returned when full_info=true.
+ */
+export type GetUserDataResponseFull = Array<GetUserDataResponseFullFile>
+
+/**
+ * Individual file entry within a full user data response.
+ */
+export type GetUserDataResponseFullFile = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+  /**
+   * File name or path relative to the user directory.
+   */
+  path?: string
+  /**
+   * File size in bytes.
+   */
+  size?: number
+}
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export type GlobalSetting = StoredAgentConsentSetting
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export type GlobalSettingKey = 'Comfy.AgentPanel.ConsentAccepted'
+
+/**
+ * The last-changed timestamp every stored setting carries.
+ */
+export type GlobalSettingUpdatedAt = {
+  /**
+   * When this value was last changed. A write that stores the value already present changes nothing and leaves this alone.
+   */
+  updated_at: string
+}
+
+/**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export type GlobalSettingValue = AgentConsentSettingValue
+
+/**
+ * Full data for a global subgraph blueprint
+ */
+export type GlobalSubgraphData = {
+  /**
+   * The full subgraph JSON data as a string
+   */
+  data: string
+  /**
+   * Additional information about the subgraph
+   */
+  info: {
+    /**
+     * The node pack/module that provides this subgraph
+     */
+    node_pack: string
+  }
+  /**
+   * Display name of the subgraph blueprint
+   */
+  name: string
+  /**
+   * Source type of the subgraph - "templates" for workflow templates or "custom_node" for custom node subgraphs
+   */
+  source: string
+}
+
+/**
+ * Metadata for a global subgraph blueprint (without full data)
+ */
+export type GlobalSubgraphInfo = {
+  /**
+   * The full subgraph JSON data (may be empty in list view)
+   */
+  data?: string
+  /**
+   * Additional information about the subgraph
+   */
+  info: {
+    /**
+     * The node pack/module that provides this subgraph
+     */
+    node_pack: string
+  }
+  /**
+   * Display name of the subgraph blueprint
+   */
+  name: string
+  /**
+   * Source type of the subgraph - "templates" for workflow templates or "custom_node" for custom node subgraphs
+   */
+  source: string
+}
+
+/**
+ * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
+ */
+export type HistoryDetailEntry = {
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Full prompt execution data
+   */
+  prompt?: {
+    /**
+     * Additional execution data. extra_pnginfo (the workflow graph) is omitted from records persisted after it stopped being stored; older records may still contain it.
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+    /**
+     * Output nodes to execute
+     */
+    outputs_to_execute?: Array<string>
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The workflow nodes
+     */
+    prompt?: {
+      [key: string]: unknown
+    }
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+  }
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Detailed execution history response for a specific prompt.
+ * Returns a dictionary with prompt_id as key and full history data as value.
+ *
+ */
+export type HistoryDetailResponse = {
+  [key: string]: HistoryDetailEntry
+}
+
+/**
+ * History entry with prompt_id and execution data
+ */
+export type HistoryEntry = {
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time?: number
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Filtered prompt execution data (lightweight format)
+   */
+  prompt?: {
+    /**
+     * Additional execution data (workflow removed from extra_pnginfo)
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+  }
+  /**
+   * Unique identifier for this prompt execution
+   */
+  prompt_id: string
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+}
+
+/**
+ * Request to manage history operations
+ */
+export type HistoryManageRequest = {
+  /**
+   * If true, clear all history for the authenticated user
+   */
+  clear?: boolean
+  /**
+   * Array of job IDs to delete from history
+   */
+  delete?: Array<string>
+}
+
+/**
+ * Execution history response with history array.
+ * Returns an object with a "history" key containing an array of history entries.
+ * Each entry includes prompt_id as a property along with execution data.
+ *
+ */
+export type HistoryResponse = {
+  /**
+   * Array of history entries ordered by creation time (newest first)
+   */
+  history: Array<HistoryEntry>
+}
+
+export type HostedTopupCheckout = {
+  /**
+   * Original credit purchase amount before promotions, not the settled payment amount.
+   */
+  amount_cents: number
+  /**
+   * Actual USD Stripe total after promotions, including a confirmed fully discounted zero. Null when unavailable; use this for payment messages, not amount_cents.
+   */
+  payment_amount_cents: number | null
+  session_id: string
+  /**
+   * open means payment has not completed; payment_processing means Checkout completed but payment is not settled; credits_applying means payment is confirmed (including a fully discounted purchase) but the durable credit grant is not yet recorded; fulfilled confirms that grant. expired is an unpaid expired link; failed is a completed checkout whose delayed payment failed. A failed credit grant remains credits_applying until fulfillment succeeds. Render this fact; do not infer payment from a return redirect or Checkout completion.
+   *
+   */
+  state:
+    | 'open'
+    | 'payment_processing'
+    | 'credits_applying'
+    | 'fulfilled'
+    | 'expired'
+    | 'failed'
+}
+
+export type HostedTopupCheckoutList = {
+  checkouts: Array<HostedTopupCheckoutSummary>
+  /**
+   * Opaque cursor for the next page, null when exhausted.
+   */
+  next_cursor: string | null
+}
+
+/**
+ * Durable discovery record only. Fetch the session endpoint for current payment and credit-fulfillment state; a summary proves neither. An unavailable session remains discoverable without hiding other rows.
+ *
+ */
+export type HostedTopupCheckoutSummary = {
+  amount_cents: number
+  created_at: string
+  session_id: string
+}
+
+/**
+ * Request body for requesting a signed upload URL for a Hub asset.
+ */
+export type HubAssetUploadUrlRequest = {
+  /**
+   * MIME type of the file (e.g. "image/jpeg", "video/mp4"). Validated against a whitelist; the canonical file extension is derived from this value.
+   *
+   */
+  content_type: string
+  /**
+   * Original filename for display purposes. Not used in the storage key.
+   */
+  filename: string
+}
+
+/**
+ * Response containing a signed upload URL and the target asset path.
+ */
+export type HubAssetUploadUrlResponse = {
+  /**
+   * The public URL where the file will be accessible after upload.
+   */
+  public_url: string
+  /**
+   * Signed token to pass in the publish request. Has a server-determined TTL.
+   */
+  token: string
+  /**
+   * Presigned R2 URL for uploading the file via PUT.
+   */
+  upload_url: string
+}
+
+/**
+ * Metadata for a single Hub label.
+ */
+export type HubLabelInfo = {
+  /**
+   * Optional description of the label.
+   */
+  description?: string
+  /**
+   * Human-readable display name.
+   */
+  display_name: string
+  /**
+   * Slug identifier.
+   */
+  name: string
+  /**
+   * Label category.
+   */
+  type: 'tag' | 'model' | 'custom_node'
+}
+
+/**
+ * List of available Hub labels for categorizing workflows.
+ */
+export type HubLabelListResponse = {
+  /**
+   * Available labels filtered by type (or all if no type specified).
+   */
+  labels: Array<HubLabelInfo>
+}
+
+/**
+ * Full public profile for a Hub creator.
+ */
+export type HubProfile = {
+  /**
+   * Public URL of the profile avatar image.
+   */
+  avatar_url?: string
+  description?: string
+  display_name?: string
+  username: string
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+}
+
+/**
+ * Abbreviated Hub profile used in workflow listings.
+ */
+export type HubProfileSummary = {
+  /**
+   * Public URL of the profile avatar image.
+   */
+  avatar_url?: string
+  display_name?: string
+  username: string
+}
+
+/**
+ * Response indicating whether a Hub username is available.
+ */
+export type HubUsernameCheckResponse = {
+  /**
+   * Whether the username is available for the caller's workspace.
+   */
+  available: boolean
+  /**
+   * Up to 5 available alternative usernames (only present when unavailable).
+   */
+  suggestions?: Array<string>
+  /**
+   * The username that was checked.
+   */
+  username: string
+  /**
+   * If the username format is invalid, describes the format requirement.
+   */
+  validation_error?: string
+}
+
+/**
+ * Full Hub workflow detail including versions, assets, and statistics.
+ */
+export type HubWorkflowDetail = {
+  /**
+   * Published assets. Each asset's id is the published asset ID (not the original private asset ID).
+   */
+  assets: Array<AssetInfo>
+  custom_nodes?: Array<LabelRef>
+  description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
+  metadata?: {
+    [key: string]: unknown
+  }
+  models?: Array<LabelRef>
+  name: string
+  profile: HubProfileSummary
+  publish_time?: string | null
+  sample_image_urls?: Array<string>
+  share_id: string
+  status: HubWorkflowStatus
+  tags?: Array<LabelRef>
+  thumbnail_comparison_url?: string
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  thumbnail_url?: string
+  tutorial_url?: string
+  workflow_id: string
+  workflow_json: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Paginated list of Hub workflows matching search criteria.
+ */
+export type HubWorkflowListResponse = {
+  /**
+   * Cursor for the next page, empty if no more results.
+   */
+  next_cursor?: string
+  /**
+   * Array of HubWorkflowSummary (default) or HubWorkflowDetail (when detail=true).
+   */
+  workflows: Array<HubWorkflowSummary | HubWorkflowDetail>
+}
+
+/**
+ * Public workflow status. NULL in the database is represented as pending in API responses.
+ */
+export type HubWorkflowStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'deprecated'
+
+/**
+ * Abbreviated Hub workflow metadata used in search and listing results.
+ */
+export type HubWorkflowSummary = {
+  custom_nodes?: Array<LabelRef>
+  description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
+  metadata?: {
+    [key: string]: unknown
+  }
+  models?: Array<LabelRef>
+  name: string
+  profile: HubProfileSummary
+  publish_time?: string | null
+  sample_image_urls?: Array<string>
+  share_id: string
+  status: HubWorkflowStatus
+  tags?: Array<LabelRef>
+  thumbnail_comparison_url?: string
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  thumbnail_url?: string
+  tutorial_url?: string
+}
+
+/**
+ * Entry in the curated workflow template gallery shown on the home page.
+ */
+export type HubWorkflowTemplateEntry = {
+  /**
+   * Content template used for generation (tutorial, showcase, comparison, breakthrough)
+   */
+  contentTemplate?: string
+  /**
+   * Publication date in YYYY-MM-DD format
+   */
+  date?: string
+  description?: string
+  /**
+   * AI-generated extended description of the workflow
+   */
+  extendedDescription?: string
+  /**
+   * AI-generated FAQ items
+   */
+  faqItems?: Array<{
+    answer: string
+    question: string
+  }>
+  /**
+   * AI-generated step-by-step usage instructions
+   */
+  howToUse?: Array<string>
+  includeOnDistributions?: Array<string>
+  io?: {
+    inputs?: Array<{
+      [key: string]: unknown
+    }>
+    outputs?: Array<{
+      [key: string]: unknown
+    }>
+  }
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  isApp: boolean
+  /**
+   * Whether the template belongs to a module marked as essential.
+   */
+  isEssential?: boolean
+  logos?: Array<{
+    [key: string]: unknown
+  }>
+  mediaSubtype?: string
+  mediaType?: string
+  /**
+   * AI-generated SEO meta description (under 160 chars)
+   */
+  metaDescription?: string
+  models?: Array<string>
+  /**
+   * Slug identifier for the template
+   */
+  name: string
+  openSource?: boolean
+  profile?: HubProfileSummary
+  requiresCustomNodes?: Array<string>
+  /**
+   * Search ranking score reported upstream.
+   */
+  searchRank?: number
+  /**
+   * Share ID for linking to the hub workflow detail
+   */
+  shareId?: string
+  /**
+   * Workflow asset size in bytes.
+   */
+  size?: number
+  status: HubWorkflowStatus
+  /**
+   * AI-generated suggested use cases
+   */
+  suggestedUseCases?: Array<string>
+  tags?: Array<string>
+  /**
+   * Public URL of the comparison thumbnail
+   */
+  thumbnailComparisonUrl?: string
+  /**
+   * Public URL of the primary thumbnail
+   */
+  thumbnailUrl?: string
+  thumbnailVariant?: string
+  title: string
+  tutorialUrl?: string
+  /**
+   * Usage count reported upstream.
+   */
+  usage?: number
+  /**
+   * Approximate VRAM requirement in bytes.
+   */
+  vram?: number
+}
+
+/**
+ * Request body for importing assets from a published workflow.
+ */
+export type ImportPublishedAssetsRequest = {
+  /**
+   * IDs of published assets (inputs and models) to import.
+   */
+  published_asset_ids: Array<string>
+  /**
+   * Optional. Share ID of the published workflow these assets belong to.
+   * When provided (non-null, non-empty): all published_asset_ids must
+   * belong to this share's workflow version; returns
+   * 400/CodeInvalidAssets if the share is not found or any asset does
+   * not belong to it.
+   * When omitted, null, or empty string: no share-scoped validation is
+   * performed and the assets are validated only against global rules
+   * (legacy behaviour, preserved for clients that have not yet adopted
+   * share_id).
+   *
+   */
+  share_id?: string | null
+}
+
+/**
+ * Response after importing published workflow assets.
+ */
+export type ImportPublishedAssetsResponse = {
+  assets: Array<AssetInfo>
+}
+
+/**
+ * Result of redeeming an input-image upload grant. Identical in shape to
+ * the POST /api/upload/image response.
+ *
+ */
+export type InputUploadResponse = {
+  /**
+   * Content hash of the stored input image.
+   */
+  name: string
+  /**
+   * Subfolder path where the image was saved (empty for input uploads).
+   */
+  subfolder: string
+  /**
+   * Upload type; always "input".
+   */
+  type: string
+}
+
+/**
+ * Request body for minting an input-image, input-audio or input-video upload grant.
+ */
+export type InputUploadUrlRequest = {
+  /**
+   * MIME type of the file to upload. Must be one of the image types
+   * image/jpeg, image/png, image/webp, image/gif, the audio types
+   * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
+   * audio/flac, audio/x-flac, audio/ogg, or the video types video/mp4,
+   * video/webm, video/quicktime.
+   * Advisory: the stored asset's format always follows the uploaded
+   * bytes as identified server-side (decoded for images, sniffed for
+   * audio and video containers).
+   *
+   */
+  content_type: string
+}
+
+/**
+ * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
+ */
+export type InteractiveTopupRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
+   */
+  amount_cents: number
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before the backend
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * New-card confirmation authority. Valid only on the dedicated interactive route; mutually exclusive with saved_payment_method_id. At most 255 UTF-8 bytes. No implicit saving.
+   */
+  confirmation_token?: string
+  /**
+   * Required globally unique opaque key for this exact purchase (for example, a UUID), at most 255 UTF-8 bytes. Replays bind amount, actor, customer, selected authority and return URL; changing them returns IDEMPOTENCY_MISMATCH. Never mint a new key while payment is unresolved.
+   *
+   */
+  idempotency_key: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; paying does not change invoice defaults.
+   */
+  make_default?: boolean
+  /**
+   * Required with confirmation_token; at most 2048 bytes before and after URL normalization. Must use an existing allowed HTTPS destination (HTTP only for configured localhost or 127.0.0.1). Bound to the request. Callers must supply credential-free routing URLs: the validator rejects userinfo, fragments, known authentication query keys and recognizable Stripe authority patterns, but cannot identify every opaque secret.
+   *
+   */
+  return_url?: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; pay once does not save a new card.
+   */
+  save_payment_method?: boolean
+  /**
+   * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
+   */
+  saved_payment_method_id?: string
+}
+
+/**
+ * Paginated list of the assets produced by a single job.
+ */
+export type JobAssetsResponse = {
+  /**
+   * The job's output assets for the requested page (empty when the job produced none)
+   */
+  assets: Array<JobOutputAsset>
+  /**
+   * ID of the job these assets belong to
+   */
+  job_id: string
+  pagination: PaginationInfo
+}
+
+/**
+ * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
+ */
+export type JobCancelResponse = {
+  /**
+   * True when a cancel event was successfully dispatched by this call.
+   * False when the job was already in a terminal or cancelling state,
+   * in which case the call is a no-op (still 200 — idempotent).
+   *
+   */
+  cancelled: boolean
+}
+
+/**
+ * The deployment a job ran on and the Release it ran, as they were when the job was sent: deployment_id and release_id stay the same after the deployment is updated to another Release or deleted. build_name and release_version are read from comfy-builder when the job is read, so a renamed Build shows its new name within a few minutes.
+ */
+export type JobDeployment = {
+  /**
+   * The name of the Build the Release was cut from, as comfy-builder names it now. Absent when it is not named for this caller: an API-key caller, a caller reading a job outside their active workspace (an admin reading another workspace's job), comfy-builder not configured on this server, minting the token to ask comfy-builder failing, comfy-builder failing or not answering in time, or a Release or Build since deleted.
+   */
+  build_name?: string
+  /**
+   * Developer-platform deployment id.
+   */
+  deployment_id: string
+  /**
+   * The deployment's own name from comfy-deploy, including for a deleted deployment. Read when the job is read and cached for five minutes, so a rename appears after the cache expires; not a job-time snapshot. Absent for unnamed or unavailable deployments, API-key callers, jobs outside the caller's active workspace, or when the service or token mint is unavailable. Does not replace build_name or the stable IDs.
+   */
+  name?: string
+  /**
+   * The Release the job ran.
+   */
+  release_id: string
+  /**
+   * The Release's version number within its Build. Absent whenever build_name is.
+   */
+  release_version?: number
+}
+
+/**
+ * Full job details including workflow and outputs
+ */
+export type JobDetailResponse = {
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
+   */
+  deployment?: JobDeployment
+  /**
+   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_end_time?: number
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
+  execution_error?: ExecutionError
+  /**
+   * Node-level execution metadata (only for terminal states), keyed by
+   * the executed node id, the same keys as `outputs`. Each entry says
+   * which canvas node shows that node's output, which matters for nodes
+   * that ComfyUI expands at run time (their executed id, such as
+   * `15.0.0.3`, is not on the canvas).
+   *
+   */
+  execution_meta?: {
+    [key: string]: JobExecutionMetaEntry
+  }
+  /**
+   * Workflow execution start timestamp (Unix milliseconds, only present once execution has started)
+   */
+  execution_start_time?: number
+  /**
+   * ComfyUI execution status and timeline (only for terminal states)
+   */
+  execution_status?: {
+    [key: string]: unknown
+  }
+  /**
+   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
+   */
+  executor?: 'cloud_inference' | 'platform_gateway'
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * Full outputs object from ComfyUI (only for terminal states)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * Primary preview output (only for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
+   * 1-based position of this job among the caller's OWN jobs held
+   * behind the same concurrency cap (same user, workspace and auth
+   * method), in the dispatcher's admission order — i.e. the number of
+   * the caller's own capped jobs that will be admitted before this
+   * one, plus one. It is NOT a fleet-wide queue position and says
+   * nothing about other users' jobs. (For an admin reading someone
+   * else's job, the set is that job owner's, not the admin's — the
+   * same scoping `workspace_id`/`user_id` already describe.)
+   *
+   * Null unless `queue_reason` is `concurrency_limit`. May also be
+   * null in that state on the rare rows whose admission ordering
+   * cannot be determined (no recorded state-change timestamp), or if
+   * the count query fails — a missing position never fails the
+   * request.
+   *
+   */
+  queue_position?: number | null
+  /**
+   * Why a still-queued job has not started yet. Present only while
+   * `status` is `pending`; null for every other status.
+   *
+   * `status` deliberately folds every waiting state into `pending`
+   * (the frontend's filter categories depend on that), so this field
+   * is the one that tells the two kinds of waiting apart:
+   *
+   * - `concurrency_limit` — the job is awaiting admission under the
+   * per-user/per-auth-method or aggregate workspace concurrent-job
+   * cap. Other members' running jobs can fill the workspace cap
+   * even when this job's owner has no running jobs. This field
+   * does not distinguish which cap is full.
+   * - `capacity` — the job has passed concurrency admission and is
+   * waiting for an inference worker to become free.
+   *
+   * Detail-only: this field is NOT present on the list view's
+   * `JobEntry`, because deriving `queue_position` for a page of jobs
+   * would cost one extra query per row.
+   *
+   */
+  queue_reason?: 'concurrency_limit' | 'capacity'
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Last update timestamp (Unix timestamp in milliseconds)
+   */
+  update_time: number
+  /**
+   * ID of the user that owns this job (see the `workspace_id`
+   * description above for why this is always the caller's own id
+   * on a successful response).
+   *
+   */
+  user_id?: string
+  /**
+   * Full ComfyUI workflow (10-100KB, omitted if not available).
+   *
+   * Sensitive credentials are redacted before the response is returned:
+   * `extra_data.api_key_comfy_org`, when present, is replaced with the
+   * literal string `"[REDACTED]"`. The field is preserved (not removed)
+   * so existence checks still pass, but the value is not usable.
+   *
+   */
+  workflow?: {
+    [key: string]: unknown
+  }
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * UUID of the cloud workflow version this job is pinned to, if the
+   * submission carried one (see PromptRequest's workflow_version_id).
+   * Absent for jobs submitted without that association, including
+   * every job submitted through the public API v2 today.
+   *
+   */
+  workflow_version_id?: string
+  /**
+   * ID of the workspace that owns this job. A successful (200)
+   * response from this operation is only ever returned for the
+   * caller's own job (see this operation's ownership-scoped
+   * query), so this is always the caller's own workspace —
+   * consumers that also need to correlate this job to its
+   * live-progress broadcast channel (workspace+user scoped; see
+   * the internal common/gateways/broadcast package) can use this
+   * value directly rather than resolving their own identity a
+   * second way.
+   *
+   */
+  workspace_id?: string
+}
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export type JobEntry = {
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
+   */
+  deployment?: JobDeployment
+  /**
+   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_end_time?: number
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
+  execution_error?: ExecutionError
+  /**
+   * Workflow execution start timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_start_time?: number
+  /**
+   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
+   */
+  executor?: 'cloud_inference' | 'platform_gateway'
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * Primary preview output (only present for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+}
+
+/**
+ * Where one executed node ran and where its output is shown, as ComfyUI
+ * records it in the history `meta`. Live `executed` messages carry the
+ * same `display_node`.
+ *
+ */
+export type JobExecutionMetaEntry = {
+  /**
+   * Canvas node id that shows this output
+   */
+  display_node?: string
+  /**
+   * Executed node id (the `outputs` key), e.g. `15.0.0.3` for an expanded node
+   */
+  node_id?: string
+  /**
+   * Id of the node that expanded this one, or null for a node that was not expanded
+   */
+  parent_node?: string | null
+  /**
+   * Top-level workflow node this node was expanded from (its own id when not expanded)
+   */
+  real_node_id?: string
+  [key: string]: unknown
+}
+
+/**
+ * An asset produced by a job, enriched with the per-output node context
+ * (`node_id`, `output_key`, `output_index`) correlated from the job's
+ * execution outputs by content hash. The node-context fields are null
+ * when the asset cannot be matched to an output entry.
+ *
+ */
+export type JobOutputAsset = {
+  /**
+   * Timestamp when the asset was created
+   */
+  created_at: string
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
+  /**
+   * Unique identifier for the asset
+   */
+  id: string
+  /**
+   * MIME type of the asset
+   */
+  mime_type?: string
+  /**
+   * Name of the asset file
+   */
+  name: string
+  /**
+   * ID of the workflow node that produced this asset, if known
+   */
+  node_id?: string | null
+  /**
+   * Zero-based index of this asset within the node's output slot, if known
+   */
+  output_index?: number | null
+  /**
+   * Output slot key under the producing node (e.g. "images"), if known
+   */
+  output_key?: string | null
+  /**
+   * Relative URL for asset preview/thumbnail
+   */
+  preview_url?: string
+  /**
+   * Size of the asset in bytes
+   */
+  size?: number
+}
+
+/**
+ * Job status information
+ */
+export type JobStatusResponse = {
+  /**
+   * The inference instance assigned to this job (if any)
+   */
+  assigned_inference?: string | null
+  /**
+   * When the job was created
+   */
+  created_at: string
+  /**
+   * Error message if the job failed
+   */
+  error_message?: string | null
+  /**
+   * The job ID
+   */
+  id: string
+  /**
+   * When the job status was last changed
+   */
+  last_state_update?: string
+  /**
+   * Current job status
+   */
+  status:
+    | 'waiting_to_dispatch'
+    | 'pending'
+    | 'in_progress'
+    | 'completed'
+    | 'error'
+    | 'cancelled'
+  /**
+   * When the job was last updated
+   */
+  updated_at: string
+}
+
+/**
+ * Request to cancel multiple jobs by ID.
+ */
+export type JobsCancelRequest = {
+  /**
+   * Job identifiers (UUIDs) to cancel.
+   */
+  job_ids: Array<string>
+}
+
+/**
+ * Response for POST /api/jobs/cancel.
+ */
+export type JobsCancelResponse = {
+  /**
+   * Job IDs for which a cancel event was successfully dispatched by this
+   * call. Jobs already in a terminal or cancelling state are idempotently
+   * skipped and will not appear here.
+   *
+   */
+  cancelled: Array<string>
+}
+
+/**
+ * Paginated list of jobs for the authenticated user.
+ */
+export type JobsListResponse = {
+  /**
+   * Array of jobs ordered by specified sort field
+   */
+  jobs: Array<JobEntry>
+  pagination: PaginationInfo
+}
+
+/**
+ * A single JSON Web Key entry within a JWKS response.
+ */
+export type JwkKey = {
+  alg: string
+  crv: string
+  kid: string
+  kty: string
+  use: string
+  /**
+   * Base64url-encoded X coordinate
+   */
+  x: string
+  /**
+   * Base64url-encoded Y coordinate
+   */
+  y: string
+}
+
+/**
+ * JSON Web Key Set containing the public keys used to verify Cloud JWTs.
+ */
+export type JwksResponse = {
+  keys: Array<JwkKey>
+}
+
+/**
+ * Reference to a Hub label by ID.
+ */
+export type LabelRef = {
+  /**
+   * Human-readable display name (e.g. "Video Generation", "Flux").
+   */
+  display_name: string
+  /**
+   * Slug identifier (e.g. "video-generation", "flux").
+   */
+  name: string
 }
 
 /**
  * Paginated list of assets belonging to the authenticated user.
  */
-export type ListAssetsResponseWritable = {
+export type ListAssetsResponse = {
   /**
    * List of assets matching the query
    */
-  assets: Array<AssetWritable>
+  assets: Array<Asset>
   /**
    * Whether more assets are available beyond this page
    */
@@ -8570,6 +5934,3212 @@ export type ListAssetsResponseWritable = {
    * Total number of assets matching the filters
    */
   total: number
+}
+
+/**
+ * List of pending invitations for the current workspace.
+ */
+export type ListInvitesResponse = {
+  invites: Array<PendingInvite>
+}
+
+/**
+ * List of members in the current workspace.
+ */
+export type ListMembersResponse = {
+  members: Array<Member>
+  pagination: PaginationInfo
+}
+
+/**
+ * Paginated list of available asset tags.
+ */
+export type ListTagsResponse = {
+  /**
+   * Whether more tags are available
+   */
+  has_more: boolean
+  /**
+   * List of tags
+   */
+  tags: Array<TagInfo>
+  /**
+   * Total number of tags
+   */
+  total: number
+}
+
+/**
+ * List of API keys associated with the current workspace.
+ */
+export type ListWorkspaceApiKeysResponse = {
+  api_keys: Array<WorkspaceApiKeyInfo>
+}
+
+/**
+ * Paginated list of workspaces the authenticated user belongs to.
+ */
+export type ListWorkspacesResponse = {
+  /**
+   * Whether the client should offer creating another workspace. False for an account managed by an SSO organization or an actor at the served max_owned_workspaces limit. Counts live owner memberships, including the personal workspace and retained memberships hidden from the list; ordinary memberships and deleted workspaces do not count. True means these checks allow creation. POST /api/workspaces rechecks the limit atomically; this fact is not write authorization.
+   */
+  can_create_workspace: boolean
+  /**
+   * The workspace the app should open on sign-in: the workspace of the
+   * SSO organization that manages the caller's account, when the caller
+   * is a member of it. Absent for accounts no SSO organization manages.
+   *
+   */
+  default_workspace_id?: string
+  denied_reasons?: WorkspaceCreationDenials
+  /**
+   * Owner membership count at which new workspace creation is refused, including the personal workspace. This is a creation-only threshold; other owner assignments can raise the actual count above it.
+   */
+  max_owned_workspaces: number
+  workspaces: Array<WorkspaceWithRole>
+}
+
+/**
+ * A 400 from a media route served outside the generated wrapper: ErrorResponse, or MediaQueryError for a bad query parameter.
+ */
+export type MediaBadRequestError = ErrorResponse | MediaQueryError
+
+/**
+ * 400 for a missing `filename` or a `res` that is not a number, on the media routes served outside the generated wrapper.
+ */
+export type MediaQueryError = {
+  error: string
+}
+
+/**
+ * Workspace member with profile and role information.
+ */
+export type Member = {
+  /**
+   * Actions the authenticated actor may offer for this exact member row. Supplied by the member list; role-update responses may omit it. Absent means unknown, not permission. Writes recheck current membership.
+   */
+  capabilities?: WorkspaceMemberCapabilities
+  /**
+   * User's email address, or an empty string if none is on file.
+   */
+  email: string
+  /**
+   * User ID
+   */
+  id: string
+  /**
+   * Whether this member created the workspace. Derived as member.id == workspace.created_by_user_id; exactly one member per workspace is marked. Personal workspace creators cannot be demoted, removed, or leave; a promoted owner is never marked.
+   */
+  is_original_owner: boolean
+  /**
+   * When the user joined the workspace
+   */
+  joined_at: string
+  /**
+   * The member's role comes from their organization's directory (SSO): it is changed in the organization's identity provider, and a role change here is refused.
+   */
+  managed_by_directory?: boolean
+  /**
+   * User's display name
+   */
+  name: string
+  /**
+   * User's role in the workspace
+   */
+  role: 'owner' | 'member'
+}
+
+/**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export type ModelDownloadData = {
+  /**
+   * Bytes received so far. On done and cached, the file's size.
+   */
+  bytes_downloaded: number
+  /**
+   * The download's Content-Length, or null when the storage response sent none. On cached, the file's size; on done with no Content-Length, the bytes received.
+   */
+  bytes_total: number | null
+  /**
+   * How many files this job fetches; files the release ships are not counted.
+   */
+  count: number
+  /**
+   * The ComfyUI model folder the file goes in.
+   */
+  dir: string
+  /**
+   * The file's 1-based position among the files this job fetches.
+   */
+  index: number
+  /**
+   * The file name the workflow loads, as it appears in the model folder.
+   */
+  name: string
+  /**
+   * bytes_downloaded over bytes_total, from 0 to 1, rounded to four decimal places; null when bytes_total is null or 0. 1 on done and cached.
+   */
+  progress: number | null
+  /**
+   * The Cloud job id, stamped by platform-gateway on every frame it forwards.
+   */
+  prompt_id: string
+  /**
+   * Known values are downloading, done, cached and failed. downloading is sent as the download opens and then at most every 0.5 seconds while bytes arrive; done once the whole file arrived and matched its hash; cached once, instead of the others, when the worker already holds the file; failed when the download stopped. Treat it as an open string: a client shows the file as downloading only while the value is downloading, and reads any other value as the end of that file's download.
+   */
+  status: string
+  /**
+   * The job's workflow id, present when the job has one.
+   */
+  workflow_id?: string
+}
+
+/**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export type ModelDownloadFrame = {
+  data: ModelDownloadData
+  type: 'model_download'
+}
+
+/**
+ * Represents a model file with metadata
+ */
+export type ModelFile = {
+  /**
+   * The filename of the model
+   */
+  name: string
+  /**
+   * Index of the path where this model is located
+   */
+  pathIndex: number
+}
+
+/**
+ * Represents a folder containing models
+ */
+export type ModelFolder = {
+  /**
+   * List of paths where models of this type are stored
+   */
+  folders: Array<string>
+  /**
+   * The name of the model folder
+   */
+  name: string
+}
+
+/**
+ * Optional client observations. Invalid values are discarded without refusing the upload.
+ * Unknown or absent client becomes unknown. Missing resumed stays unknown; choosing resumable mode
+ * does not mean recovery. Start ignores resumed. Older servers ignore this entire object.
+ *
+ */
+export type ModelUploadAnalytics = {
+  /**
+   * editor, comfy_cli or platform; other values normalize to unknown.
+   */
+  client?: string
+  /**
+   * True only after recovery continued from a nonzero stored offset; false for an observed fresh transfer. Omit when unknown.
+   */
+  resumed?: boolean
+}
+
+/**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export type ModelUploadStarted = {
+  /**
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
+   */
+  chunk_size_bytes?: number
+  /**
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
+   */
+  expires_at: string
+  /**
+   * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   */
+  headers: {
+    [key: string]: string
+  }
+  /**
+   * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
+   */
+  max_size_bytes: number
+  method: 'PUT'
+  /**
+   * Version 1 accepts optional metadata and terminal client reports. Absence means unsupported.
+   */
+  upload_analytics_version?: number
+  /**
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   */
+  upload_id: string
+  /**
+   * Present only for a resumable session. Clients must tolerate unknown values and refuse unsupported modes without sending bytes. When absent, send one PUT with the returned headers.
+   */
+  upload_mode?: 'resumable'
+  /**
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
+   */
+  upload_url: string
+}
+
+export type ModelUploadTransferReport = {
+  /**
+   * editor, comfy_cli or platform; other values normalize to unknown.
+   */
+  client: string
+  /**
+   * One folder from model_upload_folders in GET /api/features.
+   */
+  model_folder: string
+  /**
+   * Terminal transfer failure; canceled reports a user cancellation.
+   */
+  reason:
+    | 'network'
+    | 'http'
+    | 'session_expired'
+    | 'file_changed'
+    | 'file_unreadable'
+    | 'canceled'
+    | 'unknown'
+  /**
+   * Actual recovery from a nonzero stored offset; omit when unknown.
+   */
+  resumed?: boolean
+  /**
+   * Client-reported file size.
+   */
+  size_bytes: number
+}
+
+/**
+ * The next charge to the card on file, as Stripe's invoice preview reported it, after proration, discounts, tax and account credit.
+ */
+export type NextCharge = {
+  /**
+   * Amount in the currency's smallest unit (e.g. cents).
+   */
+  amount: number
+  /**
+   * Lowercase ISO currency code.
+   */
+  currency: string
+  /**
+   * When the charge is due.
+   */
+  date: string
+  /**
+   * True when the charge prices the pending scheduled plan change (scheduled_change) rather than a renewal of the current plan.
+   */
+  reflects_scheduled_change: boolean
+}
+
+/**
+ * Metadata describing a single ComfyUI node type and its inputs/outputs.
+ */
+export type NodeInfo = {
+  /**
+   * Whether this is an API node
+   */
+  api_node?: boolean
+  /**
+   * Category of the node
+   */
+  category?: string
+  /**
+   * Whether the node is deprecated
+   */
+  deprecated?: boolean
+  /**
+   * Description of the node
+   */
+  description?: string
+  /**
+   * Display name of the node
+   */
+  display_name?: string
+  /**
+   * Whether the node is experimental
+   */
+  experimental?: boolean
+  /**
+   * Input specifications for the node
+   */
+  input?: {
+    [key: string]: unknown
+  }
+  /**
+   * Order of inputs for display
+   */
+  input_order?: {
+    [key: string]: Array<string>
+  }
+  /**
+   * Internal name of the node
+   */
+  name?: string
+  /**
+   * Output types of the node
+   */
+  output?: Array<string>
+  /**
+   * Whether each output is a list
+   */
+  output_is_list?: Array<boolean>
+  /**
+   * Names of the outputs
+   */
+  output_name?: Array<string>
+  /**
+   * Whether this is an output node
+   */
+  output_node?: boolean
+  /**
+   * Tooltips for outputs
+   */
+  output_tooltips?: Array<string>
+  /**
+   * Python module implementing the node
+   */
+  python_module?: string
+}
+
+/**
+ * OAuth 2.1 authorization-server metadata (RFC 8414).
+ */
+export type OAuthAuthorizationServerMetadata = {
+  authorization_endpoint: string
+  code_challenge_methods_supported: Array<string>
+  grant_types_supported: Array<string>
+  issuer: string
+  jwks_uri: string
+  /**
+   * RFC 7591 §3.1 Dynamic Client Registration endpoint. Advertised so MCP-spec-compliant clients can auto-discover and self-register without operator involvement. Present only when DCR is enabled.
+   *
+   */
+  registration_endpoint?: string
+  response_types_supported: Array<string>
+  scopes_supported?: Array<string>
+  token_endpoint: string
+  token_endpoint_auth_methods_supported: Array<string>
+}
+
+/**
+ * Redirect target produced after a JSON consent submission. The frontend must navigate the browser to this URL so custom-scheme client callbacks work without relying on fetch-visible 302 headers.
+ */
+export type OAuthAuthorizeRedirectResponse = {
+  /**
+   * OAuth client redirect URI with either code+state for allow, or error+state for deny.
+   */
+  redirect_url: string
+}
+
+/**
+ * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
+ *
+ */
+export type OAuthConsentChallenge = {
+  /**
+   * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
+   */
+  client_display_name: string
+  /**
+   * Whether the client requesting authorization is a seeded first-party
+   * client (`first_party`) or was created through RFC 7591 dynamic client
+   * registration (`dynamic`). Derived from the client_id: every dynamically
+   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
+   * on a `dynamic` client is registrant-supplied and unverified; the consent
+   * UI must present it as such. Consumers must treat an absent value as
+   * `dynamic`.
+   *
+   */
+  client_provenance: 'first_party' | 'dynamic'
+  /**
+   * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
+   */
+  csrf_token: string
+  /**
+   * Opaque server-side identifier for the authorization-request row. Carried back unchanged in the consent submission.
+   */
+  oauth_request_id: string
+  /**
+   * The exact redirect URI this authorization request was validated
+   * against at GET time (oauth_authorization_requests.redirect_uri,
+   * itself byte-matched to the client registration). The frontend
+   * binds the post-consent navigation to this value, so it needs no
+   * per-client knowledge of callback schemes. Surfaced verbatim;
+   * also suitable for display so users can verify the destination.
+   *
+   */
+  redirect_uri: string
+  /**
+   * Human-readable name of the protected resource, from oauth_resources.display_name.
+   */
+  resource_display_name: string
+  /**
+   * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
+   */
+  scopes: Array<string>
+  verified_client?: OAuthConsentVerifiedClient
+  /**
+   * Workspaces the user can select from. Membership is re-checked on POST.
+   */
+  workspaces: Array<OAuthConsentChallengeWorkspace>
+}
+
+/**
+ * One workspace option presented in the OAuth consent challenge. Promoted to a named schema so the generated Go type is referenceable in handlers and tests rather than re-declared as an anonymous struct at every callsite.
+ *
+ */
+export type OAuthConsentChallengeWorkspace = {
+  id: string
+  name: string
+  role: 'owner' | 'member'
+  type: 'personal' | 'team'
+}
+
+/**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export type OAuthConsentVerifiedClient = {
+  /**
+   * Human-readable platform name from the server registry (e.g. "ChatGPT"), never from client_name.
+   */
+  display_name: string
+  /**
+   * Stable identifier of the verified platform.
+   */
+  platform: 'chatgpt' | 'claude'
+}
+
+/**
+ * OAuth 2.1 protected-resource metadata (RFC 9728).
+ */
+export type OAuthProtectedResourceMetadata = {
+  authorization_servers: Array<string>
+  bearer_methods_supported?: Array<string>
+  resource: string
+  scopes_supported: Array<string>
+}
+
+/**
+ * Union of the two 400 shapes /oauth/register can emit. `OAuthRegisterError` is the handler-shaped RFC 7591 §3.2.2 error; `ErrorResponse` is the strict-server binding-layer error fired when the request body fails OpenAPI-schema validation before the handler runs, normalized to the standard {code, message} shape by the custom Echo HTTPErrorHandler (BE-1178).
+ *
+ */
+export type OAuthRegisterBadRequestResponse = OAuthRegisterError | ErrorResponse
+
+/**
+ * RFC 7591 §3.2.2 error response.
+ */
+export type OAuthRegisterError = {
+  error: 'invalid_redirect_uri' | 'invalid_client_metadata'
+  error_description?: string | null
+}
+
+/**
+ * RFC 7591 §2 client metadata document. Fields fall into three groups: the ones the server honors, the purely informational ones it accepts and ignores (`scope` plus the client-profile fields `client_uri`, `logo_uri`, `tos_uri`, `policy_uri`, `contacts`, `software_id`, `software_version` — parsed, never persisted, never echoed, per RFC 7591 §2's "MAY ignore" allowance), and the ones it rejects with `invalid_client_metadata` (`resource_grants`, because scopes/grants are server-owned for dynamic clients; `jwks`/`jwks_uri`, because they only apply to the JWT client-authentication methods DCR does not offer). `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ *
+ */
+export type OAuthRegisterRequest = {
+  /**
+   * RFC 7591 §2 application_type. **OPTIONAL** — omit the field to default to `native` (the loopback-friendly policy), rather than the RFC's nominal `web` default; the MCP SDK's DCR client omits it. `native` for desktop / CLI / MCP-spec-strict clients (loopback redirects); `web` for hosted clients (HTTPS only, host must be allowlisted). The realistic MCP-client population is overwhelmingly native/loopback, so defaulting to `web` would silently bounce those clients off the wrong redirect policy. A *present* value must be one of the enum members; any other value rejects with `invalid_client_metadata`. (The server has no runtime enum validation and defensively coerces a null/empty value to `native`, but spec-validating clients should omit the field rather than send `""` — the enum does not permit it.)
+   *
+   */
+  application_type?: 'native' | 'web'
+  /**
+   * Human-readable name shown in the consent UI. Reserved-name list rejects impersonation of major MCP clients.
+   */
+  client_name?: string
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  client_uri?: string | null
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  contacts?: Array<string> | null
+  /**
+   * Optional. Defaults to `["authorization_code","refresh_token"]`.
+   */
+  grant_types?: Array<'authorization_code' | 'refresh_token'>
+  /**
+   * **REJECTED IF PRESENT.** A JWK set only applies to the `private_key_jwt` / `client_secret_jwt` client-authentication methods, which DCR does not offer — `token_endpoint_auth_method` is forced to `none` (public clients only). Accepting it silently would leave the client believing it had negotiated an authentication posture the server never agreed to, so this returns `invalid_client_metadata`.
+   */
+  jwks?: {
+    [key: string]: unknown
+  } | null
+  /**
+   * **REJECTED IF PRESENT.** Same reason as `jwks`: JWT client authentication is not offered by DCR, so a JWK set URI cannot be honored and returns `invalid_client_metadata` rather than being silently dropped.
+   */
+  jwks_uri?: string | null
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  logo_uri?: string | null
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  policy_uri?: string | null
+  /**
+   * 1–5 redirect URIs. Validated against `application_type` policy.
+   */
+  redirect_uris: Array<string>
+  /**
+   * **REJECTED IF PRESENT.** Same reason as `scope`. The set of resources and scopes a dynamic client may request is server-policy, not request-driven.
+   *
+   */
+  resource_grants?: {
+    [key: string]: Array<string>
+  } | null
+  /**
+   * Optional. Defaults to `["code"]`.
+   */
+  response_types?: Array<'code'>
+  /**
+   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server grants the published scope lists of `comfy-mcp` and, when active, `comfy-router`, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
+   *
+   */
+  scope?: string | null
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  software_id?: string | null
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  software_version?: string | null
+  /**
+   * Optional. Any value is accepted and substituted with `none` (RFC 7591 §3.2.1); the registration response reports `none`. Public clients only, so authenticate with PKCE.
+   */
+  token_endpoint_auth_method?: string
+  /**
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
+   */
+  tos_uri?: string | null
+}
+
+/**
+ * RFC 7591 §3.2.1 successful registration response.
+ */
+export type OAuthRegisterResponse = {
+  application_type: 'native' | 'web'
+  /**
+   * Server-generated client_id. Always carries the `comfy-dyn-` prefix.
+   */
+  client_id: string
+  /**
+   * Unix timestamp (seconds) when the client was registered.
+   */
+  client_id_issued_at: number
+  client_name?: string
+  grant_types: Array<string>
+  redirect_uris: Array<string>
+  response_types: Array<string>
+  token_endpoint_auth_method: 'none'
+}
+
+/**
+ * RFC 6749 §5.2 error response.
+ */
+export type OAuthTokenError = {
+  /**
+   * RFC 6749 §5.2 error code: invalid_request, invalid_client, invalid_grant, unauthorized_client, unsupported_grant_type, invalid_scope.
+   */
+  error: string
+  /**
+   * Human-readable, no leak of internal storage state.
+   */
+  error_description?: string
+}
+
+/**
+ * RFC 6749 §5.1 successful token response.
+ */
+export type OAuthTokenResponse = {
+  /**
+   * Resource-bound Cloud JWT (audience matches the protected resource).
+   */
+  access_token: string
+  /**
+   * Access token lifetime in seconds.
+   */
+  expires_in: number
+  /**
+   * Opaque refresh token. Rotates on every successful refresh; presenting an already-rotated token revokes the entire family.
+   */
+  refresh_token: string
+  /**
+   * Space-delimited scopes granted with this token.
+   */
+  scope: string
+  token_type: 'Bearer'
+}
+
+/**
+ * Pagination metadata included in list responses. Supports both legacy
+ * offset/limit pagination and cursor-based pagination. When cursor-based
+ * pagination is used, `next_cursor` is the primary pagination token and
+ * `offset`/`total` may be zero.
+ *
+ */
+export type PaginationInfo = {
+  /**
+   * Whether more items are available beyond this page
+   */
+  has_more: boolean
+  /**
+   * Items per page
+   */
+  limit: number
+  /**
+   * Opaque cursor for the next page. Pass this value as the `after`
+   * query parameter on the next request. Empty or absent when there
+   * are no more results.
+   *
+   */
+  next_cursor?: string
+  /**
+   * Current offset (0-based). Deprecated: use cursor-based pagination.
+   *
+   * @deprecated
+   */
+  offset: number
+  /**
+   * Total number of items matching filters (may be 0 when using cursor pagination)
+   */
+  total: number
+}
+
+/**
+ * Request body for generating a payment portal session URL.
+ */
+export type PaymentPortalRequest = {
+  /**
+   * Omitted or empty opens the generic Billing and invoices portal.
+   * payment_method_update opens Stripe's dedicated add-payment-method flow;
+   * completing it sets only customer.invoice_settings.default_payment_method.
+   * It does not update subscription-specific defaults or guarantee renewal recovery.
+   * Completion uses Stripe's hosted confirmation page.
+   *
+   */
+  flow_type?: '' | 'payment_method_update'
+  /**
+   * URL to redirect after the user exits the portal
+   */
+  return_url?: string
+}
+
+/**
+ * Response containing a redirect URL to the payment portal.
+ */
+export type PaymentPortalResponse = {
+  /**
+   * Stripe Billing Portal URL
+   */
+  url: string
+}
+
+/**
+ * An outstanding workspace invitation that has not yet been accepted.
+ */
+export type PendingInvite = {
+  /**
+   * Email address of the invited user
+   */
+  email: string
+  /**
+   * When the invite expires
+   */
+  expires_at: string
+  /**
+   * Invite ID
+   */
+  id: string
+  /**
+   * When the invite was created
+   */
+  invited_at: string
+  /**
+   * Invite token for constructing invite links. Empty for expired invites.
+   */
+  token?: string
+}
+
+/**
+ * Configured credit allowance of the current plan, not remaining balance, an invoice or proof of live provider grants. Amount includes credits and period; none is a proven configured zero. Native-empty or incoherent Enterprise configuration remains unknown, never none. Missing data and unresolved, unsupported, ended or activating plans remain unknown. Unknown or missing means unavailable; clients must not render zero. Does not change eligibility.
+ */
+export type PeriodCreditGrant = {
+  /**
+   * Configured whole display credits. Present only for amount.
+   */
+  credits?: number
+  /**
+   * Grant cadence, which may differ from Enterprise invoice cadence. Present only for amount.
+   */
+  period?: SubscriptionDuration
+  state: 'amount' | 'none' | 'unknown'
+}
+
+/**
+ * Which developer-platform deployment this browser should run on.
+ */
+export type PickWorkspaceDeploymentRequest = {
+  /**
+   * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
+   */
+  deployment_id: string
+}
+
+/**
+ * Billing plan details including pricing, limits, and features.
+ */
+export type Plan = {
+  action: PlanAction
+  availability: PlanAvailability
+  /**
+   * Raw credit count (not cents) the plan grants for one billing period,
+   * read from the catalog grant the subscription actually receives. An
+   * annual plan carries the whole year's grant. Omitted when the plan
+   * grants no flat credit amount: per-credit Team plans (see
+   * team_credit_stops), team-only seat plans, zero-grant plans and plans
+   * absent from the catalog.
+   *
+   */
+  credits?: number
+  /**
+   * Per-member credits in cents (base + one seat)
+   */
+  credits_cents: number
+  denied_reason?: PlanActionDeniedReason
+  denied_reason_params?: PlanActionDeniedReasonParams
+  duration: SubscriptionDuration
+  /**
+   * Optional ordered localization companion selected by the server. Only available items appear in the existing features strings; coming-soon items remain separate. Key is a stable semantic identifier, not a client locale path. Clients map known keys to translations and may use text as an English fallback according to their locale policy. Unknown keys never imply entitlements. Omitted for older string-only metadata. Team count uses the resolved max_seats.
+   */
+  feature_items?: Array<PlanFeatureItem>
+  /**
+   * Optional ordered English feature copy for this offer, for display only. Omitted when metadata is unavailable. Team member count uses max_seats. Does not grant entitlements or change plan actions or availability.
+   */
+  features?: Array<string>
+  /**
+   * Maximum number of seats allowed for this plan
+   */
+  max_seats: number
+  /**
+   * Optional display badge for this offer. True recommends a Popular chip; false means no Popular chip. Omitted when metadata is unavailable. False for a matching current or scheduled plan, and for every offer in a known previous plan's tier across billing periods. Unknown previous tier is not inferred. At most one plan per billing period is true, breaking ties by plan slug within each period. Monthly and yearly recommendations can both be true. The server resolves this precedence. Not eligibility.
+   */
+  popular?: boolean
+  /**
+   * Per-member price in cents (base + one seat)
+   */
+  price_cents: number
+  seat_summary: PlanSeatSummary
+  /**
+   * Plan identifier (e.g., "pro-monthly", "team-standard-annual")
+   */
+  slug: string
+  tier: SubscriptionTier
+}
+
+/**
+ * Action for this exact plan and billing interval. Render as received. Subscribe starts or resumes checkout, change changes the plan now, reactivate removes a scheduled cancellation, downgrade schedules a reduction at the billing boundary, and none disables the choice. This is presentation guidance, not authorization; writes recheck policy.
+ */
+export type PlanAction =
+  | 'subscribe'
+  | 'change'
+  | 'reactivate'
+  | 'downgrade'
+  | 'none'
+
+/**
+ * Why action is none. Permission refusals precede sales management, parked and running operations, a scheduled successor, transition restrictions, and seats. Scheduled successors include effective_at in denied_reason_params. Unknown or unavailable state fails closed with billing_state_unknown. Absent for an actionable choice.
+ */
+export type PlanActionDeniedReason =
+  | 'not_a_member'
+  | 'not_workspace_owner'
+  | 'not_original_owner'
+  | 'sales_managed'
+  | 'billing_operation_parked'
+  | 'billing_operation_in_progress'
+  | 'subscription_change_in_progress'
+  | 'annual_to_monthly_unsupported'
+  | 'same_plan'
+  | 'incompatible_transition'
+  | 'exceeds_max_seats'
+  | 'billing_state_unknown'
+
+export type PlanActionDeniedReasonParams = {
+  /**
+   * Billing boundary when the already-scheduled successor takes effect.
+   */
+  effective_at?: string
+}
+
+/**
+ * Availability and eligibility information for a billing plan.
+ */
+export type PlanAvailability = {
+  /**
+   * Whether the workspace can switch to this plan right now. False exactly when reason is present.
+   */
+  available: boolean
+  reason?: PlanAvailabilityReason
+}
+
+/**
+ * Why a plan is unavailable. Present exactly when available is false and
+ * absent when it is true. Only the first reason that applies is reported,
+ * in the order below. Render the value as received; do not recompute it.
+ * same_plan: (a) Why can this plan not be picked? (b) It is the plan the workspace is already on. (c) Absent means the plan is not the current one. (d) Not a refusal of a different plan; see incompatible_transition. (e) The plan slug equals the slug of the workspace's active subscription.
+ * incompatible_transition: (a) Why is this plan closed for the workspace's current plan? (b) The transition rules never allow it: the Free plan, which is provisioned only through free-tier eligibility, or a switch into the Founders plan. (c) Absent means no such rule applies. (d) Not a temporary state, and not billing_operation_in_progress, billing_operation_parked or annual_to_monthly_unsupported. (e) The target is the Free plan, or the transition matrix refuses the pair for a reason other than annual_to_monthly_unsupported.
+ * billing_operation_in_progress: (a) Why can no other plan be picked for now? (b) A subscription-changing billing operation is running for the workspace's active subscription. It settles on its own, so a client may say that plans will be available again shortly. (c) Absent means no such operation is running. (d) Not billing_operation_parked, which does not clear on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is running and none is parked.
+ * billing_operation_parked: (a) Why can no other plan be picked until support steps in? (b) A subscription-changing billing operation is parked for reconciliation for the workspace's active subscription: it is either paid but credits not granted, or a replacement subscription that could not finish superseding the old one. It does not clear on its own, so a client must route the user to support and never imply a wait. (c) Absent means no operation is parked. (d) Not billing_operation_in_progress, which settles on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is parked; reported instead of billing_operation_in_progress when both exist.
+ * annual_to_monthly_unsupported: (a) Why can a monthly plan not be chosen from an annual plan? (b) The annual commitment binds, so a move to a higher-tier monthly plan is not supported before the term ends. (c) Absent means the transition is not an annual to higher-tier monthly move. (d) Not a downgrade, which is allowed and scheduled, and not incompatible_transition. (e) The transition matrix refuses the pair with its annual-to-monthly tier upgrade rule.
+ * exceeds_max_seats: (a) Why is this plan closed to a workspace with many people? (b) The occupied seats exceed the plan's seat limit, counted as the subscribe request counts them: a team plan counts members plus unexpired pending invitations, any other plan counts members alone. (c) Absent means the occupied seats fit the plan. (d) Not a pending-invitation count for non-team plans, where an invitation does not occupy a seat. (e) For a team plan, members + pending invitations is greater than the seat limit; for any other plan, members is greater than the seat limit; a positive workspace override replaces the plan default in both cases.
+ * requires_team and requires_personal are part of this enum but are not reported today.
+ */
+export type PlanAvailabilityReason =
+  | 'same_plan'
+  | 'incompatible_transition'
+  | 'billing_operation_in_progress'
+  | 'billing_operation_parked'
+  | 'annual_to_monthly_unsupported'
+  | 'exceeds_max_seats'
+  | 'requires_team'
+  | 'requires_personal'
+
+export type PlanFeatureItem = {
+  /**
+   * Stable semantic display identifier; additions appear in generated client types.
+   */
+  key:
+    | 'shortRuntime'
+    | 'longRuntime'
+    | 'addCredits'
+    | 'importModels'
+    | 'sharedCreditPool'
+    | 'membersUpTo'
+    | 'perMemberCreditLimits'
+    | 'memberSpendAuditing'
+    | 'sharedWorkflowsAssets'
+    | 'projects'
+  /**
+   * Named raw interpolation values only, never preformatted copy.
+   */
+  params?: {
+    /**
+     * Resolved Team member limit for membersUpTo; use locale plural rules.
+     */
+    count: number
+  }
+  /**
+   * Coming-soon items are display promises, not currently available entitlements.
+   */
+  status: 'available' | 'coming_soon'
+  /**
+   * English fallback for this display item; available items also appear in features.
+   */
+  text: string
+}
+
+/**
+ * Summary of seat costs based on current workspace members
+ */
+export type PlanSeatSummary = {
+  /**
+   * Total number of seats (owner + members) that would be charged
+   */
+  seat_count: number
+  /**
+   * Total cost for all seats in cents
+   */
+  total_cost_cents: number
+  /**
+   * Total credits granted for all seats in cents
+   */
+  total_credits_cents: number
+}
+
+/**
+ * Plan information for preview display
+ */
+export type PreviewPlanInfo = {
+  /**
+   * Per-seat credits in cents
+   */
+  credits_cents: number
+  duration: SubscriptionDuration
+  /**
+   * The plan's price for one billing period before invoice-level
+   * discounts, as rated by Stripe: the compare-at price a checkout
+   * strikes through beside price_cents. Present only on new_plan of
+   * Stripe-rated quotes that itemize every applied discount in
+   * discounts, and only when it is above price_cents, so a client
+   * shows the strikethrough exactly when this field is present.
+   * Same basis as price_cents: the whole subscription for one
+   * billing period. No plan on sale is priced by seat (personal plans
+   * are one seat; Team is priced by its credit stop), so the seat
+   * count changes neither.
+   *
+   */
+  list_price_cents?: number
+  /**
+   * list_price_cents divided by 12 and rounded half up to the nearest
+   * cent, for showing a yearly plan's pre-discount per-month price.
+   * Display only, like monthly_price_cents. Present exactly when
+   * list_price_cents is present on an ANNUAL new_plan, so a client
+   * strikes it through beside monthly_price_cents whenever it is
+   * present.
+   *
+   */
+  monthly_list_price_cents?: number
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * for showing a yearly plan as a per-month price. Display only: the
+   * yearly charge is still price_cents, and 12 times this value can
+   * differ from it by up to 6 cents. Present only on new_plan, and only
+   * when duration is ANNUAL.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * Current billing period end (only for current_plan)
+   */
+  period_end?: string
+  /**
+   * Current billing period start (only for current_plan)
+   */
+  period_start?: string
+  /**
+   * Per-seat price in cents
+   */
+  price_cents: number
+  seat_summary: PlanSeatSummary
+  /**
+   * Plan slug
+   */
+  slug: string
+  tier: SubscriptionTier
+}
+
+/**
+ * Request body for previewing the cost of a plan subscription change.
+ */
+export type PreviewSubscribeRequest = {
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * Target plan slug to preview subscribing to
+   */
+  plan_slug: string
+  /**
+   * Optional Stripe promotion code to validate and include in the exact quote.
+   */
+  promotion_code?: string
+  /**
+   * Selected per-credit Team plan stop to preview.
+   */
+  team_credit_stop_id?: string
+}
+
+/**
+ * Itemized cost preview for a pending subscription change.
+ */
+export type PreviewSubscribeResponse = {
+  /**
+   * Whether this subscription change is allowed
+   */
+  allowed: boolean
+  amount_due_cents?: number
+  /**
+   * Credit from the customer's existing account balance applied to
+   * today's charge (the invoice's starting balance, capped at the
+   * total). Present only on Stripe-rated quotes that invoice today in
+   * embedded checkout, when a credit balance is applied; otherwise
+   * absent. Display only: amount_due_cents already reflects it
+   * (an absent amount_due_cents means 0).
+   *
+   */
+  balance_applied_cents?: number
+  /**
+   * The date the current subscription is set to end because a
+   * cancellation is scheduled. Present only when a cancellation is
+   * scheduled, which is exactly when requires_reactivation_confirmation
+   * is true. Use this, not current_plan.period_end, for the
+   * reactivation banner: period_end is the provider's billing-period
+   * boundary and can differ from a mid-period cancellation date.
+   *
+   */
+  cancel_at?: string
+  /**
+   * Amount that will be charged at next billing period in cents
+   */
+  cost_next_period_cents: number
+  /**
+   * Amount to charge today in cents (0 for downgrades)
+   */
+  cost_today_cents: number
+  /**
+   * Credits granted at the next billing period, as a whole credit count,
+   * resolved the same way as credits_today. Absent when the quote was not
+   * priced against Stripe.
+   *
+   */
+  credits_next_period?: number
+  /**
+   * Credits that will be granted at next billing period in cents
+   */
+  credits_next_period_cents: number
+  /**
+   * Credits granted today, as a whole credit count. Resolved from the
+   * Stripe price metadata by the same rule the invoice grant uses, so it
+   * equals credits_added on the succeeded operation. Display this rather
+   * than converting credits_today_cents, which rounds. Absent when the
+   * quote was not priced against Stripe.
+   *
+   */
+  credits_today?: number
+  /**
+   * Credits granted today in cents (prorated for mid-period upgrades)
+   */
+  credits_today_cents: number
+  currency?: string
+  current_plan?: PreviewPlanInfo
+  discounts?: Array<SubscriptionDiscount>
+  /**
+   * When the change takes effect
+   */
+  effective_at: string
+  /**
+   * Whether the change takes effect immediately (true) or at period end (false)
+   */
+  is_immediate: boolean
+  new_plan: PreviewPlanInfo
+  /**
+   * The Stripe payment method configuration governing which payment
+   * methods a checkout offers for this environment. Mount Stripe
+   * Elements with `paymentMethodConfiguration` set to this id instead
+   * of hardcoding payment method types. Present on every successful
+   * preview whenever the environment has one configured, independent
+   * of embedded_checked_enabled; absent when it is not configured.
+   *
+   */
+  payment_method_configuration_id?: string
+  /**
+   * Normalized promotion code accepted by Stripe.
+   */
+  promotion_code?: string
+  /**
+   * The instant cost_today_cents was priced at (Stripe-native transitions
+   * only; absent for other billing rails). Echo this back as proration_at
+   * on POST /billing/subscribe to have the subscribe charge exactly this
+   * previewed amount instead of re-pricing at whatever later instant the
+   * subscribe request happens to arrive.
+   *
+   */
+  proration_at?: string
+  /**
+   * Stripe's prorated charge for the rest of the current period on the
+   * new plan, before discounts. In embedded checkout, present on an
+   * immediate plan change that Stripe prorates, when every discount on
+   * today's invoice is itemized in discounts or none applies; absent on
+   * the monthly-to-yearly reset, scheduled changes and a first
+   * subscription.
+   * When present, proration_remaining_cents minus proration_unused_cents
+   * is the invoice's proration before discounts; other invoice lines are
+   * not itemized.
+   *
+   */
+  proration_remaining_cents?: number
+  /**
+   * Stripe's credit for unused time on the old plan, as a positive
+   * amount to subtract. Present exactly when proration_remaining_cents
+   * is.
+   *
+   */
+  proration_unused_cents?: number
+  /**
+   * Opaque short-lived quote identifier to echo on Subscribe.
+   */
+  quote_id?: string
+  /**
+   * Quote contract version to echo on Subscribe.
+   */
+  quote_version?: number
+  /**
+   * Reason why the change is not allowed (only present if allowed=false)
+   */
+  reason?: string
+  renewal_amount_cents?: number
+  /**
+   * The next recurring charge and target-plan period end. Current servers
+   * always return this later than effective_at and following the target
+   * plan's billing interval. Optional in the schema for older clients.
+   *
+   */
+  renewal_at?: string
+  /**
+   * Whether the checkout must collect explicit consent to today's
+   * charge (a consent checkbox) before confirming this reactivation.
+   * True when requires_reactivation_confirmation is true, current_plan
+   * is present, transition_type is upgrade or duration_change, and
+   * today's charge (amount_due_cents, or cost_today_cents when
+   * amount_due_cents is absent) exceeds the current plan's monthly
+   * price: current_plan.seat_summary.total_cost_cents (the whole
+   * subscription, every seat), divided by 12 when current_plan.duration
+   * is ANNUAL. False otherwise, including every downgrade (nothing is
+   * charged today) and every new_subscription. Present exactly when
+   * requires_reactivation_confirmation is present, and absent when it is
+   * absent.
+   * Not whether the change is a reactivation (that is
+   * requires_reactivation_confirmation) and not an authorization:
+   * subscribe enforces reactivation consent on its own.
+   *
+   */
+  requires_reactivation_charge_confirmation?: boolean
+  /**
+   * Whether this previewed change requires explicit reactivation
+   * consent. Present on every successful preview, with or without
+   * embedded checkout. Computed from the persisted subscription and a
+   * short-lived cache of Stripe lifecycle state. The subscribe
+   * enforcement path performs its own uncached Stripe lifecycle read.
+   *
+   */
+  requires_reactivation_confirmation?: boolean
+  /**
+   * Stripe's subtotal for today's invoice: before invoice-level
+   * discounts and any customer credit balance, and before tax only for
+   * tax-exclusive prices. On an immediate plan change it is net of the
+   * unused-time credit, so it can be zero or negative. Present only on
+   * Stripe-rated quotes that invoice today and itemize every applied
+   * discount in discounts. The charge is always
+   * cost_today_cents / amount_due_cents.
+   *
+   */
+  subtotal_cents?: number
+  /**
+   * Type of subscription transition
+   */
+  transition_type:
+    | 'new_subscription'
+    | 'upgrade'
+    | 'downgrade'
+    | 'duration_change'
+}
+
+/**
+ * Identity of the workspace-bound terminal subscription, not a checkout target or permission to resubscribe. Historical identity is independent of current plan availability and pricing.
+ */
+export type PreviousPlan = {
+  /**
+   * Exact recorded plan identifier; never inferred from tier.
+   */
+  plan_slug: string
+  /**
+   * Recorded Team commitment-stop choice, when known. No price is inferred.
+   */
+  team_credit_stop_id?: string
+}
+
+/**
+ * Error response for ComfyUI prompt execution.
+ */
+export type PromptErrorResponse = {
+  [key: string]: unknown
+}
+
+/**
+ * Metadata about the currently running and queued prompts.
+ */
+export type PromptInfo = {
+  exec_info?: {
+    /**
+     * Number of items remaining in the queue
+     */
+    queue_remaining?: number
+  }
+}
+
+/**
+ * Request body for submitting a ComfyUI workflow prompt for execution.
+ */
+export type PromptRequest = {
+  /**
+   * Extra data to be associated with the prompt
+   */
+  extra_data?: {
+    [key: string]: unknown
+  }
+  /**
+   * If true, adds the prompt to the front of the queue
+   */
+  front?: boolean
+  /**
+   * Priority number for the queue (lower numbers have higher priority)
+   */
+  number?: number
+  /**
+   * List of node names to execute
+   */
+  partial_execution_targets?: Array<string>
+  /**
+   * The workflow graph to execute
+   */
+  prompt: {
+    [key: string]: unknown
+  }
+  /**
+   * UUID identifying the cloud workflow entity to associate with this job
+   */
+  workflow_id?: string
+  /**
+   * UUID identifying the workflow version to associate with this job
+   */
+  workflow_version_id?: string
+}
+
+/**
+ * Response returned after successfully queuing a workflow prompt.
+ */
+export type PromptResponse = {
+  /**
+   * Any errors in the nodes of the prompt
+   */
+  node_errors?: {
+    [key: string]: unknown
+  }
+  /**
+   * Priority number in the queue
+   */
+  number?: number
+  /**
+   * Unique identifier for the prompt execution
+   */
+  prompt_id?: string
+}
+
+/**
+ * The partner-provider governance catalog: every governable provider, identical for all workspaces. A projection of the curated catalog minus the internal api_names.
+ */
+export type ProviderCatalogResponse = {
+  /**
+   * Sorted by provider_id.
+   */
+  providers: Array<CatalogProvider>
+}
+
+/**
+ * A workspace's partner-provider governance policy document — the exact shape PUT accepts (round-trips; entries come back sorted by provider_id, write order is not significant). Effective rule: enabled(P) = !enforcement_enabled || (the entry for P has enabled=true); absent from the array = unset (deny when enforcing).
+ */
+export type ProviderPolicy = {
+  /**
+   * The arming switch. While false the policy is editable but nothing blocks (preview mode).
+   */
+  enforcement_enabled: boolean
+  /**
+   * One entry per reviewed provider. A duplicate provider_id in a write is rejected with 400. Unknown provider_ids are rejected with 422.
+   */
+  providers: Array<ProviderPolicyEntry>
+}
+
+/**
+ * One provider's policy state.
+ */
+export type ProviderPolicyEntry = {
+  /**
+   * true = allowlisted. false and absent evaluate identically when enforcing; explicit false is UI review state.
+   */
+  enabled: boolean
+  /**
+   * Catalog provider identifier.
+   */
+  provider_id: string
+}
+
+/**
+ * Request body for publishing or updating a workflow on the Hub.
+ */
+export type PublishHubWorkflowRequest = {
+  /**
+   * IDs of assets (inputs and models) to snapshot.
+   */
+  asset_ids: Array<string>
+  /**
+   * Custom node slugs. Must exist in hub_labels.
+   */
+  custom_nodes?: Array<string>
+  /**
+   * Workflow description for the hub listing.
+   */
+  description?: string
+  /**
+   * Arbitrary metadata (size, vram, open_source, etc.). Reserved keys (extended_description, meta_description, how_to_use, suggested_use_cases, faq_items, content_template) are backend-managed and will be stripped if supplied.
+   */
+  metadata?: {
+    [key: string]: unknown
+  }
+  /**
+   * Model slugs. Must exist in hub_labels.
+   */
+  models?: Array<string>
+  /**
+   * Display name for the published workflow on the hub.
+   */
+  name: string
+  /**
+   * Array of tokens or existing public URLs from the previous published version. Full replacement (PUT semantics). Omit or pass [] to have no sample images.
+   *
+   */
+  sample_image_tokens_or_urls?: Array<string>
+  /**
+   * Searchable tag slugs. Must exist in hub_labels.
+   */
+  tags?: Array<string>
+  /**
+   * Token or existing public URL from the previous published version. Omit to have no comparison image.
+   *
+   */
+  thumbnail_comparison_token_or_url?: string
+  /**
+   * Token (from /api/hub/assets/upload-url) for a new upload, or an existing public URL from the previous published version. Omit to have no thumbnail.
+   *
+   */
+  thumbnail_token_or_url?: string
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  /**
+   * URL to a tutorial for this workflow.
+   */
+  tutorial_url?: string
+  /**
+   * Username of the hub profile to publish under. The authenticated user must belong to the workspace that owns this profile.
+   */
+  username: string
+  /**
+   * Userdata path of the workflow file (e.g. "workflows/my-flow.json").
+   */
+  workflow_filename: string
+}
+
+/**
+ * Request body for publishing workflow assets to the Hub.
+ */
+export type PublishWorkflowAssetsRequest = {
+  /**
+   * IDs of assets (inputs and models) to snapshot.
+   */
+  asset_ids: Array<string>
+}
+
+/**
+ * Full detail of a publicly published workflow on the Hub.
+ */
+export type PublishedWorkflowDetail = {
+  /**
+   * Published assets with their library status for the caller.
+   */
+  assets: Array<AssetInfo>
+  listed: boolean
+  /**
+   * Human-readable workflow name.
+   */
+  name: string
+  publish_time?: string | null
+  share_id: string
+  workflow_id: string
+  /**
+   * The workflow JSON content at publish time.
+   */
+  workflow_json: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Queue information with pending and running jobs
+ */
+export type QueueInfo = {
+  /**
+   * Array of pending job items (ordered by creation time, oldest first)
+   */
+  queue_pending?: Array<[unknown, unknown, unknown, unknown, unknown]>
+  /**
+   * Array of currently running job items
+   */
+  queue_running?: Array<[unknown, unknown, unknown, unknown, unknown]>
+}
+
+/**
+ * Request to manage queue operations
+ */
+export type QueueManageRequest = {
+  /**
+   * If true, clear all pending jobs from the queue
+   */
+  clear?: boolean
+  /**
+   * Array of job IDs to cancel; pending and running jobs transition to cancelled
+   */
+  delete?: Array<string>
+}
+
+/**
+ * Response after a queue management action (delete or clear).
+ */
+export type QueueManageResponse = {
+  /**
+   * Whether the queue was cleared
+   */
+  cleared?: boolean
+  /**
+   * Array of job IDs that were successfully cancelled
+   */
+  deleted?: Array<string>
+}
+
+/**
+ * A 429 body with a fixed message and no machine-readable code.
+ */
+export type RateLimitExceededError = {
+  error: string
+}
+
+/**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export type ReleaseUnsupportedPack = {
+  /**
+   * Why the pack failed to import: the last line of its import error, or "needs a GPU". Empty when ComfyUI logged no reason.
+   */
+  cause: string
+  /**
+   * The pack's folder under custom_nodes.
+   */
+  folder: string
+  /**
+   * The pack's Comfy Registry id; empty for a pack not installed from the registry.
+   */
+  registry_id: string
+  /**
+   * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
+   */
+  repository: string
+}
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export type ReleaseUnsupportedPacks = {
+  packs: Array<ReleaseUnsupportedPack>
+  /**
+   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
+   */
+  release_id: string | null
+}
+
+/**
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ */
+export type RenewalInvoice = {
+  /**
+   * Amount due in the currency's smallest unit (e.g. cents).
+   */
+  amount_due: number
+  /**
+   * Lowercase ISO currency code.
+   */
+  currency: string
+  /**
+   * Stripe-hosted page where the customer can pay the invoice.
+   */
+  hosted_invoice_url: string
+  /**
+   * When Stripe will next retry automatically; absent when no retry is scheduled.
+   */
+  next_payment_attempt?: string
+}
+
+/**
+ * Request body for reactivating a previously cancelled subscription.
+ */
+export type ResubscribeRequest = {
+  /**
+   * Client-provided key to prevent duplicate operations.
+   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
+   *
+   */
+  idempotency_key?: string
+}
+
+/**
+ * Response after accepting a resubscribe request.
+ */
+export type ResubscribeResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * Human-readable confirmation message
+   */
+  message?: string
+  /**
+   * Subscription outcome. `active` means the resubscribe committed (the scheduled cancellation was undone); `pending` means the operation is still executing — poll the billing operation for the final outcome.
+   */
+  status: 'active' | 'pending'
+}
+
+export type RetentionAcceptRequest = {
+  /**
+   * Server-issued session; carries no client-selected coupon or variant.
+   */
+  session_id: string
+}
+
+export type RetentionAcceptance = {
+  billing_op_id: string
+  /**
+   * Show success only once this is succeeded; otherwise poll the billing operation.
+   */
+  status: 'pending' | 'succeeded'
+}
+
+export type RetentionFlowEventRequest = {
+  /**
+   * flow_opened is reported at the same point for every arm.
+   */
+  event: 'flow_opened' | 'offer_shown'
+  session_id: string
+}
+
+export type RetentionFlowResponse = {
+  /**
+   * The PostHog arm: control or a retention offer ID. Absent when the
+   * subscription is ineligible or the owner is outside the experiment.
+   *
+   */
+  experiment_variant?: string
+  /**
+   * Unix seconds; reopen cancellation to refresh the offer after expiry.
+   */
+  expires_at: number
+  offer?: RetentionOffer
+  session_id: string
+  subscription: RetentionFlowSubscription
+}
+
+export type RetentionFlowSubscription = {
+  currency: string
+  /**
+   * Unix seconds of the next renewal.
+   */
+  period_end: number
+  quantity: number
+  /**
+   * Recurring unit price in the currency's smallest unit.
+   */
+  unit_amount: number
+}
+
+/**
+ * Present only when the session's arm is an offer. Terms come from the server catalog.
+ */
+export type RetentionOffer = {
+  duration_in_months: number
+  id: string
+  percent_off: number
+}
+
+/**
+ * Request body for undoing a pending scheduled plan change.
+ */
+export type RevertScheduledChangeRequest = {
+  idempotency_key?: string
+}
+
+/**
+ * Response after accepting a scheduled-change revert.
+ */
+export type RevertScheduledChangeResponse = {
+  billing_op_id: string
+  /**
+   * `pending`: poll GET /api/billing/ops/{id}.
+   */
+  status: 'reverted' | 'pending'
+}
+
+/**
+ * Response after signing out of all devices
+ */
+export type RevokeAllSessionsResponse = {
+  /**
+   * How many web sessions were ended
+   */
+  revoked: number
+}
+
+export type SsoDiscoverResponse = {
+  /**
+   * Display name of the organization, when `sso` is true
+   */
+  organization_name?: string
+  /**
+   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
+   */
+  required?: boolean
+  /**
+   * The email signs in through its organization's SSO
+   */
+  sso: boolean
+}
+
+export type SavedPaymentMethod = {
+  /**
+   * Bank of a US bank account. Absent for other types.
+   */
+  bank_name?: string
+  /**
+   * Card brand. Present only for card payment methods.
+   */
+  brand?: string
+  /**
+   * When the method was saved to the customer.
+   */
+  created_at?: string
+  /**
+   * Masked email of a Link payment method (first character and domain, such as `o***@example.com`). Absent for other types. Two methods from one Link account, or two addresses that mask alike, read the same; use `created_at` to tell them apart.
+   */
+  email?: string
+  /**
+   * Display-only card expiry month. Returned with exp_year only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_month?: number
+  /**
+   * Display-only four-digit card expiry year. Returned with exp_month only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_year?: number
+  /**
+   * Whether the card has expired, at 00:00 UTC on the first day after its expiry month. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expired?: boolean
+  /**
+   * Whether the card expires within the next 30 days, including already expired cards, using the UTC expiry-month boundary. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expiring_soon?: boolean
+  id: string
+  /**
+   * Exactly one item is the default when the returned list is non-empty.
+   */
+  is_default: boolean
+  /**
+   * Last four digits of a card, US bank account or SEPA debit account. Absent for other types, and when a SEPA account's last four characters are not all digits.
+   */
+  last4?: string
+  type: string
+}
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export type ScheduledPlanChange = {
+  /**
+   * Billing boundary when the destination plan takes effect
+   */
+  effective_at: string
+  /**
+   * Destination plan identifier
+   */
+  plan_slug: string
+  /**
+   * Destination Team credit stop. Null for personal plans and legacy Team plans without a credit stop.
+   */
+  team_credit_stop: TeamCreditStopSummary | null
+}
+
+/**
+ * List of user secrets with metadata only.
+ */
+export type SecretListResponse = {
+  data: Array<SecretResponse>
+}
+
+/**
+ * A provider the user may configure a secret for, with its display label and credential-entry options.
+ */
+export type SecretProvider = {
+  /**
+   * The credential-entry options for this provider. A single entry is the common case (an API key); multiple entries (e.g. Gemini's AI Studio API key vs Vertex service account) drive a client-side sub-selection.
+   */
+  credential_options?: Array<CredentialOption>
+  /**
+   * Provider identifier (e.g., huggingface, civitai, runway, gemini)
+   */
+  id: string
+  /**
+   * Human-facing display label for the provider. Falls back to the client registry label, then the raw id, when omitted.
+   */
+  label?: string
+}
+
+/**
+ * The providers available to the authenticated user in the current workspace.
+ */
+export type SecretProvidersResponse = {
+  data: Array<SecretProvider>
+}
+
+/**
+ * User secret metadata (the secret value itself is never returned after creation).
+ */
+export type SecretResponse = {
+  /**
+   * When the secret was created
+   */
+  created_at: string
+  /**
+   * Credential class discriminator (`api_key` or `gcp_service_account`).
+   */
+  credential_type?: 'api_key' | 'gcp_service_account'
+  /**
+   * Unique identifier for the secret
+   */
+  id: string
+  /**
+   * When the secret was last used for decryption
+   */
+  last_used_at?: string
+  /**
+   * User-provided label for the secret
+   */
+  name: string
+  /**
+   * Provider identifier (e.g., huggingface, civitai)
+   */
+  provider?: string
+  /**
+   * When the secret was last updated
+   */
+  updated_at: string
+}
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export type ServerDocFrame =
+  | DocSubscribedFrame
+  | DocUpdateFrame
+  | DocResetFrame
+  | DocOpsResultFrame
+
+/**
+ * The deployment a start was asked for, and its status after the ask.
+ */
+export type StartWorkspaceDeploymentResult = {
+  /**
+   * The deployment's id (dep-{uuid}).
+   */
+  deployment_id: string
+  /**
+   * The status comfy-deploy reports after the start: queued when it accepted the start, or the deployment's current status, unchanged, when it was already up. A job is taken only once the listing shows it ready.
+   */
+  status: string
+}
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export type StoredAgentConsentSetting = AgentConsentSettingValue &
+  GlobalSettingUpdatedAt
+
+/**
+ * Request body for subscribing a workspace to a billing plan.
+ */
+export type SubscribeRequest = {
+  /**
+   * Billing cycle for the team slider contract. When present it must be
+   * consistent with plan_slug (monthly -> team_per_credit_monthly,
+   * yearly -> team_per_credit_annual).
+   *
+   */
+  billing_cycle?: 'monthly' | 'yearly'
+  /**
+   * URL to redirect if user cancels the payment method flow.
+   * If not provided, return_url is used for both success and cancel.
+   *
+   */
+  cancel_url?: string
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * Explicit consent to reactivate a subscription that is currently
+   * scheduled to cancel at period end. Set to true when the caller has
+   * confirmed this with the user; omitting it (or sending false) while
+   * a cancellation is scheduled fails the request with
+   * REACTIVATION_CONFIRMATION_REQUIRED instead of silently clearing
+   * the cancellation.
+   *
+   */
+  confirm_reactivation?: boolean
+  /**
+   * Stripe ConfirmationToken created from deferred Payment Element
+   * details. For an initial subscription, the backend creates the exact
+   * invoice PaymentIntent and confirms it with this token.
+   *
+   */
+  confirmation_token?: string
+  /**
+   * Client-provided key to prevent duplicate operations.
+   * If a billing op with this key already exists, returns the existing op instead of creating a new one.
+   *
+   */
+  idempotency_key?: string
+  /**
+   * Target plan slug to subscribe to
+   */
+  plan_slug: string
+  /**
+   * Optional customer-facing Stripe promotion code. The backend
+   * resolves and validates it, then stacks it with plan discounts.
+   *
+   */
+  promotion_code?: string
+  /**
+   * Echoes PreviewSubscribeResponse.proration_at from the preview the
+   * caller consented to. When present, the charge is prorated to this
+   * exact instant instead of the instant this request is processed, so
+   * the amount billed matches exactly what was previewed and consented
+   * to. Optional for backward compatibility: omit to keep today's
+   * behavior (prorate to now). Rejected with PRORATION_QUOTE_EXPIRED if
+   * it is in the future or older than a short window — request a fresh
+   * preview and retry in that case.
+   *
+   */
+  proration_at?: string
+  /**
+   * Opaque quote id returned by PreviewSubscribeResponse.
+   */
+  quote_id?: string
+  /**
+   * Quote version returned by PreviewSubscribeResponse.
+   */
+  quote_version?: number
+  /**
+   * URL to redirect after payment method is added successfully.
+   * Required if the workspace has no payment method on file, when
+   * confirmation_token is provided, or when a selected saved payment
+   * method is redirect-based (any non-card type). Redirect-based flows
+   * require an absolute HTTPS URL; plain HTTP is accepted only for
+   * loopback hosts during local development.
+   *
+   */
+  return_url?: string
+  /**
+   * Optional saved payment method selected for this subscription. It
+   * must be attached to the current workspace's Stripe customer.
+   * Mutually exclusive with confirmation_token.
+   *
+   */
+  saved_payment_method_id?: string
+  /**
+   * Selected team credit-stop preset id (e.g. "team_700") for the
+   * per-credit Team plan. Required when subscribing to a per-credit Team
+   * plan; rejected for non-team plans. The backend owns the resolved
+   * amounts (credits/price) for the stop.
+   *
+   */
+  team_credit_stop_id?: string
+}
+
+/**
+ * Response after successfully subscribing to a billing plan.
+ */
+export type SubscribeResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * When the subscription became/becomes active (present when status=subscribed or pending_payment)
+   */
+  effective_at?: string
+  /**
+   * URL to redirect user to add payment method (present when status=needs_payment_method)
+   */
+  payment_method_url?: string
+  /**
+   * Status of the subscription operation:
+   * - subscribed: Subscription is active immediately
+   * - needs_payment_method: User must add payment method via payment_method_url
+   * - pending_payment: Upgrade initiated, waiting for payment to complete
+   *
+   */
+  status: 'subscribed' | 'needs_payment_method' | 'pending_payment'
+}
+
+export type SubscriptionDiscount = {
+  /**
+   * What this discount removed from the amount due today.
+   */
+  amount_off_cents?: number
+  code: string
+  /**
+   * How long the underlying coupon keeps applying. May be absent when
+   * the coupon's term is not known, e.g. a plan coupon Stripe does not
+   * echo back.
+   *
+   */
+  duration?: 'once' | 'repeating' | 'forever'
+  /**
+   * The coupon's total term in months when duration is repeating.
+   * Omitted for discounts carried over from the current subscription.
+   *
+   */
+  duration_in_months?: number
+  kind: 'plan' | 'promotion'
+  /**
+   * Customer-facing display name of the underlying coupon. `code` can
+   * be an internal identifier (e.g. team_commitment_7_5); render this
+   * when present.
+   *
+   */
+  name?: string
+  /**
+   * How long the discount applies, as the checkout should state it.
+   * this_payment: a one-time code on a change to a monthly plan, which
+   * covers only today's charge. first_month / first_year: a one-time
+   * code on a new monthly or yearly subscription, or on a change to a
+   * yearly plan. months: a repeating discount, for duration_in_months
+   * months. ongoing: a forever discount. Absent when the term is not
+   * known.
+   *
+   */
+  term?: 'this_payment' | 'first_month' | 'first_year' | 'months' | 'ongoing'
+}
+
+/**
+ * Billing period (uppercase to match comfy-api)
+ */
+export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+
+/**
+ * Owner-only customer-action recovery for the exact pending initial
+ * subscription blocking plan changes. This does not enable another plan
+ * purchase. Fetch GET /api/billing/ops/{billing_op_id} to resolve the
+ * existing authorized payment action. No payment URL or secret is included.
+ * Omitted when no safe action is known, including unavailable reads;
+ * omission must not be treated as payment success or completed recovery.
+ *
+ */
+export type SubscriptionPaymentRecovery = {
+  /**
+   * Exact workspace-bound initial-subscription operation; never a newer top-up.
+   */
+  billing_op_id: string
+  /**
+   * The customer must finish or retry the existing initial invoice payment.
+   */
+  reason: 'payment_required'
+}
+
+/**
+ * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
+ */
+export type SubscriptionState =
+  | 'never_subscribed'
+  | 'active'
+  | 'cancel_scheduled'
+  | 'past_due'
+  | 'paused'
+  | 'activating'
+  | 'ended'
+
+/**
+ * Subscription tier (uppercase to match comfy-api)
+ */
+export type SubscriptionTier =
+  | 'FREE'
+  | 'STANDARD'
+  | 'CREATOR'
+  | 'PRO'
+  | 'FOUNDERS_EDITION'
+  | 'TEAM'
+  | 'ENTERPRISE'
+
+/**
+ * System statistics response
+ */
+export type SystemStatsResponse = {
+  devices: Array<{
+    /**
+     * Device name
+     */
+    name: string
+    /**
+     * Device type
+     */
+    type: string
+    /**
+     * Free VRAM in bytes
+     */
+    vram_free?: number
+    /**
+     * Total VRAM in bytes
+     */
+    vram_total?: number
+  }>
+  system: {
+    /**
+     * Command line arguments
+     */
+    argv: Array<string>
+    /**
+     * Cloud ingest service version (commit hash)
+     */
+    cloud_version?: string
+    /**
+     * ComfyUI frontend version (commit hash or tag)
+     */
+    comfyui_frontend_version?: string
+    /**
+     * ComfyUI version
+     */
+    comfyui_version: string
+    /**
+     * How this ComfyUI instance is deployed (e.g. cloud, local-git, local-portable, local-desktop)
+     */
+    deploy_environment?: string
+    /**
+     * Whether using embedded Python
+     */
+    embedded_python: boolean
+    /**
+     * Operating system
+     */
+    os: string
+    /**
+     * Python version
+     */
+    python_version: string
+    /**
+     * PyTorch version
+     */
+    pytorch_version: string
+    /**
+     * Free RAM in bytes
+     */
+    ram_free: number
+    /**
+     * Total RAM in bytes
+     */
+    ram_total: number
+    /**
+     * Workflow templates version
+     */
+    workflow_templates_version?: string
+  }
+}
+
+/**
+ * Metadata for a single tag that can be applied to assets.
+ */
+export type TagInfo = {
+  /**
+   * Number of assets using this tag
+   */
+  count: number
+  /**
+   * Tag name
+   */
+  name: string
+}
+
+/**
+ * Response after adding, updating, or removing tags on an asset.
+ */
+export type TagsModificationResponse = {
+  /**
+   * Tags that were successfully added (for add operation)
+   */
+  added?: Array<string>
+  /**
+   * Tags that were already present (for add operation)
+   */
+  already_present?: Array<string>
+  /**
+   * Tags that were not present (for remove operation)
+   */
+  not_present?: Array<string>
+  /**
+   * Tags that were successfully removed (for remove operation)
+   */
+  removed?: Array<string>
+  /**
+   * All tags on the asset after the operation
+   */
+  total_tags: Array<string>
+}
+
+/**
+ * Task data for list views
+ */
+export type TaskEntry = {
+  /**
+   * When task completed, failed, or was cancelled (null if not finished)
+   */
+  completed_at?: string
+  /**
+   * Task creation timestamp
+   */
+  create_time: string
+  /**
+   * Unique task identifier
+   */
+  id: string
+  /**
+   * When task execution started (null if not started)
+   */
+  started_at?: string
+  /**
+   * Current task status
+   */
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Task type name (e.g., model_upload)
+   */
+  task_name: string
+}
+
+/**
+ * Full task details including payload and result
+ */
+export type TaskResponse = {
+  /**
+   * When task completed or failed (null if not finished)
+   */
+  completed_at?: string
+  /**
+   * Task creation timestamp
+   */
+  create_time: string
+  /**
+   * Error message on failure (null if not failed)
+   */
+  error_message?: string
+  /**
+   * Unique task identifier
+   */
+  id: string
+  /**
+   * Caller-provided key for idempotent task creation
+   */
+  idempotency_key: string
+  /**
+   * Task input data
+   */
+  payload: {
+    [key: string]: unknown
+  }
+  /**
+   * Task output data (null if not completed)
+   */
+  result?: {
+    [key: string]: unknown
+  }
+  /**
+   * When task execution started (null if not started)
+   */
+  started_at?: string
+  /**
+   * Current task status
+   */
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Task type name (e.g., model_upload)
+   */
+  task_name: string
+  /**
+   * Task last update timestamp
+   */
+  update_time: string
+}
+
+/**
+ * Paginated list of background tasks for the authenticated user.
+ */
+export type TasksListResponse = {
+  pagination: PaginationInfo
+  /**
+   * Array of tasks ordered by create_time
+   */
+  tasks: Array<TaskEntry>
+}
+
+/**
+ * A selectable preset on the team pricing slider. Echoed on subscribe via
+ * team_credit_stop_id; the backend owns the resolved amounts. credits is a
+ * RAW monthly credit count (not cents). Save% is derived by the FE as
+ * (list_price_cents - price_cents) / list_price_cents.
+ *
+ */
+export type TeamCreditStop = {
+  /**
+   * Raw monthly credit count granted at this stop
+   */
+  credits: number
+  /**
+   * Stable stop id echoed on subscribe (e.g. "team_700")
+   */
+  id: string
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+/**
+ * Pre/post-discount price for a team credit stop, in cents.
+ */
+export type TeamCreditStopPrice = {
+  action: PlanAction
+  denied_reason?: PlanActionDeniedReason
+  denied_reason_params?: PlanActionDeniedReasonParams
+  /**
+   * Pre-discount (struck-through) price in cents
+   */
+  list_price_cents: number
+  /**
+   * What one billing period at this stop is charged, in cents: one month
+   * for monthly, the whole year for yearly. This is the current catalog
+   * amount a new checkout at this stop quotes and invoices; an existing
+   * subscription's invoice can differ. Show this server amount as the
+   * billed total rather than deriving price_cents x 12: Stripe rounds
+   * the per-credit line before applying the discount.
+   *
+   */
+  period_charge_cents: number
+  /**
+   * Post-discount (bold) price in cents
+   */
+  price_cents: number
+}
+
+/**
+ * The team credit stop a workspace is currently subscribed to: the
+ * per-workspace slider choice recorded at subscribe time
+ * (workspace_subscriptions.team_credit_stop_id). Amounts are owned by the
+ * catalog, not the subscription row. Returned on GET /api/billing/status
+ * for per-credit Team plans (BE-1254).
+ *
+ */
+export type TeamCreditStopSummary = {
+  /**
+   * Raw monthly credit count granted at this stop
+   */
+  credits_monthly: number
+  /**
+   * Stable stop id (e.g. "team_200")
+   */
+  id: string
+  /**
+   * Monthly USD commitment for this stop
+   */
+  stop_usd: number
+}
+
+/**
+ * Credit-stop ladder for the pricing slider (BE-1254). Returned by GET /api/billing/plans for every workspace regardless of the caller's token or workspace type (the personal/team distinction was removed); omitted only when the catalog defines no stops.
+ */
+export type TeamCreditStops = {
+  /**
+   * Index into stops[] for the slider's initial position
+   */
+  default_stop_index: number
+  stops: Array<TeamCreditStop>
+}
+
+/**
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
+ */
+export type ToolCallSummary = {
+  /**
+   * Omitted when zero.
+   */
+  duration_ms?: number
+  /**
+   * Present only when status is error.
+   */
+  error_code?: string
+  finished_at?: string
+  /**
+   * This tool-call row's own primary key.
+   */
+  id: string
+  /**
+   * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
+   */
+  job_id?: string
+  /**
+   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
+   */
+  produced_asset?: {
+    /**
+     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
+     */
+    hash: string
+    /**
+     * The server-assigned asset id recorded by the producing call.
+     */
+    id: string
+  }
+  started_at?: string
+  /**
+   * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
+   */
+  status: 'success' | 'error'
+  /**
+   * The provider tool-use id, the same id a live agent_tool_call WebSocket frame carries as tool_call_id — the frontend keys its tool chip on this value so a reload and a resumed live frame for the same call render as one chip, not two. Rows recorded before this id existed have none; id (this row's own primary key) is emitted instead, so the field is never empty, though it then cannot match any live frame.
+   */
+  tool_call_id: string
+  tool_name: string
+}
+
+/**
+ * Requested credit purchase from this operation's validated stored interactive top-up intent. Visible only to callers authorized for payment details. Not the amount charged or proof of payment. Omitted for historical, non-interactive, invalid or non-top-up operations.
+ *
+ */
+export type TopUpPurchaseAmount = {
+  amount_cents: number
+  currency: 'usd'
+}
+
+/**
+ * What a credit top-up of the requested amount would grant.
+ */
+export type TopupQuoteResponse = {
+  /**
+   * The quoted amount, in cents.
+   */
+  amount_cents: number
+  /**
+   * Display credits at 211 per dollar, rounded half up. The top-up
+   * itself grants `amount_cents` of balance.
+   *
+   */
+  credits: number
+  /**
+   * Approximately 12 months from now (the default top-up window); the
+   * actual grant may start an hour or two earlier, and a price-level
+   * validity setting can change it.
+   *
+   */
+  expires_at: string
+  /**
+   * Environment-configured Stripe payment method configuration for
+   * one-time credit top-up checkout. Omitted when not configured.
+   * This metadata does not establish interactive payment eligibility,
+   * ownership of a saved method, or guarantee payment success. The
+   * interactive endpoint independently accepts only cards without
+   * future usage and revalidates payment authority.
+   * Clients must constrain the interactive payment form to that
+   * card-only, no-future-use contract; this configuration alone does
+   * not guarantee its enabled methods are compatible.
+   *
+   */
+  payment_method_configuration_id?: string
+}
+
+/**
+ * Request body for updating an existing Hub profile.
+ */
+export type UpdateHubProfileRequest = {
+  /**
+   * Token (from /api/hub/assets/upload-url) for a new avatar image. Omit or send null to leave unchanged; send empty string "" to remove.
+   *
+   */
+  avatar_token?: string | null
+  description?: string
+  display_name?: string
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+}
+
+/**
+ * Request body for changing a workspace member's role.
+ */
+export type UpdateMemberRoleRequest = {
+  /**
+   * The role to assign to the member
+   */
+  role: 'owner' | 'member'
+}
+
+/**
+ * Request body for updating an existing user secret.
+ */
+export type UpdateSecretRequest = {
+  /**
+   * New name for the secret
+   */
+  name?: string
+  /**
+   * New secret value (API key, token, etc.)
+   */
+  secret_value?: string
+}
+
+/**
+ * Request body for updating an existing saved workflow.
+ */
+export type UpdateWorkflowRequest = {
+  /**
+   * New default view mode
+   */
+  default_view?: 'workflow' | 'app'
+  /**
+   * New description
+   */
+  description?: string
+  /**
+   * New display name
+   */
+  name?: string
+}
+
+/**
+ * Request body for updating an existing workspace's settings.
+ */
+export type UpdateWorkspaceRequest = {
+  /**
+   * New display name for the workspace
+   */
+  name?: string
+}
+
+/**
+ * A minted single-use upload grant.
+ */
+export type UploadGrantResponse = {
+  /**
+   * Seconds until the grant expires if unused.
+   */
+  expires_in: number
+  /**
+   * Relative path (/api/uploads/{id}) to PUT the raw bytes to, resolved
+   * against this API's origin. The unguessable id is the only
+   * credential the upload needs — send no Authorization header or API
+   * key. Single-use: a failed or interrupted upload burns the grant;
+   * mint a new one to retry.
+   *
+   */
+  upload_path: string
+}
+
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
+export type UsageBalance = {
+  /**
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
+   */
+  amount_micros?: number
+  /**
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
+   */
+  cloud_credit_balance_micros?: number
+  currency?: string
+  /**
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
+   */
+  prepaid_balance_micros?: number
+}
+
+export type UsageBreakdownRow = {
+  cost_micros: number
+  group_key: string
+  /**
+   * Only on a ledger-served answer (`served_from: ledger`): how many distinct charges — jobs, calls, metered hours — the group's spend came from over the range.
+   */
+  run_count?: number
+  share: number
+}
+
+export type UsageBucket = {
+  cost_micros: number
+  group_key: string
+  period_end: string
+  period_start: string
+}
+
+export type UsageGroupLabel = {
+  /**
+   * Only for `model` when the key is a Serverless deployment: `gpu` for the deployment's GPU time, `storage` for its network-volume and container-disk storage.
+   */
+  cost_kind?: 'gpu' | 'storage'
+  /**
+   * For `model` and `source` when the key is a Serverless deployment: the deployment's id. Under Serverless the model level is the deployment, with its GPU time and its storage as separate keys; under `source` each deployment is one key.
+   */
+  deployment_id?: string
+  /**
+   * For `model` and `source` when the key is a Serverless deployment and the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached, and `display_name` then carries the id.
+   */
+  deployment_name?: string
+  /**
+   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`: charges that name no model, such as Agent rounds, partner calls that send none, and Comfy Cloud GPU time), or the key's owner and prefix.
+   */
+  display_name?: string
+  /**
+   * Only for `person` when the member is known; tells two members with one name apart.
+   */
+  email?: string
+  /**
+   * Only for `person`: true when the person is no longer a member of this workspace. Their spend stays under their name.
+   */
+  former_member?: boolean
+  /**
+   * The value as it appears in `groups`, `buckets` and `breakdown`.
+   */
+  key: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  key_name?: string
+  /**
+   * Only for `source` when kind is `api_key`.
+   */
+  key_prefix?: string
+  /**
+   * Only for `source` when kind is `api_key` and the key is known to this workspace: true when the key has been revoked. Its spend stays under its name.
+   */
+  key_revoked?: boolean
+  /**
+   * Only for `source`. A `deployment` key is one Serverless deployment's id (`deployment_id` set); the bare key `deployment` is deployment spend recorded without an id.
+   */
+  kind?: 'api_key' | 'session' | 'deployment'
+  /**
+   * Only for `source` when the key's or deployment's owner is known.
+   */
+  owner_display_name?: string
+  /**
+   * Only for `source` when the key's or deployment's owner is known; tells two owners with one name apart.
+   */
+  owner_email?: string
+  /**
+   * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
+   */
+  owner_user_id?: string
+  /**
+   * Only for `model` on a ledger-served answer: the partner the model's charges came through, as the partner catalog's provider id (the id workspace provider policy uses). Absent for a model whose charges name no known partner, a deployment and `unspecified`.
+   */
+  provider?: string
+  /**
+   * With `provider`: the partner's name, e.g. `Black Forest Labs`. Render beside `display_name`; `display_name` stays the model's own name.
+   */
+  provider_display_name?: string
+}
+
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
+ */
+export type UsageNotAvailable = {
+  reason: 'no_attribution_source' | 'filter_needs_ledger'
+}
+
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
+export type UsageSummary = {
+  balance?: UsageBalance
+  /**
+   * Total gross spend over the range, in microamount (1/1,000,000 of the currency unit). Genuinely micros, unlike the balance breakdown.
+   */
+  spend_micros: number
+}
+
+export type UsageTimeSeries = {
+  /**
+   * When the numbers were read. An open billing period is still moving.
+   */
+  as_of?: string
+  /**
+   * When per-charge recording began for this environment. The `person` and `source` groupings, and every `filter_*`, hold spend from this instant on: a range starting earlier shows only the recorded part under them, while `product_line` and `model` from the invoice show all of it. Absent where no charges are recorded yet.
+   */
+  attribution_since?: string
+  breakdown: Array<UsageBreakdownRow>
+  buckets: Array<UsageBucket>
+  ending_before: string
+  granularity: 'hour' | 'day' | 'month'
+  group_by:
+    | 'model'
+    | 'endpoint'
+    | 'product'
+    | 'product_line'
+    | 'person'
+    | 'source'
+  /**
+   * One entry per value in `groups` for `product_line`, `person` and `source`; absent for the other groupings.
+   */
+  group_labels?: Array<UsageGroupLabel>
+  groups: Array<string>
+  not_available?: UsageNotAvailable
+  /**
+   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept. `invoice` when a range the ledger does not hold was read from Metronome's invoices narrowed by `filter_product_line` (alone, on `product_line` or `model`): its groups are the invoices' models and accept no further filter. Absent for any other invoice-served answer.
+   */
+  served_from?: 'ledger' | 'invoice'
+  starting_on: string
+  summary: UsageSummary
+}
+
+/**
+ * User data listing entry with file metadata (path, size, modification time).
+ */
+export type UserDataResponseFull = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+  path?: string
+  size?: number
+}
+
+/**
+ * User information response
+ */
+export type UserResponse = {
+  /**
+   * Firebase UID of the authenticated user
+   */
+  id: string
+  /**
+   * User status (always "active" for authenticated users)
+   */
+  status: string
+}
+
+/**
+ * Details of a single validation error encountered during asset operations.
+ */
+export type ValidationError = {
+  /**
+   * Machine-readable error code
+   */
+  code: string
+  /**
+   * Field that failed validation
+   */
+  field: string
+  /**
+   * Human-readable error message
+   */
+  message: string
+}
+
+/**
+ * Result of validating a set of asset operations.
+ */
+export type ValidationResult = {
+  /**
+   * Blocking validation errors that prevent download
+   */
+  errors?: Array<ValidationError>
+  /**
+   * Overall validation status (true if all checks passed)
+   */
+  is_valid: boolean
+  /**
+   * Non-blocking validation warnings (informational only)
+   */
+  warnings?: Array<ValidationError>
+}
+
+/**
+ * The live web session and the user it belongs to
+ */
+export type WebSessionResponse = {
+  /**
+   * The session ends at this time regardless of use
+   */
+  absolute_expires_at: string
+  /**
+   * Send as `X-CSRF-Token` on requests that change data with this session
+   */
+  csrf_token: string
+  /**
+   * Idle expiry. Real use slides it; reading the session does not.
+   */
+  expires_at: string
+  /**
+   * Whether personal billing and personal workspace UI apply to the
+   * account. True for a live personal workspace, and for a legacy
+   * account whose personal workspace is created lazily
+   * (personal_workspace_id still NULL), linked to SSO or not. False
+   * for an account SSO sign-in or the directory created, which has
+   * none, for a personal workspace that was deleted, and for an
+   * account scheduled for deletion. Read from the account's record
+   * (whether SSO created it is recorded when it is made), not inferred
+   * from the sign-in provider.
+   *
+   */
+  has_personal_workspace: boolean
+  user: WebSessionUser
+}
+
+/**
+ * The user a web session belongs to
+ */
+export type WebSessionUser = {
+  email: string
+  /**
+   * The identity provider's verified-email claim when the session was created
+   */
+  email_verified: boolean
+  /**
+   * Comfy user id
+   */
+  id: string
+  name?: string
+  /**
+   * Sign-in method, for example `google.com` or `password`
+   */
+  sign_in_provider?: string
+}
+
+/**
+ * Request body for querying assets associated with a workflow.
+ */
+export type WorkflowApiAssetsRequest = {
+  workflow_api_json: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Response containing assets associated with a workflow.
+ */
+export type WorkflowApiAssetsResponse = {
+  assets: Array<AssetInfo>
+}
+
+/**
+ * Reference to the parent workflow from which this workflow was forked.
+ */
+export type WorkflowForkedFrom = {
+  workflow_id?: string
+  workflow_version_id?: string
+}
+
+/**
+ * Paginated list of saved workflows.
+ */
+export type WorkflowListResponse = {
+  data: Array<WorkflowResponse>
+  pagination: PaginationInfo
+}
+
+/**
+ * Publishing metadata for a workflow shared to the Hub.
+ */
+export type WorkflowPublishInfo = {
+  /**
+   * Published assets (inputs and models).
+   */
+  assets: Array<AssetInfo>
+  listed: boolean
+  publish_time?: string | null
+  share_id: string
+  workflow_id: string
+}
+
+/**
+ * Full workflow entity including metadata and version history.
+ */
+export type WorkflowResponse = {
+  created_at: string
+  created_by: string
+  default_view?: 'workflow' | 'app'
+  description?: string
+  forked_from?: WorkflowForkedFrom
+  id: string
+  latest_version: number
+  name?: string
+  updated_at: string
+}
+
+/**
+ * The sidebar file a workflow was copied from, when the two agree. No content and no userdata id: open the path through the userdata API.
+ */
+export type WorkflowSidebarFileResponse = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds, the same unit as GET /api/userdata?full_info=true.
+   */
+  modified: number
+  /**
+   * The userdata path, `workflows/<name>.json`.
+   */
+  path: string
+  /**
+   * File size in bytes.
+   */
+  size: number
+}
+
+/**
+ * Workflow metadata captured at mint time. The subsequent PUT body is the
+ * raw workflow JSON document and nothing else, so everything that would
+ * normally accompany workflow_json in POST /api/workflows is declared
+ * here instead.
+ *
+ */
+export type WorkflowUploadUrlRequest = {
+  /**
+   * Default view mode
+   */
+  default_view?: 'workflow' | 'app'
+  /**
+   * Description of the workflow
+   */
+  description?: string
+  /**
+   * ID of the source workflow if forked
+   */
+  forked_from_workflow_id?: string
+  /**
+   * ID of the source workflow version if forked
+   */
+  forked_from_workflow_version_id?: string
+  /**
+   * Display name for the workflow
+   */
+  name?: string
+}
+
+/**
+ * Full workflow version including the serialized workflow JSON.
+ */
+export type WorkflowVersionContentResponse = {
+  created_at: string
+  created_by: string
+  dependency_asset_ids?: Array<string>
+  id: string
+  version: number
+  workflow_json: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Metadata for a single workflow version.
+ */
+export type WorkflowVersionResponse = {
+  created_at: string
+  created_by: string
+  id: string
+  latest_version: number
+  version: number
+}
+
+/**
+ * Full workspace entity with configuration and ownership details.
+ */
+export type Workspace = {
+  created_at: string
+  id: string
+  name: string
+  type: 'personal' | 'team'
+}
+
+/**
+ * Metadata for a workspace-scoped API key (secret is never returned).
+ */
+export type WorkspaceApiKeyInfo = {
+  /**
+   * When the key was created
+   */
+  created_at: string
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description: string
+  /**
+   * When the key expires (if set)
+   */
+  expires_at?: string
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * Last time the key was used
+   */
+  last_used_at?: string
+  /**
+   * User-provided label
+   */
+  name: string
+  /**
+   * When the key was revoked (if revoked)
+   */
+  revoked_at?: string
+  /**
+   * User who created this key
+   */
+  user_id: string
+  /**
+   * Workspace this key belongs to
+   */
+  workspace_id: string
+}
+
+/**
+ * Reasons creation is unavailable. Returned beside can_create_workspace false or on a creation refusal; first applicable reason wins.
+ */
+export type WorkspaceCreationDenials = {
+  /**
+   * organization_managed: the SSO organization manages this account's workspaces. owned_workspace_limit: the caller owns at least max_owned_workspaces live workspaces. Reasons are evaluated in this order; an absent reason is no explanation, never permission.
+   */
+  can_create_workspace?: 'organization_managed' | 'owned_workspace_limit'
+}
+
+/**
+ * Creation refused because the account has reached its live owner membership threshold for creation.
+ */
+export type WorkspaceCreationLimitError = {
+  code: 'OWNED_WORKSPACE_LIMIT'
+  denied_reasons: WorkspaceCreationDenials
+  /**
+   * Owner membership threshold for new workspace creation, including the personal workspace. Other owner assignments can raise the actual count above it.
+   */
+  max_owned_workspaces: number
+  message: string
+}
+
+/**
+ * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
+ */
+export type WorkspaceDeletionDenialParams = {
+  /**
+   * Latest authoritative cancel_at across live subscription rows. Absent means no known boundary; never synthesize a date.
+   */
+  effective_at?: string
+}
+
+/**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export type WorkspaceDeployment = {
+  /**
+   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_id?: string
+  /**
+   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_name?: string
+  /**
+   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
+   */
+  can_start: boolean
+  /**
+   * When the deployment was created.
+   */
+  created_at: string
+  /**
+   * Developer-platform deployment id; what PUT /api/workspaces/{id}/deployment takes.
+   */
+  deployment_id: string
+  /**
+   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
+   */
+  deployment_name?: string
+  /**
+   * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
+   */
+  release_id: string
+  /**
+   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  release_version?: number
+  /**
+   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
+   */
+  status:
+    | 'queued'
+    | 'provisioning'
+    | 'starting'
+    | 'ready'
+    | 'unhealthy'
+    | 'stopping'
+    | 'stop_failed'
+    | 'stopped'
+    | 'failed'
+}
+
+/**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export type WorkspaceDeploymentCpuServer = {
+  /**
+   * none: the deployment gets no CPU server (Comfy Cloud, a deployment that is stopping, stop_failed, stopped or failed, or a Release with no route list or no pack route in it), so stop asking. A route list ingest could not read, or a status it does not know, is the 502, never none. creating: none yet, and setting one up takes seconds (a Modal deployment, or one on its way up). building: none yet, and Modal builds the Release's image first, which can take minutes the first time (RunPod). created: the CPU server exists; it may still be starting ComfyUI, which this does not say.
+   */
+  cpu_server: 'none' | 'creating' | 'building' | 'created'
+  /**
+   * The deployment the answer is about. Absent when the editor runs on Comfy Cloud.
+   */
+  deployment_id?: string
+}
+
+/**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export type WorkspaceDeploymentList = {
+  /**
+   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
+   */
+  builds_visible: boolean
+  /**
+   * The workspace's default deployment, set by an owner through PUT /api/workspaces/{id}/default-deployment; absent when none is set, or when the one set is gone (see gone_default_deployment_id). Present whether or not this browser follows it, so the switcher can label the row.
+   */
+  default_deployment_id?: string
+  /**
+   * The workspace's default deployment, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Members with no pick of their own run on Comfy Cloud, and default_deployment_id is absent. The default stays recorded until an owner sets or clears it, so this is reported on every listing until then.
+   */
+  gone_default_deployment_id?: string
+  /**
+   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it. The response leaves the cookie untouched, so an older listing cannot overwrite a newer pick. The stale cookie remains an explicit browser pick (pick_source `browser`), so a workspace default set later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. Subsequent listings report the same gone id until the cookie changes or expires.
+   */
+  gone_picked_deployment_id?: string
+  items: Array<WorkspaceDeployment>
+  /**
+   * Where the current pick came from: `browser`, this browser's own pick cookie (a deployment, or Comfy Cloud with picked_deployment_id absent); `workspace_default`, the workspace's default deployment because the browser has no pick. Absent when there is neither.
+   */
+  pick_source?: 'browser' | 'workspace_default'
+  /**
+   * The deployment this browser is on: its own pick, read from its pick cookie, or the workspace's default deployment when the browser has no pick (BE-17480); absent when the browser runs on Comfy Cloud. It is always one of the listed deployments: a pick or a default whose deployment is not among them (deleted, or no longer the workspace's) runs on Comfy Cloud, and is reported in gone_picked_deployment_id or gone_default_deployment_id instead. pick_source says which of the two it is.
+   */
+  picked_deployment_id?: string
+}
+
+/**
+ * Per-member action guidance for the authenticated actor; render each field as received rather than deriving it from roles.
+ */
+export type WorkspaceMemberCapabilities = {
+  /**
+   * Whether the actor may switch this member to the other supported role. Requires current owner authority and respects directory management, creator protection and the last-owner guard. Non-creator self-demotion is allowed when another owner remains. Not mutation authorization.
+   */
+  can_change_role: boolean
+  /**
+   * Whether the actor may remove this member. Requires current owner authority, refuses self-removal and protects the creator. Directory management alone does not refuse the existing removal route. Not permission to leave the workspace; use can_leave_workspace.
+   */
+  can_remove: boolean
+  /**
+   * Whether a persisted member credit-limit mutation is available. Currently false: no such backend mutation exists. Not a balance, local UI setting, permission to change roles or permission to remove.
+   */
+  can_set_credit_limit: boolean
+}
+
+/**
+ * Workspace-switcher display fact, not spend authorization or plan-action eligibility. Uses billing subscription-state precedence: ending, scheduled changes and activating display as active; renewal payment failures confirmed by the provider display as payment_due. Unknown or unavailable facts omit the entire summary; clients must not infer no_plan from omission.
+ */
+export type WorkspacePlanSummary = {
+  /**
+   * User-facing plan name. Null for no_plan or when the exact current/ended plan identity is unavailable; never inferred from cached admission tier.
+   */
+  plan_name: string | null
+  status: 'active' | 'no_plan' | 'paused' | 'payment_due' | 'ended'
+}
+
+/**
+ * Abbreviated workspace metadata used in list responses.
+ */
+export type WorkspaceSummary = {
+  id: string
+  name: string
+  type: 'personal' | 'team'
+}
+
+/**
+ * Workspace entity annotated with the requesting user's role.
+ */
+export type WorkspaceWithRole = {
+  /**
+   * When the workspace was created
+   */
+  created_at: string
+  id: string
+  /**
+   * When the user joined the workspace (same as created_at for the workspace creator)
+   */
+  joined_at: string
+  name: string
+  plan_summary?: WorkspacePlanSummary
+  role: 'owner' | 'member'
+  subscription_tier?: SubscriptionTier
+  type: 'personal' | 'team'
 }
 
 /**
@@ -8660,6 +9230,30 @@ export type AssetCreatedWritable = AssetWritable & {
    * Whether this was a new asset creation (true) or returned existing (false)
    */
   created_new: boolean
+}
+
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
+export type ListAssetsResponseWritable = {
+  /**
+   * List of assets matching the query
+   */
+  assets: Array<AssetWritable>
+  /**
+   * Whether more assets are available beyond this page
+   */
+  has_more: boolean
+  /**
+   * Opaque cursor to pass as the `after` query parameter to fetch the
+   * next page. Omitted from the response when there are no more results.
+   *
+   */
+  next_cursor?: string
+  /**
+   * Total number of assets matching the filters
+   */
+  total: number
 }
 
 /**
@@ -8949,6 +9543,82 @@ export type GetAgentEventsErrors = {
 export type GetAgentEventsError =
   GetAgentEventsErrors[keyof GetAgentEventsErrors]
 
+export type AgentGetExecutionsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Thread UUID; required together with message_id
+     */
+    thread_id?: string
+    /**
+     * Exact assistant message UUID; required together with thread_id
+     */
+    message_id?: string
+  }
+  url: '/api/agent/executions'
+}
+
+export type AgentGetExecutionsErrors = {
+  /**
+   * Both identifiers must be supplied as UUIDs, or session workspace selection refused (workspace_id_invalid)
+   */
+  400: ErrorResponse | AgentError
+  /**
+   * Authentication required; ingest uses ErrorResponse and the agent identity guard uses AgentError
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Assistant message not found in the caller's thread and workspace
+   */
+  404: unknown
+  /**
+   * Observation unavailable; must not be interpreted as an empty set
+   */
+  500: unknown
+  /**
+   * Agent service unavailable
+   */
+  502: unknown
+  /**
+   * Execution observation unavailable
+   */
+  503: unknown
+}
+
+export type AgentGetExecutionsError =
+  AgentGetExecutionsErrors[keyof AgentGetExecutionsErrors]
+
+export type AgentGetExecutionsResponses = {
+  /**
+   * Contract probe or the complete uncapped submission snapshot
+   */
+  200: {
+    complete?: boolean
+    executions?: Array<{
+      job_id: string
+      paid: boolean | null
+      partner: boolean | null
+      /**
+       * Raw jobs state, including error, cancelled and executing; unknown if unavailable
+       */
+      status: string
+      submitted_at: string
+    }>
+    message_id?: string
+    schema_version: 'agent-executions.v1'
+    thread_id?: string
+    turn_id?: string
+  }
+}
+
+export type AgentGetExecutionsResponse =
+  AgentGetExecutionsResponses[keyof AgentGetExecutionsResponses]
+
 export type AgentGetIdentityData = {
   body?: never
   path?: never
@@ -9106,6 +9776,10 @@ export type AgentLlmMessagesErrors = {
    * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). The feature is kept invisible when off, so ingest returns 404 rather than 403.
    */
   404: ErrorResponse
+  /**
+   * Too many requests, with one of two bodies. RateLimitExceededError (`error` is a string): ingest refused the request before it reached the agent, so nothing ran, and no Retry-After is sent. AgentLLMError (`error` is an object): the agent's LLM proxy held the round for capacity past its wait (`error.type` `rate_limit_error`), an operator paused the Agent or the workspace (`error.type` `paused`), or Anthropic throttled the call.
+   */
+  429: RateLimitExceededError | AgentLlmError
   /**
    * Agent service unavailable
    */
@@ -9628,6 +10302,10 @@ export type AgentAnswerAskErrors = {
    */
   422: AgentError
   /**
+   * Rate limit exceeded: the request was refused before it reached the agent, so nothing ran. The body is a fixed message with no code to branch on.
+   */
+  429: RateLimitExceededError
+  /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
   500: AgentError
@@ -9736,9 +10414,13 @@ export type AgentPostMessageErrors = {
    */
   403: ErrorResponse | AgentError
   /**
-   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   * The selected model is unavailable, or one or more attachments name a file type the agent does not accept. A model refusal writes no thread or message row and does not substitute another model. An attachment refusal names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
    */
-  422: AgentAttachmentError
+  422: AgentAttachmentError | AgentModelUnavailable
+  /**
+   * Rate limit exceeded: the request was refused before it reached the agent, so nothing ran. The body is a fixed message with no code to branch on.
+   */
+  429: RateLimitExceededError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -9833,6 +10515,57 @@ export type AgentCancelMessageResponses = {
 
 export type AgentCancelMessageResponse =
   AgentCancelMessageResponses[keyof AgentCancelMessageResponses]
+
+export type AgentGetUsageStatusData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/usage-status'
+}
+
+export type AgentGetUsageStatusErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid identity; no usage status is returned.
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Agent feature is unavailable for this caller.
+   */
+  404: unknown
+  /**
+   * Usage could not be determined; never interpret this as unused.
+   */
+  500: ErrorResponse | AgentError
+  /**
+   * Agent service unavailable.
+   */
+  502: ErrorResponse
+  /**
+   * Agent proxy is not configured.
+   */
+  503: ErrorResponse
+}
+
+export type AgentGetUsageStatusError =
+  AgentGetUsageStatusErrors[keyof AgentGetUsageStatusErrors]
+
+export type AgentGetUsageStatusResponses = {
+  /**
+   * Message usage for the authenticated user and workspace.
+   */
+  200: AgentUsageStatusResponse
+}
+
+export type AgentGetUsageStatusResponse =
+  AgentGetUsageStatusResponses[keyof AgentGetUsageStatusResponses]
 
 export type ListAssetsData = {
   body?: never
@@ -11055,13 +11788,24 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * The file's size, 1 to 2147483648 (2 GiB).
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
+  }
+  headers?: {
+    /**
+     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     */
+    Origin?: string
   }
   path?: never
   query?: never
@@ -11070,7 +11814,7 @@ export type StartModelUploadData = {
 
 export type StartModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB, or 25 GiB with `resumable`; the message is "Files can be up to 2 GB." or "Files can be up to 25 GB.")
    */
   400: ErrorResponse
   /**
@@ -11078,7 +11822,7 @@ export type StartModelUploadErrors = {
    */
   401: ErrorResponse
   /**
-   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, or when `resumable: true` is requested while ingest's deployment switch `MODEL_UPLOAD_RESUMABLE_ENABLED` is off (default false). The error code alone does not identify which gate refused the request. For files up to 2 GiB, callers may retry with `resumable` omitted or false for a single PUT; the library flag and all other upload checks still apply. Other refusals are `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
    */
   403: ErrorResponse
   /**
@@ -11096,7 +11840,7 @@ export type StartModelUploadError =
 
 export type StartModelUploadResponses = {
   /**
-   * Signed upload URL for one staged object
+   * Signed upload URL or resumable session for one staged object
    */
   201: ModelUploadStarted
 }
@@ -11114,6 +11858,7 @@ export type CompleteModelUploadData = {
      * The `tags` sent to start the upload.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
   }
   path: {
     /**
@@ -11127,7 +11872,7 @@ export type CompleteModelUploadData = {
 
 export type CompleteModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 25 GiB; the message is "Files can be up to 25 GB.")
    */
   400: ErrorResponse
   /**
@@ -11164,6 +11909,51 @@ export type CompleteModelUploadResponses = {
 
 export type CompleteModelUploadResponse =
   CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
+
+export type ReportModelUploadEventData = {
+  body: ModelUploadTransferReport
+  path: {
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/events'
+}
+
+export type ReportModelUploadEventErrors = {
+  /**
+   * Malformed report
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Workspace or private-library access refused
+   */
+  403: ErrorResponse
+  /**
+   * Edge rate limit exceeded
+   */
+  429: unknown
+  /**
+   * Private-model eligibility temporarily unavailable
+   */
+  503: ErrorResponse
+}
+
+export type ReportModelUploadEventError =
+  ReportModelUploadEventErrors[keyof ReportModelUploadEventErrors]
+
+export type ReportModelUploadEventResponses = {
+  /**
+   * Report accepted; delivery is best effort
+   */
+  204: void
+}
+
+export type ReportModelUploadEventResponse =
+  ReportModelUploadEventResponses[keyof ReportModelUploadEventResponses]
 
 export type AuthenticateData = {
   body: AuthenticateRequest
@@ -11241,6 +12031,88 @@ export type CreateDesktopLoginCodeResponses = {
 
 export type CreateDesktopLoginCodeResponse =
   CreateDesktopLoginCodeResponses[keyof CreateDesktopLoginCodeResponses]
+
+export type CreateBillingHandoffData = {
+  body: BillingHandoffCreateRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs'
+}
+
+export type CreateBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: the sign-in has ended, predates the user's sign-out of all devices, or must be renewed
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`, `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the Firebase revocation check could not be made
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffError =
+  CreateBillingHandoffErrors[keyof CreateBillingHandoffErrors]
+
+export type CreateBillingHandoffResponses = {
+  /**
+   * Handoff issued
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffResponse =
+  CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
+
+export type ExchangeBillingHandoffData = {
+  body: BillingHandoffExchangeRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/exchange'
+}
+
+export type ExchangeBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`, or the request did not come from the handoff's receiver
+   */
+  403: ErrorResponse
+  /**
+   * `HANDOFF_UNAVAILABLE`: unknown, expired, revoked or already consumed
+   */
+  410: ErrorResponse
+  /**
+   * The user already holds the most live scoped sessions
+   */
+  429: ErrorResponse
+}
+
+export type ExchangeBillingHandoffError =
+  ExchangeBillingHandoffErrors[keyof ExchangeBillingHandoffErrors]
+
+export type ExchangeBillingHandoffResponses = {
+  /**
+   * Scoped session created
+   */
+  200: BillingHandoffExchangeResponse
+}
+
+export type ExchangeBillingHandoffResponse =
+  ExchangeBillingHandoffResponses[keyof ExchangeBillingHandoffResponses]
 
 export type ExchangeDesktopLoginCodeData = {
   body: DesktopLoginCodeExchangeRequest
@@ -12973,7 +13845,7 @@ export type CreateTopupQuoteData = {
 export type CreateTopupQuoteErrors = {
   /**
    * Refused: `INVALID_REQUEST`, `INVALID_AMOUNT`,
-   * `LEGACY_STRIPE_CHECKOUT_REQUIRED` (use Stripe Checkout),
+   * `TRANSITION_NOT_ALLOWED` (workspace not on the `stripe` billing rail),
    * `BILLING_PLAN_ENDED` (retained code for unresolved existing plan/tier/status), or
    * `BILLING_DISABLED`.
    *
@@ -13107,6 +13979,49 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type CheckCloudCompatibilityData = {
+  body: CloudCompatibilityRequest
+  path?: never
+  query?: never
+  url: '/api/cloud/compatibility'
+}
+
+export type CheckCloudCompatibilityErrors = {
+  /**
+   * No body, no `node_types` or a null `node_types` (an empty list is answered 200), more than 2,000 distinct node types, more than 500 distinct models, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
+   * The cloud_compatibility_check_enabled switch is off
+   */
+  404: ErrorResponse
+  /**
+   * Comfy Cloud's model list, or the signed-in caller's uploads and the public model catalog, could not be read
+   */
+  500: ErrorResponse
+  /**
+   * Comfy Cloud's node list is not loaded yet
+   */
+  503: ErrorResponse
+}
+
+export type CheckCloudCompatibilityError =
+  CheckCloudCompatibilityErrors[keyof CheckCloudCompatibilityErrors]
+
+export type CheckCloudCompatibilityResponses = {
+  /**
+   * The posted node types and models Comfy Cloud is missing
+   */
+  200: CloudCompatibility
+}
+
+export type CheckCloudCompatibilityResponse =
+  CheckCloudCompatibilityResponses[keyof CheckCloudCompatibilityResponses]
 
 export type GetDefaultWorkflowData = {
   body?: never
@@ -13580,6 +14495,10 @@ export type GetFeaturesResponses = {
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     */
+    open_on_cloud_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
@@ -18289,18 +19208,18 @@ export type GetCccPublicMediaBytesData = {
 
 export type GetCccPublicMediaBytesErrors = {
   /**
-   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias
+   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias; no-store
    */
   404: unknown
   /**
-   * Requested range is outside the file
+   * Requested range is outside the file; no-store
    */
   416: unknown
 }
 
 export type GetCccPublicMediaBytesResponses = {
   /**
-   * Exact current LIVE bytes; authority checked before byte access; no-store
+   * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
    */
   200: Blob | File
   /**
@@ -18331,7 +19250,7 @@ export type HeadCccPublicMediaBytesErrors = {
 
 export type HeadCccPublicMediaBytesResponses = {
   /**
-   * Headers of the current LIVE bytes; no-store; no body
+   * Headers of the current LIVE bytes; public, max-age=120, must-revalidate; no body
    */
   200: unknown
 }
@@ -19480,6 +20399,58 @@ export type ForkWorkflowResponses = {
 
 export type ForkWorkflowResponse =
   ForkWorkflowResponses[keyof ForkWorkflowResponses]
+
+export type GetWorkflowSidebarFileData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow. Parsed by the handler, so a malformed id answers 404.
+     */
+    workflow_id: string
+  }
+  query?: never
+  url: '/api/workflows/{workflow_id}/sidebar-file'
+}
+
+export type GetWorkflowSidebarFileErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `code` is `NOT_FOUND`: no live workflow with this id that the caller created in this workspace.
+   */
+  404: ErrorResponse
+  /**
+   * `code` is `WORKFLOW_OUT_OF_SYNC` and `details.reason` is one of `no_sidebar_path`, `name_ambiguous`, `file_missing` or `content_mismatch`. Clients open nothing on this answer. The set of reasons may grow, and clients treat an unknown reason as out of sync.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowSidebarFileError =
+  GetWorkflowSidebarFileErrors[keyof GetWorkflowSidebarFileErrors]
+
+export type GetWorkflowSidebarFileResponses = {
+  /**
+   * The workflow and its sidebar file agree.
+   */
+  200: WorkflowSidebarFileResponse
+}
+
+export type GetWorkflowSidebarFileResponse =
+  GetWorkflowSidebarFileResponses[keyof GetWorkflowSidebarFileResponses]
 
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest

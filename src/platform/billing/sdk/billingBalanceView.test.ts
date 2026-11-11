@@ -42,6 +42,16 @@ describe('projectBillingBalance', () => {
     }
   )
 
+  it.for([
+    {
+      case: 'served',
+      balance: { ...BALANCE, cloud_credit_display_balance_cents: 844.5 }
+    },
+    { case: 'omitted', balance: BALANCE }
+  ])('carries the display plan balance through when $case', ({ balance }) => {
+    expect(projectBillingBalance(balance)).toStrictEqual(balance)
+  })
+
   it('reads the top-up minimum back as numbers', () => {
     expect(
       projectBillingBalance({

@@ -60,7 +60,7 @@ export function runArchitecture(
     )
     return { errors: [], warnings }
   }
-  const boundaries = buildBoundaries(configuration)
+  const boundaries = buildBoundaries(configuration.records)
   if (mode === 'update') {
     const written = writeFormatted(
       repositoryRoot,

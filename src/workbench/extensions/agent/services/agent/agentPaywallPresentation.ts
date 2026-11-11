@@ -4,12 +4,17 @@ import type {
   AgentPaywallCta,
   AgentPaywallReason
 } from '@comfyorg/telemetry/types'
+import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
 
 export type AgentPaywallPresentation =
-  | { kind: 'subscribed'; showUpgrade: boolean }
+  | {
+      kind: 'subscribed'
+      showUpgrade: boolean
+      planCreditLine?: TopUpPlanCreditLine
+    }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
   | { kind: 'salesManaged' }
@@ -22,6 +27,7 @@ interface AgentPaywallPresentationInput {
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+  planCreditLine?: TopUpPlanCreditLine | null
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -82,7 +88,8 @@ export function resolveAgentPaywallPresentation({
   role,
   tier,
   canTopUp,
-  canSubscribeSelfServe
+  canSubscribeSelfServe,
+  planCreditLine
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (distribution === 'local') return { kind: 'local' }
   if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -91,6 +98,9 @@ export function resolveAgentPaywallPresentation({
     return canSubscribeSelfServe
       ? { kind: 'subscriptionRequired' }
       : { kind: 'salesManaged' }
+  }
+  if (planCreditLine && canSubscribeSelfServe) {
+    return { kind: 'subscribed', showUpgrade: false, planCreditLine }
   }
   return {
     kind: 'subscribed',

@@ -112,7 +112,9 @@ function topupFailureError(
     serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
-    topupFailureCategory(failure)
+    topupFailureCategory(failure),
+    undefined,
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
   )
 }
 

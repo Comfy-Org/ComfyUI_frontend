@@ -4,28 +4,16 @@
   "description": "Bottom-panel presentation, core tab registration, and log and command terminals. The keyboard-shortcuts reference belongs to keybindings; generic contribution registries remain in the workbench shell.",
   "modules": [
     {
-      "path": "src/components/bottomPanel/**",
-      "role": "presentation"
+      "path": "src/components/bottomPanel/**"
     },
     {
-      "path": "src/components/sidebar/SidebarBottomPanelToggleButton.vue",
-      "role": "presentation"
+      "path": "src/components/sidebar/SidebarBottomPanelToggleButton.vue"
     },
     {
-      "path": "src/components/sidebar/SidebarShortcutsToggleButton.vue",
-      "role": "presentation"
+      "path": "src/components/sidebar/SidebarShortcutsToggleButton.vue"
     },
     {
-      "path": "src/composables/bottomPanelTabs/**",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/bottomPanelTabs/useLogsTerminal.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/bottomPanelTabs/useTerminal.ts",
-      "role": "infrastructure"
+      "path": "src/composables/bottomPanelTabs/**"
     }
   ],
   "publicEntryPoints": [],

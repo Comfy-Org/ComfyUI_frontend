@@ -4,96 +4,70 @@
   "description": "Team workspace collaboration and membership: the workspace API client, the team workspace store, workspace switching, create, edit, delete, and leave flows, members, roles, invites and invite links, workspace deep links, partner-node access governance, member credit limits, and membership mutation views. Workspace-scoped credential minting belongs to authentication; plans, subscriptions, top-ups, invoices, and billing capabilities belong to billing. Mixed account views and coordinators belong to account; shared transport contracts belong to ingest-api.",
   "modules": [
     {
-      "path": "src/platform/workspace/api/__mocks__/**",
-      "role": "infrastructure"
+      "path": "src/platform/workspace/api/__mocks__/**"
     },
     {
-      "path": "src/platform/workspace/api/partnerNodePolicyApi.ts",
-      "role": "infrastructure"
+      "path": "src/platform/workspace/api/partnerNodePolicyApi.ts"
     },
     {
-      "path": "src/platform/workspace/api/webSessionAdapter.test.ts",
-      "role": "infrastructure"
+      "path": "src/platform/workspace/api/webSessionAdapter.test.ts"
     },
     {
-      "path": "src/platform/workspace/api/workspaceApi.ts",
-      "role": "infrastructure"
+      "path": "src/platform/workspace/api/workspaceApi.ts"
     },
     {
-      "path": "src/platform/workspace/api/workspaceApiAuth.ts",
-      "role": "integration"
+      "path": "src/platform/workspace/api/workspaceApiAuth.ts"
     },
     {
-      "path": "src/platform/workspace/api/workspaceApiUrl.test.ts",
-      "role": "infrastructure"
+      "path": "src/platform/workspace/api/workspaceApiUrl.test.ts"
     },
     {
-      "path": "src/platform/workspace/components/InviteMembersForm.vue",
-      "role": "presentation"
+      "path": "src/platform/workspace/components/InviteMembersForm.vue"
     },
     {
-      "path": "src/platform/workspace/components/WorkspaceProfilePic.vue",
-      "role": "presentation"
+      "path": "src/platform/workspace/components/WorkspaceProfilePic.vue"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/**",
-      "role": "presentation"
+      "path": "src/platform/workspace/components/dialogs/**"
     },
     {
-      "path": "src/platform/workspace/composables/__mocks__/**",
-      "role": "application"
+      "path": "src/platform/workspace/composables/__mocks__/**"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceSwitch.ts",
-      "role": "application"
+      "path": "src/platform/workspace/composables/useWorkspaceSwitch.ts"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceUI.ts",
-      "role": "application"
+      "path": "src/platform/workspace/composables/useWorkspaceUI.ts"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceUrlLoader.ts",
-      "role": "integration"
+      "path": "src/platform/workspace/composables/useWorkspaceUrlLoader.ts"
     },
     {
-      "path": "src/platform/workspace/fixtures/**",
-      "role": "application"
+      "path": "src/platform/workspace/fixtures/**"
     },
     {
-      "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.ts",
-      "role": "application"
+      "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.ts"
     },
     {
-      "path": "src/platform/workspace/stores/teamWorkspaceStore.ts",
-      "role": "application"
+      "path": "src/platform/workspace/stores/teamWorkspaceStore.ts"
     },
     {
-      "path": "src/platform/workspace/utils/inviteLinks.ts",
-      "role": "application"
+      "path": "src/platform/workspace/utils/**"
     },
     {
-      "path": "src/platform/workspace/utils/platformLink.ts",
-      "role": "application"
+      "path": "src/platform/workspace/workspaceConstants.ts"
     },
     {
-      "path": "src/platform/workspace/workspaceConstants.ts",
-      "role": "domain"
+      "path": "src/platform/workspace/workspaceTypes.ts"
     },
     {
-      "path": "src/platform/workspace/workspaceTypes.ts",
-      "role": "domain"
+      "path": "src/storybook/mocks/teamWorkspaceStore.ts"
     },
     {
-      "path": "src/storybook/mocks/teamWorkspaceStore.ts",
-      "role": "application"
+      "path": "src/storybook/mocks/useWorkspaceUI.ts"
     },
     {
-      "path": "src/storybook/mocks/useWorkspaceUI.ts",
-      "role": "application"
-    },
-    {
-      "path": "packages/account-core/src/workspaceLink.ts",
-      "role": "domain"
+      "path": "packages/account-core/src/workspaceLink.ts"
     }
   ],
   "publicEntryPoints": [],

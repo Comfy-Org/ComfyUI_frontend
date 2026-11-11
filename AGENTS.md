@@ -18,6 +18,7 @@ in their frontmatter:
 ## Project Structure
 
 - pnpm workspaces monorepo. The app is in `src/` (Vue 3.5+, TypeScript, Tailwind 4, Pinia); shared code is in `packages/`, other apps in `apps/`, repo tooling in `tools/` and `scripts/`.
+- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`. Fix package exports and source imports; do not patch compiler or resolver dependencies to make package builds pass.
 - Entry `src/main.ts`, routing `src/router.ts`, i18n `src/i18n.ts`.
 - Tests: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
 
