@@ -81,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFocus } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -123,6 +124,7 @@ let valueBeforeEditing = modelValue.value
 
 const scrubElement = useTemplateRef<HTMLDivElement>('scrubElement')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
+const { focused } = useFocus(inputField)
 
 function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
@@ -173,15 +175,11 @@ function startTextEdit() {
 }
 
 useNumberScrub(scrubElement, {
+  value: modelValue,
   min: () => Math.max(min, -Number.MAX_SAFE_INTEGER),
   max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
   step: () => step,
-  disabled: () => disabled,
-  onScrubStart: () => {
-    const value = commitDraft()
-    inputField.value?.blur()
-    return value
-  },
+  disabled: () => disabled || focused.value,
   onScrub: (value) => {
     modelValue.value = value
   },

@@ -82,7 +82,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       pointerName: 'mouse',
       value: 37,
       draft: '1000',
-      firstExpected: '1067',
+      commitKey: '',
       expected: '1133'
     },
     {
@@ -90,7 +90,15 @@ describe('WidgetInputNumberInput Value Binding', () => {
       pointerName: 'TouchA',
       value: 37,
       draft: '1000',
-      firstExpected: '1067',
+      commitKey: '',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '1000',
+      commitKey: '{Enter}',
       expected: '1133'
     },
     {
@@ -98,7 +106,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       pointerName: 'TouchA',
       value: 37,
       draft: '18446744073709552000',
-      firstExpected: '18446744073709552000',
+      commitKey: '',
       expected: '18446744073709552000'
     },
     {
@@ -106,12 +114,12 @@ describe('WidgetInputNumberInput Value Binding', () => {
       pointerName: 'TouchA',
       value: 18446744073709552000,
       draft: '1000',
-      firstExpected: '1067',
+      commitKey: '',
       expected: '1133'
     }
   ])(
-    'scrubs $pointer from $value after typing $draft',
-    async ({ pointer, pointerName, value, draft, firstExpected, expected }) => {
+    'blocks $pointer scrubbing while editing $draft from $value after $commitKey until blur',
+    async ({ pointer, pointerName, value, draft, commitKey, expected }) => {
       const user = userEvent.setup()
       const { rerender } = renderComponent(
         createNumberInputWidget(value, 'int', { step2: 1 }),
@@ -129,7 +137,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       )
 
       await user.clear(input)
-      await user.type(input, draft)
+      await user.type(input, `${draft}${commitKey}`)
       await user.pointer([
         {
           keys: `[${pointer}>]`,
@@ -139,18 +147,31 @@ describe('WidgetInputNumberInput Value Binding', () => {
         { pointerName, target: label, coords: { clientX: 30, clientY: 10 } }
       ])
 
-      expect(input).toHaveValue(firstExpected)
+      expect(input).toHaveValue(draft)
 
       await user.pointer([
         { pointerName, target: label, coords: { clientX: 40, clientY: 10 } },
         { keys: `[/${pointer}]`, target: label }
       ])
 
+      expect(input).toHaveValue(draft)
+      await user.tab()
+      expect(input).toHaveValue(draft)
+      expect(input).not.toHaveFocus()
+
+      await user.pointer([
+        {
+          keys: `[${pointer}>]`,
+          target: label,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { pointerName, target: label, coords: { clientX: 30, clientY: 10 } },
+        { pointerName, target: label, coords: { clientX: 40, clientY: 10 } },
+        { keys: `[/${pointer}]`, target: label }
+      ])
+
       expect(input).toHaveValue(expected)
       expect(input).toHaveAttribute('aria-valuenow', expected)
-      expect(input).not.toHaveFocus()
-      await user.tab()
-      expect(input).toHaveValue(expected)
     }
   )
 
