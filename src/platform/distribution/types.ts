@@ -21,4 +21,4 @@ export const isCloud = DISTRIBUTION === 'cloud'
  */
 export const isNightly = __IS_NIGHTLY__
 
-export const isTrustedObjectInfo = DISTRIBUTION === 'cloud'
+export const isTrustedObjectInfo = isCloud
