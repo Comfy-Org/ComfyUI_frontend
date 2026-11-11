@@ -86,6 +86,17 @@ describe(useTemplateModelDownloads, () => {
     expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
   })
 
+  it('falls back to a dialog-scoped tracker once host tracking stops', () => {
+    installDesktopHost()
+    const stopTracking = useMissingModelDownloadStore().startTracking()
+    const downloads = useTemplateModelDownloads({ folderPaths: {} })
+    stopTracking()
+
+    downloads.request(model)
+
+    expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
+  })
+
   it('reopens a finished download the dialog finds missing', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()

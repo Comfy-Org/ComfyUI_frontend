@@ -387,11 +387,7 @@ export const useMissingModelDownloadStore = defineStore(
 
     function controlRef(model: ModelWithUrl): string | undefined {
       const download = downloads.get(getModelFileKey(model))
-      if (
-        download?.state.status !== 'pending' &&
-        download?.state.status !== 'downloading'
-      )
-        return undefined
+      if (!download || !isActive(download.state)) return undefined
       if (
         download.jobId !== undefined &&
         !download.endedJobs.has(download.jobId)

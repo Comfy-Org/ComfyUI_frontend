@@ -45,9 +45,18 @@ export function useTemplateModelDownloads(
     return useTemplateModelRowDownloads(options)
   }
   store.reopenFinished(missingModels)
+  let fallback: TemplateModelRowDownloads | undefined
+  const dialogTracker = () =>
+    (fallback ??= useTemplateModelRowDownloads(options))
   return {
-    stateFor: (model) => toTemplateModelDownloadState(store.stateFor(model)),
-    request: (model) => store.download(model),
-    dispose: () => undefined
+    stateFor: (model) =>
+      store.tracksHostProgress()
+        ? toTemplateModelDownloadState(store.stateFor(model))
+        : dialogTracker().stateFor(model),
+    request: (model) =>
+      store.tracksHostProgress()
+        ? store.download(model)
+        : dialogTracker().request(model),
+    dispose: () => fallback?.dispose()
   }
 }

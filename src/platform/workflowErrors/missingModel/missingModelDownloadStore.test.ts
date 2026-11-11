@@ -681,4 +681,16 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(pauseDownload).not.toHaveBeenCalled()
   })
+  it('can cancel a request before the host reports on it', () => {
+    installDesktopHost()
+    const cancelDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, cancelDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+    store.cancel(model)
+
+    expect(cancelDownload).toHaveBeenCalledWith(model.url)
+  })
 })
