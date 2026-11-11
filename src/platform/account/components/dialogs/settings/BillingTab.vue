@@ -366,8 +366,13 @@ const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const autoTopUpMemberView = computed(
   () => capabilities.autoTopUpMemberView.value
 )
-const salesVariant = computed(() =>
+const endedPlanSalesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+)
+
+// Local follows the billing-site rule: Add credits outranks plan actions.
+const salesVariant = computed(() =>
+  isCloud ? endedPlanSalesVariant.value : 'secondary'
 )
 
 const addCreditsVariant = computed(() =>

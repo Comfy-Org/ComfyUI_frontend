@@ -525,12 +525,33 @@ describe('BillingTab', () => {
   })
 
   it.for([
-    { subscriptionStatus: 'ended' as const, variant: 'inverted' },
-    { subscriptionStatus: 'canceled' as const, variant: 'secondary' },
-    { subscriptionStatus: 'active' as const, variant: 'secondary' }
+    {
+      subscriptionStatus: 'ended' as const,
+      isCloud: true,
+      variant: 'inverted'
+    },
+    {
+      subscriptionStatus: 'ended' as const,
+      isCloud: false,
+      variant: 'secondary'
+    },
+    {
+      subscriptionStatus: 'canceled' as const,
+      isCloud: true,
+      variant: 'secondary'
+    },
+    {
+      subscriptionStatus: 'active' as const,
+      isCloud: true,
+      variant: 'secondary'
+    }
   ])(
-    'renders Contact sales as $variant when subscription_status is $subscriptionStatus',
-    ({ subscriptionStatus, variant }) => {
+    'renders Contact sales as $variant when subscription_status is $subscriptionStatus (Cloud: $isCloud)',
+    ({ subscriptionStatus, isCloud, variant }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
       arrange({ planKind: 'sales_managed', subscriptionStatus })
 
       expect(
@@ -1514,25 +1535,45 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
     })
 
-    it('keeps Contact sales the one white action when an Enterprise plan has ended at 0', async () => {
-      arrange({
-        balance: zeroBalance,
-        planKind: 'sales_managed',
-        canOpenPlans: false,
-        subscriptionStatus: 'ended',
-        subscription: {
-          ...activeSubscription,
-          tier: 'ENTERPRISE',
-          isActive: false
-        }
-      })
+    it.for([
+      {
+        surface: 'Cloud',
+        isCloud: true,
+        contactSales: 'inverted',
+        addCredits: 'secondary'
+      },
+      {
+        surface: 'local ComfyUI',
+        isCloud: false,
+        contactSales: 'secondary',
+        addCredits: 'inverted'
+      }
+    ])(
+      'keeps one white action on $surface when an Enterprise plan has ended at 0',
+      async ({ isCloud, contactSales, addCredits }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        arrange({
+          balance: zeroBalance,
+          planKind: 'sales_managed',
+          canOpenPlans: false,
+          subscriptionStatus: 'ended',
+          subscription: {
+            ...activeSubscription,
+            tier: 'ENTERPRISE',
+            isActive: false
+          }
+        })
 
-      await screen.findByTestId('billing-auto-top-up-status')
-      expect(
-        screen.getByRole('link', { name: 'Contact sales' })
-      ).toHaveAttribute('data-variant', 'inverted')
-      expect(addCreditsVariants()).toEqual(['secondary'])
-    })
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          screen.getByRole('link', { name: 'Contact sales' })
+        ).toHaveAttribute('data-variant', contactSales)
+        expect(addCreditsVariants()).toEqual([addCredits])
+      }
+    )
 
     it('keeps Subscribe the one white button with no plan at 0', () => {
       arrange({

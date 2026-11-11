@@ -262,8 +262,13 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
-const salesVariant = computed(() =>
+const endedPlanSalesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+)
+
+// Local follows the billing-site rule: Add credits outranks plan actions.
+const salesVariant = computed(() =>
+  isCloud ? endedPlanSalesVariant.value : 'secondary'
 )
 
 const addCreditsVariant = computed(() =>
