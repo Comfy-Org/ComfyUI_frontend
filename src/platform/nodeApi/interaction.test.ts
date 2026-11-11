@@ -1,12 +1,8 @@
-/**
- * The platform half: a host supplies movement, packs observe it.
- *
- * The real layout-store wiring is tested next to the bridge in `renderer/`,
- * because `platform/` cannot import from there — and a test that reached across
- * the layer would be asserting an import the architecture forbids.
- */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import { createComfyApi } from './comfyApi'
 import { ComfyApiError } from './errors'
 import {
   createNodeDragEndObserver,
@@ -15,47 +11,64 @@ import {
   provideNodeMoveSource,
   resetNodeMoveSource
 } from './interaction'
-import type { NodeHandle } from './nodeHandle'
+import type {
+  NodeDragEndSource,
+  NodeMoveSource,
+  NodeMoveTarget
+} from './interaction'
 
-const handleFor = (id: string) =>
-  ({ id, isDeleted: false }) as unknown as NodeHandle
+function movingNode() {
+  const graph = new LGraph()
+  const node = new LGraphNode('Mover')
+  graph.add(node)
+  const comfy = createComfyApi(() => graph)
+  const target = { rootGraphId: graph.id, nodeId: String(node.id) }
+  const handleFor = ({ rootGraphId, nodeId }: NodeMoveTarget) =>
+    rootGraphId === graph.id ? comfy.graph.node(nodeId) : undefined
+  return { graph, node, comfy, target, handleFor }
+}
 
 describe('observing node movement', () => {
   beforeEach(() => resetNodeMoveSource())
 
   it('refuses rather than silently ignoring when no host wired it', () => {
-    // A capability that accepts listeners and never calls them is exactly how
-    // `onPreview` shipped broken.
-    const onNodeMoved = createNodeMoveObserver(handleFor)
+    const onNodeMoved = createNodeMoveObserver(() => undefined)
     expect(() => onNodeMoved(() => {})).toThrow(ComfyApiError)
   })
 
   it('delivers a move to the listener as a handle and a position', () => {
-    let emit: ((id: string, p: { x: number; y: number }) => void) | undefined
+    const { target, handleFor } = movingNode()
+    let emit: Parameters<NodeMoveSource>[0] | undefined
     provideNodeMoveSource((onMove) => {
       emit = onMove
       return () => (emit = undefined)
     })
 
-    const seen: { id: string; x: number }[] = []
-    createNodeMoveObserver(handleFor)((event) =>
-      seen.push({ id: event.node.id, x: event.position.x })
-    )
-    emit?.('7', { x: 120, y: 240 })
+    const seen: { id: string; graphId: string; x: number }[] = []
+    createNodeMoveObserver(handleFor)((event) => {
+      const { graphId } = event.node
+      assert.isDefined(graphId)
+      seen.push({ id: event.node.id, graphId, x: event.position.x })
+    })
+    emit?.(target, { x: 120, y: 240 })
 
-    expect(seen).toEqual([{ id: '7', x: 120 }])
+    expect(seen).toEqual([
+      { id: target.nodeId, graphId: target.rootGraphId, x: 120 }
+    ])
   })
 
   it('drops a move for a node that has since gone', () => {
-    let emit: ((id: string, p: { x: number; y: number }) => void) | undefined
+    const { graph, node, target, handleFor } = movingNode()
+    let emit: Parameters<NodeMoveSource>[0] | undefined
     provideNodeMoveSource((onMove) => {
       emit = onMove
       return () => {}
     })
 
     const seen: unknown[] = []
-    createNodeMoveObserver(() => undefined)((event) => seen.push(event))
-    emit?.('7', { x: 1, y: 2 })
+    createNodeMoveObserver(handleFor)((event) => seen.push(event))
+    graph.remove(node)
+    emit?.(target, { x: 1, y: 2 })
 
     expect(seen).toEqual([])
   })
@@ -67,7 +80,7 @@ describe('observing node movement', () => {
       return () => (live = false)
     })
 
-    const stop = createNodeMoveObserver(handleFor)(() => {})
+    const stop = createNodeMoveObserver(() => undefined)(() => {})
     expect(live).toBe(true)
     stop()
     expect(live).toBe(false)
@@ -78,36 +91,44 @@ describe('observing completed node drags', () => {
   beforeEach(() => resetNodeMoveSource())
 
   it('rejects subscriptions before the host provides a source', () => {
-    expect(() => createNodeDragEndObserver(handleFor)(() => {})).toThrow(
+    expect(() => createNodeDragEndObserver(() => undefined)(() => {})).toThrow(
       ComfyApiError
     )
   })
 
   it('filters missing and deleted nodes', () => {
-    let emit: ((ids: readonly string[]) => void) | undefined
+    const { graph, comfy, target, handleFor } = movingNode()
+    const removed = new LGraphNode('Removed')
+    graph.add(removed)
+    const deleted = comfy.graph.node(String(removed.id))
+    assert.exists(deleted)
+    graph.remove(removed)
+
+    let emit: Parameters<NodeDragEndSource>[0] | undefined
     provideNodeDragEndSource((listener) => {
       emit = listener
       return () => {
         emit = undefined
       }
     })
-    const deleted = { id: '2', isDeleted: true } as unknown as NodeHandle
     const listener = vi.fn()
-    createNodeDragEndObserver((id) => {
-      if (id === '1') return handleFor(id)
-      if (id === '2') return deleted
-      return undefined
-    })(listener)
+    createNodeDragEndObserver((candidate) =>
+      candidate.nodeId === deleted.id ? deleted : handleFor(candidate)
+    )(listener)
 
-    emit?.(['1', '2', '3'])
+    emit?.([
+      target,
+      { rootGraphId: graph.id, nodeId: deleted.id },
+      { rootGraphId: graph.id, nodeId: 'missing' }
+    ])
 
     expect(listener).toHaveBeenCalledWith([
-      expect.objectContaining({ id: '1' })
+      expect.objectContaining({ id: target.nodeId })
     ])
   })
 
   it('suppresses delivery when no live nodes remain', () => {
-    let emit: ((ids: readonly string[]) => void) | undefined
+    let emit: Parameters<NodeDragEndSource>[0] | undefined
     provideNodeDragEndSource((listener) => {
       emit = listener
       return () => undefined
@@ -115,7 +136,7 @@ describe('observing completed node drags', () => {
     const listener = vi.fn()
     createNodeDragEndObserver(() => undefined)(listener)
 
-    emit?.(['missing'])
+    emit?.([{ rootGraphId: 'missing', nodeId: 'missing' }])
 
     expect(listener).not.toHaveBeenCalled()
   })

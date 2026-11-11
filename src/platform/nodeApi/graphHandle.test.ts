@@ -198,6 +198,26 @@ describe('graph API (composed)', () => {
       expect(() => api.batch(async () => undefined)).toThrow(/synchronous/)
     })
 
+    it('refuses an async batch callback before any of it runs', async () => {
+      const node = new LGraphNode('before')
+      graph.add(node)
+      const handle = api.node(String(node.id))!
+      const started = vi.fn()
+
+      expect(() =>
+        api.batch(async () => {
+          started()
+          await Promise.resolve()
+          handle.setTitle('escaped')
+        })
+      ).toThrow(/synchronous/)
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(started).not.toHaveBeenCalled()
+      expect(node.title).toBe('before')
+    })
+
     it('advances when a value is committed through the API', () => {
       // The contrast with the raw write above is the contract: a bare
       // `widget.value =` is a silent restore, `setValue` is a user-grade

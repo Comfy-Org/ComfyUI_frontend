@@ -26,7 +26,7 @@ import {
   createNodeDragEndObserver,
   createNodeMoveObserver
 } from './interaction'
-import type { NodeMoveEvent } from './interaction'
+import type { NodeMoveEvent, NodeMoveTarget } from './interaction'
 import { watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
@@ -417,6 +417,22 @@ function buildMajor(
     return graphId === rootGraph.id ? rootGraph.node(nodeId) : undefined
   }
 
+  function movedNode({
+    rootGraphId,
+    nodeId
+  }: NodeMoveTarget): NodeHandle | undefined {
+    if (rootGraphId !== rootGraph.id) return undefined
+    const visible = graph.node(nodeId)
+    if (visible) return visible
+    const top = rootGraph.node(nodeId)
+    if (top) return top
+    for (const subgraph of graph.subgraphs()) {
+      const node = subgraph.node(nodeId)
+      if (node) return node
+    }
+    return undefined
+  }
+
   function executionNode(id: string): NodeHandle | undefined {
     const root = getGraph()?.rootGraph
     if (!root) return undefined
@@ -459,8 +475,8 @@ function buildMajor(
     backend,
     workflow,
     isInteracting,
-    onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
-    onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
+    onNodeMoved: createNodeMoveObserver(movedNode),
+    onNodeDragEnd: createNodeDragEndObserver(movedNode),
     onViewportChanged: createViewportObserver(),
     onNodeChanged: createNodeChangeObserver(nodeIn),
     onReady: onAppReady,
@@ -547,13 +563,7 @@ export function applyDefExtensions(
 
 let singleton: Comfy | undefined
 
-/**
- * The app-wide instance. The graph provider is injected by the app layer rather
- * than imported here, so this module stays a leaf: it depends on litegraph
- * types only, never on stores or the app.
- *
- * @knipIgnoreUsedByStackedPR magicPatch/verify builds its instance through this
- */
+/** Returns the shared instance, creating it with this provider if absent. */
 export function useComfyApi(
   getGraph: () => LGraph | null | undefined,
   host?: ComfyApiHost

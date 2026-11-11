@@ -193,6 +193,8 @@ import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { markAppReady } from '@/platform/nodeApi/appReady'
+import { ComfyApiError } from '@/platform/nodeApi/errors'
 import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
@@ -569,8 +571,6 @@ onMounted(async () => {
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
-    // ChangeTracker needs to be initialized before setup, as it will overwrite
-    // some listeners of litegraph canvas.
     ChangeTracker.init()
 
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
@@ -585,7 +585,6 @@ onMounted(async () => {
       throw settingsError.value
     }
 
-    // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
     await Promise.all([
@@ -606,7 +605,10 @@ onMounted(async () => {
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => canvasStore.currentGraph, {
       openWorkflow: async (data) => {
-        await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
+        const result = await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
+        if (result === false || result === undefined) {
+          throw new ComfyApiError('Workflow could not be opened.')
+        }
       },
       refreshDefinitions: () => comfyApp.refreshComboInNodes()
     })
@@ -633,18 +635,18 @@ onMounted(async () => {
     window.graph = comfyApp.graph
 
     comfyAppReady.value = true
+    await nextTick()
+    if (disposed) return
+    markAppReady()
 
-    // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    // Load color palette
     colorPaletteStore.customPalettes = settingStore.get(
       'Comfy.CustomColorPalettes'
     )
 
-    // Restore saved workflow and workflow tabs state
     await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
       startupOutcome = await workflowPersistence.initializeWorkflow()
       await workflowPersistence.restoreWorkflowTabsState()
@@ -661,10 +663,8 @@ onMounted(async () => {
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
-  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
@@ -672,7 +672,6 @@ onMounted(async () => {
 
   emit('ready')
 
-  // The tour draws into an overlay that only mounts once `ready` has flushed.
   await nextTick()
   try {
     await useFirstRunEntry().handleUrlWorkflow(

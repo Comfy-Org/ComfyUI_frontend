@@ -949,7 +949,7 @@ const frontendResolvers = new Map<string, Resolver>()
 
 type BoundPromptInputProjector = {
   run: PromptInputProjector
-  handleFor: (nodeId: string) => NodeHandle
+  handleForNode: (node: LGraphNode) => NodeHandle
   isActive: () => boolean
 }
 
@@ -1062,27 +1062,21 @@ function addProjectedInputNames(
   }
 }
 
-/**
- * Returns the union of inputs this node's extensions omit from this prompt.
- *
- * Validation lives here, at the authority boundary, rather than in packs or
- * the prompt builder. A malformed projection aborts the build with attribution
- * and never degrades to a broader execution graph.
- */
+/** Returns the validated union of inputs omitted from this node's prompt. */
 export async function projectedPromptInputOmissions(
   nodeType: string,
-  nodeId: string
+  node: LGraphNode
 ): Promise<readonly string[]> {
   const policy = promptInputProjectors.get(nodeType)
   if (!policy) return Object.freeze([])
 
   const omitted = new Set<string>()
   let failure: unknown
-  for (const { run, handleFor, isActive } of policy.projectors) {
+  for (const { run, handleForNode, isActive } of policy.projectors) {
     if (!isActive()) continue
     let value: unknown
     try {
-      value = await run(handleFor(nodeId))
+      value = await run(handleForNode(node))
     } catch (error) {
       reportError(error, {
         errorType: 'node_api_extension_callback_failure',
@@ -1115,15 +1109,9 @@ export function frontendSupplierMap(): ReadonlyMap<string, Supplier> {
   return frontendSuppliers
 }
 
-/**
- * Type name -> its preview listeners.
- *
- * Module level because delivery comes from the app's socket, which knows a node
- * id but not which registry instance registered for it.
- */
 const previewSubscribers = new Map<
   string,
-  (nodeId: string, frame: PreviewFrame) => void
+  (node: LGraphNode, frame: PreviewFrame) => void
 >()
 
 /**
@@ -1173,18 +1161,10 @@ export function offerUnplacedLink(
   return unplacedLinkSubscribers.get(nodeType)?.(nodeId, event) ?? false
 }
 
-/**
- * Hands a preview frame to whichever node type registered for it.
- *
- * Called by the app when the backend emits a preview. The node type is looked
- * up rather than passed, so the app does not need to know which packs care.
- */
-export function deliverPreview(
-  nodeId: string,
-  nodeType: string,
-  frame: PreviewFrame
-): void {
-  previewSubscribers.get(nodeType)?.(nodeId, frame)
+/** Delivers a preview to listeners for the resolved node's type. */
+export function deliverPreview(node: LGraphNode, frame: PreviewFrame): void {
+  if (!node.graph) return
+  previewSubscribers.get(node.type)?.(node, frame)
 }
 
 function rawDefinedNode(definition: NodeDefinition): RawNodeDef {
@@ -1329,7 +1309,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
         packTypeColors.set(type, color)
         applyPackTypeColors()
+        let registered = true
         return () => {
+          if (!registered) return
+          registered = false
           packTypeColors.delete(type)
           delete LGraphCanvas.link_type_colors[type]
         }
@@ -1469,6 +1452,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
       }
 
+      const invokeAttached = <T>(
+        hook: string,
+        node: LGraphNode,
+        callback: () => T
+      ): T | undefined => (node.graph ? invoke(hook, callback) : undefined)
+
       const invokeAsync = async <T>(
         hook: string,
         callback: () => T | Promise<T>
@@ -1534,7 +1523,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             onPreview: (run) => previewed.push({ run, ...binding }),
             onSerialize: (run) => serialized.push({ run, ...binding }),
             onPromptSerialize: (run) =>
-              promptSerialized.push({ run, handleFor, isActive }),
+              promptSerialized.push({ run, handleForNode, isActive }),
             onBeforeConnect: (run) => beforeConnect.push({ run, ...binding }),
             onUnplacedLink: (run) => unplacedLink.push({ run, ...binding }),
             addMenuItem: (item) => menuItems.push({ item, ...binding })
@@ -1646,15 +1635,16 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installLifecycleHooks = () => {
         if (created.length || widgets.length || hidden.length) {
           install('onAdded', (node) => {
-            const id = String(node.id)
-            for (const { def: widget, handleFor, isActive } of widgets) {
+            for (const { def: widget, handleForNode, isActive } of widgets) {
               if (isActive()) {
-                invoke('addWidget', () => handleFor(id).widgets.add(widget))
+                invokeAttached('addWidget', node, () =>
+                  handleForNode(node).widgets.add(widget)
+                )
               }
             }
-            for (const { name, handleFor, isActive } of hidden) {
+            for (const { name, handleForNode, isActive } of hidden) {
               if (!isActive()) continue
-              const widget = handleFor(id).widgets.get(name)
+              const widget = handleForNode(node).widgets.get(name)
               if (widget) invoke('hideWidget', () => widget.setHidden(true))
             }
             const loading = isLoadingGraph()
@@ -1662,9 +1652,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               restored: loading || restoredNodes.has(node),
               loading
             })
-            for (const { run, handleFor, isActive } of created) {
+            for (const { run, handleForNode, isActive } of created) {
               if (isActive())
-                invoke('onCreated', () => run(handleFor(id), event))
+                invokeAttached('onCreated', node, () =>
+                  run(handleForNode(node), event)
+                )
             }
           })
         }
@@ -1672,10 +1664,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         if (executed.length) {
           install('onExecuted', (node, message) => {
             const result = toExecutionResult(message)
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of executed) {
+            for (const { run, handleForNode, isActive } of executed) {
               if (isActive()) {
-                invoke('onExecuted', () => run(handleFor(id), result))
+                invokeAttached('onExecuted', node, () =>
+                  run(handleForNode(node), result)
+                )
               }
             }
           })
@@ -1685,10 +1678,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           install('onConfigure', (node, serialised) => {
             const data = (extensionValue(serialised) ??
               {}) as unknown as Record<string, unknown>
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of configured) {
+            for (const { run, handleForNode, isActive } of configured) {
               if (isActive()) {
-                invoke('onConfigured', () => run(handleFor(id), data))
+                invokeAttached('onConfigured', node, () =>
+                  run(handleForNode(node), data)
+                )
               }
             }
           })
@@ -1714,10 +1708,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 replacement = previous
               }
             })
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of propertyChanges) {
+            for (const { run, handleForNode, isActive } of propertyChanges) {
               if (isActive()) {
-                invoke('onPropertyChanged', () => run(handleFor(id), event))
+                invokeAttached('onPropertyChanged', node, () =>
+                  run(handleForNode(node), event)
+                )
               }
             }
             return replacement
@@ -1772,21 +1767,23 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installVisualLifecycleHooks = () => {
         if (resized.length) {
           install('onResize', (node, [width, height]) => {
-            const id = String(node.id)
             const size: Size = Object.freeze({ width, height })
-            for (const { run, handleFor, isActive } of resized) {
+            for (const { run, handleForNode, isActive } of resized) {
               if (isActive())
-                invoke('onResized', () => run(handleFor(id), size))
+                invokeAttached('onResized', node, () =>
+                  run(handleForNode(node), size)
+                )
             }
           })
         }
 
         if (hovered.length) {
           const dispatchHover = (node: LGraphNode, hovering: boolean) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of hovered) {
+            for (const { run, handleForNode, isActive } of hovered) {
               if (isActive()) {
-                invoke('onHover', () => run(handleFor(id), hovering))
+                invokeAttached('onHover', node, () =>
+                  run(handleForNode(node), hovering)
+                )
               }
             }
           }
@@ -1796,9 +1793,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
         if (doubleClicked.length) {
           install('onDblClick', (node) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of doubleClicked) {
-              if (isActive()) invoke('onDoubleClick', () => run(handleFor(id)))
+            for (const { run, handleForNode, isActive } of doubleClicked) {
+              if (isActive())
+                invokeAttached('onDoubleClick', node, () =>
+                  run(handleForNode(node))
+                )
             }
           })
         }
@@ -1807,27 +1806,33 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const installInteractionHooks = () => {
         if (dragOver.length) {
           const previous = nodeType.prototype.onDragOver
-          nodeType.prototype.onDragOver = function (event: DragEvent) {
+          nodeType.prototype.onDragOver = function (
+            this: LGraphNode,
+            event: DragEvent
+          ) {
             if (previous?.call(this, event) === true) return true
-            const id = String(this.id)
             return dragOver.some(
-              ({ run, handleFor, isActive }) =>
+              ({ run, handleForNode, isActive }) =>
                 isActive() &&
-                invoke('onDragOver', () => run(handleFor(id), event)) === true
+                invokeAttached('onDragOver', this, () =>
+                  run(handleForNode(this), event)
+                ) === true
             )
           }
         }
 
         if (dropped.length) {
           const previous = nodeType.prototype.onDragDrop
-          nodeType.prototype.onDragDrop = async function (event: DragEvent) {
+          nodeType.prototype.onDragDrop = async function (
+            this: LGraphNode,
+            event: DragEvent
+          ) {
             if ((await previous?.call(this, event)) === true) return true
-            const id = String(this.id)
-            for (const { run, handleFor, isActive } of dropped) {
+            for (const { run, handleForNode, isActive } of dropped) {
               if (
                 isActive() &&
                 (await invokeAsync('onDrop', () =>
-                  run(handleFor(id), event)
+                  run(handleForNode(this), event)
                 )) === true
               ) {
                 return true
@@ -1857,11 +1862,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 peerNodeId: peer ? String(peer.id) : undefined,
                 peerIndex: peer?.slot
               })
-              const id = String(node.id)
-              for (const { run, handleFor, isActive } of connections) {
+              for (const { run, handleForNode, isActive } of connections) {
                 if (isActive()) {
-                  invoke('onConnectionsChanged', () =>
-                    run(handleFor(id), event)
+                  invokeAttached('onConnectionsChanged', node, () =>
+                    run(handleForNode(node), event)
                   )
                 }
               }
@@ -1874,10 +1878,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           ;(nodeType.prototype as Record<string, unknown>).onSerialize =
             function (this: LGraphNode, o: Record<string, unknown>) {
               ;(previous as ((o: unknown) => void) | undefined)?.call(this, o)
-              const id = String(this.id)
-              for (const { run, handleFor, isActive } of serialized) {
+              for (const { run, handleForNode, isActive } of serialized) {
                 if (!isActive()) continue
-                const extra = invoke('onSerialize', () => run(handleFor(id)))
+                const extra = invokeAttached('onSerialize', this, () =>
+                  run(handleForNode(this))
+                )
                 if (!extra) continue
                 for (const [key, value] of Object.entries(extra)) {
                   // Core fields stay ours. A pack rewriting `type` or
@@ -1900,12 +1905,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             node: LGraphNode,
             event: BeforeConnectEvent
           ): boolean => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of beforeConnect) {
+            for (const { run, handleForNode, isActive } of beforeConnect) {
               if (
                 isActive() &&
-                invoke('onBeforeConnect', () => run(handleFor(id), event)) ===
-                  false
+                invokeAttached('onBeforeConnect', node, () =>
+                  run(handleForNode(node), event)
+                ) === false
               ) {
                 return false
               }
@@ -1976,15 +1981,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
       const installSubscribers = () => {
         if (previewed.length) {
-          previewSubscribers.set(def.type, (nodeId, frame) => {
-            for (const { run, handleFor, isActive } of previewed) {
+          previewSubscribers.set(def.type, (node, frame) => {
+            for (const { run, handleForNode, isActive } of previewed) {
               if (!isActive()) continue
-              // Subscribers are keyed by type alone, so the event can name a
-              // node in another graph scope or one already removed. A pack
-              // callback takes a handle, not the absence of one.
-              const node = extensionValue(handleFor(nodeId))
-              if (!node) continue
-              invoke('onPreview', () => run(node, frame))
+              invoke('onPreview', () => run(handleForNode(node), frame))
             }
           })
         } else {

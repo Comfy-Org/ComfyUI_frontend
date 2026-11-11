@@ -102,13 +102,21 @@ import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionC
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import {
+  currentDocumentId,
   onWorkflowLoaded,
   resetAppReadyForTest
 } from '@/platform/nodeApi/appReady'
 
+import {
+  applyDefExtensions,
+  resetComfyApi,
+  useComfyApi
+} from '@/platform/nodeApi/comfyApi'
+
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
+import * as appInstance from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -957,6 +965,138 @@ describe('ComfyApp', () => {
         'onGraphLoadError',
         expect.objectContaining({ name: 'AbortError' })
       )
+    })
+
+    it('preserves document identity through Undo and Redo but replaces it on reload', async () => {
+      onTestFinished(attachLegacyUI(app))
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/history.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(new ChangeTracker(workflow, saved))
+      workflow.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = workflow
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (_, state) => tracker.reset(state)
+      )
+      const workflowLoaded = vi.fn()
+      onTestFinished(onWorkflowLoaded(workflowLoaded))
+
+      await app.loadGraphData(changed, false, false, workflow)
+      const documentId = currentDocumentId()
+      expect(documentId).toBeDefined()
+      tracker.undoQueue.push(saved)
+
+      await tracker.undo()
+
+      expect(app.rootGraph.extra.marker).toBe('saved')
+      expect(currentDocumentId()).toBe(documentId)
+
+      await tracker.redo()
+
+      expect(app.rootGraph.extra.marker).toBe('changed')
+      expect(currentDocumentId()).toBe(documentId)
+      expect(workflowLoaded).toHaveBeenCalledTimes(1)
+
+      await app.loadGraphData(changed, false, false, workflow)
+
+      expect(currentDocumentId()).not.toBe(documentId)
+      expect(workflowLoaded).toHaveBeenCalledTimes(2)
+    })
+
+    it('announces history restores when another workflow overtakes them or is already active', async () => {
+      onTestFinished(attachLegacyUI(app))
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const other = structuredClone(saved)
+      other.extra = { marker: 'other' }
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/history.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const otherWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/other.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(new ChangeTracker(workflow, saved))
+      workflow.changeTracker = tracker
+      const workflows = new Map([
+        [workflow.path, workflow],
+        [otherWorkflow.path, otherWorkflow]
+      ])
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (value, state) => {
+          assert(value instanceof ComfyWorkflow)
+          const loaded = workflows.get(value.path)
+          assert.exists(loaded)
+          loaded.changeTracker.reset(state)
+          useWorkflowStore().activeWorkflow = loaded
+        }
+      )
+      const loads: {
+        marker: unknown
+        documentId: ReturnType<typeof currentDocumentId>
+      }[] = []
+      onTestFinished(
+        onWorkflowLoaded(() => {
+          loads.push({
+            marker: app.rootGraph.extra.marker,
+            documentId: currentDocumentId()
+          })
+        })
+      )
+      await app.loadGraphData(changed, false, false, workflow)
+      tracker.undoQueue.push(saved)
+
+      const undo = tracker.undo()
+      const loadOther = app.loadGraphData(other, false, false, otherWorkflow)
+      await Promise.all([undo, loadOther])
+
+      expect(app.rootGraph.extra.marker).toBe('saved')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(workflow.path)
+      expect(loads.map(({ marker }) => marker)).toEqual([
+        'changed',
+        'other',
+        'saved'
+      ])
+      expect(new Set(loads.map(({ documentId }) => documentId)).size).toBe(3)
+
+      await app.loadGraphData(other, false, false, otherWorkflow)
+      const otherDocumentId = currentDocumentId()
+
+      await tracker.redo()
+
+      expect(app.rootGraph.extra.marker).toBe('changed')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(workflow.path)
+      expect(currentDocumentId()).not.toBe(otherDocumentId)
+      expect(loads.map(({ marker }) => marker)).toEqual([
+        'changed',
+        'other',
+        'saved',
+        'other',
+        'changed'
+      ])
     })
 
     it('keeps a replacement started by a workflow-loaded listener', async () => {
@@ -4688,6 +4828,136 @@ describe('ComfyApp', () => {
   })
 
   describe('socket handlers', () => {
+    it('delivers nested previews to their owner while preserving placement paths', () => {
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const root = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', root)
+      mockCanvas.graph = root
+      resetComfyApi()
+      onTestFinished(resetComfyApi)
+      const comfy = useComfyApi(() => mockCanvas.graph)
+      const seen = vi.fn()
+      const stop = comfy.defs.extend('PreviewProbe', (builder) =>
+        builder.onPreview(seen)
+      )
+      onTestFinished(stop)
+      class PreviewProbe extends LGraphNode {
+        constructor() {
+          super('Preview', 'PreviewProbe')
+        }
+      }
+      applyDefExtensions(PreviewProbe, {
+        name: 'PreviewProbe',
+        input: {},
+        output: []
+      })
+      const outer = createTestSubgraph({ rootGraph: root })
+      const inner = createTestSubgraph({ rootGraph: root })
+      root.subgraphs.set(outer.id, outer)
+      root.subgraphs.set(inner.id, inner)
+      const firstPlacement = createTestSubgraphNode(outer, {
+        parentGraph: root
+      })
+      root.add(firstPlacement)
+      const secondPlacement = createTestSubgraphNode(outer, {
+        parentGraph: root
+      })
+      root.add(secondPlacement)
+      const nestedPlacement = createTestSubgraphNode(inner, {
+        parentGraph: outer
+      })
+      outer.add(nestedPlacement)
+      const previewNode = new PreviewProbe()
+      inner.add(previewNode)
+      const firstExecutionId = createNodeExecutionId([
+        firstPlacement.id,
+        nestedPlacement.id,
+        previewNode.id
+      ])
+      const secondExecutionId = createNodeExecutionId([
+        secondPlacement.id,
+        nestedPlacement.id,
+        previewNode.id
+      ])
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/preview.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = workflow
+      useExecutionStore().storeJob({
+        nodes: [firstExecutionId, secondExecutionId],
+        id: 'preview-job',
+        promptOutput: {},
+        workflow,
+        mode: 'graph'
+      })
+      vi.spyOn(URL, 'createObjectURL')
+        .mockReturnValueOnce('blob:first-placement')
+        .mockReturnValueOnce('blob:second-placement')
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const onPreview = addEventListener.mock.calls.find(
+        ([name]) => name === 'b_preview_with_metadata'
+      )?.[1]
+      assert(typeof onPreview === 'function')
+      const firstBlob = new Blob(['first'])
+      const secondBlob = new Blob(['second'])
+      onPreview(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: firstBlob,
+            displayNodeId: firstExecutionId,
+            jobId: 'preview-job'
+          }
+        })
+      )
+      onPreview(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: secondBlob,
+            displayNodeId: secondExecutionId,
+            jobId: 'preview-job'
+          }
+        })
+      )
+
+      const output = useNodeOutputStore()
+      expect(
+        output.getNodePreviewImagesByExecutionId(
+          createNodeExecutionId([firstPlacement.id])
+        )
+      ).toEqual(['blob:first-placement'])
+      expect(
+        output.getNodePreviewImagesByExecutionId(
+          createNodeExecutionId([secondPlacement.id])
+        )
+      ).toEqual(['blob:second-placement'])
+
+      expect(seen).toHaveBeenCalledTimes(2)
+      expect(seen).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          id: String(previewNode.id),
+          graphId: inner.id
+        }),
+        { blob: firstBlob, url: 'blob:first-placement' }
+      )
+      expect(seen).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: String(previewNode.id),
+          graphId: inner.id
+        }),
+        { blob: secondBlob, url: 'blob:second-placement' }
+      )
+    })
+
     it('keeps a model download that arrives as the socket starts', async () => {
       vi.spyOn(api, 'init').mockImplementation(async () => {
         api.dispatchCustomEvent('model_download', {

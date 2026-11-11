@@ -17,6 +17,9 @@ import {
 } from './comfyApi'
 import { ComfyUnsupportedError } from './errors'
 
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
+
 describe('comfy API root', () => {
   let graph: LGraph
 
@@ -192,6 +195,106 @@ describe('comfy API root', () => {
           nodeId: String(source.id),
           outputIndex: 0
         })
+      } finally {
+        dispose()
+      }
+    })
+  })
+
+  describe('graph ownership', () => {
+    it('keeps a retained handle bound to the graph that minted it', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      first.add(inFirst)
+      second.add(inSecond)
+      expect(inSecond.id).toBe(inFirst.id)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+
+      active = second
+      retained.setTitle('retargeted')
+
+      expect(inSecond.title).toBe('second')
+      expect(inFirst.title).toBe('retargeted')
+    })
+
+    it('keeps retained slot and widget collections bound to their graph', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      inFirst.addWidget('number', 'amount', 1, () => {})
+      inSecond.addWidget('number', 'amount', 2, () => {})
+      inFirst.addOutput('out', 'IMAGE')
+      inSecond.addOutput('out', 'IMAGE')
+      first.add(inFirst)
+      second.add(inSecond)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+      const widgets = retained.widgets
+      const outputs = retained.outputs
+
+      active = second
+      widgets.get('amount')!.setValue(9)
+      outputs.byName('out')!.modify({ label: 'renamed' })
+
+      expect(inSecond.widgets![0].value).toBe(2)
+      expect(inFirst.widgets![0].value).toBe(9)
+      expect(inSecond.outputs[0].label).toBeUndefined()
+      expect(inFirst.outputs[0].label).toBe('renamed')
+    })
+
+    it('hands a lifecycle callback the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const created: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('OwnedProbe', (builder) =>
+        builder.onCreated((node) =>
+          created.push([node.graphId, node.getTitle()])
+        )
+      )
+      const dispose = comfy.defs.define({ type: 'OwnedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('OwnedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('OwnedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        expect(created).toEqual([
+          [root.id, 'outer'],
+          [subgraph.id, 'inner']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('delivers no lifecycle callback for a node outside any graph', () => {
+      const comfy = createComfyApi(() => graph)
+      const configured = vi.fn()
+      comfy.defs.extend('DetachedProbe', (builder) =>
+        builder.onConfigured(configured)
+      )
+      const dispose = comfy.defs.define({ type: 'DetachedProbe' })
+
+      try {
+        const original = LiteGraph.createNode('DetachedProbe')!
+        graph.add(original)
+        reportError.mockClear()
+
+        original.clone()
+
+        expect(configured).not.toHaveBeenCalled()
+        expect(reportError).not.toHaveBeenCalled()
       } finally {
         dispose()
       }

@@ -1,6 +1,7 @@
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -9,6 +10,7 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createComfyApi } from './comfyApi'
+import { ComfyApiError } from './errors'
 import { mayRun } from './queueGuard'
 import type { RunRejectedEvent } from './queueHandle'
 
@@ -156,6 +158,17 @@ describe('comfy.queue', () => {
 
     comfy.queue.setAutoQueueMode('instant')
     expect(settings.mode).toBe('instant-running')
+  })
+
+  it('rejects an unknown automatic queuing mode and keeps the current one', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const settings = useQueueSettingsStore()
+    settings.mode = 'change'
+
+    expect(() => comfy.queue.setAutoQueueMode('bogus' as never)).toThrow(
+      ComfyApiError
+    )
+    expect(settings.mode).toBe('change')
   })
 
   it('reads and changes the default batch count', () => {
@@ -379,6 +392,102 @@ describe('comfy.queue', () => {
     })
 
     expect(cleanup).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { order: 'the order they started', ended: [1, 2] },
+    { order: 'reverse order', ended: [2, 1] }
+  ])(
+    'runs each overlapping attempt cleanup for its own attempt, ended in $order',
+    ({ ended }) => {
+      const comfy = createComfyApi(() => graphWith('A'))
+      const cleaned: number[] = []
+      let attempt = 0
+      track(
+        comfy.queue.onBeforeRun(() => {
+          const started = ++attempt
+          return () => cleaned.push(started)
+        })
+      )
+
+      api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+      api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
+      for (const requestId of ended) {
+        api.dispatchCustomEvent('promptQueueAttemptEnded', {
+          requestId,
+          queued: 1,
+          rejected: 0
+        })
+      }
+
+      expect(cleaned).toEqual(ended)
+    }
+  )
+
+  it('finishes an outstanding cleanup when unsubscribed mid-attempt', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const cleanup = vi.fn()
+    const stop = comfy.queue.onBeforeRun(() => cleanup)
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('finishes every outstanding cleanup when one throws during unsubscribe', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const error = new Error('cleanup failed')
+    const first = vi.fn(() => {
+      throw error
+    })
+    const second = vi.fn()
+    const setup = vi
+      .fn<() => () => void>()
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+    const stop = track(comfy.queue.onBeforeRun(setup))
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
+    expect(stop).not.toThrow()
+    stop()
+
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_cleaning_queue_attempt',
+      surface: 'graph'
+    })
+  })
+
+  it('immediately runs cleanup returned after the listener unsubscribes itself', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const cleanup = vi.fn()
+    const stop = track(
+      comfy.queue.onBeforeRun(() => {
+        stop()
+        return cleanup
+      })
+    )
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    expect(cleanup).toHaveBeenCalledOnce()
+
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
   })
 
   it('keeps onAfterRun meaning a run that actually started', () => {
