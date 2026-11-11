@@ -24,6 +24,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { registerDeclaredWidget } from './declaredWidgetTypes'
 
 import { ComfyApiError } from './errors'
+import { addListener } from './listeners'
 import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
 
@@ -217,10 +218,7 @@ export function createWidgetTypeRegistrar(
           set: (value) => {
             widget.value = value as typeof widget.value
           },
-          onChange: (listener) => {
-            listeners.add(listener)
-            return () => listeners.delete(listener)
-          }
+          onChange: (listener) => addListener(listeners, listener)
         },
         inputName,
         createWidgetTypeContext(node, handleFor, () => widget.options)

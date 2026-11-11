@@ -18,6 +18,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
+import { addListener } from './listeners'
 import { isEmbeddingWorkflow } from './serializeContext'
 import { constructDeclaredWidget } from './declaredWidgetTypes'
 import { subscribeWidgetTextInteraction } from './widgetTextInteraction'
@@ -325,8 +326,7 @@ export function createWidgetHandles(
                 : event === 'beforeSerialize'
                   ? slots(w).beforeSerialize
                   : slots(w).removed
-          ;(set as Set<unknown>).add(listener)
-          return () => (set as Set<unknown>).delete(listener)
+          return addListener(set as Set<(...a: unknown[]) => void>, listener)
         }
       },
       methods: {
@@ -962,10 +962,7 @@ function renderMountedWidget(
     set: (value) => {
       widget.value = value
     },
-    onChange: (listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    }
+    onChange: (listener) => addListener(listeners, listener)
   })
 }
 

@@ -25,7 +25,9 @@ import {
   SUPPORTED_MAJORS,
   createComfyApi
 } from './comfyApi'
-import { beginDocument } from './appReady'
+import type { Comfy } from './comfyApi'
+import { beginDocument, notifyWorkflowLoaded } from './appReady'
+import { notifyDefsRefreshed } from './defsRegistry'
 import { ComfyUnsupportedError } from './errors'
 
 describe('comfy API root', () => {
@@ -585,6 +587,60 @@ describe('comfy API root', () => {
       } finally {
         dispose()
       }
+    })
+  })
+
+  describe('subscriptions', () => {
+    it.for([
+      {
+        name: 'onWorkflowLoaded',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.onWorkflowLoaded(listener),
+        fire: () => notifyWorkflowLoaded()
+      },
+      {
+        name: 'onViewportChanged',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.onViewportChanged(listener),
+        fire: () => window.dispatchEvent(new Event('resize'))
+      },
+      {
+        name: 'defs.onRefreshed',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.defs.onRefreshed(listener),
+        fire: () => notifyDefsRefreshed()
+      }
+    ])(
+      'keeps a later $name subscription when a stale disposer runs again',
+      ({ subscribe, fire }) => {
+        const comfy = createComfyApi(() => graph)
+        const listener = vi.fn()
+        const stale = subscribe(comfy, listener)
+        stale()
+        onTestFinished(subscribe(comfy, listener))
+
+        stale()
+        fire()
+
+        expect(listener).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('keeps a later widget subscription when a stale disposer runs again', () => {
+      const comfy = createComfyApi(() => graph)
+      const node = new LGraphNode('n')
+      node.addWidget('number', 'amount', 1, () => {})
+      graph.add(node)
+      const widget = comfy.graph.node(String(node.id))!.widgets.get('amount')!
+      const listener = vi.fn()
+      const stale = widget.on('change', listener)
+      stale()
+      widget.on('change', listener)
+
+      stale()
+      widget.setValue(2)
+
+      expect(listener).toHaveBeenCalledOnce()
     })
   })
 
