@@ -13,6 +13,8 @@ export interface ChatSession {
   title: string
   updatedAt: number
   titleSource: 'server' | 'fallback'
+  workflowId?: string
+  lastActivityAt?: number
 }
 
 export interface HistoryGroups {

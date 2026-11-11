@@ -1,15 +1,15 @@
 import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { extractUniformSources } from '@/renderer/glsl/useGLSLUniforms'
 import { useGLSLUniforms } from '@/renderer/glsl/useGLSLUniforms'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 /**

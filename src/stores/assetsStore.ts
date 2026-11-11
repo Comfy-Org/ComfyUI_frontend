@@ -1,6 +1,7 @@
 import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
-import { delay, difference } from 'es-toolkit'
+import { delay, difference, uniqBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   computed,
   effectScope,
@@ -12,6 +13,10 @@ import {
 } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
@@ -21,6 +26,7 @@ import {
 import type {
   AssetItem,
   AssetResponse,
+  ModelBrowserAsset,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -28,11 +34,17 @@ import {
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  getAssetCategories,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
-import type { AssetSeedCompletedWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
@@ -107,6 +119,8 @@ export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
   const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const toast = useToast()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -453,6 +467,10 @@ export const useAssetsStore = defineStore('assets', () => {
     error?: Error
   }
 
+  interface ModelRefreshOptions {
+    restart?: boolean
+  }
+
   /**
    * Model assets cached by category (e.g., 'checkpoints', 'loras')
    * Multiple node types sharing the same category share the same cache entry.
@@ -464,7 +482,71 @@ export const useAssetsStore = defineStore('assets', () => {
    * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
+    const libraryCategory = 'library:models'
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
+
+    function includesLibrary(): boolean {
+      return (
+        isCloud &&
+        flags.runtimeLibraryModelsEnabled &&
+        !!workspaceStore.workspaceId &&
+        !!useDeploymentPickStore().bootDeployment
+      )
+    }
+
+    const mergedAssets = computed<ModelBrowserAsset[]>(() => {
+      const release = Array.from(
+        modelStateByCategory.value.get('tag:models')?.assets.values() ?? []
+      )
+      const library = Array.from(
+        modelStateByCategory.value.get(libraryCategory)?.assets.values() ?? []
+      ).sort(
+        (a, b) =>
+          Date.parse(b.created_at) - Date.parse(a.created_at) ||
+          (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+      )
+      const keyFor = (category: string, asset: AssetItem) =>
+        JSON.stringify([category, asset.loader_path ?? getAssetFilename(asset)])
+      const releaseKeys = new Set(
+        release.flatMap((asset) =>
+          getAssetCategories(asset, flags.supportsModelTypeTags).map(
+            (category) => keyFor(category, asset)
+          )
+        )
+      )
+      const releaseIds = new Set(release.map((asset) => asset.id))
+      const libraryKeys = new Set<string>()
+      const visibleLibrary = library.flatMap((asset): ModelBrowserAsset[] => {
+        if (releaseIds.has(asset.id)) return []
+        const filename = asset.loader_path ?? getAssetFilename(asset)
+        const categories = getAssetCategories(
+          asset,
+          flags.supportsModelTypeTags
+        )
+        const browserCategories = categories.filter((category) => {
+          const key = keyFor(category, asset)
+          return (
+            deploymentDownloads(category, filename) &&
+            !releaseKeys.has(key) &&
+            !libraryKeys.has(key)
+          )
+        })
+        if (browserCategories.length === 0) return []
+        browserCategories.forEach((category) =>
+          libraryKeys.add(keyFor(category, asset))
+        )
+        return [
+          {
+            ...asset,
+            isWorkspaceLibrary: true,
+            ...(browserCategories.length < categories.length
+              ? { browserCategories }
+              : {})
+          }
+        ]
+      })
+      return [...release, ...visibleLibrary]
+    })
 
     const assetsArrayCache = new Map<
       string,
@@ -474,6 +556,32 @@ export const useAssetsStore = defineStore('assets', () => {
     const pendingRequestByCategory = new Map<string, ModelPaginationState>()
     const pendingPromiseByCategory = new Map<string, Promise<void>>()
     const abortByCategory = new Map<string, AbortController>()
+    const replacementBySupersededFetch = new WeakMap<
+      AbortController,
+      Promise<void>
+    >()
+
+    watch(
+      [
+        () => workspaceStore.workspaceId,
+        () => workspaceStore.identityGeneration
+      ],
+      () => {
+        for (const controller of abortByCategory.values()) controller.abort()
+        abortByCategory.clear()
+        pendingRequestByCategory.clear()
+        pendingPromiseByCategory.clear()
+        assetsArrayCache.clear()
+        modelStateByCategory.value.clear()
+      },
+      { flush: 'sync' }
+    )
+
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      () => invalidateCategory(libraryCategory),
+      { flush: 'sync' }
+    )
 
     function createState(
       existingAssets?: Map<string, AssetItem>
@@ -505,6 +613,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (key.startsWith('tag:')) {
         return key
       }
+      if (key === libraryCategory) return key
       return modelToNodeStore.getCategoryForNodeType(key)
     }
 
@@ -513,7 +622,13 @@ export const useAssetsStore = defineStore('assets', () => {
      * Translates nodeType to category internally for cache lookup.
      * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
      */
-    function getAssets(key: string): AssetItem[] {
+    function getAssets(key: string): ModelBrowserAsset[] {
+      return key === 'tag:models' && includesLibrary()
+        ? mergedAssets.value
+        : getCachedAssets(key)
+    }
+
+    function getCachedAssets(key: string): AssetItem[] {
       const category = resolveCategory(key)
       if (!category) return EMPTY_ASSETS
 
@@ -531,22 +646,34 @@ export const useAssetsStore = defineStore('assets', () => {
       return array
     }
 
+    function sourceCategories(category: string): string[] {
+      return category === 'tag:models' && includesLibrary()
+        ? [category, libraryCategory]
+        : [category]
+    }
+
     function isLoading(key: string): boolean {
       const category = resolveCategory(key)
       if (!category) return false
-      return modelStateByCategory.value.get(category)?.isLoading ?? false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.isLoading ?? false
+      )
     }
 
     function getError(key: string): Error | undefined {
       const category = resolveCategory(key)
       if (!category) return undefined
-      return modelStateByCategory.value.get(category)?.error
+      return sourceCategories(category)
+        .map((source) => modelStateByCategory.value.get(source)?.error)
+        .find((error) => error !== undefined)
     }
 
     function hasMore(key: string): boolean {
       const category = resolveCategory(key)
       if (!category) return false
-      return modelStateByCategory.value.get(category)?.hasMore ?? false
+      return sourceCategories(category).some(
+        (source) => modelStateByCategory.value.get(source)?.hasMore ?? false
+      )
     }
 
     function hasAssetKey(key: string): boolean {
@@ -567,49 +694,34 @@ export const useAssetsStore = defineStore('assets', () => {
       )
     }
 
-    /**
-     * Internal helper to fetch and cache assets for a category.
-     * Loads first batch immediately, then progressively loads remaining batches.
-     * Keeps existing data visible until new data is successfully fetched.
-     *
-     * Concurrent calls for the same category are short-circuited: if a request
-     * is already in progress (tracked via pendingRequestByCategory), subsequent
-     * calls return immediately to avoid redundant work.
-     */
     async function updateModelsForCategory(
       category: string,
-      fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>
+      fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>,
+      { restart = false }: ModelRefreshOptions = {}
     ): Promise<void> {
-      if (pendingPromiseByCategory.has(category)) {
+      if (!restart && pendingPromiseByCategory.has(category)) {
         return pendingPromiseByCategory.get(category)!
       }
 
       const existingState = modelStateByCategory.value.get(category)
       const state = createState(existingState?.assets)
 
-      abortByCategory.get(category)?.abort()
+      const supersededFetch = abortByCategory.get(category)
+      supersededFetch?.abort()
       const controller = new AbortController()
       abortByCategory.set(category, controller)
 
       const seenIds = new Set<string>()
 
-      const hasExistingData = modelStateByCategory.value.has(category)
-      if (hasExistingData) {
-        pendingRequestByCategory.set(category, state)
-      } else {
-        // Also track in pending map for initial loads to prevent concurrent calls
-        pendingRequestByCategory.set(category, state)
+      const hasExistingData = existingState?.isLoading === false
+      pendingRequestByCategory.set(category, state)
+      if (!hasExistingData) {
         modelStateByCategory.value.set(category, state)
       }
 
       async function loadBatches(): Promise<void> {
         let isFirstBatch = true
-        // Only prune unseen cached ids when the walk reaches a genuine end
-        // of list; bailing out on an anomaly (empty page, cursor cycle,
-        // batch cap) must not delete assets we simply never re-fetched.
         let walkCompleted = false
-        // Cursors already requested this walk. A repeat means the server is
-        // cycling (immediate A->A or alternating A->B->A...), so we stop.
         const seenCursors = new Set<string>()
         let batchCount = 0
         while (state.hasMore) {
@@ -618,9 +730,6 @@ export const useAssetsStore = defineStore('assets', () => {
             break
           }
           try {
-            // Keyset cursor walk when the server provides one (stable under
-            // concurrent inserts/deletes); offset walk otherwise. The first
-            // batch sends offset 0, which the service omits from the request.
             const after = state.nextCursor
             const response = await fetcher(
               after !== undefined
@@ -636,7 +745,7 @@ export const useAssetsStore = defineStore('assets', () => {
                   }
             )
 
-            if (isStale(category, state)) return
+            if (controller.signal.aborted || isStale(category, state)) return
 
             const newAssets = response.assets
 
@@ -648,7 +757,6 @@ export const useAssetsStore = defineStore('assets', () => {
               }
             }
 
-            // Merge new assets into existing map and track seen IDs
             for (const asset of newAssets) {
               seenIds.add(asset.id)
               state.assets.set(asset.id, asset)
@@ -658,27 +766,18 @@ export const useAssetsStore = defineStore('assets', () => {
             state.offset += newAssets.length
 
             if (!response.has_more) {
-              // Server signalled a genuine end of list — safe to prune ids
-              // that no longer exist server-side.
               state.hasMore = false
               walkCompleted = true
             } else if (newAssets.length === 0) {
-              // Anomaly: server claims more but returned an empty page. Stop,
-              // but do not prune — unseen cached assets may still live on a
-              // page we never received.
               state.hasMore = false
             } else if (response.next_cursor !== undefined) {
               if (seenCursors.has(response.next_cursor)) {
-                // Repeated cursor: the server is cycling. Stop without
-                // pruning rather than loop forever.
                 state.hasMore = false
               } else {
                 seenCursors.add(response.next_cursor)
                 state.nextCursor = response.next_cursor
               }
             } else {
-              // Cursor-less backend: legacy offset walk. A short page is the
-              // reliable natural end of the list, so it is safe to prune.
               state.nextCursor = undefined
               if (newAssets.length < MODEL_BATCH_SIZE) {
                 state.hasMore = false
@@ -702,12 +801,15 @@ export const useAssetsStore = defineStore('assets', () => {
             if (isStale(category, state)) return
             console.error(`Error loading batch for ${category}:`, err)
 
+            if (category === libraryCategory) {
+              reportError(err, {
+                surface: 'assets',
+                errorType: 'error_loading_workspace_library_models'
+              })
+            }
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             state.isLoading = false
-            // A refresh that fails before its first batch never replaces the
-            // committed state, so mirror the error onto the state consumers
-            // actually read (getError) instead of only the discarded one.
             const committed = modelStateByCategory.value.get(category)
             if (committed && committed !== state) {
               committed.error = state.error
@@ -720,9 +822,6 @@ export const useAssetsStore = defineStore('assets', () => {
           }
         }
 
-        // Prune ids that vanished server-side, but only after a complete
-        // walk — an early bail-out hasn't seen the whole list, so unseen
-        // cached assets must be kept rather than deleted.
         if (walkCompleted) {
           const staleIds = [...state.assets.keys()].filter(
             (id) => !seenIds.has(id)
@@ -737,14 +836,16 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
-      const promise = loadBatches()
+      const promise = loadBatches().then(() =>
+        replacementBySupersededFetch.get(controller)
+      )
+      if (supersededFetch) {
+        replacementBySupersededFetch.set(supersededFetch, promise)
+      }
       pendingPromiseByCategory.set(category, promise)
       try {
         await promise
       } finally {
-        // Only clear the guards if this walk still owns them — an
-        // invalidateCategory() + fresh walk can register a newer promise and
-        // controller for the same category before this teardown runs.
         if (pendingPromiseByCategory.get(category) === promise) {
           pendingPromiseByCategory.delete(category)
         }
@@ -759,25 +860,42 @@ export const useAssetsStore = defineStore('assets', () => {
      * Translates nodeType to category internally - multiple node types
      * sharing the same category will share the same cache entry.
      * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
      */
-    async function updateModelsForNodeType(nodeType: string): Promise<void> {
+    async function updateModelsForNodeType(
+      nodeType: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
       const category = modelToNodeStore.getCategoryForNodeType(nodeType)
       if (!category) return
 
-      // Use category as cache key but fetch using nodeType for API compatibility
-      await updateModelsForCategory(category, (opts) =>
-        assetService.getAssetsPageForNodeType(nodeType, opts)
+      await updateModelsForCategory(
+        category,
+        (opts) => assetService.getAssetsPageForNodeType(nodeType, opts),
+        options
       )
     }
 
     /**
      * Fetch and cache model assets for a specific tag
      * @param tag The tag to fetch assets for (e.g., 'models')
+     * @param options.restart Supersede an in-flight fetch instead of joining it
      */
-    async function updateModelsForTag(tag: string): Promise<void> {
+    async function updateModelsForTag(
+      tag: string,
+      options?: ModelRefreshOptions
+    ): Promise<void> {
       const category = `tag:${tag}`
-      await updateModelsForCategory(category, (opts) =>
-        assetService.getAssetsPageByTag(tag, true, opts)
+      await Promise.all(
+        sourceCategories(category).map((source) =>
+          updateModelsForCategory(
+            source,
+            source === libraryCategory
+              ? (opts) => assetService.getWorkspaceLibraryAssetsPage(opts)
+              : (opts) => assetService.getAssetsPageByTag(tag, true, opts),
+            options
+          )
+        )
       )
     }
 
@@ -787,6 +905,7 @@ export const useAssetsStore = defineStore('assets', () => {
      * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
      */
     function invalidateCategory(category: string): void {
+      if (category === 'tag:models') invalidateCategory(libraryCategory)
       abortByCategory.get(category)?.abort()
       abortByCategory.delete(category)
       modelStateByCategory.value.delete(category)
@@ -810,7 +929,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (cacheKey && !category) return
 
       const categoriesToCheck = category
-        ? [category]
+        ? sourceCategories(category)
         : Array.from(modelStateByCategory.value.keys())
 
       for (const cat of categoriesToCheck) {
@@ -827,12 +946,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
-    /**
-     * Update asset metadata with optimistic cache update
-     * @param asset The asset to update
-     * @param userMetadata The user_metadata to save
-     * @param cacheKey Optional cache key to target for optimistic update
-     */
     async function updateAssetMetadata(
       asset: AssetItem,
       userMetadata: Record<string, unknown>,
@@ -846,13 +959,19 @@ export const useAssetsStore = defineStore('assets', () => {
           user_metadata: userMetadata
         })
         updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        return true
       } catch (error) {
-        console.error('Failed to update asset metadata:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_metadata'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(
           asset.id,
           { user_metadata: originalMetadata },
           cacheKey
         )
+        return false
       }
     }
 
@@ -896,7 +1015,11 @@ export const useAssetsStore = defineStore('assets', () => {
           updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
         }
       } catch (error) {
-        console.error('Failed to update asset tags:', error)
+        reportError(error, {
+          surface: 'assets',
+          errorType: 'error_updating_asset_tags'
+        })
+        toast.error(t('assetBrowser.modelInfo.saveFailed'))
         updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
 
         if (removedTagsOnServer.length > 0) {
@@ -980,16 +1103,20 @@ export const useAssetsStore = defineStore('assets', () => {
         .getAllNodeProviders(modelType)
         .filter((provider) => provider.nodeDef.name)
 
-      const nodeTypeUpdates = providers.map((provider) =>
-        updateModelsForNodeType(provider.nodeDef.name).then(
-          () => provider.nodeDef.name
+      const firstProviderOfEachCategory = new Set(
+        uniqBy(providers, (provider) =>
+          modelToNodeStore.getCategoryForNodeType(provider.nodeDef.name)
         )
       )
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name, {
+          restart: firstProviderOfEachCategory.has(provider)
+        }).then(() => provider.nodeDef.name)
+      )
 
-      // Also update by tag in case modal was opened with assetType
       const tagUpdates = [
-        updateModelsForTag(modelType),
-        updateModelsForTag('models')
+        updateModelsForTag(modelType, { restart: true }),
+        updateModelsForTag('models', { restart: true })
       ]
 
       const results = await Promise.allSettled([

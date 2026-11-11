@@ -1,11 +1,11 @@
-import dompurify from 'dompurify'
+import DOMPurify from 'dompurify'
 
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import { LiteGraph } from './litegraph'
+import { litegraph } from './litegraphInstance'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([
@@ -16,7 +16,9 @@ const ALLOWED_STYLE_PROPS = new Set([
   'border-left'
 ])
 
-dompurify.addHook('uponSanitizeAttribute', (_node, data) => {
+const menuSanitizer = DOMPurify(window)
+
+menuSanitizer.addHook('uponSanitizeAttribute', (_node, data) => {
   if (data.attrName === 'style') {
     const sanitizedStyle = data.attrValue
       .split(';')
@@ -33,7 +35,7 @@ dompurify.addHook('uponSanitizeAttribute', (_node, data) => {
 })
 
 function sanitizeMenuHTML(html: string): string {
-  return dompurify.sanitize(html, {
+  return menuSanitizer.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR: ['style']
   })
@@ -215,7 +217,7 @@ export class ContextMenu<TValue = unknown> {
     root.style.left = `${left}px`
     root.style.top = `${top}px`
 
-    if (LiteGraph.context_menu_scaling && options.scale) {
+    if (litegraph().context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
     }
   }
@@ -384,7 +386,7 @@ export class ContextMenu<TValue = unknown> {
       } else if (!ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
         ContextMenu.trigger(
           this.parentMenu.root,
-          `${LiteGraph.pointerevents_method}leave`,
+          `${litegraph().pointerevents_method}leave`,
           e
         )
       }
@@ -435,4 +437,12 @@ export class ContextMenu<TValue = unknown> {
     }
     return false
   }
+}
+
+type RegisteredContextMenu<TValue = unknown> = ContextMenu<TValue>
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface ContextMenu<
+    _TValue = unknown
+  > extends RegisteredContextMenu<_TValue> {}
 }

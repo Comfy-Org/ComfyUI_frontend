@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 

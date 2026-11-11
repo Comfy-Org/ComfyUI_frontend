@@ -156,23 +156,8 @@ async function quotePlan(
   return result
 }
 
-// A payment the server still holds for this workspace is the one the confirm
-// reports on, as in the app, which adopts it from the billing status.
-/**
- * When the subscription ends, from the billing status's `cancel_at`: the field
- * the app's reactivation notice reads, so both hosts name the same date.
- */
-const subscriptionEndDate = ref<string | null>(null)
-
-async function readSubscriptionEnd() {
-  const result = await status.read()
-  if (result.status === 'ok')
-    subscriptionEndDate.value = result.value.status.cancel_at ?? null
-}
-
 onMounted(() => {
   void lifecycle.recover()
-  void readSubscriptionEnd()
   void quotePlan(planSlug.value, teamCreditStopId.value)
 })
 
@@ -193,23 +178,8 @@ watch(
       return
     }
     resetQuote()
-    serverDemandsReactivation.value = false
     void quotePlan(slug, stopId)
   }
-)
-
-/**
- * A cancelled subscription is reactivated by subscribing again, and the server
- * wants that charge confirmed in so many words: the quote says so up front
- * (`requires_reactivation_confirmation`), or the subscribe answers
- * `REACTIVATION_CONFIRMATION_REQUIRED` and the plan is re-quoted before the
- * customer is asked through the plan-change confirm's reactivation banner.
- */
-const serverDemandsReactivation = ref(false)
-const reactivationRequired = computed(
-  () =>
-    preview.value?.requires_reactivation_confirmation === true ||
-    serverDemandsReactivation.value
 )
 
 watch(preview, () => {
@@ -630,8 +600,6 @@ async function pay(choice: PaymentChoice) {
   }
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
-    // The quote did not say so, the server did: price it again and ask.
-    serverDemandsReactivation.value = true
     await quotePlan(planSlug.value, teamCreditStopId.value)
     return
   }
@@ -671,7 +639,7 @@ useEventListener(window, 'pagehide', () => {
 
 <template>
   <main
-    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+    class="fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section
       class="mx-auto flex min-h-full max-w-7xl flex-col items-center justify-center gap-4"
@@ -681,15 +649,15 @@ useEventListener(window, 'pagehide', () => {
       </p>
       <section
         v-else-if="failure && !preview"
-        class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+        class="rounded-xl border border-border/50 bg-secondary p-6 text-sm"
       >
-        <p class="m-0 text-sm text-destructive-background">
+        <p class="m-0 text-destructive">
           {{ refusal(failure) }}
         </p>
         <button
           v-if="returnLink"
           type="button"
-          class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
+          class="mt-4 cursor-pointer text-foreground underline underline-offset-4"
           @click="leaveForHost('back')"
         >
           {{ t('checkout.back') }}
@@ -720,7 +688,7 @@ useEventListener(window, 'pagehide', () => {
           >
             <template #plan>
               <OperationPlanSummary
-                class="mt-4 w-full rounded-xl bg-secondary-background p-4"
+                class="mt-4 w-full rounded-xl bg-secondary p-4"
                 :recovered="recoveredPlan"
               />
             </template>
@@ -770,9 +738,7 @@ useEventListener(window, 'pagehide', () => {
             :copy
             :locale
             :subscription-loaded="true"
-            :subscription-end-date
             :is-loading="paying"
-            :force-reactivation="reactivationRequired"
             :action-url
             :authentication-state
             :authentication-error

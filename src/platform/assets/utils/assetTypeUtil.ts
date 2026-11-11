@@ -2,7 +2,7 @@
  * Utilities for working with asset types
  */
 
-import type { AssetItem } from '../schemas/assetSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 /**
  * Extract asset type from an asset's tags array

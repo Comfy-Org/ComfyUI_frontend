@@ -1,13 +1,15 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { api } from '@/scripts/api'
 import { pagedItems } from '@/utils/pagedList'
 
 vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
@@ -73,6 +75,8 @@ const storeAssets = {
 }
 
 beforeEach(() => {
+  respondToFetch('/internal/files/input', () => Response.json([]))
+  vi.spyOn(api, 'getHistory').mockResolvedValue([])
   storeAssets.input = [...DEFAULT_INPUTS]
   storeAssets.flatOutput = []
   const store = useAssetsStore()
@@ -88,6 +92,57 @@ beforeEach(() => {
 })
 
 describe('useWidgetSelectItems', () => {
+  it.for([
+    ['sub/x.png [output]', 'x.png', 'output', 'sub'],
+    ['a/b/x.png [temp]', 'x.png', 'temp', 'a/b'],
+    ['clipspace/x.png', 'x.png', 'input', 'clipspace'],
+    ['sub\\x.png [output]', 'x.png', 'output', 'sub'],
+    ['12:30.png [output]', '12:30.png', 'output', undefined]
+  ])('previews the relative path %s', ([value, filename, type, subfolder]) => {
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ modelValue: ref(value) })
+    )
+    const item = pagedItems(dropdownItems.value)[0]
+    const url = new URL(item.preview_url ?? '', 'http://localhost')
+    expect(url.pathname).toBe('/api/view')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      filename,
+      type,
+      ...(subfolder ? { subfolder } : {})
+    })
+  })
+
+  it.for([
+    '/x.png [output]',
+    '\\x.png [output]',
+    'sub/x.png/ [output]',
+    'sub//x.png [output]',
+    'D:\\x.png [output]',
+    'D:x.png [output]',
+    'sub/../x.png [output]'
+  ])('does not preview the unsafe path %s', (value) => {
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ modelValue: ref(value) })
+    )
+    expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+  })
+
+  it('keeps identically named outputs in distinct subfolders', () => {
+    storeAssets.flatOutput = ['first', 'second'].map((subfolder) =>
+      makeOutput(subfolder, 'same.png', { user_metadata: { subfolder } })
+    )
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({
+        modelValue: ref(undefined),
+        filterSelected: 'outputs'
+      })
+    )
+    expect(pagedItems(dropdownItems.value).map((item) => item.name)).toEqual([
+      'first/same.png [output]',
+      'second/same.png [output]'
+    ])
+  })
+
   describe('base asset mapping', () => {
     it('maps store input assets to dropdown items', () => {
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())

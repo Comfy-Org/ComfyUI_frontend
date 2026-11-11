@@ -5,8 +5,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -14,7 +14,9 @@ import {
 import {
   getAssetBaseModels,
   getAssetDisplayName,
-  getAssetUrlFilename
+  getAssetFilename,
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -25,8 +27,17 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import {
+  createAnnotatedPath,
+  parseAnnotatedPath
+} from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  hdrPreviewAssetUrl,
+  isHdrImageFilename,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
@@ -41,18 +52,37 @@ function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
 
 function getMediaUrl(
   filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
+  type: string,
+  assetKind: AssetKind | undefined,
+  subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
+  if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
 }
 function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
+  if (isGeneratedTempOutput(asset)) return 'temp'
   for (const testTag of ['input', 'output', 'temp'] as const) {
     if (asset.tags.includes(testTag)) return testTag
   }
+}
+
+function getAnnotatedValueMediaUrl(
+  value: string,
+  assetKind: AssetKind | undefined
+): string {
+  const { filepath } = parseAnnotatedPath(value)
+  if (
+    /^[^\\/]:/.test(filepath) ||
+    filepath
+      .split(/[\\/]/)
+      .some((part) => part === '' || part === '.' || part === '..')
+  )
+    return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -139,39 +169,39 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     )
       return undefined
 
-    const isOutput = currentValue.endsWith(' [output]')
-    const strippedValue = isOutput
-      ? currentValue.replace(' [output]', '')
-      : currentValue
-
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
-      ),
+      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }
   })
 
   function itemNameFor(asset: AssetItem): string {
+    if (toValue(options.isAssetMode)) return getAssetFilename(asset)
     const filenameForUrl = getAssetUrlFilename(asset)
-    const subfolder =
-      toValue(options.assetKind) === 'mesh'
-        ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-        : undefined
+    const subfolder = getOutputSubfolder(asset)
     const name = subfolder ? `${subfolder}/${filenameForUrl}` : filenameForUrl
     return createAnnotatedPath(name, { rootFolder: assetRoot(asset) })
   }
 
   function assetToForm(asset: AssetItem): FormDropdownItem {
+    const name = itemNameFor(asset)
+    const kind = toValue(options.assetKind)
     return {
       id: asset.id,
-      name: itemNameFor(asset),
+      name,
       label: getAssetDisplayName(asset),
-      preview_url: asset.preview_url,
+      preview_url:
+        kind === 'mesh'
+          ? ''
+          : isHdrImageFilename(asset.name)
+            ? asset.preview_id
+              ? hdrPreviewAssetUrl(asset.preview_id)
+              : ([asset.thumbnail_url, asset.preview_url].find(
+                  (url) => url && !isHdrImageUrl(url)
+                ) ?? '')
+            : asset.preview_url || getAnnotatedValueMediaUrl(name, kind),
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
     }
@@ -203,6 +233,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
     const kindFilter = (asset: AssetItem) =>
       asset.metadata?.kind === targetKind ||
+      (targetKind === 'image' && isHdrImageFilename(asset.name)) ||
       getMediaTypeFromFilename(asset.name) === targetMediaType
 
     const base = baseAssets.value

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
   <div
@@ -55,9 +55,12 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

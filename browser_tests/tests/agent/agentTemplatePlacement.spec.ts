@@ -1,4 +1,4 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type {
@@ -6,18 +6,20 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on
@@ -36,7 +38,6 @@ const THREAD_ID = 'a1b2c3d4-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'a1b2c3d4-0000-4000-8000-000000000002'
 const WORKFLOW_ID = 'a1b2c3d4-0000-4000-8000-000000000003'
 const WORKFLOW_NAME = 'Image edit'
-const SOCKET_SID = 'a1b2c3d4-0000-4000-8000-000000000004'
 
 // Stands in for the node the user just placed (e.g. Load Image) before
 // asking the agent to insert a template.
@@ -114,11 +115,7 @@ function templateAddNodeOps() {
 // wiring, same real HostDoc/CRDT apply path, same real canvas.
 class TemplatePlacementHarness {
   private readonly host: HostDoc
-  private socket: WebSocketRoute | null = null
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
+  private readonly hostSocket: AgentFollowerHostSocket
 
   constructor(private readonly page: Page) {
     this.host = new HostDoc(
@@ -126,23 +123,12 @@ class TemplatePlacementHarness {
       SEED_WORKFLOW.seed,
       SEED_WORKFLOW.catalog
     )
+    this.hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, this.host)
   }
 
   async boot(): Promise<void> {
     await this.mockAgentApi()
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
 
     await bootAgentApp(this.page, true, {
       settings: {
@@ -215,7 +201,7 @@ class TemplatePlacementHarness {
 
   async sendPrompt(content: string): Promise<void> {
     const panel = this.page.locator('#agent-panel-root')
-    const composer = panel.getByRole('textbox', { name: /Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.fill(content)
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect(panel.getByText(content).first()).toBeVisible()
@@ -231,7 +217,7 @@ class TemplatePlacementHarness {
         data: { workflow_id: WORKFLOW_ID, name: WORKFLOW_NAME }
       })
     )
-    await this.waitForSubscribe()
+    await this.hostSocket.waitForSubscribe()
     // The subscribe catch-up (the user's pre-existing canvas) must be applied
     // before the template tool call arrives, as it is in production: sending
     // both back-to-back coalesces them into the follower's first frame, a
@@ -259,8 +245,8 @@ class TemplatePlacementHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+    await page.route('**/api/agent/threads?*', (route) =>
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {
@@ -308,34 +294,7 @@ class TemplatePlacementHarness {
   }
 
   private send(frame: AgentWsEvent | HostFrame): void {
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
-  }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.resolveSubscribed?.()
-  }
-
-  private waitForSubscribe(): Promise<void> {
-    return this.subscribed
+    this.hostSocket.send(frame)
   }
 }
 

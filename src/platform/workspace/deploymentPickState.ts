@@ -86,6 +86,8 @@ export type DeploymentPickEvent =
    * answers, and end the switch.
    */
   | { type: 'defaultChanged'; defaultDeploymentId: string | null }
+  /** This browser dropped its own pick of the default and now follows it. */
+  | { type: 'followedInPlace' }
   /** Another workspace or account: nothing shown belongs to it. */
   | { type: 'workspaceChanged' }
 
@@ -142,6 +144,11 @@ export function reduceDeploymentPick(
         ...listing,
         defaultDeploymentId: event.defaultDeploymentId,
         goneDefaultDeploymentId: null
+      }))
+    case 'followedInPlace':
+      return endSwitch(state, (listing) => ({
+        ...listing,
+        pickSource: 'workspace_default'
       }))
     case 'workspaceChanged':
       return { phase: 'idle' }

@@ -157,7 +157,10 @@ describe('WidgetSelectDropdown', () => {
       options: { values: [] },
       spec: { type: 'COMBO', name: 'test_image', image_upload: true }
     })
-    renderComponent(widget, undefined)
+    renderComponent(widget, undefined, {
+      assetKind: 'image',
+      allowUpload: true
+    })
 
     expect(screen.getByLabelText('g.upload')).toHaveAttribute(
       'accept',

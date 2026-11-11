@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
     <div class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground select-none">
+      <span class="text-sm text-foreground select-none">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
       </span>
       <ToggleGroup
@@ -14,9 +14,9 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="flex h-auto w-full gap-2 rounded-sm bg-node-component-surface p-2 font-inter text-base-foreground data-[state=on]:bg-muted-background"
+          class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
-          <i :class="cn('size-4', option.icon)" />
+          <i :class="option.icon" />
           <span class="text-center text-sm font-bold">
             {{ option.label }}
           </span>
@@ -26,7 +26,7 @@
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-base-foreground select-none">
+        <span class="text-sm text-foreground select-none">
           {{ uploadSectionLabel }}
         </span>
         <Button
@@ -87,7 +87,7 @@
                     : 'flex-[0_1_1]',
                   comparisonOverStates[slot.key]
                     ? 'border-muted-foreground'
-                    : 'border-border-default hover:border-muted-foreground'
+                    : 'border-border hover:border-muted-foreground'
                 )
               "
               @dragenter.stop
@@ -130,7 +130,7 @@
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'
-                : 'border-border-default hover:border-muted-foreground'
+                : 'border-border hover:border-muted-foreground'
             )
           "
           @dragenter.stop
@@ -183,8 +183,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {

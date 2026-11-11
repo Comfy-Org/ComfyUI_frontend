@@ -1,22 +1,46 @@
 //es
 import { app } from '../../scripts/app.js'
 
+const moods = {
+  grumpy: { face: '(>_<)', fill: '#77F' },
+  chill: { face: '(-_-)', fill: '#7F7' },
+  hyped: { face: '(^o^)', fill: '#F77' }
+}
+
+function moodForValue(value) {
+  if (value < 0) return moods.grumpy
+  if (value > 0) return moods.hyped
+  return moods.chill
+}
+
 function legacyWidget(node, inputName, _inputData) {
   if (!node.widgets) node.widgets = []
   const widget = {
     draw: function (ctx, _node, widget_width, y, H) {
+      const { face, fill } = moodForValue(this.value)
+      const middle = y + H / 2
       ctx.save()
-      ctx.fillStyle = '#7F7'
+      ctx.fillStyle = fill
       ctx.fillRect(15, y, widget_width - 15 * 2, H)
+      ctx.fillStyle = '#000'
+      ctx.font = 'bold 11px monospace'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'left'
+      ctx.fillText('◀', 19, middle)
+      ctx.fillText(`${face} legacy test widget: ${this.value}`, 34, middle)
+      ctx.textAlign = 'right'
+      ctx.fillText('▶', widget_width - 19, middle)
       ctx.restore()
     },
-    mouse: function mouseAnnotated(_event, [x, _y], node) {
+    mouse: function mouseAnnotated(event, [x, _y], node) {
+      if (event.type !== 'pointerdown') return
       const widget_width = this.width || node.size[0]
       if (x < 30) {
         this.value--
       } else if (x > widget_width - 30 && x < widget_width) {
         this.value++
       }
+      node.setDirtyCanvas(true)
     },
     name: inputName,
     options: {},
@@ -43,6 +67,11 @@ app.registerExtension({
         break
       case 'DevToolsPreviewBridge':
         installPreviewBridgeSetter(node)
+        break
+      case 'DevToolsFancyTimer':
+        node.onSerialize = function (o) {
+          o.properties = this.properties
+        }
         break
     }
   }

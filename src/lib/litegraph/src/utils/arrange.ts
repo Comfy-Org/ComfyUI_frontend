@@ -1,12 +1,12 @@
-import type { LGraphNode } from '../LGraphNode'
-import type { Direction } from '../interfaces'
+import type {
+  Point2D,
+  RectSide as Direction
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 export interface NewNodePosition {
   node: LGraphNode
-  newPos: {
-    x: number
-    y: number
-  }
+  newPos: Point2D
 }
 
 export interface IBoundaryNodes {
@@ -82,15 +82,13 @@ export function distributeNodes(
     node.pos[index] = startAt + gap * i
     startAt += node.size[index]
   }
-  const newPositions = sorted.map(
-    (node): NewNodePosition => ({
-      node,
-      newPos: {
-        x: node.pos[0],
-        y: node.pos[1]
-      }
-    })
-  )
+  const newPositions = sorted.map((node): NewNodePosition => ({
+    node,
+    newPos: {
+      x: node.pos[0],
+      y: node.pos[1]
+    }
+  }))
   return newPositions
 }
 

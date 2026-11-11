@@ -23,25 +23,20 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
-const featureState = vi.hoisted(() => ({
+const featureState = {
   serverFeatures: {} as Record<string, unknown>
-}))
+}
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getModels: vi.fn(),
-    getModelFolders: vi.fn(),
-    getServerFeature: vi.fn(
-      (path: string, defaultValue?: unknown) =>
-        featureState.serverFeatures[path] ?? defaultValue
-    ),
-    viewMetadata: vi.fn(),
-    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    addEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getServerFeature).mockImplementation(
+    (path, defaultValue) => featureState.serverFeatures[path] ?? defaultValue
+  )
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188${path}`
+  )
+})
 
 // Mock the assetService
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -112,6 +107,7 @@ describe('useModelStore', () => {
       deployment_id: 'dep-release',
       release_id: 'release-1',
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     }
     vi.mocked(api.getModels).mockResolvedValue([
@@ -147,6 +143,7 @@ describe('useModelStore', () => {
       deployment_id: 'dep-release',
       release_id: 'release-1',
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     }
     await vi.advanceTimersByTimeAsync(500)

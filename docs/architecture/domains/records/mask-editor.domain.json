@@ -1,93 +1,65 @@
 {
   "id": "mask-editor",
   "capability": "Mask editor",
-  "description": "Mask editing UI, drawing operations, editor state, and the core extension contract.",
+  "description": "Reusable mask editing engine, image processing and presentation, with application adapters for nodes, storage, transport, dialogs and extension registration.",
   "modules": [
     {
-      "path": "src/extensions/core/maskeditor/**",
-      "role": "domain"
+      "path": "src/renderer/extensions/maskEditor/**"
     },
     {
-      "path": "src/composables/maskeditor/**",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/maskEditorStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/maskEditorDataStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/maskEditorStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/maskEditorDataStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/maskeditor/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/extensions/core/maskeditor.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/maskeditor.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/__fixtures__/decodePng.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/pngEncodeUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/pngEncodeUtil.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/clipspace.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/scripts/clipspace.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/clipspace.ts",
-      "role": "integration"
+      "path": "packages/mask-editor/src/**"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": [
+    "src/renderer/extensions/maskEditor/extension.ts",
+    "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts",
+    "packages/mask-editor/src/brushUtils.ts",
+    "packages/mask-editor/src/maskEditorStore.ts",
+    "packages/mask-editor/src/StrokeProcessor.ts",
+    "packages/mask-editor/src/types.ts",
+    "packages/mask-editor/src/imageOutput.ts",
+    "packages/mask-editor/src/useCanvasTransform.ts",
+    "packages/mask-editor/src/ui/EditorCanvas.vue",
+    "packages/mask-editor/src/ui/EditorToolbar.vue",
+    "packages/mask-editor/src/ui/style.css"
+  ],
   "characterizationScenarios": [
     {
       "name": "Drawing operations preserve brush and canvas-history behavior",
       "checks": [
-        "src/composables/maskeditor/useBrushDrawing.test.ts",
-        "src/composables/maskeditor/useCanvasHistory.test.ts"
+        "packages/mask-editor/src/useBrushDrawing.test.ts",
+        "packages/mask-editor/src/useCanvasHistory.test.ts"
       ]
     },
     {
       "name": "Loading and saving preserve image-layer and widget boundaries",
       "checks": [
-        "src/composables/maskeditor/useMaskEditorLoader.test.ts",
-        "src/composables/maskeditor/useMaskEditorSaver.test.ts"
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.test.ts"
       ]
     },
     {
       "name": "Mask PNG encoding round-trips through the decoder fixture",
-      "checks": ["src/utils/pngEncodeUtil.test.ts"]
+      "checks": ["packages/mask-editor/src/pngEncodeUtil.test.ts"]
+    },
+    {
+      "name": "Core extensions register the clipspace and mask editor and open the editor from node menus",
+      "checks": [
+        "src/extensions/core/index.test.ts",
+        "src/renderer/extensions/maskEditor/extension.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditor.test.ts"
+      ]
+    },
+    {
+      "name": "The stroke engine and editor store keep their contract for the painter and undo commands",
+      "checks": [
+        "packages/mask-editor/src/StrokeProcessor.test.ts",
+        "packages/mask-editor/src/brushUtils.test.ts",
+        "packages/mask-editor/src/maskEditorStore.test.ts"
+      ]
     }
   ],
-  "adrs": [],
+  "adrs": ["docs/adr/MASKEDITOR-0001-reusable-editor-and-host-ownership.md"],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."

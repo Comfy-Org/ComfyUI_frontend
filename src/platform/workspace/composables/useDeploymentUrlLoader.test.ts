@@ -148,6 +148,92 @@ describe('useDeploymentUrlLoader', () => {
     expect(useToast().error).not.toHaveBeenCalled()
   })
 
+  it("keeps the link's workflows folder in the URL for the boot after the pick's reload", async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-1',
+      deployment: 'dep-1',
+      workflows: 'build'
+    }
+
+    const { loadDeploymentFromUrl } = useDeploymentUrlLoader()
+    await expect(loadDeploymentFromUrl()).resolves.toBe(true)
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { workflows: 'build' }
+    })
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith('dep-1')
+  })
+
+  it('picks Comfy Cloud itself for deployment=standard, keeping the folder', async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-1',
+      deployment: 'standard',
+      workflows: 'build'
+    }
+
+    const { loadDeploymentFromUrl } = useDeploymentUrlLoader()
+    await expect(loadDeploymentFromUrl()).resolves.toBe(true)
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { workflows: 'build' }
+    })
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith(null)
+  })
+
+  it('says nothing for deployment=standard when the browser is on Comfy Cloud', async () => {
+    mockRouteQuery.value = { workspace: 'ws-1', deployment: 'standard' }
+    vi.mocked(useDeploymentPickStore().pickFromLink).mockResolvedValue({
+      kind: 'unchanged'
+    })
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(false)
+
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith(null)
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useToast().error).not.toHaveBeenCalled()
+  })
+
+  it('shows the timed-out message when deployment=standard does not land', async () => {
+    mockRouteQuery.value = { workspace: 'ws-1', deployment: 'standard' }
+    vi.mocked(useDeploymentPickStore().pickFromLink).mockResolvedValue({
+      kind: 'timedOut'
+    })
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(false)
+
+    expect(useToast().error).toHaveBeenCalledWith(
+      'This deployment took too long to open. Try the link again.',
+      { duration: 8000 }
+    )
+  })
+
+  it('switches workspace for deployment=standard, then picks Comfy Cloud', async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-2',
+      deployment: 'standard',
+      workflows: 'build'
+    }
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(true)
+    expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith('ws-2')
+    expect(mockRouterReplace).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspace: studio })
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(true)
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { workflows: 'build' }
+    })
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith(null)
+  })
+
   it('waits for URL cleanup to complete before starting the pick', async () => {
     mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-1' }
     let finishCleanup!: () => void

@@ -5,10 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Loader from '@/components/loader/Loader.vue'
-import { WidgetInputBaseClass } from '../../layout'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import type { FormDropdownInputProps } from './types'
 
 const {
+  inputId,
   isOpen,
   placeholder = 'Select...',
   selectedItems,
@@ -27,11 +28,9 @@ const emit = defineEmits<{
 
 const theButtonStyle = computed(() =>
   cn(
-    'border-0 bg-component-node-widget-background text-text-secondary outline-none',
-    disabled
-      ? 'cursor-not-allowed'
-      : 'cursor-pointer hover:bg-component-node-widget-background-hovered',
-    selectedItems.length > 0 && 'text-text-primary'
+    'border-0 bg-input text-muted-foreground outline-none',
+    disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
+    selectedItems.length > 0 && 'text-foreground'
   )
 )
 
@@ -64,17 +63,18 @@ defineExpose({ focus, showPicker })
 <template>
   <div
     :class="
-      cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'cursor-not-allowed opacity-50 outline-node-component-border': disabled
+      cn(WidgetInputBaseClass, 'flex text-xs leading-none', {
+        'cursor-not-allowed opacity-50 outline-node-border': disabled
       })
     "
   >
     <button
+      :id="inputId"
       ref="buttonRef"
       :class="
         cn(
           theButtonStyle,
-          'flex h-8 min-w-0 flex-1 items-center justify-between',
+          'flex h-8 min-w-0 flex-1 items-center justify-between gap-1 px-2',
           {
             'rounded-l-lg': uploadable,
             'rounded-lg': !uploadable
@@ -83,7 +83,7 @@ defineExpose({ focus, showPicker })
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
+      <span class="min-w-0 flex-1 truncate py-2 text-left">
         <span v-if="!selectedItems.length">
           {{ placeholder }}
         </span>
@@ -95,28 +95,25 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 shrink-0 text-component-node-foreground-secondary transition-transform duration-200',
+            'text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "
       />
     </button>
+    <slot name="anchor" :element="buttonRef" />
     <label
       v-if="uploadable"
       :class="
         cn(
           theButtonStyle,
           'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-border'
         )
       "
     >
       <Loader v-if="isUploading" size="sm" />
-      <i
-        v-else
-        class="icon-[lucide--folder-search] size-4"
-        aria-hidden="true"
-      />
+      <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />
       <input
         ref="fileInputRef"
         type="file"

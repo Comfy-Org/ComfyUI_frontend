@@ -8,7 +8,7 @@ import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn((node) => !!node?.type)

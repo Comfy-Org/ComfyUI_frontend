@@ -1,10 +1,11 @@
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   mockDeploymentRolloutRefusal,
@@ -32,6 +33,10 @@ export async function mockCloudBootRoutes(
 ) {
   await mockDeploymentRolloutRefusal(page)
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
+  if (features['agent-in-app-experience'] === true)
+    await new FeatureFlagHelper(page).seedServerFlags({
+      agent: { state: 'ready' }
+    })
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )

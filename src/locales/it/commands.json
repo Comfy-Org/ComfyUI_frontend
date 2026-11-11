@@ -36,7 +36,7 @@
     "label": "Riavvia"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "Apri 3D Viewer (Beta) per il nodo selezionato"
+    "label": "Apri il visualizzatore 3D (Beta) per il nodo selezionato"
   },
   "Comfy_BrowseModelAssets": {
     "label": "Sperimentale: Sfoglia risorse modello"
@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Elimina elementi selezionati"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Elimina collegamenti selezionati"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Adatta vista ai nodi selezionati"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Nascondi collegamenti selezionati"
   },
   "Comfy_Canvas_Lock": {
     "label": "Blocca canvas"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "Seleziona tutto"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Mostra collegamenti selezionati"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas: mostra/nascondi collegamenti"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Comprimi/Espandi nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Nascondi/Mostra collegamenti sui nodi selezionati"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenzia/Attiva nodi selezionati"

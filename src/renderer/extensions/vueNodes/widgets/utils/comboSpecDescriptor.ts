@@ -1,5 +1,5 @@
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { AssetKind } from '@/types/widgetTypes'
 
 export interface ComboSpecDescriptor {

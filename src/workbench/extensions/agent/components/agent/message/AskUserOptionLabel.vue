@@ -23,10 +23,7 @@ const {
       )
     "
   >
-    <span
-      :id="`${optionId}-label`"
-      class="wrap-break-word text-base-foreground"
-    >
+    <span :id="`${optionId}-label`" class="wrap-break-word text-foreground">
       {{ option.label }}
     </span>
     <span

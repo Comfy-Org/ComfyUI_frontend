@@ -1,7 +1,5 @@
 <template>
-  <ButtonGroup
-    class="queue-button-group h-8 rounded-lg bg-secondary-background"
-  >
+  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
     <BatchCountEdit />
     <Button
       :tooltip="queueButtonTooltip"
@@ -17,7 +15,7 @@
       data-testid="queue-button"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+      <i :class="iconClass" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 
@@ -54,14 +52,14 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
-import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
-import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
@@ -174,7 +172,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -182,7 +180,7 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'inverted'
+        : 'primary'
 )
 const queueMenuTriggerVariant = computed(() =>
   queueButtonVariant.value === 'subscribe'
@@ -190,9 +188,8 @@ const queueMenuTriggerVariant = computed(() =>
     : queueButtonVariant.value
 )
 const queueMenuTriggerVariantClass = {
-  destructive:
-    'border-black/20 data-[state=open]:bg-destructive-background-hover',
-  inverted: 'data-[state=open]:bg-base-foreground/80',
+  destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
+  primary: 'data-[state=open]:bg-primary/90',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =

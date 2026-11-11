@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
@@ -28,6 +29,9 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
+  loadingMore?: boolean
+  onLoadMore?: () => unknown
+  canLoadMore?: boolean
 }
 
 const {
@@ -41,7 +45,10 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel
+  candidateLabel,
+  onLoadMore,
+  canLoadMore = false,
+  loadingMore = false
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -95,6 +102,24 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
+type VirtualDropdownItem = FormDropdownItem & { key: string }
+const virtualItems = computed<VirtualDropdownItem[]>(() =>
+  pagedItems(items).map((item) => ({
+    ...item,
+    key: item.id
+  }))
+)
+const hasMore = computed(() =>
+  isPaged(items) ? toValue(items.hasMore) : canLoadMore
+)
+const isLoadingMore = computed(() =>
+  isPaged(items) ? toValue(items.isLoading) : loadingMore
+)
+
+function loadMore() {
+  return isPaged(items) ? items.loadMore() : onLoadMore?.()
+}
+
 const onWheel = (event: WheelEvent) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault()
 }
@@ -102,7 +127,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"
@@ -128,15 +153,28 @@ const onWheel = (event: WheelEvent) => {
       :candidate-label
       @search-enter="emit('search-enter')"
     />
+    <div
+      v-if="virtualItems.length === 0 && !hasMore"
+      class="flex h-50 items-center justify-center"
+    >
+      <i
+        :title="$t('g.noItems')"
+        :aria-label="$t('g.noItems')"
+        class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
+      />
+    </div>
     <VirtualGrid
+      v-else
       :key="layoutMode"
-      :items
+      :items="virtualItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      :on-load-more="loadMore"
+      :can-load-more="hasMore"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
@@ -150,26 +188,16 @@ const onWheel = (event: WheelEvent) => {
           @click="emit('item-click', item, index)"
         />
       </template>
-      <template #placeholder>
-        <div class="flex h-50 items-center justify-center">
-          <i
-            :title="$t('g.noItems')"
-            :aria-label="$t('g.noItems')"
-            class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
-          />
-        </div>
-      </template>
-      <template #loading>
-        <div
-          class="flex items-center justify-center py-2"
-          data-testid="form-dropdown-loading-more"
-        >
-          <i
-            :aria-label="$t('g.loading')"
-            class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
-          />
-        </div>
-      </template>
     </VirtualGrid>
+    <div
+      v-if="isLoadingMore"
+      class="flex items-center justify-center py-2"
+      data-testid="form-dropdown-loading-more"
+    >
+      <i
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+      />
+    </div>
   </div>
 </template>

@@ -77,7 +77,7 @@ test.describe(
     test('follows the tab on screen rather than a saved workflow, and holds a hand-picked target across the next turn', async ({
       page,
       workflowSelection,
-      getWebSocket
+      getAgentSocket
     }) => {
       test.setTimeout(60_000)
 
@@ -87,9 +87,6 @@ test.describe(
         message_id: FIRST_MESSAGE_ID,
         workflow_id: MINTED_WORKFLOW_ID
       }
-      // Registered from the test body so it resolves ahead of the selection
-      // fixture's thread-list route, which would otherwise answer the POST
-      // with a list instead of an accepted turn.
       await page.route('**/api/agent/threads/*/messages', (route: Route) => {
         const request = route.request()
         if (request.method() !== 'POST') return route.fallback()
@@ -97,19 +94,16 @@ test.describe(
         return route.fulfill({ ...jsonRoute(nextAck), status: 202 })
       })
 
-      // The workflow chip is disabled while a turn is in flight, so a turn
-      // that never ends would make "the binding survived the next turn"
-      // untestable (and is itself what the reporter sat through: this thread
-      // waited 101s and 121s for a first reply). Close each turn over the
-      // socket the way the server would.
       const finishTurn = async (messageId: string): Promise<void> => {
-        const socket = await getWebSocket()
+        await expect(agentPanel.userMessageBubbles).toHaveCount(posted.length)
+        const socket = await getAgentSocket()
         socket.send(
           JSON.stringify({
             type: 'agent_message_done',
             data: { message_id: messageId, thread_id: THREAD_ID }
           })
         )
+        await expect(picker).toBeEnabled()
       }
 
       const agentPanel = new AgentPanel(page)
@@ -129,10 +123,6 @@ test.describe(
         await expect(picker).toHaveText(SAVED_TAB)
       })
 
-      // Reading 2 says the user cannot tell which graph the agent holds on a
-      // phone. The measurement behind that: the panel is the entire viewport,
-      // so the canvas and the tab strip are gone while it is open and the chip
-      // is the whole of what the user can see about the binding.
       await test.step('at a phone width the panel is the entire viewport', async () => {
         const viewport = page.viewportSize()
         expect(
@@ -209,7 +199,6 @@ test.describe(
         await finishTurn(SECOND_MESSAGE_ID)
       })
 
-      // PM-1933 acceptance scenario 2: "a hand-picked binding holds".
       await test.step('the user hand-picks the saved workflow from the chip', async () => {
         await expect(picker).toBeEnabled()
         await agentPanel.chooseWorkflow(SAVED_TAB)

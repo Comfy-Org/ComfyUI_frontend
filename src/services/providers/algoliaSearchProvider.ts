@@ -6,13 +6,15 @@ import type {
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { uniqBy } from 'es-toolkit'
 import { memoize } from 'es-toolkit/compat'
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
   SEARCH_CACHE_MAX_SIZE,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { buildPackSearchRequest } from '@/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,
@@ -22,6 +24,7 @@ import type {
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
+  SearchPacksOutcome,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
@@ -42,6 +45,28 @@ const toRewriteParams = (
     REWRITE_ANALYTICS_TAG
   ]
 })
+
+const zPackSearchResult = z.looseObject({
+  hits: z.array(
+    z
+      .looseObject({
+        id: z.string().nullish(),
+        objectID: z.string().optional()
+      })
+      .refine((hit) => (hit.id ?? hit.objectID) !== undefined, {
+        message: 'expected an id or objectID'
+      })
+  ),
+  nbPages: z.number().optional()
+})
+
+const zSuggestionSearchResult = z.looseObject({
+  hits: z.array(z.looseObject({ query: z.string(), popularity: z.number() }))
+})
+
+const zPackSearchResults = z.tuple([zPackSearchResult], zSuggestionSearchResult)
+
+const zFallbackSearchResults = z.array(zPackSearchResult)
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -109,26 +134,48 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<{ result: SearchPacksResult; fallbacksFailed: boolean }> => {
+  ): Promise<
+    | { ok: true; result: SearchPacksResult; fallbacksFailed: boolean }
+    | { ok: false; cause: unknown }
+  > => {
     const { pageSize, pageNumber } = params
+
+    async function searchRawQuery<T>(
+      requests: SearchQuery[],
+      resultsSchema: z.ZodType
+    ): Promise<
+      { ok: true; results: SearchResponse<T>[] } | { ok: false; cause: unknown }
+    > {
+      let response: { results: unknown }
+      try {
+        response = await searchClient.search<T>({ requests, strategy: 'none' })
+      } catch (cause) {
+        return { ok: false, cause }
+      }
+      const parsed = resultsSchema.safeParse(response.results)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          cause: fromZodError(parsed.error, {
+            prefix: 'Malformed Algolia search response'
+          })
+        }
+      }
+      return { ok: true, results: response.results as SearchResponse<T>[] }
+    }
 
     async function searchFallbacks(
       fallbackQueries: string[]
     ): Promise<AlgoliaNodePack[] | undefined> {
       if (fallbackQueries.length === 0) return []
-      try {
-        const { results } = await searchClient.search<AlgoliaNodePack>({
-          requests: fallbackQueries.map((fallbackQuery) =>
-            buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
-          ),
-          strategy: 'none'
-        })
-        const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
-          (result) => result.hits
-        )
-        return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
-      } catch (error) {
-        reportError(error, {
+      const response = await searchRawQuery<AlgoliaNodePack>(
+        fallbackQueries.map((fallbackQuery) =>
+          buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
+        ),
+        zFallbackSearchResults
+      )
+      if (!response.ok) {
+        reportError(response.cause, {
           errorType: 'error_searching_algolia_fallbacks',
           surface: 'platform',
           level: 'warning',
@@ -136,6 +183,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
         })
         return undefined
       }
+      const hits = response.results.flatMap((result) => result.hits)
+      return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
     }
 
     const shouldQuerySuggestions =
@@ -148,12 +197,11 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })
     }
 
-    const { results } = await searchClient.search<
+    const response = await searchRawQuery<
       AlgoliaNodePack | NodesIndexSuggestion
-    >({
-      requests,
-      strategy: 'none'
-    })
+    >(requests, zPackSearchResults)
+    if (!response.ok) return response
+    const { results } = response
 
     const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
     const querySuggestions = results[1] as
@@ -177,6 +225,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })) ?? []
 
     return {
+      ok: true,
       result: {
         nodePacks: registryPacks,
         querySuggestions: suggestions,
@@ -193,15 +242,16 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksOutcome> => {
     const { analyticsTags: _analyticsTags, ...resultParams } = params
     const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
-    if (cachedResult !== undefined) return cachedResult
+    if (cachedResult !== undefined) return { ok: true, result: cachedResult }
 
-    const { result, fallbacksFailed } = await searchPacksInternal(query, params)
-    if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
-    return result
+    const outcome = await searchPacksInternal(query, params)
+    if (!outcome.ok) return outcome
+    if (!outcome.fallbacksFailed) searchPacksCache.set(cacheKey, outcome.result)
+    return { ok: true, result: outcome.result }
   }
 
   const clearSearchCache = () => {

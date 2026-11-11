@@ -13,18 +13,18 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { COMFY_CLIENT } from './requestAuth.js'
-import { timedSignal } from './requestTimeout.js'
+import { COMFY_CLIENT } from './requestAuth'
+import { timedSignal } from './requestTimeout'
 import {
   SSO_REQUIRED_SERVER_CODE,
   ssoRequiredOrganizationId
-} from './ssoRequired.js'
+} from './ssoRequired'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
   WebSessionFailure,
   WebSessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export type {
   WebSession,
@@ -33,7 +33,7 @@ export type {
   WebSessionFailure,
   WebSessionResult,
   WebSessionUser
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export interface WebSessionOptions {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */

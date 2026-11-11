@@ -14,7 +14,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import type { PagedList } from '@/utils/pagedList'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>

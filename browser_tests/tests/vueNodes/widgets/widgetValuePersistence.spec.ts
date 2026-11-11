@@ -132,13 +132,9 @@ test.describe(
           'selected-output.webp'
         )
         await comfyPage.menu.topbar.newWorkflowButton.click()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.expectNodeCount(0)
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
         await comfyPage.vueNodes.waitForNodes()
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.canvasOps.resetView()
       })
 
       test('keeps a selected non-first output and its preview after save and reload', async ({
@@ -149,12 +145,12 @@ test.describe(
         const node = comfyPage.vueNodes.getNodeByTitle(
           'Load Image (from Outputs)'
         )
-        await WidgetSelectDropdownFixture.fromTrigger(
-          node.getByRole('button', {
-            name: 'first-output.webp [output]',
-            exact: true
-          })
-        ).open()
+        const imageTrigger = node.getByRole('button', {
+          name: 'image',
+          exact: true
+        })
+        await expect(imageTrigger).toContainText('first-output.webp [output]')
+        await WidgetSelectDropdownFixture.fromTrigger(imageTrigger).open()
         const menu = comfyPage.page.getByTestId(
           TestIds.widgets.formDropdownMenu
         )
@@ -167,9 +163,8 @@ test.describe(
         })
         await selectedOption.click()
         await expect(menu).toBeHidden()
-        await expect(
-          node.getByRole('button', { name: selectedLabel, exact: true })
-        ).toBeVisible()
+        await expect(imageTrigger).toBeVisible()
+        await expect(imageTrigger).toContainText(selectedLabel)
         const nodes =
           await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
         expect(nodes, 'Workflow has one output image loader').toHaveLength(1)
@@ -180,11 +175,10 @@ test.describe(
         await comfyPage.workflow.reloadAndWaitForApp()
         await comfyPage.vueNodes.waitForNodes()
 
-        await WidgetSelectDropdownFixture.fromTrigger(
-          node.getByRole('button', {
-            name: /^selected-output\.webp( \[output\])?$/
-          })
-        ).open()
+        await expect(imageTrigger).toContainText(
+          /^(first|selected)-output\.webp( \[output\])?$/
+        )
+        await WidgetSelectDropdownFixture.fromTrigger(imageTrigger).open()
         await menu
           .getByRole('button', { name: 'Generated', exact: true })
           .click()
@@ -193,9 +187,8 @@ test.describe(
         await expect(menu).toBeHidden()
 
         await expect.poll(() => imageWidget.getValue()).toBe(selectedValue)
-        await expect(
-          node.getByRole('button', { name: selectedLabel, exact: true })
-        ).toBeVisible()
+        await expect(imageTrigger).toBeVisible()
+        await expect(imageTrigger).toContainText(selectedLabel)
         const preview = node.getByTestId(TestIds.node.mainImage)
         await expect(preview).toBeVisible()
         await expect

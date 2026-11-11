@@ -9,7 +9,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/scripts/api'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -120,6 +120,21 @@ describe('useSessionCookie', () => {
       level: 'warning'
     })
     expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('leaves a revoked session to its caller instead of reporting it from createSession', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      Response.json(
+        { code: 'SESSION_REVOKED', message: 'signed out' },
+        { status: 401 }
+      )
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('serializes strict session creation after the previous user response', async () => {
@@ -365,6 +380,12 @@ describe('useSessionCookie', () => {
       revoked: true
     },
     {
+      name: 'a 401 TOKEN_REVOKED',
+      status: 401,
+      code: 'TOKEN_REVOKED',
+      revoked: true
+    },
+    {
       name: 'a 401 UNAUTHORIZED',
       status: 401,
       code: 'UNAUTHORIZED',
@@ -388,8 +409,9 @@ describe('useSessionCookie', () => {
           { status }
         )
       )
-      const { useSessionCookie, SessionRevokedError } =
-        await loadUseSessionCookie()
+      const { useSessionCookie } = await loadUseSessionCookie()
+      const { SessionRevokedError } =
+        await import('@/platform/auth/session/sessionRevokedError')
 
       const failure = await useSessionCookie()
         .ensureSessionCookie()

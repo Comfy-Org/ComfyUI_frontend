@@ -1,6 +1,6 @@
 import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { AuthStoreError } from '@/stores/authStore'
 
 export class BillingFailureError extends Error {

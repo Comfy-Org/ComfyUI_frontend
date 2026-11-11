@@ -62,8 +62,8 @@ test.describe(
           { types: { CLIPTextEncode: { widget_order: ['text'] } } }
         )
 
-        await sharedHost.attach(pageA, 'shared-host-page-a')
-        await sharedHost.attach(pageB, 'shared-host-page-b')
+        await sharedHost.attach(pageA)
+        await sharedHost.attach(pageB)
 
         await bootSharedPage(pageA)
         await bootSharedPage(pageB)

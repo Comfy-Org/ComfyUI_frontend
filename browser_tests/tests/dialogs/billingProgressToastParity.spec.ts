@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -19,12 +18,12 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -59,9 +58,11 @@ function annualPlan(
   slug: string,
   tier: Plan['tier'],
   priceCents: number,
-  creditsCents: number
+  creditsCents: number,
+  decision: Pick<Plan, 'action' | 'denied_reason'>
 ): Plan {
   return {
+    ...decision,
     slug,
     tier,
     duration: 'ANNUAL',
@@ -81,13 +82,15 @@ const STANDARD_ANNUAL_PLAN = annualPlan(
   'standard-annual',
   'STANDARD',
   19_200,
-  4_200
+  4_200,
+  { action: 'none', denied_reason: 'same_plan' }
 )
 const CREATOR_ANNUAL_PLAN = annualPlan(
   'creator-annual',
   'CREATOR',
   33_600,
-  7_400
+  7_400,
+  { action: 'change' }
 )
 
 const PLAN_CATALOG = {
@@ -117,8 +120,10 @@ const ACTIVE_STANDARD = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -166,7 +171,6 @@ interface ToastSetup {
   status?: BillingStatusResponse
   operation?: BillingOpStatusResponse
   subscribeResponse?: SubscribeResponse
-  topupResponse?: CreateTopupResponse
 }
 
 async function setupToastParity(
@@ -178,20 +182,12 @@ async function setupToastParity(
     subscribeResponse = {
       billing_op_id: OPERATION_ID,
       status: 'pending_payment'
-    },
-    topupResponse = {
-      billing_op_id: OPERATION_ID,
-      topup_id: OPERATION_ID,
-      status: 'pending',
-      amount_cents: 5_000
     }
   }: ToastSetup
 ): Promise<BillingServer> {
   const ws = workspace('personal', 'owner')
   const server: BillingServer = { status, operation }
 
-  // A hosted page is an external origin; the truthy return keeps the
-  // popup-blocked warning out of rows that are about the progress toast.
   await page.addInitScript(() => {
     window.open = () => window
   })
@@ -239,10 +235,6 @@ async function setupToastParity(
   await page.route('**/api/billing/subscription/cancel', (route) =>
     route.fulfill(jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' }))
   )
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    return route.fulfill(jsonRoute(topupResponse))
-  })
   await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) =>
     route.fulfill(jsonRoute(server.operation))
   )
@@ -275,6 +267,8 @@ const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
 test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   for (const { name, rails } of RAIL_MATRIX) {
     test.describe(`on the ${name} rail`, () => {
       test('announces a processing subscribe and clears it once it settles', async ({
@@ -404,26 +398,28 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await expect(actionRequired).toBeVisible()
       })
 
-      test('announces a processing top-up and clears it once it settles', async ({
+      test('announces a processing top-up found at boot and clears it once it settles', async ({
         page,
         toast
       }) => {
-        const server = await setupToastParity(page, { rails })
+        const server = await setupToastParity(page, {
+          rails,
+          status: {
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'topup'
+          }
+        })
         await page.goto(APP_URL)
         await waitForCloudApp(page)
 
-        const dialog = new TopUpCreditsDialog(page)
-        await dialog.open()
-        await dialog.root
-          .getByRole('button', { name: 'Add credits', exact: true })
-          .click()
-        await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
         const processingToast = toast.toastLoadings.filter({
           hasText: TOPUP_PROCESSING
         })
         await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
+        server.status = ACTIVE_STANDARD
         await returnToTab(page)
 
         await expect(processingToast).toBeHidden()

@@ -1,4 +1,4 @@
-import type { GlobalSubgraphData } from '@/scripts/api'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import blueprint from '@e2e/../tools/devtools/subgraphs/test blueprint.json' with { type: 'json' }
 
 const data = structuredClone(blueprint)

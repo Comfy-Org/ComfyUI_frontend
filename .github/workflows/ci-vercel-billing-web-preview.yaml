@@ -64,7 +64,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -127,8 +127,13 @@ jobs:
           section-name: billing-web-preview
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 💳 Billing Web Preview
+            ## 💳 Billing Web Preview: ✅ Deployed — [View Preview](${{ steps.urls.outputs.stable-url }})
 
-            **Billing Web Preview:** ${{ steps.urls.outputs.stable-url }}
+            <details>
+            <summary>Details</summary>
 
-            <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
+            **Links**
+            - 🔗 Preview: ${{ steps.urls.outputs.stable-url }}
+            - 📌 This commit: ${{ steps.deploy.outputs.url }}
+
+            </details>

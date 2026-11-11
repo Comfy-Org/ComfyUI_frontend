@@ -4,11 +4,11 @@ export class Tooltip {
   public readonly open: Locator
 
   constructor(private readonly page: Page) {
-    this.open = page.getByRole('tooltip')
+    this.open = page.getByTestId('tooltip-text')
   }
 
   named(name: string | RegExp): Locator {
-    return this.page.getByRole('tooltip', { name })
+    return this.open.filter({ hasText: name })
   }
 
   surface(tooltip: Locator): Locator {

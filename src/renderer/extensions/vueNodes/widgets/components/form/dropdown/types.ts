@@ -29,6 +29,7 @@ export interface SortOption<TId extends string = string> {
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
 export interface FormDropdownInputProps {
+  inputId?: string
   isOpen?: boolean
   placeholder?: string
   selectedItems: readonly FormDropdownItem[]

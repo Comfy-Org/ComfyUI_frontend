@@ -20,7 +20,7 @@
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
     >
-      <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
+      <i class="icon-[comfy--node] text-muted-foreground" />
       <span class="min-w-0 flex-1 truncate">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
@@ -35,7 +35,7 @@
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] bg-destructive-background" />
+          <i class="icon-[lucide--trash-2] bg-destructive" />
         </Button>
         <Button
           v-if="isUserBlueprint"
@@ -73,14 +73,12 @@
         v-if="item.hasChildren"
         :class="
           cn(
-            'icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground transition-transform',
+            'icon-[lucide--chevron-down] text-muted-foreground transition-transform',
             !isExpanded && '-rotate-90'
           )
         "
       />
-      <i
-        :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
-      />
+      <i :class="cn(item.value.icon, 'text-muted-foreground')" />
       <span class="min-w-0 flex-1 truncate">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
@@ -106,8 +104,11 @@ import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
-import Button from '@/components/ui/button/Button.vue'
-import { treeItemClass, treeItemIndent } from '@/components/ui/tree/treeStyles'
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  treeItemClass,
+  treeItemIndent
+} from '@comfyorg/design-system/lib/tree/treeStyles'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'

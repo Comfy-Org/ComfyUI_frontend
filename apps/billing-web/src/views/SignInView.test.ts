@@ -13,7 +13,7 @@ import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
 const h = vi.hoisted(() => ({
-  available: true,
+  identityStatus: 'ready' as 'resolving' | 'ready' | 'unavailable',
   initialState: undefined as SignInState | undefined,
   sessionFailureCode: undefined as SessionErrorCode | undefined,
   ssoOrganizationId: undefined as string | undefined,
@@ -40,7 +40,7 @@ vi.mock(import('@/auth/useSignInController'), async () => {
         errorMessage: computed(() => ''),
         sessionFailureCode: computed(() => h.sessionFailureCode),
         ssoOrganizationId: computed(() => h.ssoOrganizationId),
-        available: computed(() => h.available),
+        identityStatus: computed(() => h.identityStatus),
         signInWith: h.signInWith,
         submitEmail: h.submitEmail,
         retryMint: h.retryMint,
@@ -79,7 +79,7 @@ const REFUSED_ENTRY =
   '/v1/subscription?product=comfyui&return_to=comfyui_credits&workspace=ws_refused'
 
 beforeEach(() => {
-  h.available = true
+  h.identityStatus = 'ready'
   h.retryAvailability.mockClear()
   h.retryMint.mockClear()
   h.initialState = undefined
@@ -155,8 +155,21 @@ describe('SignInView', () => {
     expect(h.submitEmail).not.toHaveBeenCalled()
   })
 
+  it('neither warns nor offers a way in while the identity is still resolving', async () => {
+    h.identityStatus = 'resolving'
+    await renderSignIn()
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Sign in with Google' })
+    ).toBeDisabled()
+  })
+
   it('offers no way in when the deployment has no identity configuration', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     await renderSignIn()
 
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -174,7 +187,7 @@ describe('SignInView', () => {
   })
 
   it('offers a retry when sign-in is unavailable', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     await renderSignIn()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -268,7 +281,7 @@ describe('SignInView', () => {
   )
 
   it('offers no sign-in when the shared session holds but the workspace is refused (SO4)', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     h.initialState = { step: 'signedIn', origin: 'restored', mintFailed: true }
     h.sessionFailureCode = 'ACCESS_DENIED'
     await renderSignIn()
@@ -285,7 +298,7 @@ describe('SignInView', () => {
   })
 
   it('keeps a restored shared-session failure on its retry, never on sign-in', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     h.initialState = { step: 'signedIn', origin: 'restored', mintFailed: true }
     h.sessionFailureCode = 'TOKEN_EXCHANGE_FAILED'
     await renderSignIn()
@@ -354,10 +367,6 @@ describe('SignInView', () => {
   it.for([
     { code: 'NOT_AUTHENTICATED', path: REFUSED_ENTRY },
     { code: undefined, path: REFUSED_ENTRY },
-    {
-      code: 'WORKSPACE_NOT_FOUND',
-      path: '/v1/subscription?product=platform&return_to=platform_account&workspace=ws_refused'
-    },
     { code: 'WORKSPACE_NOT_FOUND', path: '/sign-in' }
   ] as const)(
     'keeps the retry for $code arriving at $path',

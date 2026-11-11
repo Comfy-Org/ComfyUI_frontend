@@ -1,8 +1,13 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Assets Grid -->
-    <VirtualGrid class="flex-1" :items="assets" :grid-style>
-      <template #item="{ item: asset }">
+    <VirtualGrid
+      class="flex-1"
+      :items="assetItems"
+      :grid-style
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assets) && toValue(assets.hasMore)"
+    >
+      <template #item="{ item: { asset } }">
         <MediaAssetCard
           :asset
           :selected="isSelected(asset.id)"
@@ -23,9 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import {
   getMediaAssetGridColumns,
@@ -33,6 +38,7 @@ import {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isPaged, pagedItems } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
 const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
@@ -51,6 +57,14 @@ const emit = defineEmits<{
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()
+
+const assetItems = computed(() =>
+  pagedItems(assets).map((asset) => ({ asset, key: `asset-${asset.id}` }))
+)
+
+function loadMore() {
+  return isPaged(assets) ? assets.loadMore() : undefined
+}
 
 const gridStyle = computed(() => ({
   display: 'grid',

@@ -1,23 +1,29 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 import type { RenderLink } from './RenderLink'
 
@@ -219,4 +225,10 @@ export class FloatingRenderLink implements RenderLink {
 
     events.dispatch('output-moved', this)
   }
+}
+
+type RegisteredFloatingRenderLink = FloatingRenderLink
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface FloatingRenderLink extends RegisteredFloatingRenderLink {}
 }

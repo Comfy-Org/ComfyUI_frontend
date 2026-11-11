@@ -34,23 +34,22 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary-background"
+            class="ml-auto icon-[lucide--external-link] text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
-            class="pi pi-chevron-right ml-auto"
+            class="ml-auto icon-[lucide--chevron-right]"
           />
         </button>
       </nav>
       <div
         class="flex h-4 flex-col items-center justify-between self-stretch p-2"
       >
-        <div class="w-full border-b border-interface-menu-stroke" />
+        <div class="w-full border-b" />
       </div>
     </div>
 
-    <!-- More Submenu -->
-    <Teleport to="body">
+    <Teleport :to="config.teleportTo ?? 'body'">
       <div
         v-if="isSubmenuVisible"
         ref="submenuRef"
@@ -103,7 +102,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-accent"
           :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
@@ -140,13 +139,16 @@
         role="status"
         aria-live="polite"
       >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <i
+          class="help-menu-icon icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
       <!-- No Releases State -->
       <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+        <i class="help-menu-icon icon-[lucide--info]" aria-hidden="true" />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
       </div>
     </section>
@@ -155,27 +157,35 @@
 
 <script setup lang="ts">
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { injectConfigProviderContext } from 'reka-ui'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref
+} from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import PuzzleIcon from '@comfyorg/design-system/icon/PuzzleIcon'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {
@@ -202,11 +212,11 @@ const TIME_UNITS = {
 
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
-  OFFSET_PX: 8,
-  Z_INDEX: 10001
+  OFFSET_PX: 8
 } as const
 
 // Composables
+const config = reactive(injectConfigProviderContext(null) ?? {})
 const { t } = useI18n()
 const toast = useToast()
 const { staticUrls, buildDocsUrl } = useExternalLink()
@@ -313,7 +323,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'feedback',
       type: 'item',
-      icon: 'icon-[lucide--clipboard-pen]',
+      icon: 'icon-[lucide--megaphone] size-4',
       label: t('helpCenter.feedback'),
       showExternalIcon: isCloud || isNightly,
       action: () => {
@@ -473,39 +483,28 @@ const clearHoverTimeout = (): void => {
 
 const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   const rect = button.getBoundingClientRect()
-  const submenuWidth = 210 // Width defined in CSS
+  const submenuWidth = 210
 
-  // Get actual submenu height if available, otherwise estimate based on visible item count
   const visibleItemCount =
     moreMenuItem.value?.items?.filter((item) => item.visible !== false)
       .length || 0
-  const estimatedHeight = visibleItemCount * 48 + 16 // ~48px per item + padding
+  const estimatedHeight = visibleItemCount * 48 + 16
   const submenuHeight = submenuRef.value?.offsetHeight || estimatedHeight
 
-  // Get viewport dimensions
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
-  // Calculate basic position (aligned with button)
   let top = rect.top
   let left = rect.right + SUBMENU_CONFIG.OFFSET_PX
 
-  // Check if submenu would overflow viewport on the right
   if (left + submenuWidth > viewportWidth) {
-    // Position submenu to the left of the button instead
     left = rect.left - submenuWidth - SUBMENU_CONFIG.OFFSET_PX
   }
 
-  // Check if submenu would overflow viewport at the bottom
   if (top + submenuHeight > viewportHeight) {
-    // Position submenu above the button, aligned to bottom
-    top = Math.max(
-      SUBMENU_CONFIG.OFFSET_PX, // Minimum distance from top of viewport
-      rect.bottom - submenuHeight
-    )
+    top = Math.max(SUBMENU_CONFIG.OFFSET_PX, rect.bottom - submenuHeight)
   }
 
-  // Ensure submenu doesn't go above viewport
   if (top < SUBMENU_CONFIG.OFFSET_PX) {
     top = SUBMENU_CONFIG.OFFSET_PX
   }
@@ -515,8 +514,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   return {
     position: 'fixed',
     top: `${top}px`,
-    left: `${left}px`,
-    zIndex: SUBMENU_CONFIG.Z_INDEX
+    left: `${left}px`
   }
 }
 
@@ -665,10 +663,10 @@ onBeforeUnmount(() => {
   width: 256px;
   max-height: 500px;
   overflow-y: auto;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
-  border: 1px solid var(--interface-menu-stroke);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   padding: 12px 8px;
   position: relative;
 }
@@ -687,12 +685,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-align: left;
 }
 
 .help-menu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .help-menu-item:focus,
@@ -712,7 +710,7 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -722,7 +720,7 @@ onBeforeUnmount(() => {
 .help-menu-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .menu-red-dot {
@@ -731,9 +729,9 @@ onBeforeUnmount(() => {
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #ff3b30;
+  background: var(--destructive);
   border-radius: 50%;
-  border: 1.5px solid var(--base-background);
+  border: 1.5px solid var(--background);
   z-index: 1;
 }
 
@@ -746,7 +744,7 @@ onBeforeUnmount(() => {
 }
 
 .section-description {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -773,12 +771,12 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   line-height: 1.2;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .release-date {
   height: 16px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -809,10 +807,10 @@ onBeforeUnmount(() => {
 .more-submenu {
   width: 210px;
   padding: 12px 8px;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  border: 1px solid var(--interface-menu-stroke);
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
 }
@@ -822,14 +820,14 @@ onBeforeUnmount(() => {
   height: 32px;
   min-height: 24px;
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 0.9rem;
   font-weight: inherit;
   line-height: inherit;
 }
 
 .submenu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .submenu-item:focus,
@@ -840,7 +838,7 @@ onBeforeUnmount(() => {
 
 .submenu-divider {
   height: 1px;
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -854,12 +852,12 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb {
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   border-radius: 3px;
 }
 
 .help-center-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted-foreground);
 }
 
 /* Reduced Motion */

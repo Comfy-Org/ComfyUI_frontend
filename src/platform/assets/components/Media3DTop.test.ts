@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import Media3DTop from './Media3DTop.vue'
 
 const {
@@ -18,7 +18,7 @@ vi.mock(import('@vueuse/core'), () => ({
   useIntersectionObserver: mockUseIntersectionObserver
 }))
 
-vi.mock(import('../utils/assetPreviewUtil'), () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,
   isAssetPreviewSupported: mockIsAssetPreviewSupported
 }))

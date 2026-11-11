@@ -126,7 +126,7 @@
 import { ref } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 
 const showCivitaiHelp = ref(false)

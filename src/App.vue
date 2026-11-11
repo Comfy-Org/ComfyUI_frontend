@@ -6,29 +6,25 @@
   </TooltipProvider>
   <div
     v-show="isLoading"
-    ref="loadingOverlay"
     data-testid="app-loading-overlay"
-    class="fixed inset-0 bg-black/10"
+    class="fixed inset-0 z-blocking bg-black/10"
     :aria-busy="isLoading"
   />
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  onMounted,
-  useTemplateRef,
-  watch,
-  watchPostEffect
-} from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import config from '@/config'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
@@ -36,24 +32,16 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
+useAgentExtensionNotices()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const loadingOverlay = useTemplateRef<HTMLDivElement>('loadingOverlay')
-
-watchPostEffect((onCleanup) => {
-  const overlay = loadingOverlay.value
-  if (!isLoading.value || !overlay) return
-
-  raiseModalLayer(overlay)
-  onCleanup(() => releaseModalLayer(overlay))
-})
 
 watch(
   isLoading,
@@ -85,7 +73,11 @@ onMounted(() => {
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
-  window.addEventListener('vite:preloadError', (event) => {
+  useEventListener(window, 'vite:preloadError', (event) => {
+    if (parsePreloadError(event.payload).url === null) {
+      reportPreloadErrorUnlessExtensionImport(event.payload)
+      return
+    }
     event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this

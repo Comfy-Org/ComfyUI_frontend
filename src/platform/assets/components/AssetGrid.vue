@@ -13,9 +13,21 @@
         class="icon-[lucide--loader] size-12 animate-spin text-muted-foreground"
       />
     </div>
+    <div
+      v-else-if="assets.length === 0"
+      class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground select-none"
+    >
+      <i class="mb-4 icon-[lucide--search] size-10" />
+      <h3 class="mb-2 text-lg font-medium">
+        {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
+      </h3>
+      <p class="text-center text-sm whitespace-pre-wrap">
+        {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
+      </p>
+    </div>
     <VirtualGrid
       v-else
-      :items="assets"
+      :items="assetsWithKey"
       :grid-style
       :default-item-height="320"
       :default-item-width="240"
@@ -32,19 +44,6 @@
           @show-info="$emit('assetShowInfo', $event)"
         />
       </template>
-      <template #placeholder>
-        <div
-          class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground select-none"
-        >
-          <i class="mb-4 icon-[lucide--search] size-10" />
-          <h3 class="mb-2 text-lg font-medium">
-            {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
-          </h3>
-          <p class="text-center text-sm whitespace-pre-wrap">
-            {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
-          </p>
-        </div>
-      </template>
     </VirtualGrid>
   </div>
 </template>
@@ -54,7 +53,7 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
@@ -72,6 +71,10 @@ defineEmits<{
   assetDeleted: [asset: AssetDisplayItem]
   assetShowInfo: [asset: AssetDisplayItem]
 }>()
+
+const assetsWithKey = computed(() =>
+  assets.map((asset) => ({ ...asset, key: asset.id }))
+)
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const is2Xl = breakpoints.greaterOrEqual('2xl')
