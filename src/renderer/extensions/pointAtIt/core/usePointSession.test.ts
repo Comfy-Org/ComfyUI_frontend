@@ -1,10 +1,14 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { AgentBackend } from './agentBackends'
+import { pointConfig } from './config'
+import type { PointConfig } from './config'
 import { createFakePointHost, settingAddress } from './fakePointHost'
 import type { Point } from './geometry'
 import { MARK_KEY, problems } from './messages'
-import { usePointSession } from './usePointSession'
+import type { AgentOutcome } from './modelReply'
+import { SURFACE_ATTRIBUTE, usePointSession } from './usePointSession'
 import { SETTLE_MS } from './valueWatch'
 
 const FRAME_MS = 16
@@ -14,12 +18,48 @@ const EMPTY_CANVAS: Point = { x: 40, y: 600 }
 
 type Session = ReturnType<typeof usePointSession>
 
-function startSession(host = createFakePointHost(), strokeEntry = false) {
+interface SessionSetup {
+  host?: ReturnType<typeof createFakePointHost>
+  config?: Partial<PointConfig>
+  model?: AgentBackend
+  elementAt?: (point: Point) => Element | null
+}
+
+function startSession(setup: SessionSetup = {}) {
+  const host = setup.host ?? createFakePointHost()
   const scope = effectScope()
   onTestFinished(() => scope.stop())
-  const session = scope.run(() => usePointSession(host, { strokeEntry }))
+  const session = scope.run(() =>
+    usePointSession(host, {
+      config: { ...pointConfig, agent: 'scripted', ...setup.config },
+      model: setup.model,
+      elementAt: setup.elementAt ?? (() => null)
+    })
+  )
   if (!session) throw new Error('The session scope is not active')
   return { host, session }
+}
+
+function fakeModel() {
+  const calls: {
+    signal: AbortSignal
+    think: (text: string) => void
+    answer: (outcome: AgentOutcome) => void
+  }[] = []
+  const backend: AgentBackend = {
+    ask(_request, _nodes, { signal, onThinking, onOutcome }) {
+      calls.push({ signal, think: onThinking, answer: onOutcome })
+    }
+  }
+  return { backend, calls }
+}
+
+function pageWith(markup: string, rect: DOMRect) {
+  document.body.innerHTML = markup
+  const element = document.body.firstElementChild
+  if (!element) throw new Error('The page element was not created')
+  element.getBoundingClientRect = () => rect
+  return element
 }
 
 function press(key: string, target: EventTarget = window) {
@@ -48,8 +88,10 @@ function comment(session: Session, point: Point, text: string) {
 }
 
 function startGuidance(text: string, host = createFakePointHost()) {
-  const started = startSession(host)
-  started.session.settings.replyDelayMs = 0
+  const started = startSession({
+    host,
+    config: { scripted: { replyDelayMs: 0, wrongTarget: false } }
+  })
   comment(started.session, SAVE_NODE, text)
   started.session.sendBatch()
   vi.advanceTimersByTime(FRAME_MS)
@@ -361,6 +403,336 @@ describe('usePointSession: annotation mode', () => {
   })
 })
 
+describe('usePointSession: showing what a comment points to', () => {
+  it('U-02: opening a comment rings its target and leaves the canvas alone when the target is in view', () => {
+    const { host, session } = startSession()
+    comment(session, WIDTH_ROW, 'make this wider')
+
+    session.openPin(session.annotations.value[0].id)
+
+    expect(session.draftAnchor.value).toEqual({
+      x: 260,
+      y: 384,
+      width: 180,
+      height: 18
+    })
+    expect(host.revealed).toEqual([])
+  })
+
+  it('U-02: opening a comment whose target is out of view brings the target into view', () => {
+    const { host, session } = startSession()
+    comment(session, WIDTH_ROW, 'make this wider')
+    host.nodes[1].settings[0].rect = { x: 3000, y: 384, width: 180, height: 18 }
+
+    session.openPin(session.annotations.value[0].id)
+
+    expect(host.revealed).toEqual([settingAddress(host.nodes[1].id, 'width')])
+  })
+
+  it('U-03: a comment whose target was deleted still opens, with nothing to ring', () => {
+    const { host, session } = startSession()
+    comment(session, WIDTH_ROW, 'make this wider')
+    host.removeNode(host.nodes[1].id)
+
+    session.openPin(session.annotations.value[0].id)
+    vi.advanceTimersByTime(FRAME_MS)
+
+    expect(session.state.value).toMatchObject({
+      draft: { comment: 'make this wider' }
+    })
+    expect(session.draftAnchor.value).toBeNull()
+    expect(session.pins.value).toMatchObject([{ rect: null, missing: true }])
+  })
+})
+
+describe('usePointSession: interface elements', () => {
+  const RUN_RECT = new DOMRect(1180, 8, 80, 32)
+  const RUN_POINT: Point = { x: 1200, y: 20 }
+  const RUN_MARKUP =
+    '<div role="toolbar" aria-label="Actions"><button aria-label="Run" data-testid="queue-button"><i></i></button></div>'
+
+  function startOnPage() {
+    pageWith(RUN_MARKUP, new DOMRect(0, 0, 0, 0))
+    const button = document.querySelector('button')
+    const icon = document.querySelector('i')
+    if (!button || !icon) throw new Error('The Run button was not created')
+    button.getBoundingClientRect = () => RUN_RECT
+    const started = startSession({
+      elementAt: (point) => (point.y < 60 ? icon : null)
+    })
+    started.session.toggleAnnotate()
+    return { ...started, button }
+  }
+
+  it('E-01: outlines the interface element under the pointer, and nodes as before', () => {
+    const { session } = startOnPage()
+    const outlined: unknown[] = []
+
+    for (const point of [RUN_POINT, WIDTH_ROW]) {
+      session.movePointer(point)
+      vi.advanceTimersByTime(FRAME_MS)
+      outlined.push(session.hover.value)
+    }
+
+    expect(outlined).toMatchObject([
+      {
+        label: 'Run',
+        rect: { x: 1180, y: 8, width: 80, height: 32 },
+        address: { kind: 'element', role: 'button' }
+      },
+      { label: 'Empty Latent Image › width' }
+    ])
+  })
+
+  it('E-02: a click opens a comment on the element, addressed with its label, role, surroundings and test id', () => {
+    const { session } = startOnPage()
+
+    session.pickAt(RUN_POINT)
+
+    expect(session.state.value).toEqual({
+      phase: 'annotating',
+      draft: {
+        annotationId: null,
+        targets: [
+          {
+            kind: 'element',
+            elementId: 'element-1',
+            label: 'Run',
+            role: 'button',
+            context: 'toolbar "Actions"',
+            testId: 'queue-button'
+          }
+        ],
+        label: 'Run',
+        comment: ''
+      }
+    })
+  })
+
+  it('E-03: the pin follows the element, hides while it is not on screen, and returns when it is drawn again', () => {
+    const { session, button } = startOnPage()
+    session.pickAt(RUN_POINT)
+    session.saveDraft('what is this?')
+    const shown: unknown[] = [session.pins.value[0].rect]
+
+    button.getBoundingClientRect = () => new DOMRect(900, 8, 80, 32)
+    vi.advanceTimersByTime(FRAME_MS)
+    shown.push(session.pins.value[0].rect)
+
+    document.body.innerHTML = ''
+    vi.advanceTimersByTime(FRAME_MS)
+    shown.push(session.pins.value[0])
+
+    const redrawn = pageWith(RUN_MARKUP, new DOMRect(0, 0, 0, 0))
+    const again = redrawn.querySelector('button')
+    if (again) again.getBoundingClientRect = () => RUN_RECT
+    vi.advanceTimersByTime(600)
+    shown.push(session.pins.value[0].rect)
+
+    expect(shown).toMatchObject([
+      { x: 1180, y: 8 },
+      { x: 900, y: 8 },
+      { rect: null, missing: false },
+      { x: 1180, y: 8 }
+    ])
+  })
+
+  it('AN-04: a wheel over the interface is not sent to the canvas', () => {
+    const panel = pageWith('<aside></aside>', new DOMRect(0, 0, 300, 800))
+    const { host, session } = startSession({ elementAt: () => panel })
+    session.toggleAnnotate()
+
+    session.passWheel(new WheelEvent('wheel', { deltaY: 40 }))
+
+    expect(host.forwardedWheels).toEqual([])
+  })
+
+  it('E-04: a press on the layer’s surface picks what is under it and never reaches the page', () => {
+    const { session } = startOnPage()
+    const surface = document.createElement('div')
+    surface.setAttribute(SURFACE_ATTRIBUTE, '')
+    document.body.append(surface)
+    const pageSawPress = vi.fn()
+    document.addEventListener('pointerdown', pageSawPress)
+    onTestFinished(() =>
+      document.removeEventListener('pointerdown', pageSawPress)
+    )
+
+    const press = new MouseEvent('pointerdown', {
+      clientX: RUN_POINT.x,
+      clientY: RUN_POINT.y,
+      bubbles: true,
+      cancelable: true
+    })
+    surface.dispatchEvent(press)
+
+    expect(session.state.value).toMatchObject({ draft: { label: 'Run' } })
+    expect(press.defaultPrevented).toBe(true)
+    expect(pageSawPress).not.toHaveBeenCalled()
+  })
+
+  it('E-04: focus moving into the layer’s comment box is kept from the page, other focus changes are not', () => {
+    startSession()
+    document.body.innerHTML =
+      '<div data-point-at-it-layer><textarea></textarea></div><input />'
+    const pageSawFocus = vi.fn()
+    document.addEventListener('focusin', pageSawFocus)
+    onTestFinished(() => document.removeEventListener('focusin', pageSawFocus))
+
+    document.querySelector('textarea')?.focus()
+    expect(pageSawFocus).not.toHaveBeenCalled()
+
+    document.querySelector('input')?.focus()
+    expect(pageSawFocus).toHaveBeenCalledTimes(1)
+  })
+
+  it('E-05, E-06: the scripted agent answers a comment on an element by pointing at that element', () => {
+    const { session } = startOnPage()
+    session.pickAt(RUN_POINT)
+    session.saveDraft('what is this?')
+
+    session.sendBatch()
+    vi.advanceTimersByTime(2000 + 600)
+
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      steps: [{ target: { kind: 'element', elementId: 'element-1' } }]
+    })
+    expect(session.view.value).toEqual({
+      ring: { x: 1180, y: 8, width: 80, height: 32 },
+      pointer: { x: 1220, y: 40 }
+    })
+  })
+})
+
+describe('usePointSession: the real model', () => {
+  const reply = {
+    steps: [
+      {
+        annotationId: 'comment-1',
+        text: 'Raise width.',
+        target: { kind: 'node', nodeId: '5' },
+        waitFor: null,
+        offerEdit: null
+      }
+    ]
+  }
+
+  function startWithModel(showThinking = true) {
+    const model = fakeModel()
+    const started = startSession({
+      config: {
+        agent: 'model',
+        model: { ...pointConfig.model, showThinking }
+      },
+      model: model.backend
+    })
+    comment(started.session, SAVE_NODE, 'make this wider')
+    started.session.sendBatch()
+    return { ...started, calls: model.calls }
+  }
+
+  it('L-01, T-01: thinking shows while waiting, and the reply starts guidance with no added delay', () => {
+    const { session, calls } = startWithModel()
+
+    calls[0].think('Checking the width. ')
+    calls[0].think('It is on Empty Latent Image.')
+    expect(session.state.value.phase).toBe('waiting')
+    expect(session.thinking.value).toMatchObject({
+      text: 'Checking the width. It is on Empty Latent Image.',
+      done: false
+    })
+
+    calls[0].answer({ kind: 'reply', reply })
+
+    expect(session.state.value).toMatchObject({ phase: 'guiding', index: 0 })
+  })
+
+  it('T-03: the thinking stays after the reply and goes with Clear', () => {
+    const { session, calls } = startWithModel()
+    calls[0].think('Checking the width.')
+    calls[0].answer({ kind: 'reply', reply })
+    session.finish()
+
+    expect(session.thinking.value).toMatchObject({
+      text: 'Checking the width.',
+      done: true
+    })
+
+    session.clearAnnotations()
+    expect(session.thinking.value).toBeNull()
+  })
+
+  it('T-04: a reply with no thinking leaves an empty, finished log', () => {
+    const { session, calls } = startWithModel()
+
+    calls[0].answer({ kind: 'reply', reply })
+
+    expect(session.thinking.value).toMatchObject({ text: '', done: true })
+  })
+
+  it.for([
+    {
+      name: 'the scripted agent',
+      agent: 'scripted' as const,
+      showThinking: true
+    },
+    {
+      name: 'thinking switched off',
+      agent: 'model' as const,
+      showThinking: false
+    }
+  ])('T-05, T-06: keeps no thinking with $name', ({ agent, showThinking }) => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent, model: { ...pointConfig.model, showThinking } },
+      model: model.backend
+    })
+    comment(session, SAVE_NODE, 'make this wider')
+
+    session.sendBatch()
+    model.calls.at(0)?.think('unwanted')
+
+    expect(session.thinking.value).toBeNull()
+  })
+
+  it.for<AgentOutcome>([
+    { kind: 'failure', failure: { kind: 'provider', detail: 'status 500' } },
+    { kind: 'failure', failure: { kind: 'proxyDown', detail: '' } },
+    { kind: 'failure', failure: { kind: 'timeout', detail: '60' } },
+    { kind: 'failure', failure: { kind: 'noKey', detail: 'no key' } },
+    { kind: 'reply', reply: 'not the reply format' }
+  ])(
+    'L-04 to L-07, L-10: $failure.kind $kind keeps the comments and can be retried',
+    (outcome) => {
+      const { session, calls } = startWithModel()
+
+      calls[0].answer(outcome)
+
+      expect(session.state.value.phase).toBe('failed')
+      expect(session.annotations.value).toHaveLength(1)
+
+      session.retry()
+
+      expect(session.state.value.phase).toBe('waiting')
+      expect(calls).toHaveLength(2)
+    }
+  )
+
+  it('L-08, L-09: Cancel aborts the call, clears its thinking, and a late reply never shows', () => {
+    const { session, calls } = startWithModel()
+    calls[0].think('Checking the width.')
+
+    session.dismiss()
+    calls[0].answer({ kind: 'reply', reply })
+
+    expect(calls[0].signal.aborted).toBe(true)
+    expect(session.state.value.phase).toBe('idle')
+    expect(session.thinking.value).toBeNull()
+    expect(session.annotations.value).toHaveLength(1)
+  })
+})
+
 describe('usePointSession: guidance', () => {
   it('G-01: the pointer flies from the comment’s pin to a target in view without moving the canvas', () => {
     const { host, session } = startGuidance('how do I make this wider?')
@@ -473,7 +845,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   }
 
   it('H-02, M-01, M-02, M-03: with the switch on, holding the key and clicking a setting opens the box with that setting', () => {
-    const { session } = startSession(createFakePointHost(), true)
+    const { session } = startSession({ config: { strokeEntry: true } })
 
     press(MARK_KEY)
     expect(session.state.value.phase).toBe('armed')
@@ -488,7 +860,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   })
 
   it('H-02: with the switch on, a tap still turns annotation mode on', () => {
-    const { session } = startSession(createFakePointHost(), true)
+    const { session } = startSession({ config: { strokeEntry: true } })
 
     press(MARK_KEY)
     vi.advanceTimersByTime(80)
@@ -498,7 +870,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   })
 
   it('does not type the held key into the box that opens under it', () => {
-    const { session } = startSession(createFakePointHost(), true)
+    const { session } = startSession({ config: { strokeEntry: true } })
     const field = document.createElement('input')
     document.body.append(field)
     press(MARK_KEY)
@@ -515,7 +887,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   })
 
   it('A-02: Esc closes the box and reaches nothing else', () => {
-    const { session } = startSession(createFakePointHost(), true)
+    const { session } = startSession({ config: { strokeEntry: true } })
     const appSawEscape = vi.fn()
     window.addEventListener('keydown', appSawEscape)
     onTestFinished(() => window.removeEventListener('keydown', appSawEscape))
@@ -529,7 +901,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   })
 
   it('A-04: the box waits for the set delay, then guidance starts', () => {
-    const { session } = startSession(createFakePointHost(), true)
+    const { session } = startSession({ config: { strokeEntry: true } })
     markAt(session, WIDTH_ROW)
 
     session.ask('how do I make this wider?')
@@ -544,7 +916,7 @@ describe('usePointSession: the hidden stroke entry', () => {
   })
 
   it('A-05: after Esc and a new question, the first answer never shows', () => {
-    const { host, session } = startSession(createFakePointHost(), true)
+    const { host, session } = startSession({ config: { strokeEntry: true } })
     const shown: unknown[] = []
     markAt(session, WIDTH_ROW)
     session.ask('how do I make this wider?')

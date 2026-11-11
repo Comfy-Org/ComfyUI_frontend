@@ -1,9 +1,9 @@
-import type { GraphAddress } from './targetAddress'
+import type { AnnotationTarget } from './targetAddress'
 
 /** One pinned comment. Its number is its place in the list. */
 export interface Annotation {
   id: string
-  targets: GraphAddress[]
+  targets: AnnotationTarget[]
   label: string
   comment: string
 }
@@ -12,7 +12,7 @@ export type AnnotationEvent =
   | {
       type: 'saved'
       id: string
-      targets: GraphAddress[]
+      targets: AnnotationTarget[]
       label: string
       comment: string
     }

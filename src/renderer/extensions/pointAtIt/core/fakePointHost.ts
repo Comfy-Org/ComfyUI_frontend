@@ -2,12 +2,8 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { Rect } from './geometry'
-import type { HostNode, HostSetting, PointHost } from './pointHost'
-import type {
-  SettingAddress,
-  SettingValue,
-  TargetAddress
-} from './targetAddress'
+import type { HostLink, HostNode, HostSetting, PointHost } from './pointHost'
+import type { HostAddress, SettingAddress, SettingValue } from './targetAddress'
 
 const ROW_HEIGHT = 18
 const TITLE_HEIGHT = 24
@@ -16,6 +12,7 @@ interface SettingSeed {
   name: string
   value: SettingValue
   description?: string
+  options?: SettingValue[]
 }
 
 interface NodeSeed {
@@ -25,6 +22,7 @@ interface NodeSeed {
   description?: string
   rect: Rect | null
   settings?: SettingSeed[]
+  links?: HostLink[]
 }
 
 function rowRect(rect: Rect | null, index: number): Rect | null {
@@ -49,8 +47,10 @@ export function hostNode(seed: NodeSeed): HostNode {
       label: setting.name,
       description: setting.description ?? '',
       value: setting.value,
+      ...(setting.options ? { options: setting.options } : {}),
       rect: rowRect(seed.rect, index)
-    }))
+    })),
+    links: seed.links ?? []
   }
 }
 
@@ -104,7 +104,7 @@ export function settingAddress(
 interface FakePointHost extends PointHost {
   nodes: HostNode[]
   selection: NodeLocatorId[]
-  revealed: TargetAddress[]
+  revealed: HostAddress[]
   forwardedWheels: WheelEvent[]
   rejectsWrites: boolean
   queueRun(): void
@@ -164,6 +164,7 @@ export function createFakePointHost(
     forwardWheel(event) {
       host.forwardedWheels.push(event)
     },
+    isGraphElement: (element) => element.hasAttribute('data-fake-graph'),
     queueRun() {
       runListeners.forEach((listener) => listener())
     },

@@ -20,6 +20,9 @@
         <i class="icon-[lucide--x] size-3" aria-hidden="true" />
       </Button>
     </div>
+    <p v-if="targetNote" role="status" class="m-0 text-xs text-destructive">
+      {{ targetNote }}
+    </p>
     <textarea
       ref="input"
       v-model="text"
@@ -57,9 +60,15 @@ import type { Rect } from './geometry'
 import { messages } from './messages'
 import type { Draft } from './pointState'
 
-const { anchor, draft } = defineProps<{
+const {
+  anchor,
+  draft,
+  targetNote = ''
+} = defineProps<{
   anchor: Rect
   draft: Draft
+  /** Says why the target cannot be shown, when it cannot. */
+  targetNote?: string
 }>()
 
 const emit = defineEmits<{
@@ -89,5 +98,5 @@ function onEnter(event: KeyboardEvent) {
   emit('save', text.value)
 }
 
-onMounted(() => input.value?.focus())
+onMounted(() => input.value?.focus({ preventScroll: true }))
 </script>

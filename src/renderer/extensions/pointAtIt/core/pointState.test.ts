@@ -99,7 +99,7 @@ const waitingForQuestion = {
 } satisfies PointState
 const failed = {
   phase: 'failed',
-  failure: { kind: 'malformed' },
+  failure: { kind: 'malformed', detail: '' },
   origin,
   asked: waitingForQuestion.asked
 } satisfies PointState
@@ -123,7 +123,7 @@ const reply = {
 const failure: PointEvent = {
   type: 'requestFailed',
   requestId: 'request-1',
-  failure: { kind: 'malformed' }
+  failure: { kind: 'malformed', detail: '' }
 }
 const batchSent: PointEvent = {
   type: 'batchSent',

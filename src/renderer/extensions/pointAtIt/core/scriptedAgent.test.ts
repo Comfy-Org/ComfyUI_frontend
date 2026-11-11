@@ -130,6 +130,27 @@ describe('answerRequest', () => {
     })
   })
 
+  it('E-06: answers a comment on an interface element by saying what was marked, pointing at it', () => {
+    const queue = {
+      kind: 'element' as const,
+      elementId: 'element-1',
+      label: 'Run',
+      role: 'button',
+      context: 'toolbar "Actions"',
+      testId: 'queue-button'
+    }
+
+    expect(answer([note('comment-1', 'make this wider', [queue])])).toEqual([
+      {
+        annotationId: 'comment-1',
+        text: answers.describeElement(queue),
+        target: { kind: 'element', elementId: 'element-1' },
+        waitFor: null,
+        offerEdit: null
+      }
+    ])
+  })
+
   it('X-02: says it has no script for a comment and lists what it can answer', () => {
     expect(answer([note('comment-1', 'why is the sky blue?')])).toEqual([
       {

@@ -50,7 +50,7 @@
           class="icon-[lucide--loader-circle] motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ messages.thinking }} · {{ messages.thinkingHint }}
+        {{ messages.askWaiting }} · {{ messages.thinkingHint }}
       </p>
     </template>
   </form>

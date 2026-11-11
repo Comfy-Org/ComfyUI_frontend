@@ -3,7 +3,7 @@ export interface Point {
   y: number
 }
 
-interface Size {
+export interface Size {
   width: number
   height: number
 }

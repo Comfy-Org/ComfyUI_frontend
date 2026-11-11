@@ -5,7 +5,7 @@ import type { Point, Rect } from './geometry'
 import type { HostNode, HostSetting } from './pointHost'
 import type { Chip, Draft } from './pointState'
 import { addressKey } from './targetAddress'
-import type { GraphAddress } from './targetAddress'
+import type { AnnotationTarget } from './targetAddress'
 
 const CLICK_EXTENT = 6
 const NODE_COVERED = 0.6
@@ -13,12 +13,12 @@ const SETTING_COVERED = 0.5
 
 /** What a hit test found under a point. */
 export interface PickedTarget {
-  address: GraphAddress
+  address: AnnotationTarget
   label: string
   rect: Rect
 }
 
-function chip(target: GraphAddress, label: string): Chip {
+function chip(target: AnnotationTarget, label: string): Chip {
   return { id: addressKey(target), target, label }
 }
 

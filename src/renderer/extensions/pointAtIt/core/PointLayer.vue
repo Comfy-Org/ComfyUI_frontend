@@ -1,10 +1,17 @@
 <template>
   <div
+    data-point-at-it-layer
     data-testid="point-at-it-layer"
     class="pointer-events-none fixed inset-0 z-tour font-inter text-sm text-foreground"
+    @pointerdown.stop
+    @mousedown.stop
+    @pointerup.stop
+    @mouseup.stop
+    @click.stop
   >
     <div
-      v-if="blocksCanvas"
+      v-if="blocksPage"
+      data-point-at-it-surface
       data-testid="point-at-it-capture"
       :class="
         cn(
@@ -18,7 +25,6 @@
       @pointerup="session.releasePointer"
       @pointercancel="session.releasePointer"
       @pointerleave="session.leavePointer"
-      @click="onClick"
       @wheel="onWheel"
     />
     <svg
@@ -54,6 +60,12 @@
       class="absolute rounded-md outline-2 outline-offset-2 outline-primary outline-dashed"
       :style="rectStyle(hover.rect)"
     />
+    <div
+      v-if="draft && draftAnchor"
+      data-testid="point-at-it-comment-target"
+      class="absolute rounded-md ring-2 ring-primary"
+      :style="rectStyle(draftAnchor)"
+    />
     <template v-for="pin in pins" :key="pin.id">
       <Button
         v-if="pin.rect"
@@ -69,10 +81,11 @@
       </Button>
     </template>
     <CommentBox
-      v-if="state.phase === 'annotating' && state.draft"
+      v-if="draft"
       :key="draftKey"
       :anchor="draftAnchor ?? windowCentre"
-      :draft="state.draft"
+      :draft
+      :target-note="draftTargetNote"
       @save="session.saveDraft"
       @remove="session.deleteDraft"
       @close="session.dismiss"
@@ -103,27 +116,21 @@
       @done="session.finish"
       @close="session.dismiss"
     />
-    <div
-      class="pointer-events-auto absolute bottom-4 left-16 flex w-72 flex-col gap-2"
-    >
-      <AnnotationTray
-        :annotations
-        :pins
-        :phase="state.phase"
-        :waiting-since="state.phase === 'waiting' ? state.startedAt : null"
-        :failure="state.phase === 'failed' ? state.failure.kind : null"
-        @toggle="session.toggleAnnotate"
-        @open="session.openPin"
-        @send="session.sendBatch"
-        @clear="session.clearAnnotations"
-        @cancel="session.dismiss"
-        @retry="session.retry"
-      />
-      <DemoControls
-        v-model:reply-delay-ms="settings.replyDelayMs"
-        v-model:wrong-target="settings.wrongTarget"
-      />
-    </div>
+    <AnnotationTray
+      class="pointer-events-auto absolute bottom-4 left-16 w-72"
+      :annotations
+      :pins
+      :thinking
+      :phase="state.phase"
+      :waiting-since="state.phase === 'waiting' ? state.startedAt : null"
+      :failure="state.phase === 'failed' ? state.failure : null"
+      @toggle="session.toggleAnnotate"
+      @open="session.openPin"
+      @send="session.sendBatch"
+      @clear="session.clearAnnotations"
+      @cancel="session.dismiss"
+      @retry="session.retry"
+    />
   </div>
 </template>
 
@@ -137,7 +144,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import AnnotationTray from './AnnotationTray.vue'
 import AskBox from './AskBox.vue'
 import CommentBox from './CommentBox.vue'
-import DemoControls from './DemoControls.vue'
+import type { PointConfig } from './config'
 import type { Rect } from './geometry'
 import GuidanceOverlay from './GuidanceOverlay.vue'
 import { messages } from './messages'
@@ -145,22 +152,25 @@ import type { PointHost } from './pointHost'
 import { addressKey } from './targetAddress'
 import { usePointSession } from './usePointSession'
 
-const { host, strokeEntry = false } = defineProps<{
+const { host, config } = defineProps<{
   host: PointHost
-  strokeEntry?: boolean
+  config: PointConfig
 }>()
 
-const session = usePointSession(host, { strokeEntry })
-const { state, annotations, view, pins, hover, draftAnchor, settings } = session
+const session = usePointSession(host, { config })
+const { state, annotations, thinking, view, pins, hover, draftAnchor } = session
 const windowSize = useWindowSize()
 
 const canDraw = computed(
   () => state.value.phase === 'armed' || state.value.phase === 'marking'
 )
-const isPicking = computed(
-  () => state.value.phase === 'annotating' && !state.value.draft
+const draft = computed(() =>
+  state.value.phase === 'annotating' ? state.value.draft : null
 )
-const blocksCanvas = computed(
+const isPicking = computed(
+  () => state.value.phase === 'annotating' && !draft.value
+)
+const blocksPage = computed(
   () =>
     canDraw.value ||
     state.value.phase === 'asking' ||
@@ -186,9 +196,14 @@ const windowCentre = computed<Rect>(() => ({
   height: 0
 }))
 const draftKey = computed(() => {
-  if (state.value.phase !== 'annotating' || !state.value.draft) return ''
-  const { annotationId, targets } = state.value.draft
+  if (!draft.value) return ''
+  const { annotationId, targets } = draft.value
   return annotationId ?? targets.map(addressKey).join('|')
+})
+const draftTargetNote = computed(() => {
+  if (!draft.value?.annotationId || draftAnchor.value) return ''
+  const pin = pins.value.find((candidate) => candidate.id === draftKey.value)
+  return pin?.missing ? messages.targetGoneNote : messages.targetHiddenNote
 })
 const answeredComment = computed(() => {
   if (state.value.phase !== 'guiding') return null
@@ -226,10 +241,6 @@ function onPointerDown(event: PointerEvent) {
 
 function onPointerMove(event: PointerEvent) {
   session.movePointer({ x: event.clientX, y: event.clientY })
-}
-
-function onClick(event: MouseEvent) {
-  session.pickAt({ x: event.clientX, y: event.clientY })
 }
 
 function onWheel(event: WheelEvent) {

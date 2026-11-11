@@ -20,19 +20,21 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import type { Rect } from './core/geometry'
 import type {
+  HostLink,
   HostNode,
   HostSetting,
   PointHost,
   TargetReading
 } from './core/pointHost'
 import type {
+  HostAddress,
   SettingAddress,
-  SettingValue,
-  TargetAddress
+  SettingValue
 } from './core/targetAddress'
 
 const NODE_ELEMENTS = '[data-testid="transform-pane"] [data-node-id]'
 const RUN_BUTTON = '[data-testid="queue-button"]'
+const GRAPH_ELEMENTS = '[data-testid="transform-pane"]'
 const CLASSIC_ROW_MARGIN = 6
 const EMPTY_VIEWPORT: Rect = { x: 0, y: 0, width: 0, height: 0 }
 
@@ -130,6 +132,34 @@ function nodeDefOf(type: string): ComfyNodeDefImpl | undefined {
   return useNodeDefStore().nodeDefsByName[type]
 }
 
+function isSettingValue(value: unknown): value is SettingValue {
+  return (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  )
+}
+
+function settingOptions(widget: IBaseWidget): SettingValue[] | undefined {
+  const values: unknown = widget.options.values
+  return Array.isArray(values) ? values.filter(isSettingValue) : undefined
+}
+
+function incomingLinks(node: LGraphNode): HostLink[] {
+  return node.inputs.flatMap((input) => {
+    const link = node.graph?.getLink(input.link)
+    const origin = link && node.graph?.getNodeById(link.origin_id)
+    if (!link || !origin) return []
+    return [
+      {
+        input: input.name,
+        from: locatorIdOf(origin),
+        output: origin.outputs[link.origin_slot]?.name ?? ''
+      }
+    ]
+  })
+}
+
 function settingDescription(node: LGraphNode, widget: IBaseWidget): string {
   const type = node.type
   const backendTooltip = nodeDefOf(type)?.inputs[widget.name]?.tooltip
@@ -153,6 +183,13 @@ function visibleWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => !widget.hidden)
 }
 
+function isGraphElement(element: Element): boolean {
+  return (
+    element instanceof HTMLCanvasElement ||
+    element.closest(GRAPH_ELEMENTS) !== null
+  )
+}
+
 /** The app side of the layer: the one file that imports app modules. */
 export function createComfyPointHost(): PointHost {
   const canvasStore = useCanvasStore()
@@ -170,6 +207,7 @@ export function createComfyPointHost(): PointHost {
       label: widget.label ?? widget.name,
       description: settingDescription(node, widget),
       value: settingValue(widget),
+      options: settingOptions(widget),
       rect: canvas ? settingRect(node, widget, canvas, element) : null
     }
   }
@@ -190,7 +228,8 @@ export function createComfyPointHost(): PointHost {
         rect: canvas ? nodeRect(node, canvas, element) : null,
         settings: visibleWidgets(node).map((widget) =>
           hostSetting(node, widget, canvas, element)
-        )
+        ),
+        links: incomingLinks(node)
       }
     })
   }
@@ -199,7 +238,7 @@ export function createComfyPointHost(): PointHost {
     return canvasStore.selectedItems.filter(isLGraphNode).map(locatorIdOf)
   }
 
-  function readTarget(target: TargetAddress): TargetReading | null {
+  function readTarget(target: HostAddress): TargetReading | null {
     if (target.kind === 'control') {
       const button = document.querySelector(RUN_BUTTON)
       return { rect: button ? elementRect(button) : null, value: undefined }
@@ -229,7 +268,7 @@ export function createComfyPointHost(): PointHost {
     return { x: bounds.left, y: bounds.top, width, height }
   }
 
-  async function reveal(target: TargetAddress): Promise<void> {
+  async function reveal(target: HostAddress): Promise<void> {
     if (target.kind === 'control') return
     const node = getNodeByLocatorId(app.rootGraph, target.nodeId)
     if (node) await focusNodeInstance(node)
@@ -265,6 +304,7 @@ export function createComfyPointHost(): PointHost {
     reveal,
     write,
     onRunQueued,
-    forwardWheel: forwardEventToCanvas
+    forwardWheel: forwardEventToCanvas,
+    isGraphElement
   }
 }

@@ -11,6 +11,13 @@ const settingAddress = z.object({
   setting: z.string().describe('The name of the setting on that node.')
 })
 
+const elementAddress = z.object({
+  kind: z.literal('element'),
+  elementId: z
+    .string()
+    .describe('The elementId of an interface element a comment is pinned on.')
+})
+
 const runControl = z.object({
   kind: z.literal('control'),
   control: z.literal('run')
@@ -37,7 +44,7 @@ const replyStep = z.object({
     .describe('The id of the comment this step answers, or null.'),
   text: z.string().describe('One or two short sentences shown in the bubble.'),
   target: z
-    .union([nodeAddress, settingAddress, runControl])
+    .union([nodeAddress, settingAddress, elementAddress, runControl])
     .nullable()
     .describe('Where the pointer lands, or null when nothing fits.'),
   waitFor: stepWait
@@ -59,13 +66,27 @@ export type AgentReply = z.infer<typeof agentReplySchema>
 export type ReplyStep = AgentReply['steps'][number]
 export type ReplyAddress = NonNullable<ReplyStep['target']>
 export type ReplySettingAddress = z.infer<typeof settingAddress>
+type ReplyElementAddress = z.infer<typeof elementAddress>
+
+/** An interface element as the agent is told about it. */
+export interface DescribedElement extends ReplyElementAddress {
+  label: string
+  role: string
+  context: string
+  testId: string | null
+}
+
+type NoteTarget =
+  | z.infer<typeof nodeAddress>
+  | ReplySettingAddress
+  | DescribedElement
 
 /** One pinned comment as the agent receives it. */
 export interface AnnotationNote {
   id: string
   label: string
   comment: string
-  targets: Exclude<ReplyAddress, { kind: 'control' }>[]
+  targets: NoteTarget[]
 }
 
 /** What the layer sends: every comment of the batch in one request. */

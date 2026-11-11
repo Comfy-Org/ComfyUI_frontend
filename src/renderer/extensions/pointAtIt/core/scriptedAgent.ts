@@ -2,6 +2,7 @@ import type {
   AgentReply,
   AgentRequest,
   AnnotationNote,
+  DescribedElement,
   ReplyAddress,
   ReplySettingAddress,
   ReplyStep
@@ -137,11 +138,22 @@ function describedSetting(
   }
 }
 
+function describeElement(
+  note: AnnotationNote,
+  element: DescribedElement
+): ReplyStep {
+  return say(note, answers.describeElement(element), {
+    kind: 'element',
+    elementId: element.elementId
+  })
+}
+
 function describe(note: AnnotationNote, nodes: readonly HostNode[]): ReplyStep {
   const target = note.targets.at(0)
-  const node =
-    target && nodes.find((candidate) => candidate.id === target.nodeId)
-  if (!target || !node) return unanswered(note, answers.noScript)
+  if (!target || target.kind === 'element')
+    return unanswered(note, answers.noScript)
+  const node = nodes.find((candidate) => candidate.id === target.nodeId)
+  if (!node) return unanswered(note, answers.noScript)
   const setting =
     target.kind === 'setting'
       ? node.settings.find((candidate) => candidate.name === target.setting)
@@ -162,6 +174,8 @@ function answerNote(
   note: AnnotationNote,
   nodes: readonly HostNode[]
 ): ReplyStep {
+  const pinnedOn = note.targets.at(0)
+  if (pinnedOn?.kind === 'element') return describeElement(note, pinnedOn)
   const text = note.comment.toLowerCase()
   if (ASKS_WHAT.test(text)) return describe(note, nodes)
   if (ASKS_SIZE.test(text)) return resize(note, text, nodes)
@@ -189,6 +203,7 @@ function misdirected(
 ): ReplyStep[] {
   const first = steps.at(0)
   if (!first?.target || first.target.kind === 'control') return steps
+  if (first.target.kind === 'element') return steps
   const rightId = first.target.nodeId
   const rightIndex = nodes.findIndex((node) => node.id === rightId)
   const others = [

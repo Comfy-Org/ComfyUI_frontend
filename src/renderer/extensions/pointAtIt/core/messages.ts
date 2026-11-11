@@ -1,4 +1,5 @@
 import type { ReplySettingAddress } from './agentReply'
+import { MODEL_PROXY_PORT } from './modelWire'
 import type { SettingValue } from './targetAddress'
 
 /** The one key of the layer; lower case, compared with `event.key`. */
@@ -13,7 +14,7 @@ export const messages = {
   askInputLabel: 'Question',
   askHint: 'Enter to ask · Esc to cancel',
   removeChip: (label: string) => `Remove ${label}`,
-  thinking: 'Thinking…',
+  askWaiting: 'Thinking…',
   thinkingHint: 'Esc to cancel',
   agentTag: 'agent',
   doItForMe: 'Do it for me',
@@ -28,7 +29,8 @@ export const messages = {
   trayTitle: 'Point at it · POC',
   annotate: 'Annotate',
   annotateKey: keyLabel,
-  annotateHint: 'Click a node or a setting to comment on it. Esc to leave.',
+  annotateHint:
+    'Click a node, a setting or a part of the interface to comment on it. Esc to leave.',
   annotateIdle: `Press Annotate or ${keyLabel}, then click what you want to comment on.`,
   commentPlaceholder: 'Your comment',
   commentLabel: 'Comment',
@@ -42,23 +44,42 @@ export const messages = {
   cancel: 'Cancel',
   retry: 'Retry',
   waiting: (seconds: number) => `Waiting for the agent · ${seconds} s`,
-  controlsTitle: 'Demo controls',
-  controlsShow: 'Show demo controls',
-  controlsHide: 'Hide demo controls',
-  replyDelay: 'Reply delay',
-  seconds: (seconds: number) => `${seconds} s`,
-  wrongTarget: 'Point at the wrong node',
-  scriptedNote: 'Scripted answers, no model.'
+  commentCount: (count: number) =>
+    count === 1 ? '1 comment' : `${count} comments`,
+  showComments: 'Show comments',
+  hideComments: 'Hide comments',
+  notOnScreen: 'not on screen right now',
+  targetGoneNote: 'What this comment points to is no longer in the workflow.',
+  targetHiddenNote: 'What this comment points to is not on screen right now.',
+  thinking: 'Thinking',
+  showThinking: 'Show the thinking',
+  hideThinking: 'Hide the thinking',
+  noThinking: 'The model returned no thinking for this request.'
+}
+
+const failureText = {
+  malformed: () => 'The reply was not in the expected format.',
+  provider: (detail: string) =>
+    `The model provider returned an error (${detail}).`,
+  proxyDown: () =>
+    `Could not reach the local model proxy on 127.0.0.1:${MODEL_PROXY_PORT}. Start it with start-proxy.command.`,
+  timeout: (detail: string) => `The model sent nothing for ${detail} s.`,
+  noKey: (detail: string) => `The proxy cannot call the model: ${detail}`
 }
 
 /** The one sentence shown for a failed request. */
-export const failureText = {
-  malformed: 'The reply was not in the expected format.'
+export function describeFailure(failure: {
+  kind: keyof typeof failureText
+  detail: string
+}): string {
+  return failureText[failure.kind](failure.detail)
 }
 
 export const problems = {
   unknownNode: (nodeId: string) =>
     `The agent named node "${nodeId}", which is not in this workflow.`,
+  unknownElement: (elementId: string) =>
+    `The agent named interface element "${elementId}", which no comment in this batch is pinned on.`,
   unknownSetting: ({ nodeId, setting }: ReplySettingAddress) =>
     `The agent named setting "${setting}" on node "${nodeId}", which is not in this workflow.`,
   valueNotAccepted: (label: string, value: SettingValue) =>
@@ -71,6 +92,12 @@ export const answers = {
   stepsLead: (value: number, more: boolean) =>
     `This is how many passes the sampler makes. Change steps to ${value} for ${more ? 'more detail' : 'a faster run'}.`,
   runNext: 'That is the change. Now run it to see the result.',
+  describeElement: (element: {
+    label: string
+    role: string
+    context: string
+  }) =>
+    `This is the ${element.role} "${element.label}"${element.context ? ` in the ${element.context}` : ''}. The scripted agent only knows the workflow, so it cannot say more about the interface.`,
   noDescription: (label: string) =>
     `The node definition has no description for ${label}.`,
   describe: (label: string, description: string) => `${label}: ${description}`,

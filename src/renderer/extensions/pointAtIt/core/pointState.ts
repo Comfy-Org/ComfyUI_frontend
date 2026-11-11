@@ -1,11 +1,12 @@
 import { boundsOf } from './geometry'
 import type { Point, Rect } from './geometry'
 import type { GuidanceStep } from './replyValidation'
-import type { GraphAddress, TargetAddress } from './targetAddress'
+import type { AnnotationTarget, TargetAddress } from './targetAddress'
 
-/** Why a request produced no guidance. */
+/** Why a request produced no guidance; `detail` is shown with the message. */
 export interface RequestFailure {
-  kind: 'malformed'
+  kind: 'malformed' | 'provider' | 'proxyDown' | 'timeout' | 'noKey'
+  detail: string
 }
 
 /** A key press shorter than this is a tap, not a hold. */
@@ -25,7 +26,7 @@ interface Mark {
 /** An open comment box: a new comment, or an existing one being edited. */
 export interface Draft {
   annotationId: string | null
-  targets: GraphAddress[]
+  targets: AnnotationTarget[]
   label: string
   comment: string
 }

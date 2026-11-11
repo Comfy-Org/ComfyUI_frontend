@@ -1,6 +1,7 @@
 import { agentReplySchema } from './agentReply'
 import type {
   AgentRequest,
+  DescribedElement,
   ReplyAddress,
   ReplySettingAddress,
   ReplyStep
@@ -74,12 +75,27 @@ function checkSetting(
   })
 }
 
+function annotatedElements(request: AgentRequest): DescribedElement[] {
+  return request.annotations.flatMap((annotation) =>
+    annotation.targets.filter((target) => target.kind === 'element')
+  )
+}
+
 function checkTarget(
   address: ReplyAddress | null,
+  request: AgentRequest,
   nodes: readonly HostNode[]
 ): Checked<TargetAddress> {
   if (!address || address.kind === 'control') return found(address)
   if (address.kind === 'setting') return checkSetting(address, nodes)
+  if (address.kind === 'element') {
+    const element = annotatedElements(request).find(
+      (candidate) => candidate.elementId === address.elementId
+    )
+    return element
+      ? found<TargetAddress>(element)
+      : missing(problems.unknownElement(address.elementId))
+  }
   const node = nodes.find((candidate) => candidate.id === address.nodeId)
   if (!node) return missing(problems.unknownNode(address.nodeId))
   return found({ kind: 'node', nodeId: node.id })
@@ -96,6 +112,7 @@ function checkWait(
 }
 
 function accepts(setting: HostSetting, value: SettingValue): boolean {
+  if (setting.options) return setting.options.includes(value)
   return setting.value === undefined || typeof setting.value === typeof value
 }
 
@@ -117,7 +134,7 @@ function checkStep(
   request: AgentRequest,
   nodes: readonly HostNode[]
 ): GuidanceStep {
-  const target = checkTarget(step.target, nodes)
+  const target = checkTarget(step.target, request, nodes)
   const wait = checkWait(step.waitFor, nodes)
   const offer = checkOffer(step.offerEdit, nodes)
   const answersKnownComment = request.annotations.some(

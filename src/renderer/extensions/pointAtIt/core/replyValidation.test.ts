@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AgentReply, AgentRequest, ReplyStep } from './agentReply'
-import { settingAddress, textToImageNodes } from './fakePointHost'
+import { hostNode, settingAddress, textToImageNodes } from './fakePointHost'
 import { problems } from './messages'
 import { checkReply } from './replyValidation'
 
@@ -12,6 +12,26 @@ const request: AgentRequest = {
   requestId: 'request-1',
   annotations: [
     { id: 'comment-1', label: 'Save Image', comment: 'wider', targets: [] }
+  ]
+}
+
+const runButton = {
+  kind: 'element' as const,
+  elementId: 'element-1',
+  label: 'Run',
+  role: 'button',
+  context: '',
+  testId: 'queue-button'
+}
+const elementRequest: AgentRequest = {
+  requestId: 'request-2',
+  annotations: [
+    {
+      id: 'comment-1',
+      label: 'Run',
+      comment: 'what is this?',
+      targets: [runButton]
+    }
   ]
 }
 
@@ -81,6 +101,53 @@ describe('checkReply', () => {
         offerEdit: null,
         problems: [problems.valueNotAccepted('width', 'wide')]
       }
+    ])
+  })
+
+  it('L-03: removes an offered value that is not one of the setting’s options', () => {
+    const sampler = hostNode({
+      id: 3,
+      type: 'KSampler',
+      title: 'KSampler',
+      rect: null,
+      settings: [
+        { name: 'sampler_name', value: 'euler', options: ['euler', 'dpmpp_2m'] }
+      ]
+    })
+    const samplerName = settingAddress(sampler.id, 'sampler_name')
+    const offer = { target: samplerName, value: 'fastest' }
+    const reply: AgentReply = {
+      steps: [step({ target: samplerName, waitFor: null, offerEdit: offer })]
+    }
+
+    expect(checkReply(reply, request, [sampler])).toMatchObject([
+      {
+        target: samplerName,
+        offerEdit: null,
+        problems: [problems.valueNotAccepted('sampler_name', 'fastest')]
+      }
+    ])
+  })
+
+  it('E-05: lets a step point at an interface element a comment of the batch is pinned on', () => {
+    const element = { kind: 'element' as const, elementId: 'element-1' }
+    const reply: AgentReply = {
+      steps: [step({ target: element, waitFor: null, offerEdit: null })]
+    }
+
+    expect(checkReply(reply, elementRequest, nodes)).toMatchObject([
+      { target: runButton, problems: [] }
+    ])
+  })
+
+  it('E-05: keeps a step that names any other interface element, without a target, and says so', () => {
+    const element = { kind: 'element' as const, elementId: 'element-7' }
+    const reply: AgentReply = {
+      steps: [step({ target: element, waitFor: null, offerEdit: null })]
+    }
+
+    expect(checkReply(reply, elementRequest, nodes)).toMatchObject([
+      { target: null, problems: [problems.unknownElement('element-7')] }
     ])
   })
 
