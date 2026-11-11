@@ -390,7 +390,7 @@ describe(useMissingModelDownloadStore, () => {
     expect(refreshMissingModels).not.toHaveBeenCalled()
   })
 
-  it('forgets failed downloads and still resets when unsubscribing throws', () => {
+  it('forgets failed downloads and reports an unsubscribe that throws', () => {
     installDesktopHost()
     window.__comfyDesktop2 = {
       ...window.__comfyDesktop2,
@@ -405,8 +405,13 @@ describe(useMissingModelDownloadStore, () => {
     const stopTracking = store.startTracking()
     emitHostProgress('error')
 
-    expect(stopTracking).toThrow('unsubscribe failed')
+    stopTracking()
+
     expect(store.stateFor(model).status).toBe('idle')
+    expect(reportError).toHaveBeenCalledWith(new Error('unsubscribe failed'), {
+      surface: 'platform',
+      errorType: 'error_stopping_model_download_tracking'
+    })
   })
 
   it('treats received bytes beyond the total as an unknown total', () => {
@@ -421,5 +426,41 @@ describe(useMissingModelDownloadStore, () => {
     })
 
     expect(store.stateFor(model)).toMatchObject({ fraction: 0.4 })
+  })
+  it('follows a running job from another source once a request joins it', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+    emitHostProgress('downloading', {
+      id: 'template-job',
+      url: 'https://huggingface.co/other/repo/resolve/main/model.safetensors'
+    })
+
+    expect(store.stateFor(model).status).toBe('downloading')
+  })
+
+  it('keeps an ended job ended when a late event carries no job id', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('error', { id: undefined })
+    emitHostProgress('downloading', { id: undefined })
+
+    expect(store.stateFor(model).status).toBe('failed')
+  })
+
+  it('offers the download again after the user cancels it', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+    emitHostProgress('pending')
+    emitHostProgress('cancelled')
+
+    expect(store.stateFor(model).status).toBe('idle')
   })
 })

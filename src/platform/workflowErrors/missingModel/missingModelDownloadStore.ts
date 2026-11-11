@@ -24,13 +24,14 @@ export type MissingModelDownloadState =
       fraction: number | null
     }
   | { status: 'done' }
-  | { status: 'failed'; reason: 'error' | 'cancelled' }
+  | { status: 'failed' }
 
 interface HostDownload {
   name: string
   url: string
   state: MissingModelDownloadState
   jobId?: string
+  jobEnded: boolean
   request?: number
   endedJobs: ReadonlySet<string>
 }
@@ -74,8 +75,9 @@ function toDownloadState(
     case 'completed':
       return { status: 'done' }
     case 'error':
+      return { status: 'failed' }
     case 'cancelled':
-      return { status: 'failed', reason: progress.status }
+      return IDLE
     default:
       return undefined
   }
@@ -89,8 +91,8 @@ function isActive(state: MissingModelDownloadState): boolean {
   )
 }
 
-function isTerminal(state: MissingModelDownloadState): boolean {
-  return state.status === 'done' || state.status === 'failed'
+function isHostTerminal(status: ComfyDownloadProgress['status']): boolean {
+  return status === 'completed' || status === 'error' || status === 'cancelled'
 }
 
 function acceptsEvent(
@@ -99,11 +101,15 @@ function acceptsEvent(
 ): boolean {
   if (!current) return true
   if (progress.id === undefined) {
-    if (current.state.status === 'done') return false
+    if (current.jobEnded && !isHostTerminal(progress.status)) return false
   } else if (current.endedJobs.has(progress.id)) {
     return false
   }
-  return !isActive(current.state) || current.url === progress.url
+  return (
+    !isActive(current.state) ||
+    current.state.status === 'requested' ||
+    current.url === progress.url
+  )
 }
 
 /** Desktop 2 model downloads, mirrored by destination wherever they started. */
@@ -173,8 +179,9 @@ export const useMissingModelDownloadStore = defineStore(
       if (!acceptsEvent(current, progress)) return
 
       const jobId = progress.id ?? current?.jobId
+      const jobEnded = isHostTerminal(progress.status)
       const endedJobs =
-        isTerminal(state) && jobId !== undefined
+        jobEnded && jobId !== undefined
           ? new Set([...(current?.endedJobs ?? []), jobId])
           : (current?.endedJobs ?? new Set<string>())
       const isMissing = !!missingModelStore.missingModelCandidates?.some(
@@ -188,6 +195,7 @@ export const useMissingModelDownloadStore = defineStore(
         url: progress.url,
         state: state.status === 'done' && !isMissing ? IDLE : state,
         jobId,
+        jobEnded,
         endedJobs
       })
 
@@ -211,6 +219,11 @@ export const useMissingModelDownloadStore = defineStore(
         tracking = false
         try {
           stop()
+        } catch (error) {
+          reportError(error, {
+            surface: 'platform',
+            errorType: 'error_stopping_model_download_tracking'
+          })
         } finally {
           resetWhere(() => true)
         }
@@ -224,7 +237,7 @@ export const useMissingModelDownloadStore = defineStore(
         return
       downloads.set(key, {
         ...current,
-        state: { status: 'failed', reason: 'error' }
+        state: { status: 'failed' }
       })
     }
 
@@ -254,6 +267,7 @@ export const useMissingModelDownloadStore = defineStore(
         name: model.name,
         url: model.url,
         state: { status: 'requested' },
+        jobEnded: false,
         request,
         endedJobs: current?.endedJobs ?? new Set<string>()
       })
