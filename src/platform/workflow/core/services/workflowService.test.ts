@@ -812,6 +812,219 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('keeps the current workflow when the open is superseded while its graph loads', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const loading = createModeTestWorkflow({
+        path: 'workflows/linked.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = current
+      vi.spyOn(loading, 'load').mockImplementation(async () => {
+        loading.originalContent = '{}'
+        loading.content = '{}'
+        loading.changeTracker = createMockChangeTracker()
+        return loading
+      })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, workflow, options) => {
+          currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          workflows.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
+        }
+      )
+
+      const opened = await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(opened).toBe(false)
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(loading.isLoaded).toBe(false)
+    })
+
+    it('keeps the saved baseline of a modified workflow kept by a superseded open', async () => {
+      const workflows = useWorkflowStore()
+      const saved = makeWorkflowData({ saved: true })
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, saved)
+      current.changeTracker.activeState = makeWorkflowData({
+        saved: true,
+        unsavedEdit: true
+      })
+      current.isModified = true
+      workflows.activeWorkflow = current
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          invalidateCanvasTracker()
+          if (workflow === loading) currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(current.changeTracker.initialState).toBe(saved)
+      expect(current.isModified).toBe(true)
+    })
+
+    it('keeps an uncaptured edit modified when a superseded open skips restoring its workflow', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      current.isModified = true
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, _workflow, options) => {
+          currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(current.isModified).toBe(true)
+    })
+
+    it('keeps a workflow pasted while a superseded open was loading', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const pasted = createModeTestWorkflow({ path: 'workflows/pasted.json' })
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      let currentRequest = true
+      vi.mocked(app.loadGraphData)
+        .mockImplementationOnce(async () => {
+          invalidateCanvasTracker()
+          currentRequest = false
+          return false
+        })
+        .mockImplementationOnce(
+          async (_data, _clean, _restore, workflow, options) => {
+            workflows.activeWorkflow = pasted
+            bindCanvasTracker(pasted.changeTracker)
+            if (options?.isCurrent?.() === false) return false
+            workflows.activeWorkflow = workflow as LoadedComfyWorkflow
+            return true
+          }
+        )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(pasted.path)
+      expect(isCanvasOwner(pasted.changeTracker)).toBe(true)
+    })
+
+    it('keeps the outputs and previews of a workflow kept by a superseded open', async () => {
+      const workflows = useWorkflowStore()
+      const nodeOutputs = useNodeOutputStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      const output = {
+        images: [{ filename: 'out.png', type: 'output' as const }]
+      }
+      nodeOutputs.nodeOutputs = { '1': output }
+      nodeOutputs.nodePreviewImages = { '1': ['/api/view?filename=live.png'] }
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          useWorkflowService().beforeLoadNewGraph()()
+          nodeOutputs.resetAllOutputsAndPreviews()
+          if (workflow === loading) currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(nodeOutputs.nodeOutputs).toEqual({ '1': output })
+      expect(nodeOutputs.nodePreviewImages).toEqual({
+        '1': ['/api/view?filename=live.png']
+      })
+    })
+
+    it('keeps a preview that arrived while a superseded open was loading', async () => {
+      const workflows = useWorkflowStore()
+      const nodeOutputs = useNodeOutputStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      workflows.activeWorkflow = current
+      bindCanvasTracker(current.changeTracker)
+      nodeOutputs.nodePreviewImages = {
+        '1': ['/api/view?filename=older.png'],
+        '2': ['/api/view?filename=other.png']
+      }
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          useWorkflowService().beforeLoadNewGraph()()
+          nodeOutputs.resetAllOutputsAndPreviews()
+          if (workflow === loading) {
+            nodeOutputs.nodePreviewImages = {
+              '1': ['/api/view?filename=newer.png']
+            }
+            currentRequest = false
+          }
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(nodeOutputs.nodePreviewImages).toEqual({
+        '1': ['/api/view?filename=newer.png'],
+        '2': ['/api/view?filename=other.png']
+      })
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
@@ -2503,6 +2716,41 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('openWorkflow when the stored file cannot be fetched', () => {
+    it('reports the failed read without the file name', async () => {
+      const workflow = new ComfyWorkflowClass({
+        path: 'workflows/Customer Jane Doe.json',
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(api, 'getUserData').mockResolvedValue(
+        new Response(null, {
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
+
+      await expect(useWorkflowService().openWorkflow(workflow)).rejects.toThrow(
+        '500 Internal Server Error'
+      )
+
+      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'workflow_load_failure'
+      })
+      const delivered = reportErrorMock.mock.calls.flatMap(([error]) => [
+        String(error?.message),
+        String(error?.cause),
+        JSON.stringify(error?.cause ?? null),
+        JSON.stringify(error)
+      ])
+      expect(delivered).not.toContainEqual(
+        expect.stringContaining('Customer Jane Doe')
+      )
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 

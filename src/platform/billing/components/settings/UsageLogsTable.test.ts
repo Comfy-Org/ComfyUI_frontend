@@ -12,6 +12,7 @@ import {
 } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { BillingEventsResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -22,6 +23,7 @@ import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspa
 import UsageLogsTable from './UsageLogsTable.vue'
 
 vi.mock(import('@/services/customerEventsService'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -269,6 +271,10 @@ describe('UsageLogsTable', () => {
 
   describe('data rendering', () => {
     describe('member column', () => {
+      beforeEach(() => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      })
+
       const withMember = (member: Record<string, unknown>) =>
         makeEventsResponse([
           {
@@ -290,6 +296,20 @@ describe('UsageLogsTable', () => {
         expect(
           screen.queryByRole('columnheader', { name: 'Member' })
         ).not.toBeInTheDocument()
+      })
+
+      it('keeps the 1.60 columns when the new UX is off even with served member info', async () => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
+          withMember({ member_display_name: 'Ada Lovelace' })
+        )
+
+        await renderLoaded()
+
+        expect(
+          screen.queryByRole('columnheader', { name: 'Member' })
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText('Ada Lovelace')).not.toBeInTheDocument()
       })
 
       it('shows the display name, with a dash for rows without one', async () => {
