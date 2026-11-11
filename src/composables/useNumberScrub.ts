@@ -5,7 +5,6 @@ import type { MaybeRefOrGetter } from 'vue'
 export function useNumberScrub(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
   {
-    value,
     min,
     max,
     step,
@@ -14,7 +13,6 @@ export function useNumberScrub(
     onScrub,
     onClick
   }: {
-    value: MaybeRefOrGetter<number>
     min: MaybeRefOrGetter<number>
     max: MaybeRefOrGetter<number>
     step: MaybeRefOrGetter<number>
@@ -47,11 +45,7 @@ export function useNumberScrub(
         unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
       }
       dragged = true
-      if (
-        !Number.isFinite(startValue) ||
-        Math.abs(startValue) > Number.MAX_SAFE_INTEGER
-      )
-        return
+      if (!(Math.abs(startValue) <= Number.MAX_SAFE_INTEGER)) return
       const increment = toValue(step)
       const delta = -swipe.distanceX.value * unitsPerPixel
       const offset =
@@ -60,7 +54,7 @@ export function useNumberScrub(
         toValue(max),
         Math.max(toValue(min), startValue + offset)
       )
-      if (nextValue !== toValue(value)) onScrub(nextValue)
+      onScrub(nextValue)
     }
   })
 

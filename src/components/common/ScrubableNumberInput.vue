@@ -173,7 +173,6 @@ function startTextEdit() {
 }
 
 useNumberScrub(scrubElement, {
-  value: modelValue,
   min: () => Math.max(min, -Number.MAX_SAFE_INTEGER),
   max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
   step: () => step,
