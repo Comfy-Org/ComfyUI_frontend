@@ -185,10 +185,7 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     expect(revokeObjectURL).not.toHaveBeenCalledWith(otherUrl)
   })
 
-  describe('restoring into a graph without the preview subgraph', () => {
-    // A frame for a subgraph node can be resolved against another workflow's
-    // graph while that graph is briefly on the canvas, so it lands under a
-    // subgraph id the restored workflow does not have.
+  describe('restoring a preview resolved against another workflow into a graph without its subgraph', () => {
     beforeEach(() => {
       vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(
         fromPartial<LGraph>({
@@ -227,7 +224,6 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
       const keptLocator = createNodeLocatorId(KEPT_SUBGRAPH, 6)
       const otherLocator = createNodeLocatorId(OTHER_SUBGRAPH, 6)
 
-      // One frame fans out to the subgraph node and its container on the root.
       store.setNodePreviewsByNodeId(createMockNode(5).id, [sharedUrl])
       store.setNodePreviewsByLocatorId(otherLocator, [sharedUrl])
       store.setNodePreviewsByLocatorId(keptLocator, [sharedUrl])
