@@ -107,7 +107,7 @@
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-primary"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
             <i
               class="icon-[lucide--search] text-sm text-muted-foreground"
@@ -150,7 +150,7 @@
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
                     'hover:bg-secondary data-highlighted:bg-secondary',
-                    'data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30'
+                    'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
                   )
                 "
               >

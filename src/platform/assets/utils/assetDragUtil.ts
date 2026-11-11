@@ -87,7 +87,7 @@ export function startAssetDrag(
         }
       : {
           filename: asset.name,
-          subfolder: getOutputSubfolder(asset.user_metadata),
+          subfolder: getOutputSubfolder(asset),
           type: isGeneratedTempOutput(asset)
             ? 'temp'
             : getAssetType(asset.tags),

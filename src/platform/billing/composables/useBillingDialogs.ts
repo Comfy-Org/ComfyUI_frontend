@@ -18,6 +18,8 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
 import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -94,7 +96,9 @@ export function useBillingDialogs() {
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: AddCreditsDialogContent,
+      component: useFeatureFlags().flags.billingNewUxEnabled
+        ? AddCreditsDialogContent
+        : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
         headless: true
