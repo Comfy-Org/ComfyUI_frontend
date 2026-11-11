@@ -2,6 +2,9 @@
   "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
   "references": [
     {
+      "path": "../theme-core/tsconfig.declarations.json"
+    },
+    {
       "path": "../graph-model/tsconfig.declarations.json"
     },
     {

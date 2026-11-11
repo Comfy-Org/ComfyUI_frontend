@@ -32,6 +32,7 @@ export enum ServerFeatureFlag {
   LOCAL_WEB_SSO = 'local_web_sso',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
+  BILLING_NEW_UX_ENABLED = 'billing_new_ux_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',

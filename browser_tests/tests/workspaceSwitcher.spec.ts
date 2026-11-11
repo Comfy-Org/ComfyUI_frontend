@@ -145,6 +145,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('credits-menu-item').hover()
     await expect(page.getByTestId('add-credits-button')).toBeEnabled()
     const longWorkspaceCapabilities = page.waitForResponse(
       (response) =>
@@ -161,6 +162,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.waitForAppReady()
 
     await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('credits-menu-item').hover()
     await expect(page.getByTestId('add-credits-button')).toBeDisabled()
   })
 

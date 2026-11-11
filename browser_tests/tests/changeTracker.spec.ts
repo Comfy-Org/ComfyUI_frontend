@@ -494,8 +494,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
 
       const node = await comfyPage.vueNodes.getFixtureByTitle('Empty Latent')
-      const width = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
-      const { input } = comfyPage.vueNodes.getInputNumberControls(width)
+      const input = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
 
       await input.fill('40')
       await node.title.click()
