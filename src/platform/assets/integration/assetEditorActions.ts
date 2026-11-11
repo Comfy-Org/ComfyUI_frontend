@@ -49,7 +49,7 @@ export function useAssetEditorActions() {
       : getAssetType(asset, 'input')
     const annotated = createAnnotatedPath({
       filename: getAssetStoredFilename(asset),
-      subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
+      subfolder: getOutputSubfolder(asset) ?? '',
       type: isResultItemType(assetType) ? assetType : undefined
     })
     const widget = node.widgets?.find((w) => w.name === widgetName)

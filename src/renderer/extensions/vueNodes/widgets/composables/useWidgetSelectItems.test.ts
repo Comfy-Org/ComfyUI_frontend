@@ -1391,6 +1391,32 @@ describe('useWidgetSelectItems', () => {
     )
   })
 
+  it('keeps same-named local outputs apart by the subfolder in their loader path', async () => {
+    mockMediaAssets.items.value = [
+      'hdr_00001.exr',
+      'renders/hdr_00001.exr'
+    ].map((loaderPath) =>
+      fromPartial<AssetItem>({
+        id: loaderPath,
+        name: 'hdr_00001.exr',
+        loader_path: loaderPath,
+        tags: ['output'],
+        user_metadata: {}
+      })
+    )
+
+    const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+    )
+    filterSelected.value = 'outputs'
+    await nextTick()
+
+    expect(dropdownItems.value.map((item) => item.name)).toEqual([
+      'hdr_00001.exr [output]',
+      'renders/hdr_00001.exr [output]'
+    ])
+  })
+
   describe('HDR image outputs', () => {
     it.for(['sky_00001.exr', 'sky_00001.hdr'])(
       'lists %s under image outputs with its stored preview',

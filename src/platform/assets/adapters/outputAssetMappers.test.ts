@@ -156,6 +156,48 @@ describe('unflattenOutputAssets', () => {
     ])
   })
 
+  it.for([
+    { loaderPath: 'hdr_00001.exr', hash: undefined, subfolder: '' },
+    {
+      loaderPath: 'renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'renders'
+    },
+    {
+      loaderPath: 'archive/renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'archive/renders'
+    },
+    { loaderPath: 'renders/hdr_00001.exr', hash: 'blake3:abc', subfolder: '' }
+  ])(
+    'reads the subfolder "$subfolder" from a local output at $loaderPath with hash $hash',
+    ({ loaderPath, hash, subfolder }) => {
+      const [grouped] = unflattenOutputAssets([
+        {
+          id: 'output-id',
+          name: 'hdr_00001.exr',
+          hash,
+          loader_path: loaderPath,
+          job_id: 'job-id',
+          size: 1,
+          tags: ['output'],
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          user_metadata: {}
+        }
+      ] satisfies AssetItem[])
+      const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+      expect(metadata?.subfolder).toBe(subfolder)
+      expect(
+        metadata?.allOutputs?.map((output) => ({
+          filename: output.filename,
+          subfolder: output.subfolder
+        }))
+      ).toEqual([{ filename: 'hdr_00001.exr', subfolder }])
+    }
+  )
+
   it('keeps the representative asset id apart from same-named outputs', () => {
     const asset = {
       job_id: 'job-id',

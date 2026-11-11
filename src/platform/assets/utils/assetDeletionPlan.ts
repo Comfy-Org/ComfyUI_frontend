@@ -99,7 +99,7 @@ export function buildAssetDeletionPlan(
           isGeneratedTempOutput(asset)
             ? 'temp'
             : (stored?.type ?? getAssetType(asset, 'input')),
-          getOutputSubfolder(asset.user_metadata),
+          getOutputSubfolder(asset),
           asset.hash ?? stored?.hash
         )
       }

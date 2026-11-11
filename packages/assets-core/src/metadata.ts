@@ -272,10 +272,15 @@ export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.hash ?? asset.name
 }
 export function getOutputSubfolder(
-  userMetadata: Record<string, unknown> | undefined
+  asset: Pick<AssetItem, 'hash' | 'loader_path' | 'user_metadata'>
 ): string | undefined {
-  const subfolder = userMetadata?.subfolder
-  return typeof subfolder === 'string' ? subfolder : undefined
+  const subfolder = asset.user_metadata?.subfolder
+  if (typeof subfolder === 'string') return subfolder
+  if (asset.hash || !asset.loader_path) return undefined
+  const separatorIndex = asset.loader_path.lastIndexOf('/')
+  return separatorIndex > 0
+    ? asset.loader_path.slice(0, separatorIndex)
+    : undefined
 }
 
 export function getAssetType(
