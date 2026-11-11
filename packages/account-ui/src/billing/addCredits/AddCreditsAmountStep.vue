@@ -1,5 +1,5 @@
 <template>
-  <div :class="cn('flex flex-col gap-4 p-4', ui.body)">
+  <div :class="cn('flex min-h-0 flex-col gap-4 overflow-y-auto p-4', ui.body)">
     <slot name="description" />
     <RadioGroupRoot
       :model-value="selectedPreset"

@@ -3,15 +3,19 @@
     ref="root"
     :class="
       cn(
-        'flex w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
+        'flex max-h-[calc(100dvh-2rem)] min-h-0 w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
         ui.root
       )
     "
-    :style="{ marginTop: `${growth}px` }"
+    :style="{ transform: `translateY(${growth / 2}px)` }"
     data-testid="add-credits-dialog"
     :data-step="state.step"
   >
-    <div :class="cn('flex items-center justify-between px-4 pt-4', ui.header)">
+    <div
+      :class="
+        cn('flex shrink-0 items-center justify-between px-4 pt-4', ui.header)
+      "
+    >
       <component
         :is="titleAs"
         :class="cn('m-0 text-base font-normal', ui.title)"
@@ -265,6 +269,7 @@ useResizeObserver(root, ([entry]) => {
   height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
   defaultHeight.value ??= height.value
 })
+// A transform anchors the top without spending the height the host caps.
 const growth = computed(() => {
   if (defaultHeight.value === undefined) return 0
   const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value

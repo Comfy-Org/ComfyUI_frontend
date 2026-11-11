@@ -51,7 +51,7 @@ import {
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -76,7 +76,11 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'),
+  () =>
+    import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
+)
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -459,6 +463,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
     expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
 
+    // One denominator: every phase of a top-up must carry the same journey.
     const journeyIds = new Set(
       (
         vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
@@ -484,6 +489,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     )
 
+    // A different journey takes the slot while the request is pending, so the
+    // response must not bind to whatever happens to be active when it lands.
     clearCheckoutJourney()
     const replacement = resolveCheckoutJourney({
       actorUid: 'user-1',
@@ -1903,6 +1910,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
+  // The server holds the invoice open and refuses a replacement purchase while
+  // it is, so a restart here would be rejected. Say what is true instead, and
+  // never offer an action the server will turn down.
   it('explains a top-up parked with no link instead of offering a restart', async () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -1936,6 +1946,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(useBillingOperationStore().dismissOperation).not.toHaveBeenCalled()
   })
 
+  // Reachable whenever a purchase is submitted while the previous operation is
+  // still open — after Start over on a failed challenge, or from a second tab.
   it('names the still-open purchase when the server refuses a replacement', async () => {
     vi.mocked(mockBillingContext().topup).mockRejectedValue(
       new WorkspaceApiError('conflict', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
@@ -2232,6 +2244,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
+  // Asserting the whole projected collection rather than one stage: a source
+  // dropped from any single emit site leaves the others green, and a funnel
+  // whose terminal events are attributed while its `started` is not reads as
+  // a conversion cliff rather than a gap.
   it.for([
     { outcome: 'completed', stages: ['intent', 'started', 'succeeded'] },
     { outcome: 'failed', stages: ['intent', 'started', 'failed'] },
@@ -2261,6 +2277,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
   )
 
+  // A real payment usually settles on the poller, not synchronously, so this
+  // hand-off is what carries the source onto the poller's own terminal events.
   it('hands the opening surface to the poller for a pending top-up', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')
@@ -2280,6 +2298,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  // Completing out of band is the expected outcome here — the copy sends the
+  // customer to their bank — and the marker is what refreshes the balance when
+  // they come back, so neither exit may discard it.
   it.for([{ control: 'OK' }, { control: 'Close' }])(
     'keeps the pending top-up marker when leaving a parked purchase via $control',
     async ({ control }) => {
