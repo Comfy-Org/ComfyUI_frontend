@@ -84,13 +84,17 @@ describe('getKeepAliveBounds', () => {
 })
 
 describe('useViewportKeepAlive', () => {
-  it('keeps every node active below the large-graph threshold', () => {
-    const { activeNodeIds } = setup({
+  it('keeps every node active below the large-graph threshold', async () => {
+    const { activeNodeIds, nodes } = setup({
       near: { x: 0, y: 0, width: 100, height: 100 },
       far: { x: 50_000, y: 0, width: 100, height: 100 }
     })
-
     expect(activeNodeIds.value).toEqual(new Set(['near', 'far']))
+
+    nodes.value = [...nodes.value, nodeData('added')]
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(activeNodeIds.value).toEqual(new Set(['near', 'far', 'added']))
   })
 
   it('keeps only buffered, unknown, and invalid nodes active in large graphs', () => {

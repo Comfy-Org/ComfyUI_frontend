@@ -413,7 +413,7 @@ function invalidateNodeBoxCache(): void {
 }
 
 const { pinnedNodeIds } = useViewportKeepAlivePins({
-  getRoot: () => transformPaneRef.value?.element ?? null,
+  getRoot: () => vueNodeDropTarget.value,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
 })
 const { activeNodeIds } = useViewportKeepAlive({

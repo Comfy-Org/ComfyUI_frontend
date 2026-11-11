@@ -3,7 +3,7 @@ import {
   useMutationObserver,
   useThrottleFn
 } from '@vueuse/core'
-import { computed, nextTick, shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -103,7 +103,7 @@ export function useViewportKeepAlivePins({
     () => queueMicrotask(refreshLinkDragSources)
   )
 
-  void nextTick(refreshLiveState)
+  watch(getRoot, refreshLiveState, { immediate: true, flush: 'post' })
 
   const pinnedNodeIds = computed(() => {
     const nodeIds = new Set<NodeId>()

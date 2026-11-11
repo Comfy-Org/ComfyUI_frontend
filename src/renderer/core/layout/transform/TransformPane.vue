@@ -40,8 +40,6 @@ const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
 
 const transformPaneRef = useTemplateRef('transformPaneRef')
 
-defineExpose({ element: transformPaneRef })
-
 /**
  * Apply transform style and will-change class via direct DOM mutation
  * instead of reactive template bindings (:style / :class).
