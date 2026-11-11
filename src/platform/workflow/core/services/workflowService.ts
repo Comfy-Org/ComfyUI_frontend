@@ -543,6 +543,45 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
+  function loadOpenedGraph(
+    workflow: ComfyWorkflow,
+    {
+      force,
+      isCurrent,
+      keepSavedBaseline,
+      loadFromRemote,
+      navigationIntentId
+    }: {
+      force?: boolean
+      isCurrent?: () => boolean
+      keepSavedBaseline?: boolean
+      loadFromRemote: boolean
+      navigationIntentId: number
+    }
+  ) {
+    workflow.changeTracker?.prepareForSave()
+    const graphLoadIsCurrent = workflowStore.isActive(workflow)
+      ? undefined
+      : isCurrent
+    const load = () =>
+      useApp().loadGraphData(
+        toRaw(workflow.activeState) as ComfyWorkflowJSON,
+        true,
+        true,
+        workflow,
+        {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans: !loadFromRemote && !force,
+          workflowNavigationId: navigationIntentId,
+          isCurrent: graphLoadIsCurrent
+        }
+      )
+    return keepSavedBaseline && workflow.isModified
+      ? keepingSavedBaseline(workflow, load)
+      : load()
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
@@ -588,26 +627,15 @@ export const useWorkflowService = () => {
           return false
         }
 
-        workflow.changeTracker?.prepareForSave()
-        const load = () =>
-          useApp().loadGraphData(
-            toRaw(workflow.activeState) as ComfyWorkflowJSON,
-            true,
-            true,
-            workflow,
-            {
-              checkForRerouteMigration: false,
-              deferWarnings: true,
-              skipAssetScans: !loadFromRemote && !options.force,
-              workflowNavigationId: navigationIntentId
-            }
-          )
-        const loaded =
-          options.keepSavedBaseline && workflow.isModified
-            ? await keepingSavedBaseline(workflow, load)
-            : await load()
+        const loaded = await loadOpenedGraph(workflow, {
+          ...options,
+          loadFromRemote,
+          navigationIntentId
+        })
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          if (loadFromRemote && options.isCurrent?.() === false)
+            discardSupersededLoad(workflow, wasModified)
           await restoreRetainedWorkflow(workflow)
           return false
         }

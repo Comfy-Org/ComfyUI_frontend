@@ -703,6 +703,51 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
+    it('does not configure or activate a graph whose load stopped being current during beforeConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        { ...createWorkflowGraphData(), extra: { loadedFrom: 'superseded' } },
+        false,
+        true,
+        null,
+        { isCurrent: () => current, workflowNavigationId: 9 }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBeUndefined()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
