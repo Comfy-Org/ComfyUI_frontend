@@ -371,6 +371,17 @@ const isAsyncFunction = (callback: unknown): boolean =>
 
 type OwnedNodeHandles = ReturnType<typeof createNodeHandles>
 
+function ownerOf(graph: LGraph): () => LGraph | undefined {
+  const generation = currentDocumentGeneration()
+  const root = new WeakRef(graph.rootGraph)
+  const { id } = graph
+  return () => {
+    if (currentDocumentGeneration() !== generation) return undefined
+    const live = root.deref()
+    return live?.id === id ? live : live?.subgraphs.get(id)
+  }
+}
+
 function createOwnedNodeHandles(
   getOwner: () => LGraph | undefined,
   namespace: string,
@@ -439,25 +450,22 @@ export function createGraphApi(
   )
   const ownedHandles = new WeakMap<
     LGraph,
-    { readonly generation: number; readonly handles: OwnedNodeHandles }
+    {
+      readonly generation: number
+      readonly graphId: string
+      readonly handles: OwnedNodeHandles
+    }
   >()
   const nodeHandles = (): OwnedNodeHandles => {
     const graph = getGraph()
     if (!graph) return detachedHandles
     const generation = currentDocumentGeneration()
     let owned = ownedHandles.get(graph)
-    if (owned?.generation !== generation) {
-      const owner = new WeakRef(graph)
+    if (owned?.generation !== generation || owned.graphId !== graph.id) {
       owned = {
         generation,
-        handles: createOwnedNodeHandles(
-          () =>
-            currentDocumentGeneration() === generation
-              ? owner.deref()
-              : undefined,
-          namespace,
-          getResolvers
-        )
+        graphId: graph.id,
+        handles: createOwnedNodeHandles(ownerOf(graph), namespace, getResolvers)
       }
       ownedHandles.set(graph, owned)
     }
@@ -702,15 +710,20 @@ function createGraphScopeHandles(
   getResolvers: () => ReadonlyMap<string, Resolver>,
   getSuppliers: () => ReadonlyMap<string, Supplier>
 ) {
-  const byGraph = new WeakMap<LGraph, GraphScopeHandle>()
+  const byGraph = new WeakMap<
+    LGraph,
+    { readonly generation: number; readonly handle: GraphScopeHandle }
+  >()
 
   return function graphScopeHandle(graph: LGraph): GraphScopeHandle {
-    const id = graph.id
+    const generation = currentDocumentGeneration()
     const existing = byGraph.get(graph)
-    if (existing) return existing
+    if (existing?.generation === generation) return existing.handle
 
+    const { id } = graph
+    const owner = ownerOf(graph)
     const scoped = createGraphApi(
-      () => graph,
+      owner,
       `graph:${id}`,
       getResolvers,
       getSuppliers
@@ -718,7 +731,8 @@ function createGraphScopeHandles(
     const handle: GraphScopeHandle = Object.freeze({
       id,
       get name() {
-        const name = 'name' in graph ? graph.name : undefined
+        const live = owner()
+        const name = live && 'name' in live ? live.name : undefined
         return typeof name === 'string' ? name : undefined
       },
       nodes: () => scoped.nodes(),
@@ -726,7 +740,7 @@ function createGraphScopeHandles(
       groups: () => scoped.groups(),
       resolvedSupplies: () => scoped.resolvedSupplies()
     })
-    byGraph.set(graph, handle)
+    byGraph.set(graph, { generation, handle })
     return handle
   }
 }

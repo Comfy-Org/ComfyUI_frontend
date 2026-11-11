@@ -225,6 +225,70 @@ describe('comfy API root', () => {
       )
     })
 
+    it('retires a kept handle when its graph is cleared, until undo restores it', () => {
+      const comfy = createComfyApi(() => graph)
+      const dispose = comfy.defs.define({ type: 'ClearProbe' })
+
+      try {
+        const first = LiteGraph.createNode('ClearProbe')!
+        first.title = 'before clear'
+        graph.add(first)
+        const kept = comfy.graph.node(String(first.id))!
+        const beforeClear = graph.serialize()
+
+        graph.clear()
+        const next = LiteGraph.createNode('ClearProbe')!
+        next.title = 'after clear'
+        graph.add(next)
+
+        expect(next.id).toBe(first.id)
+        expect(kept.isDeleted).toBe(true)
+        expect(() => kept.setTitle('retargeted')).toThrow()
+        expect(next.title).toBe('after clear')
+
+        graph.configure(beforeClear)
+
+        expect(kept.isDeleted).toBe(false)
+        expect(kept.getTitle()).toBe('before clear')
+      } finally {
+        dispose()
+      }
+    })
+
+    it('keeps handles into a subgraph when undo rebuilds it', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+      let active: LGraph = subgraph
+      const comfy = createComfyApi(() => active)
+      const dispose = comfy.defs.define({ type: 'RebuiltProbe' })
+
+      try {
+        const inner = LiteGraph.createNode('RebuiltProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+        const kept = comfy.graph.node(String(inner.id))!
+        const scope = comfy.graph
+          .subgraphs()
+          .find(({ id }) => id === subgraph.id)!
+
+        root.configure(root.serialize())
+        const rebuilt = root.subgraphs.get(subgraph.id)!
+        active = rebuilt
+        kept.setTitle('renamed')
+
+        expect(rebuilt).not.toBe(subgraph)
+        expect(kept.isDeleted).toBe(false)
+        expect(rebuilt.getNodeById(inner.id)!.title).toBe('renamed')
+        expect(scope.nodes().map((node) => node.getTitle())).toEqual([
+          'renamed'
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
     it('keeps a handle minted while the new document loads', () => {
       const comfy = createComfyApi(() => graph)
       graph.clear()
