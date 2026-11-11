@@ -106,7 +106,10 @@ export async function fetchOnWebSession(
     return response
   }
   const fresh = await ports.refresh(scope)
-  return fresh ? (await sendAndReport(fresh)).response : response
+  if (!fresh) return response
+  return ports.retriesLapsedSession === true
+    ? (await sendAndReport(fresh)).response
+    : send(fresh)
 }
 
 /** What a signed-in tab's requests need from the web session. */

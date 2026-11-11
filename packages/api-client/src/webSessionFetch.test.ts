@@ -135,6 +135,42 @@ describe('a request the server refuses because the session lapsed', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
+  it('leaves a csrf retry unclassified when recovery is off', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'csrf_invalid', message: 'stale' },
+          { status: 403 }
+        )
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'workspace_access_denied', message: 'refused' },
+          { status: 403 }
+        )
+      )
+    const workspaceDenied = vi.fn()
+
+    const response = await fetchOnWebSession(
+      '/api/billing/capabilities',
+      { method: 'POST', body: '{}' },
+      scopeFor('stale-csrf'),
+      {
+        authorize: createRequestAuthorizer({
+          getWorkspaceToken: async () => 'unused'
+        }),
+        refresh: async () => scopeFor('fresh-csrf'),
+        workspaceDenied,
+        ssoRequired: vi.fn(),
+        retriesLapsedSession: false
+      }
+    )
+
+    expect(response.status).toBe(403)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(workspaceDenied).not.toHaveBeenCalled()
+  })
+
   it.for([
     { code: 'workspace_access_denied', reported: 'workspaceDenied' },
     { code: 'sso_required', reported: 'ssoRequired' }
