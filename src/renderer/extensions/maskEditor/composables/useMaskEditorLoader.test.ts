@@ -197,7 +197,9 @@ describe('useMaskEditorLoader', () => {
     await useMaskEditorLoader().loadFromNode(node)
 
     expect(mockDataStore.inputData).toMatchObject({
-      sourceRef: { filename: 'original.png' }
+      sourceRef: { filename: 'original.png' },
+      baseLayer: { url: expect.stringContaining('filename=original.png') },
+      maskLayer: { url: expect.stringContaining('filename=original.png') }
     })
     expect(requestedUrls.some((url) => url.startsWith('blob:'))).toBe(false)
   })

@@ -11,6 +11,16 @@ export const GRID_IMAGE_NAMES = Array.from(
   (_, i) => `perf_grid_${i}.png`
 )
 
+/** Measurement fields the image preview benchmark logs per phase. */
+export const GRID_LOGGED_FIELDS = [
+  'durationMs',
+  'frameDurationMs',
+  'p95FrameDurationMs',
+  'totalBlockingTimeMs',
+  'taskDurationMs',
+  'heapUsedBytes'
+] as const
+
 /** Uploads one `size`² PNG under each of {@link GRID_IMAGE_NAMES}. */
 export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
   for (const [i, name] of GRID_IMAGE_NAMES.entries()) {

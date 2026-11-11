@@ -1,6 +1,7 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   GRID_IMAGE_NAMES,
+  GRID_LOGGED_FIELDS,
   panSweep,
   uploadGridImages,
   waitForGridImagesDecoded,
@@ -10,15 +11,6 @@ import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
-
-const LOGGED_FIELDS = [
-  'durationMs',
-  'frameDurationMs',
-  'p95FrameDurationMs',
-  'totalBlockingTimeMs',
-  'taskDurationMs',
-  'heapUsedBytes'
-] as const
 
 for (const size of [4096, 256]) {
   test.describe(
@@ -41,19 +33,19 @@ for (const size of [4096, 256]) {
         await waitForGridImagesDecoded(comfyPage)
         const load = await comfyPage.perf.stopMeasuring(label('load'))
         recordMeasurement(load)
-        logMeasurement(label('load'), load, [...LOGGED_FIELDS])
+        logMeasurement(label('load'), load, [...GRID_LOGGED_FIELDS])
 
         await comfyPage.perf.startMeasuring()
         await panSweep(comfyPage)
         const pan = await comfyPage.perf.stopMeasuring(label('pan'))
         recordMeasurement(pan)
-        logMeasurement(label('pan'), pan, [...LOGGED_FIELDS])
+        logMeasurement(label('pan'), pan, [...GRID_LOGGED_FIELDS])
 
         await comfyPage.perf.startMeasuring()
         await zoomSweep(comfyPage)
         const zoom = await comfyPage.perf.stopMeasuring(label('zoom'))
         recordMeasurement(zoom)
-        logMeasurement(label('zoom'), zoom, [...LOGGED_FIELDS])
+        logMeasurement(label('zoom'), zoom, [...GRID_LOGGED_FIELDS])
       })
     }
   )
