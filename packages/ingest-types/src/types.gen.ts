@@ -4303,6 +4303,108 @@ export type DesktopLoginCodeCreateResponse = {
 }
 
 /**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export type BillingHandoffCreateRequest = {
+  /**
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   */
+  workspace_id: string
+  /**
+   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
+   */
+  receiver: 'billing_web' | 'platform'
+  /**
+   * Client-asserted; stages the rollout, not a security boundary.
+   */
+  surface: 'local_web' | 'desktop'
+  /**
+   * Version of the issuing app, for logs.
+   */
+  client_version: string
+}
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export type BillingHandoffCreateResponse = {
+  /**
+   * The receiver's handoff page with the token in the fragment. Open it, never display it.
+   */
+  entry_url: string
+  /**
+   * When the handoff can no longer be exchanged.
+   */
+  expires_at: string
+  /**
+   * Id of the stored handoff, for support and logs.
+   */
+  request_id: string
+}
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export type BillingHandoffExchangeRequest = {
+  /**
+   * The raw handoff token from the entry URL fragment.
+   */
+  token: string
+}
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export type BillingHandoffExchangeResponse = {
+  /**
+   * Bearer for billing routes of the bound workspace only.
+   */
+  session_token: string
+  /**
+   * When the session ends; it is never extended. At most 30 minutes, and never after the source sign-in expires.
+   */
+  expires_at: string
+  user: BillingHandoffUser
+  workspace: BillingHandoffWorkspace
+  /**
+   * The user's role in the workspace at exchange time.
+   */
+  role: string
+}
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export type BillingHandoffUser = {
+  /**
+   * Comfy user id.
+   */
+  id: string
+  /**
+   * The user's email address.
+   */
+  email: string
+}
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export type BillingHandoffWorkspace = {
+  /**
+   * Workspace id.
+   */
+  id: string
+  /**
+   * Workspace display name.
+   */
+  name: string
+  /**
+   * Workspace type, personal or team.
+   */
+  type: string
+}
+
+/**
  * Request to exchange a redeemed login code for a custom token.
  */
 export type DesktopLoginCodeExchangeRequest = {
@@ -11929,6 +12031,88 @@ export type CreateDesktopLoginCodeResponses = {
 
 export type CreateDesktopLoginCodeResponse =
   CreateDesktopLoginCodeResponses[keyof CreateDesktopLoginCodeResponses]
+
+export type CreateBillingHandoffData = {
+  body: BillingHandoffCreateRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs'
+}
+
+export type CreateBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: the sign-in has ended, predates the user's sign-out of all devices, or must be renewed
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`, `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the Firebase revocation check could not be made
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffError =
+  CreateBillingHandoffErrors[keyof CreateBillingHandoffErrors]
+
+export type CreateBillingHandoffResponses = {
+  /**
+   * Handoff issued
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffResponse =
+  CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
+
+export type ExchangeBillingHandoffData = {
+  body: BillingHandoffExchangeRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/exchange'
+}
+
+export type ExchangeBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`, or the request did not come from the handoff's receiver
+   */
+  403: ErrorResponse
+  /**
+   * `HANDOFF_UNAVAILABLE`: unknown, expired, revoked or already consumed
+   */
+  410: ErrorResponse
+  /**
+   * The user already holds the most live scoped sessions
+   */
+  429: ErrorResponse
+}
+
+export type ExchangeBillingHandoffError =
+  ExchangeBillingHandoffErrors[keyof ExchangeBillingHandoffErrors]
+
+export type ExchangeBillingHandoffResponses = {
+  /**
+   * Scoped session created
+   */
+  200: BillingHandoffExchangeResponse
+}
+
+export type ExchangeBillingHandoffResponse =
+  ExchangeBillingHandoffResponses[keyof ExchangeBillingHandoffResponses]
 
 export type ExchangeDesktopLoginCodeData = {
   body: DesktopLoginCodeExchangeRequest

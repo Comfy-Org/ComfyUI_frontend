@@ -1,5 +1,6 @@
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
+  endingNoticeStartsAtFact,
   runDeniedPaymentPastDueFact,
   serveBillingNotices
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
@@ -32,7 +33,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
-import type { BillingBannerKind } from '@/platform/billing/composables/useBillingBanner'
+import type { BillingStatusBannerKind } from '@comfyorg/account-core/billing'
 
 import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
@@ -40,7 +41,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 const mockBillingBanner = vi.hoisted(() => ({
-  kind: null as BillingBannerKind | null
+  kind: null as BillingStatusBannerKind | null
 }))
 
 vi.mock<unknown>(
@@ -482,6 +483,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       useBillingCapabilities().canReactivate = computed(() => false)
       useBillingCapabilities().canChangeSeats = computed(() => false)
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+      useBillingCapabilities().planKind = computed(() =>
+        receiveServerFact('plan_kind', 'sales_managed')
+      )
       mockCanReactivatePlan.value = false
       mockCanOpenPricingSurface.value = false
     }
@@ -721,10 +725,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).not.toBeInTheDocument()
       })
 
-      it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
-        mockSubscriptionTier.value = runtimeTier('GALACTIC')
-        mockPlanSlug.value = 'galactic_monthly'
+      it('keeps the stock cancelled treatment when no ending notice start is served', () => {
         endInDays(30)
+        useBillingCapabilities().endingNoticeStartsAt =
+          endingNoticeStartsAtFact(null)
         renderComponent()
 
         expect(screen.getByText('Canceled')).toBeInTheDocument()

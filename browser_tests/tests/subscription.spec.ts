@@ -90,29 +90,6 @@ unsubscribedTest.describe(
     )
 
     unsubscribedTest(
-      'User popover shows subscribe when unsubscribed',
-      async ({ subscriptionHelper }) => {
-        const popover = await subscriptionHelper.openUserPopover()
-        await expect(
-          popover.getByRole('button', { name: /subscribe/i })
-        ).toBeVisible()
-      }
-    )
-
-    unsubscribedTest(
-      'User popover subscribe click opens the platform Plans page',
-      async ({ comfyPage, subscriptionHelper }) => {
-        const popover = await subscriptionHelper.openUserPopover()
-        await expectPlatformPlansOpened(comfyPage.page, () =>
-          popover
-            .getByRole('button', { name: /subscribe/i })
-            .first()
-            .click()
-        )
-      }
-    )
-
-    unsubscribedTest(
       'Subscription state transition updates UI after re-fetch',
       async ({ comfyPage, subscriptionHelper }) => {
         await expect(
@@ -162,11 +139,9 @@ unsubscribedTest.describe(
     unsubscribedTest(
       'Returning from the Plans page refreshes stale subscription state',
       async ({ comfyPage, subscriptionHelper }) => {
-        const popover = await subscriptionHelper.openUserPopover()
         const plans = await expectPlatformPlansOpened(comfyPage.page, () =>
-          popover
-            .getByRole('button', { name: /subscribe/i })
-            .first()
+          comfyPage.page
+            .getByTestId(TestIds.topbar.subscribeToRunButton)
             .click()
         )
         subscriptionHelper.setStatus({
