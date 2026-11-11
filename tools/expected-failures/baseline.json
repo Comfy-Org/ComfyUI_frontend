@@ -66,21 +66,5 @@
   {
     "id": "vitest:src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts:keeps ops the host skipped when it refuses another op in the batch:1",
     "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic input socket is missing:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic widget is missing:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/lib/litegraph/src/LGraphNode.test.ts:does not add a reroute when a floating chain has no link:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
-    "classification": "live-defect"
   }
 ]

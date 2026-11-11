@@ -191,7 +191,7 @@
   },
   "src/core/graph/widgets/dynamicWidgets.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 4
     }
   },
   "src/core/selection/selectionStore.ts": {
@@ -296,9 +296,6 @@
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
     "comfy/no-positional-boolean-params": {
       "count": 22
     }
@@ -1024,7 +1021,7 @@
   },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/services/nodeOrganizationService.ts": {

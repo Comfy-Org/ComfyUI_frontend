@@ -184,7 +184,7 @@ describe('useSubgraphStore', () => {
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
   })
-  it.fails('should reject blueprints with multiple root nodes before registration', async () => {
+  it('should reject blueprints with multiple root nodes before registration', async () => {
     await mockFetch({
       'invalid.json': {
         nodes: [{ type: '123' }, { type: '123' }],
