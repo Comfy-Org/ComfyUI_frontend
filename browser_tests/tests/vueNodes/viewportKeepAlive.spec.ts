@@ -82,6 +82,9 @@ test.describe(
       const outputSlot = comfyPage.vueNodes.getOutputSlotConnectionDot('3', 0)
       await expect(outputSlot).toBeVisible()
       const sourceElement = await sourceNode.elementHandle()
+      const unpinnedNode = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(unpinnedNode).toBeVisible()
+      const unpinnedElement = await unpinnedNode.elementHandle()
 
       await outputSlot.hover()
       await comfyPage.page.mouse.down()
@@ -105,13 +108,13 @@ test.describe(
         await test.step('Cull offscreen nodes while retaining the drag source', async () => {
           await comfyPage.canvasOps.setOffset([-100_000, 0])
           await expect
-            .poll(() => comfyPage.vueNodes.getNodeCount())
-            .toBeLessThan(245)
-          await expect
             .poll(() =>
-              sourceElement.evaluate((element) => element.isConnected)
+              unpinnedElement.evaluate((element) => element.isConnected)
             )
-            .toBe(true)
+            .toBe(false)
+          expect(
+            await sourceElement.evaluate((element) => element.isConnected)
+          ).toBe(true)
         })
 
         await comfyPage.canvas.press('Escape')
