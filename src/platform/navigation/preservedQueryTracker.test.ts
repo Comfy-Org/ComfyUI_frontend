@@ -6,6 +6,8 @@ import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 
 const STRIPPED_NAMESPACE = 'test_strip'
@@ -348,5 +350,25 @@ describe('installPreservedQueryTracker', () => {
     expect(
       getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')
     ).toBeUndefined()
+  })
+})
+
+describe('installPreservedQueryTracker with the app definitions', () => {
+  beforeEach(() => clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID))
+
+  it('preserves a workflow-id link through sign-in and onboarding redirects', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push('/?workflowId=82b98188-0c8f-41d2-9b91-617b9152b809')
+    await router.push('/login')
+    await router.push('/onboarding')
+
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('82b98188-0c8f-41d2-9b91-617b9152b809')
   })
 })
