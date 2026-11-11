@@ -509,28 +509,39 @@ describe('MissingModelCard (OSS)', () => {
   })
 
   it.for([
-    { knownSizes: 2, label: /^Download all \(\d/ },
-    { knownSizes: 1, label: /^Download all$/ }
+    {
+      known: 'every size',
+      fileSizes: {
+        'https://huggingface.co/comfy/test/resolve/main/first.safetensors': 2048,
+        'https://huggingface.co/comfy/test/resolve/main/second.safetensors': 2048
+      },
+      label: /^Download all \(4 KB\)$/
+    },
+    {
+      known: 'one of two sizes',
+      fileSizes: {
+        'https://huggingface.co/comfy/test/resolve/main/first.safetensors': 2048
+      },
+      label: /^Download all$/
+    }
   ])(
-    'shows a Download all total only when $knownSizes of 2 sizes are known',
-    async ({ knownSizes, label }) => {
-      const names = ['first.safetensors', 'second.safetensors']
+    'labels Download all as $label when $known is known',
+    async ({ fileSizes, label }) => {
       mountCard({
         missingModelGroups: [
-          makeGroup({ withDownloadUrls: true, modelNames: names })
+          makeGroup({
+            withDownloadUrls: true,
+            modelNames: ['first.safetensors', 'second.safetensors']
+          })
         ]
       })
 
-      for (const name of names.slice(0, knownSizes)) {
-        useMissingModelStore().fileSizes[
-          `https://huggingface.co/comfy/test/resolve/main/${name}`
-        ] = 2 * 1024 * 1024
-      }
+      Object.assign(useMissingModelStore().fileSizes, fileSizes)
       await nextTick()
 
       expect(
         screen.getByTestId('missing-model-download-all')
-      ).toHaveTextContent(label)
+      ).toHaveTextContent(label, { normalizeWhitespace: true })
     }
   )
 
