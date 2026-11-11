@@ -1,13 +1,21 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import type {
   HostedTopupCheckoutResult,
   TopupCommand,
   TopupQuoteResult
 } from '@comfyorg/account-core/billing'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  ADD_CREDITS_FALLBACK_BOUNDS,
+  initialAddCreditsAmount,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 
-import { addCreditsClientPorts } from './useAddCreditsDialog'
+import {
+  addCreditsClientPorts,
+  useAddCreditsDialog
+} from './useAddCreditsDialog'
 
 function topupAnswering(
   quote: TopupQuoteResult,
@@ -79,5 +87,48 @@ describe('addCreditsClientPorts', () => {
       status: 'error',
       refusal: { kind: 'rate_limited', retryAfterSeconds: 2400 }
     })
+  })
+})
+
+describe('useAddCreditsDialog', () => {
+  it('ignores an auto top-up offer read that settles after its scope is disposed', async () => {
+    let landed = () => {}
+    let answerOffer: (url: string | null) => void = () => {}
+    const onLanded = vi.fn()
+    const scope = effectScope()
+    const dialog = scope.run(() =>
+      useAddCreditsDialog({
+        ports: {
+          quote: () => Promise.resolve({ status: 'error' }),
+          createCheckout: () =>
+            Promise.resolve({ status: 'ok', url: 'https://checkout.test' }),
+          reserveTab: () => ({ navigate: () => {}, close: () => {} }),
+          watchPayment: (onPayment) => {
+            landed = onPayment
+            return () => {}
+          },
+          autoTopUpSetupUrl: () =>
+            new Promise((resolve) => {
+              answerOffer = resolve
+            })
+        },
+        facts: { bounds: ADD_CREDITS_FALLBACK_BOUNDS, canTopUp: true },
+        initialAmount: initialAddCreditsAmount(null),
+        onLanded
+      })
+    )
+    assert(dialog)
+    await dialog.continueToCheckout()
+    await vi.waitFor(() =>
+      expect(dialog.state.value.step).toBe('checkout_opened')
+    )
+
+    landed()
+    scope.stop()
+    answerOffer(null)
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(onLanded).not.toHaveBeenCalled()
+    expect(dialog.state.value.step).toBe('checkout_opened')
   })
 })

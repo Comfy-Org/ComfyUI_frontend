@@ -25,21 +25,30 @@ const controlModel = ref(props.widget.controlWidget.value)
 watch(controlModel, props.widget.controlWidget.update)
 </script>
 <template>
-  <div class="relative grid grid-cols-subgrid">
+  <div class="relative">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-      <PopoverRoot>
-        <PopoverTrigger as-child>
-          <ValueControlButton :mode="controlModel" class="mr-1 self-center" />
-        </PopoverTrigger>
-        <PopoverContent
-          :side-offset="5"
-          dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
-        >
-          <ValueControlPopover v-model="controlModel" />
-          <PopoverArrow class="fill-background stroke-border/50" />
-        </PopoverContent>
-      </PopoverRoot>
+      <template #between>
+        <PopoverRoot>
+          <PopoverTrigger as-child>
+            <ValueControlButton
+              :mode="controlModel"
+              class="mx-1 self-center"
+              @pointerdown.stop
+              @pointermove.stop
+              @pointerup.stop
+            />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            :side-offset="5"
+            dismiss-on-viewport-change
+            class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+          >
+            <ValueControlPopover v-model="controlModel" />
+            <PopoverArrow class="fill-background stroke-border/50" />
+          </PopoverContent>
+        </PopoverRoot>
+      </template>
     </component>
   </div>
 </template>

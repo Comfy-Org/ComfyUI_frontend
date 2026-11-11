@@ -156,4 +156,48 @@ describe('groupMissingModelCandidates', () => {
       }
     ])
   })
+
+  it('offers only the replacements every reference of a model accepts', () => {
+    const [group] = groupMissingModelCandidates(
+      [
+        {
+          ...makeCandidate('m_fp16.safetensors', 'checkpoints', false),
+          replacements: ['sub/m_fp16.safetensors', 'm_bf16.safetensors']
+        },
+        {
+          ...makeCandidate('m_fp16.safetensors', 'checkpoints', false),
+          nodeId: '2',
+          replacements: ['m_bf16.safetensors', 'm_fp8.safetensors']
+        },
+        {
+          ...makeCandidate('other.safetensors', 'checkpoints', false),
+          replacements: ['sub/other.safetensors']
+        }
+      ],
+      false
+    )
+
+    expect(group.models.map((model) => model.replacements)).toEqual([
+      ['m_bf16.safetensors'],
+      ['sub/other.safetensors']
+    ])
+  })
+
+  it('offers no replacements when one reference has none', () => {
+    const [group] = groupMissingModelCandidates(
+      [
+        {
+          ...makeCandidate('m_fp16.safetensors', 'checkpoints', false),
+          replacements: ['m_bf16.safetensors']
+        },
+        {
+          ...makeCandidate('m_fp16.safetensors', 'checkpoints', false),
+          nodeId: '2'
+        }
+      ],
+      false
+    )
+
+    expect(group.models[0].replacements).toEqual([])
+  })
 })

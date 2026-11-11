@@ -1,9 +1,4 @@
 {
-  "apps/billing-web/src/components/CheckoutToast.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "apps/billing-web/src/components/PaymentMethodsPanel.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
@@ -69,7 +64,7 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue": {
+  "packages/mask-editor/src/ui/components/BrushSettingsPanel.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 4
     }

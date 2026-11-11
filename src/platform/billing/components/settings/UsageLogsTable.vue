@@ -13,6 +13,9 @@
             <TableHead>{{ $t('credits.eventType') }}</TableHead>
             <TableHead>{{ $t('credits.details') }}</TableHead>
             <TableHead>{{ $t('credits.time') }}</TableHead>
+            <TableHead v-if="showMemberColumn">{{
+              $t('credits.member')
+            }}</TableHead>
             <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,6 +63,9 @@
             <TableCell>
               {{ customerEventService.formatDate(event.createdAt ?? '') }}
             </TableCell>
+            <TableCell v-if="showMemberColumn">
+              {{ memberLabel(event) }}
+            </TableCell>
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
@@ -102,6 +108,7 @@ import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -114,8 +121,15 @@ import {
 } from '@/services/customerEventsService'
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
-const events = ref<AuditLog[]>([])
+type BillingEvent = NonNullable<
+  Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+>['events'][number]
+type ActivityEvent = AuditLog &
+  Pick<BillingEvent, 'member_display_name' | 'member_email' | 'member_former'>
+
+const events = ref<ActivityEvent[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -129,6 +143,18 @@ const pagination = ref({
   limit: 7,
   total: 0
 })
+
+const showMemberColumn = computed(
+  () =>
+    flags.billingNewUxEnabled &&
+    events.value.some((e) => e.member_display_name || e.member_email)
+)
+
+function memberLabel(event: ActivityEvent) {
+  const name = event.member_display_name || event.member_email
+  if (!name) return '-'
+  return event.member_former ? t('credits.formerMember', { name }) : name
+}
 
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)

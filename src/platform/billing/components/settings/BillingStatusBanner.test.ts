@@ -3,7 +3,8 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canManageBillingFact,
-  runDeniedPaymentPastDueFact
+  runDeniedPaymentPastDueFact,
+  serveBillingNotices
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import userEvent from '@testing-library/user-event'
@@ -24,6 +25,7 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  endedAt?: string | null
   tier?: SubscriptionInfo['tier']
   scheduledChange?: SubscriptionInfo['scheduledChange']
 }
@@ -144,7 +146,7 @@ const i18n = createI18n({
       credits: {
         addCreditsRefusal: {
           topupPurchasesPaused:
-            "Buying credits isn't available right now. Try again later, or message support.",
+            "Buying credits isn't available right now. Try again later.",
           paymentPastDue: 'Update your payment method to add credits.',
           unavailable:
             "Adding credits isn't available for this workspace right now."
@@ -181,11 +183,11 @@ const i18n = createI18n({
             pausedBody:
               "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
             pausedBodyNoDate:
-              "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+              "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
             pausedPersonalBody:
               "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
             pausedPersonalBodyNoDate:
-              "You've used all your credits. Buying credits isn't available right now. Try again later.",
+              "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -195,7 +197,7 @@ const i18n = createI18n({
             memberBody: 'You can run workflows until then.',
             personalTitle: 'Your {plan} plan ends on {date}',
             personalBody:
-              "You won't be charged again. Resume your plan to keep your monthly credits.",
+              "You won't be charged again. Resume your plan to keep getting credits.",
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
             enterpriseBody:
               'Members keep full access until then. Reach out to our sales team to extend.',
@@ -209,8 +211,7 @@ const i18n = createI18n({
             teamMemberBody: 'Ask your workspace owner to resubscribe.',
             personalTitle: 'Your {plan} plan ended on {date}',
             personalTitleNoDate: 'Your {plan} plan has ended',
-            personalBody:
-              'Resubscribe to run workflows and get monthly credits again.',
+            personalBody: 'Resubscribe to run workflows and get credits again.',
             enterpriseTitle: 'Your Enterprise plan ended on {date}',
             enterpriseBody: 'Contact sales to start a new Enterprise plan.',
             planTitle: 'Your plan ended on {date}',
@@ -308,6 +309,11 @@ describe('BillingStatusBanner', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
+    useBillingCapabilities()
+    serveBillingNotices(() => ({
+      isTeamPlan: state.isTeamPlan,
+      ...state.subscription
+    }))
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -497,7 +503,7 @@ describe('BillingStatusBanner', () => {
     },
     {
       denial: 'topup_purchases_paused',
-      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later."
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     },
     {
       denial: 'creator_only_provisioning',
@@ -607,7 +613,7 @@ describe('BillingStatusBanner', () => {
       owner: true,
       personal: false,
       refill: null,
-      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {
@@ -623,7 +629,7 @@ describe('BillingStatusBanner', () => {
       owner: true,
       personal: true,
       refill: null,
-      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
       buttons: ['Dismiss']
     },
     {
@@ -914,8 +920,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
-    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
-    // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
     useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
@@ -1041,6 +1045,27 @@ describe('BillingStatusBanner', () => {
           'Your Team plan ended on September 12, 2026'
         )
         expectChoosePlanLink()
+      }
+    )
+
+    it.for([
+      {
+        endedAt: '2026-11-04T12:00:00Z',
+        title: 'Your Team plan ended on November 4, 2026'
+      },
+      { endedAt: null, title: 'Your Team plan has ended' }
+    ])(
+      'titles the ended plan from the served ended_at ($endedAt)',
+      ({ endedAt, title }) => {
+        endedPlan()
+        state.subscription = {
+          ...state.subscription!,
+          endDate: endedAt ? null : '2026-09-12T12:00:00Z',
+          endedAt
+        }
+        renderBanner('billing')
+
+        expect(screen.getByRole('status')).toHaveTextContent(title)
       }
     )
 
@@ -1279,12 +1304,12 @@ describe('BillingStatusBanner', () => {
       {
         tier: 'PRO',
         title: 'Your Pro plan ends on August 1, 2026',
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       },
       {
         tier: 'FOUNDERS_EDITION',
         title: "Your Founder's Edition plan ends on August 1, 2026",
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       }
     ] as const)(
       'words the ending notice for $title',
@@ -1318,7 +1343,7 @@ describe('BillingStatusBanner', () => {
 
         expect(screen.getByRole('status')).toHaveTextContent(title)
         expect(screen.getByRole('status')).toHaveTextContent(
-          'Resubscribe to run workflows and get monthly credits again.'
+          'Resubscribe to run workflows and get credits again.'
         )
         expectChoosePlanLink()
       }

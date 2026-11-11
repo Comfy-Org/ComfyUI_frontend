@@ -2,7 +2,7 @@
   <div v-if="banner" class="@container">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex items-center gap-2">
@@ -94,9 +94,9 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
-  BillingBannerAudience,
-  BillingBannerKind
-} from '@/platform/billing/composables/useBillingBanner'
+  BillingStatusBannerAudience,
+  BillingStatusBannerKind
+} from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -169,6 +169,12 @@ const isEnterprisePlan = computed(
 )
 const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
+const planEndedDate = computed(() => {
+  const current = subscription.value
+  return longDate(
+    current?.endedAt === undefined ? current?.endDate : current.endedAt
+  )
+})
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
 interface BannerView {
@@ -200,11 +206,11 @@ const audienceCopy = {
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
-} satisfies Record<BillingBannerAudience, Record<string, string>>
+} satisfies Record<BillingStatusBannerAudience, Record<string, string>>
 
 const copy = computed(() => audienceCopy[audience.value ?? 'team'])
 
-const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
+const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingStatusBannerKind> = new Set([
   'planEnded',
   'ending',
   'planChange'
@@ -230,7 +236,7 @@ function planEndedCopy(): {
   ownerBody: string
   memberBody: string
 } {
-  const date = planEndDate.value
+  const date = planEndedDate.value
   if (audience.value === 'personal') {
     const plan = planName.value
     const body = t(`${bs}.planEnded.personalBody`)
@@ -397,7 +403,7 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+const bannerViews: Record<BillingStatusBannerKind, () => BannerView | null> = {
   paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,

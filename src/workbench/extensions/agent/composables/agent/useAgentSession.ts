@@ -1637,7 +1637,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      if (!observeAcceptedTurn(generation, ack, threadAtSend, onAccepted))
+        return false
       acceptTurn(
         ack,
         text,
@@ -1663,13 +1664,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function observeAcceptedTurn(
     generation: number,
+    ack: AgentTurnAccepted,
+    threadAtSend: string,
     onAccepted?: () => void
   ): boolean {
     runAcceptedTurnSideEffect(
       () => onAccepted?.(),
       'agent_turn_accepted_callback_failed'
     )
-    return generation === loadGeneration
+    const isCurrent = generation === loadGeneration
+    if (!isCurrent) {
+      reportError(
+        new Error('agent turn accepted after the send generation moved on'),
+        {
+          surface: 'agent',
+          errorType: 'failure_tracking_agent_accepted_turn_generation_change',
+          context: {
+            threadAtSend,
+            ackThreadId: ack.thread_id,
+            turnId: toTurnId(ack.message_id)
+          }
+        }
+      )
+    }
+    return isCurrent
   }
 
   function workflowTargetChanged(

@@ -6,15 +6,18 @@
   >
     <div
       v-if="state.kind === 'loading'"
-      :class="cn('rounded-xl border border-card px-5 py-4', classes?.card)"
+      :class="cn('rounded-xl border border-border px-5 py-4', classes?.card)"
     >
-      <Skeleton class="h-16 w-full" />
+      <div class="flex flex-col gap-3">
+        <Skeleton class="h-4 w-1/5" />
+        <Skeleton class="h-4 w-1/2" />
+      </div>
     </div>
     <p
       v-else-if="state.kind === 'unavailable'"
       :class="
         cn(
-          'm-0 flex items-center gap-1 rounded-xl border border-card px-5 py-4 text-sm text-muted-foreground',
+          'm-0 flex items-center gap-1 rounded-xl border border-border px-5 py-4 text-sm text-muted-foreground',
           classes?.card,
           classes?.unavailable
         )
@@ -32,7 +35,7 @@
       v-else-if="view"
       :class="
         cn(
-          'flex items-start justify-between gap-4 rounded-xl border px-5 py-4',
+          'flex items-center justify-between gap-4 rounded-xl border px-5 py-4',
           tone.border,
           classes?.card
         )
@@ -77,15 +80,7 @@
           data-testid="billing-auto-top-up-line"
         >
           {{ line.text }}
-          <TextTooltip v-if="line.tooltip" :text="line.tooltip">
-            <CheckoutButton
-              :aria-label="line.tooltip"
-              variant="muted-textonly"
-              size="icon-sm"
-            >
-              <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-            </CheckoutButton>
-          </TextTooltip>
+          <BillingInfoTip v-if="line.tooltip" :text="line.tooltip" />
         </p>
       </div>
       <slot
@@ -93,17 +88,18 @@
         :action="view.action"
         :label="copy.actions[view.actionLabel]"
         :variant="actionVariant"
-        :icon="actionIcon"
+        :icon="OPEN"
       >
-        <CheckoutButton
+        <BillingBannerActionButton
+          :href="actionHref"
+          :label="copy.actions[view.actionLabel]"
           :variant="actionVariant"
           size="md"
-          :class="cn('shrink-0 underline', classes?.action)"
+          :class="classes?.action"
           @click="emit('action', view.action)"
         >
-          {{ copy.actions[view.actionLabel] }}
-          <i :class="actionIcon" aria-hidden="true" />
-        </CheckoutButton>
+          <i :class="OPEN" aria-hidden="true" />
+        </BillingBannerActionButton>
       </slot>
     </div>
   </section>
@@ -120,43 +116,31 @@ import type {
 } from '@comfyorg/account-core/billing'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
+import BillingBannerActionButton from './BillingBannerActionButton.vue'
+import BillingInfoTip from './BillingInfoTip.vue'
 import { autoTopUpCardView } from './autoTopUpCardView'
 import type { AutoTopUpCardCopy, AutoTopUpViewKey } from './autoTopUpCardView'
 
 type ActionVariant = ButtonVariants['variant']
 
 const OPEN = 'icon-[lucide--arrow-up-right]'
-const EXTERNAL = 'icon-[lucide--external-link]'
 
-const NEUTRAL = { border: 'border-card', text: 'text-muted-foreground' }
+const NEUTRAL = { border: 'border-border', text: 'text-muted-foreground' }
 const DANGER = { border: 'border-destructive', text: 'text-destructive' }
 
 const DOT: Record<AutoTopUpViewKey, string> = {
   failed: 'bg-destructive',
-  turnedOff: 'bg-destructive-background',
+  turnedOff: 'bg-destructive',
   off: 'bg-muted-foreground',
-  on_hold: 'bg-warning-background',
-  paused_by_budget: 'bg-warning-background',
+  on_hold: 'bg-warning',
+  paused_by_budget: 'bg-warning',
   maximumReached: 'bg-warning-background',
   noPaymentMethod: 'bg-muted-foreground',
   noDefaultPaymentMethod: 'bg-muted-foreground',
-  on: 'bg-success-background'
-}
-
-const ICON: Record<AutoTopUpViewKey, string> = {
-  failed: EXTERNAL,
-  turnedOff: EXTERNAL,
-  off: EXTERNAL,
-  on_hold: EXTERNAL,
-  paused_by_budget: OPEN,
-  maximumReached: OPEN,
-  noPaymentMethod: OPEN,
-  noDefaultPaymentMethod: OPEN,
-  on: OPEN
+  on: 'bg-success'
 }
 
 const DEFAULT_VARIANTS: Record<AutoTopUpViewKey, ActionVariant> = {
@@ -171,12 +155,22 @@ const DEFAULT_VARIANTS: Record<AutoTopUpViewKey, ActionVariant> = {
   on: 'secondary'
 }
 
-const { state, offView, setup, copy, locale, variants, classes } = defineProps<{
+const {
+  state,
+  offView,
+  setup,
+  copy,
+  locale,
+  actionHref = null,
+  variants,
+  classes
+} = defineProps<{
   state: AutoTopUpCardState
   offView: AutoTopUpOffView
   setup: AutoTopUpOffViewFacts['setup']
   copy: AutoTopUpCardCopy
   locale: string
+  actionHref?: string | null
   variants?: Partial<Record<AutoTopUpViewKey, ActionVariant>>
   classes?: Partial<
     Record<
@@ -208,6 +202,4 @@ const actionVariant = computed(() =>
     ? (variants?.[view.value.key] ?? DEFAULT_VARIANTS[view.value.key])
     : undefined
 )
-
-const actionIcon = computed(() => (view.value ? ICON[view.value.key] : OPEN))
 </script>
