@@ -140,9 +140,7 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       const { offer } = offerFor({ status: 'off', atCheckout: true })
 
       await vi.waitFor(() =>
-        expect(
-          useBillingSdkStore().readPaymentMethods
-        ).toHaveBeenCalledOnce()
+        expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledOnce()
       )
       await Promise.resolve()
       expect(offer.value).toEqual({ kind: 'hidden' })
@@ -162,9 +160,7 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     it('reads no saved cards when auto top-up at checkout is off', () => {
       offerFor({ status: 'off', atCheckout: false })
 
-      expect(
-        useBillingSdkStore().readPaymentMethods
-      ).not.toHaveBeenCalled()
+      expect(useBillingSdkStore().readPaymentMethods).not.toHaveBeenCalled()
     })
   })
 })
