@@ -1345,7 +1345,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
         packTypeColors.set(type, color)
         applyPackTypeColors()
+        let registered = true
         return () => {
+          if (!registered) return
+          registered = false
           packTypeColors.delete(type)
           delete LGraphCanvas.link_type_colors[type]
         }

@@ -1144,6 +1144,18 @@ describe('type colours', () => {
     expect(api.defs.nodeColor('no_such_colour')).toBeUndefined()
   })
 
+  it('leaves a later type color in place when an earlier disposer runs again', () => {
+    const api = createComfyApi(() => new LGraph())
+    const undoFirst = api.defs.setTypeColor('REUSED_TYPE', '#aaa')
+    undoFirst()
+    const undoSecond = api.defs.setTypeColor('REUSED_TYPE', '#bbb')
+
+    undoFirst()
+
+    expect(api.defs.typeColor('REUSED_TYPE')).toBe('#bbb')
+    undoSecond()
+    expect(api.defs.typeColor('REUSED_TYPE')).not.toBe('#bbb')
+  })
   it('lets a pack colour a type it introduces, and take it back', () => {
     // Packs shipping their own types wrote straight into link_type_colors so
     // their links were not all grey.
