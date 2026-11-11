@@ -49,7 +49,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
-- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`; fix package exports and source imports before patching compiler or resolver dependencies.
+- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`. Fix package exports and source imports; do not patch compiler or resolver dependencies to make package builds pass.
 
 ## Package Manager
 
