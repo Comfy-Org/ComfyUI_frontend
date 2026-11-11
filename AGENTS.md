@@ -1,7 +1,8 @@
 # Repository Guidelines
 
-File-type conventions in `docs/guidance/*.md` load automatically by the `globs`
-in their frontmatter:
+See @docs/guidance/\*.md for file-type conventions. Amp loads each file when a
+file matching its frontmatter `globs` is read; other agents should read the
+matching files before editing:
 
 - `engineering.md`: repo-specific engineering and review rules
 - `vue-components.md`: props, models, slots, state, and styling in `.vue` files
