@@ -11,7 +11,7 @@ export interface Chip {
   label: string
 }
 
-export interface Mark {
+interface Mark {
   stroke: Point[]
   anchor: Rect
 }

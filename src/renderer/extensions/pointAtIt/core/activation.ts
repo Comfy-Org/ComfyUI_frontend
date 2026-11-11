@@ -1,4 +1,4 @@
-export const SWITCH_PARAM = 'pointAtIt'
+const SWITCH_PARAM = 'pointAtIt'
 export const SWITCH_STORAGE_KEY = 'Comfy.PointAtItPoc.enabled'
 
 type SwitchStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>

@@ -16,7 +16,7 @@ import type { ValueWatch } from './valueWatch'
 
 export const REPLY_DELAYS_MS = [0, 2000, 8000] as const
 
-export interface DemoSettings {
+interface DemoSettings {
   replyDelayMs: number
   wrongTarget: boolean
   heldKeyEntry: boolean

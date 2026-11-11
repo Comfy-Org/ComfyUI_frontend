@@ -9,7 +9,7 @@ import type {
 import { answers } from './messages'
 import type { HostNode, HostSetting } from './pointHost'
 
-export interface ScriptOptions {
+interface ScriptOptions {
   wrongTarget: boolean
 }
 
