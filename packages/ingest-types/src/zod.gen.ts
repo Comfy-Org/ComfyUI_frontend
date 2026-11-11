@@ -5170,6 +5170,22 @@ export const zWorkflowListResponse = z.object({
 })
 
 /**
+ * The sidebar file a workflow was copied from, when the two agree. No content and no userdata id: open the path through the userdata API.
+ */
+export const zWorkflowSidebarFileResponse = z.object({
+  modified: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  path: z.string(),
+  size: z.int()
+})
+
+/**
  * Workflow metadata captured at mint time. The subsequent PUT body is the
  * raw workflow JSON document and nothing else, so everything that would
  * normally accompany workflow_json in POST /api/workflows is declared
@@ -7826,6 +7842,15 @@ export const zForkWorkflowPath = z.object({
  * Workflow forked successfully
  */
 export const zForkWorkflowResponse = zWorkflowResponse
+
+export const zGetWorkflowSidebarFilePath = z.object({
+  workflow_id: z.string()
+})
+
+/**
+ * The workflow and its sidebar file agree.
+ */
+export const zGetWorkflowSidebarFileResponse = zWorkflowSidebarFileResponse
 
 export const zCreateWorkflowVersionBody = zCreateWorkflowVersionRequest
 

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -17,6 +18,7 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -351,6 +353,55 @@ describe('MissingModelRow', () => {
     )
     expect(firstSetDirtyCanvas).toHaveBeenCalledWith(true, true)
     expect(secondSetDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+
+  it('points every referencing node at a suggested replacement', async () => {
+    mockIsCloud.value = false
+    const firstWidget = { name: 'ckpt_name', value: 'model.safetensors' }
+    const secondWidget = { name: 'ckpt_name', value: 'model.safetensors' }
+    mockRootGraph.value = {}
+    mockGetNodeByExecutionId.mockImplementation((_graph, nodeId) => ({
+      widgets: [nodeId === '1' ? firstWidget : secondWidget]
+    }))
+    const model = makeModel([
+      { nodeId: '1', widgetName: 'ckpt_name' },
+      { nodeId: '2', widgetName: 'ckpt_name' }
+    ])
+    model.replacements = ['sub/model.safetensors', 'model_bf16.safetensors']
+    const unrelated = {
+      ...model.representative,
+      nodeId: '3',
+      name: 'other.safetensors'
+    }
+    const store = useMissingModelStore()
+    store.setMissingModels([
+      { ...model.representative, nodeId: '1' },
+      { ...model.representative, nodeId: '2' },
+      unrelated
+    ])
+    const recordedValues: string[][] = []
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: {
+        captureCanvasState: () =>
+          recordedValues.push([firstWidget.value, secondWidget.value])
+      }
+    })
+    renderRow(model, vi.fn(), false, 'checkpoints')
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Use model_bf16.safetensors instead'
+      })
+    )
+
+    expect([firstWidget.value, secondWidget.value]).toEqual([
+      'model_bf16.safetensors',
+      'model_bf16.safetensors'
+    ])
+    expect(store.missingModelCandidates).toEqual([unrelated])
+    expect(recordedValues).toEqual([
+      ['model_bf16.safetensors', 'model_bf16.safetensors']
+    ])
   })
 
   it('locates the parent row directly when a cloud model has one reference', async () => {

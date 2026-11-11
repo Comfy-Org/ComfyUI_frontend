@@ -82,7 +82,7 @@ export function startAssetDrag(
   const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
   const assetInfo = {
     filename: getAssetStoredFilename(asset, storedHash),
-    subfolder: getOutputSubfolder(asset.user_metadata),
+    subfolder: getOutputSubfolder(asset),
     type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
     display_name: asset.display_name || asset.name,
     attachment_ref: storedHash ?? asset.name,
