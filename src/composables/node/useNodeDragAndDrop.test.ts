@@ -74,6 +74,7 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(isDragging).toBe(false)
+    expect(node.onDragOver?.(createDragEvent({}))).toBe(false)
   })
 
   it('onDragDrop calls onDrop with filtered files', async () => {
