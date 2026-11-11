@@ -855,11 +855,7 @@ export class ComfyApp implements IComfyApp {
       }
       const node = getNodeByExecutionId(this.rootGraph, displayNodeExecutionId)
       if (node?.type) {
-        deliverPreview(
-          String(node.id),
-          node.type,
-          Object.freeze({ blob, url: blobUrl })
-        )
+        deliverPreview(node, Object.freeze({ blob, url: blobUrl }))
       }
       releaseSharedObjectUrl(blobUrl)
     })

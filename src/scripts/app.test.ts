@@ -106,9 +106,16 @@ import {
   resetAppReadyForTest
 } from '@/platform/nodeApi/appReady'
 
+import {
+  applyDefExtensions,
+  resetComfyApi,
+  useComfyApi
+} from '@/platform/nodeApi/comfyApi'
+
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
+import * as appInstance from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -4688,6 +4695,136 @@ describe('ComfyApp', () => {
   })
 
   describe('socket handlers', () => {
+    it('delivers nested previews to their owner while preserving placement paths', () => {
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const root = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', root)
+      mockCanvas.graph = root
+      resetComfyApi()
+      onTestFinished(resetComfyApi)
+      const comfy = useComfyApi(() => mockCanvas.graph)
+      const seen = vi.fn()
+      const stop = comfy.defs.extend('PreviewProbe', (builder) =>
+        builder.onPreview(seen)
+      )
+      onTestFinished(stop)
+      class PreviewProbe extends LGraphNode {
+        constructor() {
+          super('Preview', 'PreviewProbe')
+        }
+      }
+      applyDefExtensions(PreviewProbe, {
+        name: 'PreviewProbe',
+        input: {},
+        output: []
+      })
+      const outer = createTestSubgraph({ rootGraph: root })
+      const inner = createTestSubgraph({ rootGraph: root })
+      root.subgraphs.set(outer.id, outer)
+      root.subgraphs.set(inner.id, inner)
+      const firstPlacement = createTestSubgraphNode(outer, {
+        parentGraph: root
+      })
+      root.add(firstPlacement)
+      const secondPlacement = createTestSubgraphNode(outer, {
+        parentGraph: root
+      })
+      root.add(secondPlacement)
+      const nestedPlacement = createTestSubgraphNode(inner, {
+        parentGraph: outer
+      })
+      outer.add(nestedPlacement)
+      const previewNode = new PreviewProbe()
+      inner.add(previewNode)
+      const firstExecutionId = createNodeExecutionId([
+        firstPlacement.id,
+        nestedPlacement.id,
+        previewNode.id
+      ])
+      const secondExecutionId = createNodeExecutionId([
+        secondPlacement.id,
+        nestedPlacement.id,
+        previewNode.id
+      ])
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/preview.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = workflow
+      useExecutionStore().storeJob({
+        nodes: [firstExecutionId, secondExecutionId],
+        id: 'preview-job',
+        promptOutput: {},
+        workflow,
+        mode: 'graph'
+      })
+      vi.spyOn(URL, 'createObjectURL')
+        .mockReturnValueOnce('blob:first-placement')
+        .mockReturnValueOnce('blob:second-placement')
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const onPreview = addEventListener.mock.calls.find(
+        ([name]) => name === 'b_preview_with_metadata'
+      )?.[1]
+      assert(typeof onPreview === 'function')
+      const firstBlob = new Blob(['first'])
+      const secondBlob = new Blob(['second'])
+      onPreview(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: firstBlob,
+            displayNodeId: firstExecutionId,
+            jobId: 'preview-job'
+          }
+        })
+      )
+      onPreview(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: secondBlob,
+            displayNodeId: secondExecutionId,
+            jobId: 'preview-job'
+          }
+        })
+      )
+
+      const output = useNodeOutputStore()
+      expect(
+        output.getNodePreviewImagesByExecutionId(
+          createNodeExecutionId([firstPlacement.id])
+        )
+      ).toEqual(['blob:first-placement'])
+      expect(
+        output.getNodePreviewImagesByExecutionId(
+          createNodeExecutionId([secondPlacement.id])
+        )
+      ).toEqual(['blob:second-placement'])
+
+      expect(seen).toHaveBeenCalledTimes(2)
+      expect(seen).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          id: String(previewNode.id),
+          graphId: inner.id
+        }),
+        { blob: firstBlob, url: 'blob:first-placement' }
+      )
+      expect(seen).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: String(previewNode.id),
+          graphId: inner.id
+        }),
+        { blob: secondBlob, url: 'blob:second-placement' }
+      )
+    })
+
     it('keeps a model download that arrives as the socket starts', async () => {
       vi.spyOn(api, 'init').mockImplementation(async () => {
         api.dispatchCustomEvent('model_download', {

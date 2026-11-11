@@ -949,7 +949,7 @@ const frontendResolvers = new Map<string, Resolver>()
 
 type BoundPromptInputProjector = {
   run: PromptInputProjector
-  handleFor: (nodeId: string) => NodeHandle
+  handleForNode: (node: LGraphNode) => NodeHandle
   isActive: () => boolean
 }
 
@@ -1062,27 +1062,21 @@ function addProjectedInputNames(
   }
 }
 
-/**
- * Returns the union of inputs this node's extensions omit from this prompt.
- *
- * Validation lives here, at the authority boundary, rather than in packs or
- * the prompt builder. A malformed projection aborts the build with attribution
- * and never degrades to a broader execution graph.
- */
+/** Returns the validated union of inputs omitted from this node's prompt. */
 export async function projectedPromptInputOmissions(
   nodeType: string,
-  nodeId: string
+  node: LGraphNode
 ): Promise<readonly string[]> {
   const policy = promptInputProjectors.get(nodeType)
   if (!policy) return Object.freeze([])
 
   const omitted = new Set<string>()
   let failure: unknown
-  for (const { run, handleFor, isActive } of policy.projectors) {
+  for (const { run, handleForNode, isActive } of policy.projectors) {
     if (!isActive()) continue
     let value: unknown
     try {
-      value = await run(handleFor(nodeId))
+      value = await run(handleForNode(node))
     } catch (error) {
       reportError(error, {
         errorType: 'node_api_extension_callback_failure',
@@ -1115,15 +1109,9 @@ export function frontendSupplierMap(): ReadonlyMap<string, Supplier> {
   return frontendSuppliers
 }
 
-/**
- * Type name -> its preview listeners.
- *
- * Module level because delivery comes from the app's socket, which knows a node
- * id but not which registry instance registered for it.
- */
 const previewSubscribers = new Map<
   string,
-  (nodeId: string, frame: PreviewFrame) => void
+  (node: LGraphNode, frame: PreviewFrame) => void
 >()
 
 /**
@@ -1173,18 +1161,10 @@ export function offerUnplacedLink(
   return unplacedLinkSubscribers.get(nodeType)?.(nodeId, event) ?? false
 }
 
-/**
- * Hands a preview frame to whichever node type registered for it.
- *
- * Called by the app when the backend emits a preview. The node type is looked
- * up rather than passed, so the app does not need to know which packs care.
- */
-export function deliverPreview(
-  nodeId: string,
-  nodeType: string,
-  frame: PreviewFrame
-): void {
-  previewSubscribers.get(nodeType)?.(nodeId, frame)
+/** Delivers a preview to listeners for the resolved node's type. */
+export function deliverPreview(node: LGraphNode, frame: PreviewFrame): void {
+  if (!node.graph) return
+  previewSubscribers.get(node.type)?.(node, frame)
 }
 
 function rawDefinedNode(definition: NodeDefinition): RawNodeDef {
@@ -1543,7 +1523,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             onPreview: (run) => previewed.push({ run, ...binding }),
             onSerialize: (run) => serialized.push({ run, ...binding }),
             onPromptSerialize: (run) =>
-              promptSerialized.push({ run, handleFor, isActive }),
+              promptSerialized.push({ run, handleForNode, isActive }),
             onBeforeConnect: (run) => beforeConnect.push({ run, ...binding }),
             onUnplacedLink: (run) => unplacedLink.push({ run, ...binding }),
             addMenuItem: (item) => menuItems.push({ item, ...binding })
@@ -2001,15 +1981,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
       const installSubscribers = () => {
         if (previewed.length) {
-          previewSubscribers.set(def.type, (nodeId, frame) => {
-            for (const { run, handleFor, isActive } of previewed) {
+          previewSubscribers.set(def.type, (node, frame) => {
+            for (const { run, handleForNode, isActive } of previewed) {
               if (!isActive()) continue
-              // Subscribers are keyed by type alone, so the event can name a
-              // node in another graph scope or one already removed. A pack
-              // callback takes a handle, not the absence of one.
-              const node = extensionValue(handleFor(nodeId))
-              if (!node) continue
-              invoke('onPreview', () => run(node, frame))
+              invoke('onPreview', () => run(handleForNode(node), frame))
             }
           })
         } else {
