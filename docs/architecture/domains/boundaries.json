@@ -34,12 +34,17 @@
           "src/extensions/core/imageCompositor.ts",
           "src/extensions/core/layerEditor.ts",
           "src/lib/litegraph/src/widgets/CompositorWidget.ts",
-          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
           "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
           "packages/layer-editor/src/mode.ts",
-          "packages/layer-editor/src/node.ts"
+          "packages/layer-editor/src/node.ts",
+          "packages/layer-editor/src/persistence/compositorTypes.ts",
+          "packages/layer-editor-ui/src/LayerEditorCanvas.vue",
+          "packages/layer-editor-ui/src/LayerEditorToolbar.vue",
+          "packages/layer-editor-ui/src/LayerPanel.vue",
+          "packages/layer-editor-ui/src/LayerPropertiesPanel.vue"
         ]
       },
       {
@@ -723,11 +728,6 @@
           "src/utils/textCaseUtil.test.ts",
           "packages/shared-frontend-utils/src/piiUtil.ts",
           "packages/shared-frontend-utils/src/piiUtil.test.ts",
-          "src/constants/coreColorPalettes.ts",
-          "src/services/colorPaletteService.ts",
-          "src/services/colorPaletteService.test.ts",
-          "src/stores/workspace/colorPaletteStore.ts",
-          "packages/settings-core/src/colorPaletteSchema.ts",
           "src/composables/useCachedRequest.ts",
           "src/composables/useCachedRequest.test.ts",
           "src/constants/searchConstants.ts",
@@ -1633,6 +1633,8 @@
           "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.test.ts",
           "src/utils/htmlEscape.ts",
           "src/utils/htmlEscape.test.ts",
+          "packages/theme-core/src/**",
+          "src/platform/theme/**",
           "src/utils/dateTimeUtil.ts",
           "src/utils/dateTimeUtil.test.ts",
           "src/utils/numberUtil.ts",
@@ -1922,10 +1924,10 @@
           "src/extensions/core/imageCompositor.test.ts",
           "src/extensions/core/layerEditor.ts",
           "src/lib/litegraph/src/widgets/CompositorWidget.ts",
-          "src/renderer/extensions/compositor/**",
           "src/renderer/extensions/layerEditor/**",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-          "packages/layer-editor/src/**"
+          "packages/layer-editor/src/**",
+          "packages/layer-editor-ui/src/**"
         ]
       },
       {

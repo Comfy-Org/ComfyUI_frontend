@@ -2630,6 +2630,8 @@
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
+    "linkedWorkflowNotOpened": "Couldn't open this workflow",
+    "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
@@ -3063,10 +3065,6 @@
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
-      "autoTopUp": {
-        "prompt": "Running low on credits? Turn on auto top-up.",
-        "setUp": "Set up"
-      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",
@@ -3084,13 +3082,19 @@
       "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
       "paymentProcessingTitle": "A {amount} payment is still processing",
       "paymentProcessingTitleNoAmount": "A payment is still processing",
-      "paymentProcessingBody": "No need to pay again."
+      "paymentProcessingBody": "No need to pay again.",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      }
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
     "eventType": "Event Type",
     "details": "Details",
     "time": "Time",
+    "member": "Member",
+    "formerMember": "{name} (former member)",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
     "lessThanOne": "<1",
@@ -3363,6 +3367,16 @@
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run",
       "badge": "Inactive"
+    },
+    "plansLink": {
+      "blockedTitle": "Plans page didn't open",
+      "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
+      "openPlansPage": "Open Plans page",
+      "runRefusedTitle": "Your workflow didn't run",
+      "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
+      "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
+      "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
       "title": "Subscription paused",
@@ -4270,6 +4284,7 @@
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
       "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
       "pointGpu": "Work in ComfyUI on the GPU you choose",
@@ -4334,6 +4349,7 @@
     },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
+    "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
@@ -4920,7 +4936,7 @@
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
     "deployOnPlatform": "Deploy on Platform",
-    "deployWithAgent": "Deploy with your agent",
+    "deployWithAgent": "Build with your agent",
     "copied": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
@@ -5325,6 +5341,9 @@
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
+      "availableReplacements": "Available instead",
+      "use": "Use",
+      "useReplacement": "Use {model} instead",
       "missingModelsTitle": "Missing Models",
       "downloadModel": "Download {model}",
       "downloadAll": "Download all",
@@ -6580,6 +6599,11 @@
       "title": "Checkout didn't open",
       "body": "Your browser blocked the new tab. Open checkout to finish paying.",
       "action": "Open checkout"
+    },
+    "autoTopUpOffer": {
+      "body": "Buy credits automatically when you run low, so workflows and API calls keep running.",
+      "setUp": "Set up",
+      "notNow": "Not now"
     }
   }
 }

@@ -17,7 +17,7 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
     await comfyPage.vueNodes.getWidgetByName('load check', 'ckpt_name').hover()
     await expect(tooltip, 'displays for combos').toContainText('v1-5-pruned')
 
-    await comfyPage.vueNodes.getWidgetByName('ksampler', 'seed').hover()
+    await comfyPage.vueNodes.getWidgetRowByLabel('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
 
     await comfyPage.vueNodes.getNodeLocator('6').getByLabel('text').hover()
