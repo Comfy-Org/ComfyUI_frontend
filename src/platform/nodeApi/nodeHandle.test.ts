@@ -56,6 +56,19 @@ describe('NodeHandle', () => {
       expect(handle().isPinned()).toBe(false)
     })
 
+    it.for([
+      { name: 'a property the node has', key: 'amount', expected: 1 },
+      {
+        name: 'nothing for a name inherited from Object.prototype',
+        key: 'toString',
+        expected: undefined
+      }
+    ])('reads $name', ({ key, expected }) => {
+      node.properties['amount'] = 1
+
+      expect(handle().getProperty(key)).toBe(expected)
+    })
+
     it('returns frozen geometry so reads cannot be written through', () => {
       node.pos = [10, 20]
       const pos = handle().getPosition()
@@ -162,9 +175,12 @@ describe('NodeHandle', () => {
       expect(node.mode).toBe(LGraphEventMode.NEVER)
     })
 
-    it('rejects an invalid mode loudly instead of silently ignoring', () => {
+    it.for([
+      { name: 'an unknown mode', mode: 'nonsense' },
+      { name: 'a mode name inherited from Object.prototype', mode: 'toString' }
+    ])('rejects $name loudly and leaves the mode alone', ({ mode }) => {
       expect(() => {
-        handle().setMode('nonsense' as never)
+        handle().setMode(mode as never)
       }).toThrow(/Invalid node mode/)
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
     })
