@@ -98,7 +98,7 @@ export function primaryActionClass(ui: AddCreditsUi): string {
 
 export function footerBarClass(ui: AddCreditsUi, layout: string): string {
   return cn(
-    'flex items-center gap-2 border-x-0 border-t border-b-0 border-solid px-4 py-4',
+    'flex shrink-0 items-center gap-2 border-x-0 border-t border-b-0 border-solid px-4 py-4',
     layout,
     ui.footer
   )
