@@ -1555,18 +1555,33 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       it('never charges on later returns to a dialog left open behind another tab', async () => {
         refuseForNoPaymentMethod()
         portalOpensAt(portalUrl)
+        const createCheckout = vi.spyOn(billingApi, 'createTopupCheckout')
         const { tab } = stubCheckoutTab()
         await payAndGetRefused()
         await clickSetDefaultCard()
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        const visibility = vi.spyOn(document, 'visibilityState', 'get')
 
-        for (const _ of [1, 2, 3]) {
-          window.dispatchEvent(new Event('blur'))
-          window.dispatchEvent(new Event('focus'))
+        const returns = [
+          () => {
+            window.dispatchEvent(new Event('blur'))
+            window.dispatchEvent(new Event('focus'))
+          },
+          () => {
+            visibility.mockReturnValue('hidden')
+            document.dispatchEvent(new Event('visibilitychange'))
+            visibility.mockReturnValue('visible')
+            document.dispatchEvent(new Event('visibilitychange'))
+          }
+        ]
+        for (const returnToTab of [...returns, ...returns]) {
+          returnToTab()
+          await screen.findByRole('button', { name: 'Pay $50.00' })
         }
 
-        await screen.findByRole('button', { name: 'Pay $50.00' })
         expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(createCheckout).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       })
 
       it('shows the refusal again when Pay after the portal still finds no default card', async () => {
