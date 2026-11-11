@@ -3,15 +3,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
 function dragRectangle(eDown: [number, number], eMove: [number, number]) {
-  const canvasElement = document.createElement('canvas')
-  useCanvasStore().canvas = fromPartial({
-    canvas: canvasElement,
+  const canvas = fromPartial<LGraphCanvas>({
+    canvas: document.createElement('canvas'),
     dragging_rectangle: [
       eDown[0],
       eDown[1],
@@ -23,7 +23,8 @@ function dragRectangle(eDown: [number, number], eMove: [number, number]) {
       eMove: { safeOffsetX: eMove[0], safeOffsetY: eMove[1] }
     }
   })
-  return canvasElement
+  useCanvasStore().canvas = canvas
+  return canvas
 }
 
 describe('SelectionRectangle', () => {
@@ -39,9 +40,9 @@ describe('SelectionRectangle', () => {
     async ({ eDown, eMove }) => {
       render(SelectionRectangle)
 
-      const canvasElement = dragRectangle([...eDown], [...eMove])
+      const canvas = dragRectangle([...eDown], [...eMove])
       await nextTick()
-      runCanvasFramePhase(canvasElement, 'update')
+      runCanvasFramePhase(canvas, 'update')
       await nextTick()
 
       const rect = screen.getByTestId('selection-rectangle')

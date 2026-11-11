@@ -299,10 +299,10 @@ describe('LGraphCanvas.startRendering', () => {
       drawnText: string | undefined
       interval: number
     }[] = []
-    onCanvasFrame(canvas.canvas, 'update', () => {
+    onCanvasFrame(canvas, 'update', () => {
       canvas.info_text = 'updated'
     })
-    const stopPresenting = onCanvasFrame(canvas.canvas, 'present', (interval) =>
+    const stopPresenting = onCanvasFrame(canvas, 'present', (interval) =>
       presentations.push({
         drawnText: vi.mocked(ctx.fillText).mock.calls.at(-1)?.[0],
         interval

@@ -151,7 +151,7 @@ export function useSelectionToolboxPosition(
 
   watchEffect((onCleanup) => {
     if (!visible.value) return
-    onCleanup(onCanvasFrame(lgCanvas.canvas, 'present', updateTransform))
+    onCleanup(onCanvasFrame(lgCanvas, 'present', updateTransform))
   })
 
   const handleSelectionMembershipChange = () => {

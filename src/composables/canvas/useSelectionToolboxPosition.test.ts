@@ -134,7 +134,7 @@ describe('useSelectionToolboxPosition', () => {
     const initialX = parseFloat(toolbox.style.getPropertyValue('--tb-x'))
 
     canvas.ds.offset[0] += 50
-    runCanvasFramePhase(canvas.canvas, 'present')
+    runCanvasFramePhase(canvas, 'present')
 
     expect(toolbox.style.getPropertyValue('--tb-x')).toBe(`${initialX + 50}px`)
     unmount()

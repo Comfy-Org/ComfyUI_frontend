@@ -28,7 +28,7 @@ watch(
     }
 
     onCleanup(
-      onCanvasFrame(canvas.canvas, 'update', () => {
+      onCanvasFrame(canvas, 'update', () => {
         const { pointer, dragging_rectangle } = canvas
 
         if (dragging_rectangle && pointer.eDown && pointer.eMove) {

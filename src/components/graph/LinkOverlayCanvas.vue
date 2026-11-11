@@ -37,9 +37,7 @@ watch(
   () => canvas,
   (canvas, _, onCleanup) => {
     onCleanup(
-      onCanvasFrame(canvas.canvas, 'update', () =>
-        matchMainCanvasSize(canvas.canvas)
-      )
+      onCanvasFrame(canvas, 'update', () => matchMainCanvasSize(canvas.canvas))
     )
   },
   { immediate: true }
