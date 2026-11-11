@@ -489,6 +489,8 @@ export const useWorkflowService = () => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
+    const canvasAwaitsRetained = () =>
+      workflowStore.isActive(retained) && !canvasShowsActiveWorkflow
     const load = () =>
       useApp().loadGraphData(
         toRaw(retained.activeState) as ComfyWorkflowJSON,
@@ -498,7 +500,8 @@ export const useWorkflowService = () => {
         {
           checkForRerouteMigration: false,
           deferWarnings: true,
-          skipAssetScans: true
+          skipAssetScans: true,
+          isCurrent: canvasAwaitsRetained
         }
       )
     await (retained.isModified ? keepingSavedBaseline(retained, load) : load())

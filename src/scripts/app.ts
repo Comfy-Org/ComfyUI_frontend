@@ -1188,8 +1188,16 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(() =>
-      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+    return this.enqueueGraphLoad(async () =>
+      options.isCurrent?.() === false
+        ? false
+        : this.loadGraphDataNow(
+            graphData,
+            clean,
+            restore_view,
+            workflow,
+            options
+          )
     )
   }
 

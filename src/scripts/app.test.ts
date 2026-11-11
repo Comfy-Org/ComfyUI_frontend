@@ -701,6 +701,27 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
+    it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.rootGraph.extra.loadedFrom = 'newer'
+
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        null,
+        { isCurrent: () => false }
+      )
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBe('newer')
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('beforeLoadGraph')
+    })
+
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
