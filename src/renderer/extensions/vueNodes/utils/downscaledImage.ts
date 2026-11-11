@@ -15,6 +15,7 @@ const MAX_CACHED_IMAGES = 128
 const cache = new Map<string, Promise<DisplayImage>>()
 const pending = new Map<number, (response: DownscaleResponse) => void>()
 let workers: Worker[] | undefined
+let workersFailed = false
 let nextId = 0
 
 /** Whether this browser can produce downscaled display copies. */
@@ -36,9 +37,17 @@ function workerPool(): Worker[] {
       pending.get(event.data.id)?.(event.data)
       pending.delete(event.data.id)
     }
+    worker.onerror = abandonWorkers
     return worker
   })
   return workers
+}
+
+function abandonWorkers() {
+  workersFailed = true
+  workers?.forEach((worker) => worker.terminate())
+  for (const [id, resolve] of pending) resolve({ id, result: undefined })
+  pending.clear()
 }
 
 function requestDownscale(
@@ -46,6 +55,7 @@ function requestDownscale(
   maxEdge: number
 ): Promise<DownscaleResponse> {
   const id = nextId++
+  if (workersFailed) return Promise.resolve({ id, result: undefined })
   const pool = workerPool()
   return new Promise((resolve) => {
     pending.set(id, resolve)
@@ -100,8 +110,8 @@ function evictOldest() {
   for (const [key, entry] of cache) {
     if (cache.size <= MAX_CACHED_IMAGES) return
     cache.delete(key)
-    void entry.then(({ url }) => {
-      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+    void entry.then(({ source, url }) => {
+      if (url !== source) URL.revokeObjectURL(url)
     })
   }
 }

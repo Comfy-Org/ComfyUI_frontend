@@ -12,6 +12,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { canDownscaleImages } from '@/renderer/extensions/vueNodes/utils/downscaledImage'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -30,10 +31,8 @@ vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-const displayImages = vi.hoisted(() => ({ supported: false }))
-
 vi.mock(import('@/renderer/extensions/vueNodes/utils/downscaledImage'), () => ({
-  canDownscaleImages: () => displayImages.supported,
+  canDownscaleImages: vi.fn(() => false),
   getDisplayImage: async (source: string) => ({
     source,
     url: 'blob:display-copy',
@@ -102,21 +101,19 @@ describe('ImagePreview', () => {
   }
 
   it('shows a downscaled copy while keeping the full-resolution source', async () => {
-    displayImages.supported = true
-    try {
-      renderImagePreview({
-        imageUrls: ['/api/view?filename=large.png&type=output']
-      })
+    vi.mocked(canDownscaleImages).mockReturnValue(true)
+    renderImagePreview({
+      imageUrls: ['/api/view?filename=large.png&type=output']
+    })
 
-      const image = await screen.findByTestId('main-image')
+    const image = await screen.findByTestId('main-image')
+    await vi.waitFor(() =>
       expect(image).toHaveAttribute('src', 'blob:display-copy')
-      expect(image).toHaveAttribute(
-        'data-full-src',
-        '/api/view?filename=large.png&type=output'
-      )
-    } finally {
-      displayImages.supported = false
-    }
+    )
+    expect(image).toHaveAttribute(
+      'data-full-src',
+      '/api/view?filename=large.png&type=output'
+    )
   })
 
   it('does not render when no imageUrls provided', () => {

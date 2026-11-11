@@ -35,7 +35,6 @@
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
             draggable="false"
             decoding="async"
-            loading="lazy"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
             @error="failedHdrPreviews[index] = true"
@@ -115,7 +114,7 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !isHdrPlaceholder(currentIndex) && mainImageSrc"
+        v-if="!imageError && !isHdrPlaceholder(currentIndex)"
         :key="currentImageUrl"
         data-testid="main-image"
         :src="mainImageSrc"
@@ -124,7 +123,6 @@
         :alt="imageAltText"
         draggable="false"
         decoding="async"
-        loading="lazy"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"

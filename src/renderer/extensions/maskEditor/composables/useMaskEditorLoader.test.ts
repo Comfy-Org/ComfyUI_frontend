@@ -183,6 +183,25 @@ describe('useMaskEditorLoader', () => {
     })
   })
 
+  it('loads the full-resolution file behind a downscaled preview', async () => {
+    const node = createLoadImageNode('$35-0', [{ type: 'output' }])
+    node.imgs = [
+      fromAny<HTMLImageElement, unknown>({
+        src: 'blob:http://localhost:8188/display-copy',
+        dataset: {
+          fullSrc: 'http://localhost:8188/api/view?filename=original.png'
+        }
+      })
+    ]
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'original.png' }
+    })
+    expect(requestedUrls.some((url) => url.startsWith('blob:'))).toBe(false)
+  })
+
   it('still fails when the node image itself cannot be loaded', async () => {
     failUrlPattern = /./
     const node = createLoadImageNode('some-regular-image.png [input]')
