@@ -2643,7 +2643,9 @@ describe('useWorkflowService', () => {
       })
       const delivered = reportErrorMock.mock.calls.flatMap(([error]) => [
         String(error?.message),
-        String(error?.stack)
+        String(error?.cause),
+        JSON.stringify(error?.cause ?? null),
+        JSON.stringify(error)
       ])
       expect(delivered).not.toContainEqual(
         expect.stringContaining('Customer Jane Doe')
