@@ -5304,6 +5304,7 @@ export const zBillingCapabilityDenialParams = z.object({
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export const zBillingCapabilitiesResponse = z.object({
+  billing_web_checkout_ui: z.enum(['embedded', 'full_page']),
   auto_top_up_enabled: z.boolean(),
   auto_top_up_member_view: zAutoTopUpMemberView.optional(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),

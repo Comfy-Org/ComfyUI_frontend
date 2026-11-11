@@ -16,7 +16,10 @@ import type { WebSessionMode } from '@comfyorg/account-core/billing'
 
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
-import { provideWebSessionCloudRead } from '@/config/checkoutUi'
+import {
+  provideHandoffCheckoutUiRead,
+  provideWebSessionCloudRead
+} from '@/config/checkoutUi'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
@@ -202,6 +205,11 @@ provideWebSessionCloudRead(() => {
       read: (url, init) => unifiedSession().sessionGet(url, init)
     }
   )
+})
+
+provideHandoffCheckoutUiRead(async () => {
+  const read = await createModeBillingClient().capabilities.read()
+  return read.status === 'ok' ? read.value.billingWebCheckoutUi : undefined
 })
 
 export function createModeBillingClient(): BillingWebClient {

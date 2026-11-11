@@ -2083,6 +2083,15 @@ export type BillingCapabilities = {
  */
 export type BillingCapabilitiesResponse = {
   /**
+   * Which checkout UI billing-web renders for this user: the
+   * billing_web_checkout_ui rollout flag, evaluated by ingest the same
+   * way GET /api/features evaluates it. Any evaluation failure reads as
+   * embedded. It lets a caller that cannot read /api/features, such as
+   * a billing handoff's scoped session, render the same checkout.
+   *
+   */
+  billing_web_checkout_ui: 'embedded' | 'full_page'
+  /**
    * Whether auto top-up is rolled out to this user: the auto_top_up_enabled
    * rollout flag, evaluated by ingest the same way GET /api/features
    * evaluates it. Any evaluation failure reads as false. It gates

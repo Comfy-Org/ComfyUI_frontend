@@ -50,6 +50,7 @@ function capabilitiesBody(
 ): CapabilitiesResponseBody {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
@@ -68,6 +69,7 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_member_view'
   | 'auto_top_up_setup'
   | 'billing_notice_audience'
+  | 'billing_web_checkout_ui'
   | 'capabilities'
   | 'denied_reason_params'
   | 'denied_reasons'
