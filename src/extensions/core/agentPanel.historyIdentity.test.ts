@@ -30,8 +30,7 @@ vi.mock(
     DISTRIBUTION: 'cloud',
     isCloud: true,
     isDesktop: false,
-    isNightly: false,
-    isTrustedObjectInfo: true
+    isNightly: false
   })
 )
 vi.mock(
