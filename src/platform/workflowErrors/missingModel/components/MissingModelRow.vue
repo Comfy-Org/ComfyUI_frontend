@@ -345,6 +345,7 @@ import {
 } from '@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import { createTemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
+import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
 import MissingModelDownloadProgress from '@/platform/workflowErrors/missingModel/components/MissingModelDownloadProgress.vue'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -485,6 +486,9 @@ const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
+
+  const downloaded = formatDownloadedBytes(hostDownloadState.value)
+  if (downloaded) return downloaded
 
   const url = model.representative.url
   const size = url ? fileSizeFor(url) : undefined

@@ -788,6 +788,9 @@ describe('MissingModelRow', () => {
       expect(
         screen.getByTestId('missing-model-download-progress')
       ).toHaveTextContent(/^50%$/)
+      expect(
+        screen.getByText('checkpoints · 512 MB / 1 GB')
+      ).toBeInTheDocument()
       expect(screen.queryByTestId('missing-model-download')).toBeNull()
     })
 

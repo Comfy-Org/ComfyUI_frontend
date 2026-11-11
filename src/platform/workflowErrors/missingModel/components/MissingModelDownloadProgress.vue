@@ -48,7 +48,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
-import { formatSize } from '@/utils/formatUtil'
+import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
 
 type ActiveDownloadState = Extract<
   TemplateModelDownloadState,
@@ -68,16 +68,6 @@ const progressPercent = computed(() => {
   return Math.round(Math.min(1, Math.max(0, state.fraction)) * 100)
 })
 
-function byteProgressText(
-  state: Extract<ActiveDownloadState, { status: 'downloading' }>
-): string | undefined {
-  const { receivedBytes, totalBytes } = state
-  if (receivedBytes !== null && totalBytes !== null) {
-    return `${formatSize(receivedBytes)} / ${formatSize(totalBytes)}`
-  }
-  if (receivedBytes !== null) return formatSize(receivedBytes)
-}
-
 const progressText = computed(() => {
   if (state.status === 'queued') {
     return t('rightSidePanel.missingModels.downloadQueued')
@@ -85,7 +75,7 @@ const progressText = computed(() => {
   if (state.status === 'starting') {
     return t('rightSidePanel.missingModels.downloadStarting')
   }
-  const bytes = byteProgressText(state)
+  const bytes = formatDownloadedBytes(state)
   if (state.activity === 'paused') {
     return bytes
       ? t(
