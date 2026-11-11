@@ -1799,7 +1799,26 @@ export class ComfyApp implements IComfyApp {
         let rejectedCount = 0
         const promptIds: string[] = []
         const submissions: { promptId: string; nodeCount: number }[] = []
+        const announceQueued = () => {
+          if (queuedCount === 0) return
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
+          api.dispatchCustomEvent('promptQueued', {
+            number,
+            batchCount: queuedCount,
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
+          })
+        }
         const finishAttempt = () => {
+          announceQueued()
           api.dispatchCustomEvent('promptQueueAttemptEnded', {
             requestId,
             queued: queuedCount,
@@ -2093,23 +2112,6 @@ export class ComfyApp implements IComfyApp {
           useFreeTierQuota().trackRun()
         }
 
-        if (queuedCount > 0) {
-          this.canvas.draw(true, true)
-          void this.ui.queue.update().catch((error) => {
-            reportError(error, {
-              surface: 'graph',
-              errorType: 'queue_ui_update_failure'
-            })
-          })
-          api.dispatchCustomEvent('promptQueued', {
-            number,
-            batchCount: queuedCount,
-            requestId,
-            promptIds,
-            submissions,
-            rejectedCount
-          })
-        }
         finishAttempt()
       }
     } finally {
