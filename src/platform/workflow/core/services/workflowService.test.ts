@@ -799,6 +799,42 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('keeps the saved baseline of a modified workflow kept by a superseded open', async () => {
+      const workflows = useWorkflowStore()
+      const saved = makeWorkflowData({ saved: true })
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, saved)
+      current.changeTracker.activeState = makeWorkflowData({
+        saved: true,
+        unsavedEdit: true
+      })
+      current.isModified = true
+      workflows.activeWorkflow = current
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          if (workflow === loading) currentRequest = false
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(current.changeTracker.initialState).toBe(saved)
+      expect(current.isModified).toBe(true)
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
