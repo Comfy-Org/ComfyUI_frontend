@@ -1,4 +1,3 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -6,16 +5,13 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -35,7 +31,6 @@ function pendingInviteFor(email: string): WorkspacePendingInvite {
 }
 
 function renderForm(props: Record<string, unknown> = {}) {
-  mockBillingContext()
   const user = userEvent.setup()
   const result = render(InviteMembersForm, {
     props: {
@@ -134,33 +129,15 @@ describe('InviteMembersForm', () => {
       source: 'post_upgrade_success',
       count: 2
     })
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(emitted().invitesCreated).toEqual([
+      [[pendingInviteFor('a@b.com'), pendingInviteFor('c@d.com')]]
+    ])
     expect(submittedPayloads(emitted)).toHaveLength(1)
     expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com', 'c@d.com'])
     expect(submittedPayloads(emitted)[0][1].map((i) => i.email)).toEqual([
       'a@b.com',
       'c@d.com'
     ])
-  })
-
-  it('completes submission when the billing refresh fails', async () => {
-    const refreshError = new Error('refresh failed')
-    const { user, emitted } = renderForm()
-    vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
-      refreshError
-    )
-
-    await user.type(emailInput(), 'a@b.com{Enter}')
-    await user.click(submitButton())
-
-    await waitFor(() =>
-      expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com'])
-    )
-    expect(submitButton()).toBeEnabled()
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    await waitFor(() =>
-      expect(console.error).toHaveBeenCalledWith(refreshError)
-    )
   })
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
@@ -243,6 +220,7 @@ describe('InviteMembersForm', () => {
       })
     ])
     expect(emitted().submitted).toBeUndefined()
+    expect(emitted().invitesCreated).toEqual([[[pendingInviteFor('ok@x.com')]]])
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 1
@@ -254,6 +232,10 @@ describe('InviteMembersForm', () => {
       expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
     )
     expect(submittedPayloads(emitted)[0][0]).toEqual(['ok@x.com', 'fail@x.com'])
+    expect(emitted().invitesCreated).toEqual([
+      [[pendingInviteFor('ok@x.com')]],
+      [[pendingInviteFor('fail@x.com')]]
+    ])
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledTimes(2)
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
@@ -283,7 +265,7 @@ describe('InviteMembersForm', () => {
     ])
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(emitted().invitesCreated).toBeUndefined()
   })
 
   it('keeps over-limit chips visible and blocks submission', async () => {

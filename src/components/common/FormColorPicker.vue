@@ -21,7 +21,7 @@
 import { computed, ref, watch } from 'vue'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 
 const modelValue = defineModel<string>('modelValue')
 const {

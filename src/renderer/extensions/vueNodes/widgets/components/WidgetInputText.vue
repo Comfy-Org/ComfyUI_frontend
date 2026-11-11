@@ -1,23 +1,34 @@
 <template>
-  <WidgetLayoutField :widget="layoutWidget">
-    <div class="relative">
+  <WidgetLayoutField
+    data-testid="widget-text-row"
+    :widget="layoutWidget"
+    :input-id
+    :value-text="modelValue"
+    full-width-control
+    :root-class="
+      cn(!isReadOnly && 'hover:bg-muted', size === 'large' && 'py-3 text-sm')
+    "
+  >
+    <div class="relative h-full">
       <Loader
         v-if="loading"
         size="sm"
         class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-foreground"
       />
       <Input
-        v-model="modelValue"
         v-bind="filteredProps"
+        :id="inputId"
+        v-model="modelValue"
         :class="
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
             loading && 'pl-9'
           )
         "
+        :size="1"
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
@@ -27,10 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -54,6 +65,7 @@ const {
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
+const inputId = useId()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)

@@ -1,5 +1,28 @@
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField
+    :widget
+    :input-id
+    :value-text="selectedSummary"
+    :root-class="cn(!disabled && 'cursor-pointer')"
+  >
+    <template #leading>
+      <Button
+        type="button"
+        tabindex="-1"
+        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :disabled="isStepDisabled(-1)"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        variant="muted-textonly"
+        size="icon-sm"
+        @click="stepOption(-1)"
+      >
+        <i
+          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          aria-hidden="true"
+        />
+      </Button>
+    </template>
+    <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
       :model-value="selectedOption ?? null"
@@ -17,51 +40,50 @@
           :class="
             cn(
               WidgetInputBaseClass,
-              'flex w-full min-w-0 items-center overflow-hidden',
+              'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
-              !disabled && 'hover:bg-muted',
               disabled && 'opacity-50',
               isInvalid && 'ring-1 ring-destructive'
             )
           "
         >
           <ComboboxTrigger as-child>
-            <button
+            <Button
+              :id="inputId"
               type="button"
               role="combobox"
               aria-haspopup="listbox"
-              :aria-label="widget.label || widget.name"
+              :aria-label="widgetLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
               :disabled
               tabindex="0"
               data-testid="widget-select-default-trigger"
-              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
+              variant="textonly"
+              size="sm"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
             >
-              <span class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left">
-                {{ selectedLabel || placeholder || '\u00a0' }}
+              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
+                {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
-            </button>
+            </Button>
           </ComboboxTrigger>
           <slot />
-          <button
+          <Button
             type="button"
             tabindex="-1"
-            aria-hidden="true"
-            :disabled
-            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(!isOpen)"
+            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :disabled="isStepDisabled(1)"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            variant="muted-textonly"
+            size="icon-sm"
+            @click="stepOption(1)"
           >
             <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] size-4',
-                  disabled ? 'bg-muted-foreground' : 'bg-muted-foreground'
-                )
-              "
+              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
               aria-hidden="true"
             />
-          </button>
+          </Button>
         </div>
       </ComboboxAnchor>
 
@@ -71,24 +93,24 @@
           data-testid="widget-select-default-overlay"
           position="popper"
           :side-offset="1"
-          align="start"
+          align="end"
           :class="
             cn(
               'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
-          @keydown.capture="replayNavigationAfterPendingHighlight"
+          @keydown.capture="replayComboboxNavigation"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-primary"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
             <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              class="icon-[lucide--search] text-sm text-muted-foreground"
               aria-hidden="true"
             />
             <ComboboxInput
@@ -128,7 +150,7 @@
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
                     'hover:bg-secondary data-highlighted:bg-secondary',
-                    'data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30'
+                    'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
                   )
                 "
               >
@@ -173,11 +195,14 @@ import {
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -187,6 +212,7 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
+  filenameSummary?: boolean
 }
 
 interface SelectOption {
@@ -199,7 +225,9 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
   filterPlaceholder?: string
 }
 
-const { widget } = defineProps<Props>()
+const { widget, filenameSummary = false } = defineProps<Props>()
+const inputId = useId()
+const widgetLabel = computed(() => widget.label || widget.name)
 
 const MAX_VISIBLE_OPTIONS = 7
 
@@ -263,6 +291,9 @@ const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
 
+const dynamicOptions = computed(
+  () => typeof widgetOptions.value?.values === 'function'
+)
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(
@@ -349,6 +380,12 @@ const selectedLabel = computed(() => {
   return ''
 })
 
+const selectedSummary = computed(() =>
+  filenameSummary && !widgetOptions.value?.getOptionLabel
+    ? selectedLabel.value.split(/[/\\]/).at(-1)
+    : selectedLabel.value
+)
+
 function selectOption(option: SelectOption | null) {
   if (!option) return
 
@@ -358,6 +395,15 @@ function selectOption(option: SelectOption | null) {
   isOpen.value = false
 }
 
+const { isStepDisabled, stepOption } = useComboStepping({
+  options: normalizedOptions,
+  selectedOption,
+  disabled,
+  dynamicOptions,
+  refreshOptions,
+  onSelect: selectOption
+})
+
 function focusSearchInput() {
   const input =
     searchInputContainerRef.value?.querySelector<HTMLInputElement>('input')
@@ -365,27 +411,6 @@ function focusSearchInput() {
 
   input.focus({ preventScroll: true })
   return true
-}
-
-const NAVIGATION_KEYS = new Set([
-  'ArrowDown',
-  'ArrowUp',
-  'Home',
-  'End',
-  'PageDown',
-  'PageUp',
-  'Enter'
-])
-
-function replayNavigationAfterPendingHighlight(event: KeyboardEvent) {
-  if (!event.isTrusted || event.isComposing || !NAVIGATION_KEYS.has(event.key))
-    return
-  const { target } = event
-  event.preventDefault()
-  event.stopPropagation()
-  requestAnimationFrame(() =>
-    target?.dispatchEvent(new KeyboardEvent(event.type, event))
-  )
 }
 
 function handleOpenChange(open: boolean) {

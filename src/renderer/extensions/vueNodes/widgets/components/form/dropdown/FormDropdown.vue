@@ -5,14 +5,13 @@ import {
   unrefElement,
   useEventListener
 } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
@@ -32,6 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
+  inputId?: string
   items: FormDropdownItem[]
   /** Items used for display in the input field. Falls back to items if not provided. */
   displayItems?: FormDropdownItem[]
@@ -70,6 +70,7 @@ interface Props {
 const { t } = useI18n()
 
 const {
+  inputId,
   placeholder,
   multiple = false,
   uploadable = false,
@@ -316,28 +317,31 @@ function showPicker() {
 
 <template>
   <div ref="triggerAnchorRef">
-    <FormDropdownInput
-      ref="triggerRef"
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      :is-uploading
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
-    <Popover v-model:open="isOpen">
-      <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
+    <PopoverRoot v-model:open="isOpen">
+      <FormDropdownInput
+        ref="triggerRef"
+        :input-id
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :items
+        :display-items
+        :max-selectable
+        :selected
+        :uploadable
+        :disabled
+        :accept
+        :is-uploading
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
+      >
+        <template #anchor="{ element }">
+          <PopoverAnchor as="template" :reference="element" />
+        </template>
+      </FormDropdownInput>
       <PopoverContent
-        align="start"
-        :collision-padding="8"
-        class="pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        align="end"
+        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
       >
@@ -371,6 +375,6 @@ function showPicker() {
           @show-picker="showPicker"
         />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>

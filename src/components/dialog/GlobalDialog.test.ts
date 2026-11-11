@@ -1,19 +1,21 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
-import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -45,6 +47,22 @@ vi.mock<unknown>(
       })
     }
   }
+)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn()
+    })
+  })
 )
 
 const i18n = createI18n({
@@ -190,6 +208,26 @@ describe('GlobalDialog', () => {
       expect(await screen.findByRole('dialog', { name })).toBeInTheDocument()
     }
   )
+
+  it('names an untitled framed dialog by the DialogTitle in its content', async () => {
+    mountDialog()
+    const contentTitle = ref('Original title')
+    const TitledBody = defineComponent({
+      name: 'TitledBody',
+      setup: () => () => h(DialogTitle, () => contentTitle.value)
+    })
+
+    useDialogStore().showDialog({
+      key: 'framed-content-titled',
+      component: TitledBody
+    })
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Original title'
+    })
+    contentTitle.value = 'Translated title'
+    await waitFor(() => expect(dialog).toHaveAccessibleName('Translated title'))
+  })
 
   it('opens the save dialog with an accessible name and description', async () => {
     mountDialog()

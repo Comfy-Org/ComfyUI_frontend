@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 vi.mock(import('@/scripts/api'))
 

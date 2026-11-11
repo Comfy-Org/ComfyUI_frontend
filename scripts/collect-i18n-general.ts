@@ -3,7 +3,10 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
   normalizeI18nKey
@@ -42,11 +45,20 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 
 test('collect-i18n-general', async ({ comfyPage }) => {
   const commands = (
-    await comfyPage.page.evaluate(() => {
+    await comfyPage.page.evaluate(async () => {
       const app = window.app
       if (!app) throw new Error('ComfyUI app is not initialized')
 
-      return app.extensionManager.command.commands.map((command) => {
+      const { load3dExtension } =
+        await import('../src/extensions/core/load3d/load3d')
+      const commandsById = new Map(
+        [
+          ...(load3dExtension.commands ?? []),
+          ...app.extensionManager.command.commands
+        ].map((command) => [command.id, command])
+      )
+
+      return Array.from(commandsById.values()).map((command) => {
         const label =
           typeof command.label === 'function' ? command.label() : command.label
         const menubarLabel =
@@ -65,7 +77,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
 
-  // Commands
   const menuLabels = extractMenuCommandLocaleStrings()
   const commandMenuLabels = new Set(
     commands.map((command) => command.menubarLabel ?? command.label ?? '')
@@ -87,7 +98,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  // Settings
   const settings = await comfyPage.page.evaluate(async () => {
     const { useSettingStore } =
       await import('../src/platform/settings/settingStore')
@@ -123,8 +133,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
         {
           name: setting.name,
           tooltip: setting.tooltip,
-          // Don't translate the locale options as each option is in its own language.
-          // e.g. "English", "中文", "Русский", "日本語", "한국어"
           options:
             optionLabels && setting.id !== 'Comfy.Locale'
               ? Object.fromEntries(
@@ -147,7 +155,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
       ])
   )
 
-  // Server Configs
   const allServerConfigsLocale = Object.fromEntries(
     SERVER_CONFIG_ITEMS.map((config) => [
       normalizeI18nKey(config.id),
@@ -173,8 +180,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
       {
         ...locale,
         menuLabels: allLabelsLocale,
-        // Do merge for settingsCategories as there are some manual translations
-        // for special panels like "About" and "Keybinding".
         settingsCategories: {
           ...locale.settingsCategories,
           ...allSettingCategoriesLocale
@@ -189,4 +194,10 @@ test('collect-i18n-general', async ({ comfyPage }) => {
 
   fs.writeFileSync(commandsPath, JSON.stringify(allCommandsLocale, null, 2))
   fs.writeFileSync(settingsPath, JSON.stringify(allSettingsLocale, null, 2))
+
+  expect(JSON.parse(fs.readFileSync(commandsPath, 'utf-8'))).toMatchObject({
+    Comfy_3DViewer_Open3DViewer: {
+      label: 'Open 3D Viewer (Beta) for Selected Node'
+    }
+  })
 })

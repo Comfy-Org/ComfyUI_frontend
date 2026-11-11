@@ -136,7 +136,18 @@ describe('isGatedPath', () => {
     ['src/__mocks__/api.ts', false],
     ['src/storybook/mocks/useBillingCapabilities.ts', false],
     ['browser_tests/fixtures/billing.ts', false],
-    ['packages/account-core/src/index.ts', false],
+    [
+      'packages/account-core/src/core/billing/billingTab/autoTopUpCard.ts',
+      true
+    ],
+    ['packages/account-ui/src/billing/AutoTopUpCard.vue', true],
+    [
+      'packages/account-core/src/core/billing/billingTab/autoTopUpCard.test.ts',
+      false
+    ],
+    ['packages/account-core/scripts/verify-publish.ts', false],
+    ['packages/design-system/src/index.ts', false],
+    ['packages/account-ui/src/../../../outside.ts', false],
     ['src/locales/en/main.json', false],
     ['src/../../outside.ts', false],
     ['src/a/../../../outside.vue', false],

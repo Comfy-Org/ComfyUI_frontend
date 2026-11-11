@@ -89,10 +89,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { TopbarBadge } from '@/types/comfy'
 
 const {
@@ -158,7 +158,7 @@ const iconClass = computed(() => {
   }
   switch (variant.value) {
     case 'error':
-      return 'pi pi-exclamation-circle'
+      return 'icon-[lucide--circle-alert]'
     case 'warning':
       return 'icon-[lucide--triangle-alert]'
     case 'info':

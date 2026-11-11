@@ -4,19 +4,20 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
   WorkflowExecutionIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
   WorkflowId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -29,16 +30,17 @@ import type {
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { AppMode } from '@/utils/appMode'
-import { isAppModeValue } from '@/utils/appMode'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import { isAppModeValue } from '@comfyorg/graph-model/appMode'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
@@ -165,6 +167,9 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
   const jobIdToWorkflowInstanceId = new Map<JobId, string>()
+
+  const jobIdToStampedWorkflowId = new Map<JobId, string>()
+  const MAX_STAMPED_WORKFLOW_ID_ENTRIES = 4000
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
@@ -473,22 +478,98 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
     jobIdToWorkflow.clear()
+    jobIdToStampedWorkflowId.clear()
 
     cancelPendingProgressUpdates()
   }
 
-  /**
-   * Whether frames for this job may paint the active workflow's canvas.
-   * Jobs whose owner is unknown are admitted unless another job is active.
-   */
-  function belongsToActiveWorkflow(jobId: JobId | undefined): boolean {
-    if (!jobId) return true
-    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
-    const activeInstanceId = workflowStore.activeWorkflow?.instanceId
-    if (ownerInstanceId && activeInstanceId) {
-      return ownerInstanceId === activeInstanceId
+  function routableWorkflowId(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
+  function rememberStampedWorkflowId(
+    jobId: JobId,
+    workflowId: string | undefined
+  ): void {
+    const stamped = routableWorkflowId(workflowId)
+    if (!stamped || jobIdToStampedWorkflowId.has(jobId)) return
+    jobIdToStampedWorkflowId.set(jobId, stamped)
+    while (jobIdToStampedWorkflowId.size > MAX_STAMPED_WORKFLOW_ID_ENTRIES) {
+      const oldest = jobIdToStampedWorkflowId.keys().next().value
+      if (oldest === undefined) break
+      jobIdToStampedWorkflowId.delete(oldest)
     }
-    return !activeJobId.value || jobId === activeJobId.value
+  }
+
+  type OwnershipLeg = 'instance' | 'path' | 'workflow-id' | 'active-job'
+
+  interface WorkflowOwnership {
+    owned: boolean
+    leg: OwnershipLeg
+  }
+
+  function ownershipByInstance(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
+    if (!ownerInstanceId || !activeWorkflow.instanceId) return
+    return {
+      owned: ownerInstanceId === activeWorkflow.instanceId,
+      leg: 'instance'
+    }
+  }
+
+  function ownershipByPath(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (!ownerPath || !activeWorkflow.path) return
+    return { owned: ownerPath === activeWorkflow.path, leg: 'path' }
+  }
+
+  function ownershipByWorkflowId(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow,
+    workflowId: string | undefined
+  ): WorkflowOwnership | undefined {
+    const activeGraphId = routableWorkflowId(
+      activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id
+    )
+    const frameWorkflowId =
+      routableWorkflowId(workflowId) ?? jobIdToStampedWorkflowId.get(jobId)
+    if (!frameWorkflowId || !activeGraphId) return
+    return { owned: frameWorkflowId === activeGraphId, leg: 'workflow-id' }
+  }
+
+  function resolveWorkflowOwnership(
+    jobId: JobId,
+    workflowId?: string
+  ): WorkflowOwnership {
+    const ownedByActiveJob = (): WorkflowOwnership => ({
+      owned: !activeJobId.value || jobId === activeJobId.value,
+      leg: 'active-job'
+    })
+
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return ownedByActiveJob()
+
+    return (
+      ownershipByInstance(jobId, activeWorkflow) ??
+      ownershipByPath(jobId, activeWorkflow) ??
+      ownershipByWorkflowId(jobId, activeWorkflow, workflowId) ??
+      ownedByActiveJob()
+    )
+  }
+
+  function rememberStampAndCheckActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId?: string
+  ): boolean {
+    if (!jobId) return true
+    rememberStampedWorkflowId(jobId, workflowId)
+    return resolveWorkflowOwnership(jobId, workflowId).owned
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -508,10 +589,35 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) return
+    rememberStampedWorkflowId(jobId, e.detail.workflow_id)
+    const ownership = resolveWorkflowOwnership(jobId, e.detail.workflow_id)
+    if (!ownership.owned) {
+      if (ownership.leg === 'active-job') {
+        reportAmbiguousExecutionStartRejection(jobId)
+      }
+      return
+    }
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+  }
+
+  function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
+    if (jobIdToWorkflowInstanceId.get(jobId)) return
+    reportError(
+      new Error('execution_start rejected for a job with no known owner'),
+      {
+        surface: 'graph',
+        errorType: 'warning_rejecting_unowned_execution_start',
+        level: 'warning',
+        context: {
+          jobId,
+          activeJobId: activeJobId.value,
+          hasOwnWorkflowRecord: !!queuedJobs.value[jobId]?.workflow,
+          activeWorkflowInstanceId: workflowStore.activeWorkflow?.instanceId
+        }
+      }
+    )
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -642,8 +748,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
-    const isOwned = belongsToActiveWorkflow(jobId)
+    const { nodes, prompt_id: jobId, workflow_id: workflowId } = detail
+    const isOwned = rememberStampAndCheckActiveWorkflow(jobId, workflowId)
 
     if (isOwned) {
       revokeStartedNodePreviews(
@@ -932,6 +1038,42 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
+  function forgetFinishedJobs(jobIds: Iterable<JobId>) {
+    for (const jobId of jobIds) {
+      if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      const workflow = jobIdToWorkflow.get(jobId)
+      forgetJob(jobId)
+      if (
+        workflow &&
+        getWorkflowStatus(workflow) === 'running' &&
+        !hasStartedJobForWorkflow(workflow)
+      ) {
+        clearWorkflowStatus(workflow)
+      }
+    }
+  }
+
+  function hasStartedJobForWorkflow(workflow: ComfyWorkflow): boolean {
+    return Object.entries(queuedJobs.value).some(
+      ([jobId, job]) =>
+        job.executionStartedAt !== undefined &&
+        jobIdToWorkflow.get(jobId) === workflow
+    )
+  }
+
+  function forgetJob(jobId: JobId) {
+    const progress = { ...nodeProgressStatesByJob.value }
+    delete progress[jobId]
+    nodeProgressStatesByJob.value = progress
+    useJobPreviewStore().clearPreview(jobId)
+    jobIdToWorkflow.delete(jobId)
+    jobIdToStampedWorkflowId.delete(jobId)
+    if (jobId in queuedJobs.value)
+      void jobReset.trigger(queuedJobs.value[jobId])
+    delete queuedJobs.value[jobId]
+    cancelPendingProgressUpdates(jobId)
+  }
+
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
@@ -943,17 +1085,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function resetExecutionState(jobIdParam?: JobId | null) {
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      if (jobId in queuedJobs.value)
-        void jobReset.trigger(queuedJobs.value[jobId])
-      delete queuedJobs.value[jobId]
-    }
-    cancelPendingProgressUpdates(jobId)
+    if (jobId) forgetJob(jobId)
+    else cancelPendingProgressUpdates()
     if (!activeJobId.value || jobId === activeJobId.value) {
       executionIdToLocatorCache.clear()
       nodeProgressStates.value = {}
@@ -998,11 +1131,18 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.submissionAcceptedAt = submissionAcceptedAt
     queuedJob.workflowContext = workflowContext
     queuedJob.workflowExecutionIntent = workflowExecutionIntent
-    queuedJob.workflow = workflow
-    jobIdToWorkflow.set(id, workflow)
     queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
+    registerJobOwner(id, workflow)
+  }
+
+  /** Routes a job's frames and outputs to `workflow`, including jobs queued elsewhere. */
+  function registerJobOwner(id: JobId, workflow: ComfyWorkflow) {
+    queuedJobs.value[id] ??= { nodes: {} }
+    const queuedJob = queuedJobs.value[id]
+    queuedJob.workflow = workflow
+    jobIdToWorkflow.set(id, workflow)
     const wid = workflow.activeState?.id ?? workflow.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
@@ -1127,7 +1267,9 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast(belongsToActiveWorkflow)
+    const ownedJobId = startedJobIds.findLast((jobId) =>
+      rememberStampAndCheckActiveWorkflow(jobId)
+    )
     executionIdToLocatorCache.clear()
     if (!ownedJobId) {
       nodeProgressStates.value = {}
@@ -1168,17 +1310,19 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
-    belongsToActiveWorkflow,
+    rememberStampAndCheckActiveWorkflow,
     isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     clearActiveJobIfStale,
+    forgetFinishedJobs,
     bindExecutionEvents,
     unbindExecutionEvents,
     onJobReset: jobReset.on,
     storeJob,
+    registerJobOwner,
     registerJobWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.

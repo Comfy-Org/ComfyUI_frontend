@@ -1,7 +1,8 @@
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-
-export type CubicBezier = readonly [Point, Point, Point, Point]
+import type {
+  CubicBezier,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 const SPLINE_CONTROL_RATIO = 0.25
 

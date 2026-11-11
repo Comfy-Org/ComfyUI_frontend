@@ -5,18 +5,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetItem from './WidgetItem.vue'
 
@@ -29,7 +29,7 @@ const { StubWidgetComponent } = vi.hoisted(() => ({
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<button class="stub-widget" type="button" :aria-label="widget?.name" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" @click="widget?.callback?.()" />'
   }
 }))
 
@@ -213,6 +213,27 @@ describe('WidgetItem', () => {
 
       expect(stub.type).toBe('combo')
     })
+
+    it.for([
+      { scenario: 'no type', type: undefined, renderedType: null },
+      { scenario: 'a non-string type', type: 7, renderedType: '7' }
+    ])(
+      'renders a legacy widget with $scenario',
+      async ({ type, renderedType }) => {
+        const user = userEvent.setup()
+        const callback = vi.fn()
+        const widget = createMockWidget({ callback })
+        Reflect.set(widget, 'type', type)
+
+        const { container } = renderWidgetItem(widget)
+        const stub = getStubWidget(container)
+        await user.click(screen.getByRole('button', { name: 'test_widget' }))
+
+        expect(stub.name).toBe('test_widget')
+        expect(stub.type).toBe(renderedType)
+        expect(callback).not.toHaveBeenCalled()
+      }
+    )
 
     it('passes name from widget state to the widget component', () => {
       const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')

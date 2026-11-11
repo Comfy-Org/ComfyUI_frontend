@@ -29,47 +29,14 @@
     </TagEditor>
 
     <p
-      v-if="invalidEmails.length > 0"
-      :id="invalidEmailsHintId"
-      role="alert"
-      class="m-0 text-xs text-destructive"
+      v-for="hint in validationHints"
+      :id="hint.id"
+      :key="hint.id"
+      :role="hint.role"
+      :aria-live="hint.ariaLive"
+      :class="cn('m-0 text-xs', hint.class)"
     >
-      {{
-        $t(
-          'workspacePanel.inviteMemberDialog.invalidEmailCount',
-          invalidEmails.length
-        )
-      }}
-    </p>
-    <p
-      v-if="alreadyInvitedEmails.length > 0"
-      :id="pendingInvitesHintId"
-      aria-live="polite"
-      class="m-0 text-xs text-warning"
-    >
-      <template v-if="alreadyInvitedEmails.length === 1">
-        {{ $t('workspacePanel.inviteMemberDialog.pendingInviteSingle') }}
-      </template>
-      <template v-else>
-        {{
-          $t('workspacePanel.inviteMemberDialog.pendingInviteCount', {
-            count: alreadyInvitedEmails.length
-          })
-        }}
-      </template>
-    </p>
-    <p
-      v-if="seatOverage > 0"
-      :id="seatLimitHintId"
-      role="alert"
-      class="m-0 text-xs text-destructive"
-    >
-      {{
-        $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
-          max: maxSeats,
-          overage: seatOverage
-        })
-      }}
+      {{ hint.message }}
     </p>
 
     <div
@@ -108,12 +75,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import TagEditor from '@/components/common/TagEditor.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import { useTelemetry } from '@/platform/telemetry'
-import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
+import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { WorkspaceInviteMetadata } from '@comfyorg/telemetry/types'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -143,16 +109,13 @@ const {
   cancelLabel?: string
   maxSeats?: number | null
   occupiedSeats?: number | null
-  /** Hide the built-in submit row so a parent can place the action elsewhere
-   *  (e.g. the team-upgrade success footer); drive it via the exposed submit. */
   showSubmit?: boolean
-  /** Focus the email input on mount. Off by default so an embedding dialog
-   *  keeps control of its own focus order. */
   autoFocus?: boolean
   tagsInputClass?: string
 }>()
 
 const emit = defineEmits<{
+  invitesCreated: [invites: WorkspacePendingInvite[]]
   submitted: [emails: string[], invites: WorkspacePendingInvite[]]
   cancel: []
 }>()
@@ -161,7 +124,6 @@ const { t } = useI18n()
 const toast = useToast()
 const telemetry = useTelemetry()
 const workspaceStore = useTeamWorkspaceStore()
-const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
@@ -220,15 +182,48 @@ const canSubmit = computed(
     seatOverage.value === 0
 )
 
+const validationHints = computed(() =>
+  [
+    invalidEmails.value.length > 0
+      ? {
+          id: invalidEmailsHintId,
+          role: 'alert',
+          class: 'text-destructive',
+          message: t(
+            'workspacePanel.inviteMemberDialog.invalidEmailCount',
+            invalidEmails.value.length
+          )
+        }
+      : null,
+    alreadyInvitedEmails.value.length > 0
+      ? {
+          id: pendingInvitesHintId,
+          ariaLive: 'polite' as const,
+          class: 'text-warning',
+          message:
+            alreadyInvitedEmails.value.length === 1
+              ? t('workspacePanel.inviteMemberDialog.pendingInviteSingle')
+              : t('workspacePanel.inviteMemberDialog.pendingInviteCount', {
+                  count: alreadyInvitedEmails.value.length
+                })
+        }
+      : null,
+    seatOverage.value > 0
+      ? {
+          id: seatLimitHintId,
+          role: 'alert',
+          class: 'text-destructive',
+          message: t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
+            max: maxSeats,
+            overage: seatOverage.value
+          })
+        }
+      : null
+  ].filter((hint) => hint !== null)
+)
+
 const describedBy = computed(
-  () =>
-    [
-      invalidEmails.value.length > 0 ? invalidEmailsHintId : undefined,
-      alreadyInvitedEmails.value.length > 0 ? pendingInvitesHintId : undefined,
-      seatOverage.value > 0 ? seatLimitHintId : undefined
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined
+  () => validationHints.value.map((hint) => hint.id).join(' ') || undefined
 )
 
 function onEmailsUpdate(value: string[]) {
@@ -264,7 +259,7 @@ async function onSubmit() {
         source,
         count: successfulEmails.length
       })
-      void fetchStatus().catch(console.error)
+      emit('invitesCreated', createdInvites)
     }
 
     if (failedEmails.length === 0) {

@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
@@ -135,10 +135,10 @@ function handleVideoLoad(event: Event) {
         v-if="selected"
         :aria-label="t('g.selected')"
         role="img"
-        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-primary"
+        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-foreground"
       >
         <i
-          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-foreground"
+          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-background"
           aria-hidden="true"
         />
       </div>

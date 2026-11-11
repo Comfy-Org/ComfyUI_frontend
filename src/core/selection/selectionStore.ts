@@ -11,7 +11,7 @@ import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
+} from '@comfyorg/graph-model/graphScopeId'
 
 type SelectionRoots = ReadonlyMap<
   RootGraphId,

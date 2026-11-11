@@ -1,0 +1,63 @@
+{
+  "id": "ingest-api",
+  "capability": "Shared ingest transport contracts",
+  "description": "The error, URL, web-session adapter, and capability-revision contracts extracted from the workspace and billing clients. Also the generated @comfyorg/ingest-types API types and Zod schemas. ComfyUI backend wire schemas remain in comfyui-api. Other ingest transport files remain unclassified.",
+  "modules": [
+    {
+      "path": "src/platform/remote/ingest/ingestApiError.ts"
+    },
+    {
+      "path": "src/platform/remote/ingest/ingestApiUrl.ts"
+    },
+    {
+      "path": "src/platform/remote/ingest/webSessionAdapter.ts"
+    },
+    {
+      "path": "src/platform/remote/ingest/capabilityRevision.ts"
+    },
+    {
+      "path": "packages/ingest-types/src/**"
+    },
+    {
+      "path": "src/platform/remote/ingest/ingestTypesContract.test.ts"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/platform/remote/ingest/ingestApiError.ts",
+    "src/platform/remote/ingest/ingestApiUrl.ts",
+    "src/platform/remote/ingest/webSessionAdapter.ts",
+    "src/platform/remote/ingest/capabilityRevision.ts",
+    "packages/ingest-types/src/index.ts",
+    "packages/ingest-types/src/zod.gen.ts"
+  ],
+  "characterizationScenarios": [
+    {
+      "name": "Ingest errors preserve HTTP status, operation, and workspace-access refusal identity",
+      "checks": ["src/platform/workspace/api/workspaceApi.test.ts"]
+    },
+    {
+      "name": "Ingest URLs select the cloud API or configured local ingest host",
+      "checks": ["src/platform/workspace/api/workspaceApiUrl.test.ts"]
+    },
+    {
+      "name": "The web-session adapter preserves Axios request and response behavior",
+      "checks": ["src/platform/workspace/api/webSessionAdapter.test.ts"]
+    },
+    {
+      "name": "Mutation responses publish capability revisions without publishing query revisions",
+      "checks": ["src/platform/billing/api/capabilityRevision.test.ts"]
+    },
+    {
+      "name": "Generated ingest types and Zod schemas describe the same contract, and response schemas tolerate fields the server adds later",
+      "checks": ["src/platform/remote/ingest/ingestTypesContract.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md"
+  ],
+  "compatibilityPromises": [
+    "WorkspaceApiError and NoWorkspaceAccessError retain shared runtime identity across billing and workspace clients.",
+    "Other domains import only the characterized public contracts: the ingest error, URL, web-session, and capability-revision modules, and the @comfyorg/ingest-types type and Zod entries. Other ingest modules are not opened by this record."
+  ],
+  "deepImports": "enforced"
+}

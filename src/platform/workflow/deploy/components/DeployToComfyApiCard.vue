@@ -10,7 +10,7 @@
       rel="noopener noreferrer"
     >
       {{ $t('deployToComfyApi.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 
@@ -37,7 +37,7 @@
           muted
           loop
           plays-inline
-          playback-control
+          :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
@@ -84,14 +84,14 @@
             class="w-full @xl:w-auto"
             data-testid="deploy-to-comfy-api-agent"
             :loading="isCopying"
-            @click="copyHandoff"
+            @click="copyWith(copyBrief)"
           >
             <template v-if="copied">
-              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--check]" aria-hidden="true" />
               {{ $t('deployToComfyApi.copied') }}
             </template>
             <template v-else>
-              <i class="icon-[lucide--copy] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--copy]" aria-hidden="true" />
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
@@ -121,17 +121,18 @@
 
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import Video from '@/components/common/Video.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Video from '@comfyorg/design-system/media/Video'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
 const {
   videoSources = [],
@@ -154,8 +155,7 @@ const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const { captureInputs, copyBrief } = useAgentHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const isCopying = ref(false)
-const copied = ref(false)
+const { isCopying, copied, copyWith } = useBriefCopy()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
@@ -168,15 +168,4 @@ const summary = computed(() =>
     t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
   ].join(' · ')
 )
-
-async function copyHandoff() {
-  if (isCopying.value) return
-  isCopying.value = true
-  copied.value = false
-  try {
-    copied.value = await copyBrief()
-  } finally {
-    isCopying.value = false
-  }
-}
 </script>

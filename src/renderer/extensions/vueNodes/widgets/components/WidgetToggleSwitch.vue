@@ -1,5 +1,11 @@
 <template>
-  <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
+  <WidgetLayoutField
+    v-slot="{ borderStyle }"
+    :widget
+    :input-id
+    :no-border="!hasLabels"
+    :root-class="cn(hasLabels && 'h-auto')"
+  >
     <ToggleGroup
       v-if="hasLabels"
       type="single"
@@ -13,10 +19,22 @@
       "
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
-      <ToggleGroupItem value="off" size="sm" class="flex-1 truncate">
+      <ToggleGroupItem
+        :id="modelValue ? inputId : undefined"
+        value="off"
+        :aria-label="widget.options?.off ?? t('widgets.boolean.false')"
+        size="sm"
+        class="flex-1 truncate"
+      >
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
-      <ToggleGroupItem value="on" size="sm" class="flex-1 truncate">
+      <ToggleGroupItem
+        :id="modelValue ? undefined : inputId"
+        value="on"
+        :aria-label="widget.options?.on ?? t('widgets.boolean.true')"
+        size="sm"
+        class="flex-1 truncate"
+      >
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
     </ToggleGroup>
@@ -32,6 +50,7 @@
       "
     >
       <Switch
+        :id="inputId"
         :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
@@ -43,13 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Switch from '@/components/ui/switch/Switch.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -62,6 +82,7 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<boolean>()
+const inputId = useId()
 
 const hideLayoutField = useHideLayoutField()
 const { t } = useI18n()

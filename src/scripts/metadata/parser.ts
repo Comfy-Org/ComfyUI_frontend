@@ -40,7 +40,12 @@ export async function getWorkflowDataFromFile(
 
     return { workflow, prompt }
   }
-  if (file.type === 'video/webm') {
+  if (
+    file.type === 'video/webm' ||
+    file.type === 'video/x-matroska' ||
+    file.type === 'video/matroska' ||
+    file.name.toLowerCase().endsWith('.mkv')
+  ) {
     return await getFromWebmFile(file)
   }
   if (

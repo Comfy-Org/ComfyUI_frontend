@@ -62,9 +62,6 @@ export function resolveDebugPanelEnabled(
  * outbound frame, per applied frame and per minted op — and an uncached read
  * would put a synchronous `localStorage.getItem` on each of them, for
  * opted-out users most of all.
- *
- * Declared here, above `applyQueryOverride()`'s module-evaluation call, so the
- * setters it invokes are not reaching into a temporal dead zone.
  */
 let cachedEnabled: boolean | null = null
 let cachedStoredEnabled: string | null | undefined
@@ -141,7 +138,30 @@ function consumeQueryParam(): void {
   }
 }
 
-applyQueryOverride()
+/**
+ * Applies a pending `?crdtDebug` link and follows cross-tab preference changes
+ * until the returned disposer runs.
+ */
+export function startCrdtDebugGate(): () => void {
+  clearCachedPreferences()
+  applyQueryOverride()
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.key === null ||
+      event.key === ENABLED_KEY ||
+      event.key === LEVEL_KEY
+    )
+      clearCachedPreferences()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}
+
+function clearCachedPreferences(): void {
+  cachedEnabled = null
+  cachedStoredEnabled = undefined
+  cachedLevel = null
+}
 
 /**
  * Whether the CRDT debug instrument (panel + console tracing) is available.
@@ -174,14 +194,6 @@ export function setCrdtDebugEnabled(enabled: boolean): void {
   cachedEnabled = enabled
   cachedStoredEnabled = String(enabled)
   writeStorage(ENABLED_KEY, String(enabled))
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key !== null && event.key !== ENABLED_KEY) return
-    cachedEnabled = null
-    cachedStoredEnabled = undefined
-  })
 }
 
 /**

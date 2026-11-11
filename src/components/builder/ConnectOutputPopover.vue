@@ -4,12 +4,10 @@
       <slot />
     </PopoverTrigger>
     <PopoverContent
-      side="bottom"
       align="end"
       :side-offset="18"
-      :collision-padding="10"
       data-testid="builder-connect-output-popover"
-      class="z-1001 w-80 rounded-xl border bg-background shadow-md will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="w-80 rounded-xl p-0"
     >
       <div class="flex h-12 items-center justify-between px-4">
         <h3 class="text-sm font-medium">
@@ -19,7 +17,7 @@
           :aria-label="t('g.close')"
           class="flex cursor-pointer appearance-none items-center justify-center border-none bg-transparent p-0 text-muted-foreground hover:text-foreground"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </PopoverClose>
       </div>
       <div class="border-t" />
@@ -63,15 +61,11 @@
 </template>
 
 <script setup lang="ts">
-import {
-  PopoverClose,
-  PopoverContent,
-  PopoverRoot,
-  PopoverTrigger
-} from 'reka-ui'
+import { PopoverClose, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 const { isSelectActive = false } = defineProps<{
   isSelectActive?: boolean

@@ -10,13 +10,16 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import type { AgentStopMethod } from '@/platform/telemetry/types'
+import type { AgentStopMethod } from '@comfyorg/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import { formatAgentErrorContext } from '@/workbench/extensions/agent/utils/formatAgentErrorContext'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '@/workbench/extensions/agent/composables/agent/useSkillMenuDescription'
@@ -55,6 +58,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
+  openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -70,6 +74,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
+  openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -114,7 +119,7 @@ const composer = useComposer({
       const end = Math.max(draft.trimEnd().length, ...offsets)
       emit(
         'send',
-        draft.slice(start, end),
+        withErrorContext(draft.slice(start, end)),
         attachments,
         references.map((reference) => ({
           ...reference,
@@ -124,7 +129,7 @@ const composer = useComposer({
           )
         }))
       )
-    } else emit('send', prepared.text.trim(), attachments)
+    } else emit('send', withErrorContext(prepared.text.trim()), attachments)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -138,8 +143,20 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 const { workflowReferences } = composer
+
+function withErrorContext(text: string): string {
+  const context = composer.errorContext.value
+  return context ? formatAgentErrorContext(context, text) : text
+}
+
 const placeholderLabel = computed(() =>
-  t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
+  t(
+    openingChat
+      ? 'agent.openingChat'
+      : skills.enabled
+        ? 'agent.placeholder'
+        : 'agent.placeholderWithoutSkills'
+  )
 )
 const showPlaceholderHint = computed(
   () => !composer.draft.value && !composer.prompt.value.references.length
@@ -164,6 +181,7 @@ const {
   mentionActive,
   mentionMatches,
   mentionVisible,
+  mentionActiveNode,
   mentionHasResults,
   skillQueryEmpty,
   graphDupes,
@@ -190,6 +208,10 @@ const {
   pickNode: (node) => emit('mentionPick', node),
   pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
+})
+useNodeEmphasisSource(() => {
+  const node = mentionActiveNode.value
+  return node && toNodeId(node.id)
 })
 
 function onSelectNodes(event: Event): void {
@@ -245,6 +267,7 @@ function onEditorSelectionChange(): void {
 }
 
 const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 const {
   describedSkill,
   requestDescription,
@@ -312,6 +335,11 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Enter') event.stopPropagation()
+  if (openingChat) {
+    event.preventDefault()
+    return
+  }
   requestKeyboardDescription(event)
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
@@ -367,7 +395,7 @@ function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   if (running.value) return
-  composer.submit()
+  composer.submit('keyboard')
 }
 
 const primaryActionLabel = computed(() =>
@@ -402,9 +430,10 @@ const primaryActionAriaDisabled = computed(() =>
 )
 const primaryActionDisabled = computed(
   () =>
-    !running.value &&
-    !sendBlockedReason.value &&
-    (workflowSelecting || !composer.canSend.value)
+    openingChat ||
+    (!running.value &&
+      !sendBlockedReason.value &&
+      (workflowSelecting || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -419,55 +448,35 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
+  if (openingChat) return
   if (running.value) emit('stop', 'button')
-  else composer.submit()
+  else composer.submit('explicit')
 }
 
 const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
 
-// The prompt editor only forwards `keydown` while it (the ProseMirror
-// contenteditable) itself has focus, so pressing Escape after submitting via
-// Enter is caught there (see the editor-scoped handler above). Clicking Send
-// with the mouse doesn't reliably leave focus in a place a container-scoped
-// listener would see: Chrome moves it onto the button, but Safari and
-// Firefox leave it on <body> without moving it at all, so a plain pointer
-// click can leave the next Escape with nothing inside the composer in its
-// bubble path.
-//
-// For that case this registers into `keybindingService`'s Escape override
-// hook instead of adding another DOM listener: `platform/` can't import from
-// `workbench/`, so it can't see this component's `running` state directly,
-// but `keybindHandler` consults whatever is registered here before it would
-// dispatch the default Escape keybinding (`Comfy.Graph.ExitSubgraph`). This
-// handler decides whether to act by checking focus directly rather than
-// relying on the event's bubble path: it fires while focus is inside this
-// composer, or nowhere in particular (the Safari/Firefox click case), but
-// stays out of the way once focus has genuinely moved elsewhere on the page
-// (see the "once focus has left the composer entirely" test).
-//
-// This is one of several places that establish Escape ownership in this
-// app: `useKeybindingService`'s own bailouts for `[role="menu"]` targets and
-// open dialogs run before this override is even consulted
-// (src/platform/keybindings/keybindingService.ts), the mention picker closes
-// itself first via stopPropagation (useAgentMentionPicker.ts's
-// onComposerKeydown), select has its own stopEscapeToDocument
-// (packages/design-system/src/select.variants.ts), and the capture-phase
-// document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
-// full-screen overlay pre-empt everything else. This handler only ever runs
-// when none of those more specific handlers claimed the event first.
+function focusAllowsComposerStop(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    composerContainerRef.value?.contains(active) === true
+  )
+}
+
 function handleEscapeOverride(event: KeyboardEvent): boolean {
-  if (event.key !== 'Escape' || !running.value || event.isComposing)
+  if (
+    openingChat ||
+    event.key !== 'Escape' ||
+    !running.value ||
+    event.isComposing
+  )
     return false
   if (event.defaultPrevented) return false
 
-  const active = document.activeElement
-  const focusedElsewhere =
-    active !== null &&
-    active !== document.body &&
-    !composerContainerRef.value?.contains(active)
-  if (focusedElsewhere) return false
+  if (!focusAllowsComposerStop()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -519,12 +528,12 @@ defineExpose({
   >
     <div
       v-if="mentionVisible"
-      id="agent-reference-menu"
+      :id="REFERENCE_MENU_ID"
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="mentionMenuLabel"
-      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
       @mousedown.prevent
       @mouseleave="leaveDescription"
     >
@@ -594,7 +603,7 @@ defineExpose({
         "
       >
         <template v-if="uploadingAttachmentCount > 0">
-          <span
+          <i
             aria-hidden="true"
             class="icon-[lucide--loader-circle] size-3 animate-spin"
           />
@@ -611,7 +620,10 @@ defineExpose({
           role="status"
           class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
-          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">
@@ -624,13 +636,16 @@ defineExpose({
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"
+              :reference-menu-id="REFERENCE_MENU_ID"
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
+              :caret-request="composer.pendingCaret.value"
               :editable-workflow-id
               :skill-scope="skills.scope"
               @keydown="onComposerKeydown"
               @update:model-value="composer.applyEditorPrompt"
+              @caret-request-handled="composer.clearPendingCaret"
               @resolve-skill-metadata="composer.resolveSkillMetadata"
               @keyup="onComposerKeyup"
               @input="onEditorInput"

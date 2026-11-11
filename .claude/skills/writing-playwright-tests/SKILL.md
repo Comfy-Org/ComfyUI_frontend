@@ -60,7 +60,6 @@ These are frequent causes of flaky tests - check them first, but investigate if 
 | Double-click doesn't trigger        | Timing too fast           | Add `{ delay: 5 }` option                                                              |
 | Elements end up in wrong position   | Drag animation incomplete | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
 | Widget value wrong after drag-drop  | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
-| Test fails when run with others     | Test pollution            | Add `afterEach` with `resetView()`                                                     |
 | Local screenshots don't match CI    | Platform differences      | Screenshots are Linux-only, use PR label                                               |
 | `subtree intercepts pointer events` | Canvas overlay (z-999)    | Use `dispatchEvent` on the DOM element to bypass overlay                               |
 | Context menu empty / wrong items    | Node not selected         | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                 |
@@ -113,9 +112,9 @@ await expect(async () => {
 
 - **Screenshots are Linux-only.** Don't commit local screenshots.
 - **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun; the workflow fails if the run is missing or incomplete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` to rerun Playwright when one test takes several changed screenshots
-- **Mask dynamic content:**
+- **Capture only the area under test** with `expectElementScreenshot`, `expectRegionScreenshot`, or `screenshotRegion` from `@e2e/fixtures/utils/screenshotRegion`; lint rejects `toHaveScreenshot` in spec files. They accept the usual screenshot options, such as `mask` for dynamic content:
   ```typescript
-  await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
+  await expectElementScreenshot(dialog, 'dialog.png', {
     mask: [page.locator('.timestamp')]
   })
   ```
@@ -163,24 +162,20 @@ Avoid these common mistakes:
 ## Quick Start Template
 
 ```typescript
-// Path depends on test file location - adjust '../' segments accordingly
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('FeatureName', { tag: ['@canvas'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('should do something', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('myWorkflow')
 
     const node = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     // ... test logic
 
-    await expect(comfyPage.canvas).toHaveScreenshot('expected.png')
+    await expectRegionScreenshot(comfyPage.page, [node], 'expected.png')
   })
 })
 ```

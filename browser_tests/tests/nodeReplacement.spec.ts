@@ -12,7 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -173,9 +173,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
             if (mode.vueNodesEnabled) {
               await expect(
-                comfyPage.vueNodes
-                  .getWidgetByName('KSampler', 'denoise')
-                  .locator('input')
+                comfyPage.vueNodes.getWidgetByName('KSampler', 'denoise')
               ).toHaveValue(/^1(?:\.0+)?$/)
             }
           })

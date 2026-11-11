@@ -6,7 +6,7 @@ import {
   LGraphNode,
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 function nodeWithNamespacedExtension(): ISerialisedNode {
   return {

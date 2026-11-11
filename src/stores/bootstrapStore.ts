@@ -6,7 +6,7 @@ import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { isCloud } from '@/platform/distribution/types'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -83,11 +83,12 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     error: i18nError,
     execute: loadI18n
   } = useAsyncState(
-    async () => {
-      const { mergeCustomNodesI18n } = await import('@/i18n')
-      const i18nData = await fetchCustomNodesI18n()
-      if (i18nData) mergeCustomNodesI18n(i18nData)
-    },
+    () =>
+      bootstrapTracer.settle('bootstrap/i18n', async () => {
+        const { mergeCustomNodesI18n } = await import('@/i18n')
+        const i18nData = await fetchCustomNodesI18n()
+        if (i18nData) mergeCustomNodesI18n(i18nData)
+      }),
     undefined,
     { immediate: false }
   )
@@ -111,13 +112,15 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
     if (isCloud) {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
-      await bootCloudIdentity()
+      await bootstrapTracer.settle('auth-gate/identity', bootCloudIdentity)
 
       const authStore = useAuthStore()
       const apiKeyAuthStore = useApiKeyAuthStore()
-      await until(
-        () => authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated
-      ).toBe(true)
+      await bootstrapTracer.settle('auth-gate/sign-in', () =>
+        until(
+          () => authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated
+        ).toBe(true)
+      )
     }
 
     const userStore = useUserStore()
@@ -130,6 +133,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       until(needsLogin).toBe(false)
     )
 
+    if (!isCloud) api.prefetchNodeDefs()
     const storeLoads = loadAuthenticatedStores()
     void Promise.allSettled(storeLoads).then(() => {
       bootstrapTracer.milestone('stores-ready')

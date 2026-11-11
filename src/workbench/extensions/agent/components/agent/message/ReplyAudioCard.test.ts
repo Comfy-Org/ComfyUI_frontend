@@ -9,8 +9,6 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/scripts/api'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))

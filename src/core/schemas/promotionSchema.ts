@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 

@@ -27,7 +27,7 @@
           :disabled="activeIndex === 0"
           @click="activeIndex--"
         >
-          <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
         </Button>
         <Button
           v-if="images.length > 1"
@@ -39,7 +39,7 @@
           :disabled="activeIndex === images.length - 1"
           @click="activeIndex++"
         >
-          <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
         </Button>
       </div>
 
@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'

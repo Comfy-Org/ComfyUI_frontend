@@ -22,13 +22,13 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   userEmail: computed(() => undefined),
   userPhotoUrl: computed(() => undefined),
   providerName: computed(() => undefined),
-  providerIcon: computed(() => 'pi pi-user'),
+  providerIcon: computed(() => 'icon-[lucide--user]'),
   resolvedUserInfo: computed(() => null),
   handleSignOut: vi.fn(async () => {}),
   handleSignIn: vi.fn(async () => {}),
   onUserResolved: vi.fn(createWatchHandle),
   onTokenRefreshed: vi.fn(createWatchHandle),
-  onUserLogout: vi.fn()
+  onUserLogout: vi.fn(createWatchHandle)
 }
 
 const currentUser = { ...defaults }

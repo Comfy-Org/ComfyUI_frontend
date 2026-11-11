@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
 
+import { EXPECTED_PROMPT, EXPECTED_WORKFLOW } from './__fixtures__/helpers'
 import { getWorkflowDataFromFile } from './parser'
 
 describe('getWorkflowDataFromFile', () => {
@@ -15,6 +16,25 @@ describe('getWorkflowDataFromFile', () => {
         workflow:
           '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}',
         prompt: '{"1":{"class_type":"KSampler","inputs":{}}}'
+      })
+    }
+  )
+
+  it.for([
+    { name: 'test.MKV', type: '' },
+    { name: 'test', type: 'video/x-matroska' },
+    { name: 'test', type: 'video/matroska' }
+  ])(
+    'reads MKV metadata from $name with MIME "$type"',
+    async ({ name, type }) => {
+      const bytes = fs.readFileSync(
+        path.join(__dirname, '__fixtures__', 'with_metadata.webm')
+      )
+      const file = new File([bytes], name, { type })
+
+      expect(await getWorkflowDataFromFile(file)).toMatchObject({
+        workflow: EXPECTED_WORKFLOW,
+        prompt: EXPECTED_PROMPT
       })
     }
   )
