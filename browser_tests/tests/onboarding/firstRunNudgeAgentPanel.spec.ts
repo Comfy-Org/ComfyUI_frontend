@@ -46,7 +46,7 @@ async function skipTheFirstRunTour(page: Page): Promise<void> {
 
 async function hideServerTemplateGraph(page: Page): Promise<void> {
   await page.addStyleTag({
-    content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
+    content: `:has(> #graph-canvas), [data-testid="minimap-container"] { opacity: 0; }`
   })
 }
 
