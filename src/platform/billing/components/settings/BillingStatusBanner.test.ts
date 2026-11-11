@@ -197,7 +197,7 @@ const i18n = createI18n({
             memberBody: 'You can run workflows until then.',
             personalTitle: 'Your {plan} plan ends on {date}',
             personalBody:
-              "You won't be charged again. Resume your plan to keep your monthly credits.",
+              "You won't be charged again. Resume your plan to keep getting credits.",
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
             enterpriseBody:
               'Members keep full access until then. Reach out to our sales team to extend.',
@@ -211,8 +211,7 @@ const i18n = createI18n({
             teamMemberBody: 'Ask your workspace owner to resubscribe.',
             personalTitle: 'Your {plan} plan ended on {date}',
             personalTitleNoDate: 'Your {plan} plan has ended',
-            personalBody:
-              'Resubscribe to run workflows and get monthly credits again.',
+            personalBody: 'Resubscribe to run workflows and get credits again.',
             enterpriseTitle: 'Your Enterprise plan ended on {date}',
             enterpriseBody: 'Contact sales to start a new Enterprise plan.',
             planTitle: 'Your plan ended on {date}',
@@ -1305,12 +1304,12 @@ describe('BillingStatusBanner', () => {
       {
         tier: 'PRO',
         title: 'Your Pro plan ends on August 1, 2026',
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       },
       {
         tier: 'FOUNDERS_EDITION',
         title: "Your Founder's Edition plan ends on August 1, 2026",
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       }
     ] as const)(
       'words the ending notice for $title',
@@ -1344,7 +1343,7 @@ describe('BillingStatusBanner', () => {
 
         expect(screen.getByRole('status')).toHaveTextContent(title)
         expect(screen.getByRole('status')).toHaveTextContent(
-          'Resubscribe to run workflows and get monthly credits again.'
+          'Resubscribe to run workflows and get credits again.'
         )
         expectChoosePlanLink()
       }

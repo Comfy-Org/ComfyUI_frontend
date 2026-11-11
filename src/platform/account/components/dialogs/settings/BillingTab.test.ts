@@ -2089,8 +2089,18 @@ describe('BillingTab', () => {
         canTopUp: false
       }
 
-      it('tells a member who manages auto top-up, without status, action or a settings read', () => {
-        arrange(member)
+      it('keeps the 1.60 member notice with the new UX off even when a status is served', () => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+        arrange({
+          ...member,
+          autoTopUpMemberView: {
+            status: 'paused_by_budget',
+            threshold_credits: 1000,
+            target_credits: 6275,
+            cycle_resets_at: null,
+            monthly_budget_is_default: true
+          }
+        })
 
         const block = screen.getByTestId('billing-auto-top-up-member-card')
         expect(
@@ -2114,6 +2124,7 @@ describe('BillingTab', () => {
       })
 
       it('shows a member the served auto top-up status, still without an action or a settings read', () => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
         arrange({
           ...member,
           autoTopUpMemberView: {

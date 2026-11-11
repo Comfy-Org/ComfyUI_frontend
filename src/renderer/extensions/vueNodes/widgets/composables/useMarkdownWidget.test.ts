@@ -1,7 +1,9 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { reportError as reportErrorMock } from '@comfyorg/telemetry/reportError'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
@@ -9,22 +11,8 @@ import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/com
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
-const { canvasMock, reportErrorMock } = vi.hoisted(() => ({
-  canvasMock: {
-    processMouseDown: vi.fn(),
-    processMouseMove: vi.fn(),
-    processMouseUp: vi.fn()
-  },
-  reportErrorMock: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, canvas: canvasMock }
-}))
-
-vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
-}))
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'),
@@ -58,7 +46,14 @@ describe('useMarkdownWidget', () => {
       document.body.removeEventListener('keydown', parentKeydown)
       inputEl.remove()
     })
-    return { widget, inputEl, textarea, callback, parentKeydown }
+    return {
+      widget,
+      inputEl,
+      textarea,
+      callback,
+      parentKeydown,
+      canvasMock: app.canvas
+    }
   }
 
   it('notifies once per textarea input and separately on change', () => {
@@ -149,7 +144,7 @@ describe('useMarkdownWidget', () => {
   })
 
   it('forwards middle-click pointer events to the canvas while alive', () => {
-    const { inputEl } = setup()
+    const { inputEl, canvasMock } = setup()
     inputEl.dispatchEvent(new PointerEvent('pointerdown', { button: 1 }))
     inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
     inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
@@ -160,7 +155,8 @@ describe('useMarkdownWidget', () => {
   })
 
   it('detaches every listener and lets keydown bubble after removal', () => {
-    const { widget, inputEl, textarea, callback, parentKeydown } = setup()
+    const { widget, inputEl, textarea, callback, parentKeydown, canvasMock } =
+      setup()
     widget.onRemove?.()
 
     textarea.value = 'after'
@@ -177,8 +173,6 @@ describe('useMarkdownWidget', () => {
     expect(canvasMock.processMouseMove).not.toHaveBeenCalled()
     expect(canvasMock.processMouseUp).not.toHaveBeenCalled()
     expect(inputEl.classList.contains('editing')).toBe(false)
-    // keydown listener (which called stopPropagation) is gone, so the event
-    // now bubbles to the parent.
     expect(parentKeydown).toHaveBeenCalledTimes(1)
   })
 
