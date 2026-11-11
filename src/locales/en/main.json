@@ -3790,6 +3790,7 @@
         },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
+          "body": "You'll stay on {current}, which renews on {date}. You can schedule a change again anytime.",
           "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
           "title": "Cancel your change to {plan}?"
         },

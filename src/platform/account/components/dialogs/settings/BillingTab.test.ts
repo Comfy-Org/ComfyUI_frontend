@@ -845,17 +845,38 @@ describe('BillingTab', () => {
       return arranged
     }
 
-    it('confirms that the current plan stays, with no amount', async () => {
-      await openStay()
+    it.for([
+      {
+        served: 'a renewal date',
+        effectiveAt: '2026-10-28T00:00:00Z',
+        body: "You'll stay on Pro, which renews on October 28, 2026. You can schedule a change again anytime."
+      },
+      {
+        served: 'no renewal date',
+        effectiveAt: '',
+        body: "You'll stay on Pro. You can schedule a change again anytime."
+      }
+    ])(
+      'confirms that the current plan stays, with no amount, when $served is served',
+      async ({ effectiveAt, body }) => {
+        await openStay({
+          subscription: {
+            ...scheduledChange,
+            scheduledChange: {
+              plan_slug: 'creator-yearly',
+              effective_at: effectiveAt,
+              team_credit_stop: null
+            }
+          }
+        })
 
-      const dialog = screen.getByRole('dialog', {
-        name: 'Cancel your change to Creator?'
-      })
-      expect(dialog).toHaveTextContent(
-        "You'll stay on Pro. You can schedule a change again anytime."
-      )
-      expect(dialog).not.toHaveTextContent('$')
-    })
+        const dialog = screen.getByRole('dialog', {
+          name: 'Cancel your change to Creator?'
+        })
+        expect(dialog).toHaveTextContent(body)
+        expect(dialog).not.toHaveTextContent('$')
+      }
+    )
 
     it('reverts the scheduled change and rereads status when confirmed', async () => {
       const { fetchStatus, refresh } = await openStay()
