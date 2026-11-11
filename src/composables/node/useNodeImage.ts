@@ -21,10 +21,11 @@ const DEFAULT_VIDEO_SIZE = 256
 const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
 
 /** Message for a failed video load, from the media error codes of its attempts. */
-export const videoFailureMessageKey = (errorCodes: (number | undefined)[]) =>
-  errorCodes.includes(MEDIA_ERR_SRC_NOT_SUPPORTED)
+export function videoFailureMessageKey(errorCodes: (number | undefined)[]) {
+  return errorCodes.includes(MEDIA_ERR_SRC_NOT_SUPPORTED)
     ? 'g.videoFormatNotSupported'
     : 'g.videoFailedToLoad'
+}
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
