@@ -1,5 +1,6 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
+  GRID_IMAGE_NAMES,
   panSweep,
   uploadGridImages,
   waitForGridImagesDecoded,
@@ -27,9 +28,9 @@ for (const size of [4096, 256]) {
       test.setTimeout(120_000)
 
       test.beforeEach(async ({ comfyPage, comfyFiles }) => {
-        const names = await uploadGridImages(comfyPage, size)
-        for (const filename of names)
+        for (const filename of GRID_IMAGE_NAMES)
           comfyFiles.deleteAfterTest({ filename, type: 'input' })
+        await uploadGridImages(comfyPage, size)
       })
 
       test('load, pan and zoom a 4x3 grid', async ({ comfyPage }) => {

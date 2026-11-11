@@ -5,16 +5,15 @@ import { createLargePng } from '@e2e/fixtures/utils/largePng'
 
 const GRID_NODE_COUNT = 12
 
-/** Uploads one `size`² PNG per grid node under the names the workflow asset references. */
-export async function uploadGridImages(
-  comfyPage: ComfyPage,
-  size: number
-): Promise<string[]> {
-  const names = Array.from(
-    { length: GRID_NODE_COUNT },
-    (_, i) => `perf_grid_${i}.png`
-  )
-  for (const [i, name] of names.entries()) {
+/** Input filenames the `vueNodes/load-image-grid-4x3` workflow asset references. */
+export const GRID_IMAGE_NAMES = Array.from(
+  { length: GRID_NODE_COUNT },
+  (_, i) => `perf_grid_${i}.png`
+)
+
+/** Uploads one `size`² PNG under each of {@link GRID_IMAGE_NAMES}. */
+export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
+  for (const [i, name] of GRID_IMAGE_NAMES.entries()) {
     const response = await comfyPage.page.request.post(
       `${comfyPage.url}/api/upload/image`,
       {
@@ -31,7 +30,6 @@ export async function uploadGridImages(
     )
     expect(response.ok()).toBe(true)
   }
-  return names
 }
 
 /** Resolves once every grid preview has loaded and decoded. */
