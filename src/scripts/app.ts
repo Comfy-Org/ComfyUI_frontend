@@ -1600,6 +1600,10 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
+      if (isCurrent?.() === false) {
+        await cancelReplacedLoad()
+        return false
+      }
 
       const effectiveShareId =
         shareId ??

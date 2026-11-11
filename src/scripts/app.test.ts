@@ -748,6 +748,45 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
+    it('does not activate a graph whose load stopped being current during afterConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        true,
+        null,
+        {
+          isCurrent: () => current,
+          workflowNavigationId: 9
+        }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+    })
+
     it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
