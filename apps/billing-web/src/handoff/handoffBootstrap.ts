@@ -22,6 +22,7 @@ export interface HandoffBootEnv {
   readonly fetchImpl: typeof fetch
   readonly cloudBaseUrl: string
   readonly now: () => number
+  readonly exchangeTimeoutMs: number
 }
 
 export type HandoffBootOutcome = 'handoff' | 'not-handoff'
@@ -57,7 +58,8 @@ async function exchange(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
         credentials: 'omit',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: AbortSignal.timeout(env.exchangeTimeoutMs)
       }
     )
     if (!response.ok)
@@ -100,7 +102,6 @@ function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
     : state
 }
 
-/** Exchanges a captured `/handoff` token, or restores this tab's handoff, before the app and its telemetry load. */
 export async function runHandoffBootstrap(
   env: HandoffBootEnv
 ): Promise<HandoffBootOutcome> {

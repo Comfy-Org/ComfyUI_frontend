@@ -71,11 +71,13 @@ function setup(
   {
     storage = memoryStorage(),
     marker = memoryMarker(),
-    respond = () => json(200, exchanged)
+    respond = () => json(200, exchanged),
+    exchangeTimeoutMs = 10_000
   }: {
     storage?: TabStorage
     marker?: TabMarker
-    respond?: () => Response | Promise<Response>
+    respond?: (init?: RequestInit) => Response | Promise<Response>
+    exchangeTimeoutMs?: number
   } = {}
 ) {
   const location = new URL(url, 'https://testbilling.comfy.org')
@@ -90,14 +92,15 @@ function setup(
     markExchangePending: () => {}
   })
   if (capture.kind !== 'captured') throw new Error('capture halted')
-  const fetchImpl = vi.fn<typeof fetch>(async () => respond())
+  const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => respond(init))
   const env: HandoffBootEnv = {
     capture,
     storage,
     marker,
     fetchImpl,
     cloudBaseUrl: CLOUD,
-    now: () => NOW
+    now: () => NOW,
+    exchangeTimeoutMs
   }
   return { env, fetchImpl, storage }
 }
@@ -184,6 +187,38 @@ describe('runHandoffBootstrap', () => {
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'exchange_lost' })
   })
+
+  it('ends a hung exchange as a spent token once the request times out', async () => {
+    const { env } = setup('/handoff#token=tok-1', {
+      exchangeTimeoutMs: 5,
+      respond: (init) =>
+        new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+        )
+    })
+
+    await runHandoffBootstrap(env)
+
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'exchange_lost' })
+  })
+
+  it.for(['owner', 'member'] as const)(
+    'signs the tab in with the %s role the exchange reports',
+    async (role) => {
+      const { env } = setup('/handoff#token=tok-1', {
+        respond: () => json(200, { ...exchanged, role })
+      })
+
+      await runHandoffBootstrap(env)
+
+      expect(handoffTab.value).toMatchObject({
+        kind: 'session',
+        session: { role }
+      })
+    }
+  )
 
   it('ends instead of keeping the session only in memory when storing it fails', async () => {
     const storage = memoryStorage()

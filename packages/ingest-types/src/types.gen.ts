@@ -4303,7 +4303,7 @@ export type BillingHandoffExchangeResponse = {
   /**
    * The user's role in the workspace at exchange time.
    */
-  role: string
+  role: 'owner' | 'member'
 }
 
 /**

@@ -34,10 +34,6 @@ function userOf(session: HandoffSession): AccountUser {
   }
 }
 
-/**
- * The scoped session as a billing session: never minted or refreshed. A 401
- * the transport retries through `remint` ends the tab's handoff.
- */
 export function createHandoffBillingSession(
   storage: TabStorage,
   now: () => number = () => Date.now()

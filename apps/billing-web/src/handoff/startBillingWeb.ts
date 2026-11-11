@@ -7,7 +7,8 @@ import {
   windowNameMarker
 } from '@/handoff/handoffTab'
 
-/** Settles this tab's handoff, then loads the app and its telemetry. */
+const EXCHANGE_TIMEOUT_MS = 15_000
+
 export async function startBillingWeb(
   capture: Extract<HandoffCapture, { kind: 'captured' }>
 ): Promise<void> {
@@ -17,7 +18,8 @@ export async function startBillingWeb(
     marker: windowNameMarker,
     fetchImpl: (...args) => window.fetch(...args),
     cloudBaseUrl: CLOUD_BASE_URL,
-    now: () => Date.now()
+    now: () => Date.now(),
+    exchangeTimeoutMs: EXCHANGE_TIMEOUT_MS
   })
   endHandoffAtExpiry(sessionTabStorage)
   await import('@/main')

@@ -102,7 +102,6 @@ async function isScopedSessionRefusal(response: Response): Promise<boolean> {
   )
 }
 
-/** On a billing handoff: the scoped session's own workspace, never one a URL names; `onSessionRefused` runs when Cloud ends the session. */
 export function createHandoffBillingClient(
   session: BillingSession,
   onSessionRefused: () => void
