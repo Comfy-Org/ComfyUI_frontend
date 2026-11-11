@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
-    "lint": "oxlint src --type-aware && eslint src",
+    "lint": "pnpm --workspace-root exec oxlint packages/layer-editor-ui/src --type-aware && eslint src",
     "test": "vitest run"
   },
   "dependencies": {
