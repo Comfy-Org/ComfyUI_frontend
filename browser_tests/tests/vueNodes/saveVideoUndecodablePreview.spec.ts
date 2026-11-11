@@ -25,7 +25,7 @@ async function addNode(comfyPage: ComfyPage, type: string) {
     x: 300,
     y: 150
   })
-  return String(node.id)
+  return node.id
 }
 
 const filenameOf = (url: string | URL) =>
